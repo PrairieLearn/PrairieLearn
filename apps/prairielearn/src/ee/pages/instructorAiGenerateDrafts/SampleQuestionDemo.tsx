@@ -28,11 +28,16 @@ import {
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
-} from '../../src/lib/aiGeneratedQuestionSamples.js';
+} from '../../../lib/aiGeneratedQuestionSamples.js';
 
-import { mathjaxTypeset } from './lib/mathjax.js';
 
-export function SampleQuestionDemo({ prompt }: { prompt: ExamplePrompt }) {
+export function SampleQuestionDemo({ 
+  prompt, 
+  onMathjaxTypeset 
+}: { 
+  prompt: ExamplePrompt, 
+  onMathjaxTypeset: () => Promise<void>
+}) {
   const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
   const [questionContent, setQuestionContent] = useState<VNode | null>(null);
 
@@ -151,7 +156,7 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePrompt }) {
         resolve(true);
       }, 10);
     });
-    await mathjaxTypeset();
+    await onMathjaxTypeset();
   };
 
   // When a new variant is loaded, typeset the MathJax content.
@@ -269,7 +274,7 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePrompt }) {
 
   useEffect(() => {
     if (answerLabel) {
-      mathjaxTypeset();
+      onMathjaxTypeset();
     }
   }, [answerLabel]);
 

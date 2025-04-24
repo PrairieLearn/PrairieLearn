@@ -26,9 +26,10 @@ import {
   useState
 } from '@prairielearn/preact-cjs/hooks';
 
+import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
 
-import { SampleQuestionDemo } from './SampleQuestionDemo.js';
+import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
@@ -172,6 +173,7 @@ onDocumentReady(() => {
             />
             <SampleQuestionDemo 
               prompt={selectedQuestion} 
+              onMathjaxTypeset={mathjaxTypeset}
             />
             <FeatureList 
               features={selectedQuestion.features.map((feature, index) => ({
