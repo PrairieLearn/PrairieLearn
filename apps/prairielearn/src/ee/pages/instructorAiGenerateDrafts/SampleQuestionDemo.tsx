@@ -77,7 +77,7 @@ export function SampleQuestionDemo({
     setQuestionContent(null);
     // Ensure the component is rendered before typesetting MathJax
     // TODO: This results in flickering. Find a better solution.
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
     // Clear the grade shown to the user
     setGrade(null);
@@ -143,10 +143,9 @@ export function SampleQuestionDemo({
   };
 
   const handleTypesetMathjax = async () => {
-
     // Ensure the component is rendered before typesetting MathJax
     // TODO: This results in flickering. Find a better solution.
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     await onMathjaxTypeset();
   };
 
@@ -178,15 +177,10 @@ export function SampleQuestionDemo({
         rtol && variant.correctAnswer !== 0 ? relativeError <= rtol : false;
       const absoluteErrorValid = atol ? absoluteError <= atol : false;
 
-      // If rtol and atol are both not set, we only check for an exact match
-      let isValid = responseNum === variant.correctAnswer;
-
-      if (rtol) {
-        isValid = isValid || relativeErrorValid;
-      }
-      if (atol) {
-        isValid = isValid || absoluteErrorValid;
-      }
+      const isValid = 
+          responseNum === variant.correctAnswer || 
+          (rtol && relativeErrorValid) || 
+          (atol && absoluteErrorValid);
 
       if (isValid) {
         setGrade(100);
@@ -232,10 +226,10 @@ export function SampleQuestionDemo({
 
   const handleUpdateAnswerLabel = async () => {
     setAnswerLabel(null);
-    
+
     // Ensure the component is rendered before typesetting MathJax
     // TODO: This results in flickering. Find a better solution.
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
     if (prompt.answerLabel) {
       setAnswerLabel(prompt.answerLabel);
     }
