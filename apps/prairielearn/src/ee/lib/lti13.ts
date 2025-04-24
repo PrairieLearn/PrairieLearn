@@ -709,11 +709,6 @@ class Lti13ContextMembership {
    * @returns The LTI 1.3 record for the user, or null if not found.
    */
   async lookup(user: UsersWithLti13Sub): Promise<ContextMembership | null> {
-    // 1) This used to check user.lti13_sub from DB cache, but because we
-    // didn't have the full ContextMembership data cached, it was removed
-    // from this function. If we only need sub returned, perhaps break the
-    // cacheable lookup out to a different function.
-    // 2) Tests might need to be updated because lookup returns the full user not sub
     for (const match of ['uid', 'email']) {
       const memberResults = this.#memberships[user[match]];
 
@@ -777,29 +772,6 @@ export async function updateLti13Scores(
     error: 0,
     not_sent: 0,
   };
-
-  /*
-  https://github.com/PrairieLearn/PrairieLearn/issues/10900
-  To summarize it, I think we can get three lists of users:
-
-non-students in PL
-students in PL
-students in Canvas
-
-The groups are:
-
-student in PL and student in Canvas ==> push and report error if it fails
-non-student in PL and student in Canvas ==> push and report error if it fails
-
-non-student in PL and NOT student in Canvas ==> report that we skipping the user
-    because they are course staff
-
-student in PL and NOT student in Canvas ==> report that we are skipping the user
-    because they aren't in Canvas
-
-At the end, we should summarize the error cases (not the ones that we report we are skipping).
-
-*/
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
