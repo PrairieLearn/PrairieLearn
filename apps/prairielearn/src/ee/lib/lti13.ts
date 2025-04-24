@@ -772,7 +772,7 @@ export async function updateLti13Scores(
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
   const timestamp = new Date();
 
-  let counts = {
+  const counts = {
     success: 0,
     error: 0,
     not_sent: 0,
