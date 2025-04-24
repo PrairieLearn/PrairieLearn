@@ -221,7 +221,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 10);
+  const limitedInternallyGradedQuestions = internallyGradedQuestions;
 
   const badQs = [
     'element/fileEditor', // needs files
@@ -321,6 +321,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
         const rewrittenHtml = await rewriteAriaLabel(questionHtml);
         const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
+          extends: ['html-validate:recommended', 'html-validate:document'],
           rules: {
             'no-raw-characters': [
               'error',
@@ -356,6 +357,8 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             // Issues not worth solving
             'no-inline-style': 'off',
             'no-trailing-whitespace': 'off',
+            'missing-doctype': 'off',
+            'heading-level': 'off',
             // Not fully controllable
             'attribute-boolean-style': ['off'],
             // Not fully controllable, see pl-file-download
