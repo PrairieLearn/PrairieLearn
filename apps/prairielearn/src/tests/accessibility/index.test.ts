@@ -214,6 +214,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/clientFilesCourseInstance/*',
   '/pl/course_instance/:course_instance_id/elementExtensions/*',
   '/pl/course_instance/:course_instance_id/elements/*',
+  '/pl/course_instance/:course_instance_id/gradebook/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',

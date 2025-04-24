@@ -3804,7 +3804,7 @@ __metadata:
     "@smithy/types": "npm:^4.2.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@trpc/client": "npm:^11.1.0"
-    "@trpc/server": "npm:^11.1.0"
+    "@trpc/server": "npm:^11.1.1"
     "@types/archiver": "npm:^6.0.3"
     "@types/async": "npm:^3.2.24"
     "@types/blocked": "npm:^1.3.4"
@@ -4013,7 +4013,7 @@ __metadata:
   dependencies:
     "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -4022,8 +4022,8 @@ __metadata:
   resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    original-preact: "npm:preact@^10.25.4"
-    typescript: "npm:^5.7.3"
+    original-preact: "npm:preact@^10.26.5"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -5227,12 +5227,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trpc/server@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "@trpc/server@npm:11.1.0"
+"@trpc/server@npm:^11.1.1":
+  version: 11.1.1
+  resolution: "@trpc/server@npm:11.1.1"
   peerDependencies:
     typescript: ">=5.7.2"
-  checksum: 10c0/8db6c4cba4bbb8f585c81e868adfcbb05d742ab122ff3d8fa561242e3aa4a043d8f2aa249337e2d4b192d9ab98559d675325678b245f2d4862b4d8a366c622b1
+  checksum: 10c0/d590d90144e23acad31c8346ee04b2d01439dec181ede156537321b53ece81f5b4131986d599f456c3a45cd8d7a0b1569336d20765fbd6906a8bc960193cd586
   languageName: node
   linkType: hard
 
@@ -13655,10 +13655,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"original-preact@npm:preact@^10.25.4":
-  version: 10.25.4
-  resolution: "preact@npm:10.25.4"
-  checksum: 10c0/33a009d614d2b47df1c867935fe057c1dfd2bae1aaab41d6e981434b761f75b88e82eac7847ae486b4dbcffc74af814b8dc59ccef17b10625e3effefa2e1ef67
+"original-preact@npm:preact@^10.26.5":
+  version: 10.26.5
+  resolution: "preact@npm:10.26.5"
+  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
   languageName: node
   linkType: hard
 
@@ -16490,7 +16490,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.7.3, typescript@npm:^5.8.3":
+"typescript@npm:^5.8.3":
   version: 5.8.3
   resolution: "typescript@npm:5.8.3"
   bin:
@@ -16500,7 +16500,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.7.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
   version: 5.8.3
   resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
   bin:

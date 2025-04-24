@@ -57,7 +57,8 @@ jobs:
         with:
           context: images/plbase
           platforms: linux/amd64
-          no-cache: true
+          pull: true
+          cache-from: type=registry,ref=prairielearn/plbase:buildcache-linux-amd64
           tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
 
       # This ensures that the `prairielearn/prairielearn` image is built with the
@@ -69,7 +70,7 @@ jobs:
         run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
 
       - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
+        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} --cache-from type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64 .
 
       # This ensures that the `prairielearn/executor` image is built with the
       # correct version of `prairielearn/prairielearn`.
@@ -101,9 +102,6 @@ jobs:
         # spinning until it eventually times out. This shorter timeout helps
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
-      - name: Run the Python tests
-        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-python"
-        timeout-minutes: 5
 
       # Since tests run in the context of the container, we need to copy all
       # the coverage reports out of the container and into the host filesystem.
@@ -113,15 +111,7 @@ jobs:
         uses: codecov/codecov-action@v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          exclude: apps/prairielearn/python
           flags: javascript
-
-      - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: apps/prairielearn/python
-          flags: python
 
   native-checks:
     runs-on: ubuntu-latest
@@ -233,3 +223,10 @@ jobs:
       # in those cases.
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
+
+      - name: Upload Python coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: apps/prairielearn/python
+          flags: python
