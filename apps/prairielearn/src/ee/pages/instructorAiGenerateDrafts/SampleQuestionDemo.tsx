@@ -331,7 +331,6 @@ function FeedbackBadge({ grade }: { grade: number }) {
   );
 }
 
-//
 function NumericOrStringInput({
   userInputResponse,
   placeholder,

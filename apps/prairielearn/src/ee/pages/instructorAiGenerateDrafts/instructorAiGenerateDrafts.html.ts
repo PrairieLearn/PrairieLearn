@@ -67,7 +67,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div id="add-question-card" class="card mb-5 mx-auto" style="max-width: 700px">
+      <div class="card mb-5 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
