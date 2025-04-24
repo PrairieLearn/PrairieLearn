@@ -123,7 +123,7 @@ export interface ExecutionData {
   params: Record<string, any>;
   correct_answers: Record<string, unknown>;
   variant_seed: number;
-  options: Record<string, unknown> & {
+  options: Record<string, any> & {
     question_path: string;
     client_files_question_path: string;
     client_files_course_path: string;
