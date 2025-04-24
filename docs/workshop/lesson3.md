@@ -26,17 +26,17 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 Consider the Standard I-beam cross-section:
 
-![](figs/cross-section.png)
+![Diagram of a I-beam cross-section](figs/cross-section.png)
 
 The table below has the geometric properties for different specifications for a steel beam:
 
-![](figs/properties.png)
+![Table of steel beam geometric properties](figs/properties.png)
 
 For the **S20 x 66** beam, what is the maximum normal stress $\sigma_x$ assuming that the maximum moment is equal to $M_{max} = 5 \times 10^5 \rm\ lb \cdot in$.
 
 **Solution:**
 
-For the **S20 x 66** beam, we use $I_x = 1190 \rm\ in^4$ and $c = h/2 = 10 \rm\ in$. Hence the maximum normal stress is:
+For the **S20 x 66** beam, we use $I_x = 1190 \rm\ in^4$ and $c = h/2 = 10 \rm\ in$. Hence, the maximum normal stress is:
 
 $$\sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\ ksi$$
 
@@ -75,7 +75,7 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 For given values of X, Y and Z, determine F.
 
-![](figs/logic-diagram.png)
+![Circuit logic diagram](figs/logic-diagram.png)
 
 **Think about:**
 

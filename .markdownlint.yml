@@ -2,10 +2,8 @@
 MD013: false # Line length
 MD024: false # Multiple headings with the same content
 MD046: false # indented / fenced code blocks (false positives)
-# These rules should be enabled/disabled eventually
-MD033: # No inline HTML except div and img
+MD026:
+  punctuation: '.,;:'
+MD033: # No inline HTML
   allowed_elements:
     - div
-    - img
-MD034: false
-MD045: false

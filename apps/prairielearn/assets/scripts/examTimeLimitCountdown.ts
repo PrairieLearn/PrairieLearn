@@ -1,4 +1,4 @@
-import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { saveQuestionFormData } from './lib/confirmOnUnload.js';
@@ -29,9 +29,12 @@ function showWarningPopup(id: string, message: string) {
           aria-atomic="true"
         >
           <div>${message}</div>
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">×</span>
-          </button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
         </div>`,
       ),
     );

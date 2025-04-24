@@ -15,6 +15,7 @@ export const InstructorCourseSchema = z.object({
     z.object({
       id: CourseInstanceSchema.shape.id,
       long_name: CourseInstanceSchema.shape.long_name,
+      expired: z.boolean(),
     }),
   ),
 });
@@ -52,10 +53,10 @@ export function Home({
       fullHeight: true,
     },
     content: html`
-      <h1 class="sr-only">PrairieLearn Homepage</h1>
+      <h1 class="visually-hidden">PrairieLearn Homepage</h1>
       ${ActionsHeader()}
 
-      <div id="content" class="container py-5">
+      <div class="container py-5">
         ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
         ${InstructorCoursesCard({ instructorCourses })}
         ${StudentCoursesCard({
@@ -68,7 +69,7 @@ export function Home({
     postContent: html`
       ${config.homepageFooterText && config.homepageFooterTextHref
         ? html`
-            <footer class="footer font-weight-light text-light text-center small">
+            <footer class="footer fw-light text-light text-center small">
               <div class="bg-secondary p-1">
                 <a class="text-light" href="${config.homepageFooterTextHref}">
                   ${config.homepageFooterText}
@@ -88,13 +89,11 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
               </span>
-              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
-                Students
-              </h2>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
                 Add or remove courses
               </a>
@@ -104,19 +103,17 @@ function ActionsHeader() {
         <div class="col-md-6">
           <div class="card rounded-pill my-1">
             <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x mr-1" aria-hidden="true">
+              <span class="fa-stack fa-1x me-1" aria-hidden="true">
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-tie fa-stack-1x text-light"></i>
               </span>
-              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
-                Instructors
-              </h2>
+              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
               <a href="${config.urlPrefix}/request_course" class="btn btn-xs btn-outline-primary">
                 Request course
               </a>
               <a
                 href="https://prairielearn.readthedocs.io/en/latest"
-                class="btn btn-xs btn-outline-primary ml-2"
+                class="btn btn-xs btn-outline-primary ms-2"
               >
                 View docs
               </a>
@@ -203,17 +200,20 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                       </a>`
                     : `${course.short_name}: ${course.title}`}
                 </td>
-                <td>
-                  ${course.course_instances.map(
-                    (course_instance) => html`
-                      <a
-                        class="btn btn-outline-primary btn-sm my-1"
-                        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
-                      >
-                        ${course_instance.long_name}
-                      </a>
-                    `,
-                  )}
+                <td class="js-course-instance-list">
+                  ${CourseInstanceList({
+                    course_instances: course.course_instances.filter((ci) => !ci.expired),
+                  })}
+                  ${course.course_instances.some((ci) => ci.expired)
+                    ? html`
+                        <details>
+                          <summary class="text-muted small">Older instances</summary>
+                          ${CourseInstanceList({
+                            course_instances: course.course_instances.filter((ci) => ci.expired),
+                          })}
+                        </details>
+                      `
+                    : ''}
                 </td>
               </tr>
             `,
@@ -222,6 +222,23 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
       </table>
     </div>
   `;
+}
+
+function CourseInstanceList({
+  course_instances,
+}: {
+  course_instances: InstructorCourse['course_instances'];
+}) {
+  return course_instances.map(
+    (course_instance) => html`
+      <a
+        class="btn btn-outline-primary btn-sm my-1"
+        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
+      >
+        ${course_instance.long_name}
+      </a>
+    `,
+  );
 }
 
 function StudentCoursesCard({
@@ -240,7 +257,7 @@ function StudentCoursesCard({
         <h2>${heading}</h2>
         ${canAddCourses
           ? html`
-              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
+              <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ms-auto">
                 <i class="fa fa-edit" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add or remove courses</span>
               </a>

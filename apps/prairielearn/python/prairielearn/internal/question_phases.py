@@ -91,6 +91,9 @@ def process(
     ) -> str | lxml.html.HtmlElement | None:
         nonlocal result
 
+        if not isinstance(element.tag, str):
+            return element
+
         if element.tag not in elements:
             return element
 

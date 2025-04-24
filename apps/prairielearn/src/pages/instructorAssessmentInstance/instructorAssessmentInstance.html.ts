@@ -1,3 +1,4 @@
+import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -11,7 +12,12 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  type ClientFingerprint,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -79,6 +85,7 @@ export function InstructorAssessmentInstance({
     navContext: {
       type: 'instructor',
       page: 'assessment',
+      subPage: 'assessment_instance',
     },
     options: {
       fullWidth: true,
@@ -97,7 +104,7 @@ export function InstructorAssessmentInstance({
         )}"></script>
     `,
     content: html`
-      <h1 class="sr-only">
+      <h1 class="visually-hidden">
         ${resLocals.assessment_instance_label} instance for
         ${resLocals.instance_group
           ? html`${resLocals.instance_group.name}`
@@ -174,12 +181,11 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-ghost"
                         id="fingerprintDescriptionPopover"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="false"
-                        title="Client Fingerprint Changes"
-                        aria-label="Client Fingerprint Changes"
-                        data-content="Client fingerprints are a record of a user's IP address, user agent and session. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="false"
+                        data-bs-title="Client fingerprint changes"
+                        data-bs-content="Client fingerprints are a record of a user's IP address, user agent and session. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                       >
                         <i class="fa fa-question-circle"></i>
                       </button>
@@ -205,13 +211,12 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalPointsButton"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Change total points"
-                        aria-label="Change total points"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Change total points"
+                        data-bs-content="${escapeHtml(
                           EditTotalPointsForm({
                             resLocals,
                           }),
@@ -235,13 +240,12 @@ export function InstructorAssessmentInstance({
                         type="button"
                         class="btn btn-xs btn-secondary"
                         id="editTotalScorePercButton"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Change total percentage score"
-                        aria-label="Change total percentage score"
-                        data-content="${escapeHtml(
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Change total percentage score"
+                        data-bs-content="${escapeHtml(
                           EditTotalScorePercForm({
                             resLocals,
                           }),
@@ -262,11 +266,11 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        title="Included in statistics"
-                        data-content="This assessment is included in the calculation of assessment and question statistics"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Included in statistics"
+                        data-bs-content="This assessment is included in the calculation of assessment and question statistics"
                       >
                         <i class="fa fa-question-circle"></i>
                       </button>
@@ -276,11 +280,11 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-xs btn-ghost"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        title="Not included in statistics"
-                        data-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-title="Not included in statistics"
+                        data-bs-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
                       >
                         <i class="fa fa-question-circle"></i>
                       </button>
@@ -443,19 +447,19 @@ export function InstructorAssessmentInstance({
                       <button
                         type="button"
                         class="btn btn-secondary btn-xs dropdown-toggle"
-                        data-toggle="dropdown"
+                        data-bs-toggle="dropdown"
                         aria-haspopup="true"
                         aria-expanded="false"
                       >
                         Action <span class="caret"></span>
                       </button>
-                      <div class="dropdown-menu dropdown-menu-right">
+                      <div class="dropdown-menu dropdown-menu-end">
                         ${resLocals.authz_data.has_course_instance_permission_edit
                           ? html`
                               <button
                                 class="dropdown-item"
-                                data-toggle="modal"
-                                data-target="#resetQuestionVariantsModal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#resetQuestionVariantsModal"
                                 data-instance-question-id="${instance_question.id}"
                               >
                                 Reset question variants
@@ -597,25 +601,15 @@ export function InstructorAssessmentInstance({
                                 row.client_fingerprint_number % 6
                               ]}"
                               id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
-                              data-toggle="popover"
-                              data-container="body"
-                              data-html="true"
-                              data-placement="auto"
-                              title="Fingerprint ${row.client_fingerprint_number}"
-                              data-content="${escapeHtml(html`
-                                <div>
-                                  IP Address:
-                                  <a
-                                    href="https://client.rdap.org/?type=ip&object=${row
-                                      .client_fingerprint.ip_address}"
-                                    target="_blank"
-                                  >
-                                    ${row.client_fingerprint.ip_address}
-                                  </a>
-                                </div>
-                                <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
-                                <div>User Agent: ${row.client_fingerprint.user_agent}</div>
-                              `)}"
+                              data-bs-toggle="popover"
+                              data-bs-container="body"
+                              data-bs-html="true"
+                              data-bs-placement="auto"
+                              data-bs-title="Fingerprint ${row.client_fingerprint_number}"
+                              data-bs-custom-class="popover-wide"
+                              data-bs-content="${escapeHtml(
+                                FingerprintContent({ fingerprint: row.client_fingerprint }),
+                              )}"
                             >
                               ${row.client_fingerprint_number}
                             </button>
@@ -698,6 +692,27 @@ export function InstructorAssessmentInstance({
   });
 }
 
+function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
+  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  return html`
+    <div>
+      IP Address:
+      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+        ${fingerprint.ip_address}
+      </a>
+    </div>
+    <div>Session ID: ${fingerprint.user_session_id}</div>
+    <div>User Agent:</div>
+    <ul>
+      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      <li>Raw: <code>${fingerprint.user_agent}</code></li>
+    </ul>
+  `;
+}
+
 function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <form name="edit-total-points-form" method="POST">
@@ -708,7 +723,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
         name="assessment_instance_id"
         value="${resLocals.assessment_instance.id}"
       />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="text"
@@ -726,7 +741,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
@@ -743,7 +758,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
         name="assessment_instance_id"
         value="${resLocals.assessment_instance.id}"
       />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="text"
@@ -761,7 +776,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
@@ -793,7 +808,7 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="__action" value="reset_question_variants" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
     `,
   });

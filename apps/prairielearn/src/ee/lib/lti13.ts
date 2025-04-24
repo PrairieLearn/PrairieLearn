@@ -10,18 +10,19 @@ import { z } from 'zod';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryRow,
   queryRows,
-  queryAsync,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import {
   AssessmentInstanceSchema,
-  DateFromISOString,
-  Lti13InstanceSchema,
-  Lti13CourseInstanceSchema,
   AssessmentSchema,
+  DateFromISOString,
+  Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -267,6 +268,7 @@ export class Lti13Claim {
   get(property: _.PropertyPath): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
+    // eslint-disable-next-line you-dont-need-lodash-underscore/get
     return _.get(this.claims, property);
   }
 
@@ -614,9 +616,12 @@ export const Lti13ScoreSchema = z.object({
   activityProgress: z.enum(['Initialized', 'Started', 'InProgress', 'Submitted', 'Completed']),
   gradingProgress: z.enum(['FullyGraded', 'Pending', 'PendingManual', 'Failed', 'NotReady']),
   timestamp: DateFromISOString,
-  submission: z.any().optional(),
-  startedAt: DateFromISOString.optional(),
-  submittedAt: DateFromISOString.optional(),
+  submission: z
+    .object({
+      startedAt: DateFromISOString.optional(),
+      submittedAt: DateFromISOString.optional(),
+    })
+    .optional(),
   comment: z.string().optional(),
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
@@ -789,6 +794,8 @@ export async function updateLti13Scores(
         continue;
       }
 
+      const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
+
       /*
        https://www.imsglobal.org/spec/lti-ags/v2p0#score-service-media-type-and-schema
        Canvas has extensions we could use described at
@@ -796,12 +803,15 @@ export async function updateLti13Scores(
       */
       const score: Lti13Score = {
         timestamp,
-        startedAt: assessment_instance.date,
         scoreGiven: assessment_instance.score_perc,
         scoreMaximum: 100,
         activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
         gradingProgress: 'FullyGraded',
         userId,
+        submission: {
+          startedAt: assessment_instance.date,
+          submittedAt: submittedAt ?? undefined,
+        },
       };
 
       const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {

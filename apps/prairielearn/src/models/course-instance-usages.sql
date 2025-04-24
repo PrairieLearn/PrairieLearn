@@ -26,7 +26,7 @@ FROM
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
   s.id = $submission_id
 ON CONFLICT (
@@ -71,9 +71,14 @@ FROM
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.course_id = a.course_instance_id)
+  LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
   gj.id = $grading_job_id
+  -- Avoid inserting anything if we'd compute a NULL duration.
+  AND gj.grading_received_at IS NOT NULL
+  AND gj.grading_finished_at IS NOT NULL
+  -- Avoid inserting negative durations.
+  AND gj.grading_finished_at > gj.grading_received_at
 ON CONFLICT (
   type,
   course_id,

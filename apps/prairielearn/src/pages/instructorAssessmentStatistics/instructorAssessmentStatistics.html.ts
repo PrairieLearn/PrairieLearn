@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstanceSchema, AssessmentSchema, type Assessment } from '../../lib/db-types.js';
+import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -79,7 +79,9 @@ export function InstructorAssessmentStatistics({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
-      <h1 class="sr-only">${resLocals.assessment_set.name} ${assessment.number} Statistics</h1>
+      <h1 class="visually-hidden">
+        ${resLocals.assessment_set.name} ${assessment.number} Statistics
+      </h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>${resLocals.assessment_set.name} ${assessment.number}: Score statistics</h2>

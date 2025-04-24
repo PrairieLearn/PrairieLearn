@@ -1,5 +1,43 @@
 # @prairielearn/compiled-assets
 
+## 3.0.14
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
+## 3.0.13
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [03f1008]
+  - @prairielearn/html@4.0.12
+
+## 3.0.12
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+- Updated dependencies [984dc62]
+  - @prairielearn/html@4.0.11
+
+## 3.0.11
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/html@4.0.10
+
+## 3.0.10
+
+### Patch Changes
+
+- 0921653: Upgrade to latest version of esbuild
+
 ## 3.0.9
 
 ### Patch Changes
