@@ -13672,7 +13672,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"original-preact@npm:preact@^10.26.5, preact@npm:^10.26.5":
+"original-preact@npm:preact@^10.26.5":
   version: 10.26.5
   resolution: "preact@npm:10.26.5"
   checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
@@ -14312,6 +14312,57 @@ __metadata:
     turbo: "npm:^2.5.0"
     typescript: "npm:^5.8.3"
   languageName: unknown
+  linkType: soft
+
+"preact-compat@npm:^3.19.0":
+  version: 3.19.0
+  resolution: "preact-compat@npm:3.19.0"
+  dependencies:
+    immutability-helper: "npm:^2.7.1"
+    preact-context: "npm:^1.1.3"
+    preact-render-to-string: "npm:^3.8.2"
+    preact-transition-group: "npm:^1.1.1"
+    prop-types: "npm:^15.6.2"
+    standalone-react-addons-pure-render-mixin: "npm:^0.1.1"
+  peerDependencies:
+    preact: <10
+  checksum: 10c0/fea8b9c08596e52cf782feeec3a9b805e7cee8499eb992b245cda722a6efa8f22cfe2d640db0349c9f13e3790b437df538bd06276cc4908d2540114620283e27
+  languageName: node
+  linkType: hard
+
+"preact-context@npm:^1.1.3":
+  version: 1.1.4
+  resolution: "preact-context@npm:1.1.4"
+  peerDependencies:
+    preact: ^8.2.7
+  checksum: 10c0/a3eb81da4a2a2751d4ba3e3c888a20f2978e0a57e3fa1ff438ec717e09ad742f10dd8a7cf3ba5145a0b680bd000097502f5493f41df0e1926962d003cab54007
+  languageName: node
+  linkType: hard
+
+"preact-render-to-string@npm:^3.8.2":
+  version: 3.8.2
+  resolution: "preact-render-to-string@npm:3.8.2"
+  dependencies:
+    pretty-format: "npm:^3.5.1"
+  peerDependencies:
+    preact: "*"
+  checksum: 10c0/e139fb6d0bbfa4131f5ab07ab8175fd1633fb4dc3d68a045499b38bf30428131e7a7ebdf86778f9a2981b6f315083eb2d698302e74351ac1a48cebc3baa0bb35
+  languageName: node
+  linkType: hard
+
+"preact-transition-group@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "preact-transition-group@npm:1.1.1"
+  peerDependencies:
+    preact: "*"
+  checksum: 10c0/dc40e114508cff3e7952d4681eb717d20514cd87349da7455b46ed897d71c4e1b209eeadc1f2788cf851d25c3e9d781456c177a16549ebfb4c76fae3222668c6
+  languageName: node
+  linkType: hard
+
+"preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A."
+  languageName: node
   linkType: soft
 
 "prelude-ls@npm:^1.2.1":
@@ -16510,7 +16561,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.7.3, typescript@npm:^5.8.3":
+"typescript@npm:^5.8.3":
   version: 5.8.3
   resolution: "typescript@npm:5.8.3"
   bin:
@@ -16520,7 +16571,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.7.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.8.3#optional!builtin<compat/typescript>":
   version: 5.8.3
   resolution: "typescript@patch:typescript@npm%3A5.8.3#optional!builtin<compat/typescript>::version=5.8.3&hash=5786d5"
   bin:
