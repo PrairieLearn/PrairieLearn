@@ -18,6 +18,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -764,6 +765,12 @@ export async function updateLti13Scores(
     }),
   );
 
+  const course_staff_data = await selectUsersWithCourseInstanceAccess({
+    course_instance_id: assessment.course_instance_id,
+    minimal_role: 'Student Data Viewer',
+  });
+  const course_staff = new Set(course_staff_data.map((staff) => staff.uid));
+
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
   const timestamp = new Date();
 
@@ -776,11 +783,7 @@ export async function updateLti13Scores(
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
       const ltiUser = await memberships.lookup(user);
-      const is_staff = await callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, assessment.course_instance_id],
-        z.boolean(),
-      );
+      const is_staff = course_staff.has(user.uid);
 
       // User not found in LTI, reporting only
       if (ltiUser === null) {
