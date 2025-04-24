@@ -9,7 +9,6 @@ import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
-  callRow,
   loadSqlEquiv,
   queryAsync,
   queryRow,
@@ -18,7 +17,6 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
-import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -29,6 +27,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
+import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
