@@ -17,14 +17,13 @@ export function Lti13Test({
   lti13_instance: Lti13Instance;
   url: URL;
 }) {
-  return html`
-    <!DOCTYPE html>
+  return html` <!DOCTYPE html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 test' })}
       </head>
       <body>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>LTI 1.3 authentication testing</h1>
           <p>
             Once you're satisfied, remove <code>?test</code> from the end of your configured
@@ -48,8 +47,7 @@ export function Lti13Test({
 }
 
 export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any> }) {
-  return html`
-    <!doctype html>
+  return html` <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals: {}, pageTitle: 'LTI 1.3 redirect' })}
@@ -78,6 +76,32 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               messageDiv.textContent = 'Reload the page to try again.';
             });
           </script>
+        </main>
+      </body>
+    </html>`;
+}
+
+export function Lti13AuthRequired({
+  institution_id,
+  resLocals,
+}: {
+  institution_id: string;
+  resLocals: Record<string, any>;
+}) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 authentication required' })}
+      </head>
+      <body>
+        <main id="content" class="container mb-4">
+          <h1>Authentication required</h1>
+          <p>
+            Your institution requires you to authenticate via an additional method to complete the
+            login process.
+          </p>
+          <a href="/pl/login?institution_id=${institution_id}">Log in</a>
         </main>
       </body>
     </html>
