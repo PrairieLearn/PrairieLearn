@@ -221,8 +221,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  // const maxQuestions = 100;
-  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, maxQuestions);
+  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 10);
 
   const badQs = [
     'element/fileEditor', // needs files
@@ -323,26 +322,53 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         const rewrittenHtml = await rewriteAriaLabel(questionHtml);
         const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
           rules: {
-            'attribute-boolean-style': 'off',
-            'no-inline-style': 'off',
-            'no-trailing-whitespace': 'off',
-            'prefer-tbody': 'off',
-            // 'wcag/h63': 'off',
-            'element-permitted-content': 'off',
-            'no-raw-characters': 'off',
-            'form-dup-name': 'off',
-            // 'no-deprecated-attr': 'off',
-            'hidden-focusable': 'off',
-            'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
-            'attribute-empty-style': 'off',
-            'no-dup-id': 'off',
-            // deprecated: 'off',
+            'no-raw-characters': [
+              'error',
+              {
+                relaxed: true,
+              },
+            ],
+            'form-dup-name': [
+              'error',
+              {
+                shared: ['radio', 'checkbox', 'button'],
+              },
+            ],
+            // Issues to solve
             'no-implicit-close': 'off',
             'close-order': 'off',
-            // 'text-content': 'off',
+            // Known / hard to fix issues
+
+            // Issue in pygments, missing tbody
+            /*
+            pygments.format(pygments.lex("foo", pygments.lexers.get_lexer_by_name("python")), pygments.formatters.HtmlFormatter(linenos="table"))
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">foo</span>\n</pre></div></td></tr></table></div>
+            */
+            'prefer-tbody': 'off',
+            'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
+            'hidden-focusable': 'off', // False positive - https://getbootstrap.com/docs/5.3/components/modal/#accessibility
+
+            // Requires fixes in pl-answer -- div subnode of label
+            // Requires fixes in pl-multipl-choice -- div subnode of span
+            // Couldn't see a difference in the output when I changed it to a div
+            'element-permitted-content': 'off',
+
+            // Issues not worth solving
+            'no-inline-style': 'off',
+            'no-trailing-whitespace': 'off',
+            // Not fully controllable
+            'attribute-boolean-style': ['off'],
+            // Not fully controllable, see pl-file-download
+            'attribute-empty-style': 'off',
+
+            // Solved issues
             'element-required-attributes': 'off',
-            // 'input-attributes': 'off',
+            'no-deprecated-attr': 'off',
+            deprecated: 'off',
+            'text-content': 'off',
+            'input-attributes': 'off',
             'attribute-allowed-values': 'off',
+            'wcag/h63': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
           },
