@@ -37,7 +37,7 @@ render_answer: "render() - answer panel" {
 }
 check_attempts: "Attempts remain?" {
   shape: diamond
-  tooltip: "Check if the student has more attempts available"
+  tooltip: "Decrement the student's attempts. Check if the student has more attempts available after decrementing."
 }
 file: "file()" {
   tooltip: "Dynamically generated file"
@@ -68,7 +68,9 @@ render_submission -> student_interaction
 check_correct -> render_answer: "Yes (score is 100%, valid)"
 
 # If incorrect, show submission panel
-check_correct -> check_attempts: "No (score < 100% or invalid)"
+check_correct -> check_attempts: "No (score < 100%)"
+
+check_correct -> render_submission: "No (invalid)"
 
 # After rendering submission, check if attempts remain
 check_attempts -> render_submission: "Yes"
