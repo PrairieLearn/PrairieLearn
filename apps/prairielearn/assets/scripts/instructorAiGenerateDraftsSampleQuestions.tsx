@@ -166,7 +166,7 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
       <p>{prompt}</p>
 
       <Button onClick={handleFillPrompt}>
-        <i className="fa fa-clone mr-2" aria-hidden="true"></i>
+        <i className="fa fa-clone me-2" aria-hidden="true"></i>
         Fill prompt
       </Button>
     </>
