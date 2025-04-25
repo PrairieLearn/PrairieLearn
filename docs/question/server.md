@@ -88,7 +88,7 @@ This function only runs if `parse()` did not produce format errors, so we can as
 
 ??? note
 
-    Overall question feedback in `data["feedback"][NAME]` needs be rendered explicity in the `question.html` template using `{{feedback.NAME}}. Feedback given in `data["partial_scores"][NAME]["feedback"]` will be rendered automatically by the elements.
+    Overall question feedback in `data["feedback"][NAME]` needs be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]` will be rendered automatically by the elements.
 
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
