@@ -247,9 +247,7 @@ export function SampleQuestionDemo({
       // Round the answer to 4 decimal places
       return Math.round(variant.correctAnswer * 1e4) / 1e4;
     }
-    {
-      return variant.correctAnswer;
-    }
+    return variant.correctAnswer;
   }, [variant]);
 
   useEffect(() => {
