@@ -41,9 +41,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   const selectedQuestion = examplePrompts[selectedQuestionIndex];
 
   const handleClickPrevious = () => {
-    if (selectedQuestionIndex > 0) {
-      setSelectedQuestionIndex((prevIndex) => prevIndex - 1);
-    }
+    setSelectedQuestionIndex((prevIndex) => Math.max(prevIndex - 1, 0));
   };
 
   const handleClickNext = () => {
