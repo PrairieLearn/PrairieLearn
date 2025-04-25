@@ -74,7 +74,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
             onClickPrevious={handleClickPrevious}
             onClickNext={handleClickNext}
           />
-          <SampleQuestionDemo prompt={selectedQuestion} onMathjaxTypeset={mathjaxTypeset} />
+          <SampleQuestionDemo promptId={selectedQuestion.id} prompt={selectedQuestion} onMathjaxTypeset={mathjaxTypeset} />
           <FeatureList features={selectedQuestion.features} />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>

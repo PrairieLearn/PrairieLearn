@@ -122,7 +122,7 @@ export const examplePrompts = {
 } satisfies Record<string, ExamplePrompt>;
 
 export const examplePromptsArray = Object.entries(examplePrompts).map(([id, prompt]) => ({
-  id,
+  id: id as keyof typeof examplePrompts,
   ...prompt,
 }));
 

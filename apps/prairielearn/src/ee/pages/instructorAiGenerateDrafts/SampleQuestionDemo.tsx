@@ -35,14 +35,17 @@ import {
   type ExamplePrompt,
   type SampleQuestionVariant,
   type VariantOption,
+  examplePrompts,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
 export function SampleQuestionDemo({
+  promptId,
   prompt,
   onMathjaxTypeset,
 }: {
+  promptId: keyof typeof examplePrompts;
   prompt: ExamplePrompt;
   onMathjaxTypeset: () => Promise<void>;
 }) {
@@ -90,7 +93,7 @@ export function SampleQuestionDemo({
     handleClearSelectedOptions();
 
     // Generate a new question variant
-    const questionVariant = generateSampleQuestionVariant(prompt.id);
+    const questionVariant = generateSampleQuestionVariant(promptId);
     setVariant(questionVariant);
 
     let placeholderText: string = questionVariant.answerType;
@@ -181,7 +184,7 @@ export function SampleQuestionDemo({
 
   useEffect(() => {
     handleGenerateNewVariant();
-  }, [prompt.id]);
+  }, [promptId]);
 
   // The correct answer to the problem, displayed to the user
   const answerText = useMemo(() => {
