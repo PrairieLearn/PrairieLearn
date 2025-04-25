@@ -523,9 +523,7 @@ function findIrregularPlural(): SampleQuestionVariant {
 
   return {
     answerType: 'string',
-    question: `
-        What is the plural form of "${irregularPluralWords[randomIndex].singular}"?
-      `,
+    question: `What is the plural form of "${irregularPluralWords[randomIndex].singular}"?`,
     correctAnswer: irregularPluralWords[randomIndex].plural,
   };
 }
