@@ -33,7 +33,9 @@ You can use the special `<markdown>` tag to automatically convert its contents t
 <!-- prettier-ignore -->
 ```html title="question.html"
 <markdown>
-# Hello, world! This is some **Markdown** text.
+# Hello, world!
+
+This is some **Markdown** text.
 </markdown>
 ```
 
