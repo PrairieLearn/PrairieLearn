@@ -4,7 +4,7 @@
             name="{{answers-name}}"
             class="form-select w-auto"
             {{^editable}}disabled{{/editable}}
-            {{#aria-labelledby}}aria-labelledby="{{aria-labelledby}}"{{/aria-labelledby}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
         >
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>

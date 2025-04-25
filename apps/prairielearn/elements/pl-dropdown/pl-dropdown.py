@@ -81,7 +81,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
-    aria_labelledby = pl.get_string_attrib(element, "aria-labelledby", None)
+    aria_label = pl.get_string_attrib(element, "label", None)
     dropdown_options = get_options(element, data)
     submitted_answer = data["submitted_answers"].get(answers_name, None)
 
@@ -125,7 +125,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "has_submission": correct is not None,
             "editable": data["editable"],
             "correct": correct,
-            "aria-labelledby": aria_labelledby,
+            "aria_label": aria_label,
         }
 
     elif data["panel"] == "submission":
