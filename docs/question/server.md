@@ -34,6 +34,20 @@ def generate(data):
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
 
+#### Randomization
+
+Question variants are randomized based on the variant seed (`data["variant_seed"]`), and all random generators (`random`, `np.random`, etc.) are seeded with this value.
+
+If you need to generate fake data, you can use the [`faker`](https://faker.readthedocs.io/en/master/) library. This is useful for generating random names, addresses, and other data that looks real but is not.
+
+```python title="server.py"
+from faker import Faker
+fake = Faker()
+
+fake.name()
+# 'Lucy Cechtelar'
+```
+
 ### Step 2: `prepare`
 
 Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `generate()`. This is typically done to do any sort of final post-processing, but is not commonly used.

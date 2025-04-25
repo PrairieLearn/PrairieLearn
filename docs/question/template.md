@@ -2,7 +2,31 @@
 
 ## Template file
 
-All `question.html` files are processed with the [Mustache template engine](https://mustache.github.io/mustache.5.html), which allows for basic dynamic rendering of HTML. For example, you can use the following syntax to conditionally render a piece of HTML:
+All `question.html` files are processed with the [Mustache template engine](https://mustache.github.io/mustache.5.html), which allows for basic dynamic rendering of HTML. In addition, it supports:
+
+- [**Markdown**](#markdown-in-questions): HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text.
+
+- [**LaTeX**](#using-latex-in-questions-math-mode): PrairieLearn supports LaTeX equations in questions.
+
+- [**Rendering panels**](#rendering-panels-from-questionhtml): These panels control what is shown when a student is viewing the question, viewing their submission, or viewing the correct answer.
+
+### Basic rendering
+
+Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](server.md). For example, if `params["m"]` is defined in `server.py`, you can use it in `question.html` like this:
+
+```html title="question.html"
+<p>If m is {{params.m}}, what is {{params.m}} * 3?</p>
+```
+
+This will be rendered as:
+
+```html
+<p>If m is 5, what is 5 * 3?</p>
+```
+
+### Advanced rendering
+
+You can use the following syntax to conditionally render a piece of HTML:
 
 ```html title="question.html"
 {{#params.show}}
@@ -10,7 +34,7 @@ All `question.html` files are processed with the [Mustache template engine](http
 {{/params.show}}
 ```
 
-and this syntax to render over an array of strings (the `.` represents the current item in the array):
+You can use this syntax to render over an array of strings (the `.` represents the current item in the array):
 
 ```html title="question.html"
 {{#params.items}}
@@ -23,8 +47,6 @@ and this syntax to render over an array of strings (the `.` represents the curre
 You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
 
 ## Markdown in questions
-
-HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text.
 
 You can use the special `<markdown>` tag to automatically convert its contents to HTML. Here's an example `question.html` that utilizes this element:
 

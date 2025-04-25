@@ -176,18 +176,18 @@ The `question.html` is a template used to render the question to the student. A 
 
 The `question.html` is regular HTML, with a few special features:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
+1.  Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
+2.  Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
 
-   :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
+    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
-3. A special `<markdown>` tag allows you to write Markdown inline in questions.
-4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
-5. Special
+3.  A special `<markdown>` tag allows you to write Markdown inline in questions.
+4.  LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+5.  Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students at different times.
 
 !!! info
 
-    More information about `question.html` is in the [question template documentation](template.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
+    More details about these features and information about `question.html` is in the [question template documentation](template.md).
 
 ## Custom generation and grading (`server.py`)
 
@@ -209,21 +209,11 @@ def generate(data):
 
     More information about `server.py`, custom grading, and more can be found in the [server.py documentation](server.md).
 
-### Randomization
-
-Question variants are randomized based on the variant seed (`data["variant_seed"]`), and all random generators (`random`, `np.random`, etc.) are seeded with this value.
-
-If you need to generate Fake data, you can use the [`faker`](https://faker.readthedocs.io/en/master/) library. This is useful for generating random names, addresses, and other data that looks real but is not.
-
-```python title="server.py"
-from faker import Faker
-fake = Faker()
-
-fake.name()
-# 'Lucy Cechtelar'
-```
-
 ## Grading student answers
+
+!!! note
+
+    This section provides a summary of the [question template documentation](template.md) and the [server.py documentation](server.md). It is recommended to read those documents first for more context.
 
 For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
 
