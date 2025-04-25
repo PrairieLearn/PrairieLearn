@@ -137,10 +137,6 @@ This function only runs if `parse()` did not produce format errors, so we can as
 - `data["score"]` is the total score for the question (0 to 1).
 - `data["feedback"][NAME]` is the overall question feedback for each named answer.
 
-!!! note
-
-    Overall question feedback in `data["feedback"][NAME]` needs be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]` will be rendered automatically by the elements.
-
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
 If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer. In the snipped below, we update `data["score"]` using the [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] utility.
@@ -161,9 +157,28 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+### Providing feedback
+
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.
+
+Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]`, which you can override in the grading function. This field is a string, except for the `<pl-drawing>` and `<pl-checkbox>` elements. The feedback provided here will be attached to the student's answer for that element, which can make it easier for students to interpret the feedback they received in longer questions. Since not elements provide feedback this way, and use different data structures to represent the feedback they give, we recommend using `data["feedback"][NAME]` to provide question-specific feedback instead.
+
+!!! tip "Answer-specific feedback"
+
+    If you want to provide feedback on a specific answer that doesn't use/support `data["partial_scores"][NAME]["feedback"]`,
+    you could render the feedback directly after the element in `question.html`:
+
+    <!-- prettier-ignore -->
+    ```html title="question.html"
+    <pl-string-input ...></pl-string-input>
+    {{#feedback.value1}}<div>Feedback: {{.}}</div>{{/feedback.value1}}
+    ```
+
+Overall question feedback in `data["feedback"][NAME]` needs be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]` will be rendered automatically by the elements, assuming the element is visible.
+
 ### Grading floating-point answers
 
-For grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance. The `prairielearn` Python library also offers several functions to perform more specialized comparisons:
+For grading functions involving floating point numbers, **avoid exact comparisons with `==`**. Floating point comparisons with `==` might unexpectedly fail since calculations in Python can introduce floating-point error. Instead, use the [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) function, as it performs comparisons within given tolerance. The `prairielearn` Python library also offers several functions to perform more specialized comparisons:
 
 - [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
 - [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
@@ -179,21 +194,35 @@ Any custom grading function for the whole question should set `data["score"]` as
 This can be used like so:
 
 ```python title="server.py"
-from prairielearn import set_weighted_score_data
+import prairielearn as pl
 
 def grade(data):
     # update partial_scores as necessary
-    # ...
+    data["partial_scores"]["y"]["score"] = 0.5
 
     # compute total question score
-    set_weighted_score_data(data)
+    pl.set_weighted_score_data(data)
 ```
 
-More detailed information can be found in the [grading utilities documentation](../python-reference/prairielearn/grading_utils.md). If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+More detailed information can be found in the [grading utilities documentation](../python-reference/prairielearn/grading_utils.md).
 
-### Custom feedback
+If you prefer not to show score badges for individual parts, you can unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+??? example "Code snippet"
+
+    ```python title="server.py"
+    import prairielearn as pl
+
+    def grade(data):
+        # update partial_scores as necessary
+        data["partial_scores"]["y"]["score"] = 0.5
+
+        # compute total question score
+        pl.set_weighted_score_data(data)
+
+        # unset partial scores
+        data["partial_scores"]["y"]["score"] = None
+    ```
 
 ## Question lifecycle
 
