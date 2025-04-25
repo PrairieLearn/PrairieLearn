@@ -29,7 +29,7 @@ check_correct: "Is answer correct?" {
   tooltip: "Check data['score']"
 }
 render_submission: "render() - submission panel" {
-  tooltip: "Render question.html showing submission and feedback"
+  tooltip: "Render question.html showing submission and feedback. Multiple submissions can be shown."
 }
 render_answer: "render() - answer panel" {
   tooltip: "Render question.html showing correct answer (if enabled)"
@@ -50,7 +50,7 @@ student_interaction -> parse
 parse -> check_format
 
 # If format errors, show question panel again with errors
-check_format -> student_interaction: Yes
+check_format -> render_submission: Yes
 
 # If no format errors, proceed to grading
 check_format -> grade: No
