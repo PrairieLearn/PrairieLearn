@@ -180,7 +180,9 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 ### `"submission"` panel
 
-You can also use the [`pl-submission-panel`](../elements.md#pl-submission-panel-element) to show text only in the "submission" panel. For example:
+By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"]`) is rendered when an element renders in the "submission" panel. Feedback given by the question (`data["feedback"][NAME]`) needs to be shown using `{{feedback.NAME}}`.
+
+You can use the [`pl-submission-panel`](../elements.md#pl-submission-panel-element) to show text only in the "submission" panel. For example:
 
 === "Good"
 
@@ -202,7 +204,7 @@ You can also use the [`pl-submission-panel`](../elements.md#pl-submission-panel-
 
 ### `"answer"` panel
 
-By default, the correct answer is shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The [FAQ item](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) "How can I hide the correct answer when students see their grading results?" describes some other techniques for hiding the correct answer.
+By default, the correct answers are shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The FAQ item ["How can I hide the correct answer when students see their grading results?"](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) describes some other techniques for hiding the correct answer.
 
 You can use the `<pl-answer-panel>` element to show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
 
