@@ -2,8 +2,8 @@ import { html } from '@prairielearn/html';
 
 import type { Assessment } from '../lib/db-types.js';
 
-import type { NavSubPage } from './Navbar.types.js';
 import { Modal } from './Modal.html.js';
+import type { NavSubPage } from './Navbar.types.js';
 
 /**
  * Dropdown that lets users navigate between assessments in a
@@ -30,15 +30,16 @@ export function AssessmentNavigation({
         ? `?subPage=${subPage}`
         : ''}"
       hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-      hx-target="#assessmentNavigationModalContent"
       data-bs-toggle="modal"
       data-bs-target="#assessmentNavigationModal"
+      hx-target="#assessmentNavigationModalContent"
     >
       <span class="h6 mb-0 me-1 overflow-hidden text-truncate">${assessment.title}</span>
     </button>
     ${AssessmentNavigationModal()}
   `;
 }
+
 
 function AssessmentNavigationModal() {
   return Modal({
@@ -48,9 +49,9 @@ function AssessmentNavigationModal() {
       body: html`
         <div
           id="assessmentNavigationModalContent"
-          class="overflow-auto"
+          class="overflow-auto d-flex justify-content-center align-items-center"
         >
-          <div class="d-flex justify-content-center">
+          <div style="width: 30px; height: 30px;">
             <div class="spinner-border spinner-border-sm" role="status">
               <span class="visually-hidden">Loading assessments...</span>
             </div>

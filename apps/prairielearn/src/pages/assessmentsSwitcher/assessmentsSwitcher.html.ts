@@ -35,6 +35,7 @@ export function AssessmentSwitcher({
       <table class="table table-borderless table-sm table-hover" aria-label="Assessments">
         <tbody>
           ${assessmentRows.map((row) => {
+            const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
                   
             const isActive = currentAssessmentId
             ? idsEqual(currentAssessmentId, row.id)
@@ -55,7 +56,12 @@ export function AssessmentSwitcher({
                 `
               : ''}
 
-              <tr id="row-${row.id}" class="${isActive ? 'bg-primary text-white' : ''}" style="cursor: pointer;">
+              <tr 
+                id="row-${row.id}" 
+                class="${isActive ? 'bg-primary text-white' : ''}" 
+                style="cursor: pointer;"
+                onclick="window.location.href = '${assessmentUrl}'"
+              >
                 <td class="align-middle" style="width: 1%">
                   <span class="badge color-${row.assessment_set.color}">
                     ${row.label}
@@ -74,18 +80,10 @@ export function AssessmentSwitcher({
                         })
                       : ''}
                   <span>
-                    <a
-                      class="${isActive ? 'text-white' : ''}"
-                      aria-current="${isActive ? 'page' : ''}"
-                      aria-label="${row.label}"
-                      href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ??
-                      ''}"
-                    >
-                      ${row.title}
-                      ${row.group_work
-                        ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                        : ''}
-                    </a>
+                    ${row.title}
+                    ${row.group_work
+                      ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                      : ''}
                   </span>
                   ${IssueBadge({
                     count: row.open_issue_count,
@@ -99,60 +97,5 @@ export function AssessmentSwitcher({
         </tbody>
       </table>
     </div>
-  `.toString();
-
-
-  return html`
-    ${assessmentRows.map((assessmentDropdownItemData) => {
-      const isActive = currentAssessmentId
-        ? idsEqual(currentAssessmentId, assessmentDropdownItemData.id)
-        : false;
-      return html`
-        ${assessmentDropdownItemData.start_new_assessment_group
-          ? html`
-              <h6 class="dropdown-header">
-                ${assessmentsGroupBy === 'Set'
-                  ? AssessmentSetHeading({
-                      assessment_set: assessmentDropdownItemData.assessment_set,
-                    })
-                  : AssessmentModuleHeading({
-                      assessment_module: assessmentDropdownItemData.assessment_module,
-                    })}
-              </h6>
-            `
-          : ''}
-        <a
-          class="dropdown-item ${isActive ? 'active' : ''} d-flex align-items-center gap-3"
-          aria-current="${isActive ? 'page' : ''}"
-          aria-label="${assessmentDropdownItemData.title}"
-          href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${assessmentDropdownItemData.id}/${targetSubPage ??
-          ''}"
-        >
-          <div class="d-flex align-items-center" style="width: 50px; min-width: 50px;">
-            <span class="badge color-${assessmentDropdownItemData.assessment_set.color} mb-auto">
-              ${assessmentDropdownItemData.label}
-            </span>
-          </div>
-          <div>
-            <p class="m-0 text-wrap">
-              <span>${assessmentDropdownItemData.title}</span>
-              ${assessmentDropdownItemData.group_work
-                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                : ''}
-              ${assessmentDropdownItemData.open_issue_count > 0
-                ? html`
-                    <span class="badge rounded-pill text-bg-danger">
-                      ${assessmentDropdownItemData.open_issue_count}
-                    </span>
-                  `
-                : ''}
-            </p>
-            <p class="m-0 ${isActive ? 'text-light' : 'text-muted'} small">
-              ${assessmentDropdownItemData.tid}
-            </p>
-          </div>
-        </a>
-      `;
-    })}
   `.toString();
 }
