@@ -215,7 +215,7 @@ SELECT
   CASE
     WHEN ci.id IS NOT NULL
     AND cd.submission_term_ratio >= $minimum_term_ratio
-    AND cd.total_students > $minimum_student_count THEN 1
+    AND cd.total_students >= $minimum_student_count THEN 1
     ELSE NULL
   END AS active_instance,
   -- number of course staff
