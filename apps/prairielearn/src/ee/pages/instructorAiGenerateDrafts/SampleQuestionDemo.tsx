@@ -1,12 +1,22 @@
-import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
-import CardOriginal from 'react-bootstrap/cjs/Card.js';
-import CardBodyOriginal from 'react-bootstrap/cjs/CardBody.js';
-import CardFooterOriginal from 'react-bootstrap/cjs/CardFooter.js';
-import CardHeaderOriginal from 'react-bootstrap/cjs/CardHeader.js';
-import FormCheckOriginal from 'react-bootstrap/cjs/FormCheck.js';
-import FormControlOriginal from 'react-bootstrap/cjs/FormControl.js';
-import InputGroupOriginal from 'react-bootstrap/cjs/InputGroup.js';
-import InputGroupTextOriginal from 'react-bootstrap/cjs/InputGroupText.js';
+import ButtonOriginal from 'react-bootstrap/Button';
+import CardOriginal from 'react-bootstrap/Card';
+import CardBodyOriginal from 'react-bootstrap/CardBody';
+import CardFooterOriginal from 'react-bootstrap/CardFooter';
+import CardHeaderOriginal from 'react-bootstrap/CardHeader';
+import FormCheckOriginal from 'react-bootstrap/FormCheck';
+import FormControlOriginal from 'react-bootstrap/FormControl';
+import InputGroupOriginal from 'react-bootstrap/InputGroup';
+import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
+
+// import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
+// import CardOriginal from 'react-bootstrap/cjs/Card.js';
+// import CardBodyOriginal from 'react-bootstrap/cjs/CardBody.js';
+// import CardFooterOriginal from 'react-bootstrap/cjs/CardFooter.js';
+// import CardHeaderOriginal from 'react-bootstrap/cjs/CardHeader.js';
+// import FormCheckOriginal from 'react-bootstrap/cjs/FormCheck.js';
+// import FormControlOriginal from 'react-bootstrap/cjs/FormControl.js';
+// import InputGroupOriginal from 'react-bootstrap/cjs/InputGroup.js';
+// import InputGroupTextOriginal from 'react-bootstrap/cjs/InputGroupText.js';
 
 const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
 const Card = CardOriginal as unknown as typeof CardOriginal.default;
@@ -28,7 +38,7 @@ import {
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
-} from '../../../lib/aiGeneratedQuestionSamples.js';
+} from './aiGeneratedQuestionSamples.js';
 
 export function SampleQuestionDemo({
   prompt,
@@ -247,7 +257,9 @@ export function SampleQuestionDemo({
       // Round the answer to 4 decimal places
       return Math.round(variant.correctAnswer * 1e4) / 1e4;
     }
-    return variant.correctAnswer;
+    {
+      return variant.correctAnswer;
+    }
   }, [variant]);
 
   useEffect(() => {

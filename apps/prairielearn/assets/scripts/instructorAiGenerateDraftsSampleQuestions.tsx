@@ -1,12 +1,22 @@
-import AccordionOriginal from 'react-bootstrap/cjs/Accordion.js';
-import AccordionBodyOriginal from 'react-bootstrap/cjs/AccordionBody.js';
-import AccordionHeaderOriginal from 'react-bootstrap/cjs/AccordionHeader.js';
-import AccordionItemOriginal from 'react-bootstrap/cjs/AccordionItem.js';
-import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
-import DropdownOriginal from 'react-bootstrap/cjs/Dropdown.js';
-import DropdownItemOriginal from 'react-bootstrap/cjs/DropdownItem.js';
-import DropdownMenuOriginal from 'react-bootstrap/cjs/DropdownMenu.js';
-import DropdownToggleOriginal from 'react-bootstrap/cjs/DropdownToggle.js';
+import AccordionOriginal from 'react-bootstrap/Accordion';
+import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
+import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
+import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
+import ButtonOriginal from 'react-bootstrap/Button';
+import DropdownOriginal from 'react-bootstrap/Dropdown';
+import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
+import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
+import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
+
+// import AccordionOriginal from 'react-bootstrap/cjs/Accordion.js';
+// import AccordionBodyOriginal from 'react-bootstrap/cjs/AccordionBody.js';
+// import AccordionHeaderOriginal from 'react-bootstrap/cjs/AccordionHeader.js';
+// import AccordionItemOriginal from 'react-bootstrap/cjs/AccordionItem.js';
+// import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
+// import DropdownOriginal from 'react-bootstrap/cjs/Dropdown.js';
+// import DropdownItemOriginal from 'react-bootstrap/cjs/DropdownItem.js';
+// import DropdownMenuOriginal from 'react-bootstrap/cjs/DropdownMenu.js';
+// import DropdownToggleOriginal from 'react-bootstrap/cjs/DropdownToggle.js';
 
 const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
 const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
@@ -24,7 +34,7 @@ import { render } from '@prairielearn/preact-cjs';
 import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
-import { examplePrompts } from '../../src/lib/aiGeneratedQuestionSamples.js';
+import { examplePrompts } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -38,10 +48,14 @@ onDocumentReady(() => {
 function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
-  const selectedQuestion = examplePrompts[selectedQuestionIndex];
+  const selectedQuestion = useMemo(() => {
+    return examplePrompts[selectedQuestionIndex];
+  }, [selectedQuestionIndex]);
 
   const handleClickPrevious = () => {
-    setSelectedQuestionIndex((prevIndex) => Math.max(prevIndex - 1, 0));
+    if (selectedQuestionIndex > 0) {
+      setSelectedQuestionIndex((prevIndex) => prevIndex - 1);
+    }
   };
 
   const handleClickNext = () => {
@@ -64,10 +78,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
           />
           <SampleQuestionDemo prompt={selectedQuestion} onMathjaxTypeset={mathjaxTypeset} />
           <FeatureList
-            features={selectedQuestion.features.map((feature, index) => ({
-              id: index,
-              text: feature,
-            }))}
+            features={selectedQuestion.features}
           />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
@@ -104,17 +115,15 @@ function SampleQuestionSelector({
           {selectedQuestionName}
         </DropdownToggle>
         <DropdownMenu>
-          <div>
-            {examplePrompts.map((prompt, index) => (
-              <DropdownItem
-                key={prompt.id}
-                active={index === selectedQuestionIndex}
-                eventKey={index.toString()}
-              >
-                {prompt.name}
-              </DropdownItem>
-            ))}
-          </div>
+          {examplePrompts.map((prompt, index) => (
+            <DropdownItem
+              key={prompt.id}
+              active={index === selectedQuestionIndex}
+              eventKey={index.toString()}
+            >
+              {prompt.name}
+            </DropdownItem>
+          ))}
         </DropdownMenu>
       </Dropdown>
       <div className="d-flex align-items-center gap-2">
@@ -132,13 +141,13 @@ function SampleQuestionSelector({
   );
 }
 
-function FeatureList({ features }: { features: { id: number; text: string }[] }) {
+function FeatureList({ features }: { features: string[] }) {
   return (
     <>
       <p className="fw-bold mb-1 mt-3">Question features</p>
       <ul>
-        {features.map((feature) => (
-          <li key={`feature-list-${feature.id}`}>{feature.text}</li>
+        {features.map((feature, index) => (
+          <li key={index}>{feature}</li>
         ))}
       </ul>
     </>
