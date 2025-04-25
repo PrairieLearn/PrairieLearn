@@ -18,11 +18,9 @@ and this syntax to render over an array of strings (the `.` represents the curre
 {{/params.items}}
 ```
 
-!!! tip
+### Rendering HTML
 
-     If you want to render student-provided HTML, we recommend the use of the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
-
-     You can also use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This is not recommended, as it can lead to XSS vulnerabilities.
+You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
 
 ## Markdown in questions
 
