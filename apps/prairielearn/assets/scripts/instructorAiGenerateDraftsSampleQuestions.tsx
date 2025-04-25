@@ -1,12 +1,12 @@
-import AccordionOriginal from 'react-bootstrap/Accordion';
-import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
-import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
-import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
-import ButtonOriginal from 'react-bootstrap/Button';
-import DropdownOriginal from 'react-bootstrap/Dropdown';
-import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
-import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
-import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
+import AccordionOriginal from 'react-bootstrap/cjs/Accordion.js';
+import AccordionBodyOriginal from 'react-bootstrap/cjs/AccordionBody.js';
+import AccordionHeaderOriginal from 'react-bootstrap/cjs/AccordionHeader.js';
+import AccordionItemOriginal from 'react-bootstrap/cjs/AccordionItem.js';
+import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
+import DropdownOriginal from 'react-bootstrap/cjs/Dropdown.js';
+import DropdownItemOriginal from 'react-bootstrap/cjs/DropdownItem.js';
+import DropdownMenuOriginal from 'react-bootstrap/cjs/DropdownMenu.js';
+import DropdownToggleOriginal from 'react-bootstrap/cjs/DropdownToggle.js';
 
 const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
 const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
