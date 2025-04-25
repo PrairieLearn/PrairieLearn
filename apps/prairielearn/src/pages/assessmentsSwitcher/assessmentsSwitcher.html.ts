@@ -61,6 +61,7 @@ export function AssessmentSwitcher({
                 class="${isActive ? 'bg-primary text-white' : ''}" 
                 style="cursor: pointer;"
                 onclick="window.location.href = '${assessmentUrl}'"
+                aria-label="Link to assessment"
               >
                 <td class="align-middle" style="width: 1%">
                   <span class="badge color-${row.assessment_set.color}">
@@ -79,7 +80,7 @@ export function AssessmentSwitcher({
                           output: row.sync_warnings,
                         })
                       : ''}
-                  <span>
+                  <span class="${isActive ? 'text-white' : ''}">
                     ${row.title}
                     ${row.group_work
                       ? html` <i class="fas fa-users" aria-hidden="true"></i> `
@@ -91,7 +92,7 @@ export function AssessmentSwitcher({
                     issueAid: row.tid,
                   })}
                 </td>
-                <td class="align-middle">${row.tid}</td>
+                <td class="align-middle ${isActive ? 'text-white' : ''}">${row.tid}</td>
               </tr>
           `})}
         </tbody>
