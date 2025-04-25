@@ -28,7 +28,6 @@ const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal
 const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
 const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
-import { type VNode } from '@prairielearn/preact-cjs';
 import { useEffect, useLayoutEffect, useMemo, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
@@ -48,7 +47,6 @@ export function SampleQuestionDemo({
   onMathjaxTypeset: () => Promise<void>;
 }) {
   const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
-  const [questionContent, setQuestionContent] = useState<VNode | null>(null);
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -57,7 +55,6 @@ export function SampleQuestionDemo({
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(() => new Set<string>());
 
   const [placeholder, setPlaceholder] = useState('');
-  const [answerLabel, setAnswerLabel] = useState<string | null>(null);
 
   const [grade, setGrade] = useState<number | null>(null);
 
@@ -83,12 +80,6 @@ export function SampleQuestionDemo({
   };
 
   const handleGenerateNewVariant = async () => {
-    // Clear the previous question content
-    setQuestionContent(null);
-    // Ensure the component is rendered before typesetting MathJax
-    // TODO: This results in flickering. Find a better solution.
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-
     // Clear the grade shown to the user
     setGrade(null);
 
@@ -102,41 +93,6 @@ export function SampleQuestionDemo({
     const questionVariant = generateSampleQuestionVariant(prompt.id);
     setVariant(questionVariant);
 
-    // Split the question into different parts: regular text, MathJax, and bold text.
-    // MathJax is delimited by $$...$$ or $...$
-    // Bold text is delimited by **...**.
-    const questionParts = questionVariant.question
-      .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-      .filter(Boolean)
-      .map((part, index) => ({
-        index,
-        content: part,
-      }));
-
-    setQuestionContent(
-      <span>
-        {questionParts.map((part) => {
-          // Bold text
-          if (part.content.startsWith('**') && part.content.endsWith('**')) {
-            return (
-              <strong key={`question-content-${part.index}`}>{part.content.slice(2, -2)}</strong>
-            );
-          }
-
-          // MathJax
-          if (
-            (part.content.startsWith('$$') && part.content.endsWith('$$')) ||
-            (part.content.startsWith('$') && part.content.endsWith('$'))
-          ) {
-            return <span key={`question-content-${part.index}`}>{part.content}</span>;
-          }
-
-          // Regular text
-          return <span key={`question-content-${part.index}`}>{part.content}</span>;
-        })}
-      </span>,
-    );
-
     let placeholderText: string = questionVariant.answerType;
 
     if (prompt.answerType === 'number') {
@@ -148,28 +104,21 @@ export function SampleQuestionDemo({
       } else if (prompt.atol) {
         placeholderText = `${placeholderText} (atol=${prompt.atol})`;
       }
-      setPlaceholder(placeholderText);
     }
-  };
-
-  const handleTypesetMathjax = async () => {
-    // Ensure the component is rendered before typesetting MathJax
-    // TODO: This results in flickering. Find a better solution.
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    await onMathjaxTypeset();
+    setPlaceholder(placeholderText);
   };
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    handleTypesetMathjax();
-  }, [variant]);
+    onMathjaxTypeset();
+  }, [variant?.question, prompt]);
 
   const handleGrade = () => {
     if (!variant) {
       return;
     }
 
-    if (variant.answerType === 'number') {
+    if (variant.answerType === 'number' && prompt.answerType === 'number') {
       const responseNum = parseFloat(userInputResponse);
 
       const rtol = prompt.rtol;
@@ -234,17 +183,6 @@ export function SampleQuestionDemo({
     handleGenerateNewVariant();
   }, [prompt.id]);
 
-  const handleUpdateAnswerLabel = async () => {
-    setAnswerLabel(null);
-
-    // Ensure the component is rendered before typesetting MathJax
-    // TODO: This results in flickering. Find a better solution.
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (prompt.answerLabel) {
-      setAnswerLabel(prompt.answerLabel);
-    }
-  };
-
   // The correct answer to the problem, displayed to the user
   const answerText = useMemo(() => {
     if (!variant) {
@@ -262,34 +200,52 @@ export function SampleQuestionDemo({
     }
   }, [variant]);
 
-  useEffect(() => {
-    handleUpdateAnswerLabel();
-  }, [prompt.answerLabel]);
-
-  useEffect(() => {
-    if (answerLabel) {
-      onMathjaxTypeset();
-    }
-  }, [answerLabel]);
-
   return (
-    <Card id="question-demo-card" className="shadow">
+    <Card className="shadow">
       <CardHeader>
         <div className="d-flex align-items-center gap-2">
-          <p id="question-demo-name" className="mb-0">
-            {prompt.name}
-          </p>
+          <p className="mb-0">{prompt.name}</p>
           <span className="badge rounded-pill bg-success me-3">Try me!</span>
         </div>
       </CardHeader>
       <CardBody>
-        <p>{questionContent}</p>
+        <p>
+          {
+            // Split the question into different parts: regular text, MathJax, and bold text.
+            // MathJax is delimited by $$...$$ or $...$
+            // Bold text is delimited by **...**.
+            variant ? (
+              variant.question
+                .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+                .filter(Boolean)
+                .map((part, index) => {
+                  // Bold text
+                  if (part.startsWith('**') && part.endsWith('**')) {
+                    return <strong key={`${index}-${part}`}>{part.slice(2, -2)}</strong>;
+                  }
+
+                  // MathJax
+                  if (
+                    (part.startsWith('$$') && part.endsWith('$$')) ||
+                    (part.startsWith('$') && part.endsWith('$'))
+                  ) {
+                    return <span key={`${index}-${part}`}>{part}</span>;
+                  }
+
+                  // Regular text
+                  return <span key={`${index}-${part}`}>{part}</span>;
+                })
+            ) : (
+              <></>
+            )
+          }
+        </p>
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}
             placeholder={placeholder}
             grade={grade}
-            answerLabel={answerLabel}
+            answerLabel={prompt.answerLabel}
             answerUnits={prompt.answerUnits}
             onChange={setUserInputResponse}
           />
@@ -352,13 +308,15 @@ function NumericOrStringInput({
   userInputResponse: string;
   placeholder: string;
   grade: number | null;
-  answerLabel: string | null;
+  answerLabel: string;
   answerUnits?: string;
   onChange: (text: string) => void;
 }) {
   return (
     <InputGroup>
-      {answerLabel && <InputGroupText id="answer-label">{answerLabel}</InputGroupText>}
+      <InputGroupText key={answerLabel} id="answer-label">
+        {answerLabel}
+      </InputGroupText>
       <FormControl
         value={userInputResponse}
         type="text"
@@ -393,10 +351,8 @@ function CheckboxOrRadioInput({
     <div>
       {options.map((option, index) => (
         <FormCheck
-          key={`option-${option.letter ?? index}`}
+          key={index}
           type={answerType as 'checkbox' | 'radio'}
-          name={`option-${option.letter ?? index}`}
-          id={`option-${option.letter ?? index}`}
           label={variantOptionToString(option)}
           value={option.value}
           checked={selectedOptions.has(option.value)}

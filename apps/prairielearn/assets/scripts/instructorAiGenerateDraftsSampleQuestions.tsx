@@ -31,10 +31,10 @@ const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOrigi
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
-import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
+import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
-import { examplePrompts } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
+import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -48,9 +48,7 @@ onDocumentReady(() => {
 function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
-  const selectedQuestion = useMemo(() => {
-    return examplePrompts[selectedQuestionIndex];
-  }, [selectedQuestionIndex]);
+  const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
   const handleClickPrevious = () => {
     if (selectedQuestionIndex > 0) {
@@ -59,7 +57,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   };
 
   const handleClickNext = () => {
-    if (selectedQuestionIndex < examplePrompts.length - 1) {
+    if (selectedQuestionIndex < examplePromptsArray.length - 1) {
       setSelectedQuestionIndex((prevIndex) => prevIndex + 1);
     }
   };
@@ -77,9 +75,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
             onClickNext={handleClickNext}
           />
           <SampleQuestionDemo prompt={selectedQuestion} onMathjaxTypeset={mathjaxTypeset} />
-          <FeatureList
-            features={selectedQuestion.features}
-          />
+          <FeatureList features={selectedQuestion.features} />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
       </AccordionItem>
@@ -115,7 +111,7 @@ function SampleQuestionSelector({
           {selectedQuestionName}
         </DropdownToggle>
         <DropdownMenu>
-          {examplePrompts.map((prompt, index) => (
+          {examplePromptsArray.map((prompt, index) => (
             <DropdownItem
               key={prompt.id}
               active={index === selectedQuestionIndex}
@@ -132,7 +128,7 @@ function SampleQuestionSelector({
         </Button>
         <Button
           onClick={onClickNext}
-          disabled={selectedQuestionIndex === examplePrompts.length - 1}
+          disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
         >
           Next
         </Button>

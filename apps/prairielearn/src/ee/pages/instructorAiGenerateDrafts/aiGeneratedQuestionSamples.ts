@@ -1,78 +1,84 @@
-export interface ExamplePrompt {
-  id: string;
+export type ExamplePrompt = {
   name: string;
   prompt: string;
   features: string[];
-  answerType: 'number' | 'radio' | 'checkbox' | 'string';
-  /* Describes what the question answer is, e.g. dot product or velocity */
-  answerLabel?: string;
-  answerUnits?: string;
-  /* Numeric tolerances for grading number answers */
-  rtol?: number;
-  atol?: number;
-}
+  generateVariant: () => SampleQuestionVariant;
+} & (
+  | {
+      answerType: 'radio' | 'checkbox';
+    }
+  | {
+      answerType: 'number' | 'string';
+      /* Numeric tolerances for grading number answers */
+      rtol?: number;
+      atol?: number;
+      /* Describes what the question answer is, e.g. dot product or velocity */
+      answerLabel: string;
+      answerUnits?: string;
+    }
+);
 
-export const examplePrompts: ExamplePrompt[] = [
-  {
-    id: 'cities-in-random-country',
+export const examplePrompts = {
+  'cities-in-random-country': {
     name: 'Identify cities in a random country',
     features: ['Random parameters', 'Checkbox input', 'Multiple correct answers', 'Partial credit'],
     prompt:
       'Generate a list of cities and countries. Then, randomly select a country, and provide the user with a list of cities that seem like they could be in the country. Make a random number of the options actually correct.',
     answerType: 'checkbox',
+    generateVariant: citiesInRandomCountryVariant,
   },
-  {
-    id: 'identify-even-or-odd-numbers',
+  'identify-even-or-odd-numbers': {
     name: 'Identify even or odd numbers',
     features: ['Random parameters', 'Checkbox input', 'Multiple correct answers', 'Partial credit'],
     prompt:
       'Generate a random list of 8 integers, and prompt the user to select either even or odd numbers, at random.',
     answerType: 'checkbox',
+    generateVariant: identifyEvenOrOddNumbersVariant,
   },
-  {
-    id: 'convert-radians-to-degrees',
+  'convert-radians-to-degrees': {
     name: 'Convert angle in radians to degrees',
     features: ['Random parameters', 'Number input', 'Single correct answer'],
     prompt: 'Prompt the user to convert a random angle in radians, in terms of pi, to degrees.',
     answerLabel: '$$ \\theta =$$',
+    answerUnits: 'degrees',
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-8,
+    generateVariant: convertRadiansToDegreesVariant,
   },
-  {
-    id: 'multiply-two-numbers',
+  'multiply-two-numbers': {
     name: 'Multiply two random numbers',
     features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
     prompt:
       'Generate two random integers, a and b. Give the user a list of 4 randomly generated options for their product. One should be correct.',
     answerType: 'radio',
+    generateVariant: multiplyTwoNumbersVariant,
   },
-  {
-    id: 'identify-rainbow-color',
+  'identify-rainbow-color': {
     name: 'Identify the rainbow color',
     features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
     prompt:
       'Generate a list of random colors. Ask the user which can be found in a rainbow. One color should be the answer.',
     answerType: 'radio',
+    generateVariant: identifyRainbowColor,
   },
-  {
-    id: 'identify-nth-planet',
+  'identify-nth-planet': {
     name: 'Identify the n-th planet away from the sun',
     features: ['Random parameters', 'Multiple choice input', 'Single correct answer'],
     prompt:
       'Randomly pick a number n between 1 and the number of planets in the solar system. Ask the user which planet is the nth planet away from the sun, providing 4 options, one of which is correct.',
     answerType: 'radio',
+    generateVariant: identifyNthPlanet,
   },
-  {
-    id: 'verify-compass-direction',
+  'verify-compass-direction': {
     name: 'Identify the compass direction between two countries',
     features: ['Random parameters', 'True/false question'],
     prompt:
       'Randomly pick two countries in Europe, and randomly pick a compass direction. Ask the user if the selected direction between the two countries is correct or not. The user should be able to pick between true or false multiple choice options.',
     answerType: 'radio',
+    generateVariant: verifyCompassDirection,
   },
-  {
-    id: 'compute-polynomial-root',
+  'compute-polynomial-root': {
     name: 'Compute smallest root of a random polynomial',
     features: [
       'Random parameters',
@@ -86,9 +92,9 @@ export const examplePrompts: ExamplePrompt[] = [
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-8,
+    generateVariant: computePolynomialRoot,
   },
-  {
-    id: 'compute-hypotenuse-length',
+  'compute-hypotenuse-length': {
     name: 'Compute random triangle hypotenuse length',
     features: [
       'Random parameters',
@@ -102,17 +108,23 @@ export const examplePrompts: ExamplePrompt[] = [
     answerType: 'number',
     rtol: 0.01,
     atol: 1e-8,
+    generateVariant: computeHypotenuseLength,
   },
-  {
-    id: 'find-irregular-plural',
+  'find-irregular-plural': {
     name: 'Find the plural form of a random word',
     features: ['Random parameters', 'String input', 'Single correct answer'],
     prompt:
       'Give the user a random word with an irregular plural form in its singular form, and ask them to find its plural form.',
     answerLabel: 'Plural form',
     answerType: 'string',
+    generateVariant: findIrregularPlural,
   },
-];
+} satisfies Record<string, ExamplePrompt>;
+
+export const examplePromptsArray = Object.entries(examplePrompts).map(([id, prompt]) => ({
+  id,
+  ...prompt,
+}));
 
 export interface VariantOption {
   letter?: string;
@@ -157,47 +169,8 @@ export type SampleQuestionVariant =
       correctAnswer: number;
     };
 
-export function generateSampleQuestionVariant(id: string) {
-  let variant: SampleQuestionVariant;
-  switch (id) {
-    case 'cities-in-random-country':
-      variant = citiesInRandomCountryVariant();
-      break;
-    case 'identify-even-or-odd-numbers':
-      variant = identifyEvenOrOddNumbersVariant();
-      break;
-    case 'convert-radians-to-degrees':
-      variant = convertRadiansToDegreesVariant();
-      break;
-    case 'multiply-two-numbers':
-      variant = multiplyTwoNumbersVariant();
-      break;
-    case 'identify-rainbow-color':
-      variant = identifyRainbowColor();
-      break;
-    case 'identify-nth-planet':
-      variant = identifyNthPlanet();
-      break;
-    case 'verify-compass-direction':
-      variant = verifyCompassDirection();
-      break;
-    case 'compute-polynomial-root':
-      variant = computePolynomialRoot();
-      break;
-    case 'compute-hypotenuse-length':
-      variant = computeHypotenuseLength();
-      break;
-    case 'find-irregular-plural':
-      variant = findIrregularPlural();
-      break;
-    default:
-      variant = {
-        answerType: 'string',
-        question: '',
-        correctAnswer: '',
-      };
-  }
-  return variant;
+export function generateSampleQuestionVariant(id: keyof typeof examplePrompts) {
+  return examplePrompts[id].generateVariant();
 }
 
 function citiesInRandomCountryVariant(): SampleQuestionVariant {
