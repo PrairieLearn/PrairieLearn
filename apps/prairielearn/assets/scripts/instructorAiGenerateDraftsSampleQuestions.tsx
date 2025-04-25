@@ -38,9 +38,7 @@ onDocumentReady(() => {
 function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
-  const selectedQuestion = useMemo(() => {
-    return examplePrompts[selectedQuestionIndex];
-  }, [selectedQuestionIndex]);
+  const selectedQuestion = examplePrompts[selectedQuestionIndex];
 
   const handleClickPrevious = () => {
     if (selectedQuestionIndex > 0) {
