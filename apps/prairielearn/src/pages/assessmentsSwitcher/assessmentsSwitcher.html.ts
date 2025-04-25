@@ -5,6 +5,8 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html
 import type { NavSubPage } from '../../components/Navbar.types.js';
 import type { AssessmentRow } from '../../lib/assessment.js';
 import { idsEqual } from '../../lib/id.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
 
 export function AssessmentSwitcher({
   assessmentRows,
@@ -24,9 +26,81 @@ export function AssessmentSwitcher({
 }) {
   if (assessmentRows.length === 0) {
     return html`
-      <button class="dropdown-item disabled" disabled>No assessments</button>
+      <p class="m-0">No assessments</p>
     `.toString();
   }
+
+  return html`
+    <div class="table-responsive">
+      <table class="table table-borderless table-sm table-hover" aria-label="Assessments">
+        <tbody>
+          ${assessmentRows.map((row) => {
+                  
+            const isActive = currentAssessmentId
+            ? idsEqual(currentAssessmentId, row.id)
+            : false;
+
+            return html`
+            ${row.start_new_assessment_group
+              ? html`
+                  <tr>
+                    <th colspan="7" scope="row">
+                      ${assessmentsGroupBy === 'Set'
+                        ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                        : AssessmentModuleHeading({
+                            assessment_module: row.assessment_module,
+                          })}
+                    </th>
+                  </tr>
+                `
+              : ''}
+
+              <tr id="row-${row.id}" class="${isActive ? 'bg-primary text-white' : ''}" style="cursor: pointer;">
+                <td class="align-middle" style="width: 1%">
+                  <span class="badge color-${row.assessment_set.color}">
+                    ${row.label}
+                  </span>
+                </td>
+                <td class="align-middle">
+                  ${row.sync_errors
+                    ? SyncProblemButton({
+                        type: 'error',
+                        output: row.sync_errors,
+                      })
+                    : row.sync_warnings
+                      ? SyncProblemButton({
+                          type: 'warning',
+                          output: row.sync_warnings,
+                        })
+                      : ''}
+                  <span>
+                    <a
+                      class="${isActive ? 'text-white' : ''}"
+                      aria-current="${isActive ? 'page' : ''}"
+                      aria-label="${row.label}"
+                      href="${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ??
+                      ''}"
+                    >
+                      ${row.title}
+                      ${row.group_work
+                        ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                        : ''}
+                    </a>
+                  </span>
+                  ${IssueBadge({
+                    count: row.open_issue_count,
+                    urlPrefix: plainUrlPrefix,
+                    issueAid: row.tid,
+                  })}
+                </td>
+                <td class="align-middle">${row.tid}</td>
+              </tr>
+          `})}
+        </tbody>
+      </table>
+    </div>
+  `.toString();
+
 
   return html`
     ${assessmentRows.map((assessmentDropdownItemData) => {
