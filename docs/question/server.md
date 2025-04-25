@@ -2,9 +2,7 @@
 
 The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers.
 
-## Guide
-
-To explain how this works, we will use a simple example of a question that asks the student to double a number. The question will look like this:
+The following sections build a simple example of a question that asks the student to double a number. The question will look like this:
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -17,9 +15,13 @@ To explain how this works, we will use a simple example of a question that asks 
 </pl-submission-panel>
 ```
 
-More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [question template documentation](./template.md).
+!!! tip
 
-### Step 1: `generate`
+    Jump to the [complete `question.html` and `server.py` example](#complete-example).
+
+More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [question template documentation](./template.md#mustache-templates).
+
+## Step 1: `generate`
 
 First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers. The parameters can then be used in the `question.html` file by using `{{params.NAME}}`.
 
@@ -34,7 +36,7 @@ def generate(data):
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
 
-#### Randomization
+### Randomization
 
 Question variants are randomized based on the variant seed (`data["variant_seed"]`), and all random generators (`random`, `np.random`, etc.) are seeded with this value.
 
@@ -48,15 +50,41 @@ fake.name()
 # 'Lucy Cechtelar'
 ```
 
-### Step 2: `prepare`
+### Parameter generation
+
+For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
+
+```python title="server.py"
+def generate(data):
+    a = 33.33337
+    b = 33.33333
+    data["params"]["a_for_student"] = f'{a:.2f}'
+    data["params"]["b_for_student"] = f'{a:.2f}'
+    # Note how the correct answer is computed with full precision,
+    # but the parameters displayed to students are rounded.
+    data["correct_answers"]["c"] = a - b
+```
+
+Instead, the numbers should be rounded at the beginning:
+
+```python title="server.py"
+def generate(data):
+  a = np.round(33.33337, 2)
+  b = np.round(33.33333, 2)
+  data["params"]["a_for_student"] = f'{a:.2f}'
+  data["params"]["b_for_student"] = f'{b:.2f}'
+  data["correct_answers"]["c"] = a - b
+```
+
+## Step 2: `prepare`
 
 Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `generate()`. This is typically done to do any sort of final post-processing, but is not commonly used.
 
-### Step 3: `render`
+## Step 3: `render`
 
 Next, the `render(data, html)` function is called to render the question. You can use this function to override how the question is rendered. The render function expects two parameters, `data` and `html`, and should return a string of HTML. The HTML after the mustache template has been rendered is available through the `html` parameter. This is typically only used for more advanced questions, and we won't need it for this example.
 
-### Step 4: `parse`
+## Step 4: `parse`
 
 When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
 
@@ -85,7 +113,16 @@ def parse(data):
 
     In general, each function of the question generation process runs *after* all elements in the question. For example, the `parse()` function in `server.py` runs after all elements have run their `parse()` functions. This is important to remember when using the `data` dictionary, as it will contain the results *after* the elements have finished processing.
 
-### Step 5: `grade`
+Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
+
+!!! note
+
+    Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
+    element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
+    code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
+    [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
+
+## Step 5: `grade`
 
 Finally, the `grade(data)` function is called to grade the question. The grade function is responsible for:
 
@@ -100,7 +137,7 @@ This function only runs if `parse()` did not produce format errors, so we can as
 - `data["score"]` is the total score for the question (0 to 1).
 - `data["feedback"][NAME]` is the overall question feedback for each named answer.
 
-??? note
+!!! note
 
     Overall question feedback in `data["feedback"][NAME]` needs be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]` will be rendered automatically by the elements.
 
@@ -124,20 +161,59 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
-### Complete example
+### Grading floating-point answers
+
+For grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance. The `prairielearn` Python library also offers several functions to perform more specialized comparisons:
+
+- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
+- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
+- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
+
+### Recalculating scores
+
+Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The `prairielearn` Python library provides the following score recomputation functions:
+
+- [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
+- [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
+
+This can be used like so:
+
+```python title="server.py"
+from prairielearn import set_weighted_score_data
+
+def grade(data):
+    # update partial_scores as necessary
+    # ...
+
+    # compute total question score
+    set_weighted_score_data(data)
+```
+
+More detailed information can be found in the [grading utilities documentation](../python-reference/prairielearn/grading_utils.md). If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+
+### Custom feedback
+
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+
+## Question lifecycle
+
+The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
+
+![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
+
+## Complete example
 
 The finished, complete `question.html` and `server.py` example looks like:
 
+<!-- prettier-ignore -->
 ```html title="question.html"
 <pl-question-panel>
-  <!-- params.x is defined by data["params"]["x"] in server.py's `generate()`. -->
-  <!-- params.operation defined by in data["params"]["operation"] in server.py's `generate()`. -->
-  If $x = {{params.x}}$ and $y$ is {{params.operation}} $x$, what is $y$?
+  If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
 </pl-question-panel>
-
-<!-- y is defined by data["correct_answers"]["y"] in server.py's `generate()`. -->
 <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
-<pl-submission-panel> {{feedback.y}} </pl-submission-panel>
+<pl-submission-panel>
+  {{feedback.y}}
+</pl-submission-panel>
 ```
 
 ```python title="server.py"
@@ -196,12 +272,6 @@ As shown in the table, most functions accept a single argument, `data` (a dictio
 | `feedback`              | `dict`  | Dictionary of feedback for each answer. Each item maps from a named answer to a feedback message.                                    |
 
 The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
-
-### Question lifecycle
-
-The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
-
-![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
 
 ## Question data storage
 
@@ -294,74 +364,3 @@ We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
-
-## Custom grading best practices
-
-Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
-
-!!! note
-
-    Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
-    element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
-    code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
-    [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
-
-### Recalculating scores
-
-Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The `prairielearn` Python library provides the following score recomputation functions:
-
-- [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
-- [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
-
-This can be used like so:
-
-```python title="server.py"
-from prairielearn import set_weighted_score_data
-
-def grade(data):
-    # update partial_scores as necessary
-    # ...
-
-    # compute total question score
-    set_weighted_score_data(data)
-```
-
-More detailed information can be found in the [grading utilities documentation](../python-reference/prairielearn/grading_utils.md). If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
-
-### Custom feedback
-
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
-
-### Parameter generation
-
-For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
-
-```python title="server.py"
-def generate(data):
-    a = 33.33337
-    b = 33.33333
-    data["params"]["a_for_student"] = f'{a:.2f}'
-    data["params"]["b_for_student"] = f'{a:.2f}'
-    # Note how the correct answer is computed with full precision,
-    # but the parameters displayed to students are rounded.
-    data["correct_answers"]["c"] = a - b
-```
-
-Instead, the numbers should be rounded at the beginning:
-
-```python title="server.py"
-def generate(data):
-  a = np.round(33.33337, 2)
-  b = np.round(33.33333, 2)
-  data["params"]["a_for_student"] = f'{a:.2f}'
-  data["params"]["b_for_student"] = f'{b:.2f}'
-  data["correct_answers"]["c"] = a - b
-```
-
-### Grading floating-point answers
-
-For grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance. The `prairielearn` Python library also offers several functions to perform more specialized comparisons:
-
-- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
-- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
-- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
