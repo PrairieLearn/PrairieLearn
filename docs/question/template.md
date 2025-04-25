@@ -156,7 +156,55 @@ The `"question"` panel is displayed when the question is first shown to the stud
 
 All three panels are displayed based on the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
-Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+### `"question"` panel
+
+Text in `question.html` can be set to only display in the "question" panel by wrapping it in the [`<pl-question-panel>` element](../elements.md#pl-question-panel-element). This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. For example:
+
+=== "Good"
+
+    ```html
+    <pl-question-panel>
+      <p>What is y, if y is 1 + 3?</p>
+    </pl-question-panel>
+    <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+    ```
+
+=== "Bad"
+
+    ```html
+    <p>What is y, if y is 1 + 3?</p>
+    <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+    ```
+
+    The question will be repeated in the "submission" and "answer" panels, which is unnecessary and can be confusing for students.
+
+### `"submission"` panel
+
+You can also use the [`pl-submission-panel`](../elements.md#pl-submission-panel-element) to show text only in the "submission" panel. For example:
+
+=== "Good"
+
+    ```html
+    <pl-submission-panel>
+      <p>
+        Feedback: {{feedback.y}}
+      </p>
+    </pl-submission-panel>
+    ```
+
+=== "Bad"
+
+    ```html
+    <p>Feedback: {{feedback.y}}</p>
+    ```
+
+    This will show the feedback in the "question" and "answer" panels as well, which is unnecessary and can be confusing for students. Since `feedback.y` won't be defined until the student submits an answer, it will show as an empty string in the "question" panel, just showing `"Feedback: "`.
+
+### `"answer"` panel
+
+By default, the correct answer is shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The [FAQ item](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) "How can I hide the correct answer when students see their grading results?" describes some other techniques for hiding the correct answer.
+
+You can use the `<pl-answer-panel>` element to show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
 
 ## Hiding staff comments in `question.html`
 

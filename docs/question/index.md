@@ -174,19 +174,20 @@ The `question.html` is a template used to render the question to the student. A 
 </p>
 ```
 
-The `question.html` is regular HTML, with four special features:
+The `question.html` is regular HTML, with a few special features:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These values typically are defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
+2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
 
    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+5. Special
 
 !!! info
 
-    More information about `question.html` is in the [questino template documentation](template.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
+    More information about `question.html` is in the [question template documentation](template.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
 
 ## Custom generation and grading (`server.py`)
 
