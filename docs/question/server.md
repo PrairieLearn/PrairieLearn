@@ -17,7 +17,7 @@ To explain how this works, we will use a simple example of a question that asks 
 </pl-submission-panel>
 ```
 
-More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [template documentation](./template.md).
+More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [question template documentation](./template.md).
 
 ### Step 1: `generate`
 
