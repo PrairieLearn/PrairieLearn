@@ -17,7 +17,7 @@ To explain how this works, we will use a simple example of a question that asks 
 </pl-submission-panel>
 ```
 
-More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [`question.html` documentation](./html.md).
+More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can be found in the [template documentation](./template.md).
 
 ### Step 1: `generate`
 
@@ -33,10 +33,6 @@ def generate(data):
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
-
-!!! info
-
-    In general, each function of the question generation process runs *after* all elements in the question. For example, the `generate()` function in `server.py` runs after all elements have run their `generate()` functions. This is important to remember when using the `data` dictionary, as it will contain the results *after* the elements have finished processing.
 
 ### Step 2: `prepare`
 
@@ -63,6 +59,18 @@ def parse(data):
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 ```
 
+We could have also modified the submitted answers directly, if we need to process the inputs further. For example, if we wanted to ensure that the answer is always positive, we could do this:
+
+```python title="server.py"
+def parse(data):
+    # Ensure that "y" is positive
+    data["submitted_answers"]["y"] = abs(data["submitted_answers"]["y"])
+```
+
+!!! info
+
+    In general, each function of the question generation process runs *after* all elements in the question. For example, the `parse()` function in `server.py` runs after all elements have run their `parse()` functions. This is important to remember when using the `data` dictionary, as it will contain the results *after* the elements have finished processing.
+
 ### Step 5: `grade`
 
 Finally, the `grade(data)` function is called to grade the question. The grade function is responsible for:
@@ -74,17 +82,23 @@ Finally, the `grade(data)` function is called to grade the question. The grade f
 This function only runs if `parse()` did not produce format errors, so we can assume all data is valid. All elements will have already graded their answers (if any) before this point.
 
 - `data["partial_scores"][NAME]["score"]` is the individual scores for the named answers (0 to 1).
+- `data["partial_scores"][NAME]["feedback"]` is the feedback for each named answer from the element that graded it.
 - `data["score"]` is the total score for the question (0 to 1).
-- `data["feedback"][NAME]` is the feedback for each named answer.
+- `data["feedback"][NAME]` is the overall question feedback for each named answer.
+
+??? note
+
+    You should provide question feedback through `data["feedback"][NAME]`, and not through `data["partial_scores"][NAME]["feedback"]`.
 
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
-If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer.
+If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer. In the snipped below, we update `data["score"]` using the [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] utility.
 
 You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. However, you are encouraged to do as many checks for invalid data as possible in `parse` instead of `grade`; the `parse` function is called when the student hits "Save only", in manually graded questions, and in assessments without real-time grading.
 
 ```python title="server.py"
 import math
+import prairielearn as pl
 
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
@@ -92,7 +106,7 @@ def grade(data):
     y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
     if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
-        data["score"] = set_weighted_score_data(data)
+        pl.set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
@@ -115,6 +129,7 @@ The finished, complete `question.html` and `server.py` example looks like:
 ```python title="server.py"
 import random
 import math
+import prairielearn as pl
 
 def generate(data):
     # Generate random parameters for the question and store them in the data["params"] dict:
@@ -134,7 +149,7 @@ def grade(data):
     y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
     if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
-        data["score"] = set_weighted_score_data(data)
+        pl.set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
@@ -255,7 +270,7 @@ def file(data):
 
 Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type` of `pl-figure` is set to `"dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function.
 
-We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for PDFs and other content that should be downloaded, and `pl-figure` for images and other content that should be displayed.
+We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
 
 ??? info "Advanced usage"
 

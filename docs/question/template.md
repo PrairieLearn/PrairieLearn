@@ -20,7 +20,9 @@ and this syntax to render over an array of strings (the `.` represents the curre
 
 !!! tip
 
-    If you use triple-braces (e.g. `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it).
+     If you want to render student-provided HTML, we recommend the use of the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+
+     You can also use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This is not recommended, as it can lead to XSS vulnerabilities.
 
 ## Markdown in questions
 
@@ -95,9 +97,9 @@ int m = 4;
 </pl-code>
 ```
 
-### Escaping `<markdown>` tags
+??? note "Escaping literal `<markdown>` tags"
 
-PrairieLearn defines a special escape syntax to allow a literal `<markdown>` or `</markdown>` tag in your question. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown).
+    PrairieLearn defines a special escape syntax to allow a literal `<markdown>` or `</markdown>` tag in your question. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown).
 
 ## Using LaTeX in questions (math mode)
 
@@ -148,9 +150,9 @@ When a question is displayed to a student, there are three "panels" that will be
 
 ![Question panels](./panels.png)
 
-The `"question"` panel is displayed when the question is first shown to the student. The `"submission"` panel is displayed after the student submits an answer (but before they finish attempting the question), and the `"answer"` panel is displayed when the student either submits the correct answer or runs out of attempts. You can see the [lifecycle diagram](server.md#question-lifecycle) for more details on how these panels are displayed.
+The `"question"` panel is displayed when the question is first shown to the student. A `"submission"` panel is displayed each time the student saves an answer; there may be multiple submission panels if the student submits multiple answers to the same variant. The `"answer"` panel is displayed based on question/assessment configuration; by default, it is shown when the student either submits the correct answer or runs out of attempts. You can see the [lifecycle diagram](server.md#question-lifecycle) for more details on how these panels are displayed.
 
-All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
+All three panels are displayed based on the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
 Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
 

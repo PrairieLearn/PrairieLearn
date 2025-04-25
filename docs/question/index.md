@@ -7,7 +7,7 @@ Questions are the basic building blocks of PrairieLearn. They are the individual
 A question is made up of three main components:
 
 1. **`info.json`**: Metadata about the question, including the question title, topic, and tags.
-2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [HTML documentation](html.md) for more details.
+2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [template documentation](template.md) for more details.
 3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
 ## Directory structure
@@ -89,7 +89,7 @@ The `info.json` file for each question defines properties of the question. For e
 
 !!! note "Local development note"
 
-    Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might also need to generate a new variant of a question to run new Python code.
+    Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Most edits to HTML or Python files will be picked up by reloading the page. However, if you made changes to question generation or element arguments, you might also need to generate a new variant.
 
 ### Question Sharing
 
@@ -186,7 +186,7 @@ The `question.html` is regular HTML, with four special features:
 
 !!! info
 
-    More information about `question.html` is in the [question.html documentation](html.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
+    More information about `question.html` is in the [template documentation](template.md). Some non-intuitive aspects of Markdown and LaTeX are described there.
 
 ## Custom generation and grading (`server.py`)
 
