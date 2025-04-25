@@ -33,7 +33,7 @@
     },
     {
       "name": "minimum_term_ratio",
-      "description": "Minimum ratio of in-term vs out-of-term submissions for a course instance to count as active.",
+      "description": "Minimum ratio of in-term to total submissions for a course instance to count as active.",
       "default": "0.5"
     },
     {
