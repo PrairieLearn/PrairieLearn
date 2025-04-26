@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
-import { NavbarIframe } from '../../../components/Navbar.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 
@@ -24,7 +24,7 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 Assignment Selection' })}
       </head>
       <body>
-        ${NavbarIframe({ resLocals })}
+        ${Navbar({ resLocals })}
         <main id="content" class="m-3">
           <p>Select an existing PrairieLearn assessment to use with this assignment.</p>
 
@@ -95,7 +95,7 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 Assignment Selection' })}
       </head>
       <body>
-        ${NavbarIframe({ resLocals })}
+        ${Navbar({ resLocals })}
         <main id="content" class="m-3">
           <p>
             Confirmation: You selected PrairieLearn assessment <strong>${assessment.title}</strong>

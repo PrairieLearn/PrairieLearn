@@ -4,6 +4,11 @@ import onHeaders from 'on-headers';
 const router = Router();
 
 router.all('/*', function (req, res, next) {
+  /*
+      Disabling this function for development until the other iframe
+      branch gets merged into master.
+
+
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
   //
   // Currently, we only use CSP to prevent PrairieLearn from being rendered in
@@ -21,6 +26,8 @@ router.all('/*', function (req, res, next) {
       res.header('X-Frame-Options', 'SAMEORIGIN');
     }
   });
+
+  */
 
   next();
 });
