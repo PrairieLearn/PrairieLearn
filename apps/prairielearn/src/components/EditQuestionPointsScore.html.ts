@@ -37,12 +37,12 @@ export function EditQuestionPointsScoreButton({
   return html`<button
     type="button"
     class="btn btn-xs btn-secondary"
-    data-toggle="popover"
-    data-container="body"
-    data-html="true"
-    data-placement="auto"
+    data-bs-toggle="popover"
+    data-bs-container="body"
+    data-bs-html="true"
+    data-bs-placement="auto"
     aria-label="Change question ${findLabel(field)}"
-    data-content="${escapeHtml(editForm)}"
+    data-bs-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
     <i class="fa fa-edit" aria-hidden="true"></i>
@@ -63,7 +63,10 @@ function EditQuestionPointsScoreForm({
   csrfToken: string;
 }) {
   const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
-  if (assessment_question.manual_rubric_id != null) {
+  // If the question is configured to use rubrics, don't allow editing the
+  // points, unless there is no submission, in which case we allow editing the
+  // points manually since the manual grading page will not be available.
+  if (assessment_question.manual_rubric_id != null && instance_question.status !== 'unanswered') {
     return html`
       <div>
         <p>
@@ -71,7 +74,7 @@ function EditQuestionPointsScoreForm({
           <a href="${manualGradingUrl}">the manual grading page</a>.
         </p>
         <div class="text-right">
-          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         </div>
       </div>
     `;
@@ -89,7 +92,7 @@ function EditQuestionPointsScoreForm({
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="instance_question_id" value="${instance_question.id}" />
       <input type="hidden" name="modified_at" value="${instance_question.modified_at.toString()}" />
-      <div class="form-group">
+      <div class="mb-3">
         <div class="input-group">
           <input
             type="number"
@@ -100,23 +103,23 @@ function EditQuestionPointsScoreForm({
             value="${pointsOrScore}"
             aria-label="${findLabel(field)}"
           />
-          <div class="input-group-append">
-            <span class="input-group-text">
-              ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
-            </span>
-          </div>
+          <span class="input-group-text">
+            ${field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
+          </span>
         </div>
       </div>
       <p>
         <small>
           This will also recalculate the total points and total score at 100% credit. This change
-          will be overwritten if the question is answered again by the student. You may also update
-          the score
-          <a href="${manualGradingUrl}">via the manual grading page</a>.
+          will be overwritten if the question is answered again by the student.
+          ${instance_question.status !== 'unanswered'
+            ? html`You may also update the score
+                <a href="${manualGradingUrl}">via the manual grading page</a>.`
+            : ''}
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

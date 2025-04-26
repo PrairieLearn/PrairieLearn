@@ -1,0 +1,10 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
+  "compilerOptions": {
+    "outDir": "./dist-tmp",
+    "rootDir": "./src",
+    "moduleResolution": "Node16",
+    "module": "Node16",
+    "verbatimModuleSyntax": false
+  }
+}

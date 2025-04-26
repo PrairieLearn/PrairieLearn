@@ -1,15 +1,14 @@
 {{#question}}
-        {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+        {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
             <span class="input-group big-o-input">
-                <span class="input-group-prepend">
-                    <span class="input-group-text" id="pl-big-o-input-{{uuid}}-label">${{type}}($</span>
-                </span>
+                <span class="input-group-text" id="pl-big-o-input-{{uuid}}-label">${{type}}($</span>
                 <input
                     name="{{name}}"
                     type="text"
                     autocomplete="off"
                     autocorrect="off"
-                    class="form-control big-o-input-input"
+                    class="form-control big-o-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+                    {{#parse_error}}aria-invalid="true"{{/parse_error}}
                     size="{{size}}"
                     {{^editable}}disabled{{/editable}}
                     {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
@@ -17,45 +16,50 @@
                     aria-describedby="pl-big-o-input-{{uuid}}-suffix"
                     aria-labelledby="pl-big-o-input-{{uuid}}-label"
                 />
-                <span class="input-group-append">
-                    <span
-                        class="input-group-text"
-                        id="pl-big-o-input-{{uuid}}-suffix">$)$</span>
-                    {{#show_info}}
-                    <button type="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Symbolic" data-content="{{info}}" data-placement="auto">
-                        <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </button>
-                    {{/show_info}}
-                    {{#correct}}
-                        <span class="input-group-text">
-                            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-                        </span>
-                    {{/correct}}
-                    {{#partial}}
-                        <span class="input-group-text">
-                            <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-                        </span>
-                    {{/partial}}
-                    {{#incorrect}}
-                        <span class="input-group-text">
-                            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-                        </span>
-                    {{/incorrect}}
-                    {{#parse_error}}
-                        <button
-                            type="button"
-                            class="btn btn-light border d-flex align-items-center text-danger"
-                            data-toggle="popover"
-                            data-html="true"
-                            title="Format Error"
-                            data-placement="auto"
-                            data-content="{{parse_error}}"
-                        >
-                            <span class="mr-1">Invalid</span> <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                        </button>
-                    {{/parse_error}}
-                </span>
+                <span
+                    class="input-group-text"
+                    id="pl-big-o-input-{{uuid}}-suffix">$)$</span>
+                {{#show_info}}
+                <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Symbolic" data-bs-content="{{info}}" data-bs-placement="auto">
+                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                </button>
+                {{/show_info}}
+                {{#correct}}
+                    <span class="input-group-text">
+                        <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                    </span>
+                {{/correct}}
+                {{#partial}}
+                    <span class="input-group-text">
+                        <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+                    </span>
+                {{/partial}}
+                {{#incorrect}}
+                    <span class="input-group-text">
+                        <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                    </span>
+                {{/incorrect}}
             </span>
+                {{#parse_error}}
+                    <span class="invalid-feedback d-block">
+                        <span class="badge text-bg-danger">
+                            Invalid 
+                            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                        </span>
+                        <a 
+                            class="link-primary"
+                            tabindex="0"
+                            role="button"
+                            data-bs-placement="auto" 
+                            data-bs-toggle="popover"
+                            data-bs-html="true"
+                            title="Format error"
+                            data-bs-content="{{parse_error}}"
+                        >
+                            More info…
+                        </a>
+                    </span>
+                {{/parse_error}}
         {{#inline}}</span>{{/inline}}
 {{/question}}
 
@@ -68,25 +72,43 @@
         {{#raw_submitted_answer}}
             <code class="user-output-invalid">{{raw_submitted_answer}}</code>
         {{/raw_submitted_answer}}
-        <button
-            type="button"
-            class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
-            data-placement="auto"
-            data-toggle="popover"
-            data-html="true"
-            title="Format Error"
-            data-content="{{parse_error}}"
-        >
-            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-        </button>
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-danger">
+                Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format error"
+                data-bs-content="{{parse_error}}"
+            >
+            More info…
+            </a>
+        </span>
     {{/parse_error}}
     {{#missing_input}}
-        ${{type}}($
-        <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
-
-        <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" title="Missing Input" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-        </button>
-        $)$
+        <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-dark border">
+                Missing input
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a 
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Missing input"
+                data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+            >
+            More info…
+            </a>
+        </span>
     {{/missing_input}}
 
     </span>
@@ -97,10 +119,10 @@
     ${{type}}({{a_sub}})$
 
     <!-- Show submitted answer submission was parsed from -->
-    <button type="button" class="ml-1 btn btn-sm btn-secondary small border"
-        data-placement="auto" data-toggle="popover" data-html="true"
+    <button type="button" class="ms-1 btn btn-sm btn-secondary small border"
+        data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
         title="Original Input"
-        data-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>">
+        data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>">
         <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
 
@@ -109,9 +131,9 @@
             {{{feedback}}}
         </div>
     {{/feedback}}
-    {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-    {{#partial}}<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-    {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+    {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+    {{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
     </div>
     {{/error}}
     {{#inline}}</span>{{/inline}}

@@ -62,13 +62,12 @@ describe('Assessment that forces students to complete questions in-order', funct
     // Generate assessment instance
     const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
     helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
     });
     assert.isTrue(response.ok);
 
@@ -132,7 +131,7 @@ describe('Assessment that forces students to complete questions in-order', funct
 
   step('Question 2 "next question" link contains the correct advanceScorePerc', async function () {
     const response = await submitQuestion(50, context.firstUnlockedQuestion);
-    assert.include(response.$('#question-nav-next').attr('data-content'), '60%');
+    assert.include(response.$('#question-nav-next').attr('data-bs-content'), '60%');
   });
 
   async function submitQuestion(score, question) {
@@ -142,14 +141,15 @@ describe('Assessment that forces students to complete questions in-order', funct
     context.__variant_id = preSubmissionResponse
       .$('.question-form input[name="__variant_id"]')
       .attr('value');
-    const form = {
-      __action: 'grade',
-      __variant_id: context.__variant_id,
-      s: String(score),
-      __csrf_token: context.__csrf_token,
-    };
-
-    const response = await helperClient.fetchCheerio(question.url, { method: 'POST', form });
+    const response = await helperClient.fetchCheerio(question.url, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'grade',
+        __variant_id: context.__variant_id,
+        s: String(score),
+        __csrf_token: context.__csrf_token,
+      }),
+    });
     assert.isTrue(response.ok);
 
     return response;

@@ -14,21 +14,21 @@ import {
 
 import {
   AssessmentSchema,
-  Lti13CourseInstanceSchema,
   Lti13AssessmentsSchema,
+  Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  syncLineitems,
-  getLineitems,
-  unlinkAssessment,
-  queryAndLinkLineitem,
-  createAndLinkLineitem,
-  validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
+  createAndLinkLineitem,
+  getLineitems,
+  queryAndLinkLineitem,
+  syncLineitems,
+  unlinkAssessment,
   updateLti13Scores,
+  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {

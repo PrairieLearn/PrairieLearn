@@ -5,6 +5,11 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
+import {
+  type QuestionJsonInput,
+  type TagJsonInput,
+  type TopicJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -12,7 +17,7 @@ import * as util from './util.js';
 /**
  * Makes an empty question.
  */
-function makeQuestion(courseData: util.CourseData): util.Question {
+function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
     uuid: uuidv4(),
     title: 'Test question',
@@ -151,6 +156,32 @@ describe('Question syncing', () => {
     );
   });
 
+  it('syncs entrypoint as an array', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      entrypoint: ['entrypoint', 'second argument'],
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.external_grading_entrypoint, "entrypoint 'second argument'");
+  });
+
+  it('syncs workspace args as an array', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      args: ['first', 'second argument'],
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.workspace_args, "first 'second argument'");
+  });
+
   it('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
@@ -167,7 +198,7 @@ describe('Question syncing', () => {
 
   it('preserves question topic even if question topic is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTopic = {
+    const newTopic: TopicJsonInput = {
       name: 'test topic',
       color: 'green1',
       description: 'test topic description',
@@ -193,7 +224,7 @@ describe('Question syncing', () => {
 
   it('preserves question tag even if question tag is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTag = {
+    const newTag: TagJsonInput = {
       name: 'test tag',
       color: 'green1',
       description: 'test tag description',
@@ -404,5 +435,19 @@ describe('Question syncing', () => {
     const newQuestionRow2 = questions.find((q) => q.qid === 'c' && q.deleted_at === null);
     assert.isNull(newQuestionRow2?.deleted_at);
     assert.equal(newQuestionRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+  });
+
+  it('syncs draft questions', async () => {
+    const courseData = util.getCourseData();
+    const question = makeQuestion(courseData);
+    question.title = 'Draft question';
+    question.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseData.questions['__drafts__/draft_1'] = question;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === '__drafts__/draft_1');
+    assert.isOk(syncedQuestion);
+    assert.isTrue(syncedQuestion.draft);
   });
 });

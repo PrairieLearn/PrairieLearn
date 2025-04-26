@@ -47,7 +47,7 @@ Example questions are in the [`exampleCourse/questions`](https://github.com/Prai
 
 The `info.json` file for each question defines properties of the question. For example:
 
-```json
+```json title="info.json"
 {
   "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
   "title": "Newton's third law",
@@ -72,10 +72,10 @@ The `info.json` file for each question defines properties of the question. For e
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
 | `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
-| `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
+| `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                            |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
-For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
+See the [reference for `infoQuestion.json`](./schemas/infoQuestion.md) for more information about what can be added to this file.
 
 ### Question Dependencies
 
@@ -83,7 +83,7 @@ Your question can load client-side assets such as scripts or stylesheets from di
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
-```json
+```json title="info.json"
 {
   "dependencies": {
     "nodeModulesScripts": ["three/build/three.min.js"],
@@ -96,9 +96,9 @@ These dependencies are specified in the `info.json` file, and can be configured 
 
 ### Question Sharing
 
-Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course.md#adding-sharing-sets).
+Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course/index.md#adding-sharing-sets).
 
-```json
+```json title="info.json"
 {
   "sharingSets": ["python-exercises"]
 }
@@ -119,7 +119,7 @@ The different types of dependency properties available are summarized in this ta
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
 
-```html
+```html title="question.html"
 <pl-question-panel>
   <p>
     A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a =
@@ -164,9 +164,7 @@ The `server.py` file for each question creates randomized question variants by g
 
 A complete `question.html` and `server.py` example looks like:
 
-```html
-<!-- question.html -->
-
+```html title="question.html"
 <pl-question-panel>
   <!-- params.x is defined by data["params"]["x"] in server.py's `generate()`. -->
   <!-- params.operation defined by in data["params"]["operation"] in server.py's `generate()`. -->
@@ -178,9 +176,7 @@ A complete `question.html` and `server.py` example looks like:
 <pl-submission-panel> {{feedback.y}} </pl-submission-panel>
 ```
 
-```python
-# server.py
-
+```python title="server.py"
 import random
 import math
 
@@ -238,11 +234,9 @@ def grade(data):
 
 All persistent data related to a question variant is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, everything in `data` must be JSON serializable. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.
 
-To account for this, the `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn.py), usually aliased and used as `pl`, provides the functions `to_json` and `from_json`, which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
+To account for this, the `prairielearn` Python library (usually aliased and used as `pl`), provides the functions [`to_json`][prairielearn.conversion_utils.to_json] and [`from_json`][prairielearn.conversion_utils.from_json] (part of [`conversion_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/conversion_utils.py)), which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
 
-```python
-# server.py
-
+```python title="server.py"
 import numpy as np
 import prairielearn as pl
 
@@ -277,16 +271,12 @@ data["options"]["server_files_course_path"]           # on-disk location of serv
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
-```html
-<!-- question.html -->
-
+```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
 <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
 ```
 
-```python
-# server.py
-
+```python title="server.py"
 import random
 import io
 import matplotlib.pyplot as plt
@@ -328,7 +318,8 @@ In general, it is _strongly_ recommended to leave partial credit enabled for all
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
 
-```
+<!-- prettier-ignore -->
+```html title="question.html"
 <markdown>
 # Hello, world!
 
@@ -343,13 +334,37 @@ That question would be rendered like this:
 <p>This is some <strong>Markdown</strong> text.</p>
 ```
 
+!!! warning
+
+    Note that markdown recognizes indentation as a code block, so text inside these tags should not be indented with the corresponding HTML content.
+
+    === "Good"
+
+        ```html
+        <div>
+          <markdown>
+        # Hello, world!
+          </markdown>
+        </div>
+        ```
+    === "Bad"
+
+        ```html
+        <div>
+          <markdown>
+            # Hello, world!
+          </markdown>
+        </div>
+        ```
+
 A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
-## Markdown code blocks
+### Markdown code blocks
 
-Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
+Fenced code blocks (those using triple-backticks ` ``` `) are rendered as [`<pl-code>` elements](elements.md#pl-code-element), which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following Markdown:
 
-````
+<!-- prettier-ignore -->
+````html title="question.html"
 <markdown>
 ```cpp{1-2,4}
 int i = 1;
@@ -372,9 +387,52 @@ int m = 4;
 </pl-code>
 ```
 
-## Escaping `<markdown>` tags
+### Escaping `<markdown>` tags
 
-Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be rendered as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
+
+## Using LaTeX in questions (math mode)
+
+PrairieLearn supports LaTeX equations in questions. You can view a full list of [supported MathJax commands](https://docs.mathjax.org/en/latest/input/tex/macros/index.html).
+
+Inline equations can be written using `$x^2$` or `\(x^2\)`, and display equations can be written using `$$x^2$$` or `\[x^2\]`. For example:
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<p>Here is some inline math: $x^2$. Here is some display math: $$x^2$$</p>
+<p>What is the total force $F$ currently acting on the particle?</p>
+
+<markdown>
+# LaTeX works in Markdown too!
+
+$$\phi = \frac{1+\sqrt{5}}{2}$$
+</markdown>
+```
+
+### Using a dollar sign ($) without triggering math mode
+
+Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
+
+To escape either math environment, consider using PrairieLearn's `<markdown>` tag and inline code syntax.
+
+<!-- prettier-ignore -->
+```html
+<markdown>
+What happens if we use a `$` to reference the spreadsheet cell location `$A$1`?
+</markdown>
+```
+
+In scenarios where it does not make sense to use the code environment, consider disabling math entirely by
+adding the `mathjax_ignore` class to an HTML element.
+
+```html
+<div class="mathjax_ignore">
+  Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1 dollar, then how many
+  pieces of fruit can Mary get?
+</div>
+
+<div>$x = 1$ and I have <span class="mathjax_ignore">$</span>5 dollars.</div>
+```
 
 ## Rendering panels from `question.html`
 
@@ -388,99 +446,6 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
 
-## How questions are rendered
-
-Questions are rendered in two possible ways: with the "legacy renderer" and the "new renderer". Currently, the legacy renderer is the default, but the new renderer will eventually replace the legacy renderer entirely. The new renderer uses a different HTML parser, which behaves differently than the old one for malformed HTML and could result in breaking changes.
-
-**TL;DR** If you're starting a new course, you should write questions with the new renderer in mind, as it will soon become the default.
-
-> Aside: when we say "renderer", we're really talking about how we traverse the tree of elements in a question to process them. However, the way in which this occurs typically only matters during the "render" phase, so we talk about it as a "renderer".
-
-### The legacy renderer
-
-The legacy renderer uses a naive approach to rendering: it renders elements in order of name. This poses some performance problems: if an element will never actually have its output rendered on screen (for instance, it's inside a `<pl-question-panel>` and the current panel being rendered is the "answer" panel), it's possible that we'll still perform some expensive IPC to try to render a panel that will never be shown! Internally, the architecture provides inconsistent support for nested elements. For instance, if you wanted to use figures in multiple choice answers, they may not be rendered correctly:
-
-```html
-<pl-multiple-choice>
-  <pl-answer correct="true">
-    <pl-figure file-name="fig1.png">
-  </pl-answer>
-  <pl-answer correct="false">
-    <pl-figure file-name="fig2.png">
-  </pl-answer>
-</pl-multiple-choice>
-```
-
-Based on the order that the elements get rendered, the inner `<pl-figure>` elements might not get processed correctly. This is due to behavior in a dependency called [cheerio](https://github.com/cheeriojs/cheerio) that we use to build up the rendered HTML for a question. One benefit of this dependency is that its parser is more forgiving when encountering invalid HTML. However, this also made it more difficult to process the question properly as a tree. Which brings us to...
-
-### The new renderer
-
-The new renderer is rewritten from the ground up to solve the problems inherent in the old renderer. Questions are now properly processed like a tree in a deterministic order. Let's reconsider the example above:
-
-```html
-<pl-multiple-choice answers-name="student">
-  <pl-answer correct="true">
-    <pl-figure file-name="fig1.png"></pl-figure>
-  </pl-answer>
-  <pl-answer correct="false">
-    <pl-figure file-name="fig2.png"></pl-figure>
-  </pl-answer>
-</pl-multiple-choice>
-```
-
-If you imagine this being parsed into an abstract syntax tree, we have a `<pl-multiple-choice>` element with two `<pl-answer>` children elements, each of which has a `<pl-figure>` child element. When rendering this question, we first render the `<pl-multiple-choice>` element, which will produce some hypothetical markup that wraps each answer:
-
-```html
-<div class="foo">
-  <input type="radio" name="student" />
-  <pl-figure file-name="fig1.png"></pl-figure>
-</div>
-<div class="foo">
-  <input type="radio" name="student" />
-  <pl-figure file-name="fig2.png"></pl-figure>
-</div>
-```
-
-We then re-parse this tree and again begin looking for more elements to render. We'll then come across each `<pl-figure>` in turn and they will be rendered, with their markup re-inserted into the tree:
-
-```html
-<div class="foo">
-  <input type="radio" name="student" />
-  <img src="fig1.png" />
-</div>
-<div class="foo">
-  <input type="radio" name="student" />
-  <img src="fig2.png" />
-</div>
-```
-
-And then we're done! This is an obviously more correct way to process questions, and it will soon become the default. However, this change required introducing a new HTML parser that behaves differently in the presence of malformed HTML, such as missing closing tags or self-closing PrairieLearn elements. So, we are making this new renderer opt-in for the time being until we can ensure that everyone's questions have been properly updated.
-
-To opt in to the new renderer, add the following to your `infoCourse.json` file:
-
-```json
-{
-  "options": {
-    "useNewQuestionRenderer": true
-  }
-}
-```
-
-Note that this will apply to all questions, so make sure to check that you've been writing valid HTML.
-
-Example of invalid HTML:
-
-```html
-<p>This is a picture of a bird <pl-figure file-name="bird.html" /></p>
-```
-
-Example of valid HTML:
-
-```html
-<p>This is a picture of a bird</p>
-<pl-figure file-name="bird.html"></pl-figure>
-```
-
 ## Options for grading student answers
 
 For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements.md#pl-number-input-element) and [`pl-string-input`](elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements.md#pl-multiple-choice-element) or [`pl-checkbox`](elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
@@ -493,20 +458,33 @@ For most elements, there are four different ways of auto-grading the student ans
 
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
+If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
 ### Custom grading best practices
 
 Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
 
-Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn.py) provides the following score recomputation functions:
+Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The [`question_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/question_utils.py) file from the `prairielearn` Python library provides the following score recomputation functions:
 
-- `set_weighted_score_data` sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
-- `set_all_or_nothing_score_data` sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
+- [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
+- [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
 
-More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+This can be used like so:
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+```python
+from prairielearn import set_weighted_score_data
+
+def grade(data):
+    # update partial_scores as necessary
+    # ...
+
+    # compute total question score
+    set_weighted_score_data(data)
+```
+
+More detailed information can be found in the docstrings for these functions. If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
+
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
 For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 
@@ -532,11 +510,11 @@ def generate(data):
   data["correct_answers"]["c"] = a - b
 ```
 
-Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn.py) also offers several functions to perform more specialized comparisons:
+Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`grading_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/grading_utils.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
 
-- `is_correct_scalar_ra` compares floats using relative and absolute tolerances.
-- `is_correct_scalar_sf` compares floats up to a specified number of significant figures.
-- `is_correct_scalar_dd` compares floats up to a specified number of digits.
+- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
+- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
+- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
 

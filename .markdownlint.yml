@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/DavidAnson/markdownlint/main/schema/markdownlint-config-schema.json
+MD013: false # Line length
+MD024: false # Multiple headings with the same content
+MD046: false # indented / fenced code blocks (false positives)
+MD026:
+  punctuation: '.,;:'
+MD033: # No inline HTML
+  allowed_elements:
+    - div

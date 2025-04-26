@@ -1,5 +1,9 @@
 import { html } from '@prairielearn/html';
 
+import {
+  RegenerateInstanceAlert,
+  RegenerateInstanceModal,
+} from '../components/AssessmentRegenerate.html.js';
 import { HeadContents } from '../components/HeadContents.html.js';
 import { Navbar } from '../components/Navbar.html.js';
 import { Scorebar } from '../components/Scorebar.html.js';
@@ -11,10 +15,12 @@ export function StudentAssessmentAccess({
   resLocals,
   showClosedScore = true,
   showTimeLimitExpiredModal = false,
+  userCanDeleteAssessmentInstance = false,
 }: {
   resLocals: Record<string, any>;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
+  userCanDeleteAssessmentInstance?: boolean;
 }) {
   const { assessment, assessment_set, assessment_instance, authz_result } = resLocals as {
     assessment: Assessment;
@@ -31,7 +37,11 @@ export function StudentAssessmentAccess({
       <body>
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}
@@ -79,7 +89,7 @@ function AssessmentStatusDescription({
   extraClasses?: string;
 }) {
   return html`
-    <div class="test-suite-assessment-closed-message ${extraClasses}">
+    <div class="${extraClasses}" data-testid="assessment-closed-message">
       ${assessment_instance?.open === false
         ? html`Assessment is <strong>closed</strong> and is no longer available.`
         : authz_result.next_active_time == null
