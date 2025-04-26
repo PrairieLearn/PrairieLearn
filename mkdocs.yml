@@ -178,8 +178,6 @@ markdown_extensions:
 extra_javascript:
   - assets/mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
-  - path: assets/readthedocs-doc-diff.js
-    async: true
 extra_css:
   - assets/extra.css
 
