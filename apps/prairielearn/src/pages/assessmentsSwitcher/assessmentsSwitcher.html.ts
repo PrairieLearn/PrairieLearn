@@ -59,15 +59,15 @@ export function AssessmentSwitcher({
 
               <tr
                 id="row-${row.id}"
-                class="${isActive ? 'bg-primary text-white' : ''}"
+                class="${isActive ? 'text-white' : ''}"
                 style="cursor: pointer;"
                 onclick="window.location.href = '${assessmentUrl}'"
                 aria-label="Link to assessment"
               >
-                <td class="align-middle" style="width: 1%">
+                <td class="align-middle ${isActive ? 'bg-primary' : ''}" style="width: 1%">
                   <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
                 </td>
-                <td class="align-middle">
+                <td class="align-middle ${isActive ? 'bg-primary' : ''}">
                   ${row.sync_errors
                     ? SyncProblemButton({
                         type: 'error',
@@ -89,7 +89,7 @@ export function AssessmentSwitcher({
                     issueAid: row.tid,
                   })}
                 </td>
-                <td class="align-middle ${isActive ? 'text-white' : ''}">
+                <td class="align-middle ${isActive ? 'text-white bg-primary' : ''}">
                   <span>${row.tid}</span>
                 </td>
               </tr>
