@@ -34,6 +34,11 @@ export function AssessmentSwitcher({
     <div class="table-responsive">
       <table class="table table-borderless table-sm table-hover" aria-label="Assessments">
         <tbody>
+          <thead>
+            <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+            <th><span class="visually-hidden">Title</span></th>
+            <th><span class="visually-hidden">AID</span></th>
+          </thead>
           ${assessmentRows.map((row) => {
             const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
                   
@@ -45,7 +50,7 @@ export function AssessmentSwitcher({
             ${row.start_new_assessment_group
               ? html`
                   <tr>
-                    <th colspan="7" scope="row">
+                    <th colspan="3" scope="row">
                       ${assessmentsGroupBy === 'Set'
                         ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                         : AssessmentModuleHeading({
@@ -80,7 +85,7 @@ export function AssessmentSwitcher({
                           output: row.sync_warnings,
                         })
                       : ''}
-                  <span class="${isActive ? 'text-white' : ''}">
+                  <span class="${isActive ? 'text-white' : ''}"> 
                     ${row.title}
                     ${row.group_work
                       ? html` <i class="fas fa-users" aria-hidden="true"></i> `
@@ -92,7 +97,7 @@ export function AssessmentSwitcher({
                     issueAid: row.tid,
                   })}
                 </td>
-                <td class="align-middle ${isActive ? 'text-white' : ''}">${row.tid}</td>
+                <td class="align-middle ${isActive ? 'text-white' : ''}"><span>${row.tid}</span></td>
               </tr>
           `})}
         </tbody>
