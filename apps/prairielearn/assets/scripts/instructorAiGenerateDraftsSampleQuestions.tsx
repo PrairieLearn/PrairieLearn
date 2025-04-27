@@ -41,15 +41,11 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
   const handleClickPrevious = () => {
-    if (selectedQuestionIndex > 0) {
-      setSelectedQuestionIndex((prevIndex) => prevIndex - 1);
-    }
+    setSelectedQuestionIndex((prevIndex) => Math.max(prevIndex - 1, 0));
   };
 
   const handleClickNext = () => {
-    if (selectedQuestionIndex < examplePromptsArray.length - 1) {
-      setSelectedQuestionIndex((prevIndex) => prevIndex + 1);
-    }
+    setSelectedQuestionIndex((prevIndex) => Math.min(prevIndex + 1, examplePromptsArray.length - 1));
   };
 
   return (

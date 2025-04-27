@@ -5,17 +5,23 @@ export type ExamplePrompt = {
   generateVariant: () => SampleQuestionVariant;
 } & (
   | {
-      answerType: 'radio' | 'checkbox';
+    answerType: 'radio' | 'checkbox';
     }
   | {
-      answerType: 'number' | 'string';
-      /* Numeric tolerances for grading number answers */
-      rtol?: number;
-      atol?: number;
-      /* Describes what the question answer is, e.g. dot product or velocity */
-      answerLabel: string;
-      answerUnits?: string;
+    answerType: 'number';
+    /* Numeric tolerances for grading answers */
+    rtol?: number;
+    atol?: number;
+    /* Describes what the question answer is, e.g. dot product or velocity */
+    answerLabel: string;
+    answerUnits?: string;
     }
+  | {
+    answerType: 'string';
+    /* Describes what the question answer is, e.g. dot product or velocity */
+    answerLabel: string;
+    answerUnits?: string;
+  }
 );
 
 export const examplePrompts = {
