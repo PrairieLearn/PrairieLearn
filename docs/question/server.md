@@ -40,41 +40,46 @@ def generate(data):
 
 Question variants are randomized based on the variant seed (`data["variant_seed"]`), and all random generators (`random`, `np.random`, etc.) are seeded with this value.
 
-If you need to generate fake data, you can use the [`faker`](https://faker.readthedocs.io/en/master/) library. This is useful for generating random names, addresses, and other data that looks real but is not.
+!!! tip
 
-```python title="server.py"
-from faker import Faker
-fake = Faker()
+    If you need to generate fake data, you can use the [`faker`](https://faker.readthedocs.io/en/master/) library. This is useful for generating random names, addresses, and other data that looks real but is not.
 
-fake.name()
-# 'Lucy Cechtelar'
-```
+    ```python title="server.py"
+    from faker import Faker
+    fake = Faker()
+
+    fake.name()
+    # 'Lucy Cechtelar'
+    ```
 
 ### Parameter generation
 
-For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
+For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. Displaying rounded numbers to students but using the unrounded version for grading can lead to unexpected results.
 
-```python title="server.py"
-def generate(data):
-    a = 33.33337
-    b = 33.33333
-    data["params"]["a_for_student"] = f'{a:.2f}'
-    data["params"]["b_for_student"] = f'{a:.2f}'
-    # Note how the correct answer is computed with full precision,
-    # but the parameters displayed to students are rounded.
-    data["correct_answers"]["c"] = a - b
-```
+=== "Good"
 
-Instead, the numbers should be rounded at the beginning:
+    ```python title="server.py"
+    def generate(data):
+        # Rounds numbers at the beginning
+        a = np.round(33.33337, 2)
+        b = np.round(33.33333, 2)
+        data["params"]["a_for_student"] = f'{a:.2f}'
+        data["params"]["b_for_student"] = f'{b:.2f}'
+        data["correct_answers"]["c"] = a - b
+    ```
 
-```python title="server.py"
-def generate(data):
-  a = np.round(33.33337, 2)
-  b = np.round(33.33333, 2)
-  data["params"]["a_for_student"] = f'{a:.2f}'
-  data["params"]["b_for_student"] = f'{b:.2f}'
-  data["correct_answers"]["c"] = a - b
-```
+=== "Bad"
+
+    ```python title="server.py"
+    def generate(data):
+        a = 33.33337
+        b = 33.33333
+        data["params"]["a_for_student"] = f'{a:.2f}'
+        data["params"]["b_for_student"] = f'{a:.2f}'
+        # Correct answer is computed with full precision,
+        # but the parameters displayed to students are rounded.
+        data["correct_answers"]["c"] = a - b
+    ```
 
 ## Step 2: `prepare`
 
@@ -86,11 +91,13 @@ Next, the `render(data, html)` function is called to render the question. You ca
 
 ## Step 4: `parse`
 
-When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this question, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
+When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this example, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
 
-- `data["raw_submitted_answers"][NAME]` is the exact raw answer submitted by the student.
-- `data["submitted_answers"][NAME]` is the answer parsed by elements (e.g. strings converted to numbers).
-- `data["format_errors"][NAME]` is the format error message for a named answer.
+The values typically read or modified by a `parse` function are:
+
+- `data["raw_submitted_answers"][NAME]` - the exact raw answer submitted by the student.
+- `data["submitted_answers"][NAME]` - the answer parsed by elements (e.g. strings converted to numbers).
+- `data["format_errors"][NAME]` - the format error message for a named answer.
 
 If there are format errors, then the submission is "invalid" and is not graded. To provide feedback but keep the submission "valid", `data["feedback"][NAME]` can be used instead.
 
@@ -132,10 +139,12 @@ Finally, the `grade(data)` function is called to grade the question. The grade f
 
 This function only runs if `parse()` did not produce format errors, so we can assume all data is valid. All elements will have already graded their answers (if any) before this point.
 
-- `data["partial_scores"][NAME]["score"]` is the individual scores for the named answers (0 to 1).
-- `data["partial_scores"][NAME]["feedback"]` is the feedback for each named answer from the element that graded it.
-- `data["score"]` is the total score for the question (0 to 1).
-- `data["feedback"][NAME]` is the overall question feedback for each named answer.
+The values typically read or modified by a `grade` function are:
+
+- `data["partial_scores"][NAME]["score"]` - the individual scores for the named answers (0 to 1).
+- `data["partial_scores"][NAME]["feedback"]` - the feedback for each named answer from the element that graded it.
+- `data["score"]` - the total score for the question (0 to 1).
+- `data["feedback"][NAME]` - the overall question feedback for each named answer.
 
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
@@ -385,7 +394,7 @@ Requests for files to this URL will be routed to the `file()` function in `serve
 
 We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
 
-??? info "Advanced usage"
+??? info "Advanced dynamic file usage"
 
     The URL for the dynamically generated files is set to `{{options.client_files_question_dynamic_url}}` in the HTML, which is a special URL that PrairieLearn uses to route requests to the `file()` function. You could instead write `question.html` like so:
 
