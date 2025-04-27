@@ -4002,6 +4002,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat"
+  dependencies:
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs@workspace:^, @prairielearn/preact-cjs@workspace:packages/preact-cjs":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    original-preact: "npm:preact@^10.26.5"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/prettier-plugin-sql@workspace:^, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
@@ -13492,6 +13512,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"original-preact@npm:preact@^10.26.5, preact@npm:^10.26.5":
+  version: 10.26.5
+  resolution: "preact@npm:10.26.5"
+  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
+  languageName: node
+  linkType: hard
+
 "os-tmpdir@npm:^1.0.2, os-tmpdir@npm:~1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
@@ -14122,13 +14149,6 @@ __metadata:
     typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
-
-"preact@npm:^10.26.5":
-  version: 10.26.5
-  resolution: "preact@npm:10.26.5"
-  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
-  languageName: node
-  linkType: hard
 
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
