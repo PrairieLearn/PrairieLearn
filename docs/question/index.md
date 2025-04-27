@@ -213,7 +213,7 @@ def generate(data):
 
 Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different ways of auto-grading the student answer:
 
-1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
+1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most circumstances.
 
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
