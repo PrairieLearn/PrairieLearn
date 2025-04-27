@@ -201,9 +201,3 @@ body:has(div.app-container) {
 .app-container.side-nav-enabled.collapsed #side-nav-toggler {
   padding: 0.5rem 1rem;
 }
-
-/* When an assessment navigation dropdown item is pressed, explicitly
-   set the color of its AID text to bs-light to ensure the text is still visible. */
-#assessmentNavigationDropdownContent .dropdown-item:active #aid {
-  color: var(--bs-light) !important;
-}
