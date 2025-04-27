@@ -8,16 +8,6 @@ import FormControlOriginal from 'react-bootstrap/FormControl';
 import InputGroupOriginal from 'react-bootstrap/InputGroup';
 import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
 
-// import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
-// import CardOriginal from 'react-bootstrap/cjs/Card.js';
-// import CardBodyOriginal from 'react-bootstrap/cjs/CardBody.js';
-// import CardFooterOriginal from 'react-bootstrap/cjs/CardFooter.js';
-// import CardHeaderOriginal from 'react-bootstrap/cjs/CardHeader.js';
-// import FormCheckOriginal from 'react-bootstrap/cjs/FormCheck.js';
-// import FormControlOriginal from 'react-bootstrap/cjs/FormControl.js';
-// import InputGroupOriginal from 'react-bootstrap/cjs/InputGroup.js';
-// import InputGroupTextOriginal from 'react-bootstrap/cjs/InputGroupText.js';
-
 const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
 const Card = CardOriginal as unknown as typeof CardOriginal.default;
 const CardBody = CardBodyOriginal as unknown as typeof CardBodyOriginal.default;
@@ -330,7 +320,7 @@ function NumericOrStringInput({
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
-          <span>{answerUnits}</span>
+          <span class={grade !== null ? 'me-2' : ''}>{answerUnits}</span>
           {grade !== null ? <FeedbackBadge grade={grade} /> : <></>}
         </InputGroupText>
       )}
@@ -355,6 +345,7 @@ function CheckboxOrRadioInput({
     <div>
       {options.map((option, index) => (
         <FormCheck
+          id={`check-${index}`}
           key={index}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
