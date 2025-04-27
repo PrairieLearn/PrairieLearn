@@ -71,21 +71,11 @@ export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ClaimSchema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.enum([
-    'LtiResourceLinkRequest',
-    'LtiDeepLinkingRequest',
-  ]),
+export const Lti13ClaimBaseSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z
-    .object({
-      id: z.string(),
-      description: z.string().nullish(),
-      title: z.string().nullish(),
-    })
-    .optional(),
+
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
   iss: z.string(),
@@ -143,7 +133,57 @@ export const Lti13ClaimSchema = z.object({
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
   // My development Canvas sends their own named extension as a top level property
   // "https://www.instructure.com/placement": "course_navigation"
+
+  // https://www.imsglobal.org/spec/lti-ags/v2p0#assignment-and-grade-service-claim
+  'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': z
+    .object({
+      lineitems: z.string().optional(),
+      lineitem: z.string().optional(),
+      scope: z.string().array(),
+    })
+    .optional(),
+
+  // https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
+  'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice': z
+    .object({
+      context_memberships_url: z.string(),
+      service_versions: z.literal('2.0').array(),
+    })
+    .optional(),
 });
+
+// https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
+export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+      id: z.string(),
+      description: z.string().nullish(),
+      title: z.string().nullish(),
+    }),
+  }),
+).passthrough();
+
+// https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
+export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+      deep_link_return_url: z.string(),
+      accept_types: z.string().array(),
+      accept_presentation_document_targets: z.string().array(),
+      accept_multiple: z.boolean().optional(),
+      accept_lineitem: z.boolean().optional(),
+      // There are more
+      data: z.any().optional(),
+    }),
+  }),
+).passthrough();
+
+export const Lti13ClaimSchema = z.discriminatedUnion(
+  'https://purl.imsglobal.org/spec/lti/claim/message_type',
+  [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
+);
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
@@ -155,7 +195,7 @@ export class Lti13Claim {
 
   constructor(req: Request) {
     try {
-      this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
+      this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
     } catch (err) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
