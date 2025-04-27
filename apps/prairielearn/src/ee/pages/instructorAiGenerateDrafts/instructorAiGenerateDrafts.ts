@@ -46,7 +46,7 @@ router.get(
       InstructorAIGenerateDrafts({
         resLocals: res.locals,
         drafts,
-        // If there are no AI question generation drafts, the sample question is initially open 
+        // If there are no AI question generation drafts, the sample question is initially open
         sampleQuestionOpen: drafts.length === 0,
       }),
     );

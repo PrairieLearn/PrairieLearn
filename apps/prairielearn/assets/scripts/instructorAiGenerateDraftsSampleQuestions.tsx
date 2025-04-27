@@ -45,7 +45,9 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   };
 
   const handleClickNext = () => {
-    setSelectedQuestionIndex((prevIndex) => Math.min(prevIndex + 1, examplePromptsArray.length - 1));
+    setSelectedQuestionIndex((prevIndex) =>
+      Math.min(prevIndex + 1, examplePromptsArray.length - 1),
+    );
   };
 
   return (
