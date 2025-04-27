@@ -13,13 +13,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import type { AssessmentRow, AssessmentStatsRow } from '../../lib/assessment.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  type AssessmentModule,
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  type AssessmentSet,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
+import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
 

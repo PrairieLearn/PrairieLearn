@@ -19,7 +19,7 @@ export function AssessmentNavigation({
   assessment: Assessment;
 }) {
   return html`
-    <button 
+    <button
       type="button"
       class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center mt-2 ms-3"
       style="max-width: 100%;"
@@ -40,23 +40,22 @@ export function AssessmentNavigation({
   `;
 }
 
-
 function AssessmentNavigationModal() {
   return Modal({
-      id: 'assessmentNavigationModal',
-      title: 'Select assessment',
-      formMethod: 'POST',
-      body: html`
-        <div
-          id="assessmentNavigationModalContent"
-          class="overflow-auto d-flex justify-content-center align-items-center"
-        >
-          <div style="width: 30px; height: 30px;">
-            <div class="spinner-border spinner-border-sm" role="status">
-              <span class="visually-hidden">Loading assessments...</span>
-            </div>
+    id: 'assessmentNavigationModal',
+    title: 'Select assessment',
+    formMethod: 'POST',
+    body: html`
+      <div
+        id="assessmentNavigationModalContent"
+        class="overflow-auto d-flex justify-content-center align-items-center"
+      >
+        <div style="width: 30px; height: 30px;">
+          <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading assessments...</span>
           </div>
         </div>
-      `
-    });
+      </div>
+    `,
+  });
 }
