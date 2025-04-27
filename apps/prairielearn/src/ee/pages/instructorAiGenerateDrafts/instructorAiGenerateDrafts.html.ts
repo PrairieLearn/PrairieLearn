@@ -245,6 +245,18 @@ export function GenerationFailure({
   `.toString();
 }
 
+export function RateLimitExceeded(): string {
+  // TODO: Improve copy and styling
+  return html`
+    <div id="generation-results">
+      <h3>Query Limit Exceeded</h3>
+
+      <p>Too many requests in one hour. Try again later.</p>
+    </div>
+  `.toString();
+
+}
+
 function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'deleteModal',

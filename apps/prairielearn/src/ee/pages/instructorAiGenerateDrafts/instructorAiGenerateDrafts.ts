@@ -2,6 +2,7 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
+import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
@@ -14,10 +15,19 @@ import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
+
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+// TODO: Move this elsewhere
+const USAGE_LIMIT = 2;
+cache.init({
+  type: 'memory',
+  keyPrefix: 'rate-limiting'
+});
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
@@ -77,6 +87,16 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
+      const cacheKey = `${res.locals.user.user_id}-usage`;
+      const usageInLast1h = await cache.get(cacheKey) ?? 0;
+
+      if (usageInLast1h > USAGE_LIMIT) {
+        res.send(
+          RateLimitExceeded()
+        );
+        return;
+      }
+
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -85,6 +105,9 @@ router.post(
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
+
+      console.log('usageInLast1h', usageInLast1h);
+      cache.set(cacheKey, usageInLast1h + 1, 1000 * 3600);
 
       if (result.htmlResult) {
         res.set({
@@ -107,6 +130,7 @@ router.post(
       );
 
       const client = getCourseFilesClient();
+
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
