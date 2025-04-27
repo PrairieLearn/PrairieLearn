@@ -70,7 +70,7 @@ You can use the [`pl-submission-panel`](../elements.md#pl-submission-panel-eleme
 
 By default, the correct answers are shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The FAQ item ["How can I hide the correct answer when students see their grading results?"](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) describes some other techniques for hiding the correct answer.
 
-You can use the `<pl-answer-panel>` element to show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
+If you grade a question using a [custom grading function](./server.md#step-5-grade) or an [external grader](../externalGrading.md), it is recommended to set the correct answer so that students can see it in the answer panel. If there are multiple correct answers, you should add a note within the [`pl-answer-panel`](../elements.md#pl-answer-panel-element) element that any correct answer would be accepted, and the displayed answer is only an example. You can also show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
 
 ## Mustache templates
 

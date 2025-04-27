@@ -177,7 +177,7 @@ The `question.html` is a template used to render the question to the student. A 
 The `question.html` is regular HTML, with a few special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
-2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md).
+2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
 
    :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
@@ -211,18 +211,14 @@ def generate(data):
 
 ## Grading student answers
 
-!!! note
-
-    This section provides a summary of the [question template documentation](template.md) and the [server.py documentation](server.md). It is recommended to read those documents first for more context.
-
-For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
+Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different ways of auto-grading the student answer:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
-3. Write a [custom `grade(data)`](#custom-generation-and-grading-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
+3. Write a [custom grading function](./server.md#step-5-grade) in `server.py` that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
 4. Write an [external grader](../externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
+If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. If you grade a question using a custom grading function (option 3) or an external grader (option 4), it is recommended to set the correct answer so that students can see it in the answer panel. More details about providing feedback on student answers can be found in the `"answer"` panel section of the [question template documentation](template.md#answer-panel).
