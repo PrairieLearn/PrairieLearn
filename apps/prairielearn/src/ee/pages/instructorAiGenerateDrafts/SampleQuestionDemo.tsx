@@ -35,7 +35,7 @@ import {
   type ExamplePrompt,
   type SampleQuestionVariant,
   type VariantOption,
-  examplePrompts,
+  type examplePrompts,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
@@ -324,6 +324,7 @@ function NumericOrStringInput({
         value={userInputResponse}
         type="text"
         aria-label="Sample question response"
+        aria-describedby="answer-label"
         placeholder={placeholder}
         onChange={(e) => onChange(e.currentTarget.value)}
       />
