@@ -113,7 +113,7 @@ def parse(data):
 
     In general, each function of the question generation process runs *after* all elements in the question. For example, the `parse()` function in `server.py` runs after all elements have run their `parse()` functions. This is important to remember when using the `data` dictionary, as it will contain the results *after* the elements have finished processing.
 
-Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
+Although questions with custom grading may not rely on the full grading functionality from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
 
 !!! note
 
