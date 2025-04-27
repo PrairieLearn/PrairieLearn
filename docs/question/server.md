@@ -78,7 +78,7 @@ def generate(data):
 
 ## Step 2: `prepare`
 
-Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `generate()`. This is typically done to do any sort of final post-processing, but is not commonly used.
+Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `prepare()`. This is typically done to do any sort of final post-processing, but is not commonly used.
 
 ## Step 3: `render`
 
