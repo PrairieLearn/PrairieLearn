@@ -13,10 +13,11 @@ import { config } from '../lib/config.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { type GroupRoleJsonInput } from '../schemas/index.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { type GroupRole, syncCourseData } from './sync/util.js';
+import { syncCourseData } from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -1040,7 +1041,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 });
 
-const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRole[]) => {
+const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJsonInput[]) => {
   const infoAssessmentPath = path.join(
     courseDir,
     'courseInstances',

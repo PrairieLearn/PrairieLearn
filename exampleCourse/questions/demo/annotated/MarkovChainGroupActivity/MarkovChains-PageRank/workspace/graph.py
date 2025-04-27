@@ -67,12 +67,10 @@ def draw_matrix(
     directed=None,
     layout="dot",
 ):
-    """
-    Attempts to automatically determine the type of matrix by the type.
+    """Attempts to automatically determine the type of matrix by the type.
     A square matrix is interpreted to be an adjacency/stochastic matrix, while a non-square
     matrix is a edge-incidence matrix.
     """
-
     mat = mat.T
 
     if len(mat.shape) != 2:
