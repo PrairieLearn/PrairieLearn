@@ -101,7 +101,7 @@ def parse(data):
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 ```
 
-We could have also modified the submitted answers directly, if we need to process the inputs further. For example, if we wanted to ensure that the answer is always positive, we could do this:
+We could have also modified the submitted answers directly, if we need to process the inputs further. For example, if we wanted to accept negative answers as equivalent to their absolute value, we could do this instead:
 
 ```python title="server.py"
 def parse(data):
