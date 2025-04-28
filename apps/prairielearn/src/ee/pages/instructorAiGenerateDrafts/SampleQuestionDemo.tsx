@@ -357,7 +357,7 @@ function CheckboxOrRadioInput({
           <FeedbackBadge grade={grade} />
         </div>
       ) : (
-        <></>
+        null
       )}
     </div>
   );
