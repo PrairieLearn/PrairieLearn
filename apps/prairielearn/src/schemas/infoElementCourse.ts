@@ -45,32 +45,33 @@ const DependencyJsonSchema = z
   .strict()
   .describe("The element's client-side dependencies.");
 
+const DynamicDependencyJsonSchema = z
+  .object({
+    comment: CommentJsonSchema.optional(),
+    nodeModulesScripts: z
+      .record(z.string())
+      .describe('The scripts required by this element from /node_modules as an importmap.')
+      .optional(),
+    clientFilesCourseScripts: z
+      .record(z.string())
+      .describe('The scripts required by this element from clientFilesCourse as an importmap.')
+      .optional(),
+    elementScripts: z
+      .record(z.string())
+      .describe(
+        "The scripts required by this element from the element's directory as an importmap.",
+      )
+      .optional(),
+  })
+  .strict()
+  .describe("The element's client-side dynamic dependencies.");
+
 export const ElementCourseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     controller: z.string().describe("The name of the element's controller file."),
     dependencies: DependencyJsonSchema.optional(),
-    dynamicDependencies: z
-      .object({
-        comment: CommentJsonSchema.optional(),
-        nodeModulesScripts: z
-          .record(z.string())
-          .describe('The scripts required by this element from /node_modules as an importmap.')
-          .optional(),
-        clientFilesCourseScripts: z
-          .record(z.string())
-          .describe('The styles required by this element from clientFilesCourse as an importmap.')
-          .optional(),
-        elementScripts: z
-          .record(z.string())
-          .describe(
-            "The scripts required by this element from the element's directory as an importmap.",
-          )
-          .optional(),
-      })
-      .strict()
-      .describe("The element's client-side dynamic dependencies.")
-      .optional(),
+    dynamicDependencies: DynamicDependencyJsonSchema.optional(),
   })
   .strict()
   .describe('Info files for v3 elements.');
