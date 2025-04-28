@@ -374,7 +374,7 @@ export function InstructorQuestionSettings({
                   <small class="form-text text-muted">
                     Command line arguments to pass to the Docker container. Multiple arguments
                     should be separated by spaces and escaped as necessary using the same format as
-                    a typcial shell.
+                    a typical shell.
                   </small>
                 </div>
                 <div class="mb-3 form-check">
