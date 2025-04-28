@@ -329,8 +329,8 @@ export function InstructorQuestionSettings({
                     ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    The Docker image that will be used to serve this question. Should be specified
-                    as Dockerhub image.
+                    The Docker image that will be used to serve this workspace. Only images from
+                    the Dockerhub registry are supported.
                   </small>
                 </div>
                 <div class="mb-3">
