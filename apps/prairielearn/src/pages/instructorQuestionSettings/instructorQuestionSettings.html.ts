@@ -436,8 +436,7 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                       : '{}'}</textarea
                   >
                   <small class="form-text text-muted">
-                    Environment variables to set inside the workspace container. Variables should be
-                    set in proper JSON format (e.g. {"key":"value"}).
+                    Environment variables to set inside the workspace container. Variables must be specified as a JSON object (e.g. <code>{"key":"value"}</code>).
                   </small>
                 </div>
               </div>
