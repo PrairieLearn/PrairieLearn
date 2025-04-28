@@ -329,8 +329,8 @@ export function InstructorQuestionSettings({
                     ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    The Docker image that will be used to serve this workspace. Only images from
-                    the Dockerhub registry are supported.
+                    The Docker image that will be used to serve this workspace. Only images from the
+                    Dockerhub registry are supported.
                   </small>
                 </div>
                 <div class="mb-3">
@@ -363,16 +363,18 @@ export function InstructorQuestionSettings({
                 </div>
                 <div class="mb-3">
                   <label class="form-label" for="workspace_args">Arguments</label>
-                  <textarea
+                  <input
                     class="form-control"
+                    type="text"
                     id="workspace_args"
                     name="workspace_args"
                     ${canEdit ? '' : 'disabled'}
-                  >
-${resLocals.question.workspace_args}</textarea
-                  >
+                    value="${resLocals.question.workspace_args}"
+                  />
                   <small class="form-text text-muted">
-                    Command line arguments to pass to the Docker container.
+                    Command line arguments to pass to the Docker container. Mulltiple arguments
+                    should be separated by spaces and escaped as necessary using the same format as
+                    a typcial shell.
                   </small>
                 </div>
                 <div class="mb-3 form-check">
@@ -436,7 +438,8 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                       : '{}'}</textarea
                   >
                   <small class="form-text text-muted">
-                    Environment variables to set inside the workspace container. Variables must be specified as a JSON object (e.g. <code>{"key":"value"}</code>).
+                    Environment variables to set inside the workspace container. Variables must be
+                    specified as a JSON object (e.g. <code>{"key":"value"}</code>).
                   </small>
                 </div>
               </div>

@@ -57,6 +57,8 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
       if (valueHasChanged[element] === true && form.checkValidity()) {
         saveButton.removeAttribute('disabled');
         return;
+      } else {
+        (document.getElementById(element) as HTMLInputElement)?.reportValidity();
       }
     }
     saveButton.setAttribute('disabled', 'true');

@@ -125,7 +125,7 @@ router.post(
         );
       }
 
-      const validatedReqBody = z
+      const body = z
         .object({
           __action: z.string(),
           __csrf_token: z.string(),
@@ -152,76 +152,78 @@ router.post(
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
-      const origHash = validatedReqBody.orig_hash;
-      questionInfo.title = validatedReqBody.title;
-      questionInfo.topic = validatedReqBody.topic;
+      const origHash = body.orig_hash;
+      questionInfo.title = body.title;
+      questionInfo.topic = body.topic;
       questionInfo.tags = run(() => {
         // If no tags are provided, remove the entire property.
-        if (!validatedReqBody.tags) return undefined;
+        if (!body.tags) return undefined;
 
         // Handle multiple and single tags.
-        if (Array.isArray(validatedReqBody.tags)) return validatedReqBody.tags;
-        return [validatedReqBody.tags];
+        if (Array.isArray(body.tags)) return body.tags;
+        return [body.tags];
       });
 
       questionInfo.gradingMethod = propertyValueWithDefault(
         questionInfo.gradingMethod,
-        validatedReqBody.grading_method,
+        body.grading_method,
         'Internal',
       );
 
       questionInfo.singleVariant = propertyValueWithDefault(
         questionInfo.singleVariant,
-        validatedReqBody.single_variant === 'on',
+        body.single_variant === 'on',
         false,
       );
 
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
-        validatedReqBody.show_correct_answer === 'on',
+        body.show_correct_answer === 'on',
         true,
       );
 
       if (
-        validatedReqBody.workspace_image ||
-        validatedReqBody.workspace_port ||
-        validatedReqBody.workspace_home ||
-        validatedReqBody.workspace_args ||
-        validatedReqBody.workspace_rewrite_url ||
-        validatedReqBody.workspace_graded_files ||
-        validatedReqBody.workspace_enable_networking ||
-        validatedReqBody.workspace_environment
+        body.workspace_image ||
+        body.workspace_port ||
+        body.workspace_home ||
+        body.workspace_args ||
+        body.workspace_rewrite_url ||
+        body.workspace_graded_files ||
+        body.workspace_enable_networking ||
+        body.workspace_environment
       ) {
         const workspaceOptions = {
           comment: questionInfo.workspaceOptions?.comment ?? undefined,
           image: propertyValueWithDefault(
             questionInfo.workspaceOptions?.image,
-            validatedReqBody.workspace_image,
+            body.workspace_image,
             '',
           ),
           port: propertyValueWithDefault(
             questionInfo.workspaceOptions?.port,
-            validatedReqBody.workspace_port,
+            body.workspace_port,
             0,
           ),
           home: propertyValueWithDefault(
             questionInfo.workspaceOptions?.home,
-            validatedReqBody.workspace_home,
+            body.workspace_home,
             '',
           ),
           args: propertyValueWithDefault(
             questionInfo.workspaceOptions?.args,
-            shlex.split(validatedReqBody.workspace_args?.replace(/\r\n/g, ' ') || ''),
+            body.workspace_args?.includes(' ')
+              ? shlex.split(body.workspace_args || '')
+              : body.workspace_args,
             (v) => !v || v.length === 0,
           ),
           rewriteUrl: propertyValueWithDefault(
             questionInfo.workspaceOptions?.rewriteUrl,
-            validatedReqBody.workspace_rewrite_url === 'on',
+            body.workspace_rewrite_url === 'on',
             false,
           ),
           gradedFiles: propertyValueWithDefault(
             questionInfo.workspaceOptions?.gradedFiles,
-            validatedReqBody.workspace_graded_files
+            body.workspace_graded_files
               ?.split(',')
               .map((s) => s.trim())
               .filter((s) => s !== '') || [],
@@ -229,12 +231,12 @@ router.post(
           ),
           enableNetworking: propertyValueWithDefault(
             questionInfo.workspaceOptions?.enableNetworking,
-            validatedReqBody.workspace_enable_networking === 'on',
+            body.workspace_enable_networking === 'on',
             false,
           ),
           environment: propertyValueWithDefault(
             questionInfo.workspaceOptions?.environment,
-            JSON.parse(validatedReqBody.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+            JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
             (val) => !val || Object.keys(val).length === 0,
           ),
         };

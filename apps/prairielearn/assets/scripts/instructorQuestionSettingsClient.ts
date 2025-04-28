@@ -81,11 +81,15 @@ onDocumentReady(() => {
       return;
     }
     try {
-      JSON.parse((e.target as HTMLInputElement).value);
-      workspaceEnvironmentInput?.setCustomValidity('');
+      const value = JSON.parse((e.target as HTMLInputElement).value);
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
+      } else {
+        workspaceEnvironmentInput?.setCustomValidity('');
+      }
       return;
     } catch {
-      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON format');
+      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
     }
   });
 
