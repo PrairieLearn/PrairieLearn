@@ -47,8 +47,6 @@ export function SampleQuestionDemo({
   // Used if the question has a checkbox or multiple choice response
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(() => new Set<string>());
 
-  const [placeholder, setPlaceholder] = useState('');
-
   const [grade, setGrade] = useState<number | null>(null);
 
   const handleSelectOption = (option: string) => {
@@ -68,10 +66,6 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleClearSelectedOptions = () => {
-    setSelectedOptions(new Set<string>());
-  };
-
   const handleGenerateNewVariant = async () => {
     // Clear the grade shown to the user
     setGrade(null);
@@ -80,25 +74,11 @@ export function SampleQuestionDemo({
     setUserInputResponse('');
 
     // Clear the user's selected options
-    handleClearSelectedOptions();
+    setSelectedOptions(new Set<string>());
 
     // Generate a new question variant
     const questionVariant = generateSampleQuestionVariant(promptId);
     setVariant(questionVariant);
-
-    let placeholderText: string = questionVariant.answerType;
-
-    if (prompt.answerType === 'number') {
-      // Add relative and absolute tolerance if available
-      if (prompt.rtol && prompt.atol) {
-        placeholderText = `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
-      } else if (prompt.rtol) {
-        placeholderText = `${placeholderText} (rtol=${prompt.rtol})`;
-      } else if (prompt.atol) {
-        placeholderText = `${placeholderText} (atol=${prompt.atol})`;
-      }
-    }
-    setPlaceholder(placeholderText);
   };
 
   // When a new variant is loaded, typeset the MathJax content.
@@ -177,19 +157,35 @@ export function SampleQuestionDemo({
   }, [promptId]);
 
   // The correct answer to the problem, displayed to the user
-  const answerText = useMemo(() => {
-    if (!variant) {
-      return '';
-    }
-    if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
-      return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
-    }
-    if (variant.answerType === 'number') {
-      // Round the answer to 4 decimal places
-      return Math.round(variant.correctAnswer * 1e4) / 1e4;
-    }
-    return variant.correctAnswer;
-  }, [variant]);
+  const answerText = variant
+    ? run(() => {
+        if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
+          return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
+        }
+        if (variant.answerType === 'number') {
+          // Round the answer to 4 decimal places
+          return Math.round(variant.correctAnswer * 1e4) / 1e4;
+        }
+        return variant.correctAnswer;
+      })
+    : '';
+
+  const placeholder = variant
+    ? run(() => {
+        const placeholderText: string = variant.answerType;
+        if (prompt.answerType === 'number') {
+          // Add relative and absolute tolerance if available
+          if (prompt.rtol && prompt.atol) {
+            return `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
+          } else if (prompt.rtol) {
+            return `${placeholderText} (rtol=${prompt.rtol})`;
+          } else if (prompt.atol) {
+            return `${placeholderText} (atol=${prompt.atol})`;
+          }
+        }
+        return placeholderText;
+      })
+    : '';
 
   return (
     <Card className="shadow">
@@ -205,30 +201,32 @@ export function SampleQuestionDemo({
             // Split the question into different parts: regular text, MathJax, and bold text.
             // MathJax is delimited by $$...$$ or $...$
             // Bold text is delimited by **...**.
-            variant ? (
-              variant.question
-                .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-                .filter(Boolean)
-                .map((part, index) => {
-                  // Bold text
-                  if (part.startsWith('**') && part.endsWith('**')) {
-                    return <strong key={`${index}-${part}`}>{part.slice(2, -2)}</strong>;
-                  }
+            variant
+              ? variant.question
+                  .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+                  .filter(Boolean)
+                  .map((part, index) => {
+                    // Bold text
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                      return (
+                        <strong key={`bold-${index}-${part.slice(2, -2)}`}>
+                          {part.slice(2, -2)}
+                        </strong>
+                      );
+                    }
 
-                  // MathJax
-                  if (
-                    (part.startsWith('$$') && part.endsWith('$$')) ||
-                    (part.startsWith('$') && part.endsWith('$'))
-                  ) {
-                    return <span key={`${index}-${part}`}>{part}</span>;
-                  }
+                    // MathJax
+                    if (
+                      (part.startsWith('$$') && part.endsWith('$$')) ||
+                      (part.startsWith('$') && part.endsWith('$'))
+                    ) {
+                      return <span key={`math-${index}-${part}`}>{part}</span>;
+                    }
 
-                  // Regular text
-                  return <span key={`${index}-${part}`}>{part}</span>;
-                })
-            ) : (
-              null
-            )
+                    // Regular text
+                    return <span key={`text-${index}-${part.substring(0, 10)}`}>{part}</span>;
+                  })
+              : null
           }
         </p>
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
@@ -253,9 +251,7 @@ export function SampleQuestionDemo({
       </CardBody>
       <CardFooter>
         <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
-          <p className="my-0">
-            <i>Answer: {answerText}</i>
-          </p>
+          <i>Answer: {answerText}</i>
           <div className="flex-grow-1"></div>
           <div className="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
@@ -305,10 +301,11 @@ function NumericOrStringInput({
 }) {
   return (
     <InputGroup>
-      <InputGroupText key={answerLabel} id="answer-label">
+      <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
         {answerLabel}
       </InputGroupText>
       <FormControl
+        id="sample-question-resposne"
         value={userInputResponse}
         type="text"
         aria-label="Sample question response"
@@ -356,9 +353,7 @@ function CheckboxOrRadioInput({
         <div className="mt-2">
           <FeedbackBadge grade={grade} />
         </div>
-      ) : (
-        null
-      )}
+      ) : null}
     </div>
   );
 }
