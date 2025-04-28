@@ -211,9 +211,7 @@ router.post(
           ),
           args: propertyValueWithDefault(
             questionInfo.workspaceOptions?.args,
-            body.workspace_args?.includes(' ')
-              ? shlex.split(body.workspace_args || '')
-              : body.workspace_args,
+            shlex.split(body.workspace_args || ''),
             (v) => !v || v.length === 0,
           ),
           rewriteUrl: propertyValueWithDefault(
