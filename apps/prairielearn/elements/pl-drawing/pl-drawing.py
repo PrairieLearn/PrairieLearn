@@ -10,7 +10,7 @@ import lxml.html
 import prairielearn as pl
 
 
-def union_drawing_items(e1, e2):
+def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[dict]:
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
 
     if e1 is not None:
@@ -41,7 +41,7 @@ def load_extensions(data: pl.QuestionData) -> None:
         elements.register_extension(name, ext, data)
 
 
-def check_attributes_rec(element: lxml.html.HtmlElement):
+def check_attributes_rec(element: lxml.html.HtmlElement) -> None:
     # Recursively check attributes for a tree of elements
 
     name = element.tag
