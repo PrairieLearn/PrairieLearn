@@ -35,7 +35,7 @@ def union_drawing_items(e1, e2):
     return newobj
 
 
-def load_extensions(data: pl.QuestionData):
+def load_extensions(data: pl.QuestionData) -> None:
     extensions = pl.load_all_extensions(data)
     for name, ext in extensions.items():
         elements.register_extension(name, ext, data)
