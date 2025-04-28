@@ -58,7 +58,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank", "allow-blank", "weight", "sort", "aria-labelledby"],
+        optional_attribs=["blank", "allow-blank", "weight", "sort", "label"],
     )
 
     if pl.get_boolean_attrib(
