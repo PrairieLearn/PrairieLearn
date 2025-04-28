@@ -372,7 +372,7 @@ export function InstructorQuestionSettings({
                     value="${resLocals.question.workspace_args}"
                   />
                   <small class="form-text text-muted">
-                    Command line arguments to pass to the Docker container. Mulltiple arguments
+                    Command line arguments to pass to the Docker container. Multiple arguments
                     should be separated by spaces and escaped as necessary using the same format as
                     a typcial shell.
                   </small>
