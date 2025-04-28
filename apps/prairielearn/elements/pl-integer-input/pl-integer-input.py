@@ -161,13 +161,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 if isinstance(a_sub, str):
                     # The representation of the submitted_answer is always
                     # stored in base 10 by the parse function
-                    a_sub_parsed = int(a_sub)
-                else:
-                    a_sub_parsed = pl.from_json(a_sub)
+                    a_sub = int(a_sub)
+
                 a_sub_display = (
-                    np.base_repr(a_sub_parsed, base)
+                    np.base_repr(a_sub, base)
                     if base > 0
-                    else data["raw_submitted_answers"].get(name, str(a_sub_parsed))
+                    else data["raw_submitted_answers"].get(name, str(a_sub))
                 )
             except ValueError:
                 # If the submitted answer is not a valid integer, use the raw

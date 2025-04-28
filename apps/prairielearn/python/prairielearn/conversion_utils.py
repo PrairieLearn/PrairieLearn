@@ -127,6 +127,7 @@ def to_json(
     *,
     df_encoding_version: Literal[1, 2] = 1,
     np_encoding_version: Literal[1, 2] = 1,
+    strict: bool = False,
 ) -> Any | _JSONSerializedType:
     """
     Convert a value to a JSON serializable format.
@@ -171,6 +172,7 @@ def to_json(
 
     Raises:
         ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
+        TypeError: If `strict` is True and the value cannot be serialized.
     """
     if np_encoding_version not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
@@ -246,8 +248,15 @@ def to_json(
             )
     elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
-    else:
-        return v
+
+    # This allows for `to_json` to be used with `json.dumps`.
+    # The `default` argument of `json.dumps` is a function that is called
+    # called for objects that can't otherwise be serialized.
+    # It should return a JSON encodable version of the object or raise a TypeError.
+    if strict:
+        raise TypeError(f"Cannot serialize object of {type(v)}")
+
+    return v
 
 
 def _has_value_fields(v: _JSONSerializedType, fields: list[str]) -> bool:

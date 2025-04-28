@@ -31,6 +31,7 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any
 
+import prairielearn as pl
 import prairielearn.internal.zygote_utils as zu
 from prairielearn.internal import question_phases
 
@@ -157,7 +158,9 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
 def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> str:
     try:
         zu.assert_all_integers_within_limits(obj)
-        return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
+        return json.dumps(
+            obj, sort_keys=sort_keys, allow_nan=allow_nan, default=pl.to_json
+        )
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
@@ -192,7 +195,9 @@ def worker_loop() -> None:
 
             # Unpack the input line as JSON. If that fails, log the line for debugging.
             try:
-                inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+                inp = json.loads(
+                    json_inp, parse_int=zu.safe_parse_int, object_hook=pl.from_json
+                )
             except json.JSONDecodeError as exc:
                 raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
 
