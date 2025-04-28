@@ -52,7 +52,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
 
   return (
     <Accordion className="mb-3" defaultActiveKey={startOpen ? '0' : undefined}>
-      <AccordionItem eventKey={'0'}>
+      <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
         <AccordionBody>
           <SampleQuestionSelector
