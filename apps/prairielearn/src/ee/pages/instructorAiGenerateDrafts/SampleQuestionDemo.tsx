@@ -227,7 +227,7 @@ export function SampleQuestionDemo({
                   return <span key={`${index}-${part}`}>{part}</span>;
                 })
             ) : (
-              <></>
+              null
             )
           }
         </p>
@@ -319,7 +319,7 @@ function NumericOrStringInput({
       {(answerUnits || grade !== null) && (
         <InputGroupText>
           <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>
-          {grade !== null ? <FeedbackBadge grade={grade} /> : <></>}
+          {grade !== null ? <FeedbackBadge grade={grade} /> : null}
         </InputGroupText>
       )}
     </InputGroup>
