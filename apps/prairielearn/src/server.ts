@@ -9,8 +9,8 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
+import * as url from 'node:url';
 import * as util from 'node:util';
-import * as url from 'url';
 
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -565,6 +565,9 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
+    await enterpriseOnly(
+      async () => (await import('./ee/middlewares/authzRequireLinkedLtiUser.js')).default,
+    ),
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
@@ -677,15 +680,15 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/cacheableElementExtensions/:cachebuster',
+    '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/cacheableElementExtensions/:cachebuster',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/elementExtensions',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
   app.use(
-    '/pl/course/:course_id(\\d+)/cacheableElementExtensions/:cachebuster',
+    '/pl/course/:course_id(\\d+)/elementExtensions',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
 

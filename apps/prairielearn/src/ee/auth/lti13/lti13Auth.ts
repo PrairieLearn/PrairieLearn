@@ -10,10 +10,11 @@ import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import * as authnLib from '../../../lib/authn.js';
 import { setCookie } from '../../../lib/cookie.js';
+import { type User, UserSchema } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin } from '../../../models/user.js';
@@ -124,6 +125,46 @@ router.post(
         `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
       );
     }
+
+    // ADDED: Pre-authentication validation: Check for existing user and identifier mismatches.
+    let existingUser: User | null = null;
+    if (uid) {
+      existingUser = await queryOptionalRow(
+        sql.select_user_by_uid_and_institution,
+        { uid, institution_id: lti13_instance.institution_id },
+        UserSchema,
+      );
+    } else if (uin) {
+      // If UID wasn't provided/used for lookup, try UIN.
+      existingUser = await selectOptionalUserByUin({
+        uin,
+        institution_id: lti13_instance.institution_id,
+      });
+    }
+
+    if (existingUser) {
+      const uidFromClaim = lti13_instance.uid_attribute
+        ? ltiClaim.get(lti13_instance.uid_attribute)
+        : null;
+      const uinFromClaim = lti13_instance.uin_attribute
+        ? ltiClaim.get(lti13_instance.uin_attribute)
+        : null;
+
+      if (uidFromClaim && existingUser.uid && uidFromClaim !== existingUser.uid) {
+        throw new HttpStatusError(
+          403,
+          `LTI login failed: The UID from the LTI provider ('${uidFromClaim}') does not match the existing UID for your PrairieLearn account ('${existingUser.uid}'). Please contact support.`,
+        );
+      }
+
+      if (uinFromClaim && existingUser.uin && uinFromClaim !== existingUser.uin) {
+        throw new HttpStatusError(
+          403,
+          `LTI login failed: The UIN from the LTI provider ('${uinFromClaim}') does not match the existing UIN for your PrairieLearn account ('${existingUser.uin}'). Please contact support.`,
+        );
+      }
+    }
+    // END ADDED VALIDATION
 
     // Name checking, not an error
     // LTI 1.3 spec defines sharing name as a MAY https://www.imsglobal.org/spec/lti/v1p3#users-and-roles

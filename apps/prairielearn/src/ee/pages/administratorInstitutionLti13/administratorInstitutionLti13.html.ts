@@ -345,7 +345,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">Email attribute</label>
+          <label class="form-label" for="email_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"
@@ -357,6 +357,24 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="emailAttributeHelp" class="form-text text-muted">
             This attribute should contain the email address of the user. If present, PrairieLearn
             will use this to send email to the user.
+          </small>
+        </div>
+
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            name="require_linked_lti_user"
+            id="require_linked_lti_user"
+            value="true"
+            ${instance.require_linked_lti_user ? 'checked' : ''}
+          />
+          <label class="form-check-label" for="require_linked_lti_user">
+            Require LTI authentication
+          </label>
+          <small id="requireLtiUserHelp" class="form-text text-muted d-block">
+            When enabled, users who authenticate via SAML without a linked LTI user will be required
+            to access the course through the LMS first.
           </small>
         </div>
 
