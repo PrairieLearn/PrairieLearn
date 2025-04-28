@@ -44,7 +44,7 @@ Text in `question.html` can be set to only display in the "question" panel by wr
 
 ### `"submission"` panel
 
-By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"]`) is rendered when an element renders in the "submission" panel. Feedback given by the question (`data["feedback"][NAME]`) needs to be shown using `{{feedback.NAME}}`.
+By default, feedback given by elements (`data["partial_scores"][NAME]["feedback"]`) is rendered when an element renders in the "submission" panel. Feedback given by the question (`data["feedback"][NAME]`) needs to be shown using `{{feedback.NAME}}`. More details about providing feedback can be found on the [`server.py` page](server.md#providing-feedback).
 
 You can use the [`pl-submission-panel`](../elements.md#pl-submission-panel-element) to show text only in the "submission" panel. For example:
 
