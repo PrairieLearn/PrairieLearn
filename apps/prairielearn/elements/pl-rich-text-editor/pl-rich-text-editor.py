@@ -111,7 +111,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if data["ai_grading"]:
         if data["panel"] != "submission" or not submitted_file:
-            return ""
+            return f'<div data-file-name="{file_name}"></div>'
 
         contents = submitted_file.get("contents", "")
         contents = base64.b64decode(contents).decode("utf-8")
