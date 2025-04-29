@@ -684,15 +684,15 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/elementFiles/elementFiles.js')).default(),
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions',
+    '/pl/course_instance/:course_instance_id(\\d+)/elementExtensions/:cachebuster',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/elementExtensions',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/elementExtensions/:cachebuster',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
   app.use(
-    '/pl/course/:course_id(\\d+)/elementExtensions',
+    '/pl/course/:course_id(\\d+)/elementExtensions/:cachebuster',
     (await import('./pages/elementExtensionFiles/elementExtensionFiles.js')).default,
   );
 
