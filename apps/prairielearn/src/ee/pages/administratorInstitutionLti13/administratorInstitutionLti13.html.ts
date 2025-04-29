@@ -373,8 +373,10 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             Require LTI authentication
           </label>
           <small id="requireLtiUserHelp" class="form-text text-muted d-block">
-            When enabled, users who authenticate via SAML without a linked LTI user will be required
-            to access the course through the LMS first.
+            When enabled, students who authenticate via a non-LTI provider will be required to
+            authenticate via the LTI platform before they can access any course instances linked to
+            this LTI instance. This should not be enabled in most cases. It is primarily useful for
+            institutions that don't provide UIDs or useful emails to PrairieLearn via LTI.
           </small>
         </div>
 
