@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 
 export function AuthzRequireLinkedLtiUser({
   platformName,
@@ -13,7 +13,10 @@ export function AuthzRequireLinkedLtiUser({
 }) {
   return PageLayout({
     pageTitle: 'Authentication Required',
-    navbarType: 'student',
+    navContext: {
+      type: 'student',
+      page: undefined,
+    },
     resLocals,
     content: html`
       <div class="card mb-4">

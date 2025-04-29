@@ -1,0 +1,47 @@
+import { type NextFunction, type Request, type Response } from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { idsEqual } from '../../lib/id.js';
+import { selectLti13InstanceIdentitiesForCourseInstance } from '../models/lti13-user.js';
+
+/**
+ * Middleware to enforce that a user must have accessed the course through LTI
+ * if the LTI instance is configured to require it. This should be run AFTER
+ * the basic authorization middleware that confirms the user has access to the course instance.
+ */
+export default asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+  // W'll skip the check in several cases:
+  // 1. If the user is impersonating another user. This could be a useful
+  //    escape hatch for instructors.
+  // 2. If the user isn't already enrolled in the course instance. We'll
+  //    allow them proceed through any necessary enrollment steps first.
+  // 3. If the user has any instructor permissions in the course or instance.
+  if (
+    !idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) ||
+    !res.locals.authz_data.has_student_access_with_enrollment ||
+    res.locals.authz_data.has_course_permission_preview ||
+    res.locals.authz_data.has_course_instance_permission_view
+  ) {
+    next();
+    return;
+  }
+
+  const lti13InstanceIdentities = await selectLti13InstanceIdentitiesForCourseInstance({
+    course_instance: res.locals.course_instance,
+    user: res.locals.authn_user,
+  });
+
+  // In most cases, only a single LTI 1.3 instance will be linked to a given course
+  // instance, but we still choose to handle the general case of N instances.
+  const hasAllNeededIdentities = lti13InstanceIdentities.every(
+    (identity) => identity.lti13_user != null,
+  );
+
+  if (!hasAllNeededIdentities) {
+    res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/lti_linking_required`);
+    return;
+  }
+
+  // User has all necessary linked accounts, proceed with the request
+  next();
+});
