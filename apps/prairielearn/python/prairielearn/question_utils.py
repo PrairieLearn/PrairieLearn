@@ -95,6 +95,9 @@ class QuestionData(TypedDict):
     manual_grading: bool
     """Whether the question is being rendered in the manual grading view."""
 
+    ai_grading: bool
+    """Whether the question is being rendered in the AI grading view."""
+
     answers_names: dict[str, bool]
     """A dictionary whose keys list the names of the answers in the question."""
 
