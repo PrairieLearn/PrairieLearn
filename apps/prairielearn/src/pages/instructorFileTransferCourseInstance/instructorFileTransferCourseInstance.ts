@@ -11,9 +11,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { CourseInstanceTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-
-import { selectCourseById } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
