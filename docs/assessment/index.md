@@ -104,7 +104,7 @@ For more information about how to create your own assessment modules, see the [c
 
 ## Question order randomization
 
-The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether they this order is randomized for each student. The default value depends on the `type` of the assessment:
+The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether this order is randomized for each student. The default value depends on the `type` of the assessment:
 
 | Assessment type | `shuffleQuestions` default | Meaning                                                                                                                                                                                                                        |
 | --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
