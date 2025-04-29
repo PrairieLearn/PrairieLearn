@@ -748,7 +748,7 @@ export async function updateLti13Scores(
     throw new HttpStatusError(403, 'Invalid assessment.id');
   }
 
-  job.info(`Working on assessment ${assessment.title} (${assessment.tid}):`);
+  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
@@ -762,15 +762,14 @@ export async function updateLti13Scores(
     }),
   );
 
-  const course_staff_data = await selectUsersWithCourseInstanceAccess({
+  const courseStaff = await selectUsersWithCourseInstanceAccess({
     course_instance_id: assessment.course_instance_id,
     minimal_role: 'Student Data Viewer',
   });
-  const course_staff = new Set(course_staff_data.map((staff) => staff.uid));
+  const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
 
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
 
-  const token = await getAccessToken(instance.lti13_instance.id);
   const timestamp = new Date();
   const counts = {
     success: 0,
@@ -780,14 +779,17 @@ export async function updateLti13Scores(
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
+      // Get/Refresh the token in the main loop in case it expires during the run.
+      const token = await getAccessToken(instance.lti13_instance.id);
+
       const ltiUser = memberships.lookup(user);
-      const is_staff = course_staff.has(user.uid);
+      const isCourseStaff = courseStaffUids.has(user.uid);
 
       // User not found in LTI, reporting only
       if (ltiUser === null) {
         job.info(
           `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` Could not find ${is_staff ? 'PL course staff' : 'PL student'} ${user.uid}` +
+            ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
             ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
         );
         counts.not_sent++;
@@ -798,7 +800,7 @@ export async function updateLti13Scores(
       if (!ltiUser.roles.includes(STUDENT_ROLE)) {
         job.info(
           `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` ${is_staff ? 'PL course staff' : 'PL student'} ${user.uid} is not a student` +
+            ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
             ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
         );
         counts.not_sent++;
