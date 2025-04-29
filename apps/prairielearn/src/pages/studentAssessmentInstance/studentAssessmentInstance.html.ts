@@ -43,6 +43,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
+  manual_perc: z.number(),
   init_points: z.number().nullable(),
   row_order: z.number(),
   question_number: z.string(),
@@ -99,7 +100,7 @@ export function StudentAssessmentInstance({
     if (question.status === 'saved') {
       if (question.allow_grade_left_ms > 0) {
         suspendedSavedAnswers++;
-      } else if (question.max_auto_points || !question.max_manual_points) {
+      } else if (question.manual_perc < 100) {
         // Note that we exclude questions that are not auto-graded from the count.
         // This count is used to determine whether the "Grade X saved answers"
         // button should be enabled, and clicking that button won't do any good for

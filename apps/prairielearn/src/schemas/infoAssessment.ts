@@ -129,6 +129,13 @@ const QuestionPointsJsonSchema = z.object({
   maxPoints: PointsSingleJsonSchema.optional(),
   maxAutoPoints: PointsSingleJsonSchema.optional(),
   manualPoints: PointsSingleJsonSchema.optional(),
+  manualPerc: z
+    .number()
+    .gte(0)
+    .lte(100)
+    .optional()
+    .default(0)
+    .describe("The percentage of the question's points assigned to manual grading."),
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;

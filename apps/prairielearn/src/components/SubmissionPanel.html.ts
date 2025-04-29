@@ -278,12 +278,16 @@ function SubmissionStatusBadge({
   let manualGradingBadge: HtmlValue = null;
   let autoGradingBadge: HtmlValue = null;
 
+  const manualPercentage =
+    assessment_question?.manual_perc ??
+    (assessment_question
+      ? (100 * (assessment_question.max_manual_points ?? 0)) / (assessment_question.max_points || 1)
+      : (question?.manual_perc ?? (question?.grading_method === 'Manual' ? 100 : 0)));
+
   if (
-    assessment_question && instance_question
-      ? assessment_question.max_manual_points ||
-        instance_question.manual_points ||
-        instance_question.requires_manual_grading
-      : question.grading_method === 'Manual'
+    manualPercentage > 0 ||
+    instance_question?.requires_manual_grading ||
+    instance_question?.manual_points
   ) {
     // The manual grading status only applies to the latest submission
     if (isLatestSubmission) {
@@ -299,7 +303,7 @@ function SubmissionStatusBadge({
         }
       } else {
         const manualPoints = instance_question.manual_points ?? 0;
-        const manual_percentage = assessment_question?.max_points
+        const manualScoreDisplay = assessment_question?.max_points
           ? Math.floor(
               (manualPoints * 100) /
                 (assessment_question.max_manual_points || assessment_question.max_points),
@@ -314,7 +318,7 @@ function SubmissionStatusBadge({
               ? 'badge-success'
               : 'badge-warning';
         manualGradingBadge = html`
-          <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
+          <span class="badge ${badgeType}">manual grading: ${manualScoreDisplay}</span><br />
         `;
       }
     }
@@ -322,11 +326,7 @@ function SubmissionStatusBadge({
 
   const autoStatusPrefix = manualGradingBadge ? 'auto-grading: ' : '';
 
-  if (
-    assessment_question
-      ? assessment_question.max_auto_points || !assessment_question.max_manual_points
-      : question.grading_method !== 'Manual'
-  ) {
+  if (manualPercentage < 100) {
     if (submission.graded_at == null) {
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {

@@ -72,11 +72,15 @@ export function QuestionScorePanelContent({
   variant,
   urlPrefix,
 }: QuestionScorePanelContentProps) {
-  const hasAutoAndManualPoints =
-    assessment_question.max_auto_points &&
-    (assessment_question.max_manual_points ||
-      instance_question.manual_points ||
-      instance_question.requires_manual_grading);
+  const manualPercentage =
+    assessment_question.manual_perc ??
+    // Fallback for questions where manual_perc is not populated
+    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
+  const hasManualGrading =
+    manualPercentage > 0 ||
+    instance_question.manual_points ||
+    instance_question.requires_manual_grading;
+  const hasAutoAndManualPoints = manualPercentage < 100 && hasManualGrading;
 
   return html`
     <table
@@ -102,7 +106,7 @@ export function QuestionScorePanelContent({
                 // In both cases, we opt not to display the value, since it
                 // would not be possible to immediately earn any points with
                 // the next submission.
-                assessment_question.max_auto_points
+                assessment_question.max_points && manualPercentage < 100
                   ? html`
                       <tr>
                         <td>Value:</td>
@@ -132,7 +136,7 @@ export function QuestionScorePanelContent({
                   : ''
               }
             `
-          : assessment_question.max_auto_points
+          : assessment_question.max_points && manualPercentage < 100
             ? html`
                 <tr>
                   <td>Available points:</td>
@@ -191,9 +195,7 @@ export function QuestionScorePanelContent({
               <tr>
                 <td colspan="2" class="text-right">
                   <small>
-                    ${!assessment_question.max_auto_points
-                      ? 'Manually-graded question'
-                      : 'Auto-graded question'}
+                    ${manualPercentage >= 100 ? 'Manually-graded question' : 'Auto-graded question'}
                   </small>
                 </td>
               </tr>
@@ -251,8 +253,16 @@ export function ExamQuestionStatus({
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
   };
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'manual_perc' | 'max_points'
+  >;
 }) {
+  const manualPercentage =
+    assessment_question.manual_perc ??
+    // Fallback for questions where manual_perc is not populated
+    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
+
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
   // be graded immediately. We'll use a green badge so that student can drive
@@ -260,11 +270,7 @@ export function ExamQuestionStatus({
   //
   // TODO: can we safely look at the assessment question for exams? What about
   // the guarantee that an Exam-type assessment won't change after it's created?
-  if (
-    instance_question.status === 'saved' &&
-    !assessment_question.max_auto_points &&
-    assessment_question.max_manual_points
-  ) {
+  if (instance_question.status === 'saved' && manualPercentage >= 100) {
     return html`
       <span class="align-middle">
         <span class="badge text-bg-success">saved for manual grading</span>
@@ -371,7 +377,7 @@ export function InstanceQuestionPoints({
   >;
   assessment_question: Pick<
     AssessmentQuestion,
-    'max_auto_points' | 'max_manual_points' | 'max_points'
+    'max_auto_points' | 'max_manual_points' | 'max_points' | 'manual_perc'
   >;
   component: 'manual' | 'auto' | 'total';
 }) {
@@ -390,15 +396,14 @@ export function InstanceQuestionPoints({
   const pointsPending =
     (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
     (instance_question.requires_manual_grading && component !== 'auto');
+  const manualPercentage =
+    assessment_question.manual_perc ??
+    // Fallback for questions where manual_perc is not populated
+    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
 
   // Special case: if this is a manually-graded question in the saved state, don't show
   // a "pending" badge for auto points, since there aren't any pending auto points.
-  if (
-    instance_question.status === 'saved' &&
-    component === 'auto' &&
-    !assessment_question.max_auto_points &&
-    assessment_question.max_manual_points
-  ) {
+  if (instance_question.status === 'saved' && component === 'auto' && manualPercentage >= 100) {
     return html`&mdash;`;
   }
 

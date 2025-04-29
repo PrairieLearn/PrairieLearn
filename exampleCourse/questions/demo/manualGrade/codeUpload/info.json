@@ -5,5 +5,5 @@
   "tags": ["code"],
   "type": "v3",
   "singleVariant": true,
-  "gradingMethod": "Manual"
+  "manualPerc": 40
 }

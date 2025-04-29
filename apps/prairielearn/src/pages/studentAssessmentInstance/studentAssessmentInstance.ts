@@ -239,10 +239,10 @@ router.get(
     }
 
     res.locals.has_manual_grading_question = instance_question_rows?.some(
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
+      (q) => q.manual_perc > 0 || q.manual_points || q.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = instance_question_rows?.some(
-      (q) => q.max_auto_points || q.auto_points || !q.max_points,
+      (q) => q.manual_perc < 100 || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
       res.locals.assessment,

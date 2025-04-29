@@ -61,6 +61,13 @@
       "type": "string",
       "enum": ["Internal", "External", "Manual"]
     },
+    "manualPerc": {
+      "description": "The percentage of the question's points assigned to manual grading by default.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0
+    },
     "singleVariant": {
       "description": "Whether the question is not randomized and only generates a single variant.",
       "type": "boolean",

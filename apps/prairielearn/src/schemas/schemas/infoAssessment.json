@@ -359,6 +359,9 @@
           "description": "A single point value.",
           "$ref": "#/definitions/PointsSingleJsonSchema"
         },
+        "manualPerc": {
+          "$ref": "#/definitions/QuestionAlternativeJsonSchema/properties/manualPerc"
+        },
         "id": {
           "description": "Question ID (directory name of the question).",
           "$ref": "#/definitions/QuestionIdJsonSchema"
@@ -440,6 +443,13 @@
         "manualPoints": {
           "description": "A single point value.",
           "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        "manualPerc": {
+          "description": "The percentage of the question's points assigned to manual grading.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0
         },
         "id": {
           "$ref": "#/definitions/QuestionIdJsonSchema"

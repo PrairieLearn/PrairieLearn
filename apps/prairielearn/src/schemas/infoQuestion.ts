@@ -182,6 +182,13 @@ export const QuestionJsonSchema = z
       .enum(['Internal', 'External', 'Manual'])
       .describe('The grading method used for this question.')
       .optional(),
+    manualPerc: z
+      .number()
+      .gte(0)
+      .lte(100)
+      .optional()
+      .default(0)
+      .describe("The percentage of the question's points assigned to manual grading by default."),
     singleVariant: z
       .boolean()
       .describe('Whether the question is not randomized and only generates a single variant.')

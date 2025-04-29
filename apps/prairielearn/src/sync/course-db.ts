@@ -1027,6 +1027,7 @@ async function validateAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+            manualPerc: alternative.manualPerc ?? zoneQuestion.manualPerc,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1038,6 +1039,7 @@ async function validateAssessment(
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
+            manualPerc: zoneQuestion.manualPerc,
           },
         ];
       } else {
@@ -1060,6 +1062,16 @@ async function validateAssessment(
         ) {
           errors.push(
             'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+          );
+        }
+        if (
+          alternative.manualPerc !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "autoPoints", "manualPoints" or "maxAutoPoints" for a question if "manualPerc" is specified',
           );
         }
         if (assessment.type === 'Exam') {
