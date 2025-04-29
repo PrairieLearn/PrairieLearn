@@ -160,7 +160,7 @@ An assessment is broken down in to a list of zones, like this:
 | `numberChoose`  | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
 | `maxPoints`     | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
 | `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
-| `comment`       | string  | Free‑form comment for the zone (Optional; default: none)                                                                                              |
+| `comment`       | string  | Free‑form comment for the zone. (Optional; default: none)                                                                                             |
 
 Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
