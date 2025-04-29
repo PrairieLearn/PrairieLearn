@@ -1,18 +1,12 @@
-// @ts-check
-import { pipeline } from 'node:stream/promises';
-
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceCopyEditor } from '../../lib/editors.js';
-import { IdSchema } from '../../lib/db-types.js';
-import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { setCourseInstanceCopyTargets } from '../../lib/copy-course-instance.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 
 import { AssessmentRowSchema, InstructorAssessments } from './publicAssessmentPreview.html.js';
 
@@ -22,10 +16,9 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
-    res.locals.course = await selectCourseById(courseId);
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
-    res.locals.urlPrefix = `/pl`;
+    res.locals.course = await selectCourseById(res.locals.course_instanc.course_id);
+    res.locals.urlPrefix = '/pl';
 
     try {
       const isPublic = await new Promise((resolve, reject) => {
@@ -46,7 +39,7 @@ router.get(
       });
 
       if (!isPublic) {
-        throw new error.HttpStatusError(404, `Course instance not public.`);
+        throw new error.HttpStatusError(404, 'Course instance not public.');
       }
     } catch (err) {
       console.error('Error checking if course instance is public', err);

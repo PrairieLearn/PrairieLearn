@@ -2,12 +2,11 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-
+import { compiledScriptTag } from '../../lib/assets.js';
+import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
 function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any> }) {
   const { course_instance_copy_targets, course_instance } = resLocals;
@@ -20,7 +19,8 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
       course_instance_copy_targets.length === 0
         ? html`
             <p>
-              You can't copy this course instance because you don't have editor permissions in any courses.
+              You can't copy this course instance because you don't have editor permissions in any
+              courses.
               <a href="/pl/request_course">Request a course</a> if you don't have one already.
               Otherwise, contact the owner of the course you expected to have access to.
             </p>
@@ -31,7 +31,8 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
               Select one of your courses to copy this course instance to.
             </p>
             <select class="custom-select" name="to_course_id" required>
-              ${course_instance_copy_targets.map( // TEST, use course instead of course_instance?
+              ${course_instance_copy_targets.map(
+                // TEST, use course instead of course_instance?
                 (course_instance, index) => html`
                   <option
                     value="${course_instance.id}"
@@ -55,7 +56,12 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       ${course_instance_copy_targets?.length > 0
         ? html`
-            <button type="submit" name="__action" value="copy_course_instance" class="btn btn-primary">
+            <button
+              type="submit"
+              name="__action"
+              value="copy_course_instance"
+              class="btn btn-primary"
+            >
               Copy course instance
             </button>
           `
@@ -63,8 +69,6 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
     `,
   });
 }
-
-
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
@@ -86,8 +90,6 @@ export function InstructorAssessments({
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
 }) {
-  const { urlPrefix, course, __csrf_token } = resLocals;
-
   return html`
     <!doctype html>
     <html lang="en">
@@ -96,7 +98,7 @@ export function InstructorAssessments({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        
+
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary">
@@ -159,6 +161,6 @@ export function InstructorAssessments({
         </main>
       </body>
     </html>
-  ${CopyCourseInstanceModal({ resLocals })}
+    ${CopyCourseInstanceModal({ resLocals })}
   `.toString();
 }
