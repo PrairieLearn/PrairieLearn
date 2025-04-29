@@ -193,7 +193,7 @@ The `question.html` is regular HTML, with a few special features:
 
 ## Custom generation and grading (`server.py`)
 
-The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set random parameters and calculate correct answers based on those parameters, while using the built-in grading ability of the PrairieLearn elements to grade the students submission. More complex questions may use `server.py` to provide custom parsing and grading functionality, or random images and files.
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set random parameters and calculate correct answers based on those parameters, while using the built-in grading ability of the PrairieLearn elements to grade the student's submission. More complex questions may use `server.py` to provide custom parsing and grading functionality, or randomized images and files.
 
 ```python title="server.py"
 import random
@@ -213,14 +213,14 @@ def generate(data):
 
 ## Grading student answers
 
-Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different ways of auto-grading the student answer:
+Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
 
-1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most circumstances.
+1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most randomized questions.
 
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
-3. Write a [custom grading function](./server.md#step-5-grade) in `server.py` that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
+3. Write a [custom grading function](./server.md#step-5-grade) in `server.py` that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This supports a variety of alternative grading options, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
 4. Write an [external grader](../externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question uses more than one method for grading, higher-numbered grading methods override results of lower-numbered grading methods. If you grade a question using a custom grading function (option 3) or an external grader (option 4), it is recommended to set the correct answer so that students can see it in the answer panel. More details about providing feedback on student answers can be found in the `"answer"` panel section of the [question template documentation](template.md#answer-panel).
+If a question uses more than one method for grading, options 3 and 4 override options 1 and 2. If you grade a question using a custom grading function (option 3) or an external grader (option 4), you are still strongly encouraged to provide a possible correct answer so that students can see it in the answer panel. More details about providing feedback on student answers can be found in the `"answer"` panel section of the [question template documentation](template.md#answer-panel).

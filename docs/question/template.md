@@ -4,11 +4,11 @@
 
 All `question.html` files are processed with the [Mustache template engine](https://mustache.github.io/mustache.5.html), which allows for basic dynamic rendering of HTML. In addition, it supports:
 
+- [**Rendering panels**](#rendering-panels-from-questionhtml): These panels control what is shown when a student is viewing the question, viewing their submission, or viewing the correct answer.
+
 - [**Markdown**](#markdown-in-questions): HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text.
 
 - [**LaTeX**](#using-latex-in-questions-math-mode): PrairieLearn supports LaTeX equations in questions.
-
-- [**Rendering panels**](#rendering-panels-from-questionhtml): These panels control what is shown when a student is viewing the question, viewing their submission, or viewing the correct answer.
 
 ## Rendering panels from `question.html`
 
@@ -70,7 +70,7 @@ More details about providing feedback can be found on the [`server.py` page](ser
 
 By default, the correct answers are shown in the "answer" panel. This can be disabled by setting `showCorrectAnswer: false` in the question's `info.json`. The FAQ item ["How can I hide the correct answer when students see their grading results?"](../faq.md#how-can-i-hide-the-correct-answer-when-students-see-their-grading-results) describes some other techniques for hiding the correct answer.
 
-If you grade a question using a [custom grading function](./server.md#step-5-grade) or an [external grader](../externalGrading.md), it is recommended to set the correct answer so that students can see it in the answer panel. If there are multiple correct answers, you should add a note within the [`pl-answer-panel`](../elements.md#pl-answer-panel-element) element that any correct answer would be accepted, and the displayed answer is only an example. You can also show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
+If you grade a question using a [custom grading function](./server.md#step-5-grade), an [external grader](../externalGrading.md), or using [manual grading](../manualGrading/index.md), you are encouraged to display a correct answer so that students can see it in the answer panel. If there are multiple correct answers, you should add a note within the [`pl-answer-panel`](../elements.md#pl-answer-panel-element) element that any correct answer would be accepted, and the displayed answer is only an example. You can also show additional text in the answer panel as well, e.g. extended explanations for the correct answers.
 
 ## Mustache templates
 
@@ -104,9 +104,22 @@ You can use this syntax to render over an array of strings (the `.` represents t
 {{/params.items}}
 ```
 
-### HTML rendering
+!!! info "HTML rendering"
 
-You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+
+### Hiding staff comments in `question.html`
+
+HTML or JavaScript comments in your `question.html` source are visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you should use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) (`{{! ... }}`) that will be removed during the rendering process. Never put sensitive information, such as solutions, in a HTML/JS comment.
+
+Example:
+
+```html
+<!-- This HTML comment will not be visible to students in the web page, 
+ but *will be included* in the rendered page source, so students may be able to
+ see it by reading the HTML source. -->
+{{! This Mustache comment will NOT be included in the rendered page source. }}
+```
 
 ## Markdown in questions
 
@@ -224,17 +237,4 @@ adding the `mathjax_ignore` class to an HTML element.
 </div>
 
 <div>$x = 1$ and I have <span class="mathjax_ignore">$</span>5 dollars.</div>
-```
-
-## Hiding staff comments in `question.html`
-
-HTML or JavaScript comments in your `question.html` source are visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you should use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) (`{{! ... }}`) that will be removed during the rendering process. Never put sensitive information, such as solutions, in a HTML/JS comment.
-
-Example:
-
-```html
-<!-- This HTML comment will not be visible to students in the web page, 
- but *will be included* in the rendered page source, so students may be able to
- see it by reading the HTML source. -->
-{{! This Mustache comment will NOT be included in the rendered page source. }}
 ```

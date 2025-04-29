@@ -9,7 +9,7 @@ The following sections build a simple example of a question that asks the studen
 <pl-question-panel>
   If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
 </pl-question-panel>
-<pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+<pl-integer-input answers-name="y" label="$y =$"></pl-integer-input>
 <pl-submission-panel>
   {{feedback.y}}
 </pl-submission-panel>
@@ -83,15 +83,15 @@ For generated floating point answers, it's important to use consistent rounding 
 
 ## Step 2: `prepare`
 
-Next, the `prepare` function is called after all elements (e.g. `<pl-number-input>`) have run `prepare()`. This is typically done to do any sort of final post-processing, but is not commonly used.
+Next, the `prepare` function is called after all elements (e.g. `<pl-integer-input>`) have run `prepare()`. This is may be done to do any sort of final post-processing, but is not commonly used.
 
 ## Step 3: `render`
 
-Next, the `render(data, html)` function is called to render the question. You can use this function to override how the question is rendered. The render function expects two parameters, `data` and `html`, and should return a string of HTML. The HTML after the mustache template has been rendered is available through the `html` parameter. This is typically only used for more advanced questions, and we won't need it for this example.
+Next, the `render(data, html)` function is called to render the question. You can use this function to override how the question is rendered. The render function expects two parameters, `data` and `html`, and should return a string of HTML. The HTML after the mustache template has been rendered is available through the `html` parameter. This is rarely used except for very advanced questions, and we won't need it for this example.
 
 ## Step 4: `parse`
 
-When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-number-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this example, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
+When a student submits their answer, the `parse` function is called to parse the submitted answers after the individual elements have parsed them. This function can be used to display more-specific format errors than the input elements or to parse the input differently. When our parse function runs, `<pl-integer-input>` will have already parsed the submitted value as an integer, and display an error to the student if it was invalid. For this example, we will allow the student to only submit positive integers, so we will check for that and set a format error with `data["format_errors"]` if it is negative.
 
 The values typically read or modified by a `parse` function are:
 
@@ -104,7 +104,7 @@ If there are format errors, then the submission is "invalid" and is not graded. 
 ```python title="server.py"
 def parse(data):
     # Reject negative numbers for "y" if we don't already have a format error
-    if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
+    if "y" not in data["format_errors"] and int(data["submitted_answers"]["y"]) < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 ```
 
@@ -113,7 +113,7 @@ We could have also modified the submitted answers directly, if we need to proces
 ```python title="server.py"
 def parse(data):
     # Ensure that "y" is positive
-    data["submitted_answers"]["y"] = abs(data["submitted_answers"]["y"])
+    data["submitted_answers"]["y"] = abs(int(data["submitted_answers"]["y"]))
 ```
 
 !!! info
@@ -150,7 +150,7 @@ It is recommended that you give additional feedback to the student as they make 
 
 If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer. In the snipped below, we update `data["score"]` using the [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] utility.
 
-You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. However, you are encouraged to do as many checks for invalid data as possible in `parse` instead of `grade`; the `parse` function is called when the student hits "Save only", in manually graded questions, and in assessments without real-time grading.
+You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. However, you are encouraged to do as many checks for invalid data as possible in `parse` instead of `grade`; the `parse` function is called when the student hits "Save only", in manually or externally graded questions, and in assessments without real-time grading.
 
 ```python title="server.py"
 import math
@@ -248,7 +248,7 @@ The finished, complete `question.html` and `server.py` example looks like:
 <pl-question-panel>
   If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
 </pl-question-panel>
-<pl-number-input answers-name="y" label="$y =$"></pl-number-input>
+<pl-integer-input answers-name="y" label="$y =$"></pl-integer-input>
 <pl-submission-panel>
   {{feedback.y}}
 </pl-submission-panel>
@@ -290,11 +290,11 @@ This table summarizes the functions that can be defined in `server.py`.
 | `generate()` | :white_check_mark: | `correct_answers`, `params`                                                                              | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Modify the `data` dictionary in-place.                                                                 |
 | `prepare()`  | :white_check_mark: | `answers_names`, `correct_answers`, `params`                                                             | Final question preparation after element code has run. Can modify data as necessary. Modify the `data` dictionary in-place.                                                                                                                                                   |
 | `render()`   | :x:                | N/A. Returns `html` as a string                                                                          | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
-| `parse()`    | :white_check_mark: | `format_errors`, `submitted_answers`, `correct_answers`, `feedback`                                      | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
+| `parse()`    | :white_check_mark: | `correct_answers`, `format_errors`, `feedback`, `submitted_answers`                                      | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
 | `grade()`    | :white_check_mark: | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
 | `file()`     | :x:                | N/A. Returns an `object` (string, bytes-like, file-like)                                                 | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
 
-As shown in the table, most functions accept a single argument, `data` (a dictionary), and modify it in place.
+As shown in the table, all functions (except for `render`) accept a single argument, `data` (a dictionary), and modify it in place. The `render` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements.
 
 ### `data` dictionary
 
@@ -307,7 +307,10 @@ As shown in the table, most functions accept a single argument, `data` (a dictio
 | `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to a error message.                                  |
 | `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
 | `score`                 | `float` | The total score for the question variant.                                                                                            |
-| `feedback`              | `dict`  | Dictionary of feedback for each answer. Each item maps from a named answer to a feedback message.                                    |
+| `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
+| `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                         |
+| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
+| `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
 
 The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
 
@@ -363,7 +366,7 @@ data["options"]["server_files_course_path"]
 
 ## Generating dynamic files with `file()`
 
-You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the full `data` object, including `data["params"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
+You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. `file()` has access to the same `data` object as the one created by the `generate()` function, including `data["params"]` and `data["correct_answers"]`. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
 
 ```html title="question.html"
 <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
