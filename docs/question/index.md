@@ -185,7 +185,7 @@ The `question.html` is regular HTML, with a few special features:
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
-5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students at different times.
+5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students in different contexts.
 
 !!! info
 
