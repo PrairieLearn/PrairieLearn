@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { setCourseInstanceCopyTargets } from '../../lib/copy-course-instance.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
@@ -54,9 +53,6 @@ router.get(
       },
       AssessmentRowSchema,
     );
-
-    res.locals.user = res.locals.authn_user; // TEST, need res.locals.user for setCourseInstanceCopyTargets
-    await setCourseInstanceCopyTargets(res);
 
     res.send(
       InstructorAssessments({
