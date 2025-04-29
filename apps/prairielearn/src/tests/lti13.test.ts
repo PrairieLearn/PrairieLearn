@@ -5,10 +5,11 @@ import getPort from 'get-port';
 import * as jose from 'jose';
 import { step } from 'mocha-steps';
 import nodeJose from 'node-jose';
+import { z } from 'zod';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { getAccessToken } from '../ee/lib/lti13.js';
+import { fetchRetry, fetchRetryPaginated, getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectOptionalUserByUid } from '../models/user.js';
@@ -590,6 +591,154 @@ describe('LTI 1.3', () => {
       // Assert that they've been redirected to the course navigation page.
       // This means that the login succeeded.
       assert.equal(res.url, targetLinkUri);
+    });
+  });
+});
+
+describe('fetchRetry()', async () => {
+  let apiProviderPort: number;
+  const app = express();
+  let baseUrl: string;
+
+  let apiCount: number;
+
+  // Thanks chatGPT
+  const products = [
+    'Apple',
+    'Banana',
+    'Cherry',
+    'Date',
+    'Eggplant',
+    'Fig',
+    'Grapes',
+    'Honeydew',
+    'Iceberg',
+    'Jackfruit',
+    'Kiwi',
+    'Lemon',
+    'Mango',
+    'Nectarine',
+    'Orange',
+    'Papaya',
+    'Quince',
+    'Raspberry',
+    'Strawberry',
+    'Tomato',
+    'Ugli fruit',
+    'Vanilla',
+    'Watermelon',
+    'Xigua',
+    'Yam',
+    'Zucchini',
+  ];
+
+  const productApi = (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const totalPages = Math.ceil(products.length / limit);
+
+    // Base URL for links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+
+    // Generate Link Header
+    const links: string[] = [];
+
+    if (page < totalPages) {
+      links.push(`<${baseUrl}?page=${page + 1}&limit=${limit}>; rel="next"`);
+    }
+    if (page > 1) {
+      links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
+    }
+    links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
+    links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+
+    res.set('Link', links.join(', '));
+
+    const returning = products.slice(startIndex, endIndex);
+    res.json(returning);
+  };
+
+  function respond403(res: express.Response) {
+    res.status(403).json([]);
+  }
+
+  before(async () => {
+    apiProviderPort = await getPort();
+    baseUrl = `http://localhost:${apiProviderPort}/`;
+    // Run a server to respond to API requests.
+    app.use(express.urlencoded({ extended: true }));
+
+    app.use((req, res, next) => {
+      apiCount++;
+      next();
+    });
+
+    app.get('/403all', async (req, res) => {
+      respond403(res);
+    });
+
+    app.get('/403oddAttempt', async (req, res) => {
+      if (apiCount % 2 === 1) {
+        respond403(res);
+      } else {
+        productApi(req, res);
+      }
+    });
+
+    app.get('/', productApi);
+  });
+
+  step('should return the full list by iterating', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const resultArray = await fetchRetryPaginated(baseUrl, {}, { sleepMs: 100 });
+      assert.equal(resultArray.length, 3);
+      // Unwrap to one combined array
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 3);
+    });
+  });
+
+  step('should return the full list with a large limit', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const res = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
+      const products = z
+        .string()
+        .array()
+        .parse(await res.json());
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 1);
+    });
+  });
+
+  step('should throw an error on all 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /fetch error/);
+      assert.equal(apiCount, 5);
+    });
+  });
+
+  step('should return the full list by iterating with intermittant 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const resultArray = await fetchRetryPaginated(
+        baseUrl + '403oddAttempt',
+        {},
+        { sleepMs: 100 },
+      );
+      assert.equal(resultArray.length, 3);
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 6);
     });
   });
 });
