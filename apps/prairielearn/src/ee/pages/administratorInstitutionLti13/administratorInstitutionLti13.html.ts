@@ -367,6 +367,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             name="require_linked_lti_user"
             id="require_linked_lti_user"
             value="true"
+            aria-describedby="requireLtiUserHelp"
             ${instance.require_linked_lti_user ? 'checked' : ''}
           />
           <label class="form-check-label" for="require_linked_lti_user">
