@@ -161,6 +161,7 @@ An assessment is broken down in to a list of zones, like this:
 | `maxPoints`     | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
 | `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
 | `comment`       | string  | Free‑form comment for the zone (Optional; default: none)                                                                                              |
+
 Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
