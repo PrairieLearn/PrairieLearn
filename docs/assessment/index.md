@@ -128,15 +128,15 @@ See the [zone reference in `infoAssessment.json`](../schemas/infoAssessment.md#d
 
 - If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
 
-## Slots for questions and question alternatives
+## Question alternatives
 
-Each zone has a list of _slots_ given by the `questions` array. Each slot contains either a single question `id`:
+Each zone has a list of `questions`, each of which can be a single question:
 
 ```json
 { "id": "hardQV1", "points": 10 }
 ```
 
-Or a slot can contain a _question alternative list_:
+Or an entry can contain a _question alternative list_:
 
 ```json
 {
@@ -146,7 +146,7 @@ Or a slot can contain a _question alternative list_:
 }
 ```
 
-An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
+If a question alternative list is specified then some of these questions are first selected at random for each student, and then random variants of those questions are generated. Question alternatives inherit the points of their parent group, if specified.
 
 See the [question alternatives reference in `infoAssessment.json`](../schemas/infoAssessment.md#definitions/QuestionAlternativeJsonSchema) for details about the available properties.
 
@@ -291,9 +291,9 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 
 Choosing the selection of questions for each student proceeds in three steps:
 
-1. For each question slot, either take the single question in that slot or randomly select some of the questions from the list of question alternatives to give the _slot questions_. If `numberChoose` is specified for the slot, randomly select that many questions from the list of alternatives (defaults to 1).
+1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to 1).
 
-2. For each zone, concatenate the _slot questions_ from each slot to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). For Exams, randomly shuffle the order of the _zone questions_.
+2. For each zone, concatenate the _selected questions_ from each `questions` entry to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). For Exams, randomly shuffle the order of the _zone questions_.
 
 3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_ for the student. This set of questions forms the _assessment instance_ for this student.
 
