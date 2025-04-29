@@ -344,7 +344,7 @@ export async function insertAiGradingJob({
   await queryAsync(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
-    prompt,
+    prompt: JSON.stringify(prompt),
     completion,
     model: OPEN_AI_MODEL,
     prompt_tokens: completion.usage?.prompt_tokens ?? 0,

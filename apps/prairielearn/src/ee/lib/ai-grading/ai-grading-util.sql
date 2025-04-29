@@ -52,7 +52,7 @@ VALUES
   (
     $grading_job_id,
     $job_sequence_id,
-    to_jsonb($prompt::text[]),
+    $prompt::jsonb,
     $completion,
     $model,
     $prompt_tokens,
