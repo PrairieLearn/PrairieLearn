@@ -193,7 +193,7 @@ The `question.html` is regular HTML, with a few special features:
 
 ## Custom generation and grading (`server.py`)
 
-The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set `data["params"]` and `data["correct_answers"]`, and then use the built-in grading ability of the PrairieLearn elements to grade the students submission.
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set random parameters and calculate correct answers based on those parameters, while using the built-in grading ability of the PrairieLearn elements to grade the students submission. More complex questions may use `server.py` to provide custom parsing and grading functionality, or random images and files.
 
 ```python title="server.py"
 import random
