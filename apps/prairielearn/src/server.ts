@@ -2418,6 +2418,7 @@ if (esMain(import.meta) && config.startServer) {
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
   process.once('SIGTERM', async () => {
+    await sqldb.closeAsync();
     // By this point, we should no longer be attached to the load balancer,
     // so there's no point shutting down the HTTP server or the socket.io
     // server.
