@@ -6,8 +6,8 @@ import numpy as np
 import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
-ARIA_LABEL_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 COMPARISON_DEFAULT = "relabs"
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
@@ -133,7 +133,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
-            "aria_label": aria_label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -219,7 +218,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params = {
                 "answer": True,
                 "label": label,
-                "aria_label": aria_label,
                 "matlab_data": matlab_data,
                 "python_data": python_data,
                 "uuid": pl.get_uuid(),

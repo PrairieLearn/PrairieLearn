@@ -190,7 +190,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             display.value: True,
-            "aria_label": aria_label,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
             "raw_submitted_answer": raw_submitted_answer,
@@ -218,7 +217,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
         html_params = {
             "answer": True,
-            "aria_label": aria_label,
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
         }

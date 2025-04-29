@@ -250,7 +250,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
-            "aria_label": aria_label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -304,7 +303,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "answer": True,
             "label": label,
-            "aria_label": aria_label,
             "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
             "suffix": suffix,
         }

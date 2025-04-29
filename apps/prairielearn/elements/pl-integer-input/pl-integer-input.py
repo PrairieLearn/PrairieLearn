@@ -146,7 +146,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
-            "aria_label": aria_label,
             "base": base,
             "default_base": base in (BASE_DEFAULT, 0),
             "parse_error": parse_error,
@@ -212,7 +211,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "answer": True,
             "label": label,
-            "aria_label": aria_label,
             "a_tru": a_tru_str,
             "suffix": suffix,
         }
