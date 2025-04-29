@@ -86,6 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
 
     remove_spaces = pl.get_boolean_attrib(
@@ -93,7 +94,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
-    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)

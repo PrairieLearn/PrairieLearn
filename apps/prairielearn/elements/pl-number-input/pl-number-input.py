@@ -153,6 +153,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", None)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(
@@ -168,7 +169,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_help_text = pl.get_boolean_attrib(
         element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
     )
-    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     partial_score = data["partial_scores"].get(name, {"score": None})
     score = partial_score.get("score", None)
