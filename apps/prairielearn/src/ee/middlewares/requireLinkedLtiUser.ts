@@ -33,11 +33,11 @@ export default asyncHandler(async (req: Request, res: Response, next: NextFuncti
 
   // In most cases, only a single LTI 1.3 instance will be linked to a given course
   // instance, but we still choose to handle the general case of N instances.
-  const hasAllNeededIdentities = lti13InstanceIdentities.every(
-    (identity) => identity.lti13_user != null,
-  );
+  const isMissingIdentities = lti13InstanceIdentities.some(({ lti13_instance, lti13_user_id }) => {
+    return lti13_instance.require_linked_lti_user && lti13_user_id == null;
+  });
 
-  if (!hasAllNeededIdentities) {
+  if (isMissingIdentities) {
     res.redirect(`/pl/course_instance/${res.locals.course_instance.id}/lti_linking_required`);
     return;
   }

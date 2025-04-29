@@ -15,7 +15,18 @@ router.get(
       user: res.locals.authn_user,
     });
 
-    console.log(lti13InstanceIdentities);
+    const instancesWithMissingIdentities = lti13InstanceIdentities.filter(
+      ({ lti13_instance, lti13_user_id }) => {
+        return lti13_instance.require_linked_lti_user && lti13_user_id == null;
+      },
+    );
+
+    if (instancesWithMissingIdentities.length === 0) {
+      // The user ended up on this page for some reason even though all necessary
+      // linked accounts are present. Redirect them to the course instance.
+      res.redirect(`/pl/course_instance/${res.locals.course_instance.id}`);
+      return;
+    }
 
     // The platformName and message should be set by the middleware before rendering.
     // We provide defaults here as a fallback.

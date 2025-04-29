@@ -4,8 +4,8 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import {
   type CourseInstance,
+  IdSchema,
   Lti13InstanceSchema,
-  Lti13UserSchema,
   type User,
 } from '../../lib/db-types.js';
 
@@ -45,7 +45,7 @@ export async function selectLti13InstanceIdentitiesForCourseInstance({
     },
     z.object({
       lti13_instance: Lti13InstanceSchema,
-      lti13_user: Lti13UserSchema,
+      lti13_user_id: IdSchema.nullable(),
     }),
   );
 }
