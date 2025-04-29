@@ -2,11 +2,11 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
+import { compiledScriptTag } from '../../lib/assets.js';
+import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
 
 function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any> }) {

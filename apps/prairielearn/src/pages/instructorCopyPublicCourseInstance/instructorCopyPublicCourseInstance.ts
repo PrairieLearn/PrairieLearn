@@ -5,8 +5,9 @@ import * as error from '@prairielearn/error';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-course-instance.js';
 import { idsEqual } from '../../lib/id.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+
 import { selectCourseById } from '../../models/course.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 
 const router = Router();
 
