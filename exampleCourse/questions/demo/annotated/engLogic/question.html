@@ -9,28 +9,34 @@ Construct a correct logic diagram using the image provided below. There are more
 <pl-hide-in-panel answer="true">
 <pl-overlay width="500" clip="false">
     <pl-background>
-      <pl-figure file-name="logic-diagram.png" directory="clientFilesQuestion"></pl-figure>
+      <div id="logic-diagram">
+        <pl-figure
+        file-name="logic-diagram.png"
+        directory="clientFilesQuestion"
+        alt="A three-input logic diagram. The top line, x, feeds through an arrowhead and into the output F. The middle line, y, feeds through a triangle with a circle on the right, then a semicircle. The bottom line, z, feeds into the semicircle. The semicircle feeds through an arrowhead into the output F."
+        ></pl-figure>
+      </div>
     </pl-background>
       <pl-location left="60" top="15">
-        <pl-dropdown sort="ascend" answers-name="x">
+        <pl-dropdown sort="ascend" answers-name="x" label="Input x">
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-dropdown>
       </pl-location>
       <pl-location left="60" top="80">
-        <pl-dropdown sort="ascend" answers-name="y">
+        <pl-dropdown sort="ascend" answers-name="y" label="Input y">
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-dropdown>
       </pl-location>
       <pl-location left="60" top="130">
-        <pl-dropdown sort="ascend" answers-name="z">
+        <pl-dropdown sort="ascend" answers-name="z" label="Input z">
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-dropdown>
       </pl-location>
       <pl-location left="450" top="80">
-          <pl-dropdown sort="ascend" answers-name="F">
+          <pl-dropdown sort="ascend" answers-name="F" label="Output F">
             <pl-answer correct="true">1</pl-answer>
             <pl-answer correct="false">0</pl-answer>
           </pl-dropdown>
