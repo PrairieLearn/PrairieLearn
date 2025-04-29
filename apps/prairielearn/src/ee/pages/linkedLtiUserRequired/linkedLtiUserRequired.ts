@@ -32,8 +32,7 @@ router.get(
     // We provide defaults here as a fallback.
     res.send(
       AuthzRequireLinkedLtiUser({
-        platformName: res.locals.platformName || 'your learning management system',
-        message: res.locals.message || 'Please access this course through your LMS first.',
+        instancesWithMissingIdentities,
         resLocals: res.locals,
       }),
     );

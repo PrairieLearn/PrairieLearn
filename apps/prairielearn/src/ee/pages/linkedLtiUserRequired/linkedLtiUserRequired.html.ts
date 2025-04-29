@@ -1,18 +1,18 @@
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
+import type { Lti13Instance } from '../../../lib/db-types.js';
 
 export function AuthzRequireLinkedLtiUser({
-  platformName,
-  message,
+  instancesWithMissingIdentities,
   resLocals,
 }: {
-  platformName: string;
-  message: string;
+  instancesWithMissingIdentities: { lti13_instance: Lti13Instance; lti13_user_id: string | null }[];
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
-    pageTitle: 'Authentication Required',
+    pageTitle: 'Missing LTI connection',
     navContext: {
       type: 'student',
       page: undefined,
@@ -21,23 +21,41 @@ export function AuthzRequireLinkedLtiUser({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-warning">
-          <h3 class="text-center mb-0">Access Required Through ${platformName}</h3>
+          <h1>Missing LTI connection</h1>
         </div>
         <div class="card-body">
-          <p class="lead text-center">${message}</p>
+          ${run(() => {
+            if (instancesWithMissingIdentities.length === 1) {
+              const instance = instancesWithMissingIdentities[0].lti13_instance;
+              return html`
+                <p>
+                  To continue, please log into PrairieLearn via <strong>${instance.name}</strong>.
+                  This creates a connection between your PrairieLearn account and your
+                  ${instance.name} account.
+                </p>
+              `;
+            }
 
-          <div class="text-center mb-4">
-            <i class="fa fa-info-circle fa-3x text-info"></i>
-          </div>
+            return html`
+              <p>
+                To continue to this course, please log into PrairieLearn via all of the following
+                platforms:
+              </p>
+              <ul>
+                ${instancesWithMissingIdentities.map(
+                  ({ lti13_instance }) => html`<li><strong>${lti13_instance.name}</strong></li>`,
+                )}
+              </ul>
+              <p>
+                This will create a connection between your PrairieLearn account and your accounts on
+                these platforms.
+              </p>
+            `;
+          })}
 
-          <p class="text-center">
-            To continue, please access this course through ${platformName} first. This creates a
-            connection between your PrairieLearn account and your ${platformName} account.
-          </p>
-
-          <p class="text-center">
-            <strong>Important:</strong> After logging in through ${platformName}, you'll be able to
-            access this course directly in PrairieLearn in the future.
+          <p class="mb-0">
+            After completing this step, you'll be able to access this course directly in
+            PrairieLearn in the future.
           </p>
         </div>
       </div>
