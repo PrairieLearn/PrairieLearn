@@ -25,7 +25,25 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import * as questionServers from '../../../question-servers/index.js';
 
-import * as aiGradingUtil from './ai-grading-util.js';
+import {
+  GradingResultSchema,
+  OPEN_AI_MODEL,
+  OPEN_AI_TEMPERATURE,
+  generatePrompt,
+  generateSubmissionEmbedding,
+  insertAiGradingJob,
+  parseAiRubricItems,
+  pearsonCorrelation,
+  rootMeanSquaredError,
+  rubricItemAccuracy,
+  selectClosestSubmissionInfo,
+  selectEmbeddingForSubmission,
+  selectInstanceQuestionsForAssessmentQuestion,
+  selectLastSubmissionId,
+  selectLastVariantAndSubmission,
+  selectRubricForGrading,
+  selectRubricGradingItems,
+} from './ai-grading-util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -71,17 +89,17 @@ export async function aiGradeTest({
     if (!assessment_question.max_manual_points) {
       job.fail('The tested question has no manual grading');
     }
-    const instance_questions = await aiGradingUtil.selectInstanceQuestionsForAssessmentQuestion(
+    const instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
     );
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
-      const submission_id = await aiGradingUtil.selectLastSubmissionId(instance_question.id);
-      const submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission_id);
+      const submission_id = await selectLastSubmissionId(instance_question.id);
+      const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
-        await aiGradingUtil.generateSubmissionEmbedding({
+        await generateSubmissionEmbedding({
           course,
           question,
           instance_question,
@@ -105,7 +123,7 @@ export async function aiGradeTest({
     }
     job.info(`Found ${number_to_test} submissions to test!`);
 
-    const rubric_items = await aiGradingUtil.selectRubricForGrading(assessment_question.id);
+    const rubric_items = await selectRubricForGrading(assessment_question.id);
     const rubric_id = rubric_items.length ? rubric_items[0].rubric_id : null;
 
     let error_count = 0;
@@ -131,9 +149,7 @@ export async function aiGradeTest({
 
       job.info(`\nInstance question ${instance_question.id}`);
 
-      const { variant, submission } = await aiGradingUtil.selectLastVariantAndSubmission(
-        instance_question.id,
-      );
+      const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const grading_rubric_id = await queryOptionalRow(
         sql.select_rubric_id_from_grading,
@@ -170,9 +186,9 @@ export async function aiGradeTest({
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
-      let submission_embedding = await aiGradingUtil.selectEmbeddingForSubmission(submission.id);
+      let submission_embedding = await selectEmbeddingForSubmission(submission.id);
       if (!submission_embedding) {
-        submission_embedding = await aiGradingUtil.generateSubmissionEmbedding({
+        submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
           instance_question,
@@ -182,14 +198,14 @@ export async function aiGradeTest({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await aiGradingUtil.selectClosestSubmissionInfo({
+      const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
         embedding: submission_embedding.embedding,
         limit: 5,
       });
 
-      const { messages } = await aiGradingUtil.generatePrompt({
+      const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
         example_submissions,
@@ -197,7 +213,7 @@ export async function aiGradeTest({
       });
 
       if (rubric_id) {
-        const rubric_grading_items = await aiGradingUtil.selectRubricGradingItems(
+        const rubric_grading_items = await selectRubricGradingItems(
           submission.manual_rubric_grading_id,
         );
         const referenceRubricDescriptions = new Set<string>();
@@ -219,10 +235,10 @@ export async function aiGradeTest({
         });
         const completion = await openai.beta.chat.completions.parse({
           messages,
-          model: aiGradingUtil.OPEN_AI_MODEL,
+          model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
-          temperature: aiGradingUtil.API_TEMPERATURE,
+          temperature: OPEN_AI_TEMPERATURE,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
@@ -232,11 +248,10 @@ export async function aiGradeTest({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            const { appliedRubricItems, appliedRubricDescription } =
-              aiGradingUtil.parseAiRubricItems({
-                ai_rubric_items: response.parsed.rubric_items,
-                rubric_items,
-              });
+            const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+              ai_rubric_items: response.parsed.rubric_items,
+              rubric_items,
+            });
             testRubricResults.push({
               reference_items: referenceRubricDescriptions,
               ai_items: appliedRubricDescription,
@@ -268,7 +283,7 @@ export async function aiGradeTest({
                 },
                 IdSchema,
               );
-              await aiGradingUtil.insertAiGradingJob({
+              await insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
@@ -300,10 +315,10 @@ export async function aiGradeTest({
         const score_perc = instance_question.score_perc ?? 0;
         const completion = await openai.beta.chat.completions.parse({
           messages,
-          model: aiGradingUtil.OPEN_AI_MODEL,
+          model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
-          response_format: zodResponseFormat(aiGradingUtil.GradingResultSchema, 'score'),
-          temperature: aiGradingUtil.API_TEMPERATURE,
+          response_format: zodResponseFormat(GradingResultSchema, 'score'),
+          temperature: OPEN_AI_TEMPERATURE,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
@@ -335,7 +350,7 @@ export async function aiGradeTest({
                 },
                 IdSchema,
               );
-              await aiGradingUtil.insertAiGradingJob({
+              await insertAiGradingJob({
                 grading_job_id,
                 job_sequence_id: serverJob.jobSequenceId,
                 prompt: messages,
@@ -368,17 +383,17 @@ export async function aiGradeTest({
       if (rubric_id) {
         job.info(`Test size: ${testRubricResults.length}`);
         rubric_items.forEach((item) => {
-          const accuracy = aiGradingUtil.rubricItemAccuracy(testRubricResults, item);
+          const accuracy = rubricItemAccuracy(testRubricResults, item);
           job.info(`Rubric item: ${item.description}, accuracy: ${accuracy * 100}%`);
         });
       } else {
         job.info(`Test size: ${testScoreResults.length}`);
-        const rmse = aiGradingUtil.rootMeanSquaredError(
+        const rmse = rootMeanSquaredError(
           testScoreResults.map((item) => item.reference_score),
           testScoreResults.map((item) => item.ai_score),
         );
         job.info(`RMSE: ${rmse}`);
-        const r = aiGradingUtil.pearsonCorrelation(
+        const r = pearsonCorrelation(
           testScoreResults.map((item) => item.reference_score),
           testScoreResults.map((item) => item.ai_score),
         );

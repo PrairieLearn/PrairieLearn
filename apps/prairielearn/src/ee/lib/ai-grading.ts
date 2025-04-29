@@ -170,7 +170,7 @@ export async function aiGrade({
           model: aiGradingUtil.OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
-          temperature: aiGradingUtil.API_TEMPERATURE,
+          temperature: aiGradingUtil.OPEN_AI_TEMPERATURE,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
@@ -236,7 +236,7 @@ export async function aiGrade({
           model: aiGradingUtil.OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(aiGradingUtil.GradingResultSchema, 'score'),
-          temperature: aiGradingUtil.API_TEMPERATURE,
+          temperature: aiGradingUtil.OPEN_AI_TEMPERATURE,
         });
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);

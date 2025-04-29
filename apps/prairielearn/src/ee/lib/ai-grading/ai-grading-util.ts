@@ -32,7 +32,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
-export const API_TEMPERATURE = 0.2;
+export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -182,11 +182,7 @@ export async function generateSubmissionEmbedding({
   openai: OpenAI;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
-  const { variant, submission } = await queryRow(
-    sql.select_last_variant_and_submission,
-    { instance_question_id: instance_question.id },
-    SubmissionVariantSchema,
-  );
+  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     questionRenderContext: 'ai_grading',
@@ -306,27 +302,25 @@ export function rubricItemAccuracy(
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
 ): Promise<InstanceQuestion[]> {
-  const instance_questions = await queryRows(
+  return await queryRows(
     sql.select_instance_questions_for_assessment_question,
     {
       assessment_question_id,
     },
     InstanceQuestionSchema,
   );
-  return instance_questions;
 }
 
 export async function selectRubricGradingItems(
   manual_rubric_grading_id: string | null,
 ): Promise<RubricItem[]> {
-  const rubric_grading_items = await queryRows(
+  return await queryRows(
     sql.select_rubric_grading_items,
     {
       manual_rubric_grading_id,
     },
     RubricItemSchema,
   );
-  return rubric_grading_items;
 }
 
 export async function insertAiGradingJob({
@@ -364,12 +358,11 @@ export async function insertAiGradingJob({
 export async function selectLastVariantAndSubmission(
   instance_question_id: string,
 ): Promise<{ variant: Variant; submission: Submission }> {
-  const { variant, submission } = await queryRow(
+  return await queryRow(
     sql.select_last_variant_and_submission,
     { instance_question_id },
     SubmissionVariantSchema,
   );
-  return { variant, submission };
 }
 
 export async function selectClosestSubmissionInfo({
@@ -383,7 +376,7 @@ export async function selectClosestSubmissionInfo({
   embedding: string;
   limit: number;
 }): Promise<GradedExample[]> {
-  const example_submissions = await queryRows(
+  return await queryRows(
     sql.select_closest_submission_info,
     {
       submission_id,
@@ -393,38 +386,30 @@ export async function selectClosestSubmissionInfo({
     },
     GradedExampleSchema,
   );
-  return example_submissions;
 }
 
 export async function selectRubricForGrading(
   assessment_question_id: string,
 ): Promise<RubricItem[]> {
-  const rubric_items = await queryRows(
+  return await queryRows(
     sql.select_rubric_for_grading,
     {
       assessment_question_id,
     },
     RubricItemSchema,
   );
-  return rubric_items;
 }
 
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  const submission_id = await queryRow(
-    sql.select_last_submission_id,
-    { instance_question_id },
-    IdSchema,
-  );
-  return submission_id;
+  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function selectEmbeddingForSubmission(
   submission_id: string,
 ): Promise<SubmissionGradingContextEmbedding | null> {
-  const submission_embedding = await queryOptionalRow(
+  return await queryOptionalRow(
     sql.select_embedding_for_submission,
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
-  return submission_embedding;
 }
