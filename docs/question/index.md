@@ -1,8 +1,16 @@
 # Questions
 
-**NOTE:** Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might need to generate a new variant of a question to run new Python code.
+Questions are the basic building blocks of PrairieLearn. They are the individual problems that students will solve, and they can be combined into assessments (homeworks and exams). Questions can be simple or complex, and they can be written in a variety of ways. This document describes how to create questions, including the directory structure, metadata, HTML templates, and server-side code.
 
-**NOTE:** New-style PrairieLearn questions are marked with `"type": "v3"`. This documentation only describes new-style questions, although old-style v2 questions are still supported in the code.
+![A sample question](example-question.png)
+
+## Question components
+
+A question is made up of three main components:
+
+1. **`info.json`**: Metadata about the question, including the question title, topic, and tags.
+2. **`question.html`**: The HTML template that defines the question. This is where you write the question text and define the input elements. Reference the [question template documentation](template.md) for more details.
+3. **`server.py`**: This is where you write the logic for generating random values, grading student responses, and any other server-side code. This file is optional, but it is necessary for any question that has non-trivial randomization or custom grading behavior. Reference the [server documentation](server.md) for more details.
 
 ## Directory structure
 
@@ -39,11 +47,17 @@ questions
         `-- question.html
 ```
 
+!!! tip
+
+    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms. One potential folder structure you could consider is `topic/subtopic/question`.
+
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
-Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
+!!! info
 
-## Question `info.json`
+    An extensive library of example questions can be found under the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory of PrairieLearn. You can also view these questions by [running PrairieLearn locally](../installing.md/#running-instructions).
+
+## Metadata (`info.json`)
 
 The `info.json` file for each question defines properties of the question. For example:
 
@@ -75,7 +89,19 @@ The `info.json` file for each question defines properties of the question. For e
 | `shareSourcePublicly`    | boolean | Whether the source code of the question should be available                                                                                                            |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
-See the [reference for `infoQuestion.json`](../schemas/infoQuestion.md) for more information about what can be added to this file.
+!!! note "Local development note"
+
+    Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Most edits to HTML or Python files will be picked up by reloading the page. However, if you made changes to question generation or element arguments, you might also need to generate a new variant.
+
+### Question Sharing
+
+Any question that is marked with `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Any question that is marked with `"sharePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
+
+```json title="info.json"
+{
+  "sharingSets": ["python-exercises"]
+}
+```
 
 ### Question Dependencies
 
@@ -94,16 +120,6 @@ These dependencies are specified in the `info.json` file, and can be configured 
 }
 ```
 
-### Question Sharing
-
-Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
-
-```json title="info.json"
-{
-  "sharingSets": ["python-exercises"]
-}
-```
-
 The different types of dependency properties available are summarized in this table:
 
 | Property                     | Description                                                                                       |
@@ -115,7 +131,28 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-## Question `question.html`
+Additional details about how to access these fields from `server.py` can be found in the [`server.py` documentation](server.md#accessing-files-on-disk).
+
+### Non-randomized questions
+
+While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
+
+- On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
+- On `Exam`-type assessments, all questions are effectively single-variant, so the `singleVariant` option has no effect.
+
+### Partial credit
+
+By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
+
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements.md) also provide more fine-grained control over partial credit.
+
+In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
+
+!!! info
+
+    See the [reference for `infoQuestion.json`](../schemas/infoQuestion.md) for an exhaustive list of all the properties available, and their schemas.
+
+## HTML (`question.html`)
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
 
@@ -139,106 +176,51 @@ The `question.html` is a template used to render the question to the student. A 
 </p>
 ```
 
-The `question.html` is regular HTML, with four special features:
+The `question.html` is regular HTML, with a few special features:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values using [Mustache](https://mustache.github.io/mustache.5.html). These parameters are typically defined by a [question's `server.py`](#custom-generation-and-grading-serverpy).
+2. Special HTML elements (like [`<pl-number-input>`](../elements.md#pl-number-input-element)) enable input and formatted output. A student's submission is composed of the answers they provide to the question elements. See the [list of PrairieLearn elements](../elements.md).
 
-2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](../elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
+   :warning: **All submission elements must have unique `answers-name` attributes.** This is necessary for questions to be graded properly.
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
-
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+5. Special layout elements like `<pl-question-panel>` and `<pl-answer-panel>` can be used to show content to students in different contexts.
 
-## Question `server.py`
+!!! info
 
-## The `singleVariant` option for non-randomized questions
+    More details about these features and information about `question.html` is in the [question template documentation](template.md).
 
-While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
+## Custom generation and grading (`server.py`)
 
-- On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-- On `Exam`-type assessments, all questions are effectively single-variant, so the `singleVariant` option has no effect.
+The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answers. A minimal `server.py` might set random parameters and calculate correct answers based on those parameters, while using the built-in grading ability of the PrairieLearn elements to grade the student's submission. More complex questions may use `server.py` to provide custom parsing and grading functionality, or randomized images and files.
 
-## The `partialCredit` option
+```python title="server.py"
+import random
 
-By default, all questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct, the student will be awarded 50% of the available points.
+def generate(data):
+    # Generate random parameters
+    data["params"]["m"] = random.randint(1, 10)
+    data["params"]["a"] = random.randint(1, 10)
 
-To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](../elements.md) also provide more fine-grained control over partial credit.
+    # Compute the correct answer
+    data["correct_answers"]["F"] = data["params"]["m"] * data["params"]["a"]
+```
 
-In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
+!!! info
 
-## Options for grading student answers
+    More information about `server.py`, custom grading, and more can be found in the [server.py documentation](server.md).
 
-For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
+## Grading student answers
 
-1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
+Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) or [`pl-checkbox`](../elements.md#pl-checkbox-element), which aren't freeform answers, are automatically graded based on the element parameters. For other elements, like [`pl-number-input`](../elements.md#pl-number-input-element) and [`pl-string-input`](../elements.md#pl-string-input-element), which have students input an answer of their choosing, there are four different methods of auto-grading the student answer:
+
+1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. This option is typically used for answers with a hard-coded value (i.e. if `"singleVariant": true` in `info.json`), and is not expected to be used in most randomized questions.
 
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
-3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
+3. Write a [custom grading function](./server.md#step-5-grade) in `server.py` that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This supports a variety of alternative grading options, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
 4. Write an [external grader](../externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](../elements.md#pl-answer-panel-element) that any correct answer would be accepted, and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
-
-### Custom grading best practices
-
-Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
-
-Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The [`question_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/question_utils.py) file from the `prairielearn` Python library provides the following score recomputation functions:
-
-- [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
-- [`set_all_or_nothing_score_data`][prairielearn.question_utils.set_all_or_nothing_score_data] sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
-
-This can be used like so:
-
-```python
-from prairielearn import set_weighted_score_data
-
-def grade(data):
-    # update partial_scores as necessary
-    # ...
-
-    # compute total question score
-    set_weighted_score_data(data)
-```
-
-More detailed information can be found in the docstrings for these functions. If you prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
-
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feedback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
-
-For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
-
-```python
-def generate(data):
-    a = 33.33337
-    b = 33.33333
-    data["params"]["a_for_student"] = f'{a:.2f}'
-    data["params"]["b_for_student"] = f'{a:.2f}'
-    # Note how the correct answer is computed with full precision,
-    # but the parameters displayed to students are rounded.
-    data["correct_answers"]["c"] = a - b
-```
-
-Instead, the numbers should be rounded at the beginning:
-
-```python
-def generate(data):
-  a = np.round(33.33337, 2)
-  b = np.round(33.33333, 2)
-  data["params"]["a_for_student"] = f'{a:.2f}'
-  data["params"]["b_for_student"] = f'{b:.2f}'
-  data["correct_answers"]["c"] = a - b
-```
-
-Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`grading_utils.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/grading_utils.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
-
-- [`is_correct_scalar_ra`][prairielearn.grading_utils.is_correct_scalar_ra] compares floats using relative and absolute tolerances.
-- [`is_correct_scalar_sf`][prairielearn.grading_utils.is_correct_scalar_sf] compares floats up to a specified number of significant figures.
-- [`is_correct_scalar_dd`][prairielearn.grading_utils.is_correct_scalar_dd] compares floats up to a specified number of digits.
-
-More detailed information can be found in the docstrings for these functions.
-
-_Note:_ Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
-element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
-code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
-[PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
+If a question uses more than one method for grading, options 3 and 4 override options 1 and 2. If you grade a question using a custom grading function (option 3) or an external grader (option 4), you are still strongly encouraged to provide a possible correct answer so that students can see it in the answer panel. More details about providing feedback on student answers can be found in the `"answer"` panel section of the [question template documentation](template.md#answer-panel).
