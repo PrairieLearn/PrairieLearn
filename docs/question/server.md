@@ -40,7 +40,7 @@ def generate(data):
 
 Question variants are randomized based on the variant seed (`data["variant_seed"]`), and all random generators (`random`, `np.random`, etc.) are seeded with this value.
 
-!!! tip
+??? tip "Generating fake data"
 
     If you need to generate fake data, you can use the [`faker`](https://faker.readthedocs.io/en/master/) library. This is useful for generating random names, addresses, and other data that looks real but is not.
 
