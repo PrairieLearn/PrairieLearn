@@ -4,7 +4,7 @@ import { run } from '@prairielearn/run';
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
 
-export function AuthzRequireLinkedLtiUser({
+export function LinkedLtiUserRequired({
   instancesWithMissingIdentities,
   resLocals,
 }: {

@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { selectLti13InstanceIdentitiesForCourseInstance } from '../../models/lti13-user.js';
 
-import { AuthzRequireLinkedLtiUser } from './linkedLtiUserRequired.html.js';
+import { LinkedLtiUserRequired } from './linkedLtiUserRequired.html.js';
 
 const router = Router();
 
@@ -28,10 +28,8 @@ router.get(
       return;
     }
 
-    // The platformName and message should be set by the middleware before rendering.
-    // We provide defaults here as a fallback.
     res.send(
-      AuthzRequireLinkedLtiUser({
+      LinkedLtiUserRequired({
         instancesWithMissingIdentities,
         resLocals: res.locals,
       }),
