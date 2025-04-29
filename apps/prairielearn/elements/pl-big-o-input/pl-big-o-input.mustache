@@ -13,7 +13,7 @@
                     {{^editable}}disabled{{/editable}}
                     {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                     placeholder="{{placeholder}}"
-                    aria-describedby="pl-big-o-input-{{uuid}}-suffix"
+                    {{#suffix}}aria-describedby="pl-big-o-input-{{uuid}}-suffix"{{/suffix}}
                     aria-labelledby="pl-big-o-input-{{uuid}}-label"
                 />
                 <span

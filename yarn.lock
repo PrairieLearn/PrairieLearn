@@ -3803,7 +3803,7 @@ __metadata:
     "@smithy/types": "npm:^4.2.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@trpc/client": "npm:^11.1.0"
-    "@trpc/server": "npm:^11.1.0"
+    "@trpc/server": "npm:^11.1.1"
     "@types/archiver": "npm:^6.0.3"
     "@types/async": "npm:^3.2.24"
     "@types/blocked": "npm:^1.3.4"
@@ -4000,6 +4000,26 @@ __metadata:
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.24.3"
     zod-to-json-schema: "npm:^3.24.4"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat"
+  dependencies:
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    typescript: "npm:^5.8.3"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact-cjs@workspace:^, @prairielearn/preact-cjs@workspace:packages/preact-cjs":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    original-preact: "npm:preact@^10.26.5"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -5141,12 +5161,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trpc/server@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "@trpc/server@npm:11.1.0"
+"@trpc/server@npm:^11.1.1":
+  version: 11.1.1
+  resolution: "@trpc/server@npm:11.1.1"
   peerDependencies:
     typescript: ">=5.7.2"
-  checksum: 10c0/8db6c4cba4bbb8f585c81e868adfcbb05d742ab122ff3d8fa561242e3aa4a043d8f2aa249337e2d4b192d9ab98559d675325678b245f2d4862b4d8a366c622b1
+  checksum: 10c0/d590d90144e23acad31c8346ee04b2d01439dec181ede156537321b53ece81f5b4131986d599f456c3a45cd8d7a0b1569336d20765fbd6906a8bc960193cd586
   languageName: node
   linkType: hard
 
@@ -13493,6 +13513,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"original-preact@npm:preact@^10.26.5, preact@npm:^10.26.5":
+  version: 10.26.5
+  resolution: "preact@npm:10.26.5"
+  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
+  languageName: node
+  linkType: hard
+
 "os-tmpdir@npm:^1.0.2, os-tmpdir@npm:~1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
@@ -14123,13 +14150,6 @@ __metadata:
     typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
-
-"preact@npm:^10.26.5":
-  version: 10.26.5
-  resolution: "preact@npm:10.26.5"
-  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
-  languageName: node
-  linkType: hard
 
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1

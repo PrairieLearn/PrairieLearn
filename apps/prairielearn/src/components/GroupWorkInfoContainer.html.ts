@@ -164,8 +164,8 @@ function GroupRoleTable({
           >
             <thead>
               <tr>
-                <th scope="col">User</th>
-                <th scope="col">Roles</th>
+                <th>User</th>
+                <th>Roles</th>
               </tr>
             </thead>
             <tbody>
@@ -223,10 +223,10 @@ function GroupRoleTable({
         >
           <thead>
             <tr>
-              <th scope="col">Role</th>
-              <th scope="col">Minimum assignments</th>
-              <th scope="col">Maximum assignments</th>
-              <th scope="col">Can assign roles</th>
+              <th>Role</th>
+              <th>Minimum assignments</th>
+              <th>Maximum assignments</th>
+              <th>Can assign roles</th>
             </tr>
           </thead>
           <tbody>

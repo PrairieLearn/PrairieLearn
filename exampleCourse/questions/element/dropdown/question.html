@@ -9,25 +9,25 @@
 
 <p>
   The 
-  <pl-dropdown answers-name="aristotle">
+  <pl-dropdown answers-name="aristotle" label="The blank is more than the sum of its parts.">
     {{#params.aristotle}}
-        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.aristotle}}
   </pl-dropdown> 
   is more than the sum of its parts.
 </p>
 <p>
   The 
-  <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="aristotle_mc">
+  <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="aristotle_mc" label="The blank is more than the sum of its parts.">
     {{#params.aristotle}}
-        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.aristotle}}
   </pl-multiple-choice> 
   is more than the sum of its parts.
 </p>
 <p>
   A
-  <pl-dropdown sort="ascend" answers-name="hume">
+  <pl-dropdown sort="ascend" answers-name="hume" label="A blank man proportions his belief to the evidence.">
     <pl-answer correct="true">wise</pl-answer>
     <pl-answer correct="false">clumsy</pl-answer>
     <pl-answer correct="false">reckless</pl-answer>
@@ -36,7 +36,7 @@
 </p>
 <p>
   A
-  <pl-multiple-choice display="dropdown" hide-letter-keys="true" order="ascend" answers-name="hume_mc">
+  <pl-multiple-choice display="dropdown" hide-letter-keys="true" order="ascend" answers-name="hume_mc" label="A blank man proportions his belief to the evidence.">
     <pl-answer correct="true">wise</pl-answer>
     <pl-answer correct="false">clumsy</pl-answer>
     <pl-answer correct="false">reckless</pl-answer>
