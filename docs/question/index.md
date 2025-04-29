@@ -138,7 +138,7 @@ Additional details about how to access these fields from `server.py` can be foun
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
 
 - On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-- On `Exam`-type assessments, all questions are effectively single-variant, so the `singleVariant` option has no effect.
+- On `Exam`-type assessments, each student only can attempt one variant of the question. The `singleVariant` option ensures all students will receive the same exact variant of the question.
 
 ### Partial credit
 
