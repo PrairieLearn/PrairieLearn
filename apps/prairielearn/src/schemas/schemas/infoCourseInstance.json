@@ -47,7 +47,7 @@
       "deprecated": true
     },
     "shareSourcePublicly": {
-      "description": "If true, the course instance's source code is shared publicly.",
+      "description": "If true, the course instance is shared publicly.",
       "type": "boolean",
       "default": true
     },
