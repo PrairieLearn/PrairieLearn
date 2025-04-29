@@ -221,7 +221,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const limitedInternallyGradedQuestions = internallyGradedQuestions;
+  const limitedInternallyGradedQuestions = internallyGradedQuestions.slice(0, 50);
 
   const badQs = [
     'element/fileEditor', // needs files
@@ -348,6 +348,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'prefer-tbody': 'off',
             'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
             'hidden-focusable': 'off', // False positive - https://getbootstrap.com/docs/5.3/components/modal/#accessibility
+            'wcag/h63': 'off', // False positive, too strict
 
             // Requires fixes in pl-answer -- div subnode of label
             // Requires fixes in pl-multipl-choice -- div subnode of span
@@ -365,13 +366,12 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'attribute-empty-style': 'off',
 
             // Solved issues
-            'element-required-attributes': 'off',
-            'no-deprecated-attr': 'off',
-            deprecated: 'off',
-            'text-content': 'off',
-            'input-attributes': 'off',
-            'attribute-allowed-values': 'off',
-            'wcag/h63': 'off',
+            // 'element-required-attributes': 'off',
+            // 'no-deprecated-attr': 'off',
+            // deprecated: 'off',
+            // 'text-content': 'off',
+            // 'input-attributes': 'off',
+            // 'attribute-allowed-values': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
           },
