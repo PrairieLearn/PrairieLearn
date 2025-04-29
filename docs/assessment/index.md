@@ -22,42 +22,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-## Format specification
-
-| Property                | Type    | Description                                                                                                                                                                    |
-| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `uuid`                  | string  | Unique identifier (UUID). E.g., `"8b4891d6-64d1-4e89-b72d-ad2133f25b2f"`. These can be obtained from [uuidgenerator.net](https://www.uuidgenerator.net) (Required; no default) |
-| `type`                  | string  | Either `"Homework"` or `"Exam"`. ([Details;](#assessment-types) Required; no default)                                                                                          |
-| `title`                 | string  | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)                                                                                      |
-| `set`                   | string  | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)                                                                               |
-| `number`                | string  | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)                                                                                      |
-| `module`                | string  | The module that this assessment belongs to (e.g., `Chapter 3`). ([Details;](#grouping-assessments-by-modules) Optional; default: none)                                         |
-| `allowAccess`           | array   | List of access rules. ([Details;](../accessControl/index.md) Optional; default: no student access)                                                                             |
-| `zones`                 | array   | Specification of zones and questions. ([Details;](#question-specification) Optional; default: none)                                                                            |
-| `text`                  | string  | HTML text shown on the assessment overview page. (Optional; default: none)                                                                                                     |
-| `multipleInstance`      | boolean | Whether to allow students to create whole new attempts at the entire assessment. (Optional; default: `false`)                                                                  |
-| `maxPoints`             | number  | The maximum points that can be earned. (Optional; default: sum of zone max points)                                                                                             |
-| `maxBonusPoints`        | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (Optional; default: 0)                                                                          |
-| `shuffleQuestions`      | boolean | Whether to randomize the question order (Homework only). (Optional; default: `false`)                                                                                          |
-| `autoClose`             | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (Optional; default: `true`)                                                            |
-| `allowIssueReporting`   | boolean | Whether to allow students to report question issues. (Optional; default: `true`)                                                                                               |
-| `allowPersonalNotes`    | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)                                                                                                   |
-| `constantQuestionValue` | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)                                                                 |
-| `allowRealTimeGrading`  | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)                                                                                              |
-| `requireHonorCode`      | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)                                                                               |
-| `advanceScorePerc`      | number  | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)                                                                          |
-| `gradeRateMinutes`      | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)                                                                    |
-| `groupWork`             | boolean | Whether the assessment will support group work. (Optional; default: `false`)                                                                                                   |
-| `groupMaxSize`          | number  | Maximum number of students in a group. (Optional; default: none)                                                                                                               |
-| `groupMinSize`          | number  | Minimum number of students in a group. (Optional; default: none)                                                                                                               |
-| `groupRoles`            | array   | Array of custom user roles in a group. (Optional; default: none)                                                                                                               |
-| `canSubmit`             | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none)                                      |
-| `canView`               | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)                                        |
-| `studentGroupCreate`    | boolean | Whether students can create groups. (Optional; default: `false`)                                                                                                               |
-| `studentGroupJoin`      | boolean | Whether students can join groups. (Optional; default: `false`)                                                                                                                 |
-| `studentGroupLeave`     | boolean | Whether students can leave groups. (Optional; default: `false`)                                                                                                                |
-
-See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
+See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for details about the available properties.
 
 ## Assessment types
 
@@ -153,15 +118,7 @@ An assessment is broken down in to a list of zones, like this:
 }
 ```
 
-| Zone Property   | Type    | Description                                                                                                                                           |
-| --------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`         | string  | The title of the zone. (Optional; default: none)                                                                                                      |
-| `questions`     | array   | The list of slots for questions and question alternatives within the zone. (Optional; default: none)                                                  |
-| `numberChoose`  | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
-| `maxPoints`     | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
-| `bestQuestions` | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
-| `comment`       | string  | Free‑form comment for the zone (Optional; default: none)                                                                                              |
-Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
+See the [zone reference in `infoAssessment.json`](../schemas/infoAssessment.md#definitions/ZoneAssessmentJsonSchema) for details about the available properties.
 
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
 
@@ -191,17 +148,7 @@ Or a slot can contain a _question alternative list_:
 
 An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
-| Slot property     | Type            | Description                                                                                                                                                                 |
-| ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `points`          | number or array | The number of points for this question. Can be a number (e.g., `10`) or a declining list of points (e.g., `[10, 8, 4]`) for partial credit on Exams. (Required; no default) |
-| `maxPoints`       | number          | The maximum points available for this question on a Homework that allows multiple attempts for more points. (Optional: default: same as `points`)                           |
-| `id`              | string          | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)                                                 |
-| `alternatives`    | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                            |
-| `numberChoose`    | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                     |
-| `triesPerVariant` | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                    |
-| `forceMaxPoints`  | boolean         | Whether to force all students to receive maximum points. See [Regrading](../regrading.md). (Optional; default `false`)                                                      |
-
-Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
+See the [question alternatives reference in `infoAssessment.json`](../schemas/infoAssessment.md#definitions/QuestionAlternativeJsonSchema) for details about the available properties.
 
 ## Question points for `Homework` assessments
 
@@ -401,14 +348,7 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+See the [Group work properties in `infoAssessment.json`](../schemas/infoAssessment.md) for details.
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
@@ -484,12 +424,7 @@ To opt in to custom group roles, group roles must be defined at the root of the 
 }
 ```
 
-| Attribute        | Type    | Default | Description                                                                  |
-| ---------------- | ------- | ------- | ---------------------------------------------------------------------------- |
-| `name`           | string  | -       | The name of the role.                                                        |
-| `minimum`        | integer | 0       | The minimum required number of students holding this role in the assessment. |
-| `maximum`        | integer | -       | The maximum required number of students holding this role in the assessment. |
-| `canAssignRoles` | boolean | false   | Allow students with this role to assign roles to other students.             |
+See the [Group roles reference in `infoAssessment.json`](../schemas/infoAssessment.md#definitions/GroupRoleJsonSchema) for details about the available properties.
 
 Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a group's role configuration does not meet the instructor's specification.
 
@@ -506,10 +441,7 @@ The schema for permissions is defined as follows:
 }
 ```
 
-| Attribute   | Type            | Default | Description                                                     |
-| ----------- | --------------- | ------- | --------------------------------------------------------------- |
-| `canView`   | Array of string | -       | The names of roles that can view this part of the assessment.   |
-| `canSubmit` | Array of string | -       | The names of roles that can submit this part of the assessment. |
+See the [group permissions in the zone properties of `infoAssessment.json`](../schemas/infoAssessment.md#definitions/ZoneAssessmentJsonSchema) for details.
 
 Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no role** can view or submit that part of the assessment, respectively. If either attribute is not set, it means that **every role** has the permission associated to the attribute, i.e., any student with any role can view or submit that part of the assessment.
 
