@@ -62,6 +62,11 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default('Set'),
+    shareSourcePublicly: z
+      .boolean()
+      .describe("If true, the course instance's source code is shared publicly.")
+      .optional()
+      .default(false),
   })
   .strict()
   .describe('The specification file for a course instance.');
