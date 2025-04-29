@@ -1,6 +1,6 @@
 # Questions
 
-Questions are the basic building blocks of PrairieLearn. They are the individual problems that students will solve, and they can be composed into assessments (homeworks and exams). Questions can be simple or complex, and they can be written in a variety of ways. This document describes how to create questions, including the directory structure, metadata, HTML templates, and server-side code.
+Questions are the basic building blocks of PrairieLearn. They are the individual problems that students will solve, and they can be combined into assessments (homeworks and exams). Questions can be simple or complex, and they can be written in a variety of ways. This document describes how to create questions, including the directory structure, metadata, HTML templates, and server-side code.
 
 ![A sample question](example-question.png)
 
