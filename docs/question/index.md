@@ -49,7 +49,7 @@ questions
 
 !!! tip
 
-    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms.
+    Avoid using term names (e.g. `Spring20/questionName`) or assessment names (e.g. `exam3/question12`) in your question directory structure, as these can make it harder to find and reuse questions across assessments and terms. One potential folder structure you could consider is `topic/subtopic/question`.
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
