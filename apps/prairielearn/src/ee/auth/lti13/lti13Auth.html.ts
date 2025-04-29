@@ -4,7 +4,7 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
-export const Lti13Test = ({
+export function Lti13Test({
   resLocals,
   lti13_claims,
   userInfo,
@@ -16,7 +16,7 @@ export const Lti13Test = ({
   userInfo: LoadUserAuth;
   lti13_instance: Lti13Instance;
   url: URL;
-}) => {
+}) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -24,7 +24,7 @@ export const Lti13Test = ({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 test' })}
       </head>
       <body>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>LTI 1.3 authentication testing</h1>
           <p>
             Once you're satisfied, remove <code>?test</code> from the end of your configured
@@ -45,4 +45,31 @@ export const Lti13Test = ({
       </body>
     </html>
   `.toString();
-};
+}
+
+export function Lti13AuthRequired({
+  institution_id,
+  resLocals,
+}: {
+  institution_id: string;
+  resLocals: Record<string, any>;
+}) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 authentication required' })}
+      </head>
+      <body>
+        <main id="content" class="container mb-4">
+          <h1>Authentication required</h1>
+          <p>
+            Your institution requires you to authenticate via an additional method to complete the
+            login process.
+          </p>
+          <a href="/pl/login?institution_id=${institution_id}">Log in</a>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}

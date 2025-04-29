@@ -6,7 +6,6 @@ import {
   AssessmentQuestionNumber,
 } from '../../components/AssessmentQuestions.html.js';
 import { Modal } from '../../components/Modal.html.js';
-
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -24,15 +23,16 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
       assessment_copy_targets.length === 0
         ? html`
             <p>
-              You can't copy this assessment because you don't have editor permissions in any courses that have course instances.
+              You can't copy this assessment because you don't have editor permissions in any
+              courses that have course instances.
               <a href="/pl/request_course">Request a course</a> if you don't have one already.
               Otherwise, contact the owner of the course you expected to have access to.
             </p>
           `
         : html`
             <p>
-              This assessment can be copied to any course instance in courses for which you have editor permissions.
-              Select one of your course instances to copy this assessment to.
+              This assessment can be copied to any course instance in courses for which you have
+              editor permissions. Select one of your course instances to copy this assessment to.
             </p>
             <select class="custom-select" name="to_course_instance_id" required>
               ${assessment_copy_targets.map(
@@ -69,7 +69,6 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
   });
 }
 
-
 export function PublicAssessmentQuestions({
   resLocals,
   assessment,
@@ -95,20 +94,19 @@ export function PublicAssessmentQuestions({
     },
     content: course.sharing_name
       ? html`
-      ${CopyAssessmentModal({ resLocals })}
-
+          ${CopyAssessmentModal({ resLocals })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${assessment_set.name} ${assessment.number}: Questions
               <button
-              class="btn btn-light btn-sm ml-auto"
-              type="button"
-              data-toggle="modal"
-              data-target="#copyAssessmentModal"
-            >
-              <i class="fa fa-clone"></i>
-              Copy assessment
-            </button>
+                class="btn btn-light btn-sm ml-auto"
+                type="button"
+                data-toggle="modal"
+                data-target="#copyAssessmentModal"
+              >
+                <i class="fa fa-clone"></i>
+                Copy assessment
+              </button>
             </div>
             ${AssessmentQuestionsTable({
               questions,

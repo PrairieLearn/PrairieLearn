@@ -153,7 +153,13 @@ def is_correct_scalar_sf(a_sub: ArrayLike, a_tru: ArrayLike, digits: int = 2) ->
 
 
 def check_answers_names(data: QuestionData, name: str) -> None:
-    """Check that answers names are distinct using property in data dict."""
+    """Check that answers names are distinct using property in data dict.
+
+    Updates the data dictionary with the name if it is not already present.
+
+    Raises:
+        KeyError: If the name is already present in the data dictionary.
+    """
     if name in data["answers_names"]:
         raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
     data["answers_names"][name] = True
@@ -161,29 +167,52 @@ def check_answers_names(data: QuestionData, name: str) -> None:
 
 def grade_answer_parameterized(
     data: QuestionData,
-    question_name: str,
+    name: str,
     grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
 ) -> None:
     """
-    Grade question question_name. grade_function should take in a single parameter
-    (which will be the submitted answer) and return a 2-tuple:
-        - The first element of the 2-tuple should either be:
-            - a boolean indicating whether the question should be marked correct
-            - a partial score between 0 and 1, inclusive
-        - The second element of the 2-tuple should either be:
-            - a string containing feedback
-            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    Grade the answer for the input `name` using the provided `grade_function`.
+
+    Updates the `data` dictionary with the partial score and feedback for the question.
+
+    `grade_function` should take in a single parameter (which will be the submitted answer) and return a 2-tuple.
+
+    The first element of the 2-tuple should either be:
+
+    - a boolean indicating whether the question should be marked correct
+    - a partial score between 0 and 1, inclusive
+
+    The second element of the 2-tuple should either be:
+
+    - a string containing feedback
+    - `None`, if there is no feedback (usually this should only occur if the answer is correct)
+
+    Examples:
+        >>> def grading_function(submitted_answer):
+        ...     if submitted_answer == "foo":
+        ...         return True, None
+        ...     elif submitted_answer == "bar":
+        ...         return 0.5, "Almost there!"
+        ...     return False, "Try again!"
+        >>> data = {
+        ...     "submitted_answers": {"my_string_input": "bar"},
+        ...     "partial_scores": {},
+        ...     "answers_names": {},
+        ... }
+        >>> grade_answer_parameterized(data, "my_string_input", grading_function, weight=2)
+        >>> data["partial_scores"]
+        {"my_string_input": {"score": 0.5, "weight": 2, "feedback": "Almost there!"}}
     """
     # Create the data dictionary at first
-    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+    data["partial_scores"][name] = {"score": 0.0, "weight": weight}
 
     # If there is no submitted answer, we shouldn't do anything. Issues with blank
     # answers should be handled in parse.
-    if question_name not in data["submitted_answers"]:
+    if name not in data["submitted_answers"]:
         return
 
-    submitted_answer = data["submitted_answers"][question_name]
+    submitted_answer = data["submitted_answers"][name]
 
     # Run passed-in grading function
     result, feedback_content = grade_function(submitted_answer)
@@ -198,10 +227,10 @@ def grade_answer_parameterized(
         assert_never(result)
 
     # Set corresponding partial score and feedback
-    data["partial_scores"][question_name]["score"] = partial_score
+    data["partial_scores"][name]["score"] = partial_score
 
     if feedback_content:
-        data["partial_scores"][question_name]["feedback"] = feedback_content
+        data["partial_scores"][name]["feedback"] = feedback_content
 
 
 def determine_score_params(
@@ -215,6 +244,14 @@ def determine_score_params(
 
     Returns:
         A tuple containing the key and value for the score badge.
+
+    Examples:
+        >>> determine_score_params(1)
+        ("correct", True)
+        >>> determine_score_params(0)
+        ("incorrect", True)
+        >>> determine_score_params(0.5)
+        ("partial", 50)
     """
     if score >= 1:
         return ("correct", True)

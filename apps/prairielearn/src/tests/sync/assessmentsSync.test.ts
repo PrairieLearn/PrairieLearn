@@ -19,6 +19,11 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import type {
+  AssessmentJsonInput,
+  AssessmentSetJsonInput,
+  GroupRoleJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -31,8 +36,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-): util.Assessment {
-  const assessmentSet = courseData.course.assessmentSets[0].name;
+): AssessmentJsonInput {
+  const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
     uuid: uuidv4(),
     type,
@@ -47,20 +52,20 @@ function makeAssessment(
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
-function getGroupRoles(): util.GroupRole[] {
+function getGroupRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ];
+  ] satisfies GroupRoleJsonInput[];
 }
 
 function getPermission(permissions, groupRole, assessmentQuestion) {
@@ -2063,7 +2068,7 @@ describe('Assessment syncing', () => {
   it('creates entry in database in the case of a missing UUID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -2079,7 +2084,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     const oldUuid = assessment.uuid;
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
@@ -2159,7 +2164,7 @@ describe('Assessment syncing', () => {
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
     newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       newAssessment;
@@ -2504,5 +2509,62 @@ describe('Assessment syncing', () => {
     assert.deepEqual(syncedData.alternative_groups[0].json_can_submit, ['Contributor']);
     assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
     assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
+  });
+
+  it('syncs advanceScorePerc correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.advanceScorePerc = 50;
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 1,
+          },
+        ],
+      },
+      {
+        title: 'zone 2',
+        advanceScorePerc: 60,
+        questions: [
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 1,
+            advanceScorePerc: 70,
+          },
+          {
+            advanceScorePerc: 80,
+            alternatives: [
+              {
+                id: util.MANUAL_GRADING_QUESTION_ID,
+                points: 1,
+              },
+              {
+                id: util.WORKSPACE_QUESTION_ID,
+                points: 1,
+                advanceScorePerc: 90,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.advance_score_perc, 50);
+    assert.equal(syncedData.zones[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].effective_advance_score_perc, 50);
+    assert.equal(syncedData.zones[1].advance_score_perc, 60);
+    assert.equal(syncedData.assessment_questions[1].advance_score_perc, 70);
+    assert.equal(syncedData.assessment_questions[1].effective_advance_score_perc, 70);
+    assert.equal(syncedData.alternative_groups[2].advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[2].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[2].effective_advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[3].advance_score_perc, 90);
+    assert.equal(syncedData.assessment_questions[3].effective_advance_score_perc, 90);
   });
 });

@@ -8,8 +8,18 @@ import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import type {
+  AssessmentJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  CourseOptionsJson,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
+} from '../../schemas/index.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
+<<<<<<< HEAD
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
   devModeFeatures: Record<string, boolean> | string[];
@@ -205,14 +215,16 @@ export interface Question {
   workspaceOptions?: QuestionWorkspaceOptions;
 }
 
+=======
+>>>>>>> master
 export interface CourseInstanceData {
-  assessments: Record<string, Assessment>;
-  courseInstance: CourseInstance;
+  assessments: Record<string, AssessmentJsonInput>;
+  courseInstance: CourseInstanceJsonInput;
 }
 
 export interface CourseData {
-  course: Course;
-  questions: Record<string, Question>;
+  course: CourseJsonInput;
+  questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -289,7 +301,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course: Course = {
+const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -330,7 +342,7 @@ const course: Course = {
       color: 'gray2',
       description: 'Another test topic',
     },
-  ],
+  ] as TopicJsonInput[],
   tags: [
     {
       name: 'test',
@@ -342,10 +354,11 @@ const course: Course = {
       color: 'blue2',
       description: 'Another test tag',
     },
-  ],
-};
+  ] as TagJsonInput[],
+  options: undefined as CourseOptionsJson | undefined,
+} satisfies CourseJsonInput;
 
-const questions: Record<string, Question> = {
+const questions: Record<string, QuestionJsonInput> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -433,7 +446,7 @@ const courseInstances: Record<string, CourseInstanceData> = {
 /**
  * @returns The base course data for syncing testing
  */
-export function getCourseData(): CourseData {
+export function getCourseData() {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   return structuredClone({

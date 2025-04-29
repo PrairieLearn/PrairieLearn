@@ -214,6 +214,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/clientFilesCourseInstance/*',
   '/pl/course_instance/:course_instance_id/elementExtensions/*',
   '/pl/course_instance/:course_instance_id/elements/*',
+  '/pl/course_instance/:course_instance_id/gradebook/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion/*',
@@ -342,6 +343,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/ai_grading_runs',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/grading_rubric_panels',
 

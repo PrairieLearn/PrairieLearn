@@ -35,6 +35,9 @@ def get_enum_attrib(
 
     Returns:
         The value of attribute `name`, as part of the enum.
+
+    Raises:
+        ValueError: If the attribute is not a valid enum value.
     """
     enum_val, is_default = (
         _get_attrib(element, name)
@@ -99,6 +102,9 @@ def _get_attrib(
 
     Returns:
         The named attribute for the element, or the default value if the attribute is missing.
+
+    Raises:
+        ValueError: If the function is called with too many arguments.
 
     Internal function, do not all. Use one of the typed variants
     instead (e.g., `get_string_attrib()`).
@@ -193,6 +199,9 @@ def get_boolean_attrib(
 
     Returns:
         The boolean value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid boolean value.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -249,6 +258,9 @@ def get_integer_attrib(
 
     Returns:
         The int value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid integer value.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -291,6 +303,13 @@ def get_float_attrib(
 
     Returns:
         The float value of attribute `name`.
+
+    Raises:
+        ValueError: If the attribute is not a valid floating-point number.
+
+    Examples:
+        >>> get_float_attrib(element, "stroke-width", 4.0)
+        10.0
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
@@ -328,6 +347,9 @@ def get_color_attrib(
 
     Returns:
         A CSS color string.
+
+    Raises:
+        ValueError: If the attribute is not a valid CSS color string.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:

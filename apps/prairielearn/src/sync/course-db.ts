@@ -15,6 +15,15 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import {
+  type AssessmentJson,
+  type AssessmentSetJson,
+  type CourseInstanceJson,
+  type CourseJson,
+  type QuestionJson,
+  type QuestionPointsJson,
+  type TagJson,
+} from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
@@ -32,7 +41,7 @@ const DEFAULT_COURSE_INSTANCE_INFO = {
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
-const DEFAULT_ASSESSMENT_SETS = [
+const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
     abbreviation: 'HW',
     name: 'Homework',
@@ -74,7 +83,7 @@ const DEFAULT_ASSESSMENT_SETS = [
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
-const DEFAULT_TAGS = [
+const DEFAULT_TAGS: TagJson[] = [
   {
     name: 'numeric',
     color: 'brown1',
@@ -185,6 +194,7 @@ const FILE_UUID_REGEX =
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
 
+<<<<<<< HEAD
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
   devModeFeatures: Record<string, boolean> | string[];
@@ -400,17 +410,24 @@ export interface Question {
   shareSourcePublicly: boolean;
 }
 
+=======
+>>>>>>> master
 export interface CourseInstanceData {
-  courseInstance: InfoFile<CourseInstance>;
-  assessments: Record<string, InfoFile<Assessment>>;
+  courseInstance: InfoFile<CourseInstanceJson>;
+  assessments: Record<string, InfoFile<AssessmentJson>>;
 }
 
 export interface CourseData {
-  course: InfoFile<Course>;
-  questions: Record<string, InfoFile<Question>>;
+  course: InfoFile<CourseJson>;
+  questions: Record<string, InfoFile<QuestionJson>>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
+/**
+ * Loads and validates an entire course from a directory on disk.
+ * Downstream callers of this function can use
+ * ...Json types instead of ...JsonInput types.
+ */
 export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
@@ -691,8 +708,8 @@ export async function loadCourseInfo({
   coursePath: string;
   assessmentSetsInUse: Set<string>;
   tagsInUse: Set<string>;
-}): Promise<InfoFile<Course>> {
-  const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
+}): Promise<InfoFile<CourseJson>> {
+  const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -720,7 +737,7 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -831,11 +848,6 @@ export async function loadCourseInfo({
     }
   }
 
-  const exampleCourse =
-    info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
-    info.title === 'Example Course' &&
-    info.name === 'XC 101';
-
   const course = {
     uuid: info.uuid.toLowerCase(),
     path: coursePath,
@@ -847,7 +859,6 @@ export async function loadCourseInfo({
     tags,
     topics,
     sharingSets,
-    exampleCourse,
     options: {
       useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
@@ -1098,7 +1109,7 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
 }
 
 async function validateQuestion(
-  question: Question,
+  question: QuestionJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1136,8 +1147,8 @@ function formatQids(qids: Set<string>) {
 }
 
 async function validateAssessment(
-  assessment: Assessment,
-  questions: Record<string, InfoFile<Question>>,
+  assessment: AssessmentJson,
+  questions: Record<string, InfoFile<QuestionJson>>,
   courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1216,13 +1227,7 @@ async function validateAssessment(
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: {
-        points: number | number[];
-        autoPoints: number | number[];
-        maxPoints: number;
-        maxAutoPoints: number;
-        manualPoints: number;
-      }[] = [];
+      let alternatives: QuestionPointsJson[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
@@ -1314,11 +1319,19 @@ async function validateAssessment(
           }
 
           if (!courseInstanceExpired) {
-            if (alternative.points === 0 && alternative.maxPoints > 0) {
+            if (
+              alternative.points === 0 &&
+              alternative.maxPoints !== undefined &&
+              alternative.maxPoints > 0
+            ) {
               errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
             }
 
-            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+            if (
+              alternative.autoPoints === 0 &&
+              alternative.maxAutoPoints !== undefined &&
+              alternative.maxAutoPoints > 0
+            ) {
               errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
             }
           }
@@ -1344,7 +1357,7 @@ async function validateAssessment(
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
+      (role) => role.canAssignRoles && role.minimum !== undefined && role.minimum >= 1,
     );
 
     if (!foundCanAssignRoles) {
@@ -1353,22 +1366,34 @@ async function validateAssessment(
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (role.minimum > assessment.groupMinSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMinSize &&
+        role.minimum > assessment.groupMinSize
+      ) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (role.minimum && role.minimum > assessment.groupMaxSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMaxSize &&
+        role.minimum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
-      if (role.maximum && role.maximum > assessment.groupMaxSize) {
+      if (
+        role.maximum !== undefined &&
+        assessment.groupMaxSize &&
+        role.maximum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
-      if (role.minimum > role.maximum) {
+      if (role.minimum !== undefined && role.maximum !== undefined && role.minimum > role.maximum) {
         errors.push(
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
@@ -1385,14 +1410,15 @@ async function validateAssessment(
       canSubmit: string[] | null | undefined,
       area: string,
     ): void => {
-      (canView || []).forEach((roleName) => {
+      canView?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
-      (canSubmit || []).forEach((roleName) => {
+
+      canSubmit?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
@@ -1422,7 +1448,7 @@ async function validateAssessment(
 }
 
 async function validateCourseInstance(
-  courseInstance: CourseInstance,
+  courseInstance: CourseInstanceJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1481,7 +1507,7 @@ async function validateCourseInstance(
  */
 export async function loadQuestions(
   coursePath: string,
-): Promise<Record<string, InfoFile<Question>>> {
+): Promise<Record<string, InfoFile<QuestionJson>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
@@ -1510,7 +1536,7 @@ export async function loadQuestions(
  */
 export async function loadCourseInstances(
   coursePath: string,
-): Promise<Record<string, InfoFile<CourseInstance>>> {
+): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
@@ -1534,8 +1560,8 @@ export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
   courseInstanceExpired: boolean,
-  questions: Record<string, InfoFile<Question>>,
-): Promise<Record<string, InfoFile<Assessment>>> {
+  questions: Record<string, InfoFile<QuestionJson>>,
+): Promise<Record<string, InfoFile<AssessmentJson>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   const assessments = await loadInfoForDirectory({
     coursePath,
@@ -1543,7 +1569,7 @@ export async function loadAssessments(
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: (assessment: Assessment) =>
+    validate: (assessment: AssessmentJson) =>
       validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });

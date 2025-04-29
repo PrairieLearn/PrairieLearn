@@ -230,6 +230,42 @@ async function generateSubmissionEmbedding({
   return new_submission_embedding;
 }
 
+function parseAiRubricItems({
+  ai_rubric_items,
+  rubric_items,
+}: {
+  ai_rubric_items: Record<string, boolean>;
+  rubric_items: RubricItem[];
+}): {
+  appliedRubricItems: {
+    rubric_item_id: string;
+  }[];
+  appliedRubricDescription: Set<string>;
+} {
+  // Compute the set of selected rubric descriptions.
+  const appliedRubricDescription = new Set<string>();
+  Object.entries(ai_rubric_items).forEach(([description, selected]) => {
+    if (selected) {
+      appliedRubricDescription.add(description);
+    }
+  });
+
+  // Build a lookup table for rubric items by description.
+  const rubricItemsByDescription: Record<string, RubricItem> = {};
+  for (const item of rubric_items) {
+    rubricItemsByDescription[item.description] = item;
+  }
+
+  // It's possible that the rubric could have changed since we last
+  // fetched it. We'll optimistically apply all the rubric items
+  // that were selected. If an item was deleted, we'll allow the
+  // grading to fail; the user can then try again.
+  const appliedRubricItems = Array.from(appliedRubricDescription).map((description) => ({
+    rubric_item_id: rubricItemsByDescription[description].id,
+  }));
+  return { appliedRubricItems, appliedRubricDescription };
+}
+
 export async function aiGrade({
   course,
   course_instance_id,
@@ -421,33 +457,14 @@ export async function aiGrade({
           job.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
-            // Compute the set of selected rubric descriptions.
-            const selectedRubricDescriptions = new Set<string>();
-            Object.entries(response.parsed.rubric_items).forEach(([description, selected]) => {
-              if (selected) {
-                selectedRubricDescriptions.add(description);
-              }
+            const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+              ai_rubric_items: response.parsed.rubric_items,
+              rubric_items,
             });
             job.info('Selected rubric items:');
-            for (const item of selectedRubricDescriptions) {
+            for (const item of appliedRubricDescription) {
               job.info(`- ${item}`);
             }
-
-            // Build a lookup table for rubric items by description.
-            const rubricItemsByDescription: Record<string, RubricItem> = {};
-            for (const item of rubric_items) {
-              rubricItemsByDescription[item.description] = item;
-            }
-
-            // It's possible that the rubric could have changed since we last
-            // fetched it. We'll optimistically apply all the rubric items
-            // that were selected. If an item was deleted, we'll allow the
-            // grading to fail; the user can then try again.
-            const appliedRubricItems = Array.from(selectedRubricDescriptions).map(
-              (description) => ({
-                rubric_item_id: rubricItemsByDescription[description].id,
-              }),
-            );
 
             // Record the grading results.
             const manual_rubric_data = {

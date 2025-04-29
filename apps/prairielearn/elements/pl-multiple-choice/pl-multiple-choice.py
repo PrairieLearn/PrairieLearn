@@ -401,6 +401,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "size",
         "placeholder",
+        "label",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -493,6 +494,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = display_type is not DisplayType.BLOCK
     display_radio = display_type in {DisplayType.BLOCK, DisplayType.INLINE}
     submitted_key = data["submitted_answers"].get(name, None)
+    aria_label = pl.get_string_attrib(element, "label", "Multiple choice options")
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -542,6 +544,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "display_score_badge": display_score,
             "answers": answerset,
+            "aria_label": aria_label,
             "hide_letter_keys": pl.get_boolean_attrib(
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),
