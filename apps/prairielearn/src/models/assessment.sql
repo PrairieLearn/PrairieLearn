@@ -11,5 +11,5 @@ SELECT
   *
 FROM
   assessments
-where
+WHERE
   id = $assessment_id;

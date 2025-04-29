@@ -195,7 +195,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       </tr>
                     </thead>
                     <tbody>
-                      ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
+                      ${rubric_data?.rubric_items?.map((item, index) =>
+                        RubricItemRow({ item, index }),
+                      )}
                       <tr
                         class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
                           ? 'd-none'
@@ -220,7 +222,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0)}
+                  ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -278,7 +280,13 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   `;
 }
 
-function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
+function RubricItemRow({
+  item,
+  index,
+}: {
+  item: RubricData['rubric_items'][0] | null;
+  index: number;
+}) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr>
