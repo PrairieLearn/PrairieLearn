@@ -160,7 +160,7 @@ def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
     # Use math.isclose to avoid possible floating point errors.
     y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
-    if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
+    if not y_is_correct and int(data["submitted_answers"]["y"]) > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         pl.set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
@@ -268,14 +268,14 @@ def generate(data):
 
 def parse(data):
     # Reject negative numbers for "y" if we don't already have a format error
-    if "y" not in data["format_errors"] and data["submitted_answers"]["y"] < 0:
+    if "y" not in data["format_errors"] and int(data["submitted_answers"]["y"]) < 0:
         data["format_errors"]["y"] = "Negative numbers are not allowed"
 
 def grade(data):
     # Give half points for incorrect answers larger than "x", only if not already correct.
     # Use math.isclose to avoid possible floating point errors.
     y_is_correct = math.isclose(data["partial_scores"]["y"]["score"], 1.0)
-    if not y_is_correct and data["submitted_answers"]["y"] > data["params"]["x"]:
+    if not y_is_correct and int(data["submitted_answers"]["y"]) > data["params"]["x"]:
         data["partial_scores"]["y"]["score"] = 0.5
         pl.set_weighted_score_data(data)
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
