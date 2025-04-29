@@ -6,6 +6,7 @@ from enum import Enum
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 
 class Counter(Enum):
@@ -80,6 +81,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "answer":
+        return ""
+
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
@@ -123,12 +127,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 span.attrib.clear()
 
         # Reconstruct the HTML content
-        contents = "".join([
+        contents = "".join(
             str(lxml.html.tostring(fragment, encoding="unicode"))
             if not isinstance(fragment, str)
             else str(fragment)
             for fragment in html_doc
-        ])
+        )
 
         return f'<div data-file-name="{file_name}">\n{contents}\n</div>'
 
@@ -186,10 +190,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
-    elif data["panel"] == "answer":
-        return ""
-    else:
-        raise ValueError("Invalid panel type: " + data["panel"])
+    assert_never(data["panel"])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
