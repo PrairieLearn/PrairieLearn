@@ -17,7 +17,8 @@ export function Lti13Test({
   lti13_instance: Lti13Instance;
   url: URL;
 }) {
-  return html` <!DOCTYPE html>
+  return html`
+    <!DOCTYPE html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 test' })}
@@ -58,7 +59,7 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
           <form id="interceptForm" method="POST" action="" target="_blank">
             ${Object.entries(parameters).map(
               ([key, value]) =>
-                html` <input type="hidden" name="${key}" value="${String(value)}" />`,
+                html`<input type="hidden" name="${key}" value="${String(value)}" />`,
             )}
             <button id="submitButton" class="btn btn-primary btn-lg">
               Open PrairieLearn in a new window
