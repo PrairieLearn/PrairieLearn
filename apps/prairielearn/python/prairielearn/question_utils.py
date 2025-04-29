@@ -50,6 +50,7 @@ class QuestionData(TypedDict):
     extensions: dict[str, Any]
     num_valid_submissions: int
     manual_grading: bool
+    ai_grading: bool
     answers_names: dict[str, bool]
 
 
