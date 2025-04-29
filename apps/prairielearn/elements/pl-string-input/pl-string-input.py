@@ -28,6 +28,7 @@ SPACE_HINT_DICT: dict[tuple[bool, bool], str] = {
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 REMOVE_LEADING_TRAILING_DEFAULT = False
@@ -51,6 +52,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "correct-answer",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "remove-leading-trailing",
@@ -91,6 +93,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
@@ -130,6 +133,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,
@@ -153,6 +157,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
@@ -190,6 +195,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "answer": True,
             "label": label,
+            "aria_label": aria_label or label,
             "a_tru": a_tru,
             "suffix": suffix,
             "multiline": multiline,

@@ -20,6 +20,7 @@ class ComparisonMode(Enum):
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
@@ -78,6 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
     )
@@ -111,7 +113,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             m, n = np.shape(a_tru)
 
         input_array = create_table_for_html_display(
-            m, n, name, label=label, label_uuid=uuid, data=data, format_type="input"
+            m,
+            n,
+            name,
+            label=label,
+            aria_label=aria_label,
+            label_uuid=uuid,
+            data=data,
+            format_type="input",
         )
 
         # Get comparison parameters and info strings
@@ -537,6 +546,7 @@ def create_table_for_html_display(
     n: int,
     name: str,
     label: str | None,
+    aria_label: str | None,
     label_uuid: str,
     data: pl.QuestionData,
     format_type: Literal["output-invalid", "output-feedback", "input"],
@@ -544,9 +554,13 @@ def create_table_for_html_display(
     editable = data["editable"]
 
     label_attr = (
-        f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
-        if label
-        else ""
+        f'aria-label="{aria_label}"'
+        if aria_label is not None
+        else (
+            f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
+            if label
+            else ""
+        )
     )
     if format_type == "output-invalid":
         display_array = "<table>"

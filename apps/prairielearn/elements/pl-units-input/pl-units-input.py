@@ -25,6 +25,7 @@ GRADING_MODE_DEFAULT = GradingMode.WITH_UNITS
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
@@ -64,6 +65,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "correct-answer",
         "custom-format",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "allow-blank",
@@ -157,6 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -224,6 +227,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,
@@ -246,6 +250,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
+            "aria_label": aria_label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -299,6 +304,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "answer": True,
             "label": label,
+            "aria_label": aria_label,
             "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
             "suffix": suffix,
         }

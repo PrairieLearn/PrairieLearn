@@ -6,6 +6,7 @@ import numpy as np
 import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
+ARIA_LABEL_DEFAULT = None
 LABEL_DEFAULT = None
 COMPARISON_DEFAULT = "relabs"
 RTOL_DEFAULT = 1e-2
@@ -21,6 +22,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "label",
+        "aria-label",
         "comparison",
         "rtol",
         "atol",
@@ -37,6 +39,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     if "_pl_matrix_input_format" in data["submitted_answers"]:
         format_type = data["submitted_answers"]["_pl_matrix_input_format"].get(
@@ -102,6 +105,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "editable": editable,
             "info": info,
             "shortinfo": shortinfo,
@@ -129,6 +133,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "submission": True,
             "label": label,
+            "aria_label": aria_label,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -214,6 +219,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params = {
                 "answer": True,
                 "label": label,
+                "aria_label": aria_label,
                 "matlab_data": matlab_data,
                 "python_data": python_data,
                 "uuid": pl.get_uuid(),
