@@ -15,7 +15,6 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "marked": "^15.0.7",
-    "mathjax-full": "^3.2.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }

@@ -1,5 +1,4 @@
 import type { Marked } from 'marked';
-import type { MathJaxObject } from 'mathjax-full/js/components/startup.js';
 
 const startMath = /(\$|\\\(|\\\[)/;
 
@@ -12,7 +11,7 @@ const startMath = /(\$|\\\(|\\\[)/;
  * client-side code, this is `window.MathJax`. In server-side code, this
  * is the result of `require('mathjax-full').init()`.
  */
-export function addMathjaxExtension(marked: Marked, MathJax: MathJaxObject) {
+export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
     renderer: {
@@ -47,7 +46,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: MathJaxObject) {
           if (src.match(startMath)?.index !== 0) return undefined;
           // Use MathJax API to retrieve the math content.
           for (const inputJax of mathjaxInput) {
-            const foundMath = inputJax.findMath([src])?.find((math) => math.start?.n === 0);
+            const foundMath = inputJax.findMath([src])?.find((math: any) => math.start?.n === 0);
             if (foundMath?.end?.n !== undefined) {
               const raw = src.substring(0, foundMath.end.n);
               return {
