@@ -42,6 +42,12 @@ import {
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
+import {
+  ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
+  IntegerFromStringOrEmptySchema,
+} from '@prairielearn/zod';
+import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -115,38 +121,38 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
-      if (!req.body.qid) {
-        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.qid}`);
-      }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
+      const body = z
+        .object({
+          orig_hash: z.string(),
+          qid: z.string(),
+          title: z.string(),
+          topic: z.string().optional(),
+          tags: ArrayFromStringOrArraySchema.optional(),
+          grading_method: EnumGradingMethodSchema.optional(),
+          single_variant: z.string().optional(),
+          show_correct_answer: z.string().optional(),
+          workspace_image: z.string().optional(),
+          workspace_port: IntegerFromStringOrEmptySchema,
+          workspace_home: z.string().optional(),
+          workspace_args: z.string().transform((s) => shlex.split(s || '')),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_graded_files: z.string().transform((s) =>
+            s
+              .split(',')
+              .map((s) => s.trim())
+              .filter((s) => s !== ''),
+          ),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
+          workspace_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-
-      const body = z
-        .object({
-          __action: z.string(),
-          __csrf_token: z.string(),
-          orig_hash: z.string(),
-          qid: z.string(),
-          title: z.string(),
-          topic: z.string().optional(),
-          tags: z.union([z.string(), z.array(z.string())]).optional(),
-          grading_method: z.string().optional(),
-          single_variant: z.string().optional(),
-          show_correct_answer: z.string().optional(),
-          workspace_image: z.string().optional(),
-          workspace_port: z.coerce.number().optional(),
-          workspace_home: z.string().optional(),
-          workspace_args: z.string().optional(),
-          workspace_rewrite_url: z.string().optional(),
-          workspace_graded_files: z.string().optional(),
-          workspace_enable_networking: z.string().optional(),
-          workspace_environment: z.string().optional(),
-        })
-        .parse(req.body);
 
       const paths = getPaths(undefined, res.locals);
 
@@ -155,14 +161,11 @@ router.post(
       const origHash = body.orig_hash;
       questionInfo.title = body.title;
       questionInfo.topic = body.topic;
-      questionInfo.tags = run(() => {
-        // If no tags are provided, remove the entire property.
-        if (!body.tags) return undefined;
-
-        // Handle multiple and single tags.
-        if (Array.isArray(body.tags)) return body.tags;
-        return [body.tags];
-      });
+      questionInfo.tags = propertyValueWithDefault(
+        questionInfo.tags,
+        body.tags,
+        (val) => !val || val.length === 0,
+      );
 
       questionInfo.gradingMethod = propertyValueWithDefault(
         questionInfo.gradingMethod,
@@ -211,25 +214,22 @@ router.post(
           ),
           args: propertyValueWithDefault(
             questionInfo.workspaceOptions?.args,
-            shlex.split(body.workspace_args || ''),
+            body.workspace_args,
             (v) => !v || v.length === 0,
           ),
           rewriteUrl: propertyValueWithDefault(
             questionInfo.workspaceOptions?.rewriteUrl,
-            body.workspace_rewrite_url === 'on',
+            body.workspace_rewrite_url,
             false,
           ),
           gradedFiles: propertyValueWithDefault(
             questionInfo.workspaceOptions?.gradedFiles,
-            body.workspace_graded_files
-              ?.split(',')
-              .map((s) => s.trim())
-              .filter((s) => s !== '') || [],
+            body.workspace_graded_files,
             (v) => !v || v.length === 0,
           ),
           enableNetworking: propertyValueWithDefault(
             questionInfo.workspaceOptions?.enableNetworking,
-            body.workspace_enable_networking === 'on',
+            body.workspace_enable_networking,
             false,
           ),
           environment: propertyValueWithDefault(

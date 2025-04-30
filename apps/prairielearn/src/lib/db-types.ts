@@ -24,6 +24,9 @@ export const AssessmentsFormatForQuestionSchema = z.array(
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
+export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -813,7 +816,7 @@ export const QuestionSchema = z.object({
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']),
+  grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   draft: z.boolean(),
   number: z.number().nullable(),
