@@ -88,17 +88,24 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected);
   });
 
-  it('handles GFM extension for tables', async () => {
-    const question = '| foo | bar |\n| --- | --- |\n| baz | bim |';
+  it('handles lists', async () => {
+    const question = '* first line with $e=mc^2$\n* second line with $a+b=c$';
     const expected =
-      '<table>\n<thead>\n<tr>\n<th><span class="mathjax_ignore">foo</span></th>\n<th><span class="mathjax_ignore">bar</span></th>\n</tr>\n</thead>\n<tbody><tr>\n<td><span class="mathjax_ignore">baz</span></td>\n<td><span class="mathjax_ignore">bim</span></td>\n</tr>\n</tbody></table>';
+      '<ul>\n<li><span class="mathjax_ignore">first line with </span>$e=mc^2$</li>\n<li><span class="mathjax_ignore">second line with </span>$a+b=c$</li>\n</ul>';
+    await testMarkdown(question, expected);
+  });
+
+  it('handles GFM extension for tables', async () => {
+    const question = '| foo | bar |\n| --- | --- |\n| baz | $bim$ |';
+    const expected =
+      '<table>\n<thead>\n<tr>\n<th><span class="mathjax_ignore">foo</span></th>\n<th><span class="mathjax_ignore">bar</span></th>\n</tr>\n</thead>\n<tbody><tr>\n<td><span class="mathjax_ignore">baz</span></td>\n<td>$bim$</td>\n</tr>\n</tbody></table>';
     await testMarkdown(question, expected);
   });
 
   it('handles HTML tags', async () => {
-    const question = 'testing with <strong>bold</strong> and <em>italics</em> words';
+    const question = 'testing with <strong>bold</strong> and <em>italics and $m^a_th$</em> words';
     const expected =
-      '<p><span class="mathjax_ignore">testing with </span><strong><span class="mathjax_ignore">bold</span></strong><span class="mathjax_ignore"> and </span><em><span class="mathjax_ignore">italics</span></em><span class="mathjax_ignore"> words</span></p>';
+      '<p><span class="mathjax_ignore">testing with </span><strong><span class="mathjax_ignore">bold</span></strong><span class="mathjax_ignore"> and </span><em><span class="mathjax_ignore">italics and </span>$m^a_th$</em><span class="mathjax_ignore"> words</span></p>';
     await testMarkdown(question, expected);
   });
 });
