@@ -110,15 +110,14 @@
 
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
-    let marked = null;
-    if (options.format === 'markdown') {
-      marked = (await import('marked')).marked;
-    }
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     let contents = atob(inputElement.val());
-    if (contents && marked) contents = marked.parse(contents);
+    if (contents && options.format === 'markdown') {
+      const marked = (await import('marked')).marked;
+      contents = marked.parse(contents);
+    }
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
@@ -126,7 +125,7 @@
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
-    quill.on('text-change', function () {
+    const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
       // this is treated as blank by the element's parse code and tagged as
@@ -162,7 +161,10 @@
       if (counter) {
         counter.update();
       }
-    });
+    };
+
+    quill.on('text-change', updateHiddenInput);
+    updateHiddenInput();
   };
 
   // Override default implementation of 'formula'
