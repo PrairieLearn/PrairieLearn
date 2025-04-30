@@ -1745,7 +1745,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.navbarType = 'public';
       next();
     },
-    (await import('./pages/publicAssessmentPreview/publicAssessmentPreview.js')).default,
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   ]);
 
   // Client files for questions
