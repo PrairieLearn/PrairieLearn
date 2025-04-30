@@ -1,5 +1,7 @@
+import copy
 import html
 import json
+import random
 import warnings
 
 import chevron
@@ -494,3 +496,71 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "weight": 1,
         "feedback": {"correct": (score == 1), "missing": {}, "matches": matches},
     }
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(
+        element, "answers-name", defaults.element_defaults["answers-name"]
+    )
+    # Get raw correct answer
+    a_tru = data["correct_answers"][name]
+
+    result = data["test_type"]
+    if result == "correct":
+        data["raw_submitted_answers"][name] = json.dumps(a_tru)
+        data["partial_scores"][name] = {
+            "score": 1,
+            "weight": 1,
+            "feedback": {
+                "correct": True,
+                "missing": {},
+                "matches": {
+                    element["id"]: True
+                    for element in a_tru
+                    if elements.is_gradable(element["gradingName"])
+                    and element["graded"]
+                },
+            },
+        }
+
+    elif result == "incorrect":
+        data["raw_submitted_answers"][name] = copy.deepcopy(a_tru)
+        for i, element in enumerate(a_tru):
+            if (
+                not elements.is_gradable(element["gradingName"])
+                or not element["graded"]
+            ):
+                continue
+
+            if "top" in element and "left" in element:
+                data["raw_submitted_answers"][name][i]["top"] += random.randint(50, 100)
+
+                data["raw_submitted_answers"][name][i]["left"] += random.randint(
+                    50, 100
+                )
+            else:
+                raise RuntimeError(
+                    f"Don't know how to mutate the element {element['type']}"
+                )
+        data["raw_submitted_answers"][name] = json.dumps(
+            data["raw_submitted_answers"][name]
+        )
+        data["partial_scores"][name] = {
+            "score": 0,
+            "weight": 1,
+            "feedback": {
+                "correct": False,
+                "missing": {},
+                "matches": {
+                    element["id"]: False
+                    for element in a_tru
+                    if elements.is_gradable(element["gradingName"])
+                    and element["graded"]
+                },
+            },
+        }
+
+    elif result == "invalid":
+        data["raw_submitted_answers"][name] = "invalid submission"
+        data["format_errors"][name] = ""
