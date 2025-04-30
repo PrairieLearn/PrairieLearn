@@ -46,11 +46,6 @@
       "properties": {},
       "deprecated": true
     },
-    "shareSourcePublicly": {
-      "description": "If true, the course instance's source code is shared publicly.",
-      "type": "boolean",
-      "default": true
-    },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
       "type": "array",
@@ -96,6 +91,11 @@
       "type": "string",
       "enum": ["Set", "Module"],
       "default": "Set"
+    },
+    "shareSourcePublicly": {
+      "description": "If true, the course instance's source code is shared publicly.",
+      "type": "boolean",
+      "default": false
     }
   },
   "definitions": {
