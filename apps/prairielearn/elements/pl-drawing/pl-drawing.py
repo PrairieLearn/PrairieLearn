@@ -503,11 +503,24 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
+    gradable = pl.get_boolean_attrib(
+        element, "gradable", defaults.element_defaults["gradable"]
+    )
+    if not gradable:
+        return
+
     # Get raw correct answer
     a_tru = data["correct_answers"][name]
+    grid_size = pl.get_integer_attrib(
+        element, "grid-size", defaults.element_defaults["grid-size"]
+    )
+    tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+    angtol = pl.get_float_attrib(
+        element, "angle-tol", defaults.element_defaults["angle-tol"]
+    )
 
     result = data["test_type"]
-    if result == "correct":
+    if result == "correct" and len(a_tru) > 0:
         data["raw_submitted_answers"][name] = json.dumps(a_tru)
         data["partial_scores"][name] = {
             "score": 1,
@@ -524,7 +537,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             },
         }
 
-    elif result == "incorrect":
+    elif result == "incorrect" and len(a_tru) > 0:
         data["raw_submitted_answers"][name] = copy.deepcopy(a_tru)
         for i, element in enumerate(a_tru):
             if (
@@ -533,13 +546,54 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             ):
                 continue
 
-            if "top" in element and "left" in element:
-                data["raw_submitted_answers"][name][i]["top"] += random.randint(50, 100)
-
-                data["raw_submitted_answers"][name][i]["left"] += random.randint(
-                    50, 100
+            mutated = False
+            if "x1" in element and "y1" in element:
+                data["raw_submitted_answers"][name][i]["x1"] += (
+                    random.choice([1, -1]) * 1.1 * tol
                 )
-            else:
+
+                data["raw_submitted_answers"][name][i]["y1"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+                mutated = True
+
+            if "x2" in element and "y2" in element:
+                data["raw_submitted_answers"][name][i]["x2"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+
+                data["raw_submitted_answers"][name][i]["y2"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+                mutated = True
+
+            if "x3" in element and "y3" in element:
+                data["raw_submitted_answers"][name][i]["x3"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+
+                data["raw_submitted_answers"][name][i]["y3"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+                mutated = True
+
+            if "top" in element and "left" in element:
+                data["raw_submitted_answers"][name][i]["top"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+
+                data["raw_submitted_answers"][name][i]["left"] += (
+                    random.choice([1, -1]) * 1.1 * tol
+                )
+                mutated = True
+
+            if "angle" in element:
+                data["raw_submitted_answers"][name][i]["angle"] += (
+                    random.choice([1, -1]) * 1.1 * angtol
+                )
+                mutated = True
+
+            if not mutated:
                 raise RuntimeError(
                     f"Don't know how to mutate the element {element['type']}"
                 )
@@ -561,6 +615,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             },
         }
 
-    elif result == "invalid":
-        data["raw_submitted_answers"][name] = "invalid submission"
+    elif result == "invalid" or len(a_tru) == 0:
         data["format_errors"][name] = ""
+        data["raw_submitted_answers"][name] = "invalid submission"
