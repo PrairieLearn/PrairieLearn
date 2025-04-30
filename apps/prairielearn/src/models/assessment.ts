@@ -21,16 +21,14 @@ export async function selectOptionalAssessmentById(
   return await queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
 }
 
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
-
 export async function selectAssessmentInfoForJob(assessment_id: string) {
   return await queryRow(
     sql.select_assessment_info_for_job,
     { assessment_id },
-    AssessmentInfoSchema,
+    z.object({
+      assessment_label: z.string(),
+      course_instance_id: IdSchema,
+      course_id: IdSchema,
+    }),
   );
 }
