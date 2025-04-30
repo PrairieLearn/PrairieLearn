@@ -1,4 +1,5 @@
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
+import type { ElementExtensionJson } from '../schemas/index.js';
 
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
@@ -15,9 +16,9 @@ export type QuestionServerReturnValue<T> = Promise<{
 }>;
 
 export interface GenerateResultData {
-  params: Record<string, any>;
-  true_answer: Record<string, any>;
-  options?: Record<string, any> | null;
+  params: Record<string, unknown>;
+  true_answer: Record<string, unknown>;
+  options?: Record<string, unknown>;
 }
 
 export type PrepareResultData = GenerateResultData;
@@ -30,34 +31,34 @@ export interface RenderResultData {
 }
 
 export interface ParseResultData {
-  params: Record<string, any>;
-  true_answer: Record<string, any>;
-  submitted_answer: Record<string, any>;
-  feedback: Record<string, any>;
-  raw_submitted_answer: Record<string, any>;
-  format_errors: Record<string, any>;
+  params: Record<string, unknown>;
+  true_answer: Record<string, unknown>;
+  submitted_answer: Record<string, unknown>;
+  feedback: Record<string, unknown>;
+  raw_submitted_answer: Record<string, unknown>;
+  format_errors: Record<string, unknown>;
   gradable: boolean;
 }
 
 export interface GradeResultData {
-  params: Record<string, any>;
-  true_answer: Record<string, any>;
-  submitted_answer: Record<string, any>;
-  format_errors: Record<string, any>;
-  raw_submitted_answer: Record<string, any>;
-  partial_scores: Record<string, any>;
+  params: Record<string, unknown>;
+  true_answer: Record<string, unknown>;
+  submitted_answer: Record<string, unknown>;
+  format_errors: Record<string, unknown>;
+  raw_submitted_answer: Record<string, unknown>;
+  partial_scores: Record<string, unknown>;
   score: number;
-  feedback: Record<string, any>;
+  feedback: Record<string, unknown>;
   gradable: boolean;
   v2_score?: number;
 }
 
 export interface TestResultData {
   params: Record<string, any>;
-  true_answer: Record<string, any>;
-  format_errors: Record<string, any>;
-  raw_submitted_answer: Record<string, any>;
-  partial_scores: Record<string, any>;
+  true_answer: Record<string, unknown>;
+  format_errors: Record<string, unknown>;
+  raw_submitted_answer: Record<string, unknown>;
+  partial_scores: Record<string, unknown>;
   score: number;
   gradable: boolean;
 }
@@ -109,4 +110,39 @@ export interface QuestionServer {
     course: Course,
     test_type: 'correct' | 'incorrect' | 'invalid',
   ) => QuestionServerReturnValue<TestResultData>;
+}
+
+export type ElementExtensionJsonExtension = ElementExtensionJson & {
+  name: string;
+  directory: string;
+};
+
+// This data object changes over the lifetime of the question grading process.
+// That is why many fields are optional, as they are only present in later phases.
+export interface ExecutionData {
+  params: Record<string, any>;
+  correct_answers: Record<string, unknown>;
+  variant_seed: number;
+  options: Record<string, any> & {
+    question_path: string;
+    client_files_question_path: string;
+    client_files_course_path: string;
+    server_files_course_path: string;
+    course_extensions_path: string;
+  };
+  answers_names?: Record<string, string>;
+  submitted_answers?: Record<string, unknown>;
+  format_errors?: Record<string, unknown>;
+  partial_scores?: Record<string, unknown>;
+  score?: number;
+  feedback?: Record<string, unknown>;
+  raw_submitted_answers?: Record<string, unknown>;
+  editable?: boolean;
+  manual_grading?: boolean;
+  ai_grading?: boolean;
+  panel?: 'question' | 'answer' | 'submission';
+  num_valid_submissions?: number;
+  filename?: string;
+  gradable?: boolean;
+  extensions?: Record<string, ElementExtensionJsonExtension>;
 }

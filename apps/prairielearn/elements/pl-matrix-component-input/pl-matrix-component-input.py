@@ -87,6 +87,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_fractions = pl.get_boolean_attrib(
         element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
     )
+    uuid = pl.get_uuid()
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -109,7 +110,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
             m, n = np.shape(a_tru)
 
-        input_array = create_table_for_html_display(m, n, name, label, data, "input")
+        input_array = create_table_for_html_display(
+            m, n, name, label=label, label_uuid=uuid, data=data, format_type="input"
+        )
 
         # Get comparison parameters and info strings
         comparison = pl.get_enum_attrib(
@@ -167,6 +170,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "info": info,
             "shortinfo": shortinfo,
             "input_array": input_array,
+            "uuid": uuid,
             "inline": True,
         }
 
@@ -230,7 +234,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
             # When allowing feedback, display submitted answers using html table
             sub_html_table = create_table_for_html_display(
-                m, n, name, label, data, "output-feedback"
+                m,
+                n,
+                name,
+                label=label,
+                label_uuid=uuid,
+                data=data,
+                format_type="output-feedback",
             )
             if allow_feedback and score is not None:
                 if score < 1:
@@ -245,7 +255,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params["raw_submitted_answer"] = create_table_for_html_display(
-                m, n, name, label, data, "output-invalid"
+                m,
+                n,
+                name,
+                label=label,
+                label_uuid=uuid,
+                data=data,
+                format_type="output-invalid",
             )
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
@@ -521,11 +537,17 @@ def create_table_for_html_display(
     n: int,
     name: str,
     label: str | None,
+    label_uuid: str,
     data: pl.QuestionData,
     format_type: Literal["output-invalid", "output-feedback", "input"],
 ) -> str:
     editable = data["editable"]
 
+    label_attr = (
+        f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
+        if label
+        else ""
+    )
     if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
@@ -646,7 +668,9 @@ def create_table_for_html_display(
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, ""
                 )
-                display_array += ' <td class="allborder"> '
+                display_array += (
+                    f' <td class="allborder" aria-label="Row {i + 1}, Column {j + 1}"> '
+                )
                 display_array += escape(raw_submitted_answer)
                 if feedback_each_entry is not None and isinstance(
                     feedback_each_entry, dict
@@ -665,7 +689,7 @@ def create_table_for_html_display(
         display_array += "</table>"
 
     elif format_type == "input":
-        display_array = "<table>"
+        display_array = f'<table role="grid" {label_attr}>'
         display_array += "<tr>"
         # Add first row
         display_array += (
@@ -679,9 +703,7 @@ def create_table_for_html_display(
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
-            display_array += (
-                ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
-            )
+            display_array += f' <td> <input name= "{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" '
             if not editable:
                 display_array += " disabled "
             if raw_submitted_answer is not None:
@@ -702,11 +724,7 @@ def create_table_for_html_display(
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
-                display_array += (
-                    ' <td> <input name= "'
-                    + each_entry_name
-                    + '" type="text" size="8"  '
-                )
+                display_array += f' <td> <input name= "{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" '
                 if not editable:
                     display_array += " disabled "
                 if raw_submitted_answer is not None:
