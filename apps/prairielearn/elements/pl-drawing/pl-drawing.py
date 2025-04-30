@@ -547,51 +547,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 continue
 
             mutated = False
-            if "x1" in element and "y1" in element:
-                data["raw_submitted_answers"][name][i]["x1"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-
-                data["raw_submitted_answers"][name][i]["y1"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-                mutated = True
-
-            if "x2" in element and "y2" in element:
-                data["raw_submitted_answers"][name][i]["x2"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-
-                data["raw_submitted_answers"][name][i]["y2"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-                mutated = True
-
-            if "x3" in element and "y3" in element:
-                data["raw_submitted_answers"][name][i]["x3"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-
-                data["raw_submitted_answers"][name][i]["y3"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-                mutated = True
-
-            if "top" in element and "left" in element:
-                data["raw_submitted_answers"][name][i]["top"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-
-                data["raw_submitted_answers"][name][i]["left"] += (
-                    random.choice([1, -1]) * 1.1 * tol
-                )
-                mutated = True
-
-            if "angle" in element:
-                data["raw_submitted_answers"][name][i]["angle"] += (
-                    random.choice([1, -1]) * 1.1 * angtol
-                )
-                mutated = True
+            attr_sets = [
+                (("top", "left"), tol),
+                (("x1", "y1"), tol),
+                (("x2", "y2"), tol),
+                (("x3", "y3"), tol),
+                (("angle",), angtol),
+            ]
+            for attr_set, offset in attr_sets:
+                if all(attr in element for attr in attr_set):
+                    for attr in attr_set:
+                        data["raw_submitted_answers"][name][i][attr] += (
+                            random.choice([1, -1]) * 1.1 * offset
+                        )
+                    mutated = True
 
             if not mutated:
                 raise RuntimeError(
