@@ -362,10 +362,7 @@ potentially misleading error messages for large file uploads, we recommend not u
 ![Screenshot of the pl-file-upload element](elements/pl-file-upload.png)
 
 ```html title="question.html"
-<pl-file-upload
-  file-names="foo.py, bar.c, filename with\, comma.txt"
-  optional-file-names="foo.pdf, *.py, file_?.txt, file_[abc].txt, file with \\? as non-wildcard.pdf"
-></pl-file-upload>
+<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
 ```
 
 #### Customizations
