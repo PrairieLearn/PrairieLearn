@@ -25,7 +25,8 @@ BEGIN
         uuid uuid,
         errors TEXT,
         warnings TEXT,
-        data JSONB
+        data JSONB,
+        share_source_publicly BOOLEAN
     ) ON COMMIT DROP;
 
     INSERT INTO disk_course_instances (
@@ -33,13 +34,15 @@ BEGIN
         uuid,
         errors,
         warnings,
-        data
+        data,
+        share_source_publicly
     ) SELECT
         entries->>0,
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        (entries->4)::JSONB,
+        (entries->>5)::boolean
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src
@@ -133,6 +136,7 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

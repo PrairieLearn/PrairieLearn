@@ -91,6 +91,11 @@
       "type": "string",
       "enum": ["Set", "Module"],
       "default": "Set"
+    },
+    "shareSourcePublicly": {
+      "description": "If true, the course instance's source code is shared publicly.",
+      "type": "boolean",
+      "default": false
     }
   },
   "definitions": {
