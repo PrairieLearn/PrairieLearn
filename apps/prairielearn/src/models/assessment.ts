@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
-import * as sqldb from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema, IdSchema } from '../lib/db-types.js';
 
@@ -29,7 +28,7 @@ const AssessmentInfoSchema = z.object({
 });
 
 export async function selectAssessmentInfoForJob(assessment_id: string) {
-  return await sqldb.queryRow(
+  return await queryRow(
     sql.select_assessment_info_for_job,
     { assessment_id },
     AssessmentInfoSchema,
