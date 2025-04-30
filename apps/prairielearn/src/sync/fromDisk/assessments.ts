@@ -163,7 +163,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
-            comment: !!question.alternatives ? undefined : question.comment,
+            comment: question.alternatives ? undefined : question.comment,
           },
         ];
       }
@@ -244,7 +244,7 @@ function getParamsForAssessment(
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
         questions,
-        comment: !!question.alternatives ? question.comment : undefined,
+        comment: question.alternatives ? question.comment : undefined,
       };
     });
   });
