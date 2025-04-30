@@ -222,12 +222,6 @@ window.PLDrawingApi = {
     $(canvas_elem.parentElement).children('canvas').width(canvas_width);
     $(canvas_elem.parentElement).children('canvas').height(canvas_height);
 
-    // Get the content within the canvas element, and duplicate it onto upperCanvasEl.
-    const canvasInnerHTML = canvas_elem.innerHTML;
-    if (canvas.upperCanvasEl) {
-      canvas.upperCanvasEl.innerHTML = canvasInnerHTML;
-    }
-
     canvas.on('object:added', (ev) => {
       ev.target.cornerSize *= renderScale;
       ev.target.borderColor = 'rgba(102,153,255,1.0)';
@@ -317,7 +311,9 @@ class PLDrawingAnswerState {
     if (object.id in this._answerData) {
       if (this._answerData[object.id].type !== object.type) {
         console.trace(
-          `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${object.type}`,
+          `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${
+            object.type
+          }`,
         );
         console.warn('Existing', this._answerData[object.id]);
         console.warn('New', object);

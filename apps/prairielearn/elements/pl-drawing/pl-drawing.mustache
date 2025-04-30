@@ -29,9 +29,8 @@
             width="{{width}}"
             height="{{height}}"
             {{#preview_mode}}role="img"{{/preview_mode}}
-            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{#aria_description}}aria-description="{{aria_description}}"{{/aria_description}}
         >
-            {{^preview_mode}}<p>Your browser does not support the canvas element, and this drawing needs canvas interaction.</p>{{/preview_mode}}
         </canvas>
         {{#show_tolerance}}
             <div><small>({{{ tolerance }}})</small></div>

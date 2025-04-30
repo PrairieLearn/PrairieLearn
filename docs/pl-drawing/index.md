@@ -35,11 +35,11 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 | `tolerance-hint`           | string  | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.                                                                                                                        |
 | `disregard-extra-elements` | boolean | false                                        | If true, extra elements are ignored if they match the same reference object. Otherwise, multiple matching elements will reduce the awarded points.                          |
 | `hide-answer-panel`        | boolean | true                                         | If true, the correct answer is not displayed in the answer panel.                                                                                                           |
-| `aria-label`               | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
+| `aria-description`         | string  | None                                         | Text that describes the diagram. See the [accessibility section](#accessibility)                                                                                            |
 
 #### Accessibility
 
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a description of a static diagram.
+Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-description` attribute to provide a description of a static diagram.
 
 ### `pl-drawing-initial` element
 
