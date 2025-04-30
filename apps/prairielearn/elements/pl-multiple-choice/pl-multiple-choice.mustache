@@ -4,7 +4,7 @@
 {{#inline}}
 <span>
 {{/inline}}
-    <span role="group" aria-label="Multiple choice options">
+    <span role="group" aria-label="{{aria_label}}">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
@@ -73,7 +73,7 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
-        aria-label="Multiple choice options"
+        aria-label="{{aria_label}}"
     >
         <option value="" disabled selected data-content="{{placeholder}}"></option>
         {{#answers}}

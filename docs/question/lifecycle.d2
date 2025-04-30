@@ -1,0 +1,84 @@
+# Shapes
+generate: "generate()" {
+  tooltip: "Generate random parameters and correct answers"
+}
+prepare: "prepare()" {
+  tooltip: "Post-process element data after generate()"
+}
+render_question: "render() - question panel" {
+  tooltip: "Render question.html for initial view"
+}
+student_interaction: "Student views and submits." {
+  tooltip: " The student can only submit if they have attempts remaining."
+  shape: person
+  width: 100
+  height: 100
+}
+parse: "parse()" {
+  tooltip: "Parse submitted answers, check format"
+}
+check_format: "Has format errors?" {
+  shape: diamond
+  tooltip: "Check data['format_errors']"
+}
+
+grade: "grade()" {
+  tooltip: "Grade the submission, set score and feedback"
+}
+check_correct: "Is answer correct and valid?" {
+  shape: diamond
+  tooltip: "Check data['score']"
+}
+render_submission: "render() - submission panel" {
+  tooltip: "Render question.html showing submission and feedback. Multiple submissions can be shown."
+}
+render_answer: "render() - answer panel" {
+  tooltip: "Render question.html showing correct answer (if enabled)"
+}
+check_attempts: "Attempts remain?" {
+  shape: diamond
+  tooltip: "Decrement the student's attempts. Check if the student has more attempts available after decrementing."
+}
+file: "file()" {
+  tooltip: "Dynamically generated file"
+  shape: page
+}
+# Flow
+generate -> prepare
+prepare -> render_question
+render_question -> student_interaction
+student_interaction -> parse: "If attempts remain" {
+  style: {
+    stroke-dash: 3
+  }
+}
+parse -> check_format
+
+# If format errors, show question panel again with errors
+check_format -> render_submission: Yes
+
+# If no format errors, proceed to grading
+check_format -> grade: No
+
+grade -> check_correct
+
+render_submission -> render_question
+
+# If correct, show answer panel
+check_correct -> render_answer: "Yes (score is 100%, valid)"
+
+# If incorrect, show submission panel
+check_correct -> check_attempts: "No (score < 100%)"
+
+check_correct -> render_submission: "No (invalid)"
+
+# After rendering submission, check if attempts remain
+check_attempts -> render_submission: "Yes"
+
+# If no attempts remain, show the answer panel
+check_attempts -> render_answer: "No"
+
+render_answer -> render_submission
+# Dynamic file generation
+file -> student_interaction: "Generated file"
+student_interaction -> file: "Dynamic file request \n from browser"

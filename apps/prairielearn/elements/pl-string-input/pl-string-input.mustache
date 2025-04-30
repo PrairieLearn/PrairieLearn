@@ -39,8 +39,8 @@
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
@@ -59,9 +59,9 @@
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
-                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}
             />
     {{/multiline}}
     {{^multiline}}
@@ -262,7 +262,7 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
-            aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
+            {{#suffix}}aria-describedby="pl-string-input-answer-{{uuid}}-suffix"{{/suffix}}
         >{{a_tru}}</textarea>
         {{! Show raw value correct answer was parsed from }}
         <button

@@ -1113,6 +1113,7 @@ def test_load_extension() -> None:
         "panel": "question",
         "num_valid_submissions": 0,
         "manual_grading": False,
+        "ai_grading": False,
         "answers_names": {},
     }
 

@@ -704,21 +704,22 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                    | Type                                                 | Default              | Description                                                                                                                                                                                |
-| ---------------------------- | ---------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`               | string                                               | —                    | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
-| `weight`                     | integer                                              | 1                    | Weight to use when computing a weighted average score over elements.                                                                                                                       |
-| `display`                    | `"block"`, `"inline"`, or `"dropdown"`               | `"block"`            | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
-| `number-answers`             | integer                                              | See description      | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
-| `order`                      | `"random"`, `"ascend"`, `"descend"`, or `"fixed"`    | `"random"`           | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
-| `hide-letter-keys`           | boolean                                              | false                | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
-| `all-of-the-above`           | `"false"`, `"random"`, `"correct"`, or `"incorrect"` | `"false"`            | Add `"All of the above"` choice. See below for details.                                                                                                                                    |
-| `none-of-the-above`          | `"false"`, `"random"`, `"correct"`, or `"incorrect"` | `"false"`            | Add `"None of the above"` choice. See below for details.                                                                                                                                   |
-| `all-of-the-above-feedback`  | string                                               | —                    | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
-| `none-of-the-above-feedback` | string                                               | —                    | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
-| `allow-blank`                | boolean                                              | false                | Whether an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.                    |
-| `size`                       | integer                                              | —                    | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
-| `placeholder`                | string                                               | `"Select an option"` | String to be used as the placeholder text when `display` is set to `"dropdown"`. Will also accept an empty string as `placeholder=""`.                                                     |
+| Attribute                    | Type                                                 | Default                     | Description                                                                                                                                                                                |
+| ---------------------------- | ---------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                               | —                           | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
+| `weight`                     | integer                                              | 1                           | Weight to use when computing a weighted average score over elements.                                                                                                                       |
+| `display`                    | `"block"`, `"inline"`, or `"dropdown"`               | `"block"`                   | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
+| `number-answers`             | integer                                              | See description             | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
+| `order`                      | `"random"`, `"ascend"`, `"descend"`, or `"fixed"`    | `"random"`                  | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
+| `hide-letter-keys`           | boolean                                              | false                       | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
+| `all-of-the-above`           | `"false"`, `"random"`, `"correct"`, or `"incorrect"` | `"false"`                   | Add `"All of the above"` choice. See below for details.                                                                                                                                    |
+| `none-of-the-above`          | `"false"`, `"random"`, `"correct"`, or `"incorrect"` | `"false"`                   | Add `"None of the above"` choice. See below for details.                                                                                                                                   |
+| `all-of-the-above-feedback`  | string                                               | —                           | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
+| `none-of-the-above-feedback` | string                                               | —                           | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
+| `allow-blank`                | boolean                                              | false                       | Whether an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.                    |
+| `size`                       | integer                                              | —                           | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
+| `placeholder`                | string                                               | `"Select an option"`        | String to be used as the placeholder text when `display` is set to `"dropdown"`. Will also accept an empty string as `placeholder=""`.                                                     |
+| `label`                      | string                                               | `"Multiple choice options"` | An accessible label for the element.                                                                                                                                                       |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -885,6 +886,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `tag`                 | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
+| `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
 
 #### Details
 
@@ -1315,17 +1317,10 @@ data["params"]["names_from_user"] = [
 
 <p>Your code snippet should define the following variables:</p>
 <pl-external-grader-variables params-name="names_from_user">
-  <pl-variable name="x" type="numpy array (length $n$)"
-    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
-  >
+  <pl-variable name="x" type="numpy array (length $n$)">
+    Solution to $\mathbf{Ax}=\mathbf{b}$.
+  </pl-variable>
 </pl-external-grader-variables>
-
-<!--
-  The following tag defines an empty list for the given params-name.
-  This is useful for some cases where a parameter must be set to empty to run the external grader.
-  Nothing will be displayed from this tag.
--->
-<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 ```python title="server.py"
@@ -1388,7 +1383,7 @@ Display a statically or dynamically generated image. Supports many image file fo
 | `file-name` | string  | —                       | Name of image file.                                                                                                                                                                                     |
 | `type`      | text    | `"static"`              | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).                                                                                             |
 | `directory` | text    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
-| `width`     | number  | —                       | Width of image (e.g., '250px').                                                                                                                                                                         |
+| `width`     | number  | —                       | Width of the image in pixels, e.g. `250`.                                                                                                                                                               |
 | `inline`    | boolean | false                   | Display figure inline with text (true) or on a separate line (false).                                                                                                                                   |
 | `alt`       | text    | ""                      | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image. Default is an empty string.                                                     |
 
@@ -1788,7 +1783,7 @@ def generate(data):
 
 #### Details
 
-The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question/server.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
@@ -2366,6 +2361,7 @@ def generate(data):
 | `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
 | `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
 | `allow-blank`  | boolean | false   | Whether an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                             |
+| `label`        | string  | None    | A string that provides an accessible label for the element.                                                                                                          |
 
 #### Example implementation
 
