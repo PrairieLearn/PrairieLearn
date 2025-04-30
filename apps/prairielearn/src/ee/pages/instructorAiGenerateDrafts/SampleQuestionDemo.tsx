@@ -18,7 +18,7 @@ const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal
 const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
 const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
-import { useEffect, useLayoutEffect, useMemo, useState } from '@prairielearn/preact-cjs/hooks';
+import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import {
@@ -172,7 +172,7 @@ export function SampleQuestionDemo({
 
   const placeholder = variant
     ? run(() => {
-        const placeholderText: string = variant.answerType;
+        const placeholderText: string = prompt.answerType;
         if (prompt.answerType === 'number') {
           // Add relative and absolute tolerance if available
           if (prompt.rtol && prompt.atol) {
@@ -205,14 +205,10 @@ export function SampleQuestionDemo({
               ? variant.question
                   .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
                   .filter(Boolean)
-                  .map((part, index) => {
+                  .map((part) => {
                     // Bold text
                     if (part.startsWith('**') && part.endsWith('**')) {
-                      return (
-                        <strong key={`bold-${index}-${part.slice(2, -2)}`}>
-                          {part.slice(2, -2)}
-                        </strong>
-                      );
+                      return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
                     }
 
                     // MathJax
@@ -220,11 +216,11 @@ export function SampleQuestionDemo({
                       (part.startsWith('$$') && part.endsWith('$$')) ||
                       (part.startsWith('$') && part.endsWith('$'))
                     ) {
-                      return <span key={`math-${index}-${part}`}>{part}</span>;
+                      return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
                     }
 
                     // Regular text
-                    return <span key={`text-${index}-${part.substring(0, 10)}`}>{part}</span>;
+                    return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
                   })
               : null
           }
@@ -338,10 +334,10 @@ function CheckboxOrRadioInput({
 }) {
   return (
     <div>
-      {options.map((option, index) => (
+      {options.map((option) => (
         <FormCheck
-          id={`check-${index}`}
-          key={index}
+          id={`check-${option.value}`}
+          key={option.value}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
           value={option.value}
