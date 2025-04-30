@@ -61,14 +61,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     w_button = None
 
-    prev = not pl.get_boolean_attrib(
+    gradable = pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
 
     load_extensions(data)
 
     # Some preparation for elements with grading componenet
-    if not prev:
+    if gradable:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
             raise ValueError("answers-name is required if gradable mode is enabled")
@@ -239,6 +239,9 @@ def render_drawing_items(elem, curid=0, defaults=None):
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name", "")
+    aria_label = pl.get_string_attrib(
+        element, "aria-label", defaults.element_defaults["aria-label"]
+    )
     preview_mode = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
@@ -326,6 +329,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_buttons": show_btn,
         "name": name,
         "render_element": True,
+        "preview_mode": preview_mode,
+        "aria_label": aria_label,
         "btn_markup": btn_markup,
         "show_tolerance": show_btn
         and pl.get_boolean_attrib(

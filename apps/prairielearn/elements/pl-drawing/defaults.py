@@ -5,6 +5,7 @@ ElementDefaults = TypedDict(
     {
         "gradable": bool,
         "answers-name": str,
+        "aria-label": str | None,
         "draw-error-box": bool,
         "grid-size": int,
         "angle-tol": int,
@@ -44,6 +45,7 @@ DrawingDefaults = TypedDict(
 element_defaults: ElementDefaults = {
     "gradable": False,
     "answers-name": "",
+    "aria-label": None,
     "draw-error-box": False,
     "grid-size": 20,
     "angle-tol": 10,

@@ -2510,6 +2510,7 @@ class DrawingElement(UnplaceableBaseElement):
         return [
             "gradable",
             "answers-name",
+            "aria-label",
             "width",
             "height",
             "grid-size",
