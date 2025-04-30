@@ -13,6 +13,7 @@
     }
     code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
     element.html(code);
+    await MathJax.typesetPromise([element.get(0)]);
   });
 </script>
 <div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>
