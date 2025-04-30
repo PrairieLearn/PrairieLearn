@@ -354,6 +354,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "name": form_name,
                 "display_score_badge": display_score_badge,
                 "correct": display_score_badge and student_answer == correct_answer,
+                "statement_id": pl.get_uuid(),
             }
             statement_set.append(statement_html)
 

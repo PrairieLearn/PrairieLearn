@@ -1,4 +1,47 @@
-element_defaults = {
+from typing import TypedDict
+
+ElementDefaults = TypedDict(
+    "ElementDefaults",
+    {
+        "gradable": bool,
+        "answers-name": str,
+        "draw-error-box": bool,
+        "grid-size": int,
+        "angle-tol": int,
+        "snap-to-grid": bool,
+        "width": int,
+        "height": int,
+        "show-tolerance-hint": bool,
+        "render-scale": float,
+        "disregard-extra-elements": bool,
+    },
+)
+
+DrawingDefaults = TypedDict(
+    "DrawingDefaults",
+    {
+        "x1": int,
+        "y1": int,
+        "x2": int,
+        "y2": int,
+        "offsetx": int,
+        "offsety": int,
+        "width": int,
+        "width-rod": int,
+        "height": int,
+        "label": str,
+        "angle": int,
+        "end-angle": int,
+        "radius": int,
+        "opacity": float,
+        "stroke-width": int,
+        "selectable": bool,
+        "font-size": int,
+        "point-size": int,
+        "force-width": int,
+    },
+)
+element_defaults: ElementDefaults = {
     "gradable": False,
     "answers-name": "",
     "draw-error-box": False,
@@ -12,7 +55,7 @@ element_defaults = {
     "disregard-extra-elements": False,
 }
 
-drawing_defaults = {
+drawing_defaults: DrawingDefaults = {
     "x1": 40,
     "y1": 40,
     "x2": 80,

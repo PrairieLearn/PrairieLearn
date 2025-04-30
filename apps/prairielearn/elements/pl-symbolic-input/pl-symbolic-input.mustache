@@ -2,7 +2,7 @@
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
     <span class="input-group pl-symbolic-input">
         {{#label}}
-        <span class="input-group-text"  id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
+        <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
         <input
             name="{{name}}"
@@ -15,8 +15,8 @@
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             placeholder="{{placeholder}}"
-            aria-describedby="pl-symbolic-input-{{uuid}}-suffix"
-            aria-labelledby="pl-symbolic-input-{{uuid}}-label"
+            {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
+            {{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}
         />
         {{#suffix}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
