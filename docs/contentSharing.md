@@ -19,7 +19,7 @@ To refer to a question from another course, use the question ID (qid) prefixed b
 }
 ```
 
-## Sharing Questions
+## Sharing questions
 
 !!! info
 
@@ -29,9 +29,9 @@ To refer to a question from another course, use the question ID (qid) prefixed b
 
 In order for another course to use questions from your course into their assessments, you must have chosen a _sharing name_ for your course that they will use as a prefix to your question IDs when using them. This sharing name will be unique across all PrairieLearn instances and because it will be used in the JSON files for other courses, there will be no way to change the sharing name for your course once you have chosen it. It is recommended that you choose something short but descriptive. For example, if you're teaching a calculus course at a university that goes by the abbreviation "XYZ", then you could choose the sharing name "xyz-calculus". Then other courses will use questions from your course with the syntax `@xyz-calculus/qid`.
 
-### Two ways to share: Publicly or through "Sharing sets"
+### Two ways to share: publicly or through "Sharing sets"
 
-Questions can either be shared publicly, so that anyone can preview the questions and use them in their course, or shared only to specific other courses using sharing sets.
+Questions can either be shared publicly so that anyone can preview the questions and use them in their course, or shared only to specific other courses using sharing sets.
 
 Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC license](https://www.creativecommons.org/licenses/by-nc/4.0/).
 
@@ -43,7 +43,7 @@ Access to shared questions which are not shared publicly is controlled through *
 
 For security reasons, establishing the connection for one course to share questions with another course requires coordinated action by owners of the course sharing the questions (which we will refer to hereafter as the "sharing course") and the course that is using the questions that are being shared ('which we will refer to hereafter as the "consuming course")
 
-In order to allow someone to share their questions with your course, you must provide them with the "Sharing Token" listed on the "Sharing" tab of your instructor settings page. Then the sharing course must use the sharing token which you provide to them to add your course as a consumer of one of their sharing sets.
+To allow someone to share their questions with your course, you must provide them with the "Sharing Token" listed on the "Sharing" tab of your instructor settings page. Then the sharing course must use the sharing token which you provide to them to add your course as a consumer of one of their sharing sets.
 
 ### Client and server files
 
