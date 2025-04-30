@@ -17,6 +17,7 @@ class DisplayType(Enum):
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 SIZE_DEFAULT = 35
@@ -36,6 +37,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "correct-answer",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "size",
@@ -80,6 +82,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -118,6 +121,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,

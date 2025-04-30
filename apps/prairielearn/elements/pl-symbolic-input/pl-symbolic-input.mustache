@@ -16,7 +16,8 @@
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             placeholder="{{placeholder}}"
             {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-            {{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
         />
         {{#suffix}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-suffix">{{suffix}}</span>
