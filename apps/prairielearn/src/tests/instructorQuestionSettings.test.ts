@@ -79,6 +79,13 @@ describe('Editing question settings', () => {
         qid: 'question',
         topic: 'Test2',
         tags: 'test2',
+        grading_method: 'Internal',
+        workspace_image: '',
+        workspace_port: '',
+        workspace_home: '',
+        workspace_args: '',
+        workspace_graded_files: '',
+        workspace_environment: '',
       }),
     });
 
@@ -105,6 +112,13 @@ describe('Editing question settings', () => {
       title: 'New title',
       qid: 'test/question1',
       topic: 'Test',
+      grading_method: 'Internal',
+      workspace_image: '',
+      workspace_port: '',
+      workspace_home: '',
+      workspace_args: '',
+      workspace_graded_files: '',
+      workspace_environment: '',
     });
     body.append('tags', 'test1');
     body.append('tags', 'test2');
@@ -164,6 +178,13 @@ describe('Editing question settings', () => {
             orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test Title - Unauthorized',
             qid: 'test/question',
+            grading_method: 'Internal',
+            workspace_image: '',
+            workspace_port: '',
+            workspace_home: '',
+            workspace_args: '',
+            workspace_graded_files: '',
+            workspace_environment: '',
           }),
         },
       );
@@ -190,6 +211,13 @@ describe('Editing question settings', () => {
             orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test title - no info file',
             qid: 'test/question',
+            grading_method: 'Internal',
+            workspace_image: '',
+            workspace_port: '',
+            workspace_home: '',
+            workspace_args: '',
+            workspace_graded_files: '',
+            workspace_environment: '',
           }),
         },
       );
@@ -223,6 +251,13 @@ describe('Editing question settings', () => {
         orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
         title: 'Test title - changed',
         qid: 'test/question',
+        grading_method: 'Internal',
+        workspace_image: '',
+        workspace_port: '',
+        workspace_home: '',
+        workspace_args: '',
+        workspace_graded_files: '',
+        workspace_environment: '',
       }),
     });
     assert.equal(response.status, 200);
@@ -245,6 +280,13 @@ describe('Editing question settings', () => {
         title: 'Test title - changed',
         qid: 'question2',
         topic: 'Test',
+        grading_method: 'Internal',
+        workspace_image: '',
+        workspace_port: '',
+        workspace_home: '',
+        workspace_args: '',
+        workspace_graded_files: '',
+        workspace_environment: '',
       }),
     });
 
@@ -283,6 +325,13 @@ describe('Editing question settings', () => {
             title: 'Test title - changed',
             qid: '../question3',
             topic: 'Test',
+            grading_method: 'Internal',
+            workspace_image: '',
+            workspace_port: '',
+            workspace_home: '',
+            workspace_args: '',
+            workspace_graded_files: '',
+            workspace_environment: '',
           }),
         },
       );

@@ -129,8 +129,8 @@ router.post(
           topic: z.string().optional(),
           tags: ArrayFromStringOrArraySchema.optional(),
           grading_method: EnumGradingMethodSchema.optional(),
-          single_variant: z.string().optional(),
-          show_correct_answer: z.string().optional(),
+          single_variant: BooleanFromCheckboxSchema,
+          show_correct_answer: BooleanFromCheckboxSchema,
           workspace_image: z.string().optional(),
           workspace_port: IntegerFromStringOrEmptySchema,
           workspace_home: z.string().optional(),
@@ -175,13 +175,13 @@ router.post(
 
       questionInfo.singleVariant = propertyValueWithDefault(
         questionInfo.singleVariant,
-        body.single_variant === 'on',
+        body.single_variant,
         false,
       );
 
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
-        body.show_correct_answer === 'on',
+        body.show_correct_answer,
         true,
       );
 
