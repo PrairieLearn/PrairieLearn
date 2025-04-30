@@ -14,6 +14,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/chai": "^5.2.1",
+    "chai": "^5.2.0",
     "marked": "^15.0.7",
     "mathjax": "^3.2.2",
     "tsx": "^4.19.3",

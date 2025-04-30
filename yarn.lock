@@ -3598,6 +3598,8 @@ __metadata:
   resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/chai": "npm:^5.2.1"
+    chai: "npm:^5.2.0"
     marked: "npm:^15.0.7"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.19.3"
