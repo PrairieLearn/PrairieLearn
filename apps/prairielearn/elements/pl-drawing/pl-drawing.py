@@ -242,6 +242,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     aria_description = pl.get_string_attrib(
         element, "aria-description", defaults.element_defaults["aria-description"]
     )
+    aria_label = pl.get_string_attrib(
+        element, "aria-label", defaults.element_defaults["aria-label"]
+    )
     preview_mode = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
@@ -331,6 +334,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "render_element": True,
         "preview_mode": preview_mode,
         "aria_description": aria_description,
+        "aria_label": aria_label,
         "btn_markup": btn_markup,
         "show_tolerance": show_btn
         and pl.get_boolean_attrib(
