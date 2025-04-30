@@ -6,13 +6,19 @@
     grid-size="20"
     width={{params.width_canvas}}
     height={{params.height_canvas}}
-    aria-label="Diagram of a mechanical system featuring a T-shaped bar with labeled points A, B, C, and D.
-        The bar rests on two wheels at points A and B, which are positioned on an inclined plane.
-        The bar extends horizontally, with distances labeled as b and d between points, and a vertical distance a from the bar to the inclined plane at point D.
-        A small block is placed on the right side of the bar between points C and D. Arrows and labels indicate distances and directions of forces.
-        A force vector P is applied at point A parallel to the inclined plane.
-        "
-    >
+    aria-label="
+        Diagram of T-shaped lifting mechanism on an incline.
+        Two black rails slope downward from upper-left to lower-right.
+        A rigid bar runs horizontally from a point labeled A, through a point labeled C, to a point labeled D. From C, a vertical stem drops to B, giving the mechanism a 'T' shape.
+        Points A and C are attached to wheels, which ride between the sloped rails.
+        A small green block rests on the bar between points C and D.
+        A force vector P is applied at point A, parallel with the sloped rails.
+        Labeled black arrows indicate key dimensions.
+        The distance from A to the center of the green block are labeled d.
+        The horizontal distance from A to C and C to D are labeled b.
+        The vertical distance from C to B is labeled a.
+    "
+>
     <pl-drawing-initial>
         <pl-circle x1={{params.xA}} y1={{params.yA}}  radius={{params.circle_radius}} > </pl-circle>
         <pl-circle x1={{params.xB}} y1={{params.yB}}  radius={{params.circle_radius}} > </pl-circle>
