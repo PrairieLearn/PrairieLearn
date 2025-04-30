@@ -9,6 +9,8 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
 import { updateAssessmentInstance } from './assessment.js';
 import {
   AssessmentInstanceSchema,
@@ -26,11 +28,6 @@ const RegradeAssessmentInstanceInfoSchema = z.object({
   user_uid: z.string().nullable(),
   group_name: z.string().nullable(),
   assessment_id: IdSchema,
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
-const RegradeAssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
   course_instance_id: IdSchema,
   course_id: IdSchema,
 });
@@ -110,11 +107,8 @@ export async function regradeAllAssessmentInstances(
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
-  const { assessment_label, course_instance_id, course_id } = await queryRow(
-    sql.select_regrade_assessment_info,
-    { assessment_id },
-    RegradeAssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
