@@ -20,7 +20,7 @@
 
   class PLFileUpload {
     constructor(uuid, options) {
-      // Not configurable at this point as this matches the request size limit enforced by the server
+      // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
       this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
