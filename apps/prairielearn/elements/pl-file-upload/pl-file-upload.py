@@ -113,18 +113,35 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "optional-file-patterns",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
+
+    file_names = pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
+    opt_file_names = pl.get_string_attrib(
+        element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+    )
+    file_patterns = pl.get_string_attrib(
+        element, "file-patterns", FILE_PATTERNS_DEFAULT
+    )
+    opt_file_patterns = pl.get_string_attrib(
+        element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
+    )
     if (
-        not pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
-        and not pl.get_string_attrib(
-            element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
-        )
-        and not pl.get_string_attrib(element, "file-patterns", FILE_PATTERNS_DEFAULT)
-        and not pl.get_string_attrib(
-            element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
-        )
+        not file_names
+        and not opt_file_names
+        and not file_patterns
+        and not opt_file_patterns
     ):
         raise ValueError(
             'At least one attribute of "file-names", "optional-file-names", "file-patterns", or "optional-file-patterns" must be provided.'
+        )
+
+    if (
+        (file_names and "/" in file_names)
+        or (opt_file_names and "/" in opt_file_names)
+        or (file_patterns and "/" in file_patterns)
+        or (opt_file_patterns and "/" in opt_file_patterns)
+    ):
+        raise ValueError(
+            'None of the attributes "file-names", "optional-file-names", "file-patterns", and "optional-file-patterns" can contain a "/" character.'
         )
 
     if "_required_file_names" not in data["params"]:
