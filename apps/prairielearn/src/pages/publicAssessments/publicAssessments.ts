@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
-import { AssessmentRowSchema, InstructorAssessments } from './publicAssessmentPreview.html.js';
+import { AssessmentRowSchema, InstructorAssessments } from './publicAssessments.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
