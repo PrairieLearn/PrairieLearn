@@ -500,9 +500,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(
-        element, "answers-name", defaults.element_defaults["answers-name"]
-    )
     gradable = pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
@@ -510,6 +507,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         return
 
     # Get raw correct answer
+    name = pl.get_string_attrib(
+        element, "answers-name", defaults.element_defaults["answers-name"]
+    )
     a_tru = data["correct_answers"][name]
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
