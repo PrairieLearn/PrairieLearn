@@ -7,12 +7,20 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    // Only backfill from workspaces within the date range
-    const min = 1n;
-    const max = await queryRow(sql.select_max_bound, z.bigint({ coerce: true }).nullable());
+    // Should backfill all existing rows of ai_grading_jobs
+    const { min, max } = await queryRow(
+      sql.select_bounds,
+      z.object({
+        min: z.bigint({ coerce: true }).nullable(),
+        max: z.bigint({ coerce: true }).nullable(),
+      }),
+    );
     return { min, max, batchSize: 10_000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    // something here
+    await queryAsync(sql.update_ai_grading_job_prompt_type, {
+      start,
+      end,
+    });
   },
 });
