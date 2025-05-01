@@ -23,5 +23,6 @@ WHERE
       jsonb_array_elements(prompt) AS elem
     WHERE
       jsonb_typeof(elem) != 'string'
-  ) id >= $start
+  )
+  AND id >= $start
   AND id <= $end;
