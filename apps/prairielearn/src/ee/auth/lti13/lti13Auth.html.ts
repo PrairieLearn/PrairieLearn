@@ -65,9 +65,7 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               Open PrairieLearn in a new window
             </button>
           </form>
-          <div id="message">
-            If there are login errors, reload this page to start a new session.
-          </div>
+          <div id="message">If there are login errors, reload this page to start again.</div>
 
           <script>
             const form = document.getElementById('interceptForm');
