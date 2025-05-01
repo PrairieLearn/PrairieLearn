@@ -22,7 +22,7 @@ export function AssessmentNavigation({
     <div class="dropdown bg-light pt-2 px-3">
       <button
         type="button"
-        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center mt-2 ms-3"
+        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
         style="max-width: 100%;"
         aria-label="Change assessment"
         aria-haspopup="true"
