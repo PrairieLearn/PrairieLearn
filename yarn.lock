@@ -3599,9 +3599,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^5.2.1"
+    c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
     marked: "npm:^15.0.7"
     mathjax: "npm:^3.2.2"
+    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.3"
     typescript: "npm:^5.8.3"
   languageName: unknown
