@@ -23,8 +23,8 @@ import {
   DateFromISOString,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
-  UserSchema,
   type User,
+  UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
