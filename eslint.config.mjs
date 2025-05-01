@@ -1,9 +1,9 @@
-// @ts-check
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import { defineConfig, globalIgnores } from 'eslint/config';
+import prettierConfig from 'eslint-config-prettier';
 import importX from 'eslint-plugin-import-x';
 import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
@@ -53,7 +53,6 @@ export default defineConfig([
         'plugin:@typescript-eslint/stylistic',
         'plugin:@typescript-eslint/strict',
         'plugin:you-dont-need-lodash-underscore/all',
-        'prettier',
       ),
       eslintReact.configs['recommended-typescript'],
     ],
@@ -64,7 +63,6 @@ export default defineConfig([
       mocha,
       'no-floating-promise': noFloatingPromise,
       'no-only-tests': noOnlyTests,
-      // '@eslint-react': eslintReact,
       '@prairielearn': prairielearn,
       '@typescript-eslint': typescriptEslint,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
@@ -208,6 +206,7 @@ export default defineConfig([
       },
     },
   },
+  prettierConfig,
   globalIgnores([
     '.venv/*',
     'docs/*',
