@@ -91,7 +91,7 @@ def execute_code(
             str_student = extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
-    str_student = "\n".join(filter(bool, [str_leading, str_student, str_trailing]))
+    str_student = "\n".join(filter(bool, (str_leading, str_student, str_trailing)))
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
         str_test = f.read()
@@ -235,12 +235,12 @@ def execute_code(
 
     plot_value = None
     if include_plt:
-        for key in list(student_globals):
+        for val in student_globals.values():
             if (
-                isinstance(student_globals[key], ModuleType)
-                and student_globals[key].__dict__["__name__"] == "matplotlib.pyplot"
+                isinstance(val, ModuleType)
+                and val.__dict__["__name__"] == "matplotlib.pyplot"
             ):
-                plot_value = student_globals[key]
+                plot_value = val
 
         if not plot_value:
             import matplotlib as mpl
