@@ -134,8 +134,8 @@ function FeatureList({ features }: { features: string[] }) {
     <>
       <p className="fw-bold mb-1 mt-3">Question features</p>
       <ul>
-        {features.map((feature, index) => (
-          <li key={index}>{feature}</li>
+        {features.map((feature) => (
+          <li key={feature}>{feature}</li>
         ))}
       </ul>
     </>

@@ -345,11 +345,11 @@ function CheckboxOrRadioInput({
           onChange={() => onSelectOption(option.value)}
         />
       ))}
-      {grade !== null ? (
+      {grade !== null && (
         <div className="mt-2">
           <FeedbackBadge grade={grade} />
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
