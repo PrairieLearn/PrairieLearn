@@ -238,7 +238,7 @@ body:has(div.app-container) {
 
 @media (max-width: 768px) {
   #assessment-switcher-container .assessment-row {
-    /* First row is completely filled, then second row is split 65px - 1fr */
+    /* The title takes up the entire first row. The label and TID take up the second row. */
     grid-template-columns: auto 1fr;
     grid-template-rows: auto auto;
     column-gap: 0.5rem;
