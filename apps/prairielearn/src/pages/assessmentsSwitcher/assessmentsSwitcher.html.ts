@@ -47,7 +47,7 @@ export function AssessmentSwitcher({
                 </div>
               `
             : ''}
-          <div class="assessment-row ${isActive ? 'selected' : ''}" aria-label="Link to assessment">
+          <div class="assessment-row ${isActive ? 'selected' : ''}">
             <div class="label">
               <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
             </div>
@@ -63,7 +63,7 @@ export function AssessmentSwitcher({
                       output: row.sync_warnings,
                     })
                   : ''}
-              <a href="${assessmentUrl}">
+              <a href="${assessmentUrl}"  >
                 ${row.title}
                 ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
               </a>

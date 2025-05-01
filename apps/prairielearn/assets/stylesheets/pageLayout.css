@@ -207,44 +207,46 @@ body:has(div.app-container) {
   flex-direction: column;
 }
 
-.assessment-heading {
+#assessment-switcher-container .assessment-heading {
   font-weight: bold;
   margin-top: 0.75rem;
 }
 
-.assessment-heading.first {
+#assessment-switcher-container .assessment-heading.first {
   margin-top: 0;
 }
 
-.assessment-row {
+#assessment-switcher-container .assessment-row {
   width: 100%;
   display: grid;
+  /* Minmax handles the case that the assessment label is larger than 75px. */
   grid-template-columns: minmax(75px, auto) 1fr 1fr;
   gap: 10px;
   text-decoration: none;
   padding: 0.25rem;
 }
 
-.assessment-row.selected {
+#assessment-switcher-container .assessment-row.selected {
   background-color: rgba(var(--bs-primary-rgb));
   color: white;
   border-radius: 5px;
 }
 
-.assessment-row.selected a {
+/* Ensure that the link within the selected assessment row is white */
+#assessment-switcher-container .assessment-row.selected a {
   color: white;
 }
 
-.spacer {
+#assessment-switcher-container .spacer {
   display: none;
 }
 
-.bottom-label {
+#assessment-switcher-container .bottom-label {
   display: none;
 }
 
 @media (max-width: 768px) {
-  .assessment-row {
+  #assessment-switcher-container .assessment-row {
     /* First row is completely filled, then second row is split 65px - 1fr */
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
@@ -254,20 +256,20 @@ body:has(div.app-container) {
     margin-top: 0.25rem;
   }
 
-  .assessment-row .title {
+  #assessment-switcher-container .assessment-row .title {
     grid-column: 1/-1;
     grid-row: 1;
   }
 
-  .assessment-row .label {
+  #assessment-switcher-container .assessment-row .label {
     display: none;
   }
 
-  .assessment-row .bottom-label {
+  #assessment-switcher-container .assessment-row .bottom-label {
     display: block;
   }
 
-  .spacer {
+  #assessment-switcher-container .spacer {
     display: block;
   }
 }
