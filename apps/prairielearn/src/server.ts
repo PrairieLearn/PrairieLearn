@@ -2385,6 +2385,7 @@ if (esMain(import.meta) && config.startServer) {
       nodeMetrics.start({
         awsConfig: makeAwsClientConfig(),
         intervalSeconds: config.nodeMetricsIntervalSec,
+        namespace: 'PrairieLearn',
         dimensions: [
           { Name: 'Server Group', Value: config.groupName },
           { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
