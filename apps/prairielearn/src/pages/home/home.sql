@@ -73,7 +73,7 @@ WITH
           'id',
           ci.id,
           'expired',
-          coalesce(d.expired, TRUE)
+          coalesce(d.expired, FALSE)
         )
         ORDER BY
           d.start_date DESC NULLS LAST,
