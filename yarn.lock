@@ -1716,18 +1716,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint-community/eslint-utils@npm:^4.2.0, @eslint-community/eslint-utils@npm:^4.4.0":
-  version: 4.4.0
-  resolution: "@eslint-community/eslint-utils@npm:4.4.0"
-  dependencies:
-    eslint-visitor-keys: "npm:^3.3.0"
-  peerDependencies:
-    eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
-  checksum: 10c0/7e559c4ce59cd3a06b1b5a517b593912e680a7f981ae7affab0d01d709e99cd5647019be8fafa38c350305bc32f1f7d42c7073edde2ab536c745e365f37b607e
-  languageName: node
-  linkType: hard
-
-"@eslint-community/eslint-utils@npm:^4.4.1":
+"@eslint-community/eslint-utils@npm:^4.2.0, @eslint-community/eslint-utils@npm:^4.4.0, @eslint-community/eslint-utils@npm:^4.4.1":
   version: 4.6.1
   resolution: "@eslint-community/eslint-utils@npm:4.6.1"
   dependencies:
@@ -6370,7 +6359,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/eslint-plugin@npm:8.31.1, @typescript-eslint/eslint-plugin@npm:^8.31.1":
+"@typescript-eslint/eslint-plugin@npm:8.31.1":
   version: 8.31.1
   resolution: "@typescript-eslint/eslint-plugin@npm:8.31.1"
   dependencies:
@@ -6391,7 +6380,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/parser@npm:8.31.1, @typescript-eslint/parser@npm:^8.31.1":
+"@typescript-eslint/parser@npm:8.31.1":
   version: 8.31.1
   resolution: "@typescript-eslint/parser@npm:8.31.1"
   dependencies:
@@ -9511,7 +9500,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-visitor-keys@npm:^3.3.0, eslint-visitor-keys@npm:^3.4.3":
+"eslint-visitor-keys@npm:^3.4.3":
   version: 3.4.3
   resolution: "eslint-visitor-keys@npm:3.4.3"
   checksum: 10c0/92708e882c0a5ffd88c23c0b404ac1628cf20104a108c745f240a13c332a11aac54f49a22d5762efbffc18ecbc9a580d1b7ad034bf5f3cc3307e5cbff2ec9820
@@ -14193,8 +14182,6 @@ __metadata:
     "@eslint-react/eslint-plugin": "npm:^1.48.5"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@types/tar-stream": "npm:^3.1.3"
-    "@typescript-eslint/eslint-plugin": "npm:^8.31.1"
-    "@typescript-eslint/parser": "npm:^8.31.1"
     dependency-cruiser: "npm:^16.10.1"
     eslint: "npm:^9.25.1"
     eslint-import-resolver-typescript: "npm:^4.3.4"
