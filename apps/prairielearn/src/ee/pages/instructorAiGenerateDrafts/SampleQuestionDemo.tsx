@@ -288,7 +288,7 @@ function NumericOrStringInput({
   onChange: (text: string) => void;
 }) {
   return (
-    <InputGroup className="mt-3">
+    <InputGroup className="mt-2">
       <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
         {answerLabel}
       </InputGroupText>
@@ -323,7 +323,7 @@ function CheckboxOrRadioInput({
   onSelectOption: (option: string) => void;
 }) {
   return (
-    <div className="mt-3">
+    <div className="mt-2">
       {options.map((option) => (
         <FormCheck
           id={`check-${option.value}`}
