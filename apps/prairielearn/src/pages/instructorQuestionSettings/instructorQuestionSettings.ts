@@ -11,6 +11,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { BooleanFromCheckboxSchema, IntegerFromStringOrEmptySchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
@@ -27,6 +28,7 @@ import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -40,8 +42,6 @@ import {
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
-import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
-import { applyKeyOrder } from '../../lib/json.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -136,14 +136,15 @@ router.post(
               .filter((s) => s !== ''),
           ),
           external_grading_entrypoint: z.union([z.string(), z.array(z.string())]),
-          external_grading_timeout: z.string().transform((s) => {
-            if (s === '') {
-              return 0;
-            }
-            Number.parseInt(s);
-          }),
+          external_grading_timeout: IntegerFromStringOrEmptySchema,
           external_grading_enable_networking: BooleanFromCheckboxSchema,
-          external_grading_environment: z.string().optional(),
+          external_grading_environment: z.string().transform((s) => {
+            try {
+              return JSON.parse(s.replace(/\r\n/g, '\n') || '{}');
+            } catch {
+              throw new error.HttpStatusError(400, 'Invalid JSON format');
+            }
+          }),
         })
         .parse(req.body);
 
@@ -224,7 +225,7 @@ router.post(
           ),
           environment: propertyValueWithDefault(
             questionInfo.externalGradingOptions?.environment,
-            JSON.parse(body.external_grading_environment?.replace(/\r\n/g, '\n') || '{}'),
+            body.external_grading_environment,
             (val) => !val || Object.keys(val).length === 0,
           ),
         };
