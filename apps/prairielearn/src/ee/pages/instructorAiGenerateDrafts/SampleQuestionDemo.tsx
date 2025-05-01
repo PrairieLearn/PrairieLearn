@@ -301,11 +301,9 @@ function NumericOrStringInput({
         {answerLabel}
       </InputGroupText>
       <FormControl
-        id="sample-question-resposne"
+        id="sample-question-response"
         value={userInputResponse}
         type="text"
-        aria-label="Sample question response"
-        aria-describedby="answer-label"
         placeholder={placeholder}
         onChange={(e) => onChange(e.currentTarget.value)}
       />
