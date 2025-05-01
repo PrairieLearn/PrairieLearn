@@ -40,6 +40,8 @@ import {
   SelectedAssessmentsSchema,
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
+import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
+import { applyKeyOrder } from '../../lib/json.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -123,6 +125,28 @@ router.post(
         );
       }
 
+      const body = z
+        .object({
+          external_grading_enabled: BooleanFromCheckboxSchema,
+          external_grading_image: z.string(),
+          external_grading_files: z.string().transform((s) =>
+            s
+              .split(',')
+              .map((s) => s.trim())
+              .filter((s) => s !== ''),
+          ),
+          external_grading_entrypoint: z.union([z.string(), z.array(z.string())]),
+          external_grading_timeout: z.string().transform((s) => {
+            if (s === '') {
+              return 0;
+            }
+            Number.parseInt(s);
+          }),
+          external_grading_enable_networking: BooleanFromCheckboxSchema,
+          external_grading_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
       const paths = getPaths(undefined, res.locals);
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
@@ -156,6 +180,69 @@ router.post(
         req.body.show_correct_answer === 'on',
         true,
       );
+
+      if (
+        body.external_grading_enabled ||
+        body.external_grading_image ||
+        body.external_grading_files ||
+        body.external_grading_entrypoint ||
+        body.external_grading_timeout ||
+        body.external_grading_enable_networking ||
+        body.external_grading_environment
+      ) {
+        const externalGradingOptions = {
+          comment: questionInfo.externalGradingOptions?.comment ?? undefined,
+          enabled: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.enabled,
+            body.external_grading_enabled,
+            false,
+          ),
+          image: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.image,
+            body.external_grading_image,
+            '',
+          ),
+          entrypoint: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.entrypoint,
+            body.external_grading_entrypoint,
+            '',
+          ),
+          serverFilesCourse: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.serverFilesCourse,
+            body.external_grading_files,
+            (v) => !v || v.length === 0,
+          ),
+          timeout: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.timeout,
+            body.external_grading_timeout,
+            0,
+          ),
+          enableNetworking: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.enableNetworking,
+            body.external_grading_enable_networking,
+            false,
+          ),
+          environment: propertyValueWithDefault(
+            questionInfo.externalGradingOptions?.environment,
+            JSON.parse(body.external_grading_environment?.replace(/\r\n/g, '\n') || '{}'),
+            (val) => !val || Object.keys(val).length === 0,
+          ),
+        };
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.externalGradingOptions,
+              externalGradingOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+
+        questionInfo.externalGradingOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredOptions)
+            : undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
