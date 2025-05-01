@@ -33,6 +33,9 @@ reviews:
     # prevent spurious warnings, we just disable ESLint for now.
     eslint:
       enabled: false
+    # The version of ruff (0.8.2) used by coderabbit is not modern enough to support our config.
+    ruff:
+      enabled: false
 
 chat:
   auto_reply: true

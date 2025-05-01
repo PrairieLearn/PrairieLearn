@@ -547,6 +547,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
              || checkProp('editable',              'boolean', ['render'],                           [])
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
+             || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
              || checkProp('num_valid_submissions','integer',  ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
@@ -1353,6 +1354,7 @@ async function renderPanel(
       }
       return false;
     }),
+    ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
     num_valid_submissions: variant.num_tries ?? null,
   } satisfies ExecutionData;
