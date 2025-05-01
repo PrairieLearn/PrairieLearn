@@ -229,6 +229,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of input tokens provided to the LLM.
+   */
+  inputTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined; 
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -319,6 +327,15 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
 
+    console.log('Prompt tokens', completion?.usage?.prompt_tokens, 'Completion tokens', completion?.usage?.completion_tokens);
+
+    if (completion?.usage?.prompt_tokens) {
+      job.data['inputTokens'] = completion?.usage?.prompt_tokens;
+    }
+    if (completion?.usage?.completion_tokens) {
+      job.data['completionTokens'] = completion?.usage?.completion_tokens;
+    }
+
     job.data.html = html;
     job.data.python = results?.python;
     job.data.context = context;
@@ -358,6 +375,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    inputTokens: jobData.data.inputTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 

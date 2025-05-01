@@ -1,7 +1,9 @@
 import * as cheerio from 'cheerio';
 
-import { formatHtmlWithPrettier } from './prettier.js';
+import { Cache } from '@prairielearn/cache';
 
+import {config} from './config.js';
+import { formatHtmlWithPrettier } from './prettier.js';
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
  * This includes removing scripts/stylesheets and attributes that aren't
@@ -54,3 +56,26 @@ export async function stripHtmlForAiGrading(html: string) {
 
   return (await formatHtmlWithPrettier(result)).trim();
 }
+
+/**
+ * Initializes the AI question generation rate limiting cache.
+ */
+export function initializeAiQuestionGenerationCache() {
+  const aiQuestionGenerationCache = new Cache();
+  aiQuestionGenerationCache.init({
+    type: config.cacheTypeAiQuestionGeneration,
+    keyPrefix: config.cacheKeyPrefixAiQuestionGeneration,
+    redisUrl: config.redisUrlAiQuestionGeneration
+  });
+  return aiQuestionGenerationCache;
+}
+
+/**
+ * Approximate the cost of the input tokens for a given prompt, in US dollars.
+ */
+export function approximateInputCost(prompt: string) {
+   // 1.25 is a factor to account for the error of the token approximation
+  const approximateTokenCount = (prompt.length / Math.E) * 1.25;
+  return (config.costPerMillionInputTokens * approximateTokenCount) / 1e6;
+}
+

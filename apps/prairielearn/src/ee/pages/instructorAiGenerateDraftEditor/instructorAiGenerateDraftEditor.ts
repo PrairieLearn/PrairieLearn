@@ -251,6 +251,8 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
+      // Perform rate limiting here. 
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
@@ -277,6 +279,7 @@ router.post(
           }),
         );
       }
+
     } else if (req.body.__action === 'save_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,

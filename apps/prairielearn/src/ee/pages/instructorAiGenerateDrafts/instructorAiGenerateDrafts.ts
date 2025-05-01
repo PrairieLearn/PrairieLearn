@@ -2,10 +2,10 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
-import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { approximateInputCost, initializeAiQuestionGenerationCache } from '../../../lib/ai-grading.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
@@ -15,19 +15,14 @@ import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
-  RateLimitExceeded,
+  RateLimitError
 } from './instructorAiGenerateDrafts.html.js';
 
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-// TODO: Move this elsewhere
-const USAGE_LIMIT = 2;
-cache.init({
-  type: 'memory',
-  keyPrefix: 'rate-limiting'
-});
+const aiQuestionGenerationCache = initializeAiQuestionGenerationCache();
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
@@ -87,13 +82,30 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
-      const cacheKey = `${res.locals.user.user_id}-usage`;
-      const usageInLast1h = await cache.get(cacheKey) ?? 0;
+      console.log('user id', `${res.locals.user.user_id}-rate-limit`);
+      let lastIntervalCost = await aiQuestionGenerationCache.get(`${res.locals.user.user_id}-rate-limit`) ?? 0;
+      const userRateLimitStart = await aiQuestionGenerationCache.get(`${res.locals.user.user_id}-rate-limit-start`) as Date | null;
+      
+      // The rate limit interval has passed; begin a new interval
+      if (userRateLimitStart && userRateLimitStart < new Date(Date.now() - config.aiQuestionGenerationRateLimitIntervalMs)) {
+        await aiQuestionGenerationCache.del(`${res.locals.user.user_id}-rate-limit`);
+        aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit-start`, new Date(), config.aiQuestionGenerationRateLimitIntervalMs);
+        lastIntervalCost = 0;
+      }
 
-      if (usageInLast1h > USAGE_LIMIT) {
+      const approxInputCost = approximateInputCost(req.body.prompt);
+
+      console.log('lastIntervalCost', lastIntervalCost);
+      console.log('approxInputCost', approxInputCost);
+
+      if (lastIntervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
         res.send(
-          RateLimitExceeded()
-        );
+          RateLimitError({
+            // If the user has more tokens than some threshold (50, in this case),
+            // they can shorten their message to avoid reaching the rate limit.
+            canShortenMessage: config.aiQuestionGenerationRateLimit - lastIntervalCost > (config.costPerMillionInputTokens * 50)
+          })
+        ); 
         return;
       }
 
@@ -106,8 +118,17 @@ router.post(
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
-      console.log('usageInLast1h', usageInLast1h);
-      cache.set(cacheKey, usageInLast1h + 1, 1000 * 3600);
+      const completionCost = (
+        (config.costPerMillionInputTokens * (result.inputTokens ?? 0)) + 
+        (config.costPerMillionCompletionTokens * (result.completionTokens ?? 0))
+      ) / 1e6;
+
+      console.log('completionCost', completionCost);
+
+      aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit`, lastIntervalCost + completionCost, config.aiQuestionGenerationRateLimitIntervalMs);
+      if (!userRateLimitStart) {
+        aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit-start`, new Date(), config.aiQuestionGenerationRateLimitIntervalMs);
+      }
 
       if (result.htmlResult) {
         res.set({
