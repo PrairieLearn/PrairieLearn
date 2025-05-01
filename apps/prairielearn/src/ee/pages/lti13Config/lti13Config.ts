@@ -10,7 +10,8 @@ const router = Router({ mergeParams: true });
 
 const ltiConfig = {
   title: 'PrairieLearn',
-  description: 'The best platform for online assessments',
+  description:
+    'Interactive, auto-graded assessments with randomized question variants and instant feedback',
   oidc_initiation_url: 'PLACEHOLDER--will be replaced later',
   target_link_uri: 'PLACEHOLDER--will be replaced later',
   extensions: [
