@@ -547,20 +547,36 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 continue
 
             mutated = False
-            attr_sets = [
-                (("top", "left"), tol),
-                (("x1", "y1"), tol),
-                (("x2", "y2"), tol),
-                (("x3", "y3"), tol),
-                (("angle",), angtol),
+
+            def get_oob_tol(x: float) -> float:
+                return x + random.choice([-1, 1]) * 1.1 * tol
+
+            def get_oob_angtol(x: float) -> float:
+                return x + random.choice([-1, 1]) * 1.1 * angtol
+
+            def get_oob_start_arrow(x: bool) -> bool:
+                return not x
+
+            grading_attrs = [
+                ("top", get_oob_tol),
+                ("left", get_oob_tol),
+                ("x1", get_oob_tol),
+                ("y1", get_oob_tol),
+                ("x2", get_oob_tol),
+                ("y2", get_oob_tol),
+                ("x3", get_oob_tol),
+                ("y3", get_oob_tol),
+                ("angle", get_oob_angtol),
+                ("drawStartArrow", get_oob_start_arrow),
             ]
-            for attr_set, offset in attr_sets:
-                if all(attr in element for attr in attr_set):
-                    for attr in attr_set:
-                        data["raw_submitted_answers"][name][i][attr] += (
-                            random.choice([1, -1]) * 1.1 * offset
-                        )
-                    mutated = True
+
+            for attr, oob_getter in grading_attrs:
+                if attr not in data["raw_submitted_answers"][name][i]:
+                    continue
+                data["raw_submitted_answers"][name][i][attr] = oob_getter(
+                    data["raw_submitted_answers"][name][i][attr]
+                )
+                mutated = True
 
             if not mutated:
                 raise RuntimeError(
