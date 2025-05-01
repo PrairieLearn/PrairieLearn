@@ -1,14 +1,15 @@
+// @ts-check
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import { defineConfig, globalIgnores } from 'eslint/config';
+import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
 import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import noOnlyTests from 'eslint-plugin-no-only-tests';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 import prairielearn from '@prairielearn/eslint-plugin';
 
@@ -30,37 +31,26 @@ const NO_RESTRICTED_SYNTAX = [
   },
 ];
 
-export default defineConfig([
+export default tseslint.config([
   js.configs.recommended,
+  tseslint.configs.stylistic,
+  tseslint.configs.strict,
+  eslintReact.configs['recommended-typescript'],
   {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-
-      ecmaVersion: 13,
-      parserOptions: {},
-    },
-
-    extends: [
-      'js/recommended',
-      ...compat.extends(
-        'plugin:@typescript-eslint/stylistic',
-        'plugin:@typescript-eslint/strict',
-        'plugin:you-dont-need-lodash-underscore/all',
-      ),
-      eslintReact.configs['recommended-typescript'],
-    ],
+    extends: [...compat.extends('plugin:you-dont-need-lodash-underscore/all')],
 
     plugins: {
-      js,
       'import-x': importX,
       mocha,
+      // @ts-expect-error Missing types for this plugin
       'no-floating-promise': noFloatingPromise,
       'no-only-tests': noOnlyTests,
       '@prairielearn': prairielearn,
-      '@typescript-eslint': typescriptEslint,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+    },
+
+    languageOptions: {
+      globals: { ...globals.node },
     },
 
     settings: {
@@ -134,7 +124,7 @@ export default defineConfig([
       // The recommended Mocha rules are too strict for us; we'll only enable
       // these two rules.
       'mocha/no-exclusive-tests': 'error',
-      'mocha/no-skipped-tests': 'error',
+      'mocha/no-pending-tests': 'error',
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
@@ -172,7 +162,6 @@ export default defineConfig([
   },
   {
     files: ['**/*.ts'],
-
     rules: {
       'no-restricted-syntax': [
         'error',
