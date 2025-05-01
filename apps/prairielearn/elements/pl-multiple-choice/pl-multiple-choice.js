@@ -1,4 +1,3 @@
-/* eslint-env browser */
 /* global TomSelect, MathJax */
 
 window.PLMultipleChoice = function (uuid) {
