@@ -232,24 +232,15 @@ body:has(div.app-container) {
   border-radius: 5px;
 }
 
-/* Ensure that the link within the selected assessment row is white */
 #assessment-switcher-container .assessment-row.selected a {
   color: white;
-}
-
-#assessment-switcher-container .spacer {
-  display: none;
-}
-
-#assessment-switcher-container .bottom-label {
-  display: none;
 }
 
 @media (max-width: 768px) {
   #assessment-switcher-container .assessment-row {
     /* First row is completely filled, then second row is split 65px - 1fr */
     grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto;
     column-gap: 0.5rem;
     row-gap: 0;
     padding: 0.5rem;
@@ -262,14 +253,12 @@ body:has(div.app-container) {
   }
 
   #assessment-switcher-container .assessment-row .label {
-    display: none;
+    grid-column: 1;
+    grid-row: 2;
   }
 
-  #assessment-switcher-container .assessment-row .bottom-label {
-    display: block;
-  }
-
-  #assessment-switcher-container .spacer {
-    display: block;
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
   }
 }

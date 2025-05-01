@@ -63,7 +63,7 @@ export function AssessmentSwitcher({
                       output: row.sync_warnings,
                     })
                   : ''}
-              <a href="${assessmentUrl}"  >
+              <a href="${assessmentUrl}">
                 ${row.title}
                 ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
               </a>
@@ -72,9 +72,6 @@ export function AssessmentSwitcher({
                 urlPrefix: plainUrlPrefix,
                 issueAid: row.tid,
               })}
-            </div>
-            <div class="bottom-label">
-              <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
             </div>
             <div>${row.tid}</div>
           </div>
