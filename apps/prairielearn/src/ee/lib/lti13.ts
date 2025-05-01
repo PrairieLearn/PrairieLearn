@@ -24,6 +24,7 @@ import {
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
   UserSchema,
+  type User,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
@@ -627,11 +628,6 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-const UsersWithLti13SubSchema = UserSchema.extend({
-  lti13_sub: z.string().nullable(),
-});
-type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
-
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = z.object({
   user_id: z.string(),
@@ -708,7 +704,7 @@ class Lti13ContextMembership {
    * @param user The user to look up.
    * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  lookup(user: UsersWithLti13Sub): ContextMembership | null {
+  lookup(user: User): ContextMembership | null {
     for (const match of ['uid', 'email']) {
       const memberResults = this.#memberships[user[match]];
 
@@ -758,7 +754,7 @@ export async function updateLti13Scores(
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query
-      users: UsersWithLti13SubSchema.array(),
+      users: UserSchema.array(),
     }),
   );
 
