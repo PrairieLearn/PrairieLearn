@@ -73,6 +73,9 @@ WITH
           'id',
           ci.id,
           'expired',
+          -- If no access rules exist, it is typically either a sandbox or a
+          -- future CI that has not yet been configured. In both cases it should
+          -- not be considered expired.
           coalesce(d.expired, FALSE)
         )
         ORDER BY
