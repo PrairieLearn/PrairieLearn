@@ -61,11 +61,13 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               ([key, value]) =>
                 html`<input type="hidden" name="${key}" value="${String(value)}" />`,
             )}
-            <button id="submitButton" class="btn btn-primary btn-lg">
+            <button id="submitButton" class="btn btn-primary mb-2">
               Open PrairieLearn in a new window
             </button>
           </form>
-          <div id="message">If there are login errors, reload this page to try again.</div>
+          <div id="message">
+            If there are login errors, reload this page to start a new session.
+          </div>
 
           <script>
             const form = document.getElementById('interceptForm');
@@ -75,7 +77,7 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
             form.addEventListener('submit', function () {
               button.disabled = true;
               button.textContent = 'Opened PrairieLearn in a new window';
-              messageDiv.textContent = 'Reload the page to try again.';
+              messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
             });
           </script>
         </main>
