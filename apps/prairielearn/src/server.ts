@@ -2418,57 +2418,63 @@ if (esMain(import.meta) && config.startServer) {
   // may come from another process, but we also send it to ourselves if
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
-  process.once('SIGTERM', async () => {
-    // By this point, we should no longer be attached to the load balancer,
-    // so there's no point shutting down the HTTP server or the socket.io
-    // server.
-    //
-    // We use `allSettled()` here to ensure that all tasks can gracefully
-    // shut down, even if some of them fail.
-    logger.info('Shutting down async processing');
-    const results = await Promise.allSettled([
-      externalGraderResults.stop(),
-      cron.stop(),
-      serverJobs.stop(),
-      stopBatchedMigrations(),
-    ]);
-    results.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error shutting down async processing', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
+  process.once('SIGTERM', shutdown);
 
-    // fix Postgres warning "another server might be running; trying to start server anyway"
-    logger.info('Closing Postgres connection...');
-    try {
-      await sqldb.closeAsync();
-    } catch (err) {
-      logger.error('Error closing database', err);
-      Sentry.captureException(err);
-    }
+  // SIGINT is sent when the user presses Control-C.
+  process.once('SIGINT', shutdown);
+}
 
-    try {
-      await lifecycleHooks.completeInstanceTermination();
-    } catch (err) {
-      logger.error('Error completing instance termination', err);
-      Sentry.captureException(err);
-    }
-
-    logger.info('Terminating...');
-    // Shut down OpenTelemetry exporting.
-    try {
-      await opentelemetry.shutdown();
-    } catch (err) {
-      logger.error('Error shutting down OpenTelemetry', err);
-      Sentry.captureException(err);
-    }
-
-    // Flush all events to Sentry.
-    try {
-      await Sentry.flush();
-    } finally {
-      process.exit(0);
+async function shutdown() {
+  logger.info('Performing a graceful shut down...');
+  // By this point, we should no longer be attached to the load balancer,
+  // so there's no point shutting down the HTTP server or the socket.io
+  // server.
+  //
+  // We use `allSettled()` here to ensure that all tasks can gracefully
+  // shut down, even if some of them fail.
+  logger.info('Shutting down async processing');
+  const results = await Promise.allSettled([
+    externalGraderResults.stop(),
+    cron.stop(),
+    serverJobs.stop(),
+    stopBatchedMigrations(),
+  ]);
+  results.forEach((r) => {
+    if (r.status === 'rejected') {
+      logger.error('Error shutting down async processing', r.reason);
+      Sentry.captureException(r.reason);
     }
   });
+
+  // fix Postgres warning "another server might be running; trying to start server anyway"
+  logger.info('Closing Postgres connection...');
+  try {
+    await sqldb.closeAsync();
+  } catch (err) {
+    logger.error('Error closing database', err);
+    Sentry.captureException(err);
+  }
+
+  try {
+    await lifecycleHooks.completeInstanceTermination();
+  } catch (err) {
+    logger.error('Error completing instance termination', err);
+    Sentry.captureException(err);
+  }
+
+  logger.info('Terminating...');
+  // Shut down OpenTelemetry exporting.
+  try {
+    await opentelemetry.shutdown();
+  } catch (err) {
+    logger.error('Error shutting down OpenTelemetry', err);
+    Sentry.captureException(err);
+  }
+
+  // Flush all events to Sentry.
+  try {
+    await Sentry.flush();
+  } finally {
+    process.exit(0);
+  }
 }
