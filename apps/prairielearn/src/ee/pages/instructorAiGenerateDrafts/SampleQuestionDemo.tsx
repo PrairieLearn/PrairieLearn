@@ -196,8 +196,8 @@ export function SampleQuestionDemo({
         </div>
       </CardHeader>
       <CardBody>
-        {variant && (
-          variant.question  
+        {variant &&
+          variant.question
             .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
             .filter(Boolean)
             .map((part) => {
@@ -216,8 +216,7 @@ export function SampleQuestionDemo({
 
               // Regular text
               return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
-            })
-        )}
+            })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}
@@ -289,7 +288,7 @@ function NumericOrStringInput({
   onChange: (text: string) => void;
 }) {
   return (
-    <InputGroup>
+    <InputGroup className="mt-3">
       <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
         {answerLabel}
       </InputGroupText>
@@ -302,7 +301,7 @@ function NumericOrStringInput({
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
-          <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>
+          {answerUnits && <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
           {grade !== null && <FeedbackBadge grade={grade} />}
         </InputGroupText>
       )}
@@ -324,7 +323,7 @@ function CheckboxOrRadioInput({
   onSelectOption: (option: string) => void;
 }) {
   return (
-    <div>
+    <div className="mt-3">
       {options.map((option) => (
         <FormCheck
           id={`check-${option.value}`}
