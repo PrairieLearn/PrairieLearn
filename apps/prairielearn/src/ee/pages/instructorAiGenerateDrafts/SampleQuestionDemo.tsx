@@ -196,35 +196,28 @@ export function SampleQuestionDemo({
         </div>
       </CardHeader>
       <CardBody>
-        <p>
-          {
-            // Split the question into different parts: regular text, MathJax, and bold text.
-            // MathJax is delimited by $$...$$ or $...$
-            // Bold text is delimited by **...**.
-            variant
-              ? variant.question
-                  .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-                  .filter(Boolean)
-                  .map((part) => {
-                    // Bold text
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                      return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
-                    }
+        {variant && (
+          variant.question  
+            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+            .filter(Boolean)
+            .map((part) => {
+              // Bold text
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
+              }
 
-                    // MathJax
-                    if (
-                      (part.startsWith('$$') && part.endsWith('$$')) ||
-                      (part.startsWith('$') && part.endsWith('$'))
-                    ) {
-                      return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
-                    }
+              // MathJax
+              if (
+                (part.startsWith('$$') && part.endsWith('$$')) ||
+                (part.startsWith('$') && part.endsWith('$'))
+              ) {
+                return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
+              }
 
-                    // Regular text
-                    return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
-                  })
-              : null
-          }
-        </p>
+              // Regular text
+              return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
+            })
+        )}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}
