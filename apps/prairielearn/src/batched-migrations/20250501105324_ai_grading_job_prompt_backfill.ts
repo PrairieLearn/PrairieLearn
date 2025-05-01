@@ -7,17 +7,14 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    // Should backfill all existing rows of ai_grading_jobs
-    const { min, max } = await queryRow(
-      sql.select_bounds,
-      z.object({
-        min: z.bigint({ coerce: true }).nullable(),
-        max: z.bigint({ coerce: true }).nullable(),
-      }),
-    );
-    return { min, max, batchSize: 10_000 };
+    const max = await queryRow(sql.select_bounds, z.bigint({ coerce: true }).nullable());
+    return { min: 1n, max, batchSize: 1000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
+    // In earlier version of AI grading, the ai_grading_jobs.prompt column is stored
+    // as an array of strings rather than an array of json objects.
+    // This function finds all entries of ai_grading_jobs.prompt that are arrays of
+    // strings and parse the strings into json objects.
     await queryAsync(sql.update_ai_grading_job_prompt_type, {
       start,
       end,

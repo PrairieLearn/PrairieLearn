@@ -1,6 +1,5 @@
 -- BLOCK select_bounds
 SELECT
-  min(id),
   max(id)
 FROM
   ai_grading_jobs;
@@ -16,13 +15,13 @@ SET
   )
 WHERE
   jsonb_typeof(prompt) = 'array'
-  AND NOT EXISTS (
+  AND EXISTS (
     SELECT
       1
     FROM
       jsonb_array_elements(prompt) AS elem
     WHERE
-      jsonb_typeof(elem) != 'string'
+      jsonb_typeof(elem) = 'string'
   )
   AND id >= $start
   AND id <= $end;
