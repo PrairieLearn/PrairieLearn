@@ -1,7 +1,7 @@
-import { createRequire } from 'node:module';
-
 import { assert } from 'chai';
 import { Marked } from 'marked';
+// @ts-expect-error Mathjax is not a module
+import mathjax from 'mathjax';
 
 import { addMathjaxExtension } from './index.js';
 
@@ -14,9 +14,7 @@ async function testMarkdown(original: string, expected: string) {
 
 describe('Markdown processing', () => {
   before(async () => {
-    // MathJax does not support ESM, so we need to use CommonJS to load it.
-    const require = createRequire(import.meta.url);
-    const mathjax = await require('mathjax').init({
+    const MathJax = await mathjax.init({
       options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
       tex: {
         inlineMath: [
@@ -26,7 +24,7 @@ describe('Markdown processing', () => {
       },
       loader: { load: ['input/tex'] },
     });
-    addMathjaxExtension(marked, mathjax);
+    addMathjaxExtension(marked, MathJax);
   });
 
   it('renders basic markdown correctly', async () => {
