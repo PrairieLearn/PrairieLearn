@@ -209,7 +209,10 @@ nav:
       - 'Course configuration': 'course/index.md'
       - 'Course instance configuration': 'courseInstance.md'
       - 'Assessment configuration': 'assessment/index.md'
-      - 'Question configuration': 'question.md'
+      - 'Question configuration':
+          - 'question/index.md'
+          - '<code>question.html</code>': 'question/template.md'
+          - '<code>server.py</code>': 'question/server.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'
       - 'Access control': 'accessControl/index.md'
