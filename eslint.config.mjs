@@ -37,7 +37,7 @@ export default tseslint.config([
   tseslint.configs.strict,
   eslintReact.configs['recommended-typescript'],
   {
-    extends: [...compat.extends('plugin:you-dont-need-lodash-underscore/all')],
+    extends: compat.extends('plugin:you-dont-need-lodash-underscore/all'),
 
     plugins: {
       'import-x': importX,
