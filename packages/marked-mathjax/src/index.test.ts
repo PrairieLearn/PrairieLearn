@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 import { Marked } from 'marked';
-// @ts-expect-error Mathjax is not a module
+// @ts-expect-error MathJax does not include types
 import mathjax from 'mathjax';
 
 import { addMathjaxExtension } from './index.js';
