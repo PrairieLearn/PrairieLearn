@@ -30,7 +30,7 @@ export function AssessmentSwitcher({
 
   return html`
     <div id="assessment-switcher-container">
-      ${assessmentRows.map((row) => {
+      ${assessmentRows.map((row, index) => {
         const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
         const isActive = currentAssessmentId ? idsEqual(currentAssessmentId, row.id) : false;
@@ -38,7 +38,7 @@ export function AssessmentSwitcher({
         return html`
           ${row.start_new_assessment_group
             ? html`
-                <div class="assessment-heading">
+                <div class="assessment-heading ${index === 0 ? 'first' : ''}">
                   ${assessmentsGroupBy === 'Set'
                     ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                     : AssessmentModuleHeading({
