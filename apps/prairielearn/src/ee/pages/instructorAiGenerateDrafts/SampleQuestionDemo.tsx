@@ -312,7 +312,7 @@ function NumericOrStringInput({
       {(answerUnits || grade !== null) && (
         <InputGroupText>
           <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>
-          {grade !== null ? <FeedbackBadge grade={grade} /> : null}
+          {grade !== null && <FeedbackBadge grade={grade} />}
         </InputGroupText>
       )}
     </InputGroup>
