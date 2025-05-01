@@ -383,8 +383,8 @@ export async function aiGradeTest({
       if (rubric_id) {
         job.info(`Test size: ${testRubricResults.length}`);
         rubric_items.forEach((item) => {
-          const accuracy = rubricItemAccuracy(testRubricResults, item);
-          job.info(`Rubric item: ${item.description}, accuracy: ${accuracy * 100}%`);
+          const accuracyPerc = rubricItemAccuracy(testRubricResults, item) * 100;
+          job.info(`Rubric item: ${item.description}, accuracy: ${accuracyPerc}%`);
         });
       } else {
         job.info(`Test size: ${testScoreResults.length}`);
