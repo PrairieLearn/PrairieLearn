@@ -3,7 +3,6 @@ import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import { defineConfig, globalIgnores } from 'eslint/config';
-import prettierConfig from 'eslint-config-prettier';
 import importX from 'eslint-plugin-import-x';
 import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
@@ -13,11 +12,7 @@ import globals from 'globals';
 
 import prairielearn from '@prairielearn/eslint-plugin';
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-  // recommendedConfig: js.configs.recommended,
-  // allConfig: js.configs.all,
-});
+const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
 
 const NO_RESTRICTED_SYNTAX = [
   {
@@ -206,7 +201,6 @@ export default defineConfig([
       },
     },
   },
-  prettierConfig,
   globalIgnores([
     '.venv/*',
     'docs/*',
