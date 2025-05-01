@@ -46,11 +46,8 @@ function AssessmentNavigationModal() {
     title: 'Select assessment',
     formMethod: 'POST',
     body: html`
-      <div
-        id="assessmentNavigationModalContent"
-        class="overflow-auto d-flex justify-content-center align-items-center"
-      >
-        <div style="width: 30px; height: 30px;">
+      <div id="assessmentNavigationModalContent">
+        <div style="width: 100%;" class="d-flex justify-content-center align-items-center">
           <div class="spinner-border spinner-border-sm" role="status">
             <span class="visually-hidden">Loading assessments...</span>
           </div>

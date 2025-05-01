@@ -29,74 +29,57 @@ export function AssessmentSwitcher({
   }
 
   return html`
-    <div class="table-responsive">
-      <table class="table table-borderless table-sm table-hover" aria-label="Assessments">
-        <tbody>
-          <thead>
-            <th style="width: 1%"><span class="visually-hidden">Label</span></th>
-            <th><span class="visually-hidden">Title</span></th>
-            <th><span class="visually-hidden">AID</span></th>
-          </thead>
-          ${assessmentRows.map((row) => {
-            const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
+    <div id="assessment-switcher-container">
+      ${assessmentRows.map((row) => {
+        const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
-            const isActive = currentAssessmentId ? idsEqual(currentAssessmentId, row.id) : false;
+        const isActive = currentAssessmentId ? idsEqual(currentAssessmentId, row.id) : false;
 
-            return html`
-              ${row.start_new_assessment_group
-                ? html`
-                    <tr>
-                      <th colspan="3" scope="row">
-                        ${assessmentsGroupBy === 'Set'
-                          ? AssessmentSetHeading({ assessment_set: row.assessment_set })
-                          : AssessmentModuleHeading({
-                              assessment_module: row.assessment_module,
-                            })}
-                      </th>
-                    </tr>
-                  `
-                : ''}
-
-              <tr
-                id="row-${row.id}"
-                class="${isActive ? 'text-white' : ''}"
-                style="cursor: pointer;"
-                onclick="window.location.href = '${assessmentUrl}'"
-                aria-label="Link to assessment"
-              >
-                <td class="align-middle ${isActive ? 'bg-primary' : ''}" style="width: 1%">
-                  <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
-                </td>
-                <td class="align-middle ${isActive ? 'bg-primary' : ''}">
-                  ${row.sync_errors
-                    ? SyncProblemButton({
-                        type: 'error',
-                        output: row.sync_errors,
-                      })
-                    : row.sync_warnings
-                      ? SyncProblemButton({
-                          type: 'warning',
-                          output: row.sync_warnings,
-                        })
-                      : ''}
-                  <span class="${isActive ? 'text-white' : ''}">
-                    ${row.title}
-                    ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
-                  </span>
-                  ${IssueBadge({
-                    count: row.open_issue_count,
-                    urlPrefix: plainUrlPrefix,
-                    issueAid: row.tid,
-                  })}
-                </td>
-                <td class="align-middle ${isActive ? 'text-white bg-primary' : ''}">
-                  <span>${row.tid}</span>
-                </td>
-              </tr>
-            `;
-          })}
-        </tbody>
-      </table>
+        return html`
+          ${row.start_new_assessment_group
+            ? html`
+                <div class="assessment-heading">
+                  ${assessmentsGroupBy === 'Set'
+                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                    : AssessmentModuleHeading({
+                        assessment_module: row.assessment_module,
+                      })}
+                </div>
+              `
+            : ''}
+          <div class="assessment-row ${isActive ? 'selected' : ''}" aria-label="Link to assessment">
+            <div class="label">
+              <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
+            </div>
+            <div class="title">
+              ${row.sync_errors
+                ? SyncProblemButton({
+                    type: 'error',
+                    output: row.sync_errors,
+                  })
+                : row.sync_warnings
+                  ? SyncProblemButton({
+                      type: 'warning',
+                      output: row.sync_warnings,
+                    })
+                  : ''}
+              <a href="${assessmentUrl}">
+                ${row.title}
+                ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
+              </a>
+              ${IssueBadge({
+                count: row.open_issue_count,
+                urlPrefix: plainUrlPrefix,
+                issueAid: row.tid,
+              })}
+            </div>
+            <div class="bottom-label">
+              <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
+            </div>
+            <div>${row.tid}</div>
+          </div>
+        `;
+      })}
     </div>
   `.toString();
 }

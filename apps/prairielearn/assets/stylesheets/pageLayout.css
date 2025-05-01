@@ -201,3 +201,69 @@ body:has(div.app-container) {
 .app-container.side-nav-enabled.collapsed #side-nav-toggler {
   padding: 0.5rem 1rem;
 }
+
+#assessment-switcher-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.assessment-heading {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.assessment-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(75px, auto) 1fr 1fr;
+  gap: 10px;
+  text-decoration: none;
+  padding: 0.25rem;
+}
+
+.assessment-row.selected {
+  background-color: rgba(var(--bs-primary-rgb));
+  color: white;
+  border-radius: 5px;
+}
+
+.assessment-row.selected a {
+  color: white;
+}
+
+.spacer {
+  display: none;
+}
+
+.bottom-label {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .assessment-row {
+    /* First row is completely filled, then second row is split 65px - 1fr */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: 0.5rem;
+    row-gap: 0;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  .assessment-row .label {
+    display: none;
+  }
+
+  .assessment-row .bottom-label {
+    display: block;
+  }
+
+  .spacer {
+    display: block;
+  }
+}
