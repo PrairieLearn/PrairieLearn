@@ -39,8 +39,9 @@
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
@@ -59,9 +60,10 @@
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-                aria-describedby="pl-string-input-{{uuid}}-suffix"
-                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             />
     {{/multiline}}
     {{^multiline}}
@@ -141,6 +143,7 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
         >{{a_sub}}</textarea>
         {{#a_sub}}
@@ -262,7 +265,8 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
-            aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
+            {{#suffix}}aria-describedby="pl-string-input-answer-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
         >{{a_tru}}</textarea>
         {{! Show raw value correct answer was parsed from }}
         <button
