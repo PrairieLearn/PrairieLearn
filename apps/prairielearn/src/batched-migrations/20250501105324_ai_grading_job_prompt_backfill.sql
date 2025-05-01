@@ -1,4 +1,4 @@
--- BLOCK select_max_bound
+-- BLOCK select_bounds
 SELECT
   min(id),
   max(id)
