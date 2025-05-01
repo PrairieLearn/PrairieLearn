@@ -19,7 +19,7 @@ RUN arch="$(uname -m)" \
     && chmod +x "Miniforge3-Linux-${arch}.sh" \
     && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
     # Install conda and mamba hooks for future interactive bash sessions:
-    && /home/coder/conda/bin/mamba init bash \
+    && /home/coder/conda/bin/mamba shell init --shell bash \
     # Activate hooks in the current noninteractive session:
     && . "/home/coder/conda/etc/profile.d/conda.sh" \
     && . "/home/coder/conda/etc/profile.d/mamba.sh" \
