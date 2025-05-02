@@ -157,7 +157,11 @@ export async function uploadSubmissionsCsv(
 
         const instance_question_id = await sqldb.queryRow(
           sql.insert_instance_question,
-          { assessment_instance_id, assessment_question_id: assessmentQuestion.id },
+          {
+            assessment_instance_id,
+            assessment_question_id: assessmentQuestion.id,
+            requires_manual_grading: (assessmentQuestion.max_manual_points ?? 0) > 0,
+          },
           IdSchema,
         );
 

@@ -64,9 +64,17 @@ WHERE
 
 -- BLOCK insert_instance_question
 INSERT INTO
-  instance_questions (assessment_instance_id, assessment_question_id)
+  instance_questions (
+    assessment_instance_id,
+    assessment_question_id,
+    requires_manual_grading
+  )
 VALUES
-  ($assessment_instance_id, $assessment_question_id)
+  (
+    $assessment_instance_id,
+    $assessment_question_id,
+    $requires_manual_grading
+  )
 RETURNING
   id AS instance_question_id;
 
