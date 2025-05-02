@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require('node:path');
 
 // We support running our tests in two modes:
@@ -18,6 +19,7 @@ const isRunningOnDist = process.argv
 
 // We need to point to this `tsconfig.json` specifically to pick up the
 // `allowJs: true` option.
+// eslint-disable-next-line no-restricted-globals
 process.env.TSX_TSCONFIG_PATH = path.resolve(__dirname, './src/tsconfig.json');
 
 module.exports = {
