@@ -57,7 +57,7 @@ def generate(data):
 
     rA = np.array([xA, yA])
     e1 = np.array([b, a], dtype=np.float64)
-    e1 /= la.norm(e1, ord=2)
+    e1 /= la.norm(e1, 2)
     e2 = np.array([-a, b], dtype=np.float64)
     e2 /= la.norm(e2, 2)
     rE = rA + circle_radius * e2
