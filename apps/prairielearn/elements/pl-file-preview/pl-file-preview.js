@@ -125,17 +125,15 @@
               if (type === 'text/plain') {
                 const text = await blob.text();
                 if (escapedFileName.endsWith('.ipynb')) {
-                  // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
-                  // importing DOMPurify sets the global variable DOMPurify.
                   await Promise.all([
                     import('marked'),
+                    import('@prairielearn/marked-mathjax'),
+                    // importing DOMPurify sets the global variable DOMPurify.
                     import('dompurify'),
+                    // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
                     import('notebookjs'),
-                  ]).then(async ([Marked]) => {
-                    (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(
-                      Marked.marked,
-                      MathJax,
-                    );
+                  ]).then(async ([Marked, markedMathjax]) => {
+                    markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
                     nb.markdown = Marked.marked.parse;
 
                     nb.sanitizer = (code) =>
