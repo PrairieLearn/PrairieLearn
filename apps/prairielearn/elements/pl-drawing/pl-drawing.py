@@ -548,32 +548,32 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
             mutated = False
 
-            def get_oob_tol(x: float) -> float:
+            def get_incorrect_with_tol(x: float) -> float:
                 return x + random.choice([-1, 1]) * 1.1 * tol
 
-            def get_oob_angtol(x: float) -> float:
+            def get_incorrect_with_angtol(x: float) -> float:
                 return x + random.choice([-1, 1]) * 1.1 * angtol
 
-            def get_oob_start_arrow(x: bool) -> bool:
+            def get_incorrect_with_start_arrow(x: bool) -> bool:
                 return not x
 
             grading_attrs = [
-                ("top", get_oob_tol),
-                ("left", get_oob_tol),
-                ("x1", get_oob_tol),
-                ("y1", get_oob_tol),
-                ("x2", get_oob_tol),
-                ("y2", get_oob_tol),
-                ("x3", get_oob_tol),
-                ("y3", get_oob_tol),
-                ("angle", get_oob_angtol),
-                ("drawStartArrow", get_oob_start_arrow),
+                ("top", get_incorrect_with_tol),
+                ("left", get_incorrect_with_tol),
+                ("x1", get_incorrect_with_tol),
+                ("y1", get_incorrect_with_tol),
+                ("x2", get_incorrect_with_tol),
+                ("y2", get_incorrect_with_tol),
+                ("x3", get_incorrect_with_tol),
+                ("y3", get_incorrect_with_tol),
+                ("angle", get_incorrect_with_angtol),
+                ("drawStartArrow", get_incorrect_with_start_arrow),
             ]
 
-            for attr, oob_getter in grading_attrs:
+            for attr, incorrect_getter in grading_attrs:
                 if attr not in data["raw_submitted_answers"][name][i]:
                     continue
-                data["raw_submitted_answers"][name][i][attr] = oob_getter(
+                data["raw_submitted_answers"][name][i][attr] = incorrect_getter(
                     data["raw_submitted_answers"][name][i][attr]
                 )
                 mutated = True
