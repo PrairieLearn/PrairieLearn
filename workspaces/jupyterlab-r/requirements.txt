@@ -1,2 +1,2 @@
-r-base>=4.1
+r-base>=4.4.3
 r-irkernel
