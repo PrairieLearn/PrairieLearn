@@ -1,6 +1,6 @@
 <pl-question-panel>
 
-    <p>
+    <div class="p-2">
         <pl-drawing grid-size="15" width={{params.width_start_canvas}} height={{params.height_start_canvas}}>
             <pl-drawing-initial>
             <pl-rod x1={{params.x2}} x2={{params.x2}} y1={{params.y1}} y2={{params.y4}}></pl-rod>
@@ -16,7 +16,7 @@
         </pl-drawing>
 
 
-    </p>
+      </div>
     <p>
         Draw the corresponding free body diagram.
     </p>
@@ -34,7 +34,7 @@
 
 </pl-question-panel>
 
-<p>
+<div class="p-2">
     <pl-drawing grid-size="15" gradable="true" answers-name="box" hide-answer-panel="false"
         width={{params.width_canvas}} height={{params.height_canvas}}>
 
@@ -87,4 +87,4 @@
             </pl-controls-group>
         </pl-controls>
     </pl-drawing>
-</p>
+  </div>
