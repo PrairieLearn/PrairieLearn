@@ -163,8 +163,10 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
-            // The comment is only set if there are no alternatives. Otherwise, it is
-            // set in the alternative group.
+            // If a question has alternatives, the comment is stored on the alternative
+            // group, since each alternative can have its own comment. If this is
+            // just a single question with no alternatives, the comment is stored on
+            // the assessment question itself.
             comment: question.alternatives ? undefined : question.comment,
           },
         ];
@@ -246,6 +248,8 @@ function getParamsForAssessment(
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
         questions,
+        // If the question doesn't have any alternatives, we store the comment
+        // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
       };
     });
