@@ -392,3 +392,15 @@ def generate(data):
         {"name": "xyz.c", "questionFile": "tests/xyz.c"},
     ]
 ```
+
+## When uploading grades via CSV, the upload process cannot match some group names. Why?
+
+The [manual grading documentation](./manualGrading/index.md#manual-grading-using-file-uploads) lists a process for manual grading using CSV files, that involves downloading a CSV file, changing the score/feedback in the file locally (via Excel or other tools), then uploading the changed file. However, when a group assessment includes groups with some specific group name patterns, such as numeric names starting at zeros or strings that can be interpreted as dates, Excel may change the group name to match its own representation of these values (e.g., by removing leading zeros). This causes the upload process to fail to recognize the group name.
+
+In these cases, there are a few possible ways to address these cases:
+
+- Instead of opening the CSV file directly on Excel, you can import it to a blank new workspace, ensuring the group name column uses the "Text" data type. More details can be found in [the Microsoft Support page](https://support.microsoft.com/en-us/office/keeping-leading-zeros-and-large-numbers-1bf7b935-36e1-4985-842f-5dfa51f85fe7).
+
+- Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found the row can be identified with other columns such as the `submission_id`.
+
+- If the number of groups with this issue is relatively small, you can manually edit the CSV file to update the group name to the proper name. Note that you need to ensure Excel interprets the name you input as a string. One way to ensure this is to [add an apostrophe in front of the group name](https://support.microsoft.com/en-us/office/stop-automatically-changing-numbers-to-dates-452bd2db-cc96-47d1-81e4-72cec11c4ed8) when setting it on Excel, e.g., `'0123`.
