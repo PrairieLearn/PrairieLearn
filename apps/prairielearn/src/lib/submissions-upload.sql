@@ -62,50 +62,11 @@ WHERE
   assessment_id = $assessment_id
   AND question_id = $question_id;
 
--- BLOCK ensure_assessment_question
-INSERT INTO
-  assessment_questions (
-    assessment_id,
-    question_id,
-    max_points,
-    max_manual_points,
-    max_auto_points,
-    points_list,
-    init_points,
-    grade_rate_mins
-  )
-VALUES
-  (
-    $assessment_id,
-    $question_id,
-    $max_points,
-    $max_manual_points,
-    $max_auto_points,
-    NULL, -- points_list not easily recreated
-    COALESCE(
-      $max_points,
-      $max_manual_points,
-      $max_auto_points,
-      0
-    ),
-    0
-  )
-ON CONFLICT (assessment_id, question_id, number) DO UPDATE
-SET
-  max_points = EXCLUDED.max_points,
-  max_manual_points = EXCLUDED.max_manual_points,
-  max_auto_points = EXCLUDED.max_auto_points
-RETURNING
-  id AS assessment_question_id;
-
--- BLOCK ensure_instance_question
+-- BLOCK insert_instance_question
 INSERT INTO
   instance_questions (assessment_instance_id, assessment_question_id)
 VALUES
   ($assessment_instance_id, $assessment_question_id)
-ON CONFLICT (assessment_instance_id, assessment_question_id) DO UPDATE
-SET
-  assessment_instance_id = EXCLUDED.assessment_instance_id -- Dummy update
 RETURNING
   id AS instance_question_id;
 
@@ -141,10 +102,9 @@ VALUES
 RETURNING
   id AS variant_id;
 
--- BLOCK ensure_submission
+-- BLOCK insert_submission
 INSERT INTO
   submissions (
-    id,
     variant_id,
     auth_user_id,
     submitted_answer,
@@ -166,7 +126,6 @@ INSERT INTO
   )
 VALUES
   (
-    $submission_id,
     $variant_id,
     $authn_user_id,
     $submitted_answer,
@@ -186,19 +145,5 @@ VALUES
     true, -- Assume gradable
     $submission_date
   )
-ON CONFLICT (id) DO UPDATE
-SET
-  submitted_answer = EXCLUDED.submitted_answer,
-  raw_submitted_answer = EXCLUDED.raw_submitted_answer,
-  partial_scores = EXCLUDED.partial_scores,
-  override_score = EXCLUDED.override_score,
-  credit = EXCLUDED.credit,
-  mode = EXCLUDED.mode,
-  grading_requested_at = EXCLUDED.grading_requested_at,
-  graded_at = EXCLUDED.graded_at,
-  score = EXCLUDED.score,
-  correct = EXCLUDED.correct,
-  feedback = EXCLUDED.feedback,
-  date = EXCLUDED.date
 RETURNING
   id AS submission_id;

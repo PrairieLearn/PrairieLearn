@@ -1,6 +1,6 @@
 import csvtojson from 'csvtojson';
-import _ from 'lodash';
 import * as streamifier from 'streamifier';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -13,6 +13,73 @@ import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const ZodStringToNumber = z.preprocess((val) => {
+  if (val === '' || val == null) return null;
+  const num = Number(val);
+  return isNaN(num) ? null : num;
+}, z.number().nullable());
+
+const ZodStringToBoolean = z.preprocess((val) => {
+  if (val === '' || val == null) return null;
+  const lowerVal = String(val).toLowerCase();
+  if (lowerVal === 'true' || lowerVal === '1') return true;
+  if (lowerVal === 'false' || lowerVal === '0') return false;
+  return null;
+}, z.boolean().nullable());
+
+const ZodStringToDate = z.preprocess((val) => {
+  if (val === '' || val == null) return null;
+  const date = new Date(String(val));
+  return isNaN(date.getTime()) ? null : date;
+}, z.date().nullable());
+
+const ZodStringToJson = z.preprocess((val) => {
+  if (val === '' || val == null) return null;
+  try {
+    const parsed = JSON.parse(String(val));
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}, z.record(z.any()).nullable());
+
+const SubmissionCsvRowSchema = z.object({
+  UID: z.string(),
+  UIN: z.string().optional().nullable(),
+  Name: z.string().optional().nullable(),
+  'Group name': z.string().optional().nullable(),
+  'Assessment instance': ZodStringToNumber,
+  Question: z.string(),
+  'Question instance': ZodStringToNumber,
+  Seed: z.string().optional().nullable(),
+  Params: ZodStringToJson,
+  'True answer': ZodStringToJson,
+  Options: ZodStringToJson,
+  'Submission date': ZodStringToDate,
+  'Submitted answer': ZodStringToJson,
+  'Partial Scores': ZodStringToJson,
+  'Override score': ZodStringToNumber,
+  Credit: ZodStringToNumber,
+  Mode: z.string().optional().nullable(),
+  'Grading requested date': ZodStringToDate,
+  'Grading date': ZodStringToDate,
+  Score: ZodStringToNumber,
+  Correct: ZodStringToBoolean,
+  Feedback: ZodStringToJson,
+  'Max points': ZodStringToNumber,
+  'Max auto points': ZodStringToNumber,
+  'Max manual points': ZodStringToNumber,
+  Assessment: z.string().optional().nullable(),
+  'Zone number': z.string().optional().nullable(),
+  'Zone title': z.string().optional().nullable(),
+  Variant: z.string().optional().nullable(),
+  'Assigned manual grader': z.string().optional().nullable(),
+  'Last manual grader': z.string().optional().nullable(),
+  'Rubric Grading': z.string().optional().nullable(),
+  'Question points': z.string().optional().nullable(),
+  'Question % score': z.string().optional().nullable(),
+});
 
 export async function uploadSubmissionsCsv(
   assessment_id: string,
@@ -56,61 +123,10 @@ export async function uploadSubmissionsCsv(
     });
     const csvConverter = csvtojson();
 
-    const requiredHeaders = [
-      'UID',
-      'UIN',
-      'Username',
-      'Name',
-      'Role',
-      'Assessment',
-      'Assessment instance',
-      'Zone number',
-      'Zone title',
-      'Question',
-      'Question instance',
-      'Variant',
-      'Seed',
-      'Params',
-      'True answer',
-      'Options',
-      'submission_id',
-      'Submission date',
-      'Submitted answer',
-      'Partial Scores',
-      'Override score',
-      'Credit',
-      'Mode',
-      'Grading requested date',
-      'Grading date',
-      'Assigned manual grader',
-      'Last manual grader',
-      'Score',
-      'Correct',
-      'Feedback',
-      'Rubric Grading',
-      'Question points',
-      'Max points',
-      'Question % score',
-      'Auto points',
-      'Max auto points',
-      'Manual points',
-      'Max manual points',
-    ];
-
     try {
-      await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
-        // Replace all keys with their lower-case values for easier access
-        json = _.mapKeys(json, (_v, k) => k.toLowerCase());
-
-        // Validate headers for the first row
-        if (number === 0) {
-          const headers = Object.keys(json);
-          if (!requiredHeaders.every((header) => headers.includes(header.toLowerCase()))) {
-            throw new Error('Invalid CSV format or missing required headers.');
-          }
-        }
-
-        const msg = `Processing CSV line ${number + 2}: ${JSON.stringify(json)}`;
+      await csvConverter.fromStream(csvStream).subscribe(async (rawJson, number) => {
+        const lineNumber = number + 2;
+        const msg = `Processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`;
         if (output == null) {
           output = msg;
         } else {
@@ -118,47 +134,17 @@ export async function uploadSubmissionsCsv(
         }
 
         try {
-          // Helper to parse JSON fields, returning null on error or if empty
-          const parseJsonField = (fieldName: string) => {
-            const value = json[fieldName];
-            if (value == null || value === '') return null;
-            return JSON.parse(value);
-          };
+          const row = SubmissionCsvRowSchema.parse(rawJson);
 
-          // Helper to parse numeric fields, returning null if invalid or empty
-          const parseNumericField = (fieldName: string): number | null => {
-            const value = json[fieldName];
-            if (value == null || value === '') return null;
-            const num = Number(value);
-            return isNaN(num) ? null : num;
-          };
+          const user = await selectOrInsertUserByUid(row.UID);
 
-          // Helper to parse boolean fields
-          const parseBooleanField = (fieldName: string): boolean | null => {
-            const value = json[fieldName]?.toLowerCase();
-            if (value == null || value === '') return null;
-            return value === 'true' || value === '1';
-          };
-
-          // Helper to parse date fields
-          const parseDateField = (fieldName: string): Date | null => {
-            const value = json[fieldName];
-            if (value == null || value === '') return null;
-            const date = new Date(value);
-            return isNaN(date.getTime()) ? null : date;
-          };
-
-          // Get the user for the submission.
-          const user = await selectOrInsertUserByUid(json.uid);
-
-          // 1. Ensure User/Group and Assessment Instance
           let assessment_instance_id: string;
 
-          if (json.group_name) {
-            const group_id = await sqldb.queryRow(
+          if (row['Group name']) {
+            const group_id_for_instance = await sqldb.queryRow(
               sql.ensure_group,
               {
-                group_name: json.group_name,
+                group_name: row['Group name'],
                 course_instance_id,
               },
               IdSchema,
@@ -168,8 +154,8 @@ export async function uploadSubmissionsCsv(
               sql.ensure_assessment_instance_group,
               {
                 assessment_id,
-                group_id,
-                instance_number: parseNumericField('assessment instance') ?? 1,
+                group_id: group_id_for_instance,
+                instance_number: row['Assessment instance'] ?? 1,
               },
               IdSchema,
             );
@@ -179,34 +165,25 @@ export async function uploadSubmissionsCsv(
               {
                 assessment_id,
                 user_id: user.user_id,
-                instance_number: parseNumericField('assessment instance') ?? 1,
+                instance_number: row['Assessment instance'] ?? 1,
               },
               IdSchema,
             );
           }
 
-          const question = await selectQuestionByQid({
-            course_id,
-            qid: json.question,
-          });
-
+          const question = await selectQuestionByQid({ course_id, qid: row.Question });
           const assessmentQuestion = await sqldb.queryRow(
             sql.select_assessment_question,
             { assessment_id, question_id: question.id },
             AssessmentQuestionSchema,
           );
 
-          // Insert the instance question if it doesn't exist.
           const instance_question_id = await sqldb.queryRow(
-            sql.ensure_instance_question,
+            sql.insert_instance_question,
             { assessment_instance_id, assessment_question_id: assessmentQuestion.id },
             IdSchema,
           );
 
-          // Insert the variant if it doesn't exist.
-          const params = parseJsonField('params');
-          const true_answer = parseJsonField('true answer');
-          const options = parseJsonField('options');
           const variant_id = await sqldb.queryRow(
             sql.insert_variant,
             {
@@ -216,38 +193,33 @@ export async function uploadSubmissionsCsv(
               user_id: user.user_id,
               // TODO: handle groups.
               group_id: null,
-              seed: json.seed,
-              params,
-              true_answer,
-              options,
+              seed: row.Seed,
+              params: row.Params,
+              true_answer: row['True answer'],
+              options: row.Options,
               course_id,
             },
             IdSchema,
           );
 
-          // 6. Ensure Submission
-          const submitted_answer = parseJsonField('submitted answer');
-          const partial_scores = parseJsonField('partial scores');
-          const feedback = parseJsonField('feedback');
           await sqldb.queryRow(
-            sql.ensure_submission,
+            sql.insert_submission,
             {
-              submission_id: json.submission_id,
               variant_id,
-              authn_user_id: user.user_id,
-              submitted_answer,
-              partial_scores,
-              override_score: parseNumericField('override score'),
-              credit: parseNumericField('credit'),
-              mode: json.mode ?? null,
-              grading_requested_at: parseDateField('grading requested date'),
-              graded_at: parseDateField('grading date'),
-              score: parseNumericField('score'),
-              correct: parseBooleanField('correct'),
-              feedback,
-              params, // Re-insert variant params/true_answers for history
-              true_answer,
-              submission_date: parseDateField('submission date') ?? new Date(), // Default to now if missing
+              authn_user_id,
+              submitted_answer: row['Submitted answer'],
+              partial_scores: row['Partial Scores'],
+              override_score: row['Override score'],
+              credit: row.Credit,
+              mode: row.Mode,
+              grading_requested_at: row['Grading requested date'],
+              graded_at: row['Grading date'],
+              score: row.Score,
+              correct: row.Correct,
+              feedback: row.Feedback,
+              params: row.Params,
+              true_answer: row['True answer'],
+              submission_date: row['Submission date'] ?? new Date(),
             },
             IdSchema,
           );
@@ -255,13 +227,24 @@ export async function uploadSubmissionsCsv(
           successCount++;
         } catch (err) {
           errorCount++;
-          const errorMsg = `Error processing CSV line ${number + 2}: ${JSON.stringify(json)}\n${err}`;
+          let errorMsg = `Error processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}\n`;
+          if (err instanceof z.ZodError) {
+            errorMsg += `Validation Error: ${err.errors
+              .map((e) => `${e.path.join('.')}: ${e.message}`)
+              .join(', ')}`;
+          } else {
+            errorMsg += String(err);
+            // TODO: remove before merging.
+            errorMsg += `\n${err.stack}`;
+            console.error(err);
+          }
+
           if (output == null) {
             output = errorMsg;
           } else {
             output += '\n' + errorMsg;
           }
-          job.error(errorMsg); // Also log error immediately to job
+          job.error(errorMsg);
         }
 
         outputCount++;
@@ -269,11 +252,10 @@ export async function uploadSubmissionsCsv(
           job.verbose(output ?? '');
           output = null;
           outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
+          outputThreshold *= 2;
         }
       });
     } finally {
-      // Log remaining output
       if (output != null) {
         job.verbose(output);
       }

@@ -343,6 +343,9 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
         submissions.
       </p>
       <p>You should upload one of the submissions CSV files from the Downloads page.</p>
+      <div class="alert alert-danger">
+        This will delete all existing assessment instances and submissions for this assessment.
+      </div>
       <div class="mb-3">
         <label class="form-label" for="uploadSubmissionsCsvFileInput">Choose CSV file</label>
         <input
