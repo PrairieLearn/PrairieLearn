@@ -416,7 +416,11 @@ worker_pid = 0
 
 def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
     if worker_pid > 0:
-        os.kill(worker_pid, signal.SIGKILL)
+        try:
+            os.kill(worker_pid, signal.SIGKILL)
+        except OSError:
+            # The worker process has already exited, so we don't need to do anything
+            pass
     os._exit(0)
 
 

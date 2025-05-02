@@ -2425,7 +2425,16 @@ if (esMain(import.meta) && config.startServer) {
 }
 
 async function shutdown() {
-  logger.info('Performing a graceful shut down...');
+  logger.info('Attempting a graceful shut down...');
+
+  logger.info('Closing Postgres connection');
+  try {
+    await sqldb.closeAsync();
+  } catch (err) {
+    logger.error('Error closing database', err);
+    Sentry.captureException(err);
+  }
+
   // By this point, we should no longer be attached to the load balancer,
   // so there's no point shutting down the HTTP server or the socket.io
   // server.
@@ -2446,15 +2455,7 @@ async function shutdown() {
     }
   });
 
-  // fix Postgres warning "another server might be running; trying to start server anyway"
-  logger.info('Closing Postgres connection...');
-  try {
-    await sqldb.closeAsync();
-  } catch (err) {
-    logger.error('Error closing database', err);
-    Sentry.captureException(err);
-  }
-
+  logger.info('Shutting down lifecycle hooks');
   try {
     await lifecycleHooks.completeInstanceTermination();
   } catch (err) {
@@ -2474,6 +2475,7 @@ async function shutdown() {
   // Flush all events to Sentry.
   try {
     await Sentry.flush();
+    logger.info('process.exit(0);');
   } finally {
     process.exit(0);
   }

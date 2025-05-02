@@ -110,6 +110,7 @@ export class CodeCallerNative implements CodeCaller {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
+  cleanKill: Boolean = false;
 
   /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
@@ -374,6 +375,19 @@ export class CodeCallerNative implements CodeCaller {
     const child = child_process.spawn(cmd, args, options) as CodeCallerNativeChildProcess;
     this.debug(`started child pid ${child.pid}`);
 
+    process.once('SIGINT', () => {
+      this.cleanKill = true;
+      try {
+        if (this.child && !this.child.killed && this.child.connected) {
+          child.kill('SIGINT');
+        }
+      }
+      catch (e) {
+        const errorMessage = e instanceof Error ? e.toString() : JSON.stringify(e);
+        this.debug(`Error killing child process: ${errorMessage}`);
+      }
+    });
+  
     child.stdio[1].setEncoding('utf8');
     child.stdio[2].setEncoding('utf8');
     child.stdio[3].setEncoding('utf8');
@@ -450,7 +464,10 @@ export class CodeCallerNative implements CodeCaller {
   _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
-    if (this.state === WAITING) {
+    if (this.cleanKill) {
+      this.child = null;
+      this.state = EXITED;
+    } else if (this.state === WAITING) {
       this._logError(
         'CodeCallerNative child process exited while in state = WAITING, code = ' +
           String(code) +

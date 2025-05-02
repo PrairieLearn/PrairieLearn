@@ -279,7 +279,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
     // Spin until we're no longer running.
     while (this.running) {
-      await sleep(1000);
+      await sleep(10);
     }
   }
 }
