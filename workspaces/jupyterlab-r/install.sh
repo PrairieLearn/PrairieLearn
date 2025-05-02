@@ -5,11 +5,12 @@ set -ex
 # Install dependencies and various libraries.
 apt-get update && apt-get -y upgrade
 
-# Install all Python dependencies.
-pip3 install -r /requirements.txt
+# Install all R dependencies.
+xargs mamba install --yes < /requirements.txt
 
 # Clear various caches to minimize the final image size.
 apt-get clean
-pip3 cache purge
+mamba clean --all -f -y
 
 rm /requirements.txt /install.sh
+

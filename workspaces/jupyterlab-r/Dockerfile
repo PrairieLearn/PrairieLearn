@@ -7,3 +7,5 @@ RUN /bin/bash /install.sh
 
 USER jovyan
 
+# Tell Jupyter to hide the Python kernel
+ENV HIDE_PYTHON_KERNEL=true
