@@ -1,5 +1,13 @@
 # @prairielearn/compiled-assets
 
+## 3.0.15
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
 ## 3.0.14
 
 ### Patch Changes
