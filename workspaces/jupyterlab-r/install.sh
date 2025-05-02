@@ -13,4 +13,3 @@ apt-get clean
 mamba clean --all -f -y
 
 rm /requirements.txt /install.sh
-
