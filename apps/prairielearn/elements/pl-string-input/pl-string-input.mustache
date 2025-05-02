@@ -41,6 +41,7 @@
                 {{^editable}}disabled{{/editable}}
                 placeholder="{{placeholder}}"
                 {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
     {{^multiline}}
@@ -61,7 +62,8 @@
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                 placeholder="{{placeholder}}"
                 {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
-                {{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             />
     {{/multiline}}
     {{^multiline}}
@@ -141,6 +143,7 @@
             class="form-control pl-string-input-multiline"
             style="resize: none;"
             disabled
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
         >{{a_sub}}</textarea>
         {{#a_sub}}
@@ -263,6 +266,7 @@
             style="resize: none;"
             disabled
             {{#suffix}}aria-describedby="pl-string-input-answer-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
         >{{a_tru}}</textarea>
         {{! Show raw value correct answer was parsed from }}
         <button
