@@ -3654,7 +3654,7 @@ __metadata:
     marked: "npm:^15.0.7"
     mathjax: "npm:^3.2.2"
     mocha: "npm:^11.1.0"
-    tsx: "npm:^4.19.3"
+    tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
