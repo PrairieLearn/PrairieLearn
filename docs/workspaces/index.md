@@ -225,7 +225,9 @@ If a file name appears in multiple locations, the following precedence takes eff
 PrairieLearn provides and maintains the following workspace images:
 
 - [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
+- [`prairielearn/workspace-jupyterlab-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-base/): JupyterLab
 - [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.11
+- [`prairielearn/workspace-jupyterlab-r`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-r/): JupyterLab with R
 - [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
 - [`prairielearn/workspace-vscode-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-base/): Basic VS Code without any additions (used to build the C/C++ and Python workspaces below)
 - [`prairielearn/workspace-vscode-cpp`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-cpp/): VS Code with C/C++ (using `gcc` and `g++`)
