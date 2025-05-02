@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global Quill, he, MathJax, QuillMarkdown, DOMPurify, bootstrap */
 
 (() => {

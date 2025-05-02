@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {

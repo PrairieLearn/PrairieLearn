@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global nb, DOMPurify */
 (() => {
   async function downloadFile(path, name) {

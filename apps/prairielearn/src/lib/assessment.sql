@@ -392,19 +392,6 @@ SELECT
 FROM
   updated_assessment_instance;
 
--- BLOCK select_assessment_info
-SELECT
-  assessment_label (a, aset),
-  ci.id AS course_instance_id,
-  c.id AS course_id
-FROM
-  assessments AS a
-  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-WHERE
-  a.id = $assessment_id;
-
 -- BLOCK select_instances_to_grade
 SELECT
   ai.id AS assessment_instance_id,
@@ -1778,3 +1765,13 @@ FROM
   deleted_assessment_instances AS ai
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);
+
+-- BLOCK select_assessment_instance_last_submission_date
+SELECT
+  max(s.date)
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id;
