@@ -40,7 +40,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 #### Accessibility
 
-Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram, and the `aria-description` attribute to provide a detailed description. This will be read by screen readers when `gradable` is `false`.
+Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
 
 ### `pl-drawing-initial` element
 
