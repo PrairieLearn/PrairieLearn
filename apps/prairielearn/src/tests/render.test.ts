@@ -221,7 +221,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const limitedInternallyGradedQuestions = internallyGradedQuestions.slice(0, 50);
+  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 50);
 
   const badQs = [
     'element/fileEditor', // needs files
@@ -238,7 +238,6 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     'demo/workspace/xtermjs',
     'demo/workspace/xtermjsPython',
     // Unknown issues
-    'demo/drawing/liftingMechanism',
     'demo/annotated/LectureVelocity/2-Derivative',
   ];
   // Dynamically create tests for each identified question
@@ -335,9 +334,15 @@ describe('Internally Graded Question Lifecycle Tests', () => {
                 shared: ['radio', 'checkbox', 'button'],
               },
             ],
+            'require-sri': [
+              'error',
+              {
+                target: 'crossorigin',
+              },
+            ],
             // Issues to solve
             'no-implicit-close': 'off',
-            'close-order': 'off',
+            // 'close-order': 'off',
             // Known / hard to fix issues
 
             // Issue in pygments, missing tbody
@@ -364,6 +369,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'attribute-boolean-style': ['off'],
             // Not fully controllable, see pl-file-download
             'attribute-empty-style': 'off',
+            'input-missing-label': 'off',
 
             // Solved issues
             // 'element-required-attributes': 'off',
@@ -371,7 +377,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             // deprecated: 'off',
             // 'text-content': 'off',
             // 'input-attributes': 'off',
-            // 'attribute-allowed-values': 'off',
+            'attribute-allowed-values': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
           },
