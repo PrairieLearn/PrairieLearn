@@ -8,7 +8,8 @@
     "nodeModulesScripts": {
       "dompurify": "dompurify/dist/purify.min.js",
       "notebookjs": "notebookjs/notebook.js",
-      "marked": "marked/lib/marked.esm.js"
+      "marked": "marked/lib/marked.esm.js",
+      "@prairielearn/marked-mathjax": "@prairielearn/marked-mathjax/dist/index.js"
     }
   }
 }

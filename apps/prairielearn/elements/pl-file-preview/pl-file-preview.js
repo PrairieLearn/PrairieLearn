@@ -1,4 +1,4 @@
-/* global nb, DOMPurify */
+/* global nb, DOMPurify, MathJax */
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -132,6 +132,10 @@
                     import('dompurify'),
                     import('notebookjs'),
                   ]).then(async ([Marked]) => {
+                    (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(
+                      Marked.marked,
+                      MathJax,
+                    );
                     nb.markdown = Marked.marked.parse;
 
                     nb.sanitizer = (code) =>
