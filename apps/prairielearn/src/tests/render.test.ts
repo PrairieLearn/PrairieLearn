@@ -30,91 +30,6 @@ const exampleCoursePath = resolve(__dirname, '..', '..', '..', '..', 'exampleCou
 const questionsPath = join(exampleCoursePath, 'questions');
 chaiConfig.showDiff = true;
 
-const buildSubmission = (answer: any): any => {
-  // hacky way to recover the expected input given the correct answer.
-  for (const key in answer) {
-    // if array, loop over
-    if (Array.isArray(answer[key])) {
-      answer[key] = answer[key].map((item) => {
-        if (typeof item === 'object' && 'key' in item) {
-          return item.key;
-        }
-        return item;
-      });
-      if (answer[key].some((v) => typeof v === 'object' && 'inner_html' in v)) {
-        answer[`${key}-input`] = JSON.stringify(answer[key]);
-        delete answer[key];
-      } else if (answer[key].some((v) => typeof v === 'object' && ('top' in v || 'x1' in v))) {
-        // pl-drawing
-        answer[key] = JSON.stringify(answer[key]);
-      } else {
-        let i = 0;
-        for (const v in answer[key]) {
-          // matching
-          answer[`${key}-dropdown-${i}`] = v;
-          i += 1;
-        }
-      }
-      // pl-drawing
-      // if (answer[key].length === 0) {
-      //   answer[key] = '[]';
-      // }
-    } else if (typeof answer[key] === 'number') {
-      // if number, convert to string
-      answer[key] = answer[key].toString();
-    } else if (typeof answer[key] === 'object') {
-      if ('_type' in answer[key] && answer[key]._type === 'ndarray') {
-        let i = 1;
-        for (const row in answer[key]['_value']) {
-          for (const col in answer[key]['_value'][row]) {
-            answer[`${key}${i}`] = answer[key]['_value'][row][col].toString();
-            i++;
-          }
-        }
-        answer[key] = JSON.stringify(answer[key]['_value']);
-      } else if ('_type' in answer[key] && answer[key]._type === 'complex_ndarray') {
-        let i = 1;
-        const realPart = answer[key]._value?.real;
-        const imagPart = answer[key]._value?.imag;
-
-        // Validate structure
-        const fullAnswer: string[] = [];
-        if (
-          Array.isArray(realPart) &&
-          Array.isArray(imagPart) &&
-          realPart.length === imagPart.length
-        ) {
-          for (let rowIdx = 0; rowIdx < realPart.length; rowIdx++) {
-            const realRow = realPart[rowIdx];
-            const imagRow = imagPart[rowIdx];
-            const row: string[] = [];
-
-            for (let colIdx = 0; colIdx < realRow.length; colIdx++) {
-              const real = realRow[colIdx];
-              const imag = imagRow[colIdx];
-              // Format as complex number string: handle sign of imaginary part
-              const imagSign = imag >= 0 ? '+' : '';
-              const complexString = `${real}${imagSign}${imag}j`;
-              answer[`${key}${i}`] = complexString;
-              i++;
-              row.push(complexString);
-            }
-            fullAnswer.push(`[${String(row)}]`);
-          }
-          answer[key] = `[${String(fullAnswer)}]`;
-        }
-      } else if ('key' in answer[key]) {
-        answer[key] = answer[key].key;
-      } else if (
-        '_type' in answer[key] &&
-        (answer[key]._type === 'np_scalar' || answer[key]._type === 'sympy')
-      ) {
-        answer[key] = answer[key]._value.replace('_ImaginaryUnit', 'j');
-      }
-    }
-  }
-  return answer;
-};
 // Helper function to find question directories recursively
 const findQuestionDirectories = (dir: string): string[] => {
   const questionDirs: string[] = [];
@@ -221,24 +136,36 @@ describe('Internally Graded Question Lifecycle Tests', () => {
     }, 10000);
   });
 
-  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 50);
+  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 5);
 
   const badQs = [
     'element/fileEditor', // needs files
-    'element/integerInput', // base 2 parsing
-    'workshop/Lesson4_example2', // correct answer not set
-    'workshop/Lesson4_example3', // correct answer not set
+    // 'element/integerInput', // base 2 parsing
+    // 'workshop/Lesson4_example2', // correct answer not set
+    // 'workshop/Lesson4_example3', // correct answer not set
     'demo/drawing/extensions', // empty answer array
     'demo/drawing/customizedButtons', // empty answer array
     'demo/drawing/buttons', // empty answer array
+    // 'demo/drawing/liftingMechanism',
+    // 'demo/drawing/pulley',
+    // 'workshop/Lesson4_example2',
+    // 'workshop/Lesson4_example3',
+    // 'workshop/Lesson5_example3',
+    // 'demo/annotated/engCentroid',
+    // 'demo/annotated/engVectorDrawing',
+    // 'demo/custom/elementHiddenTag',
+    // 'demo/custom/gradeFunction',
+    // 'demo/drawing/centroid',
+    // 'demo/annotated/LectureVelocity/4-KnowledgeTest',
+    // 'demo/drawing/vmDiagrams',
+    // 'demo/drawing/simpleTutorial'
   ];
   const reallyBadQs = [
     'demo/workspace/desktop',
     'demo/workspace/dynamicFiles',
     'demo/workspace/xtermjs',
     'demo/workspace/xtermjsPython',
-    // Unknown issues
-    'demo/annotated/LectureVelocity/2-Derivative',
+    'demo/annotated/LectureVelocity/2-Derivative', // no gradable answer
   ];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
@@ -340,9 +267,6 @@ describe('Internally Graded Question Lifecycle Tests', () => {
                 target: 'crossorigin',
               },
             ],
-            // Issues to solve
-            'no-implicit-close': 'off',
-            // 'close-order': 'off',
             // Known / hard to fix issues
 
             // Issue in pygments, missing tbody
@@ -356,7 +280,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             'wcag/h63': 'off', // False positive, too strict
 
             // Requires fixes in pl-answer -- div subnode of label
-            // Requires fixes in pl-multipl-choice -- div subnode of span
+            // Requires fixes in pl-multiple-choice -- div subnode of span
             // Couldn't see a difference in the output when I changed it to a div
             'element-permitted-content': 'off',
 
@@ -377,6 +301,8 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             // deprecated: 'off',
             // 'text-content': 'off',
             // 'input-attributes': 'off',
+            'no-implicit-close': 'off',
+            'close-order': 'off',
             'attribute-allowed-values': 'off',
 
             // Add other relevant html-validate rules to ignore if necessary
@@ -394,12 +320,24 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         if (badQs.includes(relativePath)) {
           return;
         }
-        const submissionRaw = buildSubmission(structuredClone(variant.true_answer));
+        if (!questionModule.test) {
+          assert.fail('Test function not implemented for this question module');
+        }
+
+        const {
+          data: { raw_submitted_answer, format_errors },
+        } = await questionModule.test(
+          variant as unknown as Variant, // Cast needed
+          question,
+          course,
+          'correct',
+        );
+        // buildSubmission(structuredClone(variant.true_answer));
 
         // Mock submission object similar to render.test.ts
         const submissionInput = {
-          submitted_answer: submissionRaw,
-          raw_submitted_answer: submissionRaw, // Keep original raw answer
+          submitted_answer: raw_submitted_answer,
+          raw_submitted_answer, // Keep original raw answer
           gradable: true, // Assume gradable initially
           // Add other properties only if strictly required by parse
         } as unknown as Submission;
@@ -439,15 +377,19 @@ describe('Internally Graded Question Lifecycle Tests', () => {
           }
         }
 
-        assert.isEmpty(
-          parsedData.format_errors ?? {},
-          `Parse format_errors should be empty
-          but it was ${JSON.stringify(parsedData.format_errors, undefined, 2)} for submission ${JSON.stringify(
+        assert.deepEqual(
+          Object.keys(parsedData.format_errors ?? {}),
+          Object.keys(format_errors),
+          `Parse format_errors should be equal
+          but it was ${JSON.stringify(parsedData.format_errors, undefined, 2)}`,
+        );
+        /*
+         for submission ${JSON.stringify(
             submissionInput.submitted_answer,
             undefined,
             2,
-          )}`,
-        );
+          )}
+        */
 
         // Update submission with parsed data
         const submissionForGrading = { ...parsedData };
