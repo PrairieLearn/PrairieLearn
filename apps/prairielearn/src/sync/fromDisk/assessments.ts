@@ -163,6 +163,8 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            // The comment is only set if there are no alternatives. Otherwise, it is
+            // set in the alternative group.
             comment: question.alternatives ? undefined : question.comment,
           },
         ];
