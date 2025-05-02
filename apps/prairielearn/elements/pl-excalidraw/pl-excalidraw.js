@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 // This module is redefined in the import map with the same name
 import { ExcalidrawLib, React, ReactDOM } from '@prairielearn/excalidraw-builds';
 
