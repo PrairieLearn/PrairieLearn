@@ -54,11 +54,7 @@ export async function uploadSubmissionsCsv(
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
-    const csvConverter = csvtojson({
-      // Define column parsers if needed, e.g., for dates or numbers
-      // colParser: { ... },
-      maxRowLength: 10000, // Adjust as needed
-    });
+    const csvConverter = csvtojson();
 
     const requiredHeaders = [
       'UID',
