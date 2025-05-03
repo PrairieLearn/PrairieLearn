@@ -117,7 +117,8 @@ typecheck-scripts:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright
+	@yarn pyright || \
+		yarn dlx $(shell yarn info pyright --name-only --json | tr -d '"')
 
 changeset:
 	@yarn changeset
