@@ -46,3 +46,16 @@ def grade(data):
     for name in variables:
         score += data["partial_scores"][name]["score"]
     data["score"] = score / len(variables)
+
+
+def test(data):
+    if data["test_type"] == "invalid":
+        return
+    correct = data["correct_answers"]
+    offset = 0 if data["test_type"] == "correct" else 1
+    data["raw_submitted_answers"] = {k: str(v + offset) for k, v in correct.items()}
+    k = data["params"]["k"]
+    Ac = math.pi * correct["D"] ** 2 / 4
+    data["raw_submitted_answers"]["qf"] = str(
+        (-k * Ac * (correct["T1"] - correct["Tb"]) / correct["x1"]) + offset
+    )
