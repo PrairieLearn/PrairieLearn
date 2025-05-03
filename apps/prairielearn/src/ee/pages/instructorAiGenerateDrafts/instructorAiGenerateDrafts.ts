@@ -7,7 +7,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   addCompletionCostToIntervalUsage,
-  approximateInputCost,
+  approximatePromptCost,
   getIntervalUsage,
   initializeAiQuestionGenerationCache,
 } from '../../../lib/ai-grading.js';
@@ -20,7 +20,7 @@ import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
-  RateLimitError,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();
@@ -91,16 +91,16 @@ router.post(
         userId: res.locals.user.user_id,
       });
 
-      const approxInputCost = approximateInputCost(req.body.prompt);
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
 
-      if (intervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimit) {
         res.send(
-          RateLimitError({
+          RateLimitExceeded({
             // If the user has more tokens than the threshold of 50 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
               config.aiQuestionGenerationRateLimit - intervalCost >
-              config.costPerMillionInputTokens * 50,
+              config.costPerMillionPromptTokens * 50,
           }),
         );
         return;
@@ -118,7 +118,7 @@ router.post(
       addCompletionCostToIntervalUsage({
         aiQuestionGenerationCache,
         userId: res.locals.user.user_id,
-        inputTokens: result.inputTokens ?? 0,
+        promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
         intervalCost,
       });

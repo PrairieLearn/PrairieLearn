@@ -581,7 +581,7 @@ const ConfigSchema = z.object({
   /**
    * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
    */
-  costPerMillionInputTokens: z.number().default(3.75),
+  costPerMillionPromptTokens: z.number().default(3.75),
   costPerMillionCompletionTokens: z.number().default(15),
 });
 

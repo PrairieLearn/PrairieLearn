@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import {
   addCompletionCostToIntervalUsage,
-  approximateInputCost,
+  approximatePromptCost,
   getIntervalUsage,
   initializeAiQuestionGenerationCache,
 } from '../../../lib/ai-grading.js';
@@ -33,7 +33,7 @@ import { selectQuestionById } from '../../../models/question.js';
 import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 import {
   GenerationFailure,
-  RateLimitError,
+  RateLimitExceeded,
 } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
@@ -267,18 +267,16 @@ router.post(
         userId: res.locals.user.user_id,
       });
 
-      const approxInputCost = approximateInputCost(req.body.prompt);
-      console.log('intervalCost', intervalCost);
-      console.log('approxInputCost', approxInputCost);
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
 
-      if (intervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimit) {
         res.send(
-          RateLimitError({
+          RateLimitExceeded({
             // If the user has more tokens than the threshold of 50 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
               config.aiQuestionGenerationRateLimit - intervalCost >
-              config.costPerMillionInputTokens * 50,
+              config.costPerMillionPromptTokens * 50,
           }),
         );
         return;
@@ -297,12 +295,10 @@ router.post(
         res.locals.authz_data.has_course_permission_edit,
       );
 
-      console.log('result', result);
-
       addCompletionCostToIntervalUsage({
         aiQuestionGenerationCache,
         userId: res.locals.user.user_id,
-        inputTokens: result.inputTokens ?? 0,
+        promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
         intervalCost,
       });

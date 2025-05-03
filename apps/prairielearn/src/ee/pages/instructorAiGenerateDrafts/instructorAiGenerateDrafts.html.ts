@@ -245,11 +245,11 @@ export function GenerationFailure({
   `.toString();
 }
 
-export function RateLimitError({
+export function RateLimitExceeded({
   canShortenMessage = false,
 }: {
   /**
-   * If true, shows that the user must shorten their message to receive a completion.
+   * If true, shows that the user should shorten their message, ensuring they don't exceed the rate limit.
    */
   canShortenMessage: boolean;
 }): string {

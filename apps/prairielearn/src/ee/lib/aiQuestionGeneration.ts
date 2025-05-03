@@ -230,9 +230,9 @@ export async function generateQuestion({
    */
   context: string | undefined;
   /**
-   * The number of input tokens provided to the LLM.
+   * The number of tokens in the prompt provided to the LLM.
    */
-  inputTokens: number | undefined;
+  promptTokens: number | undefined;
   /**
    * The number of completion tokens generated as output by the LLM.
    */
@@ -328,7 +328,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['questionQid'] = saveResults.question_qid;
 
     if (completion?.usage?.prompt_tokens) {
-      job.data['inputTokens'] = completion?.usage?.prompt_tokens;
+      job.data['promptTokens'] = completion?.usage?.prompt_tokens;
     }
     if (completion?.usage?.completion_tokens) {
       job.data['completionTokens'] = completion?.usage?.completion_tokens;
@@ -373,7 +373,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
-    inputTokens: jobData.data.inputTokens,
+    promptTokens: jobData.data.promptTokens,
     completionTokens: jobData.data.completionTokens,
   };
 }
@@ -549,7 +549,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   if (completion?.usage?.prompt_tokens) {
-    job.data['inputTokens'] = completion?.usage?.prompt_tokens;
+    job.data['promptTokens'] = completion?.usage?.prompt_tokens;
   }
   if (completion?.usage?.completion_tokens) {
     job.data['completionTokens'] = completion?.usage?.completion_tokens;
@@ -611,7 +611,7 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
-  inputTokens: number | undefined;
+  promptTokens: number | undefined;
   completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
@@ -648,7 +648,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
-    inputTokens: jobData.data.inputTokens,
+    promptTokens: jobData.data.promptTokens,
     completionTokens: jobData.data.completionTokens,
   };
 }

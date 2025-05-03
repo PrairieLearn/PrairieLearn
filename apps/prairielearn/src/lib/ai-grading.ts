@@ -58,10 +58,12 @@ export async function stripHtmlForAiGrading(html: string) {
 }
 
 /**
- * Initializes the AI question generation rate limiting cache.
+ * Initializes the AI question generation cache used for rate limiting.
  */
+let aiQuestionGenerationCache: Cache | undefined;
 export function initializeAiQuestionGenerationCache() {
-  const aiQuestionGenerationCache = new Cache();
+  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
+  aiQuestionGenerationCache = new Cache();
   aiQuestionGenerationCache.init({
     type: config.cacheTypeAiQuestionGeneration,
     keyPrefix: config.cacheKeyPrefixAiQuestionGeneration,
@@ -71,24 +73,30 @@ export function initializeAiQuestionGenerationCache() {
 }
 
 /**
- * Approximate the cost of the input tokens for a given prompt, in US dollars.
+ * Approximate the cost of the prompt tokens, in US dollars.
  */
-export function approximateInputCost(prompt: string) {
-  // 1.25 is a factor to account for the error of the token approximation
-  const approximateTokenCount = (prompt.length / Math.E) * 1.25;
-  return (config.costPerMillionInputTokens * approximateTokenCount) / 1e6;
-}
-
-function getRateLimitKey(userId: number) {
-  return `${userId}-rate-limit`;
-}
-
-function getRateLimitStartKey(userId: number) {
-  return `${userId}-rate-limit-start`;
+export function approximatePromptCost(prompt: string) {
+  // Multiply the approximate token count by a factor of 1.25 to account for error in the estimate
+  const approximatePromptTokenCount = (prompt.length / Math.E) * 1.25;
+  return (config.costPerMillionPromptTokens * approximatePromptTokenCount) / 1e6;
 }
 
 /**
- * Retrieve the AI question generation usage for a user in the current interval.
+ * Retrieve the Redis key for a user's current interval usage
+ */
+function getIntervalUsageKey(userId: number) {
+  return `user-${userId}-interval-usage`;
+}
+
+/**
+ * Retrieve the Redis key for the start of the user's current interval
+ */
+function getIntervalStartKey(userId: number) {
+  return `user-${userId}-interval-start`;
+}
+
+/**
+ * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
 export async function getIntervalUsage({
   aiQuestionGenerationCache,
@@ -97,17 +105,17 @@ export async function getIntervalUsage({
   aiQuestionGenerationCache: Cache;
   userId: number;
 }) {
-  let intervalCost = (await aiQuestionGenerationCache.get(getRateLimitKey(userId))) ?? 0;
+  let intervalCost = (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
 
   const currentIntervalStart = Date.now() - (Date.now() % (3600 * 1000));
-  const storedIntervalStart = (await aiQuestionGenerationCache.get(
-    getRateLimitStartKey(userId),
-  )) as number | null;
+  const storedIntervalStart = (await aiQuestionGenerationCache.get(getIntervalStartKey(userId))) as
+    | number
+    | null;
 
-  // If no interval exists, or the interval has changed, reset the rate limit
+  // If no interval exists or the interval has changed, reset the interval usage
   if (!storedIntervalStart || currentIntervalStart !== storedIntervalStart) {
-    aiQuestionGenerationCache.set(getRateLimitKey(userId), 0, 3600 * 1000);
-    aiQuestionGenerationCache.set(getRateLimitStartKey(userId), currentIntervalStart, 3600 * 1000);
+    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, 3600 * 1000);
+    aiQuestionGenerationCache.set(getIntervalStartKey(userId), currentIntervalStart, 3600 * 1000);
     intervalCost = 0;
   }
 
@@ -120,22 +128,22 @@ export async function getIntervalUsage({
 export async function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache,
   userId,
-  inputTokens,
+  promptTokens,
   completionTokens,
   intervalCost,
 }: {
   aiQuestionGenerationCache: Cache;
   userId: number;
-  inputTokens: number;
+  promptTokens: number;
   completionTokens: number;
   intervalCost: number;
 }) {
   const completionCost =
-    (config.costPerMillionInputTokens * (inputTokens ?? 0) +
+    (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
       config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
     1e6;
   aiQuestionGenerationCache.set(
-    getRateLimitKey(userId),
+    getIntervalUsageKey(userId),
     intervalCost + completionCost,
     3600 * 1000,
   );
