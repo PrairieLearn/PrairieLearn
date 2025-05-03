@@ -20,20 +20,20 @@ compare: "Compare outputs" {
 }
 test_type: "Test Type"
 
-test_type -> test: |
-    correct
-    incorrect
-    invalid
+test_type -> test: |md
+  correct
+  incorrect
+  invalid
 |
 generate -> prepare
 prepare -> test
 test -> parse: "raw_submitted_answers"
 parse -> grade
 grade -> compare: |md
-    format_errors, score, 
-    gradable, partial_scores
+  format_errors, score, 
+  gradable, partial_scores
 |
 test -> compare: |md
-    format_errors, score,
-    gradable, partial_scores
+  format_errors, score,
+  gradable, partial_scores
 |
