@@ -1,16 +1,6 @@
 <script>
 $(function() {
-    var rte = window.PLRTE('{{editor_uuid}}', {
-        readOnly: {{read_only}},
-        placeholder: '{{placeholder}}',
-        format: '{{format}}',
-        markdownShortcuts: {{markdown_shortcuts}},
-        counter: '{{counter}}',
-        modules: { clipboard: { {{^clipboard_enabled}}enabled: false{{/clipboard_enabled}} } },
-        {{#quill_theme}}
-        theme: '{{.}}',
-        {{/quill_theme}}
-    });
+    var rte = window.PLRTE('{{editor_uuid}}', {{{quill_options_json}}});
 });
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"
