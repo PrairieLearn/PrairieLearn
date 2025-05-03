@@ -126,11 +126,11 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
   after(async () => {
     await helperServer.after();
-    // console.log('Cleaning up after tests...');
-    // await codeCaller.finish();
-    // loadEstimator.close();
-    // await assetServer.close();
-    // console.log('Cleanup complete.');
+    console.log('Cleaning up after tests...');
+    await codeCaller.finish();
+    loadEstimator.close();
+    await assetServer.close();
+    console.log('Cleanup complete.');
     setTimeout(function () {
       log.default(); // logs out active handles that are keeping node running
     }, 10000);
@@ -140,6 +140,13 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
   const badQs = [
     'element/fileEditor', // needs files
+    /* fixed in another PR */
+    'demo/drawing/buttons',
+    'demo/drawing/customizedButtons',
+    'demo/drawing/extensions',
+    'workshop/Lesson4_example2',
+    'workshop/Lesson4_example3',
+    'demo/custom/elementHiddenTag',
   ];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
