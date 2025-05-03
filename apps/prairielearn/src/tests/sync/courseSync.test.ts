@@ -107,4 +107,37 @@ describe('Course syncing', () => {
       config.devMode = originalDevMode;
     }
   });
+
+  it('syncs string comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = 'Course comment';
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.equal(syncedCourses[0].json_comment, 'Course comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = ['Course comment 1', 'Course comment 2'];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, ['Course comment 1', 'Course comment 2']);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = { comment: 'Course comment', comment2: 'Course comment 2' };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, {
+      comment: 'Course comment',
+      comment2: 'Course comment 2',
+    });
+  });
 });

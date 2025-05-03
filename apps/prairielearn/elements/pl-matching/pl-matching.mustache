@@ -4,13 +4,13 @@
 {{#statements}}
     <div class="pl-matching-statement">
         <div class="pl-matching-statement-select">
-            <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}}>
+            <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}} aria-labelledby="statement-label-{{statement_id}}">
                 {{#options}}
                     <option {{selected}} value="{{index}}">{{value}}</option>
                 {{/options}}
             </select>
         </div>
-        <div class="pl-matching-statement-text">
+        <div class="pl-matching-statement-text" id="statement-label-{{statement_id}}">
             {{{html}}}
         </div>
         {{#display_score_badge}}

@@ -34,6 +34,7 @@ GRADE_FUNCTION_DICT: dict[BigOType, bou.BigOGradingFunctionT] = {
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+ARIA_LABEL_DEFAULT = None
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
@@ -50,6 +51,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "correct-answer",
+        "aria-label",
         "variable",
         "size",
         "display",
@@ -93,6 +95,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
@@ -165,6 +168,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "aria_label": aria_label,
             "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
