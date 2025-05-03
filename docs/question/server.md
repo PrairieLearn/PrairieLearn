@@ -420,4 +420,4 @@ The `test()` function receives the output of `prepare()`, along with a `test_typ
 
 Most elements implement the `test()` function, and generate a `raw_submitted_answers` value based on `correct_answers` and `test_type`. If the element is unable to determine the needed inputs (i.e. `correct_answers` isn't set in `generate` or `prepare`), or the element doesn't implement the `test()` function, then you should implement the `test()` function at the question level in `server.py` to generate the needed inputs.
 
-![](./test-cycle.d2){ pad="0" scale="1"}
+![Testing lifecycle](./test-cycle.d2){ pad="0" scale="1"}
