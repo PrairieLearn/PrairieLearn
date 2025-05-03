@@ -110,7 +110,7 @@ export class CodeCallerNative implements CodeCaller {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
-  cleanKill: Boolean = false;
+  cleanKill: boolean = false;
 
   /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
