@@ -25,10 +25,13 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
       // * After child tokens are rendered, this renderer is called again with
       //   the result (and escaped set to true). At that point the text is
       //   already rendered with escape characters as needed, so nothing to do.
-      text: (token) =>
-        token.type === 'text' && (token.tokens || token.escaped)
-          ? false
-          : `<span class="mathjax_ignore">${token.text}</span>`,
+      text: (token) => {
+        if (token.type === 'text' && (token.tokens || token.escaped)) return false;
+        if (token.text.match(/[$\\]/)) {
+          return `<span class="mathjax_ignore">${token.text}</span>`;
+        }
+        return false;
+      },
     },
     extensions: [
       {
