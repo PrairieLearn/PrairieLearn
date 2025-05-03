@@ -63,6 +63,12 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected);
   });
 
+  it('handles block latex with HTML', async () => {
+    const question = '$$\na <b> c\n$$';
+    const expected = '<p>$$\na &lt;b&gt; c\n$$</p>';
+    await testMarkdown(question, expected);
+  });
+
   it('handles two consecutive latex blocks', async () => {
     const question = '$$\na **b** c\n$$\n$$\na+b=c\n$$';
     const expected = '<p>$$\na **b** c\n$$\n$$\na+b=c\n$$</p>';
