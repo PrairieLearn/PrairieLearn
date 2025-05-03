@@ -3,6 +3,7 @@ import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
@@ -101,6 +102,9 @@ export async function uploadSubmissionsCsv(
     let successCount = 0;
     let errorCount = 0;
 
+    // A map from UIDs to the IDs of the inserted assessment instances.
+    const insertedInstances = new Map<string, string>();
+
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
@@ -114,11 +118,15 @@ export async function uploadSubmissionsCsv(
         const row = SubmissionCsvRowSchema.parse(rawJson);
 
         const user = await selectOrInsertUserByUid(row.UID);
-
-        let assessment_instance_id: string;
-
-        if (row['Group name']) {
-          const group_id_for_instance = await sqldb.queryRow(
+        const question = await selectQuestionByQid({ course_id, qid: row.Question });
+        const assessmentQuestion = await sqldb.queryRow(
+          sql.select_assessment_question,
+          { assessment_id, question_id: question.id },
+          AssessmentQuestionSchema,
+        );
+        const group_id = await run(async () => {
+          if (!row['Group name']) return null;
+          return await sqldb.queryRow(
             sql.ensure_group,
             {
               group_name: row['Group name'],
@@ -126,34 +134,22 @@ export async function uploadSubmissionsCsv(
             },
             IdSchema,
           );
+        });
 
+        let assessment_instance_id = insertedInstances.get(user.uid);
+        if (!assessment_instance_id) {
           assessment_instance_id = await sqldb.queryRow(
-            sql.ensure_assessment_instance_group,
+            sql.insert_assessment_instance,
             {
               assessment_id,
-              group_id: group_id_for_instance,
+              user_id: group_id ? null : user.user_id,
+              group_id,
               instance_number: row['Assessment instance'] ?? 1,
             },
             IdSchema,
           );
-        } else {
-          assessment_instance_id = await sqldb.queryRow(
-            sql.ensure_assessment_instance_user,
-            {
-              assessment_id,
-              user_id: user.user_id,
-              instance_number: row['Assessment instance'] ?? 1,
-            },
-            IdSchema,
-          );
+          insertedInstances.set(user.uid, assessment_instance_id);
         }
-
-        const question = await selectQuestionByQid({ course_id, qid: row.Question });
-        const assessmentQuestion = await sqldb.queryRow(
-          sql.select_assessment_question,
-          { assessment_id, question_id: question.id },
-          AssessmentQuestionSchema,
-        );
 
         const instance_question_id = await sqldb.queryRow(
           sql.insert_instance_question,
@@ -171,9 +167,8 @@ export async function uploadSubmissionsCsv(
             instance_question_id,
             question_id: question.id,
             authn_user_id: user.user_id,
-            user_id: user.user_id,
-            // TODO: handle groups.
-            group_id: null,
+            user_id: group_id ? null : user.user_id,
+            group_id,
             seed: row.Seed,
             params: row.Params,
             true_answer: row['True answer'],

@@ -1,14 +1,11 @@
--- BLOCK ensure_user
-INSERT INTO
-  users (uid, uin, name) -- Assuming role is handled elsewhere or not needed here
-VALUES
-  ($uid, $uin, $name)
-ON CONFLICT (uid) DO UPDATE
-SET
-  uin = EXCLUDED.uin,
-  name = EXCLUDED.name
-RETURNING
-  user_id;
+-- BLOCK select_assessment_question
+SELECT
+  *
+FROM
+  assessment_questions
+WHERE
+  assessment_id = $assessment_id
+  AND question_id = $question_id;
 
 -- BLOCK ensure_group
 INSERT INTO
@@ -21,46 +18,19 @@ SET
 RETURNING
   id AS group_id;
 
--- BLOCK ensure_assessment_instance_user
+-- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, number, open)
+  assessment_instances (assessment_id, user_id, group_id, number, open)
 VALUES
   (
     $assessment_id,
     $user_id,
-    $instance_number,
-    false -- Assume closed by default when recreating
-  )
-ON CONFLICT (assessment_id, user_id, number) DO UPDATE
-SET
-  assessment_id = EXCLUDED.assessment_id -- Dummy update
-RETURNING
-  id AS assessment_instance_id;
-
--- BLOCK ensure_assessment_instance_group
-INSERT INTO
-  assessment_instances (assessment_id, group_id, number, open)
-VALUES
-  (
-    $assessment_id,
     $group_id,
     $instance_number,
     false -- Assume closed by default when recreating
   )
-ON CONFLICT (assessment_id, group_id, number) DO UPDATE
-SET
-  assessment_id = EXCLUDED.assessment_id -- Dummy update
 RETURNING
   id AS assessment_instance_id;
-
--- BLOCK select_assessment_question
-SELECT
-  *
-FROM
-  assessment_questions
-WHERE
-  assessment_id = $assessment_id
-  AND question_id = $question_id;
 
 -- BLOCK insert_instance_question
 INSERT INTO
