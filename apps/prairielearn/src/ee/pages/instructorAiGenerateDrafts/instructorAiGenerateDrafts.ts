@@ -5,7 +5,12 @@ import OpenAI from 'openai';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { approximateInputCost, initializeAiQuestionGenerationCache } from '../../../lib/ai-grading.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximateInputCost,
+  getIntervalUsage,
+  initializeAiQuestionGenerationCache,
+} from '../../../lib/ai-grading.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
@@ -15,9 +20,8 @@ import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
-  RateLimitError
+  RateLimitError,
 } from './instructorAiGenerateDrafts.html.js';
-
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -82,30 +86,23 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
-      console.log('user id', `${res.locals.user.user_id}-rate-limit`);
-      let lastIntervalCost = await aiQuestionGenerationCache.get(`${res.locals.user.user_id}-rate-limit`) ?? 0;
-      const userRateLimitStart = await aiQuestionGenerationCache.get(`${res.locals.user.user_id}-rate-limit-start`) as Date | null;
-      
-      // The rate limit interval has passed; begin a new interval
-      if (userRateLimitStart && userRateLimitStart < new Date(Date.now() - config.aiQuestionGenerationRateLimitIntervalMs)) {
-        await aiQuestionGenerationCache.del(`${res.locals.user.user_id}-rate-limit`);
-        aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit-start`, new Date(), config.aiQuestionGenerationRateLimitIntervalMs);
-        lastIntervalCost = 0;
-      }
+      const intervalCost = await getIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.user.user_id,
+      });
 
       const approxInputCost = approximateInputCost(req.body.prompt);
 
-      console.log('lastIntervalCost', lastIntervalCost);
-      console.log('approxInputCost', approxInputCost);
-
-      if (lastIntervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
+      if (intervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
         res.send(
           RateLimitError({
-            // If the user has more tokens than some threshold (50, in this case),
+            // If the user has more tokens than the threshold of 50 tokens,
             // they can shorten their message to avoid reaching the rate limit.
-            canShortenMessage: config.aiQuestionGenerationRateLimit - lastIntervalCost > (config.costPerMillionInputTokens * 50)
-          })
-        ); 
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimit - intervalCost >
+              config.costPerMillionInputTokens * 50,
+          }),
+        );
         return;
       }
 
@@ -118,17 +115,13 @@ router.post(
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
-      const completionCost = (
-        (config.costPerMillionInputTokens * (result.inputTokens ?? 0)) + 
-        (config.costPerMillionCompletionTokens * (result.completionTokens ?? 0))
-      ) / 1e6;
-
-      console.log('completionCost', completionCost);
-
-      aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit`, lastIntervalCost + completionCost, config.aiQuestionGenerationRateLimitIntervalMs);
-      if (!userRateLimitStart) {
-        aiQuestionGenerationCache.set(`${res.locals.user.user_id}-rate-limit-start`, new Date(), config.aiQuestionGenerationRateLimitIntervalMs);
-      }
+      addCompletionCostToIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.user.user_id,
+        inputTokens: result.inputTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
+      });
 
       if (result.htmlResult) {
         res.set({
@@ -151,7 +144,6 @@ router.post(
       );
 
       const client = getCourseFilesClient();
-
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,

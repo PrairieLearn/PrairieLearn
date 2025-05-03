@@ -236,7 +236,7 @@ export async function generateQuestion({
   /**
    * The number of completion tokens generated as output by the LLM.
    */
-  completionTokens: number | undefined; 
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -326,8 +326,6 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
-
-    console.log('Prompt tokens', completion?.usage?.prompt_tokens, 'Completion tokens', completion?.usage?.completion_tokens);
 
     if (completion?.usage?.prompt_tokens) {
       job.data['inputTokens'] = completion?.usage?.prompt_tokens;
@@ -550,6 +548,13 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
+  if (completion?.usage?.prompt_tokens) {
+    job.data['inputTokens'] = completion?.usage?.prompt_tokens;
+  }
+  if (completion?.usage?.completion_tokens) {
+    job.data['completionTokens'] = completion?.usage?.completion_tokens;
+  }
+
   job.data.html = html;
   job.data.python = python;
 
@@ -606,6 +611,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  inputTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -641,5 +648,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    inputTokens: jobData.data.inputTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }

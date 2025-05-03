@@ -306,7 +306,9 @@ const ConfigSchema = z.object({
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheTypeAiQuestionGeneration: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
-  cacheKeyPrefixAiQuestionGeneration: z.string().default('prairielearn-cache:ai-question-generation-usage:'),
+  cacheKeyPrefixAiQuestionGeneration: z
+    .string()
+    .default('prairielearn-cache:ai-question-generation-usage:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
@@ -571,20 +573,16 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
-  /** 
-   * The spending rate limit for AI question generation, in US dollars. 
-   * Accounts for both input and output tokens. 
+  /**
+   * The hourly spending rate limit for AI question generation, in US dollars.
+   * Accounts for both input and output tokens.
    * */
   aiQuestionGenerationRateLimit: z.number().default(1),
   /**
-   * The length of time the rate limit applies to, in milliseconds. 
+   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
    */
-  aiQuestionGenerationRateLimitIntervalMs: z.number().default(3600 * 1000),
-  /** 
-   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/. 
-   */
-  costPerMillionInputTokens: z.number().default(3.750),
-  costPerMillionCompletionTokens: z.number().default(15)
+  costPerMillionInputTokens: z.number().default(3.75),
+  costPerMillionCompletionTokens: z.number().default(15),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -246,25 +246,22 @@ export function GenerationFailure({
 }
 
 export function RateLimitError({
-  canShortenMessage = false
+  canShortenMessage = false,
 }: {
-  /** 
+  /**
    * If true, shows that the user must shorten their message to receive a completion.
-  */
+   */
   canShortenMessage: boolean;
 }): string {
-  // TODO: Improve copy and styling
   return html`
     <div id="generation-results">
       <div class="alert alert-danger mt-2 mb-0">
-        ${canShortenMessage ? 
-          'Your prompt is too long. Please shorten it and try again.' : 
-          "You've reached the hourly usage cap for AI question generation. Please try again later. "
-        }
+        ${canShortenMessage
+          ? 'Your prompt is too long. Please shorten it and try again.'
+          : "You've reached the hourly usage cap for AI question generation. Please try again later. "}
       </div>
     </div>
   `.toString();
-
 }
 
 function DeleteQuestionsModal({ csrfToken }: { csrfToken: string }) {

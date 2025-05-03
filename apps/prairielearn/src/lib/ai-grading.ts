@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 
 import { Cache } from '@prairielearn/cache';
 
-import {config} from './config.js';
+import { config } from './config.js';
 import { formatHtmlWithPrettier } from './prettier.js';
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
@@ -65,7 +65,7 @@ export function initializeAiQuestionGenerationCache() {
   aiQuestionGenerationCache.init({
     type: config.cacheTypeAiQuestionGeneration,
     keyPrefix: config.cacheKeyPrefixAiQuestionGeneration,
-    redisUrl: config.redisUrlAiQuestionGeneration
+    redisUrl: config.redisUrlAiQuestionGeneration,
   });
   return aiQuestionGenerationCache;
 }
@@ -74,8 +74,69 @@ export function initializeAiQuestionGenerationCache() {
  * Approximate the cost of the input tokens for a given prompt, in US dollars.
  */
 export function approximateInputCost(prompt: string) {
-   // 1.25 is a factor to account for the error of the token approximation
+  // 1.25 is a factor to account for the error of the token approximation
   const approximateTokenCount = (prompt.length / Math.E) * 1.25;
   return (config.costPerMillionInputTokens * approximateTokenCount) / 1e6;
 }
 
+function getRateLimitKey(userId: number) {
+  return `${userId}-rate-limit`;
+}
+
+function getRateLimitStartKey(userId: number) {
+  return `${userId}-rate-limit-start`;
+}
+
+/**
+ * Retrieve the AI question generation usage for a user in the current interval.
+ */
+export async function getIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+}) {
+  let intervalCost = (await aiQuestionGenerationCache.get(getRateLimitKey(userId))) ?? 0;
+
+  const currentIntervalStart = Date.now() - (Date.now() % (3600 * 1000));
+  const storedIntervalStart = (await aiQuestionGenerationCache.get(
+    getRateLimitStartKey(userId),
+  )) as number | null;
+
+  // If no interval exists, or the interval has changed, reset the rate limit
+  if (!storedIntervalStart || currentIntervalStart !== storedIntervalStart) {
+    aiQuestionGenerationCache.set(getRateLimitKey(userId), 0, 3600 * 1000);
+    aiQuestionGenerationCache.set(getRateLimitStartKey(userId), currentIntervalStart, 3600 * 1000);
+    intervalCost = 0;
+  }
+
+  return intervalCost;
+}
+
+/**
+ * Add the cost of a completion to the user's rate limit for the current interval.
+ */
+export async function addCompletionCostToIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+  inputTokens,
+  completionTokens,
+  intervalCost,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+  inputTokens: number;
+  completionTokens: number;
+  intervalCost: number;
+}) {
+  const completionCost =
+    (config.costPerMillionInputTokens * (inputTokens ?? 0) +
+      config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
+    1e6;
+  aiQuestionGenerationCache.set(
+    getRateLimitKey(userId),
+    intervalCost + completionCost,
+    3600 * 1000,
+  );
+}

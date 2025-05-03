@@ -6,6 +6,12 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
+import {
+  addCompletionCostToIntervalUsage,
+  approximateInputCost,
+  getIntervalUsage,
+  initializeAiQuestionGenerationCache,
+} from '../../../lib/ai-grading.js';
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
@@ -25,12 +31,17 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import {
+  GenerationFailure,
+  RateLimitError,
+} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+const aiQuestionGenerationCache = initializeAiQuestionGenerationCache();
 
 async function saveGeneratedQuestion(
   res: express.Response,
@@ -251,7 +262,27 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      // Perform rate limiting here. 
+      const intervalCost = await getIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.user.user_id,
+      });
+
+      const approxInputCost = approximateInputCost(req.body.prompt);
+      console.log('intervalCost', intervalCost);
+      console.log('approxInputCost', approxInputCost);
+
+      if (intervalCost + approxInputCost > config.aiQuestionGenerationRateLimit) {
+        res.send(
+          RateLimitError({
+            // If the user has more tokens than the threshold of 50 tokens,
+            // they can shorten their message to avoid reaching the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimit - intervalCost >
+              config.costPerMillionInputTokens * 50,
+          }),
+        );
+        return;
+      }
 
       const result = await regenerateQuestion(
         client,
@@ -266,6 +297,16 @@ router.post(
         res.locals.authz_data.has_course_permission_edit,
       );
 
+      console.log('result', result);
+
+      addCompletionCostToIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.user.user_id,
+        inputTokens: result.inputTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
+      });
+
       if (result.htmlResult) {
         res.set({
           'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${question.id}`,
@@ -279,7 +320,6 @@ router.post(
           }),
         );
       }
-
     } else if (req.body.__action === 'save_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
