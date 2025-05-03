@@ -249,7 +249,7 @@ export function RateLimitExceeded({
   canShortenMessage = false,
 }: {
   /**
-   * If true, shows that the user should shorten their message, ensuring they don't exceed the rate limit.
+   * If true, shows that the user should shorten their message to stay under the rate limit.
    */
   canShortenMessage: boolean;
 }): string {
