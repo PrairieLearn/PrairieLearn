@@ -82,11 +82,13 @@ lint-python:
 	@python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
-	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site" || \
+		yarn dlx $(shell yarn info htmlhint --name-only --json | tr -d '"') "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
+	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md" || \
+		yarn dlx $(shell yarn info markdownlint-cli --name-only --json | tr -d '"') --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
 lint-links:
-	@node scripts/validate-links.mjs
+	@python3 scripts/validate_links.py
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
