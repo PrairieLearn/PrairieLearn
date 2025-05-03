@@ -140,42 +140,12 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
   const badQs = [
     'element/fileEditor', // needs files
-    // 'element/integerInput', // base 2 parsing
-    // 'workshop/Lesson4_example2', // correct answer not set
-    // 'workshop/Lesson4_example3', // correct answer not set
-    'demo/drawing/extensions', // empty answer array
-    'demo/drawing/customizedButtons', // empty answer array
-    'demo/drawing/buttons', // empty answer array
-    // 'demo/drawing/liftingMechanism',
-    // 'demo/drawing/pulley',
-    // 'workshop/Lesson4_example2',
-    // 'workshop/Lesson4_example3',
-    // 'workshop/Lesson5_example3',
-    // 'demo/annotated/engCentroid',
-    // 'demo/annotated/engVectorDrawing',
-    // 'demo/custom/elementHiddenTag',
-    // 'demo/custom/gradeFunction',
-    // 'demo/drawing/centroid',
-    // 'demo/annotated/LectureVelocity/4-KnowledgeTest',
-    // 'demo/drawing/vmDiagrams',
-    // 'demo/drawing/simpleTutorial'
-  ];
-  const reallyBadQs = [
-    'demo/workspace/desktop',
-    'demo/workspace/dynamicFiles',
-    'demo/workspace/xtermjs',
-    'demo/workspace/xtermjsPython',
-    'demo/annotated/LectureVelocity/2-Derivative', // no gradable answer
   ];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async () => {
       await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
         // Mock Question object similar to render.test.ts
-        if (reallyBadQs.includes(relativePath)) {
-          console.log('This question is not supported');
-          return;
-        }
 
         const question = {
           options: info.options ?? {}, // Use options from info.json if available
@@ -209,7 +179,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
           questionRenderContext: undefined,
           ...buildQuestionUrls(
             '/prefix2',
-            { id: 'vid' } as unknown as Variant, // Minimal mock for URLs
+            { id: 'vid', workspace_id: 'wid' } as unknown as Variant, // Minimal mock for URLs
             { id: 'qid' } as unknown as Question, // Minimal mock for URLs
             null,
           ),
@@ -232,7 +202,7 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         );
         assert.isEmpty(
           renderIssues,
-          `Render courseIssues should be empty, but it was ${renderIssues}`,
+          `Render courseIssues should be empty, but it was ${JSON.stringify(renderIssues, undefined, 2)}`,
         );
         assert.isOk(questionHtml, 'Rendered HTML should exist');
         assert.isString(questionHtml, 'Rendered HTML should be a string');
