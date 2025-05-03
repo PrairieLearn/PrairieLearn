@@ -279,7 +279,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
     // Spin until we're no longer running.
     while (this.running) {
-      await sleep(10);
+      // Long waits during shutdown cause the process to be terminated.
+      await sleep(5);
     }
   }
 }

@@ -13,6 +13,10 @@ if [[ "$ACTION" == "start" ]]; then
     if pg_isready -q; then
         exit
     fi
+    # avoid "pg_ctl: another server might be running; trying to start server anyway"
+    if [[ -f "$PGDATA/postmaster.pid" ]]; then
+        rm -f "$PGDATA/postmaster.pid"
+    fi
 fi
 
 mkdir -p $PGDATA

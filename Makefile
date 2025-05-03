@@ -19,7 +19,7 @@ refresh-workspace-hosts-dev:
 	@yarn refresh-workspace-hosts-dev
 
 dev: start-support
-	@yarn dev
+	-@yarn dev
 dev-bun:
 	@yarn dev-bun
 dev-workspace-host: start-support

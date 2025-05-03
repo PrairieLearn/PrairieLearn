@@ -375,19 +375,6 @@ export class CodeCallerNative implements CodeCaller {
     const child = child_process.spawn(cmd, args, options) as CodeCallerNativeChildProcess;
     this.debug(`started child pid ${child.pid}`);
 
-    process.once('SIGINT', () => {
-      this.cleanKill = true;
-      try {
-        if (this.child && !this.child.killed && this.child.connected) {
-          child.kill('SIGINT');
-        }
-      }
-      catch (e) {
-        const errorMessage = e instanceof Error ? e.toString() : JSON.stringify(e);
-        this.debug(`Error killing child process: ${errorMessage}`);
-      }
-    });
-  
     child.stdio[1].setEncoding('utf8');
     child.stdio[2].setEncoding('utf8');
     child.stdio[3].setEncoding('utf8');
@@ -404,8 +391,28 @@ export class CodeCallerNative implements CodeCaller {
     this.child = child;
     this.state = WAITING;
     this._checkState();
+
+    process.once('SIGINT', () => {this._shutdownChild();});
+    process.once('SIGTERM', () => {this._shutdownChild();});
+
     this.debug('exit _startChild()');
   }
+    
+  _shutdownChild() {
+    this.debug('enter _shutdownChild()');
+    this.cleanKill = true;
+    try {
+      if (this.child && !this.child.killed && this.child.connected) {
+        this.child.kill('SIGTERM');
+      }
+    }
+    catch (e) {
+      const errorMessage = e instanceof Error ? e.toString() : JSON.stringify(e);
+      this.debug(`Error killing child process: ${errorMessage}`);
+    }
+    this.debug('exit _shutdownChild()');
+  }
+
 
   _handleStdoutData(data: string) {
     this.debug('enter _handleStdoutData()');
