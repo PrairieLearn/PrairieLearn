@@ -107,15 +107,15 @@ export async function getIntervalUsage({
 }) {
   let intervalCost = (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
 
-  const currentIntervalStart = Date.now() - (Date.now() % (3600 * 1000));
+  const currentIntervalStart = Date.now() - (Date.now() % (60 * 1000));
   const storedIntervalStart = (await aiQuestionGenerationCache.get(getIntervalStartKey(userId))) as
     | number
     | null;
 
   // If no interval exists or the interval has changed, reset the interval usage
   if (!storedIntervalStart || currentIntervalStart !== storedIntervalStart) {
-    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, 3600 * 1000);
-    aiQuestionGenerationCache.set(getIntervalStartKey(userId), currentIntervalStart, 3600 * 1000);
+    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, 60 * 1000);
+    aiQuestionGenerationCache.set(getIntervalStartKey(userId), currentIntervalStart, 60 * 1000);
     intervalCost = 0;
   }
 
@@ -145,6 +145,6 @@ export async function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache.set(
     getIntervalUsageKey(userId),
     intervalCost + completionCost,
-    3600 * 1000,
+    60 * 1000,
   );
 }
