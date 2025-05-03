@@ -21,9 +21,7 @@ Each assessment contains:
 
 ### Concept Map
 
-<div style="max-width: 500px;" markdown>
-![](./concept-map-example.d2){pad="0"}
-</div>
+![](./concept-map-example.d2){pad="0" scale="1"}
 
 ### Questions
 
