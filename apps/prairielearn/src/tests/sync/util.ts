@@ -10,6 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import type {
   AssessmentJsonInput,
+  CommentJsonInput,
   CourseInstanceJsonInput,
   CourseJsonInput,
   CourseOptionsJson,
@@ -158,6 +159,7 @@ const course = {
     },
   ] as TagJsonInput[],
   options: undefined as CourseOptionsJson | undefined,
+  comment: undefined as CommentJsonInput | undefined,
 } satisfies CourseJsonInput;
 
 const questions: Record<string, QuestionJsonInput> = {
