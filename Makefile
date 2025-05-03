@@ -88,7 +88,7 @@ lint-markdown:
 	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md" || \
 		yarn dlx $(shell yarn info markdownlint-cli --name-only --json | tr -d '"') --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
 lint-links:
-	@python3 scripts/validate_links.py
+	@node scripts/validate-links.mjs
 lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
