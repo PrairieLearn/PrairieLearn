@@ -1,5 +1,13 @@
 # @prairielearn/html-ejs
 
+## 2.0.14
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
 ## 2.0.13
 
 ### Patch Changes

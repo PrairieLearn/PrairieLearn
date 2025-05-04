@@ -593,7 +593,6 @@ export async function fetchRetryPaginated(
 ): Promise<unknown[]> {
   const output: unknown[] = [];
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
     output.push(await res.json());

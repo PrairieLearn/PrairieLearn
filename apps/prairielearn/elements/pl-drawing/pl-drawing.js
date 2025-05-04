@@ -1,4 +1,4 @@
-/* global window, _, $, fabric, mechanicsObjects */
+/* global _, fabric, mechanicsObjects */
 
 /**
  * Base element class.
