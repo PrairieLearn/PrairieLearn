@@ -30,6 +30,7 @@
       "active": false
     }
   ],
+  "shuffleQuestions": false,
   "zones": [
     {
       "title": "Hard questions",
@@ -39,7 +40,8 @@
         { "id": "fossilFuelsRadio", "points": [17, 13, 7, 2] },
         { "id": "partialCredit1", "points": [19] },
         { "id": "partialCredit2", "points": [9, 7, 5, 3] },
-        { "id": "partialCredit3", "points": [13, 13, 8, 0.5, 0.1] }
+        { "id": "partialCredit3", "points": [13, 13, 8, 0.5, 0.1] },
+        { "id": "workspace", "points": [10] }
       ]
     }
   ]

@@ -1,3 +1,5 @@
+import { ESLintUtils } from '@typescript-eslint/utils';
+
 import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
@@ -7,24 +9,35 @@ import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
  * This rules works in tandem with `aws-client-shared-config` to ensure that
  * we're properly configuring AWS SDK clients.
  */
-export default {
-  create(context: any) {
+export default ESLintUtils.RuleCreator.withoutDocs({
+  meta: {
+    type: 'problem',
+    messages: {
+      missingConfig: '{{clientName}} must be constructed with a config object.',
+    },
+    schema: [],
+  },
+  defaultOptions: [],
+  create(context) {
     const awsClientImports = new Set();
 
     return {
       // Handle `import ...` statements
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         const clientNames = getAwsClientNamesFromImportDeclaration(node);
         clientNames.forEach((clientName) => awsClientImports.add(clientName));
       },
-      NewExpression(node: any) {
+      NewExpression(node) {
         if (node.callee.type === 'Identifier' && awsClientImports.has(node.callee.name)) {
           // We're constructing an AWS client. Ensure that the call has at
           // least one argument corresponding to a config object.
           if (node.arguments.length === 0) {
             context.report({
               node,
-              message: `${node.callee.name} must be constructed with a config object.`,
+              messageId: 'missingConfig',
+              data: {
+                clientName: node.callee.name,
+              },
             });
             return;
           }
@@ -32,4 +45,4 @@ export default {
       },
     };
   },
-};
+});

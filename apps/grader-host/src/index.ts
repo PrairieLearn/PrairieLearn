@@ -123,7 +123,6 @@ async.series(
       const sqs = new SQSClient(makeAwsClientConfig());
 
       async function worker() {
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           if (!healthCheck.isHealthy() || processTerminating) return;
 
@@ -405,16 +404,21 @@ async function initFiles(context: Context) {
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
 
-    const entrypointFirstToken = shlex.split(entrypoint)[0];
-    if (path.isAbsolute(entrypointFirstToken) && contains('/grade', entrypointFirstToken, false)) {
-      // Mark the entrypoint as executable if it lives in the mounted volume.
-      logger.info('Making entrypoint executable');
-      await execa('chmod', [
-        '+x',
-        path.resolve(jobDirectory.path, path.relative('/grade', entrypointFirstToken)),
-      ]).catch(() => {
-        logger.error('Could not make file executable; continuing execution anyways');
-      });
+    if (entrypoint != null) {
+      const entrypointFirstToken = shlex.split(entrypoint)[0];
+      if (
+        path.isAbsolute(entrypointFirstToken) &&
+        contains('/grade', entrypointFirstToken, false)
+      ) {
+        // Mark the entrypoint as executable if it lives in the mounted volume.
+        logger.info('Making entrypoint executable');
+        await execa('chmod', [
+          '+x',
+          path.resolve(jobDirectory.path, path.relative('/grade', entrypointFirstToken)),
+        ]).catch(() => {
+          logger.error('Could not make file executable; continuing execution anyways');
+        });
+      }
     }
 
     return jobDirectory;
@@ -489,7 +493,7 @@ async function runJob(
           },
         ],
       },
-      Entrypoint: shlex.split(entrypoint),
+      Entrypoint: entrypoint ? shlex.split(entrypoint) : undefined,
     });
 
     const stream = await container.attach({

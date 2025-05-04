@@ -46,6 +46,7 @@ SCORE_CORRECT_DEFAULT = 1.0
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
+ARIA_LABEL_DEFAULT = "Multiple choice options"
 NONE_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
 ALL_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
 EXTERNAL_JSON_DEFAULT = None
@@ -103,7 +104,7 @@ def categorize_options(
             else:
                 incorrect_answers.append(answer_tuple)
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:
@@ -166,7 +167,6 @@ def get_nota_aota_attrib(
     interpretations. If the value cannot be interpreted as boolean,
     the string representation is used.
     """
-
     try:
         boolean_value = pl.get_boolean_attrib(
             element, name, default != AotaNotaType.FALSE
@@ -177,8 +177,7 @@ def get_nota_aota_attrib(
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
-    """Gets order type in a backwards-compatible way. New display overwrites old."""
-
+    """Get order type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         raise ValueError(
             'Setting answer choice order should be done with the "order" attribute.'
@@ -191,8 +190,7 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 
 
 def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
-    """Gets display type in a backwards-compatible way. New display overwrites old."""
-
+    """Get display type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(
             'Setting answer choice display should be done with the "display" attribute.'
@@ -404,6 +402,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "size",
         "placeholder",
+        "aria-label",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -496,6 +495,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = display_type is not DisplayType.BLOCK
     display_radio = display_type in {DisplayType.BLOCK, DisplayType.INLINE}
     submitted_key = data["submitted_answers"].get(name, None)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -545,6 +545,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "editable": editable,
             "display_score_badge": display_score,
             "answers": answerset,
+            "aria_label": aria_label,
             "hide_letter_keys": pl.get_boolean_attrib(
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),

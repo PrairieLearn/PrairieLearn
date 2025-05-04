@@ -20,7 +20,7 @@ For questions that require manual grading, the question can be set up for manual
 
 Questions set to use only manual grading (i.e., with manual points but no auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored.
 
-It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question.md#question-infojson) in the question, like this:
+It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question/index.md#metadata-infojson) in the question, like this:
 
 ```json title="info.json"
 {
@@ -29,7 +29,7 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 }
 ```
 
-Any [elements](../elements.md) can be used in the [`question.html`](../question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
+Any [elements](../elements.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 
@@ -152,4 +152,4 @@ When updating rubric settings, a flag at the bottom of the settings dialog box g
 
 To manually grade a submission using a rubric, a grader must select the items that apply to a particular submission and press Submit. Additionally, each rubric item (or each of the first 10 items, in long rubrics) is assigned a keyboard shortcut corresponding to a digit; pressing that digit on the keyboard causes that item to be selected (or cleared, if it is selected).
 
-Graders have the flexibility to apply a grading adjustment (positive or negative) on top of the rubric item. This may be used where instructors need to make judgement calls for unconventional submissions that don't apply to specific rubric items. This option is discouraged in cases where the issue is found in multiple submissions, as additional rubric items provide more flexibility in providing feedback and adjusting grades.
+Graders have the flexibility to apply a grading adjustment (positive or negative) on top of the rubric item. This may be used where instructors need to make judgment calls for unconventional submissions that don't apply to specific rubric items. This option is discouraged in cases where the issue is found in multiple submissions, as additional rubric items provide more flexibility in providing feedback and adjusting grades.

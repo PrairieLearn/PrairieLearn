@@ -1,7 +1,11 @@
-"""
-Custom colors for the PrairieLearn project based on Coloraide.
+"""Custom colors for the PrairieLearn project based on Coloraide.
 
-Based on https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/.
+Based on <https://gist.github.com/facelessuser/0b129c1faf7f3f59c0de40eeaaab5691/>.
+
+```python
+from prairielearn.colors import ...
+```
+
 """
 
 import re
@@ -75,6 +79,9 @@ class PrairieLearnColor(sRGB):
         """
         Match a color string, first trying PrairieLearn.
         If no match is found, defaults to sRGB class' implementation.
+
+        Returns:
+            The matched color
         """
         # Match the string using fullmatch if requested
         match = (
@@ -105,10 +112,13 @@ class PrairieLearnColor(sRGB):
         alpha: bool | None = None,
         fit: bool | str | dict[str, Any] = True,
         names: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
-        """Convert to string."""
+        """Convert the color to a string.
 
+        Returns:
+            The color as a string.
+        """
         if names:
             # Get alpha and coordinates resolving undefined values as required
             alpha_float = serialize.get_alpha(parent, alpha, none=False, legacy=False)
@@ -141,9 +151,10 @@ PLColor.register(PrairieLearnColor(), overwrite=True)
 
 
 def get_css_color(name: str) -> str | None:
-    """
-    Tries to look up a hex code value from a named css color, otherwise will
-    return None if not a valid color.
+    """Get the hex code value from a named css color.
+
+    Returns:
+        The hex code of the color, otherwise `None`.
     """
     name = name.lower()
 

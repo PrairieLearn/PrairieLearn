@@ -29,6 +29,8 @@ DISPLAY_DEFAULT = DisplayType.INLINE
 COMPARISON_DEFAULT = ComparisonType.RELABS
 ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
+LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
 ALLOW_FRACTIONS_DEFAULT = True
@@ -50,6 +52,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "correct-answer",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "comparison",
@@ -97,6 +100,14 @@ def format_true_ans(
             element, "comparison", ComparisonType, COMPARISON_DEFAULT
         )
 
+        # Correct answers may be specified as strings, so we need to convert them
+        # to numbers for formatting. See the note in `grade()` for why we cast to
+        # these specific types.
+        if np.iscomplexobj(correct_answer):
+            correct_answer = np.complex128(correct_answer)
+        else:
+            correct_answer = np.float64(correct_answer)
+
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:
@@ -141,7 +152,8 @@ def get_string_decimal_digits(number_string: str) -> int:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    label = pl.get_string_attrib(element, "label", None)
+    label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", None)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(
@@ -171,6 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "size": pl.get_integer_attrib(element, "size", SIZE_DEFAULT),

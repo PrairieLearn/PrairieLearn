@@ -14,8 +14,8 @@ import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import {
-  InstructorCourseAdminInstances,
   type CourseInstanceAuthzRow,
+  InstructorCourseAdminInstances,
 } from './instructorCourseAdminInstances.html.js';
 
 const router = express.Router();
@@ -94,7 +94,7 @@ router.post(
       }
 
       const editor = new CourseInstanceAddEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         short_name: req.body.short_name,
         long_name: req.body.long_name,
         start_access_date: startAccessDate,

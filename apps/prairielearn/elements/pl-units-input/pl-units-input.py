@@ -25,6 +25,7 @@ GRADING_MODE_DEFAULT = GradingMode.WITH_UNITS
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
@@ -45,8 +46,7 @@ UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 def get_with_units_atol(
     element: lxml.html.HtmlElement, data: pl.QuestionData, ureg: UnitRegistry
 ) -> str:
-    """Returns the atol string for use in the "with-units" grading mode."""
-
+    """Return the atol string for use in the "with-units" grading mode."""
     if pl.has_attrib(element, "atol"):
         return pl.get_string_attrib(element, "atol")
 
@@ -65,6 +65,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "correct-answer",
         "custom-format",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "allow-blank",
@@ -140,9 +141,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
 
-        if (correct_answer_parsed is not None) and (
-            not correct_answer_parsed.check(parsed_atol.dimensionality)
-        ):
+        if not correct_answer_parsed.check(parsed_atol.dimensionality):
             raise ValueError(
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
@@ -160,6 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -227,6 +227,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,

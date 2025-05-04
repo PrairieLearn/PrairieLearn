@@ -33,7 +33,7 @@ def get_form_name(answers_name: str, index: int) -> str:
 
 
 def get_counter(i: int, counter_type: str) -> str:
-    """Converts an integer counter to the specified CSS counter type"""
+    """Convert an integer counter to the specified CSS counter type"""
     if counter_type == "lower-alpha":
         return pl.index2key(i - 1)
     elif counter_type == "upper-alpha":
@@ -48,15 +48,15 @@ def get_counter(i: int, counter_type: str) -> str:
         )
 
 
-def legal_answer(answer: int, options: list) -> bool:
-    """Checks that the given answer is within the range of the given counter type."""
+def legal_answer(answer: int, options: list[Any]) -> bool:
+    """Check that the given answer is within the range of the given counter type."""
     return -1 <= answer < len(options)
 
 
 def get_select_options(
-    options_list: list, selected_value: int, blank_used: bool
+    options_list: list[Any], selected_value: int, blank_used: bool
 ) -> list[dict[str, Any]]:
-    def transform(i: int, opt: Any):
+    def transform(i: int, opt: Any) -> dict[str, Any]:
         index = i - int(blank_used)
         return {
             "index": index,
@@ -74,10 +74,9 @@ def partition(
     data: list[ListItem], pred: Callable[[ListItem], bool]
 ) -> tuple[list[ListItem], list[ListItem]]:
     """
-    Implements a partition function, splitting the data into two lists based on the predicate.
+    Split the data into two lists based on the predicate.
     TODO move this into prairielearn.py once it's used in another element.
     """
-
     yes, no = [], []
     for d in data:
         if pred(d):
@@ -209,9 +208,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         else:
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
-            needed_options_keys = needed_options_keys.union(
-                {o["name"] for o in distractor_sample}
-            )
+            needed_options_keys = needed_options_keys.union({
+                o["name"] for o in distractor_sample
+            })
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options
         if not fixed_options_order:
@@ -235,9 +234,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             random.shuffle(options)
 
     if nota:
-        options.append(
-            {"index": len(options), "name": "__nota__", "html": "None of the above"}
-        )
+        options.append({
+            "index": len(options),
+            "name": "__nota__",
+            "html": "None of the above",
+        })
 
     # Build the options to display to the student.
     chosen_option_names = []
@@ -281,11 +282,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     for i in range(len(display_statements)):
         expected_html_name = get_form_name(name, i)
         try:
-            student_answer = int(submitted_answers.get(expected_html_name, None))
+            student_answer = int(submitted_answers[expected_html_name])
         except (ValueError, TypeError):
+            # This could happen if the not parsable.
             data["format_errors"][expected_html_name] = (
                 "The submitted answer is not a legal option."
             )
+            continue
+        except KeyError:
+            # This could happen if the input field is missing.
+            data["format_errors"][expected_html_name] = "No answer was submitted."
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
@@ -293,8 +299,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["format_errors"][expected_html_name] = (
                 "The submitted answer was left blank."
             )
-        elif student_answer is None:
-            data["format_errors"][expected_html_name] = "No answer was submitted."
         elif not legal_answer(student_answer, display_options):
             data["format_errors"][expected_html_name] = (
                 "The submitted answer is invalid."
@@ -350,6 +354,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "name": form_name,
                 "display_score_badge": display_score_badge,
                 "correct": display_score_badge and student_answer == correct_answer,
+                "statement_id": pl.get_uuid(),
             }
             statement_set.append(statement_html)
 
@@ -358,7 +363,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option_html = {"key": option["key"], "html": option["html"].strip()}
             option_set.append(option_html)
 
-        html_params = {
+        html_params: dict[str, str | bool | float | list[Any]] = {
             "question": True,
             "name": name,
             "statements": statement_set,

@@ -49,7 +49,7 @@ def _draw_edge_inc_matrix(mat, mat_label, layout="dot"):
     for node in mat_label:
         G.add_node(node)
 
-    edges, nodes = mat.shape
+    edges, _ = mat.shape
     for e in range(edges):
         out_node = np.where(mat[e] == -1)[0][0]
         in_node = np.where(mat[e] == 1)[0][0]
@@ -67,12 +67,10 @@ def draw_matrix(
     directed=None,
     layout="dot",
 ):
-    """
-    Attempts to automatically determine the type of matrix by the type.
+    """Attempts to automatically determine the type of matrix by the type.
     A square matrix is interpreted to be an adjacency/stochastic matrix, while a non-square
     matrix is a edge-incidence matrix.
     """
-
     mat = mat.T
 
     if len(mat.shape) != 2:

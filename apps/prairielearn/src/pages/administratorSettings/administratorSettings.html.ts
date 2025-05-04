@@ -5,6 +5,8 @@ import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
+  const showAiSettings = isEnterprise() && config.openAiApiKey && config.openAiOrganization;
+
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Settings',
@@ -17,7 +19,7 @@ export function AdministratorSettings({ resLocals }) {
       fullWidth: true,
     },
     content: html`
-      <h1 class="sr-only">Administrator Settings</h1>
+      <h1 class="visually-hidden">Administrator Settings</h1>
       <!-- Chunk generation -->
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -27,8 +29,8 @@ export function AdministratorSettings({ resLocals }) {
           <form name="generate_chunks_form" method="POST">
             <input type="hidden" name="__action" value="generate_chunks" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <div class="form-group">
-              <label for="generateChunksCourseIds">Course IDs:</label>
+            <div class="mb-3">
+              <label class="form-label" for="generateChunksCourseIds">Course IDs:</label>
               <input
                 type="text"
                 class="form-control"
@@ -85,15 +87,34 @@ export function AdministratorSettings({ resLocals }) {
         </div>
       </div>
 
-      ${isEnterprise() && config.openAiApiKey && config.openAiOrganization
+      ${showAiSettings
         ? html`
             <div class="card mb-4">
-              <div class="card-header bg-primary text-white">LLM Context Documents</div>
+              <div class="card-header bg-primary text-white">LLM</div>
               <div class="card-body">
                 <form method="POST">
-                  <input type="hidden" name="__action" value="sync_context_documents" />
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button class="btn btn-primary">Resync Documents</button>
+                  <button class="btn btn-primary" name="__action" value="sync_context_documents">
+                    Resync context documents
+                  </button>
+
+                  ${config.devMode
+                    ? html`
+                        <hr />
+                        <p>
+                          Benchmarking the AI will generate questions from a set of sample prompts
+                          and ask an LLM to evaluate their quality, including comparing them to gold
+                          standard implementations.
+                        </p>
+                        <button
+                          class="btn btn-primary"
+                          name="__action"
+                          value="benchmark_question_generation"
+                        >
+                          Benchmark question generation
+                        </button>
+                      `
+                    : ''}
                 </form>
               </div>
             </div>
@@ -117,6 +138,7 @@ export function AdministratorSettings({ resLocals }) {
             <button type="button" class="btn btn-warning">Warning</button>
             <button type="button" class="btn btn-info">Info</button>
             <button type="button" class="btn btn-light">Light</button>
+            <button type="button" class="btn btn-med-light">Medium Light</button>
             <button type="button" class="btn btn-dark">Dark</button>
             <button type="button" class="btn btn-link">Link</button>
           </div>
@@ -173,7 +195,7 @@ export function AdministratorSettings({ resLocals }) {
           <div>
             <button type="button" class="btn btn-xs btn-ghost">Extra small</button>
             <button type="button" class="btn btn-sm btn-ghost">Small</button>
-            <button type="button" class="btn btn btn-ghost">Default</button>
+            <button type="button" class="btn btn-ghost">Default</button>
             <button type="button" class="btn btn-lg btn-ghost">Large</button>
           </div>
         </div>

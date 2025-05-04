@@ -5,8 +5,8 @@ import prairielearn as pl
 
 def safe_parse_int(int_str: str) -> int | float:
     """
-    Parses a JSON string. If the string contains an integer that is too large,
-    it will be parsed as a float instead. This ensures that we don't error out
+    Parse a JSON string. If the string contains an integer that is too large,
+    parse as a float instead. This ensures that we don't error out
     if the number is later re-serialized back to JSON.
     """
     equiv_int = int(int_str)
@@ -22,6 +22,9 @@ def assert_all_integers_within_limits(item: Any) -> None:
 
     We consider an integer to be oversized if it cannot be losslessly parsed
     from JSON into a JavaScript number.
+
+    Raises:
+        ValueError: If any oversized integers are found in the input item.
     """
     item_stack = [item]
 

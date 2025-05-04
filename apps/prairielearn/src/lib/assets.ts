@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
 import express from 'express';
-import { hashElement, type HashElementNode } from 'folder-hash';
+import { type HashElementNode, hashElement } from 'folder-hash';
+import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
@@ -106,6 +107,14 @@ function getPackageVersion(packageName: string): string {
  */
 function getNodeModulesAssetHash(assetPath: string): string {
   const packageName = getPackageNameForAssetPath(assetPath);
+
+  if (config.devMode && packageName.startsWith('@prairielearn/')) {
+    // In dev mode, we don't want to cache the hash of our own packages, or use
+    // a repeatable hash that would cause the browser to cache the asset. This
+    // is because we want to be able to change them without changing the package
+    // version number.
+    return uuid();
+  }
 
   // Reading files synchronously and computing cryptographic hashes are both
   // relatively expensive; cache the hashes for each package.

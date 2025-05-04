@@ -37,13 +37,13 @@ export function PlanGrantsEditor({
                   value="1"
                   id="plan_${planName}"
                 />
-                <label class="form-check-label text-monospace" for="plan_${planName}">
+                <label class="form-check-label font-monospace" for="plan_${planName}">
                   ${planName}
                 </label>
                 <div>
                   ${planFeatures.map(
                     (feature) => html`
-                      <span class="badge badge-pill badge-secondary text-monospace mr-1">
+                      <span class="badge rounded-pill text-bg-secondary font-monospace me-1">
                         ${feature}
                       </span>
                     `,
@@ -52,7 +52,7 @@ export function PlanGrantsEditor({
               </div>
 
               <select
-                class="custom-select w-auto js-plan-type"
+                class="form-select w-auto js-plan-type"
                 name="plan_${planName}_grant_type"
                 ${!hasPlanGrant ? 'disabled' : null}
               >

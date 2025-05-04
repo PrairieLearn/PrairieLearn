@@ -23,6 +23,18 @@ def test_get_css_color(color: str, expected: str | None) -> None:
 
 @pytest.mark.parametrize(
     ("color", "expected"),
+    [
+        ("#ff0000", "red"),
+        ("#008c31", "green3"),
+    ],
+)
+def test_get_css_color_custom(color: str, expected: str) -> None:
+    """Assert the get_css_color method can handle custom colors."""
+    assert PLColor(color).to_string(names=True) == expected
+
+
+@pytest.mark.parametrize(
+    ("color", "expected"),
     [("red", Base("srgb", [1, 0, 0], 1)), ("RED", Base("srgb", [1, 0, 0], 1))],
 )
 def test_color_constructor(color: str, expected: str) -> None:
@@ -50,9 +62,7 @@ def test_color_constructor_error() -> None:
     ],
 )
 def test_color_match_is_not_none(color: str) -> None:
-    """
-    Assert the custom color match method returns a color object
-    """
+    """Assert the custom color match method returns a color object"""
     assert PLColor.match(color) is not None
 
 
@@ -64,7 +74,5 @@ def test_color_match_is_not_none(color: str) -> None:
     ],
 )
 def test_color_match(invalid_color: str) -> None:
-    """
-    Assert the custom color match method returns None for invalid colors.
-    """
+    """Assert the custom color match method returns None for invalid colors."""
     assert PLColor.match(invalid_color) is None

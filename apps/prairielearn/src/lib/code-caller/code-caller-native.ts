@@ -7,7 +7,6 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
@@ -17,11 +16,11 @@ import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
 import {
-  FunctionMissingError,
-  type CodeCaller,
-  type PrepareForCourseOptions,
-  type CodeCallerResult,
   type CallType,
+  type CodeCaller,
+  type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
@@ -357,7 +356,7 @@ export class CodeCallerNative implements CodeCaller {
     const cmd = this.options.pythonExecutable;
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
-    const env = _.clone(process.env);
+    const env = structuredClone(process.env);
     // PYTHONIOENCODING might not be needed once we switch to Python 3.7
     // https://www.python.org/dev/peps/pep-0538/
     // https://www.python.org/dev/peps/pep-0540/
@@ -651,7 +650,7 @@ export class CodeCallerNative implements CodeCaller {
 
   _checkState(allowedStates?: CodeCallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
-      const allowedStatesList = '[' + _.map(allowedStates, String).join(',') + ']';
+      const allowedStatesList = '[' + allowedStates.map(String).join(',') + ']';
       return this._logError(
         'Expected CodeCallerNative states ' +
           allowedStatesList +

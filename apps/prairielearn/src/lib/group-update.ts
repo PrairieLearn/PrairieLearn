@@ -6,23 +6,18 @@ import { z } from 'zod';
 import * as namedLocks from '@prairielearn/named-locks';
 import {
   loadSqlEquiv,
-  queryRow,
-  queryRows,
   queryOptionalRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from './db-types.js';
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
+import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
@@ -47,11 +42,8 @@ export async function uploadInstanceGroups(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -138,11 +130,8 @@ export async function randomGroups(
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
