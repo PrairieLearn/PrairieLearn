@@ -20,6 +20,7 @@ RUN apt-get update \
 
 COPY requirements.txt /requirements.txt
 RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
+RUN ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so
 
 COPY cgrader /cgrader
 
