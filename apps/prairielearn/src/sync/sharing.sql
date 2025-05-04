@@ -19,14 +19,6 @@ WHERE
     )
   );
 
--- BLOCK select_sharing_sets
-SELECT
-  ss.name
-FROM
-  sharing_sets AS ss
-WHERE
-  ss.course_id = $course_id;
-
 -- BLOCK select_question_sharing_sets
 WITH
   sharing_sets_agg AS (
@@ -55,3 +47,19 @@ WHERE
   AND ssa.sharing_sets IS NOT NULL
 ORDER BY
   q.qid;
+
+-- BLOCK select_non_deletable_sharing_sets
+SELECT
+  ss.name
+FROM
+  sharing_sets AS ss
+WHERE
+  ss.course_id = $course_id
+  AND EXISTS (
+    SELECT
+      1
+    FROM
+      sharing_set_questions AS ssq
+    WHERE
+      ssq.sharing_set_id = ss.id
+  );
