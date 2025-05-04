@@ -2409,7 +2409,9 @@ if (esMain(import.meta) && config.startServer) {
     logger.error('Error initializing PrairieLearn server:', err);
     throw err;
   }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
+  logger.info('PrairieLearn server ready');
+  logger.info(`To attempt a clean shutdown run \`kill ${process.pid}\` from another process`);
+  logger.info('Otherwise press Control-C to quit without cleanup');
   if (config.devMode) {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
@@ -2419,6 +2421,8 @@ if (esMain(import.meta) && config.startServer) {
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
   process.once('SIGTERM', async () => {
+    logger.info('Attempting to gracefully shut down PrairieLearn server');
+    logger.info('Look for confirmation to see if shutdown was successful');
     // By this point, we should no longer be attached to the load balancer,
     // so there's no point shutting down the HTTP server or the socket.io
     // server.
@@ -2439,6 +2443,7 @@ if (esMain(import.meta) && config.startServer) {
       }
     });
 
+    logger.info('Shutting down lifecycle hooks');
     try {
       await lifecycleHooks.completeInstanceTermination();
     } catch (err) {
@@ -2446,8 +2451,7 @@ if (esMain(import.meta) && config.startServer) {
       Sentry.captureException(err);
     }
 
-    logger.info('Terminating...');
-    // Shut down OpenTelemetry exporting.
+    logger.info('Shutting down OpenTelemetry exporting');
     try {
       await opentelemetry.shutdown();
     } catch (err) {
@@ -2458,6 +2462,7 @@ if (esMain(import.meta) && config.startServer) {
     // Flush all events to Sentry.
     try {
       await Sentry.flush();
+      logger.info('Completed shutdown steps successfully; now exiting');
     } finally {
       process.exit(0);
     }
