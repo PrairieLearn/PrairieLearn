@@ -134,7 +134,7 @@ function DevModeCard() {
       </div>
       <div class="card-body">
         <p>
-          Test3. PrairieLearn is running in Development Mode. Click the
+          Test7. PrairieLearn is running in Development Mode. Click the
           <strong>"Load from disk"</strong> button above to load question and assessment definitions
           from JSON files on disk.
         </p>

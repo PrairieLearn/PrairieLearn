@@ -162,5 +162,5 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
-  didMigration = false;
+  didMigration = true;
 }
