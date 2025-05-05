@@ -77,9 +77,13 @@ export function initializeAiQuestionGenerationCache() {
  * Approximate the cost of the prompt tokens, in US dollars.
  */
 export function approximatePromptCost(prompt: string) {
-  // Multiply the approximate token count by a factor of 1.25 to account for error in the estimate
-  const approximatePromptTokenCount = (prompt.length / Math.E) * 1.25;
-  return (config.costPerMillionPromptTokens * approximatePromptTokenCount) / 1e6;
+  // There are approximately 4 characters per token (Source: https://platform.openai.com/tokenizer)
+  // We then multiply the approximate token count by 1.25 to account for error in the estimate
+  // On average, we generate 3750 system tokens for a prompt.
+  const approximatePromptAndSystemTokenCount = (prompt.length / 4) * 1.25 + 3750;  
+
+  // On average, we generate 250 completion tokens for a prompt.
+  return (config.costPerMillionPromptTokens * approximatePromptAndSystemTokenCount + config.costPerMillionCompletionTokens * 250) / 1e6;
 }
 
 /**
