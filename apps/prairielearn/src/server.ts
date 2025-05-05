@@ -1,8 +1,8 @@
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as Sentry from '@prairielearn/sentry';
 import * as opentelemetry from '@prairielearn/opentelemetry';
+import * as Sentry from '@prairielearn/sentry';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -78,7 +78,6 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
-
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
@@ -1966,7 +1965,6 @@ export async function startServer(app: express.Express) {
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
   if ((import.meta as any).env?.DEV) {
-    console.log('Running in vite dev mode');
     return server;
   }
 
