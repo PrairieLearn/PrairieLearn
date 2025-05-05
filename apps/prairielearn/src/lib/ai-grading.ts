@@ -96,6 +96,9 @@ function getIntervalStartKey(userId: number) {
   return `user-${userId}-interval-start`;
 }
 
+// 1 hour in milliseconds
+const intervalLengthMs = 3600 * 1000;
+
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
@@ -108,15 +111,19 @@ export async function getIntervalUsage({
 }) {
   let intervalCost = (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
 
-  const currentIntervalStart = Date.now() - (Date.now() % (3600 * 1000));
+  const currentIntervalStart = Date.now() - (Date.now() % intervalLengthMs);
   const storedIntervalStart = (await aiQuestionGenerationCache.get(getIntervalStartKey(userId))) as
     | number
     | null;
 
   // If no interval exists or the interval has changed, reset the interval usage
   if (!storedIntervalStart || currentIntervalStart !== storedIntervalStart) {
-    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, 3600 * 1000);
-    aiQuestionGenerationCache.set(getIntervalStartKey(userId), currentIntervalStart, 3600 * 1000);
+    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, intervalLengthMs);
+    aiQuestionGenerationCache.set(
+      getIntervalStartKey(userId),
+      currentIntervalStart,
+      intervalLengthMs,
+    );
     intervalCost = 0;
   }
 
@@ -146,6 +153,6 @@ export async function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache.set(
     getIntervalUsageKey(userId),
     intervalCost + completionCost,
-    3600 * 1000,
+    intervalLengthMs,
   );
 }
