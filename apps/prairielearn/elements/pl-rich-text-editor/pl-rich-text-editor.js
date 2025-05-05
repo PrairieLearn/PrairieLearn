@@ -67,7 +67,10 @@
 
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
-  window.PLRTE = async function (uuid, options) {
+  window.PLRTE = async function (uuid) {
+    const baseElement = document.getElementById(`rte-${uuid}`);
+    const options = JSON.parse(baseElement.dataset.options);
+
     if (!options.modules) options.modules = {};
     if (!options.modules.clipboard) options.modules.clipboard = {};
     options.modules.clipboard.toast_id = 'rte-clipboard-toast-' + uuid;
@@ -105,10 +108,10 @@
     // Set the bounds for UI elements (e.g., the tooltip for the formula editor)
     // to the question container.
     // https://quilljs.com/docs/configuration#bounds
-    options.bounds = document.getElementById(`rte-${uuid}`).closest('.question-container');
+    options.bounds = baseElement.closest('.question-container');
 
     let inputElement = $('#rte-input-' + uuid);
-    let quill = new Quill('#rte-' + uuid, options);
+    let quill = new Quill(baseElement, options);
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
