@@ -1,3 +1,7 @@
+# Used in CI to avoid running with yarn
+NODE_TOOL_PREFIX?=yarn
+export NODE_TOOL_PREFIX
+
 build:
 	@yarn turbo run build
 build-sequential:
@@ -82,9 +86,9 @@ lint-python:
 	@python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
-	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
+	@$(NODE_TOOL_PREFIX) htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
+	@$(NODE_TOOL_PREFIX) markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
@@ -115,7 +119,7 @@ typecheck-scripts:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright
+	@$(NODE_TOOL_PREFIX) pyright
 
 changeset:
 	@yarn changeset
