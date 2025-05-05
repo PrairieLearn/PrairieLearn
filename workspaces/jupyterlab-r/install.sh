@@ -2,9 +2,6 @@
 
 set -ex
 
-# Install dependencies and various libraries.
-apt-get update && apt-get -y upgrade
-
 # Install all R dependencies.
 xargs mamba install --yes < /requirements.txt
 
