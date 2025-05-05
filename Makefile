@@ -116,6 +116,7 @@ typecheck-js:
 	@yarn turbo run build
 typecheck-python:
 	@yarn pyright
+
 changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
