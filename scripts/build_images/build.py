@@ -30,6 +30,8 @@ BASE_IMAGE_MAPPING = {
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
 }
 
 BASE_IMAGES = list(set(BASE_IMAGE_MAPPING.values()))
