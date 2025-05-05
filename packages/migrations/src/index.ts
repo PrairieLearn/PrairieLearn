@@ -20,8 +20,4 @@ export {
   retryFailedBatchedMigrationJobs,
 } from './batched-migrations/index.js';
 
-export const SCHEMA_MIGRATIONS_PATH = path.resolve(
-  ...(import.meta.dirname ? [import.meta.dirname] : [import.meta.url.replace('file:', ''), '..']),
-  '..',
-  'schema-migrations',
-);
+export const SCHEMA_MIGRATIONS_PATH = path.resolve(import.meta.dirname, '..', 'schema-migrations');

@@ -2,7 +2,6 @@ import { type ChildProcess } from 'child_process';
 import * as child_process from 'node:child_process';
 import { type SpawnOptions } from 'node:child_process';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
@@ -10,7 +9,6 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
-
 
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
@@ -368,7 +366,7 @@ export class CodeCallerNative implements CodeCaller {
     }
 
     const options: SpawnOptions = {
-      cwd: path.resolve(fileURLToPath(import.meta.url), '..'),
+      cwd: import.meta.dirname,
       // stdin, stdout, stderr, data, and restart confirmations
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       env,

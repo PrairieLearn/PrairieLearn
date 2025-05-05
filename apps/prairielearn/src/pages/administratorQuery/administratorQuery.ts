@@ -1,5 +1,4 @@
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -12,7 +11,6 @@ import type { AdministratorQueryResult } from '../../admin_queries/util.js';
 import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
-
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
@@ -22,7 +20,7 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const queriesDir = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', 'admin_queries');
+const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 router.get(
   '/:query',

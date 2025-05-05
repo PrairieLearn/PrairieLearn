@@ -1,7 +1,3 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 /**
  * There are 4 object kinds that are defined in this directory:
  * - JSON (ajv) schemas (info... e.g. infoCourse)
@@ -12,14 +8,6 @@ import { fileURLToPath } from 'node:url';
  * If you have already parsed the object, you should use the output types.
  * If you have an unparsed object, you should use the input types.
  */
-function readSchema(filePath: string) {
-  return JSON.parse(
-    fs.readFileSync(
-      path.resolve(fileURLToPath(import.meta.url), '..', 'schemas', filePath),
-      'utf8',
-    ),
-  );
-}
 
 export * from './adminQuery.js';
 export * from './infoAssessment.js';

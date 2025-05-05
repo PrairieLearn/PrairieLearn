@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as path from 'node:path';
 
 import { contains } from '@prairielearn/path-utils';

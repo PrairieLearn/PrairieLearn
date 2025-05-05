@@ -1,14 +1,11 @@
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 
-
-
-const sql = sqldb.loadSql(path.join(fileURLToPath(import.meta.url), '..', '..', 'queries.sql'));
+const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
 
 router.get(

@@ -1,12 +1,10 @@
 import * as fsPromises from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import * as path from 'path';
 
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as jsonLoad from '../../lib/json-load.js';
-
 
 import {
   AdministratorQueries,
@@ -15,7 +13,7 @@ import {
 } from './administratorQueries.html.js';
 
 const router = express.Router();
-const queriesDir = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', 'admin_queries');
+const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 router.get(
   '/',

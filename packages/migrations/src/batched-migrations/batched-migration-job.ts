@@ -1,10 +1,8 @@
-import { fileURLToPath } from 'url';
-
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(fileURLToPath(import.meta.url));
+const sql = loadSqlEquiv(import.meta.filename);
 
 export const BatchedMigrationJobStatusSchema = z.enum(['pending', 'failed', 'succeeded']);
 export type BatchedMigrationJobStatus = z.infer<typeof BatchedMigrationJobStatusSchema>;

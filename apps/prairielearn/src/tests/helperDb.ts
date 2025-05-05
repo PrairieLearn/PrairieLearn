@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { fileURLToPath } from 'url';
 
 import { type Context } from 'mocha';
 import pg from 'pg';
@@ -60,15 +59,12 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   // so we need to make sure the batched migration machinery is initialized.
   initBatchedMigrations({
     project: 'prairielearn',
-    directories: [path.resolve(fileURLToPath(import.meta.url), '..', '..', 'batched-migrations')],
+    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
   });
 
   if (runMigrations) {
     await initMigrations(
-      [
-        path.resolve(fileURLToPath(import.meta.url), '..', '..', 'migrations'),
-        SCHEMA_MIGRATIONS_PATH,
-      ],
+      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       'prairielearn',
     );
   }

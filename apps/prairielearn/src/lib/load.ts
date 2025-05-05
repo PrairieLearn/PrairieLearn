@@ -146,8 +146,7 @@ export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJob
   debug(
     `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
   );
-  if (_.has(estimators, jobType)) {
-    if (import.meta.env?.DEV) return;
+  if (Object.prototype.hasOwnProperty.call(estimators, jobType)) {
     throw new Error(`duplicate jobType: ${jobType}`);
   }
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);

@@ -1,5 +1,3 @@
-import { fileURLToPath } from 'url';
-
 import { z } from 'zod';
 
 import {
@@ -10,7 +8,7 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(fileURLToPath(import.meta.url));
+const sql = loadSqlEquiv(import.meta.filename);
 
 export const BatchedMigrationStatusSchema = z.enum([
   'pending',
