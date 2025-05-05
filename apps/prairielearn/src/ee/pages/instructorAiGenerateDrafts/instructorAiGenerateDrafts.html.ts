@@ -258,7 +258,7 @@ export function RateLimitExceeded({
       <div class="alert alert-danger mt-2 mb-0">
         ${canShortenMessage
           ? 'Your prompt is too long. Please shorten it and try again.'
-          : "You've reached the hourly usage cap for AI question generation. Please try again later. "}
+          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
       </div>
     </div>
   `.toString();
