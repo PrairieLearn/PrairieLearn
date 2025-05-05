@@ -31,9 +31,11 @@ def test(data):
     if data["test_type"] == "invalid":
         return
 
+    is_correct = data["test_type"] == "correct"
     data["raw_submitted_answers"] = {
         "x": "1",
         "y": "0",
         "z": "1",
-        "F": "1" if data["test_type"] == "correct" else "0",
+        "F": "1" if is_correct else "0",
     }
+    data["score"] = 1 if is_correct else 0
