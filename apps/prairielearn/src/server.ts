@@ -1964,14 +1964,13 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
-  // In production, startup the server normally
-  if ((import.meta as any).env?.PROD) {
-    console.log('Running in production mode');
-    server.listen(config.serverPort);
-  } else {
-    console.log('Running in development mode');
+  if ((import.meta as any).env?.DEV) {
+    console.log('Running in vite dev mode');
     return server;
   }
+
+  // In production, startup the server normally
+  server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
   await new Promise((resolve, reject) => {
@@ -2043,6 +2042,7 @@ function idleErrorHandler(err: Error) {
 }
 
 if (!((esMain(import.meta) || import.meta.env?.DEV) && config.startServer)) {
+  console.log('In dev')
   exit(0);
 }
 
