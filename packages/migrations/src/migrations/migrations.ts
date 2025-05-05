@@ -53,7 +53,14 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
+let didMigration = false;
+
 export async function initWithLock(directories: string[], project: string) {
+  if (didMigration) {
+    // For Vite HMR mode
+    if ((import.meta as any).env?.DEV) return;
+    throw new Error('BatchedMigrationsRunner has already performed migration');
+  }
   logger.verbose('Starting DB schema migration');
 
   // Create the migrations table if needed
@@ -155,4 +162,5 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
+  didMigration = false;
 }

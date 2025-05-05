@@ -164,6 +164,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
   start(options: BatchedMigrationStartOptions = {}) {
     if (this.running) {
+      // For Vite HMR mode
+      if ((import.meta as any).env?.DEV) return;
       throw new Error('BatchedMigrationsRunner is already running');
     }
 
@@ -293,7 +295,10 @@ function assertRunner(
 }
 
 export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
-  if (runner) throw new Error('Batched migrations already initialized');
+  if (runner) {
+    if ((import.meta as any).env?.DEV) return null;
+    throw new Error('Batched migrations already initialized');
+  }
   runner = new BatchedMigrationsRunner(options);
   return runner;
 }

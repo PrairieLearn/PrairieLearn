@@ -1,17 +1,17 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
 /* eslint-disable import-x/order */
-import * as Sentry from '@prairielearn/sentry';
-import * as opentelemetry from '@prairielearn/opentelemetry';
-/* eslint-enable import-x/order */
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
+import { exit } from 'node:process';
 import * as util from 'node:util';
+import * as Sentry from '@prairielearn/sentry';
+import * as opentelemetry from '@prairielearn/opentelemetry';
+/* eslint-enable import-x/order */
 import * as url from 'url';
 
-import httpDevServer from '@vavite/reloader/http-dev-server';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
 import bodyParser from 'body-parser';
@@ -43,6 +43,7 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
@@ -76,6 +77,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
@@ -1907,10 +1909,8 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
-let server: http.Server | https.Server;
-
-export async function startServer() {
-  const app = await initExpress();
+export async function startServer(app: express.Express) {
+  let server: http.Server | https.Server;
 
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
@@ -1965,17 +1965,12 @@ export async function startServer() {
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
   // In production, startup the server normally
-  if ((import.meta as any).env.PROD) {
+  if ((import.meta as any).env?.PROD) {
     console.log('Running in production mode');
     server.listen(config.serverPort);
-  } else if (httpDevServer) {
+  } else {
     console.log('Running in development mode');
-    // TODO: currently, must be a connect handler, not an instance of a http server
-    httpDevServer.on('request', app);
-    httpDevServer.on('error', (err) => {
-      throw err;
-    });
-    return httpDevServer;
+    return server;
   }
 
   // Wait for the server to either start successfully or error out.
@@ -2047,431 +2042,431 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if ((esMain(import.meta) || import.meta.env?.DEV) && config.startServer) {
-  try {
-    logger.verbose('PrairieLearn server start');
+if (!((esMain(import.meta) || import.meta.env?.DEV) && config.startServer)) {
+  exit(0);
+}
 
-    // For backwards compatibility, we'll default to trying to load config
-    // files from both the application and repository root.
-    //
-    // We'll put the app config file second so that it can override anything
-    // in the repository root config file.
-    let configPaths = [
-      path.join(REPOSITORY_ROOT_PATH, 'config.json'),
-      path.join(APP_ROOT_PATH, 'config.json'),
-    ];
+logger.verbose('PrairieLearn server start');
 
-    // If a config file was specified on the command line, we'll use that
-    // instead of the default locations.
-    if ('config' in argv) {
-      configPaths = [argv['config']];
-    }
+// For backwards compatibility, we'll default to trying to load config
+// files from both the application and repository root.
+//
+// We'll put the app config file second so that it can override anything
+// in the repository root config file.
+let configPaths = [
+  path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+  path.join(APP_ROOT_PATH, 'config.json'),
+];
 
-    // Load config immediately so we can use it configure everything else.
-    await loadConfig(configPaths);
+// If a config file was specified on the command line, we'll use that
+// instead of the default locations.
+if ('config' in argv) {
+  configPaths = [argv['config']];
+}
 
-    // This should be done as soon as we load our config so that we can
-    // start exporting spans.
-    await opentelemetry.init({
-      ...config,
-      serviceName: 'prairielearn',
-      // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
-      // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
-      //
-      // However, despite what their documentation claims, only the `SentryContextManager`
-      // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
-      // is used, 100% of traces will be sent to Sentry, despite us never having set
-      // `tracesSampleRate` in the Sentry configuration.
-      contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
-    });
+// Load config immediately so we can use it configure everything else.
+await loadConfig(configPaths);
 
-    // Same with Sentry configuration.
-    if (config.sentryDsn) {
-      await Sentry.init({
-        dsn: config.sentryDsn,
-        environment: config.sentryEnvironment,
+// This should be done as soon as we load our config so that we can
+// start exporting spans.
+await opentelemetry.init({
+  ...config,
+  serviceName: 'prairielearn',
+  // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
+  // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
+  //
+  // However, despite what their documentation claims, only the `SentryContextManager`
+  // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
+  // is used, 100% of traces will be sent to Sentry, despite us never having set
+  // `tracesSampleRate` in the Sentry configuration.
+  contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+});
 
-        // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-        // try to set that up for itself, but only if OpenTelemetry is
-        // enabled. Otherwise, allow Sentry to install its own stuff so
-        // that request isolation works correctly.
-        skipOpenTelemetrySetup: config.openTelemetryEnabled,
-      });
-    }
+// Same with Sentry configuration.
+if (config.sentryDsn) {
+  await Sentry.init({
+    dsn: config.sentryDsn,
+    environment: config.sentryEnvironment,
 
-    // Start capturing profiling information as soon as possible.
-    if (config.pyroscopeEnabled) {
-      if (
-        !config.pyroscopeServerAddress ||
-        !config.pyroscopeBasicAuthUser ||
-        !config.pyroscopeBasicAuthPassword
-      ) {
-        throw new Error('Pyroscope configuration is incomplete');
-      }
-
-      const Pyroscope = await import('@pyroscope/nodejs');
-      Pyroscope.init({
-        appName: 'prairielearn',
-        serverAddress: config.pyroscopeServerAddress,
-        basicAuthUser: config.pyroscopeBasicAuthUser,
-        basicAuthPassword: config.pyroscopeBasicAuthPassword,
-        tags: {
-          instanceId: config.instanceId,
-          ...config.pyroscopeTags,
-        },
-      });
-      Pyroscope.start();
-    }
-
-    if (config.logFilename) {
-      addFileLogging({ filename: config.logFilename });
-    }
-
-    if (config.logErrorFilename) {
-      addFileLogging({ filename: config.logErrorFilename, level: 'error' });
-    }
-
-    if (config.blockedAtWarnEnable) {
-      blockedAt(
-        (time, stack) => {
-          const msg = `BLOCKED-AT: Blocked for ${time}ms`;
-          logger.verbose(msg, { time, stack });
-          console.log(msg + '\n' + stack.join('\n'));
-        },
-        { threshold: config.blockedWarnThresholdMS },
-      ); // threshold in milliseconds
-    } else if (config.blockedWarnEnable) {
-      blocked(
-        (time) => {
-          const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
-          logger.verbose(msg, { time });
-          console.log(msg);
-        },
-        { threshold: config.blockedWarnThresholdMS },
-      ); // threshold in milliseconds
-    }
-
-    if (isEnterprise() && config.hasAzure) {
-      const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
-      passport.use(getAzureStrategy());
-    }
-
-    if (isEnterprise()) {
-      const { strategy } = await import('./ee/auth/saml/index.js');
-      passport.use(strategy);
-    }
-
-    const pgConfig = {
-      user: config.postgresqlUser,
-      database: config.postgresqlDatabase,
-      host: config.postgresqlHost,
-      password: config.postgresqlPassword ?? undefined,
-      max: config.postgresqlPoolSize,
-      idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
-      ssl: config.postgresqlSsl,
-      errorOnUnusedParameters: config.devMode,
-    };
-
-    logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
-
-    await sqldb.initAsync(pgConfig, idleErrorHandler);
-
-    // Our named locks code maintains a separate pool of database connections.
-    // This ensures that we avoid deadlocks.
-    await namedLocks.init(pgConfig, idleErrorHandler, {
-      renewIntervalMs: config.namedLocksRenewIntervalMs,
-    });
-
-    logger.verbose('Successfully connected to database');
-
-    if (argv['refresh-workspace-hosts-and-exit']) {
-      logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
-
-      const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
-
-      const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
-      logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
-      hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
-
-      process.exit(0);
-    }
-
-    // We need to do this before we run migrations, as some migrations will
-    // call `enqueueBatchedMigration` which requires this to be initialized.
-    const runner = initBatchedMigrations({
-      project: 'prairielearn',
-      directories: [path.join(import.meta.dirname, 'batched-migrations')],
-    });
-
-    runner.on('error', (err) => {
-      logger.error('Batched migration runner error', err);
-      Sentry.captureException(err);
-    });
-
-    // Using the `--migrate-and-exit` flag will override the value of
-    // `config.runMigrations`. This allows us to use the same config when
-    // running migrations as we do when we start the server.
-    if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
-
-      if (argv['migrate-and-exit']) {
-        logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-        process.exit(0);
-      }
-    }
-
-    // Collect metrics on our Postgres connection pools.
-    const meter = opentelemetry.metrics.getMeter('prairielearn');
-
-    const pools = [
-      {
-        name: 'default',
-        pool: sqldb.defaultPool,
-      },
-      {
-        name: 'named-locks',
-        pool: namedLocks.pool,
-      },
-    ];
-
-    pools.forEach(({ name, pool }) => {
-      opentelemetry.createObservableValueGauges(
-        meter,
-        `postgres.pool.${name}.total`,
-        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-        () => pool.totalCount,
-      );
-
-      opentelemetry.createObservableValueGauges(
-        meter,
-        `postgres.pool.${name}.idle`,
-        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-        () => pool.idleCount,
-      );
-
-      opentelemetry.createObservableValueGauges(
-        meter,
-        `postgres.pool.${name}.waiting`,
-        { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-        () => pool.waitingCount,
-      );
-
-      const queryCounter = opentelemetry.getObservableCounter(
-        meter,
-        `postgres.pool.${name}.query.count`,
-        { valueType: opentelemetry.ValueType.INT },
-      );
-      queryCounter.addCallback((observableResult) => {
-        observableResult.observe(pool.queryCount);
-      });
-    });
-
-    // Collect metrics on our code callers.
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'code-caller.pool.size',
-      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-      () => codeCaller.getMetrics().size,
-    );
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'code-caller.pool.available',
-      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-      () => codeCaller.getMetrics().available,
-    );
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'code-caller.pool.borrowed',
-      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-      () => codeCaller.getMetrics().borrowed,
-    );
-    opentelemetry.createObservableValueGauges(
-      meter,
-      'code-caller.pool.pending',
-      { valueType: opentelemetry.ValueType.INT, interval: 1000 },
-      () => codeCaller.getMetrics().pending,
-    );
-
-    // We create and activate a random DB schema name
-    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
-    // after we have run the migrations but before we create
-    // the sprocs. This means all tables (from migrations) are
-    // in the public schema, but all sprocs are in the random
-    // schema. Every server invocation thus has its own copy
-    // of its sprocs, allowing us to update servers while old
-    // servers are still running. See docs/dev-guide.md for
-    // more info.
-    //
-    // We use the combination of instance ID and port number to uniquely
-    // identify each server; in some cases, we're running multiple instances
-    // on the same physical host.
-    //
-    // The schema prefix should not exceed 28 characters; this is due to
-    // the underlying Postgres limit of 63 characters for schema names.
-    // Currently, EC2 instance IDs are 19 characters long, and we use
-    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
-    // of those ever get longer, we have a little wiggle room. Nonetheless,
-    // we'll check to make sure we don't exceed the limit and fail fast if
-    // we do.
-    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
-    if (schemaPrefix.length > 28) {
-      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
-    }
-    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-    await sprocs.init();
-
-    if (config.runBatchedMigrations) {
-      // Now that all migrations have been run, we can start executing any
-      // batched migrations that may have been enqueued by migrations.
-      //
-      // Note that we don't do this until sprocs have been created because
-      // some batched migrations may depend on sprocs.
-      startBatchedMigrations({
-        workDurationMs: config.batchedMigrationsWorkDurationMs,
-        sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-      });
-    }
-
-    if ('sync-course' in argv) {
-      logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
-      const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-        courseId: argv['sync-course'],
-        authnUserId: null,
-        userId: null,
-      });
-      logger.info(`Course sync job sequence ${jobSequenceId} created.`);
-      logger.info('Waiting for job to finish...');
-      await jobPromise;
-      (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
-        logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
-      });
-      process.exit(0);
-    }
-
-    if (config.initNewsItems) {
-      // We initialize news items asynchronously so that servers can boot up
-      // in production as quickly as possible.
-      news_items.initInBackground({
-        // Always notify in production environments.
-        notifyIfPreviouslyEmpty: !config.devMode,
-      });
-    }
-
-    // We need to initialize these first, as the code callers require these
-    // to be set up.
-    load.initEstimator('request', 1);
-    load.initEstimator('authed_request', 1);
-    load.initEstimator('python', 1, false);
-    load.initEstimator('python_worker_active', 1);
-    load.initEstimator('python_worker_idle', 1, false);
-    load.initEstimator('python_callback_waiting', 1);
-
-    await codeCaller.init();
-    await assets.init();
-    await cache.init({
-      type: config.cacheType,
-      keyPrefix: config.cacheKeyPrefix,
-      redisUrl: config.redisUrl,
-    });
-    await freeformServer.init();
-
-    if (config.devMode) {
-      await insertDevUser();
-    }
-
-    logger.verbose('Starting server...');
-    const server = await startServer();
-
-    await socketServer.init(server);
-
-    externalGradingSocket.init();
-    externalGrader.init();
-
-    await workspace.init();
-    serverJobs.init();
-
-    if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
-      nodeMetrics.start({
-        awsConfig: makeAwsClientConfig(),
-        intervalSeconds: config.nodeMetricsIntervalSec,
-        namespace: 'PrairieLearn',
-        dimensions: [
-          { Name: 'Server Group', Value: config.groupName },
-          { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
-        ],
-        onError(err) {
-          logger.error('Error reporting Node metrics', err);
-          Sentry.captureException(err);
-        },
-      });
-    }
-
-    // These should be the last things to start before we actually start taking
-    // requests, as they may actually end up executing course code.
-    if (config.externalGradingEnableResults) {
-      await externalGraderResults.init();
-    }
-
-    await cron.init();
-    await lifecycleHooks.completeInstanceLaunch();
-  } catch (err) {
-    logger.error('Error initializing PrairieLearn server:', err);
-    throw err;
-  }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-  }
-
-  // SIGTERM can be used to gracefully shut down the process. This signal
-  // may come from another process, but we also send it to ourselves if
-  // we want to gracefully shut down. This is used below in the ASG
-  // lifecycle handler, and also within the "terminate" webhook.
-  process.once('SIGTERM', async () => {
-    // By this point, we should no longer be attached to the load balancer,
-    // so there's no point shutting down the HTTP server or the socket.io
-    // server.
-    //
-    // We use `allSettled()` here to ensure that all tasks can gracefully
-    // shut down, even if some of them fail.
-    logger.info('Shutting down async processing');
-    const results = await Promise.allSettled([
-      externalGraderResults.stop(),
-      cron.stop(),
-      serverJobs.stop(),
-      stopBatchedMigrations(),
-    ]);
-    results.forEach((r) => {
-      if (r.status === 'rejected') {
-        logger.error('Error shutting down async processing', r.reason);
-        Sentry.captureException(r.reason);
-      }
-    });
-
-    try {
-      await lifecycleHooks.completeInstanceTermination();
-    } catch (err) {
-      logger.error('Error completing instance termination', err);
-      Sentry.captureException(err);
-    }
-
-    logger.info('Terminating...');
-    // Shut down OpenTelemetry exporting.
-    try {
-      await opentelemetry.shutdown();
-    } catch (err) {
-      logger.error('Error shutting down OpenTelemetry', err);
-      Sentry.captureException(err);
-    }
-
-    // Flush all events to Sentry.
-    try {
-      await Sentry.flush();
-    } finally {
-      process.exit(0);
-    }
+    // We have our own OpenTelemetry setup, so ensure Sentry doesn't
+    // try to set that up for itself, but only if OpenTelemetry is
+    // enabled. Otherwise, allow Sentry to install its own stuff so
+    // that request isolation works correctly.
+    skipOpenTelemetrySetup: config.openTelemetryEnabled,
   });
 }
+
+// Start capturing profiling information as soon as possible.
+if (config.pyroscopeEnabled) {
+  if (
+    !config.pyroscopeServerAddress ||
+    !config.pyroscopeBasicAuthUser ||
+    !config.pyroscopeBasicAuthPassword
+  ) {
+    throw new Error('Pyroscope configuration is incomplete');
+  }
+
+  const Pyroscope = await import('@pyroscope/nodejs');
+  Pyroscope.init({
+    appName: 'prairielearn',
+    serverAddress: config.pyroscopeServerAddress,
+    basicAuthUser: config.pyroscopeBasicAuthUser,
+    basicAuthPassword: config.pyroscopeBasicAuthPassword,
+    tags: {
+      instanceId: config.instanceId,
+      ...config.pyroscopeTags,
+    },
+  });
+  Pyroscope.start();
+}
+
+if (config.logFilename) {
+  addFileLogging({ filename: config.logFilename });
+}
+
+if (config.logErrorFilename) {
+  addFileLogging({ filename: config.logErrorFilename, level: 'error' });
+}
+
+if (config.blockedAtWarnEnable) {
+  blockedAt(
+    (time, stack) => {
+      const msg = `BLOCKED-AT: Blocked for ${time}ms`;
+      logger.verbose(msg, { time, stack });
+      console.log(msg + '\n' + stack.join('\n'));
+    },
+    { threshold: config.blockedWarnThresholdMS },
+  ); // threshold in milliseconds
+} else if (config.blockedWarnEnable) {
+  blocked(
+    (time) => {
+      const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
+      logger.verbose(msg, { time });
+      console.log(msg);
+    },
+    { threshold: config.blockedWarnThresholdMS },
+  ); // threshold in milliseconds
+}
+
+if (isEnterprise() && config.hasAzure) {
+  const { getAzureStrategy } = await import('./ee/auth/azure/index.js');
+  passport.use(getAzureStrategy());
+}
+
+if (isEnterprise()) {
+  const { strategy } = await import('./ee/auth/saml/index.js');
+  passport.use(strategy);
+}
+
+const pgConfig = {
+  user: config.postgresqlUser,
+  database: config.postgresqlDatabase,
+  host: config.postgresqlHost,
+  password: config.postgresqlPassword ?? undefined,
+  max: config.postgresqlPoolSize,
+  idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+  ssl: config.postgresqlSsl,
+  errorOnUnusedParameters: config.devMode,
+};
+
+logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+// Our named locks code maintains a separate pool of database connections.
+// This ensures that we avoid deadlocks.
+await namedLocks.init(pgConfig, idleErrorHandler, {
+  renewIntervalMs: config.namedLocksRenewIntervalMs,
+});
+
+logger.verbose('Successfully connected to database');
+
+if (argv['refresh-workspace-hosts-and-exit']) {
+  logger.info('option --refresh-workspace-hosts specified, refreshing workspace hosts');
+
+  const hosts = await markAllWorkspaceHostsUnhealthy('refresh-workspace-hosts-and-exit');
+
+  const pluralHosts = hosts.length === 1 ? 'host' : 'hosts';
+  logger.info(`${hosts.length} ${pluralHosts} marked unhealthy`);
+  hosts.forEach((host) => logger.info(`- ${host.instance_id} (${host.hostname})`));
+
+  process.exit(0);
+}
+
+// We need to do this before we run migrations, as some migrations will
+// call `enqueueBatchedMigration` which requires this to be initialized.
+const runner = initBatchedMigrations({
+  project: 'prairielearn',
+  directories: [path.join(import.meta.dirname, 'batched-migrations')],
+});
+
+runner?.on('error', (err) => {
+  logger.error('Batched migration runner error', err);
+  Sentry.captureException(err);
+});
+
+// Using the `--migrate-and-exit` flag will override the value of
+// `config.runMigrations`. This allows us to use the same config when
+// running migrations as we do when we start the server.
+if (config.runMigrations || argv['migrate-and-exit']) {
+  await migrations.init(
+    [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+    'prairielearn',
+  );
+
+  if (argv['migrate-and-exit']) {
+    logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+    process.exit(0);
+  }
+}
+
+// Collect metrics on our Postgres connection pools.
+const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+const pools = [
+  {
+    name: 'default',
+    pool: sqldb.defaultPool,
+  },
+  {
+    name: 'named-locks',
+    pool: namedLocks.pool,
+  },
+];
+
+pools.forEach(({ name, pool }) => {
+  opentelemetry.createObservableValueGauges(
+    meter,
+    `postgres.pool.${name}.total`,
+    { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+    () => pool.totalCount,
+  );
+
+  opentelemetry.createObservableValueGauges(
+    meter,
+    `postgres.pool.${name}.idle`,
+    { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+    () => pool.idleCount,
+  );
+
+  opentelemetry.createObservableValueGauges(
+    meter,
+    `postgres.pool.${name}.waiting`,
+    { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+    () => pool.waitingCount,
+  );
+
+  const queryCounter = opentelemetry.getObservableCounter(
+    meter,
+    `postgres.pool.${name}.query.count`,
+    { valueType: opentelemetry.ValueType.INT },
+  );
+  queryCounter.addCallback((observableResult) => {
+    observableResult.observe(pool.queryCount);
+  });
+});
+
+// Collect metrics on our code callers.
+opentelemetry.createObservableValueGauges(
+  meter,
+  'code-caller.pool.size',
+  { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+  () => codeCaller.getMetrics().size,
+);
+opentelemetry.createObservableValueGauges(
+  meter,
+  'code-caller.pool.available',
+  { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+  () => codeCaller.getMetrics().available,
+);
+opentelemetry.createObservableValueGauges(
+  meter,
+  'code-caller.pool.borrowed',
+  { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+  () => codeCaller.getMetrics().borrowed,
+);
+opentelemetry.createObservableValueGauges(
+  meter,
+  'code-caller.pool.pending',
+  { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+  () => codeCaller.getMetrics().pending,
+);
+
+// We create and activate a random DB schema name
+// (https://www.postgresql.org/docs/current/ddl-schemas.html)
+// after we have run the migrations but before we create
+// the sprocs. This means all tables (from migrations) are
+// in the public schema, but all sprocs are in the random
+// schema. Every server invocation thus has its own copy
+// of its sprocs, allowing us to update servers while old
+// servers are still running. See docs/dev-guide.md for
+// more info.
+//
+// We use the combination of instance ID and port number to uniquely
+// identify each server; in some cases, we're running multiple instances
+// on the same physical host.
+//
+// The schema prefix should not exceed 28 characters; this is due to
+// the underlying Postgres limit of 63 characters for schema names.
+// Currently, EC2 instance IDs are 19 characters long, and we use
+// 4-digit port numbers, so this will be safe (19+1+4=24). If either
+// of those ever get longer, we have a little wiggle room. Nonetheless,
+// we'll check to make sure we don't exceed the limit and fail fast if
+// we do.
+const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+if (schemaPrefix.length > 28) {
+  throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+}
+await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+await sprocs.init();
+
+if (config.runBatchedMigrations) {
+  // Now that all migrations have been run, we can start executing any
+  // batched migrations that may have been enqueued by migrations.
+  //
+  // Note that we don't do this until sprocs have been created because
+  // some batched migrations may depend on sprocs.
+  startBatchedMigrations({
+    workDurationMs: config.batchedMigrationsWorkDurationMs,
+    sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+  });
+}
+
+if ('sync-course' in argv) {
+  logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+  const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
+    courseId: argv['sync-course'],
+    authnUserId: null,
+    userId: null,
+  });
+  logger.info(`Course sync job sequence ${jobSequenceId} created.`);
+  logger.info('Waiting for job to finish...');
+  await jobPromise;
+  (await serverJobs.selectJobsByJobSequenceId(jobSequenceId)).forEach((job) => {
+    logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
+  });
+  process.exit(0);
+}
+
+if (config.initNewsItems) {
+  // We initialize news items asynchronously so that servers can boot up
+  // in production as quickly as possible.
+  news_items.initInBackground({
+    // Always notify in production environments.
+    notifyIfPreviouslyEmpty: !config.devMode,
+  });
+}
+
+// We need to initialize these first, as the code callers require these
+// to be set up.
+load.initEstimator('request', 1);
+load.initEstimator('authed_request', 1);
+load.initEstimator('python', 1, false);
+load.initEstimator('python_worker_active', 1);
+load.initEstimator('python_worker_idle', 1, false);
+load.initEstimator('python_callback_waiting', 1);
+
+await codeCaller.init();
+await assets.init();
+await cache.init({
+  type: config.cacheType,
+  keyPrefix: config.cacheKeyPrefix,
+  redisUrl: config.redisUrl,
+});
+await freeformServer.init();
+
+if (config.devMode) {
+  await insertDevUser();
+}
+
+logger.verbose('Starting server...');
+const app = await initExpress();
+const server = await startServer(app);
+
+await socketServer.init(server);
+
+externalGradingSocket.init();
+externalGrader.init();
+
+await workspace.init();
+serverJobs.init();
+
+if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
+  nodeMetrics.start({
+    awsConfig: makeAwsClientConfig(),
+    intervalSeconds: config.nodeMetricsIntervalSec,
+    namespace: 'PrairieLearn',
+    dimensions: [
+      { Name: 'Server Group', Value: config.groupName },
+      { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
+    ],
+    onError(err) {
+      logger.error('Error reporting Node metrics', err);
+      Sentry.captureException(err);
+    },
+  });
+}
+
+// These should be the last things to start before we actually start taking
+// requests, as they may actually end up executing course code.
+if (config.externalGradingEnableResults) {
+  await externalGraderResults.init();
+}
+
+await cron.init();
+await lifecycleHooks.completeInstanceLaunch();
+logger.info('PrairieLearn server ready, press Control-C to quit');
+if (config.devMode) {
+  logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+}
+
+// SIGTERM can be used to gracefully shut down the process. This signal
+// may come from another process, but we also send it to ourselves if
+// we want to gracefully shut down. This is used below in the ASG
+// lifecycle handler, and also within the "terminate" webhook.
+process.once('SIGTERM', async () => {
+  // By this point, we should no longer be attached to the load balancer,
+  // so there's no point shutting down the HTTP server or the socket.io
+  // server.
+  //
+  // We use `allSettled()` here to ensure that all tasks can gracefully
+  // shut down, even if some of them fail.
+  logger.info('Shutting down async processing');
+  const results = await Promise.allSettled([
+    externalGraderResults.stop(),
+    cron.stop(),
+    serverJobs.stop(),
+    stopBatchedMigrations(),
+  ]);
+  results.forEach((r) => {
+    if (r.status === 'rejected') {
+      logger.error('Error shutting down async processing', r.reason);
+      Sentry.captureException(r.reason);
+    }
+  });
+
+  try {
+    await lifecycleHooks.completeInstanceTermination();
+  } catch (err) {
+    logger.error('Error completing instance termination', err);
+    Sentry.captureException(err);
+  }
+
+  logger.info('Terminating...');
+  // Shut down OpenTelemetry exporting.
+  try {
+    await opentelemetry.shutdown();
+  } catch (err) {
+    logger.error('Error shutting down OpenTelemetry', err);
+    Sentry.captureException(err);
+  }
+
+  // Flush all events to Sentry.
+  try {
+    await Sentry.flush();
+  } finally {
+    process.exit(0);
+  }
+});
+
+export const viteNodeApp = app;
