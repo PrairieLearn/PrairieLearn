@@ -1,5 +1,9 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
+/* eslint-disable import-x/order */
+import * as Sentry from '@prairielearn/sentry';
+import * as opentelemetry from '@prairielearn/opentelemetry';
+/* eslint-enable import-x/order */
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -40,9 +44,7 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
-import * as Sentry from '@prairielearn/sentry';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
@@ -75,7 +77,6 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
-
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
@@ -110,7 +111,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
-  app.set('views', path.join(fileURLToPath(import.meta.url), '..', 'pages'));
+  app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -2200,7 +2201,7 @@ if ((esMain(import.meta) || import.meta.env?.DEV) && config.startServer) {
     // call `enqueueBatchedMigration` which requires this to be initialized.
     const runner = initBatchedMigrations({
       project: 'prairielearn',
-      directories: [path.join(fileURLToPath(import.meta.url), '..', 'batched-migrations')],
+      directories: [path.join(import.meta.dirname, 'batched-migrations')],
     });
 
     runner.on('error', (err) => {
@@ -2213,7 +2214,7 @@ if ((esMain(import.meta) || import.meta.env?.DEV) && config.startServer) {
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
       await migrations.init(
-        [path.join(fileURLToPath(import.meta.url), '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
         'prairielearn',
       );
 
