@@ -12,7 +12,12 @@ ENV PYTHONPATH=/cgrader/:/grade/serverFilesCourse
 ENV C_INCLUDE_PATH=/cgrader
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends python3.12 gcc g++ gdb make python3-pip valgrind check pkg-config clang python3-clang \
+    # The python3-clang package is installed from the Ubuntu repository instead
+    # of in the pip requirements file, to ensure that the clang version of the
+    # Python library matches the version of clang itself. This also ensures that
+    # any dependencies that simplify the use of the library (e.g., libclang) are
+    # installed and configured to be easily accessible from Python code.
+    && apt-get install -y --no-install-recommends gcc g++ gdb make valgrind check pkg-config clang python3.12 python3-pip python3-clang \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
