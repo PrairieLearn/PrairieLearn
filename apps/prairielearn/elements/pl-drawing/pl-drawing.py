@@ -1,5 +1,7 @@
+import copy
 import html
 import json
+import random
 import warnings
 
 import chevron
@@ -61,14 +63,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     w_button = None
 
-    prev = not pl.get_boolean_attrib(
+    gradable = pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
 
     load_extensions(data)
 
     # Some preparation for elements with grading componenet
-    if not prev:
+    if gradable:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
             raise ValueError("answers-name is required if gradable mode is enabled")
@@ -239,6 +241,12 @@ def render_drawing_items(elem, curid=0, defaults=None):
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name", "")
+    aria_label = pl.get_string_attrib(
+        element, "aria-label", defaults.element_defaults["aria-label"]
+    )
+    aria_description = pl.get_string_attrib(
+        element, "aria-description", defaults.element_defaults["aria-description"]
+    )
     preview_mode = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]
     )
@@ -326,6 +334,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_buttons": show_btn,
         "name": name,
         "render_element": True,
+        "preview_mode": preview_mode,
+        "aria_label": aria_label,
+        "aria_description": aria_description,
         "btn_markup": btn_markup,
         "show_tolerance": show_btn
         and pl.get_boolean_attrib(
@@ -494,3 +505,110 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "weight": 1,
         "feedback": {"correct": (score == 1), "missing": {}, "matches": matches},
     }
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    gradable = pl.get_boolean_attrib(
+        element, "gradable", defaults.element_defaults["gradable"]
+    )
+    if not gradable:
+        return
+
+    # Get raw correct answer
+    name = pl.get_string_attrib(
+        element, "answers-name", defaults.element_defaults["answers-name"]
+    )
+    a_tru = data["correct_answers"][name]
+    grid_size = pl.get_integer_attrib(
+        element, "grid-size", defaults.element_defaults["grid-size"]
+    )
+    tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+    angtol = pl.get_float_attrib(
+        element, "angle-tol", defaults.element_defaults["angle-tol"]
+    )
+
+    result = data["test_type"]
+    if result == "correct" and len(a_tru) > 0:
+        data["raw_submitted_answers"][name] = json.dumps(a_tru)
+        data["partial_scores"][name] = {
+            "score": 1,
+            "weight": 1,
+            "feedback": {
+                "correct": True,
+                "missing": {},
+                "matches": {
+                    element["id"]: True
+                    for element in a_tru
+                    if elements.is_gradable(element["gradingName"])
+                    and element["graded"]
+                },
+            },
+        }
+
+    elif result == "incorrect" and len(a_tru) > 0:
+        data["raw_submitted_answers"][name] = copy.deepcopy(a_tru)
+        for i, element in enumerate(a_tru):
+            if (
+                not elements.is_gradable(element["gradingName"])
+                or not element["graded"]
+            ):
+                continue
+
+            mutated = False
+
+            def get_incorrect_with_tol(x: float) -> float:
+                return x + random.choice([-1, 1]) * 1.1 * tol
+
+            def get_incorrect_with_angtol(x: float) -> float:
+                return x + random.choice([-1, 1]) * 1.1 * angtol
+
+            def get_incorrect_with_start_arrow(x: bool) -> bool:
+                return not x
+
+            grading_attrs = [
+                ("top", get_incorrect_with_tol),
+                ("left", get_incorrect_with_tol),
+                ("x1", get_incorrect_with_tol),
+                ("y1", get_incorrect_with_tol),
+                ("x2", get_incorrect_with_tol),
+                ("y2", get_incorrect_with_tol),
+                ("x3", get_incorrect_with_tol),
+                ("y3", get_incorrect_with_tol),
+                ("angle", get_incorrect_with_angtol),
+                ("drawStartArrow", get_incorrect_with_start_arrow),
+            ]
+
+            for attr, incorrect_getter in grading_attrs:
+                if attr not in data["raw_submitted_answers"][name][i]:
+                    continue
+                data["raw_submitted_answers"][name][i][attr] = incorrect_getter(
+                    data["raw_submitted_answers"][name][i][attr]
+                )
+                mutated = True
+
+            if not mutated:
+                raise RuntimeError(
+                    f"Don't know how to mutate the element {element['type']}"
+                )
+        data["raw_submitted_answers"][name] = json.dumps(
+            data["raw_submitted_answers"][name]
+        )
+        data["partial_scores"][name] = {
+            "score": 0,
+            "weight": 1,
+            "feedback": {
+                "correct": False,
+                "missing": {},
+                "matches": {
+                    element["id"]: False
+                    for element in a_tru
+                    if elements.is_gradable(element["gradingName"])
+                    and element["graded"]
+                },
+            },
+        }
+
+    elif result == "invalid" or len(a_tru) == 0:
+        data["format_errors"][name] = ""
+        data["raw_submitted_answers"][name] = "invalid submission"
