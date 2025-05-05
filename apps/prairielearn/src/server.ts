@@ -1908,10 +1908,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
+let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
-  let server: http.Server | https.Server;
-
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -2040,10 +2040,9 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (!((esMain(import.meta) || import.meta.env?.DEV) && config.startServer)) {
+if (!((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer)) {
   exit(0);
 }
-let app: express.Express | undefined;
 
 // TODO: unindent this code alongside .git-blame-ignore-revs
 // eslint-disable-next-line no-constant-condition
@@ -2384,9 +2383,9 @@ if (true) {
 
     logger.verbose('Starting server...');
     app = await initExpress();
-    const server = await startServer(app);
+    const serverInstance = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(serverInstance);
 
     externalGradingSocket.init();
     externalGrader.init();
