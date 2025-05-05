@@ -8,7 +8,6 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import * as util from 'node:util';
 import * as url from 'url';
 
