@@ -223,10 +223,14 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
+          # We don't install all the yarn dependencies for performance reasons.
+          # We instead only download needed dependencies.
       - name: Run the d2 diagram linter
         run: make lint-d2
       - name: Run the Python typechecker
-        run: make typecheck-python
+        run: |
+          npm install --global $(yarn info pyright --name-only --json | tr -d '"' | sed 's/npm://')
+          make typecheck-python
       - name: Run the Python linter
         run: make lint-python
       - name: Run the Python tests
@@ -237,12 +241,16 @@ jobs:
       - name: Run the Shellcheck linter
         run: make lint-shell
       - name: Run the Markdown linter
-        run: make lint-markdown
+        run: |
+          npm install --global $(yarn info markdownlint-cli --name-only --json | tr -d '"' | sed 's/npm://')
+          make lint-markdown
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.
       - name: Run the HTML linter
-        run: make lint-html
+        run: |
+          npm install --global $(yarn info htmlhint --name-only --json | tr -d '"' | sed 's/npm://')
+          make lint-html
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.4.2
         with:
