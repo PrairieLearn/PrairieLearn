@@ -2040,13 +2040,7 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (!((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer)) {
-  exit(0);
-}
-
-// TODO: unindent this code alongside .git-blame-ignore-revs
-// eslint-disable-next-line no-constant-condition
-if (true) {
+if ((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer) {
   try {
     logger.verbose('PrairieLearn server start');
 
