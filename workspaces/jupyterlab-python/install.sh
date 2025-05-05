@@ -4,6 +4,7 @@ set -ex
 
 # Install dependencies and various libraries.
 apt-get update && apt-get -y upgrade
+apt-get -y install graphviz graphviz-dev
 
 # Install all Python dependencies.
 pip3 install -r /requirements.txt
