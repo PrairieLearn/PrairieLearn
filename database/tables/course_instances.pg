@@ -1,6 +1,7 @@
 columns
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
+    cost: int not null
     deleted_at: timestamp with time zone
     display_timezone: text not null
     enrollment_limit: integer
