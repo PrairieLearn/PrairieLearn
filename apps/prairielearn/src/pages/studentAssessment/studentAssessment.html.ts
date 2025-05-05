@@ -1,22 +1,26 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
+import { markdownToHtml } from '@prairielearn/markdown';
+import mustache from 'mustache';
 
 export function StudentAssessment({
   resLocals,
   groupConfig,
   groupInfo,
   userCanAssignRoles,
+  customHonorCode,
 }: {
   resLocals: Record<string, any>;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
+  customHonorCode: string;
 }) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
 
@@ -63,7 +67,13 @@ export function StudentAssessment({
                 : ''}
               ${assessment.group_work
                 ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
-                : StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: true })}
+                : StartAssessmentForm({
+                    assessment,
+                    user,
+                    __csrf_token,
+                    startAllowed: true,
+                    customHonorCode,
+                  })}
             </div>
           </div>
         </main>
@@ -76,15 +86,21 @@ function StartAssessmentForm({
   user,
   __csrf_token,
   startAllowed,
+  customHonorCode,
 }: {
   assessment: Assessment;
   user: User;
   __csrf_token: string;
   startAllowed: boolean;
+  customHonorCode?: string;
 }) {
   return html`
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
-      ? HonorPledge({ user, groupWork: !!assessment.group_work })
+      ? HonorPledge({
+          user,
+          groupWork: !!assessment.group_work,
+          customHonorCode,
+        })
       : ''}
     <form
       id="confirm-form"
@@ -108,21 +124,30 @@ function StartAssessmentForm({
   `;
 }
 
-function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
+function HonorPledge({
+  user,
+  groupWork,
+  customHonorCode,
+}: {
+  user: User;
+  groupWork: boolean;
+  customHonorCode?: string;
+}) {
   return html`
     <div class="card card-secondary mb-4 test-class-honor-code">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item py-2">
-          I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
-          take this assessment.
-        </li>
-        <li class="list-group-item py-2">
-          ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
-          ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
-          assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
-        </li>
-      </ul>
-
+      ${customHonorCode
+        ? html`<div class="mx-3 mt-2">${unsafeHtml(customHonorCode)}</div>`
+        : html`<ul class="list-group list-group-flush">
+            <li class="list-group-item py-2">
+              I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
+              take this assessment.
+            </li>
+            <li class="list-group-item py-2">
+              ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
+              ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+              assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
+            </li>
+          </ul>`}
       <div class="card-footer d-flex justify-content-center">
         <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
