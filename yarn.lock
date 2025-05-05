@@ -3348,7 +3348,6 @@ __metadata:
     chai: "npm:^5.2.0"
     commander: "npm:^13.1.0"
     esbuild: "npm:^0.25.3"
-    express: "npm:^4.21.2"
     express-static-gzip: "npm:^2.2.0"
     fs-extra: "npm:^11.3.0"
     get-port: "npm:^7.1.0"
