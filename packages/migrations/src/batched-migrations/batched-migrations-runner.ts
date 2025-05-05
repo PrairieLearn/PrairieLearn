@@ -296,6 +296,7 @@ function assertRunner(
 
 export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
   if (runner) {
+    // For Vite HMR mode
     if ((import.meta as any).env?.DEV) return null;
     throw new Error('Batched migrations already initialized');
   }

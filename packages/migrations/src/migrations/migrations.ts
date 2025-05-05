@@ -62,6 +62,7 @@ export async function initWithLock(directories: string[], project: string) {
     throw new Error('BatchedMigrationsRunner has already performed migration');
   }
   logger.verbose('Starting DB schema migration');
+  didMigration = true;
 
   // Create the migrations table if needed
   await sqldb.queryAsync(sql.create_migrations_table, {});
@@ -162,5 +163,7 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
+
+  // Mark that the migrations have finished, and shouldn't be run again
   didMigration = true;
 }

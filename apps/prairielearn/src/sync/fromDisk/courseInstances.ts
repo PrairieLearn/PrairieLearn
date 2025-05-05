@@ -1,6 +1,3 @@
-import { fileURLToPath } from 'url';
-
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +9,7 @@ import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
-const sql = sqldb.loadSqlEquiv(fileURLToPath(import.meta.url));
+const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
   if (!courseInstance) return null;

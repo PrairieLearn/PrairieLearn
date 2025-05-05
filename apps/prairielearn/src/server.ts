@@ -1,15 +1,16 @@
+/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-/* eslint-disable import-x/order */
+import * as Sentry from '@prairielearn/sentry';
+import * as opentelemetry from '@prairielearn/opentelemetry';
+/* eslint-enable import-x/order */
+
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
 import { exit } from 'node:process';
 import * as util from 'node:util';
-import * as Sentry from '@prairielearn/sentry';
-import * as opentelemetry from '@prairielearn/opentelemetry';
-/* eslint-enable import-x/order */
 import * as url from 'url';
 
 import blocked from 'blocked';
