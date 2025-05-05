@@ -229,7 +229,7 @@ jobs:
         run: make lint-d2
       - name: Run the Python typechecker
         run: |
-          npm install --global $(yarn info pyright --name-only --json | tr -d '"' | sed 's/npm://')
+          npm install --global "$(yarn info pyright --name-only --json | tr -d '"' | sed 's/npm://')"
           make typecheck-python NODE_TOOL_PREFIX=
       - name: Run the Python linter
         run: make lint-python
@@ -242,14 +242,14 @@ jobs:
         run: make lint-shell
       - name: Run the Markdown linter
         run: |
-          npm install --global $(yarn info markdownlint-cli --name-only --json | tr -d '"' | sed 's/npm://')
+          npm install --global "$(yarn info markdownlint-cli --name-only --json | tr -d '"' | sed 's/npm://')"
           make lint-markdown NODE_TOOL_PREFIX=
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.
       - name: Run the HTML linter
         run: |
-          npm install --global $(yarn info htmlhint --name-only --json | tr -d '"' | sed 's/npm://')
+          npm install --global "$(yarn info htmlhint --name-only --json | tr -d '"' | sed 's/npm://')"
           make lint-html NODE_TOOL_PREFIX=
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.4.2
