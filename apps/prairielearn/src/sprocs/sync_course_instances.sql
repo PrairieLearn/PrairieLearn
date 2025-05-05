@@ -133,6 +133,7 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        json_comment = (src.data->>'comment')::jsonb,
         sync_errors = NULL,
         sync_warnings = src.warnings,
         question_params = (src.data ->> 'question_params')::JSONB
@@ -167,7 +168,8 @@ BEGIN
             uids,
             start_date,
             end_date,
-            institution
+            institution,
+            json_comment
         )
         SELECT
             ci.id,
@@ -178,7 +180,8 @@ BEGIN
             END,
             input_date(access_rule->>'start_date', ci.display_timezone),
             input_date(access_rule->>'end_date', ci.display_timezone),
-            access_rule->>'institution'
+            access_rule->>'institution',
+            access_rule->'comment'
         FROM
             synced_course_instances AS ci,
             JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
@@ -187,7 +190,8 @@ BEGIN
             uids = EXCLUDED.uids,
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,
-            institution = EXCLUDED.institution
+            institution = EXCLUDED.institution,
+            json_comment = EXCLUDED.json_comment
     )
     DELETE FROM course_instance_access_rules AS ciar
     USING

@@ -6,13 +6,14 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-type AssessmentInfoFile = infofile.InfoFile<Assessment>;
+type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 
 /**
  * SYNCING PROCESS:
@@ -79,6 +80,7 @@ function getParamsForAssessment(
         show_closed_assessment: accessRule.showClosedAssessment ?? true,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
+        comment: accessRule.comment,
       };
     });
   const zones = (assessment.zones ?? []).map((zone, index) => {
@@ -91,6 +93,9 @@ function getParamsForAssessment(
       advance_score_perc: zone.advanceScorePerc,
       question_params: zone.questionParams || {},
       grade_rate_minutes: zone.gradeRateMinutes,
+      json_can_view: zone.canView,
+      json_can_submit: zone.canSubmit,
+      comment: zone.comment,
     };
   });
 
@@ -106,18 +111,19 @@ function getParamsForAssessment(
     return zone.questions.map((question) => {
       let alternatives: {
         qid: string;
-        maxPoints: number | number[];
-        points: number | number[];
-        maxAutoPoints: number | number[];
-        autoPoints: number | number[];
-        manualPoints: number;
+        maxPoints: number | null;
+        points: number | number[] | null;
+        maxAutoPoints: number | null;
+        autoPoints: number | number[] | null;
+        manualPoints: number | null;
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
-        jsonGradeRateMinutes: number;
+        jsonGradeRateMinutes: number | undefined;
         canView: string[] | null;
         canSubmit: string[] | null;
-        advanceScorePerc: number;
+        advanceScorePerc: number | undefined;
+        comment?: CommentJson;
         questionParams: Record<string, any>;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
@@ -137,8 +143,9 @@ function getParamsForAssessment(
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
-            canView: alternative?.canView ?? questionCanView,
-            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
+            comment: alternative.comment,
             questionParams: alternative?.questionParams || {},
           };
         });
@@ -151,14 +158,19 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
-            forceMaxPoints: question.forceMaxPoints || false,
-            triesPerVariant: question.triesPerVariant || 1,
+            forceMaxPoints: question.forceMaxPoints ?? false,
+            triesPerVariant: question.triesPerVariant ?? 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             questionParams: question.questionParams,
+            // If a question has alternatives, the comment is stored on the alternative
+            // group, since each alternative can have its own comment. If this is
+            // just a single question with no alternatives, the comment is stored on
+            // the assessment question itself.
+            comment: question.alternatives ? undefined : question.comment,
           },
         ];
       }
@@ -221,6 +233,7 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           question_params: question.questionParams,
+          comment: alternative.comment,
         };
       });
       return {
@@ -228,8 +241,14 @@ function getParamsForAssessment(
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_has_alternatives: !!question.alternatives,
         questions,
         question_params: question.questionParams, // this is correct here!
+        // If the question doesn't have any alternatives, we store the comment
+        // on the assessment question itself, not the alternative group.
+        comment: question.alternatives ? question.comment : undefined,
       };
     });
   });
@@ -269,7 +288,10 @@ function getParamsForAssessment(
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
+    comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
+    json_can_view: assessment.canView,
+    json_can_submit: assessment.canSubmit,
     allowAccess,
     zones,
     alternativeGroups,
@@ -277,6 +299,7 @@ function getParamsForAssessment(
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
+    share_source_publicly: assessment.shareSourcePublicly ?? false,
   };
 }
 
@@ -407,7 +430,12 @@ export async function sync(
       course_instance_id: courseInstanceId,
       institution_id: institutionId,
     });
-    if (!questionSharingEnabled && config.checkSharingOnSync) {
+    const consumePublicQuestionsEnabled = await features.enabled('consume-public-questions', {
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      institution_id: institutionId,
+    });
+    if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
       for (const [tid, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(

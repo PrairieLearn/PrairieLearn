@@ -1,5 +1,5 @@
 import pytest
-from prairielearn.unicode_utils import escape_unicode_string, full_unidecode
+from prairielearn.misc_utils import escape_unicode_string, full_unidecode
 
 
 @pytest.mark.parametrize(

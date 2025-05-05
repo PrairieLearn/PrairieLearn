@@ -1,5 +1,17 @@
 # @prairielearn/zod
 
+## 1.1.5
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 1.1.4
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
 ## 1.1.3
 
 ### Patch Changes

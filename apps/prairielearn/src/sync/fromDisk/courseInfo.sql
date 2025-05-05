@@ -9,6 +9,7 @@ SET
   END,
   example_course = $example_course,
   options = $options,
+  json_comment = $comment::jsonb,
   sync_errors = NULL,
   sync_warnings = $sync_warnings,
   question_params = $question_params
