@@ -62,6 +62,7 @@ export async function stripHtmlForAiGrading(html: string) {
  */
 let aiQuestionGenerationCache: Cache | undefined;
 export function initializeAiQuestionGenerationCache() {
+  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();
   aiQuestionGenerationCache.init({
@@ -82,14 +83,14 @@ export function approximatePromptCost(prompt: string) {
 }
 
 /**
- * Retrieve the Redis key for a user's current interval usage
+ * Retrieve the Redis key for a user's current AI question generation interval usage
  */
 function getIntervalUsageKey(userId: number) {
   return `user-${userId}-interval-usage`;
 }
 
 /**
- * Retrieve the Redis key for the start of the user's current interval
+ * Retrieve the Redis key for the start of the user's current hourly interval
  */
 function getIntervalStartKey(userId: number) {
   return `user-${userId}-interval-start`;
@@ -123,7 +124,7 @@ export async function getIntervalUsage({
 }
 
 /**
- * Add the cost of a completion to the user's rate limit for the current interval.
+ * Add the cost of a completion to the user's usage for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache,
