@@ -26,6 +26,11 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="m-3">
+          <p>
+            Do you want to overwrite the Canvas assignment name? Points count? Ask this before this
+            post so we can build the appropriate response. Show already linked assignments here?
+          </p>
+
           <p>Select an existing PrairieLearn assessment to use with this assignment.</p>
 
           <form method="POST">
@@ -33,8 +38,6 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
             <input type="hidden" name="__action" value="confirm" />
             <table>
               ${assessments.map((row) => {
-                console.log(row);
-
                 const start_new_assessment_group = row.start_new_assessment_group
                   ? html`<tr>
                       <th colspan="3">${row.assessment_group_heading}</th>
@@ -111,16 +114,17 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
 
           <form id="LMSForm" method="POST" action="${deep_link_return_url}">
             <input type="hidden" name="JWT" value="${signed_jwt}" />
-            <input
-              class="btn btn-success"
-              type="submit"
-              value="Update link in ${platform_name}"
-              onClick="event.preventDefault();
-              console.log('Got to here');
-              document.getElementById('linkForm').submit();
-              document.getElementById('LMSForm').submit();"
-            />
           </form>
+
+          <button
+            class="btn btn-success"
+            onClick="event.preventDefault();
+          console.log('Got to here');
+          document.getElementById('linkForm').submit();
+          document.getElementById('LMSForm').submit();"
+          >
+            Update link in ${platform_name}
+          </button>
         </main>
       </body>
     </html>

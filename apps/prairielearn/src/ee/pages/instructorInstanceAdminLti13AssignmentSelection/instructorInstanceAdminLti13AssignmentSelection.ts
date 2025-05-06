@@ -36,9 +36,6 @@ router.use(
 router.get(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    res.removeHeader('content-security-policy');
-    res.removeHeader('x-frame-options');
-
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -53,8 +50,6 @@ router.get(
       },
       AssessmentRowSchema,
     );
-
-    console.log(assessments);
 
     res.send(
       InstructorInstanceAdminLti13AssignmentSelection({
@@ -99,6 +94,8 @@ router.post(
       /* https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
        * and
        * https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
+       * and
+       * https://canvas.instructure.com/doc/api/file.content_item.html
        */
       const signed_jwt = await client.requestObject({
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
@@ -112,8 +109,11 @@ router.post(
             window: {
               targetName: '_blank',
             },
-            lineitem: {
-              scoreMaximum: 100,
+            lineItem: {
+              // Updates the points in Canvas
+              //scoreMaximum: assessment.max_points, // 100
+              // Updates the name in Canvas
+              label: assessment.title,
               resourceId: assessment.uuid,
             },
           },

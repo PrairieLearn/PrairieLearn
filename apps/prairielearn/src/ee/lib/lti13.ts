@@ -325,6 +325,11 @@ export class Lti13Claim {
     delete this.req.session['lti13_claims'];
     delete this.req.session['authn_lti13_instance_id'];
   }
+
+  dump() {
+    this.assertValid();
+    console.log(JSON.stringify(this.claims, null, 2));
+  }
 }
 
 export async function validateLti13CourseInstance(

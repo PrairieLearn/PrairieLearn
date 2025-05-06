@@ -178,7 +178,6 @@ router.post(
         token_endpoint_auth_method: 'private_key_jwt',
         token_endpoint_auth_signing_alg: 'RS256',
         request_object_signing_alg: 'RS256',
-        // TODO: Make a migration to add this.
       };
 
       await queryAsync(sql.update_platform, {
