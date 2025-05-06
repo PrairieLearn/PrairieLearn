@@ -44,8 +44,11 @@ const findQuestionDirectories = (dir: string): string[] => {
   return questionDirs;
 };
 
-// Helper function to rewrite aria-labels like in render.test.ts
-const rewriteAriaLabel = async (html: string): Promise<string> => {
+const rewriteAccessibility = async (html: string): Promise<string> => {
+  /**
+   * Bootstrap uses JS to set accessibility attributes like aria-label on elements.
+   * We rewrite the HTML to avoid incorrectly flagged errors in HTMLValidate.
+   */
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   let output = '';
@@ -63,10 +66,6 @@ const rewriteAriaLabel = async (html: string): Promise<string> => {
   });
   await rewriter.write(encoder.encode(html));
   await rewriter.end();
-
-  // Ensure all img tags are self-closing
-  // output = output.replace(/(<img[^>]*[^/])>/gi, '$1/>');
-
   return output;
 };
 
@@ -95,14 +94,7 @@ const internallyGradedQuestions = allQuestionDirs
       q !== null && !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
-// Mock course object similar to render.test.ts
 const course = {
-  // These are required to pass validateContext in the feature manager
-  institutition_id: true,
-  course_id: true,
-  course_instance_id: true,
-  // These options are from CourseJsonSchema, but not needed
-  options: {},
   path: exampleCoursePath,
 } as unknown as Course;
 
@@ -140,54 +132,40 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
   const badQs = [
     'element/fileEditor', // needs files
-    /* fixed in another PR */
-    'demo/drawing/buttons',
-    'demo/drawing/customizedButtons',
-    'demo/drawing/extensions',
-    'workshop/Lesson4_example2',
-    'workshop/Lesson4_example3',
-    'demo/custom/elementHiddenTag',
   ];
   // Dynamically create tests for each identified question
   limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async () => {
       await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
-        // Mock Question object similar to render.test.ts
-
         const question = {
           options: info.options ?? {}, // Use options from info.json if available
           directory: relativePath,
           type: 'Freeform',
-          // Add other properties if strictly needed by makeVariant or other functions
-          // based on their usage in the codebase, but keep it minimal.
-          // Use type casting to satisfy the type checker.
         } as unknown as Question;
 
-        // 1. Prepare/Generate
-        const { courseIssues: prepareGenerateIssues, variant } = await makeVariant(
+        // Prepare and generate
+        const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
           question,
           course,
-          {}, // variant_seed
+          {
+            variant_seed: null,
+          },
         );
-        assert.isEmpty(
-          prepareGenerateIssues,
-          `Prepare/Generate courseIssues should be empty but it was ${prepareGenerateIssues}`,
-        );
-        assert.isOk(variant, 'Variant should be generated');
 
-        // Mock variant properties needed for rendering/grading, similar to render.test.ts
-        // @ts-expect-error Adding property for test
-        variant.num_tries = 1; // Example property, adjust if needed
+        assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate courseIssues should be empty');
 
-        // 2. Render
+        const variant = rawVariant as Variant;
+        variant.num_tries = 0;
+
+        // Render
         const locals = {
           urlPrefix: '/prefix1',
           plainUrlPrefix: config.urlPrefix,
           questionRenderContext: undefined,
           ...buildQuestionUrls(
             '/prefix2',
-            { id: 'vid', workspace_id: 'wid' } as unknown as Variant, // Minimal mock for URLs
-            { id: 'qid' } as unknown as Question, // Minimal mock for URLs
+            { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
+            { id: 'qid' } as unknown as Question,
             null,
           ),
         };
@@ -200,76 +178,79 @@ describe('Internally Graded Question Lifecycle Tests', () => {
             submissions: false,
             answer: false,
           },
-          variant as unknown as Variant, // Cast needed
+          variant,
           question,
-          null, // submission
-          [], // submissions
+          null /* submission */,
+          [] /* submissions */,
           course,
           locals,
         );
-        assert.isEmpty(
-          renderIssues,
-          `Render courseIssues should be empty, but it was ${JSON.stringify(renderIssues, undefined, 2)}`,
-        );
-        assert.isOk(questionHtml, 'Rendered HTML should exist');
-        assert.isString(questionHtml, 'Rendered HTML should be a string');
+        assert.isEmpty(renderIssues, 'Render courseIssues should be empty');
 
         // 3. Lint HTML
         const htmlHintMessages = HTMLHint.verify(questionHtml, {
           'doctype-first': false, // Ignore doctype requirement for fragments
-          // Add other relevant HTMLHint rules to ignore if necessary
         });
         assert.isEmpty(htmlHintMessages, 'HTMLHint should pass');
-        // console.log(questionHtml);
 
-        const rewrittenHtml = await rewriteAriaLabel(questionHtml);
+        const rewrittenHtml = await rewriteAccessibility(questionHtml);
         const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
           extends: ['html-validate:recommended', 'html-validate:document'],
           rules: {
+            // https://html-validate.org/rules/no-raw-characters.html
+            // https://html.spec.whatwg.org/multipage/syntax.html#syntax-ambiguous-ampersand
             'no-raw-characters': [
               'error',
               {
                 relaxed: true,
               },
             ],
+
+            // https://html-validate.org/rules/form-dup-name.html
             'form-dup-name': [
               'error',
               {
                 shared: ['radio', 'checkbox', 'button'],
               },
             ],
+
+            // https://html-validate.org/rules/require-sri.html
             'require-sri': [
               'error',
               {
                 target: 'crossorigin',
               },
             ],
-            // Known / hard to fix issues
 
-            // Issue in pygments, missing tbody
-            /*
-            pygments.format(pygments.lex("foo", pygments.lexers.get_lexer_by_name("python")), pygments.formatters.HtmlFormatter(linenos="table"))
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">foo</span>\n</pre></div></td></tr></table></div>
-            */
+            // https://html-validate.org/rules/prefer-tbody.html
+            // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
             'prefer-tbody': 'off',
-            'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
-            'hidden-focusable': 'off', // False positive - https://getbootstrap.com/docs/5.3/components/modal/#accessibility
-            'wcag/h63': 'off', // False positive, too strict
 
-            // Requires fixes in pl-answer -- div subnode of label
-            // Requires fixes in pl-multiple-choice -- div subnode of span
-            // Couldn't see a difference in the output when I changed it to a div
-            'element-permitted-content': 'off',
+            // False positive https://getbootstrap.com/docs/5.3/components/modal/#accessibility
+            // https://html-validate.org/rules/hidden-focusable.html
+            'hidden-focusable': 'off',
+
+            // https://html-validate.org/rules/wcag/h63.html
+            // For simple tables that have the headers in the first row or column, it is sufficient to simply use the th elements without scope.
+            'wcag/h63': 'off',
+
+            // https://html-validate.org/rules/attribute-boolean-style.html
+            // https://html-validate.org/rules/attribute-empty-style.html
+            // Not fully controllable, artifacts of our rendering system
+            'attribute-boolean-style': ['off'],
+            'attribute-empty-style': 'off',
+
+            // TODO:
+            // 'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
+            // https://html-validate.org/rules/element-permitted-content.html
+            // TODO: Requires fixes in pl-multiple-choice
+            // 'element-permitted-content': 'off',
 
             // Issues not worth solving
             'no-inline-style': 'off',
             'no-trailing-whitespace': 'off',
             'missing-doctype': 'off',
             'heading-level': 'off',
-            // Not fully controllable
-            'attribute-boolean-style': ['off'],
-            // Not fully controllable, see pl-file-download
-            'attribute-empty-style': 'off',
             'input-missing-label': 'off',
 
             // Solved issues
