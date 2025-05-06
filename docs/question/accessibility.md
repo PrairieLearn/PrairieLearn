@@ -36,16 +36,15 @@ Many PrairieLearn elements that involve student input have attributes to enhance
 <pl-integer-input answers-name="num_apples" label="Number of apples:"></pl-integer-input>
 ```
 
-Sometimes, the visual label may not be sufficient for screen readers. In such cases, you can use the `aria-label` attribute to provide a more descriptive label that is not visible on the page but can be read by assistive technologies. For instance, in the following example, the visual label is "x =", but the screen reader will read "Enter the value of x in the equation 2x + 3 = 7":
+Many elements support an `aria-label` attribute to provide a label that is not visible on the page but can be read by assistive technologies. This can be used in addition to or instead of the `label` attribute, as appropriate. This is particularly useful for elements like `<pl-multiple-choice>` where the default accessible label may not be sufficient.
 
 ```html
-<p>What is the value of <em>x</em> in the equation <em>2x + 3 = 7</em>?</p>
-
-<pl-integer-input
-  answers-name="x"
-  label="$x =$"
-  aria-label="Enter the value of x in the equation 2x + 3 = 7"
-></pl-integer-input>
+<pl-multiple-choice answers-name="x" aria-label="Value of x in the equation">
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="false">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+</pl-multiple-choice>
 ```
 
 Consult [the documentation for each specific PrairieLearn element](../elements.md) to understand its accessibility features and best practices.
