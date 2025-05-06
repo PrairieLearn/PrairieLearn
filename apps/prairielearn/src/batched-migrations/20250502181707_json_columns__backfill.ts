@@ -1,18 +1,19 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import { queryOneRowAsync, queryRows } from '@prairielearn/postgres';
+import { queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type Course, CourseSchema } from '../lib/db-types.js';
 import { createServerJob } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
+import { z } from 'zod';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(id) as max from pl_courses;', {});
+    const result = await queryRow('SELECT MAX(id) as max from pl_courses;', {}, z.string());
     return {
       min: 1n,
-      max: result.rows[0].max,
+      max: result,
       batchSize: 10,
     };
   },
