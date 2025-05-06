@@ -22,6 +22,8 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
+    # [optional] Some example questions need LaTeX
+    sudo apt install texlive
     ```
 
     Make sure you start Postgres:
@@ -80,6 +82,12 @@ Most of these prerequisites can be installed using the package manager of your O
     sudo make install
     ```
 
+    :
+
+    ```sh
+
+    ```
+
 === "macOS"
 
     On macOS, ensure you have installed the XCode command line tools:
@@ -92,6 +100,8 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     brew install git graphviz postgresql redis uv d2 node npm pgvector
+    # [optional] Some example questions need LaTeX
+    brew install --cask mactex
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -99,42 +109,6 @@ Most of these prerequisites can be installed using the package manager of your O
     ```sh
     corepack enable
     ```
-
-=== "mise + uv"
-
-    [Mise](https://mise.jdx.dev/) is a cross-platform package manager that supports per-directory tool versioning.
-
-    First install git, graphviz, redis, and postgresql for Ubuntu or MacOS.
-
-    Next install mise:
-
-    ```sh
-    curl https://mise.run | sh
-    ```
-
-    If you want to install globally, you can use `mise use -g`. Otherwise, you can omit the flag, causing the tool to be available only in that directory (e.g. the `PrairieLearn` directory).
-
-    ```sh
-    mise use -g node@20
-    mise use -g npm:yarn
-    mise use -g ubi:terrastruct/d2
-    ```
-
-    You can install Python 3.10 through mise:
-
-    ```sh
-    mise use -g python@3.10
-    ```
-
-    Or you can install it through [uv](https://github.com/astral-sh/uv) (recommended):
-
-    ```sh
-    mise use -g uv
-    uv python install 3.10
-    ```
-
-    !!! note
-        `uv` does not override the system Python, it is only active inside a `venv`.
 
 - Clone the latest code:
 
