@@ -1,33 +1,27 @@
-#include <stdio.h>
-using namespace std;
+#include <check.h>
 
-extern int factorial(int n);
+extern int factorial(int x);
 
-int main() {
-    bool success = true;
-    if (factorial(0) != 1) {
-      printf("Factorial of 0 is 1 not %d\n", factorial(0));
-      success = false;
-    };
-    if (factorial(1) != 1) {
-      printf("Factorial of 1 is 1 not %d\n", factorial(1));
-      success = false;
-    };
-    if (factorial(2) != 2) {
-      printf("Factorial of 2 is 2 not %d\n", factorial(2));
-      success = false;
-    };
-    if (factorial(5) != 120) {
-      printf("Factorial of 5 is 120 not %d\n", factorial(5));
-      success = false;
-    };
-    if (factorial(10) != 3628800) {
-      printf("Factorial of 10 is 3628800 not %d\n", factorial(10));
-      success = false;
-    };
-    if (success) {
-      printf("SUCCESS\n");
-      return 0;
-    }
-    return 1;
+START_TEST(test_factorial)
+{
+  ck_assert_int_eq(factorial(0), 1);
+  ck_assert_int_eq(factorial(1), 1);
+  ck_assert_int_eq(factorial(2), 2);
+  ck_assert_int_eq(factorial(5), 120);
+  ck_assert_int_eq(factorial(10), 3628800);
+}
+END_TEST
+
+int main(void)
+{
+  Suite *s = suite_create("factorial");
+
+  TCase *tc_factorial = tcase_create("Check factorial return value");
+  tcase_add_test(tc_factorial, test_factorial);
+  suite_add_tcase(s, tc_factorial);
+
+  SRunner *sr = srunner_create(s);
+  srunner_run_all(sr, CK_NORMAL);
+  srunner_free(sr);
+  return 0;
 }
