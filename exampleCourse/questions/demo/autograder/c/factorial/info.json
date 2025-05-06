@@ -1,0 +1,14 @@
+{
+    "uuid": "c3b02ed9-3a2e-462a-9d18-f1b21cab65d1",
+    "title": "Parse a C program",
+    "topic": "clang",
+    "singleVariant": true,
+    "tags": [ "jgfoster" ],
+    "type": "v3",
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-c",
+        "entrypoint": "/grade/tests/test.py"
+    }
+}
