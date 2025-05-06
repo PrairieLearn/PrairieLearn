@@ -16,6 +16,7 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
+    && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
     && groupadd sbuser && useradd -g sbuser sbuser
 
 COPY requirements.txt /requirements.txt
