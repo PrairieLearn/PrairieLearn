@@ -1,4 +1,4 @@
-FROM prairielearn/jupyterlab-base:latest
+FROM prairielearn/workspace-jupyterlab-base:latest
 ARG CACHEBUST=2025-04-15-14-15-50
 
 USER root
