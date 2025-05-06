@@ -15,7 +15,6 @@ export default makeBatchedMigration({
       'SELECT MAX(id) as max from pl_courses;',
       z.string().nullable(),
     );
-    return {
       min: 1n,
       max: result,
       batchSize: 10,
