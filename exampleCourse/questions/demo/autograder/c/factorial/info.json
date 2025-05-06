@@ -3,7 +3,7 @@
   "title": "Recursive implementation of factorial",
   "topic": "C",
   "singleVariant": true,
-  "tags": ["jgfoster", "clang", "factorial", "c"],
+  "tags": ["jgfoster", "code", "c", "check"],
   "type": "v3",
   "gradingMethod": "External",
   "externalGradingOptions": {
