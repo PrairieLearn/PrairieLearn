@@ -1,52 +1,46 @@
 #! /usr/bin/python3
 
 import cgrader
-import clang.cindex as ci
+from clang.cindex import CursorKind, Index
+
+
+def find_node(node, test):
+    if node is None:
+        return None
+    if test(node):
+        return node
+    for child in node.get_children():
+        found = find_node(child, test)
+        if found is not None:
+            return found
+    return None
 
 
 def find_function(node, function_name):
-    if node is None:
-        return None
-    if node.kind == ci.CursorKind.FUNCTION_DECL and node.spelling == function_name:
-        return node
-    for child in node.get_children():
-        found = find_function(child, function_name)
-        if found is not None:
-            return found
-    return None
+    return find_node(
+        node,
+        lambda n: n.kind == CursorKind.FUNCTION_DECL and n.spelling == function_name,
+    )
 
 
 def find_function_call(node, function_name):
-    if node is None:
-        return None
-    if node.kind == ci.CursorKind.CALL_EXPR and node.spelling == function_name:
-        return node
-    for child in node.get_children():
-        found = find_function_call(child, function_name)
-        if found is not None:
-            return found
-    return None
+    return find_node(
+        node,
+        lambda n: n.kind == CursorKind.CALL_EXPR and n.spelling == function_name,
+    )
 
 
 def find_loop(node):
-    if node is None:
-        return None
-    if node.kind in (
-        ci.CursorKind.FOR_STMT,
-        ci.CursorKind.WHILE_STMT,
-        ci.CursorKind.DO_STMT,
-    ):
-        return node
-    for child in node.get_children():
-        found = find_loop(child)
-        if found is not None:
-            return found
-    return None
+    return find_node(
+        node,
+        lambda n: n.kind
+        in (CursorKind.FOR_STMT, CursorKind.WHILE_STMT, CursorKind.DO_STMT),
+    )
 
 
 class QuestionGrader(cgrader.CPPGrader):
     def tests(self):
-        index = ci.Index.create()
+        index = Index.create()
         translation_unit = index.parse("student.c", args=["-x", "c"])
 
         factorial_function = find_function(translation_unit.cursor, "factorial")
