@@ -8,7 +8,6 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/grader-c",
-    "entrypoint": "/grade/tests/test.py"
+    "image": "prairielearn/grader-c"
   }
 }
