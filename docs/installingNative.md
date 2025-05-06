@@ -22,7 +22,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
-    # [optional] Some example questions need LaTeX
+    # Optional; needed only for some example questions that use LaTeX
     sudo apt install texlive
     ```
 
@@ -82,12 +82,6 @@ Most of these prerequisites can be installed using the package manager of your O
     sudo make install
     ```
 
-    :
-
-    ```sh
-
-    ```
-
 === "macOS"
 
     On macOS, ensure you have installed the XCode command line tools:
@@ -100,7 +94,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     brew install git graphviz postgresql redis uv d2 node npm pgvector
-    # [optional] Some example questions need LaTeX
+    # Optional; needed only for some example questions that use LaTeX
     brew install --cask mactex
     ```
 
