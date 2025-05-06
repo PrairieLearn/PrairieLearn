@@ -46,9 +46,13 @@ export function Navbar({
         `
       : ''}
 
-    <div class="container-fluid bg-primary">
-      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
-        Skip to main content
+    <div class="container-fluid bg-primary visually-hidden-focusable">
+      <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        class="d-inline-flex p-2 m-2 text-white"
+      >
+        Accessibility guide
       </a>
     </div>
 
