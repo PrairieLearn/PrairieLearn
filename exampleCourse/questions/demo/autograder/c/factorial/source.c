@@ -1,5 +1,4 @@
 #include <stdio.h>
-using namespace std;
 
 int factorial(int n) {
     // your solution goes here

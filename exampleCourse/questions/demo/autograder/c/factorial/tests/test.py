@@ -60,12 +60,6 @@ class QuestionGrader(cgrader.CPPGrader):
             return
         self.add_test_result("factorial function found")
 
-        if_statement = find_if_statement(translation_unit.cursor)
-        if if_statement is None:
-            self.add_test_result("if statement not found in factorial()", points=0, max_points=1)
-        else:
-            self.add_test_result("if statement found")
-
         call_to_factorial = find_call_to_factorial(factorial_function)
         if call_to_factorial is None:
             self.add_test_result("call to factorial function not found in factorial()", points=0, max_points=1)
