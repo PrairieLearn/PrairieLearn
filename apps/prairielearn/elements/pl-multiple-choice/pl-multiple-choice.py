@@ -665,7 +665,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    correct_key = data["correct_answers"][name].get("key", None)
     if correct_key is None:
         raise ValueError("could not determine correct_key")
 
