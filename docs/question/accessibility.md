@@ -26,7 +26,7 @@ When using the [`pl-figure`](../elements.md#pl-figure-element) element to embed 
 ></pl-figure>
 ```
 
-If the figure contains complex information that's essential for understanding the content, you should provide that information elsewhere in the question text.
+If the figure contains complex information that's essential to understand the content or answer the question, you should provide that information elsewhere in the question text.
 
 ### Input elements
 
@@ -51,7 +51,7 @@ Consult [the documentation for each specific PrairieLearn element](../elements.m
 
 ## Perceivable content
 
-- **Color contrast**: Ensure sufficient contrast between text and background colors. Avoid relying on color alone to convey information.
+- **Color contrast**: Ensure sufficient contrast between text and background colors. Do not rely on color alone to convey information.
 - **Text resizing**: Content should remain readable and functional when text is resized.
 
 ## Operable content
@@ -76,4 +76,4 @@ While PrairieLearn aims to provide accessible building blocks, it's important to
 
 - **Keyboard-only navigation**: Can you navigate and answer the question using only the keyboard?
 - **Screen reader**: Use a screen reader (e.g. NVDA, JAWS, or VoiceOver) to experience the question like a student who is blind or has low vision.
-- **Accessibility checkers**: Browser extensions and online tools can help identify common accessibility issues.
+- **Accessibility checkers**: Browser extensions and online tools can help identify common accessibility issues. However, they cannot identify all issues, so manual testing is still important.
