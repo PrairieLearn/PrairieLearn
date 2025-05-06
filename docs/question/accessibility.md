@@ -7,7 +7,7 @@ Ensuring that PrairieLearn questions are accessible to all students, including t
 Using semantic HTML elements appropriately is the foundation of web accessibility. Semantic HTML means using HTML tags for their intended purpose, which helps assistive technologies (like screen readers) understand the structure and meaning of the content.
 
 - **Headings**: Use `<h1>`, `<h2>`, etc., to structure your question content logically. Avoid skipping heading levels.
-- **Lists**: Use `<ol>` for ordered lists and `<ul>` for unordered lists, and `<li>` for list items.
+- **Lists**: Use `<ol>` for ordered lists and `<ul>` for unordered lists. Use `<li>` for list items.
 - **Paragraphs**: Wrap text content in `<p>` tags.
 - **Emphasis**: Use `<em>` for emphasis and `<strong>` for strong importance, rather than relying on visual styling alone.
 - **Tables**: Use `<table>` with `<thead>`, `<tbody>`, `<tr>`, `<th>`, and `<td>` appropriately. Ensure tables have clear headings and meaningful row/column relationships. [MDN's table accessibility guide](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content/Table_accessibility) provides a good overview of how to create accessible tables.
