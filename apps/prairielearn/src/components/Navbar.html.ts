@@ -46,7 +46,10 @@ export function Navbar({
         `
       : ''}
 
-    <div class="container-fluid bg-primary visually-hidden-focusable">
+    <nav
+      class="container-fluid bg-primary visually-hidden-focusable"
+      aria-label="Skip link and accessibility guide"
+    >
       <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
       <a
         href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
@@ -54,7 +57,7 @@ export function Navbar({
       >
         Accessibility guide
       </a>
-    </div>
+    </nav>
 
     ${config.announcementHtml
       ? html`
