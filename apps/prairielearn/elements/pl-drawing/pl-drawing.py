@@ -159,7 +159,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             for obj in init:
                 obj["graded"] = False
             data["correct_answers"][name] = union_drawing_items(init, ans)
-        else:
+        # Only save a correct answer if it contains any elements.
+        elif len(ans) > 0:
             data["correct_answers"][name] = ans
 
 
@@ -355,7 +356,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if preview_mode:
         html_params["input_answer"] = json.dumps(init)
     elif data["panel"] == "answer" and name in data["correct_answers"]:
-        html_params["input_answer"] = json.dumps(data["correct_answers"][name])
+        html_params["input_answer"] = json.dumps(data["correct_answers"].get(name, []))
     else:
         sub = []
         if name in data["submitted_answers"]:
@@ -391,7 +392,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         ):
             data["format_errors"][name] = defaults.no_submission_error
             data["submitted_answers"][name] = None
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, KeyError):
         data["format_errors"][name] = defaults.no_submission_error
         data["submitted_answers"][name] = None
 
@@ -421,7 +422,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
     student = data["submitted_answers"][name]
-    reference = data["correct_answers"][name]
+    reference = data["correct_answers"].get(name, [])
 
     if not isinstance(student, list) or len(student) == 0:
         data["format_errors"][name] = "No submitted answer."
@@ -516,20 +517,19 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         return
 
     # Get raw correct answer
+    result = data["test_type"]
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
-    a_tru = data["correct_answers"][name]
-    grid_size = pl.get_integer_attrib(
-        element, "grid-size", defaults.element_defaults["grid-size"]
-    )
-    tol = pl.get_float_attrib(element, "tol", grid_size / 2)
-    angtol = pl.get_float_attrib(
-        element, "angle-tol", defaults.element_defaults["angle-tol"]
-    )
 
-    result = data["test_type"]
-    if result == "correct" and len(a_tru) > 0:
+    a_tru = []
+    if result in ["correct", "incorrect"]:
+        if name not in data["correct_answers"]:
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+        a_tru = data["correct_answers"][name]
+
+    if result == "correct":
         data["raw_submitted_answers"][name] = json.dumps(a_tru)
         data["partial_scores"][name] = {
             "score": 1,
@@ -546,7 +546,14 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             },
         }
 
-    elif result == "incorrect" and len(a_tru) > 0:
+    elif result == "incorrect":
+        grid_size = pl.get_integer_attrib(
+            element, "grid-size", defaults.element_defaults["grid-size"]
+        )
+        tol = pl.get_float_attrib(element, "tol", grid_size / 2)
+        angtol = pl.get_float_attrib(
+            element, "angle-tol", defaults.element_defaults["angle-tol"]
+        )
         data["raw_submitted_answers"][name] = copy.deepcopy(a_tru)
         for i, element in enumerate(a_tru):
             if (
@@ -609,6 +616,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             },
         }
 
-    elif result == "invalid" or len(a_tru) == 0:
+    elif result == "invalid":
         data["format_errors"][name] = ""
         data["raw_submitted_answers"][name] = "invalid submission"
