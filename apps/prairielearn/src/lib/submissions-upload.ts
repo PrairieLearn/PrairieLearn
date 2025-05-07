@@ -64,6 +64,14 @@ function makeDedupedInserter<T>() {
   };
 }
 
+/**
+ * Processes a CSV file containing submissions and creates users, assessment instances,
+ * instance questions, variants, and submissions in the database.
+ *
+ * Note that this will delete all existing assessment instances for the assessment.
+ * Use this function with caution! Specifically, it should really only ever be used
+ * in dev mode.
+ */
 export async function uploadSubmissions(
   assessment_id: string,
   csvFile: Express.Multer.File | null | undefined,
