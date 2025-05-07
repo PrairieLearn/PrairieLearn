@@ -99,7 +99,7 @@ function getIntervalUsageKey(userId: number) {
 }
 
 // 1 hour in milliseconds
-const intervalLengthMs = 3600 * 1000;
+const intervalLengthMs = 3600;
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
