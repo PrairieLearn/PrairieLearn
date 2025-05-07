@@ -81,12 +81,6 @@ export function InstructorAIGenerateDrafts({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="generate_question" />
 
-            <div
-              id="sample-questions"
-              class="mb-3"
-              data-start-open="${sampleQuestionOpen ? true : false}"
-            ></div>
-
             <div class="mb-3">
               <label class="form-label" for="user-prompt-llm">
                 Give a high-level overview of the question, including what parameters should be
@@ -113,8 +107,12 @@ export function InstructorAIGenerateDrafts({
             <div class="text-muted small text-center mt-2">
               AI can make mistakes. Review the generated question.
             </div>
-
             <div id="generation-results"></div>
+            <div
+              id="sample-questions"
+              class="mt-2"
+              data-start-open="${sampleQuestionOpen ? true : false}"
+            ></div>
           </form>
         </div>
       </div>

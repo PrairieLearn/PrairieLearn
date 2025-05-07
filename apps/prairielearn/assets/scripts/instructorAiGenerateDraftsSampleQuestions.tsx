@@ -51,7 +51,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   };
 
   return (
-    <Accordion className="mb-3" defaultActiveKey={startOpen ? '0' : undefined}>
+    <Accordion defaultActiveKey={startOpen ? '0' : undefined}>
       <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
         <AccordionBody>
@@ -89,7 +89,7 @@ function SampleQuestionSelector({
   onClickNext: () => void;
 }) {
   return (
-    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
         onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
