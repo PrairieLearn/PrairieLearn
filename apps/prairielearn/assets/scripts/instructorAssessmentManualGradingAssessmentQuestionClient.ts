@@ -22,7 +22,6 @@ onDocumentReady(() => {
     aiGradingEnabled,
     courseStaff,
     csrfToken,
-    aiGradingUrl,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -68,12 +67,7 @@ onDocumentReady(() => {
           id: 'js-ai-grade-button',
           title: 'AI grading',
         },
-        html: html`
-          <a class="btn btn-secondary" href="${aiGradingUrl}">
-            <i class="fa fa-pen" aria-hidden="true"></i>
-            AI Grading
-          </a>
-        `.toString(),
+        html: aiGradingDropdown(),
       },
       showStudentInfo: {
         text: 'Show student info',
@@ -324,6 +318,37 @@ function updatePointsPopoverHandlers(this: Element) {
     form.removeEventListener('submit', pointsFormEventListener);
     form.addEventListener('submit', pointsFormEventListener);
   });
+}
+
+function aiGradingDropdown() {
+  return html`
+    <div class="dropdown btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="ai-grading"
+      >
+        <i class="fa fa-pen" aria-hidden="true"></i> AI Grading
+      </button>
+      <div class="dropdown-menu dropdown-menu-end">
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
+          Grade All
+        </button>
+        <button
+          class="dropdown-item grading-tag-button"
+          type="submit"
+          name="batch_action"
+          value="ai_grade_assessment_selected"
+        >
+          Grade Selected
+        </button>
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading-test').submit();">
+          Test Accuracy
+        </button>
+      </div>
+    </div>
+  `.toString();
 }
 
 function gradingTagDropdown(courseStaff: User[]) {
