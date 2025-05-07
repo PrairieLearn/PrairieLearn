@@ -1,9 +1,19 @@
 <pl-question-panel>
+  <p>
+    The below element uses the pl-details component to show and hide content. 
+    The pl-details component is shown by default, and the content is hidden when you click on the title.
+    The pl-details component can be used to show or hide any content, including other components.
+  </p>
+
   <pl-details title="Hint">
     <p>For this question, you should click on the next header labeled "Large table of data" to view the content.</p>
   </pl-details>
 
-  <pl-details title="Large table of data with show=false" show="false">
+  <p>
+    The below element has set <code>show="false"</code> to hide the content by default.
+    When you click on the title, the content will be shown.
+  </p>
+  <pl-details title="Large table of data" show="false">
     <pl-dataframe params-name="df"></pl-dataframe>
   </pl-details>
 </pl-question-panel>
