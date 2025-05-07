@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     ask = ["equivalent resistance $R_T$", "current from the power supply $I_T$"]
     which = random.choice([0, 1])
     data["params"]["ask"] = ask[which]

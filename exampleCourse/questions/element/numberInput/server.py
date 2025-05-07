@@ -1,8 +1,10 @@
 import math
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Simulate values
     a = random.randint(2, 10)
     b = random.randint(2, 10)

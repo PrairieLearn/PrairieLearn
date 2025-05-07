@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # List of animals in each group
     # More animals can be added here for increased variation
     animals = {

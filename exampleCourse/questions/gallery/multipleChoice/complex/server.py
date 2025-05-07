@@ -1,8 +1,10 @@
 import math
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # gravity (m/s^2)
     g = 9.8
     # mass of the ball (kg)

@@ -1,12 +1,16 @@
+from typing import Literal
+
 import numpy as np
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     n = 4
 
     # Randomly decide to generate a random or ring matrix.
-    choice = np.random.choice(["random", "ring"], p=[0.7, 0.3])
+    choice: Literal["random", "ring"] = np.random.choice(
+        ["random", "ring"], p=[0.7, 0.3]
+    )
 
     if choice == "random":
         correct = np.random.choice([0, 1], size=(n, n), p=[0.5, 0.5])

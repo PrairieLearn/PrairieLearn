@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Create a list of angles in radians and their corresponding angles in degrees.
     angle_options = [("\\pi/2", 90), ("\\pi/4", 45), ("\\pi/3", 60), ("\\pi/6", 30)]
 

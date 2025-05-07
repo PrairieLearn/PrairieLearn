@@ -1,10 +1,11 @@
 import math
 import random
 
+import prairielearn as pl
 import sympy
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # We want to pick three random coefficients a, b, and c such that the
     # resulting polynomial has two real roots. We'll loop until we manage
     # to find such coefficients.

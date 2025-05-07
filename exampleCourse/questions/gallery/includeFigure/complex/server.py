@@ -4,6 +4,7 @@ import random
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import prairielearn as pl
 import sympy as sym
 
 mpl.rcParams["text.usetex"] = True
@@ -13,7 +14,7 @@ def func(x, a, b, c):
     return a * x**3 + b * x**2 + c * x - 9
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # generating the coefficients for the function
     a = random.choice([-1, 0, 1])
     b = random.choice([-1, 1])
@@ -45,7 +46,7 @@ def generate(data):
         data["params"][varName] = s
 
 
-def file(data):
+def file(data: pl.QuestionFileData):
     if data["filename"] == "figure.png":
         # Generate data points for the plot
         xp = np.linspace(-6, 6, num=60)

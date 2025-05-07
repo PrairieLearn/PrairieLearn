@@ -3,9 +3,10 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import prairielearn as pl
 
 
-def file(data):
+def file(data: pl.QuestionFileData):
     if data["filename"] == "cos-x.png":
         # data points
         # coeff cos(x) from -5 * pi 5 * pi, stepping 0.01

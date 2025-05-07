@@ -2,7 +2,7 @@ import numpy as np
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     N = 2
     A = np.random.rand(N, N)
     sf = 2

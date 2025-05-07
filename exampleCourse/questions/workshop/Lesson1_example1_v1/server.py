@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     a = random.randint(1, 10)
     data["params"]["a"] = a
 

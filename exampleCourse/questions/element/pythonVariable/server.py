@@ -1,10 +1,11 @@
 import copy
+from typing import Any
 
 import numpy as np
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     data["params"]["matrix"] = pl.to_json(np.random.random((3, 3)))
     data["params"]["my_dictionary"] = {"a": 1, "b": 2, "c": 3}
     data["params"]["my_list"] = ["a", "b", "c"]
@@ -18,7 +19,7 @@ def generate(data):
 
     data["params"]["my_string"] = "a string"
 
-    monty_python_stuff = ["spam", "eggs", "lumberjack", "knights", "ni"]
+    monty_python_stuff: list[Any] = ["spam", "eggs", "lumberjack", "knights", "ni"]
     monty_python_stuff.insert(0, copy.deepcopy(monty_python_stuff))
 
     data["params"]["monty_python_stuff"] = monty_python_stuff

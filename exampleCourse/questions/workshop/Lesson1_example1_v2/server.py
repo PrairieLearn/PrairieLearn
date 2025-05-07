@@ -3,11 +3,12 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import prairielearn as pl
 
 plt.rcParams.update({"font.size": 30})
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     a = random.randint(1, 10)
     data["params"]["a"] = a
 

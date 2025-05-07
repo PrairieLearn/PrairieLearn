@@ -1,5 +1,7 @@
 import random
 
+import prairielearn as pl
+
 COUNTRIES = {
     "United States": ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"],
     "Canada": ["Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa"],
@@ -14,7 +16,7 @@ COUNTRIES = {
 }
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # Select a random country for the prompt.
     prompt_country = random.choice(list(COUNTRIES.keys()))
 

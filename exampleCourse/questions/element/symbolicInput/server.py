@@ -2,8 +2,8 @@ import prairielearn as pl
 import sympy
 
 
-def generate(data):
-    (y, b, a, m) = sympy.var("y b a m")
+def generate(data: pl.QuestionData):
+    (y, b, a, m) = sympy.var("y b a m")  # type: ignore
     x = (y - b) / a
     z = m * (sympy.cos(a) + sympy.I * sympy.sin(a))
     c = a + sympy.I * b

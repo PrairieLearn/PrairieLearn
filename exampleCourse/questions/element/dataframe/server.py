@@ -3,7 +3,7 @@ import pandas as pd
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     df = pd.read_csv("breast-cancer-train.dat", header=None)
 
     df2 = pd.DataFrame([

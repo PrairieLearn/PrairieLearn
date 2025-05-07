@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Sample a random decimal number in the tenths place between 2 and 5.
     a = round(random.uniform(2, 5), 1)
 

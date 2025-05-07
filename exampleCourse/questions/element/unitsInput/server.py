@@ -1,7 +1,7 @@
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     ureg = pl.get_unit_registry()
     answer = 5280 * ureg.foot
 

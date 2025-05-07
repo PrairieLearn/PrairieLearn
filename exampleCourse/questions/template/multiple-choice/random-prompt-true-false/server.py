@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Create a list of question prompts and the corresponding answers.
     scenarios = [
         ("North", True),

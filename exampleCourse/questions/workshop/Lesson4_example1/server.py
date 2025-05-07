@@ -2,12 +2,12 @@ import numpy as np
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     A = np.zeros((2, 2))
     data["correct_answers"]["A"] = pl.to_json(A)
 
 
-def grade(data):
+def grade(data: pl.QuestionData):
     # get the submitted answers
     MatrixA = pl.from_json(data["submitted_answers"]["A"])
     MatrixB = MatrixA.dot(MatrixA)

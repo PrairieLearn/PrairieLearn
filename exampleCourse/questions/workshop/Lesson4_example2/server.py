@@ -1,4 +1,7 @@
-def parse(data):
+import prairielearn as pl
+
+
+def parse(data: pl.QuestionData):
     variables = ["x", "y", "z", "F"]
     for name in variables:
         var = data["submitted_answers"].get(name, None)
@@ -8,7 +11,7 @@ def parse(data):
             data["format_errors"][name] = f"Variable {name} has to be either 0 or 1"
 
 
-def grade(data):
+def grade(data: pl.QuestionData):
     x = data["submitted_answers"]["x"]
     y = data["submitted_answers"]["y"]
     z = data["submitted_answers"]["z"]
@@ -27,7 +30,7 @@ def grade(data):
         data["score"] = 0
 
 
-def test(data):
+def test(data: pl.ElementTestData):
     if data["test_type"] == "invalid":
         return
 

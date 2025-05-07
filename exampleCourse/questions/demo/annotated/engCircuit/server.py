@@ -1,4 +1,8 @@
+# pyright: reportAttributeAccessIssue=none
+# https://github.com/hgrecco/pint/issues/1947 - Multiplication isn't typed correctly
+
 import random
+from typing import Literal
 
 import prairielearn as pl
 import schemdraw.elements as elm
@@ -12,8 +16,8 @@ def file(data):
     drawing = Drawing()
     params_dict = data["params"]
     battery_label_list = ["$+$", params_dict["Vt_label"], "$-$"]
-
-    match params_dict["whichfig"]:
+    whichfig = params_dict["whichfig"]
+    match whichfig:
         case 0:
             # variant: Resistors in series
             drawing.push()
@@ -45,6 +49,8 @@ def file(data):
             drawing += elm.Line().left()
             drawing.pop()
             drawing += elm.BatteryCell().down().label(battery_label_list)
+        case _:
+            raise RuntimeError("Invalid value for whichfig")
 
     return drawing.get_imagedata()
 
@@ -54,7 +60,7 @@ def generate(data):
     params_dict = data["params"]
 
     # Randomly choose Vt, R1, R2, R3 with appropriate units
-    Vt = random.randint(100, 200) * ureg.volt
+    Vt = ureg.volt * random.randint(100, 200)
     R1 = random.randrange(20, 180, 10) * ureg.ohm
     R2 = random.randrange(20, 180, 20) * ureg.ohm
     R3 = random.randrange(20, 100, 5) * ureg.ohm
@@ -73,7 +79,7 @@ def generate(data):
 
     # Next randomly choose which diagram to ask about and compute
     # the resistance
-    whichfig = random.choice([0, 1])
+    whichfig: Literal[0, 1] = random.choice([0, 1])
     params_dict["whichfig"] = whichfig
 
     match whichfig:
@@ -89,7 +95,7 @@ def generate(data):
 
     # Finally, choose what to ask about (current or resistance)
     # Note: This is independent of the previous choice of which figure.
-    variant = random.choice([0, 1])
+    variant: Literal[0, 1] = random.choice([0, 1])
     match variant:
         case 0:
             params_dict["ask"] = "equivalent resistance $R_T$"
