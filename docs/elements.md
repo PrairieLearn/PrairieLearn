@@ -1136,7 +1136,6 @@ Displays question content within a card-styled component. Optionally displays a 
 | `header`         | string                                 | —        | Contents of the card header.           |
 | `title`          | string                                 | —        | Contents of the card title.            |
 | `subtitle`       | string                                 | —        | Contents of the card subtitle.         |
-| `contents`       | string                                 | —        | Raw contents of the card body.         |
 | `footer`         | string                                 | —        | Contents of the card footer.           |
 | `img-top-src`    | string                                 | —        | Source URL for the top image.          |
 | `img-top-alt`    | string                                 | —        | Alternative text for the top image.    |
@@ -1267,19 +1266,19 @@ Displays question content within a collapsible accordion-style component.
 
 ```html title="question.html"
 <pl-question-panel>
-  <pl-details title="Large table of data">
-    <pl-dataframe params-name="df"></pl-dataframe>
+  <pl-details title="Hint">
+    For this question, you should click on the next header labeled "Large table of data" to view the
+    content.
   </pl-details>
 </pl-question-panel>
 ```
 
 #### Customizations
 
-| Attribute  | Type    | Default | Description                                       |
-| ---------- | ------- | ------- | ------------------------------------------------- |
-| `title`    | string  | —       | Title for the component. This is always visible.  |
-| `contents` | string  | —       | HTML contents shown when the component is opened. |
-| `show`     | boolean | true    | Whether the element shows it content by default.  |
+| Attribute | Type    | Default | Description                                      |
+| --------- | ------- | ------- | ------------------------------------------------ |
+| `title`   | string  | —       | Title for the component. This is always visible. |
+| `show`    | boolean | true    | Whether the element shows it content by default. |
 
 #### Details
 
