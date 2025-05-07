@@ -8,7 +8,7 @@ import {
   uploadAssessmentInstanceScores,
   uploadInstanceQuestionScores,
 } from '../../lib/score-upload.js';
-import { uploadSubmissionsCsv } from '../../lib/submissions-upload.js';
+import { uploadSubmissions } from '../../lib/submissions-upload.js';
 
 import {
   InstructorAssessmentUploads,
@@ -56,8 +56,8 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'upload_submissions_csv') {
-      const jobSequenceId = await uploadSubmissionsCsv(
+    } else if (req.body.__action === 'upload_submissions') {
+      const jobSequenceId = await uploadSubmissions(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,

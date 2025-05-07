@@ -1,9 +1,9 @@
 import csvtojson from 'csvtojson';
+import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
@@ -15,62 +15,47 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const ZodStringToNumber = z.preprocess((val) => {
-  if (val === '' || val == null) return null;
-  const num = Number(val);
-  return isNaN(num) ? null : num;
-}, z.number().nullable());
-
-const ZodStringToBoolean = z.preprocess((val) => {
-  if (val === '' || val == null) return null;
-  const lowerVal = String(val).toLowerCase();
-  if (lowerVal === 'true' || lowerVal === '1') return true;
-  if (lowerVal === 'false' || lowerVal === '0') return false;
-  return null;
-}, z.boolean().nullable());
-
-const ZodStringToDate = z.preprocess((val) => {
-  if (val === '' || val == null) return null;
-  const date = new Date(String(val));
-  return isNaN(date.getTime()) ? null : date;
-}, z.date().nullable());
-
 const ZodStringToJson = z.preprocess((val) => {
-  if (val === '' || val == null) return null;
-  try {
-    const parsed = JSON.parse(String(val));
-    return typeof parsed === 'object' && parsed !== null ? parsed : null;
-  } catch {
-    return null;
-  }
+  if (val === '' || val == null) return {};
+  return JSON.parse(String(val));
 }, z.record(z.any()).nullable());
 
 const SubmissionCsvRowSchema = z.object({
   UID: z.string(),
-  UIN: z.string().nullable(),
-  Name: z.string().nullable(),
-  'Group name': z.string().optional().nullable(),
-  'Assessment instance': ZodStringToNumber,
+  // We only use this if someone tries to upload a CSV for a group assessment,
+  // in which case we'll throw an error.
+  'Group name': z.string().optional(),
+  'Assessment instance': z.coerce.number().int(),
   Question: z.string(),
-  'Question instance': ZodStringToNumber,
   Seed: z.string(),
   Params: ZodStringToJson,
   'True answer': ZodStringToJson,
   Options: ZodStringToJson,
-  'Submission date': ZodStringToDate,
+  'Submission date': z.string().transform((val, ctx) => {
+    // The datetime may have a malformed offset like `+05` or `-05` instead of `+05:00` or `-05:00`.
+    // This is a bug in the submissions CSV export. Until that's fixed, we'll
+    // massage the date to make it valid.
+    if (val.length === 25) {
+      // The date is in the format `2023-10-01T12:34:56.789+05:00`.
+      return new Date(val);
+    } else if (val.length === 22) {
+      // The date is in the format `2023-10-01T12:34:56.789+05`.
+      // We'll add the `:00` to the end of the string to make it valid.
+      const date = new Date(val.slice(0, 22) + ':00');
+      if (isNaN(date.getTime())) {
+        throw new Error(`Invalid date: ${val}`);
+      }
+      return date;
+    } else {
+      ctx.addIssue({
+        code: z.ZodIssueCode.invalid_date,
+      });
+    }
+  }),
   'Submitted answer': ZodStringToJson,
-  'Partial Scores': ZodStringToJson,
-  'Override score': ZodStringToNumber,
-  Credit: ZodStringToNumber,
-  Mode: z.string(),
-  'Grading requested date': ZodStringToDate,
-  'Grading date': ZodStringToDate,
-  Score: ZodStringToNumber,
-  Correct: ZodStringToBoolean,
-  Feedback: ZodStringToJson,
 });
 
-export async function uploadSubmissionsCsv(
+export async function uploadSubmissions(
   assessment_id: string,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
@@ -89,9 +74,22 @@ export async function uploadSubmissionsCsv(
     assessmentId: assessment_id,
     userId: user_id,
     authnUserId: authn_user_id,
-    type: 'upload_submissions_csv',
+    type: 'upload_submissions',
     description: 'Upload submissions CSV for ' + assessment_label,
   });
+
+  const selectUser = memoize(async (uid: string) => await selectOrInsertUserByUid(uid));
+  const selectQuestion = memoize(
+    async (qid: string) => await selectQuestionByQid({ course_id, qid }),
+  );
+  const selectAssessmentQuestion = memoize(
+    async (question_id: string) =>
+      await sqldb.queryRow(
+        sql.select_assessment_question,
+        { assessment_id, question_id },
+        AssessmentQuestionSchema,
+      ),
+  );
 
   serverJob.executeInBackground(async (job) => {
     job.info('Deleting all existing assessment instances');
@@ -117,24 +115,12 @@ export async function uploadSubmissionsCsv(
       try {
         const row = SubmissionCsvRowSchema.parse(rawJson);
 
-        const user = await selectOrInsertUserByUid(row.UID);
-        const question = await selectQuestionByQid({ course_id, qid: row.Question });
-        const assessmentQuestion = await sqldb.queryRow(
-          sql.select_assessment_question,
-          { assessment_id, question_id: question.id },
-          AssessmentQuestionSchema,
-        );
-        const group_id = await run(async () => {
-          if (!row['Group name']) return null;
-          return await sqldb.queryRow(
-            sql.ensure_group,
-            {
-              group_name: row['Group name'],
-              course_instance_id,
-            },
-            IdSchema,
-          );
-        });
+        // For simplicity, we're not handling group work until it's needed.
+        if (row['Group name']) throw new Error('Group work is not supported yet');
+
+        const user = await selectUser(row.UID);
+        const question = await selectQuestion(row.Question);
+        const assessmentQuestion = await selectAssessmentQuestion(question.id);
 
         let assessment_instance_id = insertedInstances.get(user.uid);
         if (!assessment_instance_id) {
@@ -142,8 +128,7 @@ export async function uploadSubmissionsCsv(
             sql.insert_assessment_instance,
             {
               assessment_id,
-              user_id: group_id ? null : user.user_id,
-              group_id,
+              user_id: user.user_id,
               instance_number: row['Assessment instance'] ?? 1,
             },
             IdSchema,
@@ -167,8 +152,7 @@ export async function uploadSubmissionsCsv(
             instance_question_id,
             question_id: question.id,
             authn_user_id: user.user_id,
-            user_id: group_id ? null : user.user_id,
-            group_id,
+            user_id: user.user_id,
             seed: row.Seed,
             params: row.Params,
             true_answer: row['True answer'],
@@ -184,15 +168,6 @@ export async function uploadSubmissionsCsv(
             variant_id,
             authn_user_id,
             submitted_answer: row['Submitted answer'],
-            partial_scores: row['Partial Scores'],
-            override_score: row['Override score'],
-            credit: row.Credit,
-            mode: row.Mode,
-            grading_requested_at: row['Grading requested date'],
-            graded_at: row['Grading date'],
-            score: row.Score,
-            correct: row.Correct,
-            feedback: row.Feedback,
             params: row.Params,
             true_answer: row['True answer'],
             submission_date: row['Submission date'] ?? new Date(),

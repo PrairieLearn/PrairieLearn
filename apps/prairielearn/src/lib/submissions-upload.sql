@@ -7,25 +7,13 @@ WHERE
   assessment_id = $assessment_id
   AND question_id = $question_id;
 
--- BLOCK ensure_group
-INSERT INTO
-  groups (group_name, course_instance_id)
-VALUES
-  ($group_name, $course_instance_id)
-ON CONFLICT (group_name, course_instance_id) DO UPDATE
-SET
-  group_name = EXCLUDED.group_name -- Dummy update to get returning id
-RETURNING
-  id AS group_id;
-
 -- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, group_id, number, open)
+  assessment_instances (assessment_id, user_id, number, open)
 VALUES
   (
     $assessment_id,
     $user_id,
-    $group_id,
     $instance_number,
     false -- Assume closed by default when recreating
   )
@@ -37,13 +25,15 @@ INSERT INTO
   instance_questions (
     assessment_instance_id,
     assessment_question_id,
-    requires_manual_grading
+    requires_manual_grading,
+    status
   )
 VALUES
   (
     $assessment_instance_id,
     $assessment_question_id,
-    $requires_manual_grading
+    $requires_manual_grading,
+    'saved' -- Must not be the default 'unanswered' status
   )
 RETURNING
   id AS instance_question_id;
@@ -55,12 +45,10 @@ INSERT INTO
     question_id,
     authn_user_id,
     user_id,
-    group_id,
     variant_seed,
     params,
     true_answer,
     options,
-    broken,
     course_id
   )
 VALUES
@@ -69,12 +57,10 @@ VALUES
     $question_id,
     $authn_user_id,
     $user_id,
-    $group_id,
     $seed,
     $params,
     $true_answer,
     $options,
-    false,
     $course_id
   )
 RETURNING
@@ -87,19 +73,8 @@ INSERT INTO
     auth_user_id,
     submitted_answer,
     raw_submitted_answer,
-    partial_scores,
-    override_score,
-    credit,
-    mode,
-    grading_requested_at,
-    graded_at,
-    score,
-    correct,
-    feedback,
     params,
     true_answer,
-    broken,
-    gradable,
     date
   )
 VALUES
@@ -107,20 +82,9 @@ VALUES
     $variant_id,
     $authn_user_id,
     $submitted_answer,
-    NULL, -- We don't have anything useful to use as the raw submitted answer.
-    $partial_scores,
-    $override_score,
-    $credit,
-    $mode,
-    $grading_requested_at,
-    $graded_at,
-    $score,
-    $correct,
-    $feedback,
-    $params, -- Re-inserting variant params/true_answers for history
+    '{}'::jsonb, -- We don't have any useful value for `raw_submitted_answer` here.
+    $params,
     $true_answer,
-    false,
-    true, -- Assume gradable
     $submission_date
   )
 RETURNING

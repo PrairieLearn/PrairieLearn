@@ -142,20 +142,15 @@ function AssessmentUploadCard({
                               data-bs-toggle="modal"
                               data-bs-target="#upload-submissions-csv-form"
                             >
-                              <i class="fas fa-upload"></i> Upload Submissions CSV
+                              <i class="fas fa-upload"></i> Upload submissions
                             </button>
                           </td>
                           <td>
                             <p>
                               Upload a CSV file to recreate users, assessment instances, questions,
-                              variants, and submissions.
-                              <a data-bs-toggle="collapse" href="#uploadSubmissionsCsvHelp">
-                                Show details...
-                              </a>
+                              variants, and submissions. Useful for local testing with real data.
+                              <strong>Only available in development mode.</strong>
                             </p>
-                            <div class="collapse" id="uploadSubmissionsCsvHelp">
-                              <p>This functionality is only available in development mode.</p>
-                            </div>
                           </td>
                         `
                       : ''}
@@ -344,7 +339,8 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
       </p>
       <p>You should upload one of the submissions CSV files from the Downloads page.</p>
       <div class="alert alert-danger">
-        This will delete all existing assessment instances and submissions for this assessment.
+        This will delete all existing assessment instances and submissions for this assessment and
+        replace them with the submissions from the CSV file. This action cannot be undone.
       </div>
       <div class="mb-3">
         <label class="form-label" for="uploadSubmissionsCsvFileInput">Choose CSV file</label>
@@ -358,7 +354,7 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="upload_submissions_csv" />
+      <input type="hidden" name="__action" value="upload_submissions" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
