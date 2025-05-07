@@ -53,7 +53,7 @@ function SampleQuestion() {
   };
 
   return (
-    <Accordion defaultActiveKey={'0'}>
+    <Accordion>
       <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
         <AccordionBody>
