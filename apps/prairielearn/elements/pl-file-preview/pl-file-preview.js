@@ -132,8 +132,8 @@
                     import('dompurify'),
                     // importing the notebookjs library sets the global variable `nb`.
                     import('notebookjs'),
-                    // MathJax needs to have been completely loaded before the extension can be used.
-                    MathJax.typesetPromise(),
+                    // MathJax needs to have been loaded before the extension can be used.
+                    MathJax.startup.promise,
                   ]).then(async ([Marked, markedMathjax]) => {
                     markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
                     nb.markdown = Marked.marked.parse;

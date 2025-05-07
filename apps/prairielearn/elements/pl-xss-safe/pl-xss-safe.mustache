@@ -8,7 +8,7 @@
     // confusion
     if (language == "markdown") {
       const marked = (await import('marked')).marked;
-      await MathJax.typesetPromise();
+      await MathJax.startup.promise;
       (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       code = marked.parse(code);
     }
