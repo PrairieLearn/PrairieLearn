@@ -27,6 +27,7 @@ const SubmissionCsvRowSchema = z.object({
   'Group name': z.string().optional(),
   'Assessment instance': z.coerce.number().int(),
   Question: z.string(),
+  Variant: z.coerce.number().int(),
   Seed: z.string(),
   Params: ZodStringToJson,
   'True answer': ZodStringToJson,
@@ -54,6 +55,22 @@ const SubmissionCsvRowSchema = z.object({
   }),
   'Submitted answer': ZodStringToJson,
 });
+
+/**
+ * A utility function to help with inserting only a single row per combination of keys.
+ */
+function makeDedupedInserter<T>() {
+  const inserted = new Map<string, T>();
+  return async (key: string[], fn: () => Promise<T>) => {
+    const keyString = key.join(':');
+    let value = inserted.get(keyString);
+    if (value != null) return value;
+
+    value = await fn();
+    inserted.set(keyString, value);
+    return value;
+  };
+}
 
 export async function uploadSubmissions(
   assessment_id: string,
@@ -100,8 +117,9 @@ export async function uploadSubmissions(
     let successCount = 0;
     let errorCount = 0;
 
-    // A map from UIDs to the IDs of the inserted assessment instances.
-    const insertedInstances = new Map<string, string>();
+    const getOrInsertAssessmentInstance = makeDedupedInserter<string>();
+    const getOrInsertInstanceQuestion = makeDedupedInserter<string>();
+    const getOrInsertVariant = makeDedupedInserter<string>();
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
@@ -122,44 +140,55 @@ export async function uploadSubmissions(
         const question = await selectQuestion(row.Question);
         const assessmentQuestion = await selectAssessmentQuestion(question.id);
 
-        let assessment_instance_id = insertedInstances.get(user.uid);
-        if (!assessment_instance_id) {
-          assessment_instance_id = await sqldb.queryRow(
-            sql.insert_assessment_instance,
-            {
-              assessment_id,
-              user_id: user.user_id,
-              instance_number: row['Assessment instance'] ?? 1,
-            },
-            IdSchema,
-          );
-          insertedInstances.set(user.uid, assessment_instance_id);
-        }
-
-        const instance_question_id = await sqldb.queryRow(
-          sql.insert_instance_question,
-          {
-            assessment_instance_id,
-            assessment_question_id: assessmentQuestion.id,
-            requires_manual_grading: (assessmentQuestion.max_manual_points ?? 0) > 0,
-          },
-          IdSchema,
+        const assessment_instance_id = await getOrInsertAssessmentInstance(
+          [user.user_id, row['Assessment instance'].toString()],
+          async () =>
+            await sqldb.queryRow(
+              sql.insert_assessment_instance,
+              {
+                assessment_id,
+                user_id: user.user_id,
+                instance_number: row['Assessment instance'],
+              },
+              IdSchema,
+            ),
         );
 
-        const variant_id = await sqldb.queryRow(
-          sql.insert_variant,
-          {
-            instance_question_id,
-            question_id: question.id,
-            authn_user_id: user.user_id,
-            user_id: user.user_id,
-            seed: row.Seed,
-            params: row.Params,
-            true_answer: row['True answer'],
-            options: row.Options,
-            course_id,
-          },
-          IdSchema,
+        const instance_question_id = await getOrInsertInstanceQuestion(
+          [assessment_instance_id, question.id],
+          async () =>
+            await sqldb.queryRow(
+              sql.insert_instance_question,
+              {
+                assessment_instance_id,
+                assessment_question_id: assessmentQuestion.id,
+                requires_manual_grading: (assessmentQuestion.max_manual_points ?? 0) > 0,
+              },
+              IdSchema,
+            ),
+        );
+
+        const variant_id = await getOrInsertVariant(
+          [assessment_instance_id, question.id, row.Variant.toString()],
+          async () =>
+            await sqldb.queryRow(
+              sql.insert_variant,
+              {
+                course_id,
+                instance_question_id,
+                question_id: question.id,
+                authn_user_id: user.user_id,
+                user_id: user.user_id,
+                seed: row.Seed,
+                // Despite the fact that these values could change over the course of multiple
+                // submissions, we'll just use the first set of values we encounter. This
+                // is good enough for our purposes.
+                params: row.Params,
+                true_answer: row['True answer'],
+                options: row.Options,
+              },
+              IdSchema,
+            ),
         );
 
         await sqldb.queryRow(
