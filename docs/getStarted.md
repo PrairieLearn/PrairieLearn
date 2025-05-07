@@ -93,7 +93,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 ### Change the content of the question
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
+To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question/index.md#html-questionhtml).
 
 - go to the `Files` tab.
 
@@ -143,7 +143,7 @@ Note that this question does not use any server side code, and for that reason, 
 
 ### Change the content of the question
 
-We will add randomization to the previous question, using the file [server.py](question.md#question-serverpy)
+We will add randomization to the previous question, using the file [server.py](question/index.md#custom-generation-and-grading-serverpy)
 
 - go to the `Files` tab.
 

@@ -327,7 +327,6 @@ async function startup(workspace_id: string): Promise<void> {
 
   let workspace_host_id: string | null = null;
   let attempt = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (attempt > config.workspaceLaunchingRetryAttempts) {
       throw new Error('Time exceeded to deploy more computational resources');
