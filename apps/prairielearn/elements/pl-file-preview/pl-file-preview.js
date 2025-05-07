@@ -128,9 +128,9 @@
                   await Promise.all([
                     import('marked'),
                     import('@prairielearn/marked-mathjax'),
-                    // importing DOMPurify sets the global variable DOMPurify.
+                    // importing DOMPurify sets the global variable `DOMPurify`.
                     import('dompurify'),
-                    // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
+                    // importing the notebookjs library sets the global variable `nb`.
                     import('notebookjs'),
                   ]).then(async ([Marked, markedMathjax]) => {
                     markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
