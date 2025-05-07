@@ -1267,7 +1267,9 @@ Displays question content within a collapsible accordion-style component.
 
 ```html title="question.html"
 <pl-question-panel>
-  <pl-details title="Large table of data"> </pl-details>
+  <pl-details title="Large table of data">
+    <pl-dataframe params-name="df"></pl-dataframe>
+  </pl-details>
 </pl-question-panel>
 ```
 
