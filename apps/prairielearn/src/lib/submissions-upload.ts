@@ -39,6 +39,8 @@ const SubmissionCsvRowSchema = z.object({
         // The datetime likely has a malformed offset like `+05` or `-05` instead of
         // `+05:00` or `-05:00`. This is a bug in the submissions CSV export. Until
         // that's fixed, we'll massage the date to make it valid.
+        //
+        // TODO: Remove this once the fix for the CSV export has been deployed.
         return val + ':00';
       }
 
