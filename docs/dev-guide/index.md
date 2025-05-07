@@ -4,9 +4,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 ## High level view
 
-<div style="max-width: 500px;" markdown>
-![](./high-level.d2){pad="0"}
-</div>
+![High level overview](./high-level.d2){pad="0" scale="1"}
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and database data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the database. The instructor can view the student results on the website and download CSV files with the data.
 
