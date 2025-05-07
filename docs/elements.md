@@ -1286,7 +1286,7 @@ The `pl-details` is a styled version of the [`<details> / <summary>`](https://de
 
 #### Accessibility
 
-For accessibility reasons, if the content is crucial for answering the questions, you should keep the `show` attribute set to `true`. This ensures that screenreaders can easily access the content.
+If the content is used as an accessible fallback (e.g. a table of values as a fallback for a diagram or chart), you should keep the `show` attribute set to `true`. This ensures that accessibility tools can access the content.
 
 #### Example implementations
 
