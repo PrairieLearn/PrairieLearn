@@ -70,8 +70,8 @@ const ConfigSchema = z.object({
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
-  /** For the non-volatile Redis cluster used for AI question generation rate limiting. */
-  redisUrlAiQuestionGeneration: z.string().nullable().default('redis://localhost:6379/'),
+  /** For the non-volatile Redis cluster. */
+  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379/'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -304,11 +304,8 @@ const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheTypeAiQuestionGeneration: z.enum(['none', 'redis', 'memory']).default('none'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
-  cacheKeyPrefixAiQuestionGeneration: z
-    .string()
-    .default('prairielearn-cache:ai-question-generation-usage:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),

@@ -66,38 +66,36 @@ export function initializeAiQuestionGenerationCache() {
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();
   aiQuestionGenerationCache.init({
-    type: config.cacheTypeAiQuestionGeneration,
-    keyPrefix: config.cacheKeyPrefixAiQuestionGeneration,
-    redisUrl: config.redisUrlAiQuestionGeneration,
+    type: config.nonVolatileCacheType,
+    keyPrefix: config.cacheKeyPrefix,
+    redisUrl: config.nonVolatileRedisUrl,
   });
   return aiQuestionGenerationCache;
 }
 
 /**
- * Approximate the cost of the prompt tokens, in US dollars.
+ * Approximate the cost of the prompt, in US dollars.
+ * Accounts for the cost of prompt, system, and completion tokens.
  */
 export function approximatePromptCost(prompt: string) {
-  // There are approximately 4 characters per token (Source: https://platform.openai.com/tokenizer)
-  // We then multiply the approximate token count by 1.25 to account for error in the estimate
-  // On average, we generate 3750 system tokens for a prompt.
-  const approximatePromptAndSystemTokenCount = (prompt.length / 4) * 1.25 + 3750;  
+  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
+  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
+  // Also, on average, we generate 3750 system tokens for each prompt.
+  const approxPromptAndSystemTokenCost =
+    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
 
   // On average, we generate 250 completion tokens for a prompt.
-  return (config.costPerMillionPromptTokens * approximatePromptAndSystemTokenCount + config.costPerMillionCompletionTokens * 250) / 1e6;
+  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+
+  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
 }
 
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
 function getIntervalUsageKey(userId: number) {
-  return `user-${userId}-interval-usage`;
-}
-
-/**
- * Retrieve the Redis key for the start of the user's current hourly interval
- */
-function getIntervalStartKey(userId: number) {
-  return `user-${userId}-interval-start`;
+  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
+  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
 
 // 1 hour in milliseconds
@@ -113,25 +111,7 @@ export async function getIntervalUsage({
   aiQuestionGenerationCache: Cache;
   userId: number;
 }) {
-  let intervalCost = (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
-
-  const currentIntervalStart = Date.now() - (Date.now() % intervalLengthMs);
-  const storedIntervalStart = (await aiQuestionGenerationCache.get(getIntervalStartKey(userId))) as
-    | number
-    | null;
-
-  // If no interval exists or the interval has changed, reset the interval usage
-  if (!storedIntervalStart || currentIntervalStart !== storedIntervalStart) {
-    aiQuestionGenerationCache.set(getIntervalUsageKey(userId), 0, intervalLengthMs);
-    aiQuestionGenerationCache.set(
-      getIntervalStartKey(userId),
-      currentIntervalStart,
-      intervalLengthMs,
-    );
-    intervalCost = 0;
-  }
-
-  return intervalCost;
+  return (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
 }
 
 /**
@@ -154,9 +134,14 @@ export async function addCompletionCostToIntervalUsage({
     (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
       config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
     1e6;
+
+  // Date.now() % intervalLengthMs is the time the start of the current interval, in milliseconds.
+  // Thus, timeRemainingInInterval is the time until the end of the current interval, in milliseconds.
+  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
+
   aiQuestionGenerationCache.set(
     getIntervalUsageKey(userId),
     intervalCost + completionCost,
-    intervalLengthMs,
+    timeRemainingInInterval,
   );
 }

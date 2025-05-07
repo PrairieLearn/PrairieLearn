@@ -264,7 +264,7 @@ router.post(
 
       const intervalCost = await getIntervalUsage({
         aiQuestionGenerationCache,
-        userId: res.locals.user.user_id,
+        userId: res.locals.authn_user.user_id,
       });
 
       const approxPromptCost = approximatePromptCost(req.body.prompt);
@@ -272,11 +272,11 @@ router.post(
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimit) {
         res.send(
           RateLimitExceeded({
-            // If the user has more tokens than the threshold of 50 tokens,
+            // If the user has more tokens than the threshold of 100 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
               config.aiQuestionGenerationRateLimit - intervalCost >
-              config.costPerMillionPromptTokens * 50,
+              config.costPerMillionPromptTokens * 100,
           }),
         );
         return;
@@ -343,7 +343,7 @@ router.post(
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.authn_user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_ids: [question.id],
