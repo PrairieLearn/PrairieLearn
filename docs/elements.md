@@ -1266,7 +1266,7 @@ Displays question content within a collapsible accordion-style component.
 
 ```html title="question.html"
 <pl-question-panel>
-  <pl-details title="Hint">
+  <pl-details title="Additional information">
     For this question, you should click on the next header labeled "Large table of data" to view the
     content.
   </pl-details>
