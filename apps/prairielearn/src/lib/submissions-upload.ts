@@ -33,25 +33,23 @@ const SubmissionCsvRowSchema = z.object({
   'True answer': ZodStringToJson,
   Options: ZodStringToJson,
   'Submission date': z.string().transform((val, ctx) => {
-    // The datetime may have a malformed offset like `+05` or `-05` instead of `+05:00` or `-05:00`.
-    // This is a bug in the submissions CSV export. Until that's fixed, we'll
-    // massage the date to make it valid.
-    if (val.length === 25) {
-      // The date is in the format `2023-10-01T12:34:56.789+05:00`.
-      return new Date(val);
-    } else if (val.length === 22) {
-      // The date is in the format `2023-10-01T12:34:56.789+05`.
-      // We'll add the `:00` to the end of the string to make it valid.
-      const date = new Date(val.slice(0, 22) + ':00');
-      if (isNaN(date.getTime())) {
-        throw new Error(`Invalid date: ${val}`);
-      }
-      return date;
+    let date: Date;
+    if (val.length === 22) {
+      // The datetime may have a malformed offset like `+05` or `-05` instead of `+05:00` or `-05:00`.
+      // This is a bug in the submissions CSV export. Until that's fixed, we'll
+      // massage the date to make it valid.
+      date = new Date(val.slice(0, 22) + ':00');
     } else {
+      date = new Date(val);
+    }
+
+    if (isNaN(date.getTime())) {
       ctx.addIssue({
         code: z.ZodIssueCode.invalid_date,
       });
     }
+
+    return date;
   }),
   'Submitted answer': ZodStringToJson,
 });
@@ -199,7 +197,7 @@ export async function uploadSubmissions(
             submitted_answer: row['Submitted answer'],
             params: row.Params,
             true_answer: row['True answer'],
-            submission_date: row['Submission date'] ?? new Date(),
+            submission_date: row['Submission date'],
           },
           IdSchema,
         );
