@@ -101,11 +101,11 @@ export function AssessmentQuestion({
       </a>
       ${aiGradingEnabled
         ? html`
-            <form name="start-ai-grading" method="POST" id="ai-grading">
+            <form method="POST" id="ai-grading">
               <input type="hidden" name="__action" value="ai_grade_assessment" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form name="start-ai-grading-test" method="POST" id="ai-grading-test">
+            <form method="POST" id="ai-grading-test">
               <input type="hidden" name="__action" value="ai_grade_assessment_test" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>

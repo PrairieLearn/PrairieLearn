@@ -48,6 +48,10 @@ export async function aiGrade({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
+  /**
+   * Limit grading to the specified instance questions. Omit to grade only
+   * the questions that are tagged as requiring manual grading.
+   */
   instance_question_ids?: string[];
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error

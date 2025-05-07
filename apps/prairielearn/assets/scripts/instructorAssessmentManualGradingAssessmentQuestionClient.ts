@@ -339,11 +339,11 @@ function aiGradingDropdown() {
         data-bs-toggle="dropdown"
         name="ai-grading"
       >
-        <i class="fa fa-pen" aria-hidden="true"></i> AI Grading
+        <i class="fa fa-pen" aria-hidden="true"></i> AI grading
       </button>
       <div class="dropdown-menu dropdown-menu-end">
         <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
-          Grade All
+          Grade all ungraded
         </button>
         <button
           class="dropdown-item grading-tag-button"
@@ -351,10 +351,10 @@ function aiGradingDropdown() {
           name="batch_action"
           value="ai_grade_assessment_selected"
         >
-          Grade Selected
+          Grade selected
         </button>
         <button class="dropdown-item" type="button" onclick="$('#ai-grading-test').submit();">
-          Test Accuracy
+          Test accuracy
         </button>
       </div>
     </div>
