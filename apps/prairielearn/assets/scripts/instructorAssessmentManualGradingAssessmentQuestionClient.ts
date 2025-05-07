@@ -297,8 +297,12 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
     // TODO Better user notification of update failure
     return null;
   }
+  const responseData = await response.json();
+  if (responseData.redirect) {
+    window.location.href = responseData.redirect;
+  }
   $('#grading-table').bootstrapTable('refresh');
-  return await response.json();
+  return responseData;
 }
 
 async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent) {

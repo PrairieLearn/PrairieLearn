@@ -82,7 +82,25 @@ router.post(
     }
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
-        // TODO: add input for selected instances for aiGrade
+        const ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
+        if (!ai_grading_enabled) {
+          throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+        }
+        const instance_question_ids = Array.isArray(req.body.instance_question_id)
+          ? req.body.instance_question_id
+          : [req.body.instance_question_id];
+        const jobSequenceId = await aiGrade({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          instance_question_ids,
+        });
+
+        res.json({ redirect: res.locals.urlPrefix + '/jobSequence/' + jobSequenceId });
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
