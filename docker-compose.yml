@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   pl:
     build:
@@ -7,10 +6,13 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./testCourse:/course
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
       - .:/PrairieLearn
+      # To test local changes to workspaces or external graders
+      # or override other defaults from ConfigSchema, 
+      # enable the following line and make your edits.
+      # - config.dev.json:/PrairieLearn/config.json
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
