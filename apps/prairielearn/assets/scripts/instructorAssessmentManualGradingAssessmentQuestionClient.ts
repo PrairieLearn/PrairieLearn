@@ -282,11 +282,21 @@ onDocumentReady(() => {
 });
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
+  const formData = new FormData(this, e.submitter);
+
+  // Access specific values from the form data (or other fields)
+  const action = formData.get('__action');
+  const batchAction = formData.get('batch_action');
+
+  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+    return;
+  }
+
   e.preventDefault();
 
   const postBody = new URLSearchParams(
     // https://github.com/microsoft/TypeScript/issues/30584
-    new FormData(this, e.submitter) as any,
+    formData as any,
   );
 
   const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
@@ -297,12 +307,8 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
     // TODO Better user notification of update failure
     return null;
   }
-  const responseData = await response.json();
-  if (responseData.redirect) {
-    window.location.href = responseData.redirect;
-  }
   $('#grading-table').bootstrapTable('refresh');
-  return responseData;
+  return await response.json();
 }
 
 async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent) {
