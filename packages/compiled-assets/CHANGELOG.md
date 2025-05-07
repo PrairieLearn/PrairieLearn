@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.0.16
+
+### Patch Changes
+
+- deb4635: Drop `express` dependency
+
 ## 3.0.15
 
 ### Patch Changes
