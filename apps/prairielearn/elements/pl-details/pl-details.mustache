@@ -1,0 +1,30 @@
+<div class="accordion mb-3" id="pl-details-{{uuid}}">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="pl-details-header-{{uuid}}">
+      <button 
+        {{#show}}class="accordion-button"{{/show}}
+        {{^show}}class="accordion-button collapsed"{{/show}}
+
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#pl-details-summary-{{uuid}}"
+        {{#show}}aria-expanded="true"{{/show}}
+        {{^show}}aria-expanded="false"{{/show}}
+        aria-controls="pl-details-summary-{{uuid}}"
+        >
+        {{title}}
+      </button>
+    </h2>
+    <div
+      id="pl-details-summary-{{uuid}}"
+      {{#show}}class="accordion-collapse collapse show"{{/show}}
+      {{^show}}class="accordion-collapse collapse"{{/show}}
+      aria-labelledby="pl-details-header-{{uuid}}"
+      data-bs-parent="#pl-details-{{uuid}}"
+      >
+      <div class="accordion-body">
+        {{{content}}}
+      </div>
+    </div>
+  </div>
+</div>

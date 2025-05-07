@@ -52,6 +52,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-code`](#pl-code-element): Displays code rendered with the appropriate
   syntax highlighting.
 - [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
+- [`pl-details`](#pl-details-element): Displays content in a collapsible container.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
@@ -1254,6 +1255,43 @@ Note that some Python types may not be serialized correctly in the code provided
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
 - [`pl-python-variable` for displaying a formatted output of Python variables.](#pl-python-variable-element)
+
+### `pl-details` element
+
+Displays question content within a collapsible accordion-style component.
+
+![pl-details element closed](elements/pl-details-closed.png)
+![pl-details element opened](elements/pl-details-open.png)
+
+#### Sample element
+
+```html title="question.html"
+<pl-question-panel>
+  <pl-details title="Large table of data"> </pl-details>
+</pl-question-panel>
+```
+
+#### Customizations
+
+| Attribute  | Type    | Default | Description                                       |
+| ---------- | ------- | ------- | ------------------------------------------------- |
+| `title`    | string  | —       | Title for the component. This is always visible.  |
+| `contents` | string  | —       | HTML contents shown when the component is opened. |
+| `show`     | boolean | true    | Whether the element shows it content by default.  |
+
+#### Details
+
+The `pl-details` is a styled version of the [`<details> / <summary>`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/details) element. For more advanced usage, you could use a [Bootstrap accordion](https://getbootstrap.com/docs/5.3/components/accordion/).
+
+#### Accessibility
+
+For accessibility reasons, if the content is crucial for answering the questions, you should keep the `show` attribute set to `true`. This ensures that screenreaders can easily access the content.
+
+#### Example implementations
+
+- [element/details]
+
+---
 
 ### `pl-drawing` element
 
@@ -2507,6 +2545,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/hiddenhints]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/hiddenHints
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/details]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/details
 [element/excalidraw]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/excalidraw
 [element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
