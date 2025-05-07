@@ -6,7 +6,6 @@ set -ex
 xargs mamba install --yes < /requirements.txt
 
 # Clear various caches to minimize the final image size.
-apt-get clean
 mamba clean --all -f -y
 
 rm /requirements.txt /install.sh
