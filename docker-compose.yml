@@ -10,7 +10,7 @@ services:
       - ${HOME}/pl_ag_jobs:/jobs
       - .:/PrairieLearn
       # To test local changes to workspaces or external graders
-      # or override other defaults from ConfigSchema, 
+      # or override other defaults from ConfigSchema,
       # enable the following line and make your edits.
       # - config.dev.json:/PrairieLearn/config.json
     container_name: pl
