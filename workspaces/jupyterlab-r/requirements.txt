@@ -1,2 +1,2 @@
 r-base==4.4.3
-r-irkernel
+r-irkernel==1.3.2
