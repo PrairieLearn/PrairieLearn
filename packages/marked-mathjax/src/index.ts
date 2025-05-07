@@ -8,8 +8,9 @@ const startMath = /(\$|\\\(|\\\[)/;
  *
  * @param marked - The marked instance to extend.
  * @param MathJax - The MathJax instance to use for rendering math. In
- * client-side code, this is `window.MathJax`. In server-side code, this
- * is the result of `require('mathjax-full').init()`.
+ * client-side code, this is `window.MathJax` (ensure `Mathjax.typesetPromise()`
+ * has been resolved). In server-side code, this is the result of
+ * `require('mathjax-full').init()`.
  */
 export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
