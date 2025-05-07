@@ -95,7 +95,7 @@ Most of these prerequisites can be installed using the package manager of your O
     ```sh
     brew install git graphviz postgresql redis uv d2 node npm pgvector
     # Optional; needed only for some example questions that use LaTeX
-    brew install --cask mactex
+    brew install texlive
     ```
 
     Enable `corepack` to make `yarn` available:
