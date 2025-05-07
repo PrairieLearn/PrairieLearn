@@ -90,9 +90,10 @@ describe('Markdown processing', () => {
   });
 
   it('handles lists', async () => {
-    const question = '* first line with $e=mc^2$\n* second line with $a+b=c$';
+    const question =
+      '* first line with $e=mc^2$\n* second line with $a+b=c$\n* third line with **bold** and a $ dollar sign';
     const expected =
-      '<ul>\n<li>first line with $e=mc^2$</li>\n<li>second line with $a+b=c$</li>\n</ul>';
+      '<ul>\n<li>first line with $e=mc^2$</li>\n<li>second line with $a+b=c$</li>\n<li>third line with <strong>bold</strong><span class="mathjax_ignore"> and a $ dollar sign</span></li>\n</ul>';
     await testMarkdown(question, expected);
   });
 
@@ -104,9 +105,10 @@ describe('Markdown processing', () => {
   });
 
   it('handles HTML tags', async () => {
-    const question = 'testing with <strong>bold</strong> and <em>italics and $m^a_th$</em> words';
+    const question =
+      'testing with <strong>bold and $m^a_th$</strong> and <em>italics with $ dollar sign</em> words';
     const expected =
-      '<p>testing with <strong>bold</strong> and <em>italics and $m^a_th$</em> words</p>';
+      '<p>testing with <strong>bold and $m^a_th$</strong> and <em><span class="mathjax_ignore">italics with $ dollar sign</span></em> words</p>';
     await testMarkdown(question, expected);
   });
 });
