@@ -32,6 +32,7 @@ pip3 install -r /requirements.txt
 # Clear various caches to minimize the final image size.
 apt-get clean && rm -rf /var/lib/apt/lists/*
 pip3 cache purge
+
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
 jupyter labextension disable @jupyterlab/apputils-extension:announcements
