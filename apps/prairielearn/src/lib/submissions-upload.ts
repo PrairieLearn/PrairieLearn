@@ -32,25 +32,19 @@ const SubmissionCsvRowSchema = z.object({
   Params: ZodStringToJson,
   'True answer': ZodStringToJson,
   Options: ZodStringToJson,
-  'Submission date': z.string().transform((val, ctx) => {
-    let date: Date;
-    if (val.length === 22) {
-      // The datetime may have a malformed offset like `+05` or `-05` instead of `+05:00` or `-05:00`.
-      // This is a bug in the submissions CSV export. Until that's fixed, we'll
-      // massage the date to make it valid.
-      date = new Date(val.slice(0, 22) + ':00');
-    } else {
-      date = new Date(val);
-    }
+  'Submission date': z
+    .string()
+    .transform((val) => {
+      if (val.length === 22) {
+        // The datetime likely has a malformed offset like `+05` or `-05` instead of
+        // `+05:00` or `-05:00`. This is a bug in the submissions CSV export. Until
+        // that's fixed, we'll massage the date to make it valid.
+        return val + ':00';
+      }
 
-    if (isNaN(date.getTime())) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.invalid_date,
-      });
-    }
-
-    return date;
-  }),
+      return val;
+    })
+    .pipe(z.coerce.date()),
   'Submitted answer': ZodStringToJson,
 });
 
