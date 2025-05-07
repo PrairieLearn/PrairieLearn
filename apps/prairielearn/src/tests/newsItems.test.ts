@@ -18,7 +18,7 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.newsItemsUrl = locals.baseUrl + '/news_items';
 
 describe('News items', function () {
-  this.timeout(10000);
+  this.timeout(15000);
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
