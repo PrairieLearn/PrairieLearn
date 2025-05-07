@@ -4004,7 +4004,6 @@ __metadata:
     passport-azure-ad: "npm:^4.3.5"
     pem: "npm:^1.14.8"
     pg: "npm:^8.15.6"
-    plist: "npm:^3.1.0"
     popper.js: "npm:^1.16.1"
     preact: "npm:^10.26.5"
     prettier: "npm:3.5.3"
@@ -4041,7 +4040,6 @@ __metadata:
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
-    tzientist: "npm:^3.2.0"
     ua-parser-js: "npm:^1.0.40"
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
@@ -6735,7 +6733,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xmldom/xmldom@npm:^0.8.10, @xmldom/xmldom@npm:^0.8.5, @xmldom/xmldom@npm:^0.8.8":
+"@xmldom/xmldom@npm:^0.8.10, @xmldom/xmldom@npm:^0.8.5":
   version: 0.8.10
   resolution: "@xmldom/xmldom@npm:0.8.10"
   checksum: 10c0/c7647c442502720182b0d65b17d45d2d95317c1c8c497626fe524bda79b4fb768a9aa4fae2da919f308e7abcff7d67c058b102a9d641097e9a57f0b80187851f
@@ -7129,7 +7127,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-js@npm:^1.0.2, base64-js@npm:^1.3.0, base64-js@npm:^1.3.1, base64-js@npm:^1.5.1":
+"base64-js@npm:^1.0.2, base64-js@npm:^1.3.0, base64-js@npm:^1.3.1":
   version: 1.5.1
   resolution: "base64-js@npm:1.5.1"
   checksum: 10c0/f23823513b63173a001030fae4f2dabe283b99a9d324ade3ad3d148e218134676f1ee8568c877cd79ec1c53158dcf2d2ba527a97c606618928ba99dd930102bf
@@ -14226,17 +14224,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"plist@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "plist@npm:3.1.0"
-  dependencies:
-    "@xmldom/xmldom": "npm:^0.8.8"
-    base64-js: "npm:^1.5.1"
-    xmlbuilder: "npm:^15.1.1"
-  checksum: 10c0/db19ba50faafc4103df8e79bcd6b08004a56db2a9dd30b3e5c8b0ef30398ef44344a674e594d012c8fc39e539a2b72cb58c60a76b4b4401cbbc7c8f6b028d93d
-  languageName: node
-  linkType: hard
-
 "popper.js@npm:^1.16.1":
   version: 1.16.1
   resolution: "popper.js@npm:1.16.1"
@@ -16613,13 +16600,6 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/39117e346ff8ebd87ae1510b3a77d5d92dae5a89bde588c747d25da5c146603a99c8ee588c7ef80faaf123d89ed46f6dbd918d534d641083177d5fac38b8a1cb
-  languageName: node
-  linkType: hard
-
-"tzientist@npm:^3.2.0":
-  version: 3.2.0
-  resolution: "tzientist@npm:3.2.0"
-  checksum: 10c0/3318aa3696a3aaad31b9ff060467dd9ecd5306c93bedc7aca812c502a3f16ffd926aa7e399fa36e79145dd95375913335a2ba86062034eadf35c136663bd090f
   languageName: node
   linkType: hard
 

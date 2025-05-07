@@ -282,11 +282,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-
-    # Get raw correct answer
-    a_tru = data["correct_answers"][name]
-
     result = data["test_type"]
+    a_tru = None
+
+    if result in ["correct", "incorrect"] and name not in data["correct_answers"]:
+        # This element cannot test itself. Defer the generation of test inputs to server.py
+        return
+    elif result in ["correct", "incorrect"]:
+        # Get raw correct answer
+        a_tru = data["correct_answers"][name]
+
     if result == "correct":
         data["raw_submitted_answers"][name] = a_tru
         data["partial_scores"][name] = {
