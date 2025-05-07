@@ -23,12 +23,9 @@ export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
-  sampleQuestionOpen,
 }: {
   resLocals: Record<string, any>;
   drafts: DraftMetadataWithQid[];
-  /* Determines if the sample question should be open by default. */
-  sampleQuestionOpen: boolean;
 }) {
   const hasDrafts = drafts.length > 0;
 
@@ -108,11 +105,7 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div
-              id="sample-questions"
-              class="mt-2"
-              data-start-open="${sampleQuestionOpen ? true : false}"
-            ></div>
+            <div id="sample-questions" class="mt-2"></div>
           </form>
         </div>
       </div>

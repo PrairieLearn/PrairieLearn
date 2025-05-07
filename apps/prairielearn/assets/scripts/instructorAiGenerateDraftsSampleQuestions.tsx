@@ -7,6 +7,8 @@ import DropdownOriginal from 'react-bootstrap/Dropdown';
 import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
 import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
 import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
+import OverlayTriggerOriginal from 'react-bootstrap/OverlayTrigger';
+import TooltipOriginal from 'react-bootstrap/Tooltip';
 
 const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
 const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
@@ -18,6 +20,8 @@ const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
 const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggleOriginal.default;
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
 const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
+const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
+const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
@@ -30,12 +34,10 @@ import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
-  const startOpen = sampleQuestions.dataset.startOpen === 'true';
-
-  render(<SampleQuestion startOpen={startOpen} />, sampleQuestions);
+  render(<SampleQuestion />, sampleQuestions);
 });
 
-function SampleQuestion({ startOpen }: { startOpen: boolean }) {
+function SampleQuestion() {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
@@ -51,7 +53,7 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
   };
 
   return (
-    <Accordion defaultActiveKey={startOpen ? '0' : undefined}>
+    <Accordion defaultActiveKey={'0'}>
       <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
         <AccordionBody>
@@ -67,7 +69,6 @@ function SampleQuestion({ startOpen }: { startOpen: boolean }) {
             prompt={selectedQuestion}
             onMathjaxTypeset={mathjaxTypeset}
           />
-          <FeatureList features={selectedQuestion.features} />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
       </AccordionItem>
@@ -89,7 +90,7 @@ function SampleQuestionSelector({
   onClickNext: () => void;
 }) {
   return (
-    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 flex-wrap">
+    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
         onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
@@ -129,21 +130,8 @@ function SampleQuestionSelector({
   );
 }
 
-function FeatureList({ features }: { features: string[] }) {
-  return (
-    <>
-      <p className="fw-bold mb-1 mt-3">Question features</p>
-      <ul>
-        {features.map((feature) => (
-          <li key={feature}>{feature}</li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
-  const handleFillPrompt = () => {
+  const handleUsePrompt = () => {
     const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
     promptTextarea.value = prompt;
   };
@@ -152,11 +140,12 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
     <>
       <p className="fw-bold mb-1 mt-3">Prompt</p>
       <p>{prompt}</p>
-
-      <Button onClick={handleFillPrompt}>
-        <i className="fa fa-clone me-2" aria-hidden="true"></i>
-        Fill prompt
-      </Button>
+      <OverlayTrigger
+        placement="top"
+        overlay={<Tooltip>Copy this prompt to the prompt input</Tooltip>}
+      >
+        <Button onClick={handleUsePrompt}>Use prompt</Button>
+      </OverlayTrigger>
     </>
   );
 }
