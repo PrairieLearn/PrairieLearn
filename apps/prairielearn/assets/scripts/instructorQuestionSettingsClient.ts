@@ -129,7 +129,7 @@ onDocumentReady(() => {
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);
 
-  showWorkspaceOptionsButton?.addEventListener('click', (e) => {
+  showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
   });
