@@ -272,10 +272,11 @@ describe('Internally Graded Question Lifecycle Tests', function () {
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
-    if (unsupportedQuestions.includes(relativePath)) {
-      return;
-    }
-    it(`should succeed for ${relativePath}`, async () => {
+    it(`should succeed for ${relativePath}`, async function () {
+      if (unsupportedQuestions.includes(relativePath)) {
+        this.skip();
+      }
+
       await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
         const question = {
           options: info.options ?? {}, // Use options from info.json if available
