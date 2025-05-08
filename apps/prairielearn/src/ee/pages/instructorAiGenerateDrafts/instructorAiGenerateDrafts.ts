@@ -122,7 +122,7 @@ router.post(
 
       addCompletionCostToIntervalUsage({
         aiQuestionGenerationCache,
-        userId: res.locals.user.user_id,
+        userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
         intervalCost,
