@@ -5,7 +5,6 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
-import { getCanonicalHost } from '../../../lib/url.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -104,27 +103,29 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             Confirmation: You selected PrairieLearn assessment <strong>${assessment.title}</strong>
           </p>
 
-          <form id="linkForm" method="POST">
+          <script>
+            const dataToSend = { JWT: '${signed_jwt}', return_url: '${deep_link_return_url}' };
+            function sendIt() {
+              if (window.opener) {
+                window.opener.postMessage(dataToSend);
+              } else {
+                console.warn('No opener found to send message to');
+              }
+            }
+          </script>
+
+          <div id="response"></div>
+
+          <form id="linkForm" method="POST" hx-post="" hx-target="#response" hx-swap="innerHTML">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="link" />
             <input type="hidden" name="unsafe_assessment_id" value="${assessment.id}" />
             <input type="hidden" name="unsafe_resourceId" value="${assessment.uuid}" />
-            <input type="submit" value="Link form" />
-          </form>
 
-          <form id="LMSForm" method="POST" action="${deep_link_return_url}">
-            <input type="hidden" name="JWT" value="${signed_jwt}" />
+            <button type="submit" class="btn btn-primary" onClick="sendIt();window.close();">
+              Confirm
+            </button>
           </form>
-
-          <button
-            class="btn btn-success"
-            onClick="event.preventDefault();
-          console.log('Got to here');
-          document.getElementById('linkForm').submit();
-          document.getElementById('LMSForm').submit();"
-          >
-            Update link in ${platform_name}
-          </button>
         </main>
       </body>
     </html>

@@ -56,7 +56,10 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
       </head>
       <body>
         <main id="content" class="m-3">
-          <form id="interceptForm" method="POST" action="" target="_blank">
+          <!-- We have to use a named target here for window.opener to work.
+               Randomize it or load to same window each time?
+          -->
+          <form id="interceptForm" method="POST" action="" target="PrairieLearnFromIframe">
             ${Object.entries(parameters).map(
               ([key, value]) =>
                 html`<input type="hidden" name="${key}" value="${String(value)}" />`,
@@ -65,7 +68,11 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               Open PrairieLearn in a new window
             </button>
           </form>
-          <div id="message">If there are login errors, reload this page to start again.</div>
+          <div id="message">
+            ${parameters?.target_link_uri.endsWith('assignment_selection')
+              ? 'Come back here when finished to complete the assignment linking.'
+              : 'If there are login errors, reload this page to start again.'}
+          </div>
 
           <script>
             const form = document.getElementById('interceptForm');
@@ -76,6 +83,28 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               button.disabled = true;
               button.textContent = 'Opened PrairieLearn in a new window';
               messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
+            });
+
+            window.addEventListener('message', function (event) {
+              const responseForm = document.createElement('form');
+              responseForm.method = 'POST';
+              responseForm.action = event.data.return_url;
+
+              const JWT = document.createElement('input');
+              JWT.type = 'hidden';
+              JWT.name = 'JWT';
+              JWT.value = event.data.JWT;
+              responseForm.appendChild(JWT);
+
+              const submit = document.createElement('button');
+              submit.type = 'submit';
+              submit.textContent = 'Finish the process';
+              submit.className = 'btn btn-primary';
+              responseForm.appendChild(submit);
+
+              messageDiv.replaceWith(responseForm);
+
+              responseForm.submit(); // works if we want to do it
             });
           </script>
         </main>
