@@ -19,7 +19,6 @@ import { makeVariant } from '../lib/question-variant.js';
 import * as freeformServer from '../question-servers/freeform.js';
 import * as questionServers from '../question-servers/index.js';
 import * as helperServer from '../tests/helperServer.js';
-import { exit } from 'process';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -152,7 +151,7 @@ const validateHtml = async (html: string) => {
       // https://html-validate.org/rules/no-inline-style.html
       // TODO: Move to CSS
       'no-inline-style': [
-        'off',
+        'error',
         {
           allowedProperties: [
             'white-space',
@@ -267,10 +266,9 @@ describe('Internally Graded Question Lifecycle Tests', function () {
     loadEstimator.close();
     await assetServer.close();
     // TODO: clean up
-    // setTimeout(function () {
-    //   log.default(); // logs out active handles that are keeping node running
-    // }, 10000);
-    exit(0);
+    setTimeout(function () {
+      log.default(); // logs out active handles that are keeping node running
+    }, 10000);
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
