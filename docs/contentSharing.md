@@ -79,7 +79,7 @@ Just as anyone with access to a question in your course can access any file in `
 
 ## Sharing assessments
 
-You may also publicly share whole assessments, if every question referenced by the assessment is also publicly shared.
+You may also publicly share whole assessments, provided that every question referenced by the assessment is also publicly shared.
 
 ### Steps to share an assessment
 
