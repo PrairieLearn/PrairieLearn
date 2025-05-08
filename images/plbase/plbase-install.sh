@@ -103,6 +103,7 @@ uv venv --seed
 # don't exist on Amazon Linux 2023. We need to override them with the correct paths.
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
+export LDSHARED="gcc -shared"
 uv pip install --force-reinstall --no-cache-dir -r /python-requirements.txt
 
 # Clear various caches to minimize the final image size.
