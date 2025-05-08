@@ -115,7 +115,7 @@ export async function getIntervalUsage({
 }
 
 /**
- * Add the cost of a completion to the user's usage for the current interval.
+ * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache,
@@ -135,8 +135,7 @@ export async function addCompletionCostToIntervalUsage({
       config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
     1e6;
 
-  // Date.now() % intervalLengthMs is the time the start of the current interval, in milliseconds.
-  // Thus, timeRemainingInInterval is the time until the end of the current interval, in milliseconds.
+  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
 
   aiQuestionGenerationCache.set(
