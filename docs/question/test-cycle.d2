@@ -1,0 +1,39 @@
+direction: down
+# Shapes
+generate: "generate()" {
+  tooltip: "Generate random parameters and correct answers"
+}
+prepare: "prepare()" {
+  tooltip: "Post-process element data after generate()"
+}
+test: "test()" {
+  tooltip: "Test the question, set `raw_submitted_answers`, `format_errors`, `gradable`, and expected `score` and `partial_scores`"
+}
+parse: "parse()" {
+  tooltip: "Parse `raw_submitted_answers`, check format"
+}
+grade: "grade()" {
+  tooltip: "Grade the submission, set score and feedback"
+}
+compare: "Compare outputs" {
+  tooltip: "Compare the graded submission with expected submission outputs"
+}
+test_type: "Test Type"
+
+test_type -> test: |md
+  correct
+  incorrect
+  invalid
+|
+generate -> prepare
+prepare -> test
+test -> parse: "raw_submitted_answers"
+parse -> grade
+grade -> compare: |md
+  format_errors, score, 
+  gradable, partial_scores
+|
+test -> compare: |md
+  format_errors, score,
+  gradable, partial_scores
+|

@@ -213,6 +213,7 @@ nav:
           - 'question/index.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Accessibility': 'question/accessibility.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'
       - 'Access control': 'accessControl/index.md'

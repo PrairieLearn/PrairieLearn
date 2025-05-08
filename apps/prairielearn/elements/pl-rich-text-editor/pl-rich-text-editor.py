@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import os
 from enum import Enum
 
@@ -137,22 +138,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return f'<div data-file-name="{file_name}">\n{contents}\n</div>'
 
     if data["panel"] == "question" or data["panel"] == "submission":
+        quill_options = {
+            "readOnly": data["panel"] == "submission" or not data["editable"],
+            "placeholder": placeholder,
+            "format": input_format.value,
+            "markdownShortcuts": markdown_shortcuts,
+            "counter": counter.value,
+            "modules": {"clipboard": {} if clipboard_enabled else {"enabled": False}},
+            "theme": quill_theme or None,
+        }
         html_params = {
             "name": answer_name,
             "file_name": file_name,
-            "quill_theme": quill_theme,
-            "placeholder": placeholder,
             "editor_uuid": uuid,
-            "question": data["panel"] == "question",
-            "submission": data["panel"] == "submission",
-            "read_only": (
-                "true"
-                if (data["panel"] == "submission" or not data["editable"])
-                else "false"
-            ),
-            "format": input_format.value,
-            "markdown_shortcuts": "true" if markdown_shortcuts else "false",
-            "counter": counter.value,
+            "quill_options_json": json.dumps(quill_options),
             "counter_enabled": counter != Counter.NONE,
             "clipboard_enabled": clipboard_enabled,
         }
