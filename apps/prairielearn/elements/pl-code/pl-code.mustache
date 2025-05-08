@@ -11,6 +11,12 @@ $(function(){
     <div
         id="pl-code-{{uuid}}"
         class="rounded {{#prevent_select}}user-select-none{{/prevent_select}}"
+        {{#prevent_select}}
+        unselectable="on"
+        onselectstart="return false;"
+        onmousedown="return false;"
+        oncontextmenu="return false;"
+        {{/prevent_select}}
     >{{{code}}}</div>
 
     {{#copy_code_button}}
