@@ -44,10 +44,15 @@ const findQuestionDirectories = (dir: string): string[] => {
   return questionDirs;
 };
 
-const rewriteAccessibility = async (html: string): Promise<string> => {
+const rewriteValidatorFalsePositives = async (html: string): Promise<string> => {
   /**
    * Bootstrap uses JS to set accessibility attributes like aria-label on elements.
    * We rewrite the HTML to avoid incorrectly flagged errors in HTMLValidate.
+   *
+   * Additionally, pl-drawing uses JS to set the img src attribute.
+   *
+   * pl-code has span elements with empty style attributes we need to ignore.
+   * pl-overlay has empty style attributes we need to ignore.
    */
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -55,24 +60,156 @@ const rewriteAccessibility = async (html: string): Promise<string> => {
   const rewriter = new HTMLRewriter((chunk) => {
     output += decoder.decode(chunk);
   });
-  rewriter.on('a, button', {
-    element(el) {
-      if (el.hasAttribute('aria-label')) return;
-      const title = el.getAttribute('data-bs-title') ?? el.getAttribute('title');
-      if (title) {
-        el.setAttribute('aria-label', title);
-      }
-    },
-  });
+  rewriter
+    .on('a, button', {
+      element(el) {
+        if (el.hasAttribute('aria-label')) return;
+        const title = el.getAttribute('data-bs-title') ?? el.getAttribute('title');
+        if (title) {
+          el.setAttribute('aria-label', title);
+        }
+      },
+    })
+    .on('.pl-drawing-button img', {
+      element(el) {
+        const src = el.getAttribute('src');
+        if (src === '') {
+          el.setAttribute('src', 'pl-drawing-dummy-img.png');
+        }
+      },
+    })
+    .on('.linenodiv pre span, .pl-overlay', {
+      element(el) {
+        const style = el.getAttribute('style');
+        if (style?.trim() === '') {
+          el.removeAttribute('style');
+        }
+      },
+    });
   await rewriter.write(encoder.encode(html));
   await rewriter.end();
   return output;
 };
 
+const validateHtml = async (html: string) => {
+  const htmlHintMessages = HTMLHint.verify(html, {
+    'doctype-first': false, // Ignore doctype requirement for fragments
+  });
+  assert.isEmpty(htmlHintMessages, 'HTMLHint should pass');
+
+  const rewrittenHtml = await rewriteValidatorFalsePositives(html);
+  const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
+    extends: ['html-validate:recommended', 'html-validate:document'],
+    rules: {
+      // https://html-validate.org/rules/no-raw-characters.html
+      // https://html.spec.whatwg.org/multipage/syntax.html#syntax-ambiguous-ampersand
+      'no-raw-characters': [
+        'error',
+        {
+          relaxed: true,
+        },
+      ],
+
+      // https://html-validate.org/rules/form-dup-name.html
+      'form-dup-name': [
+        'error',
+        {
+          shared: ['radio', 'checkbox', 'button'],
+        },
+      ],
+
+      // https://html-validate.org/rules/require-sri.html
+      'require-sri': [
+        'error',
+        {
+          target: 'crossorigin',
+        },
+      ],
+
+      // https://html-validate.org/rules/prefer-tbody.html
+      // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
+      'prefer-tbody': 'off',
+
+      // False positive https://getbootstrap.com/docs/5.3/components/modal/#accessibility
+      // https://html-validate.org/rules/hidden-focusable.html
+      'hidden-focusable': 'off',
+
+      // https://html-validate.org/rules/wcag/h63.html
+      // For simple tables that have the headers in the first row or column, it is sufficient to simply use the th elements without scope.
+      'wcag/h63': 'off',
+
+      // https://html-validate.org/rules/attribute-boolean-style.html
+      // https://html-validate.org/rules/attribute-empty-style.html
+      // Not fully controllable, artifacts of our rendering system
+      'attribute-boolean-style': ['off'],
+      'attribute-empty-style': 'off',
+      'no-trailing-whitespace': 'off',
+
+      // We aren't linting full HTML documents
+      'missing-doctype': 'off',
+      // https://html-validate.org/rules/heading-level.html
+      'heading-level': 'off',
+
+      // https://html-validate.org/rules/no-inline-style.html
+      // TODO: Move to CSS
+      'no-inline-style': [
+        'error',
+        {
+          allowedProperties: [
+            'white-space',
+            'color',
+            'resize',
+            'margin-left',
+            'width',
+            'height',
+            'margin',
+            // variables
+            '--pl-code-background-color',
+            '--pl-code-line-number-color',
+            '--pl-multiple-choice-dropdown-width',
+            '--pl-matching-counter-type',
+            // pl-code
+            'line-height',
+            'font-weight',
+            'font-style',
+            'background-color',
+            // example course
+            'border',
+            'text-align',
+            'cursor',
+            // pl-overlay
+            'top',
+            'left',
+            'transform',
+            'z-index',
+            'max-width',
+            'max-height',
+          ],
+        },
+      ],
+
+      // https://html-validate.org/rules/wcag/h37.html
+      // TODO:
+      'wcag/h37': 'off',
+
+      // https://html-validate.org/rules/element-permitted-content.html
+      // TODO: Requires fixes in pl-multiple-choice
+      'element-permitted-content': 'off',
+    },
+  });
+  if (!valid) {
+    const validationMessages = results.flatMap((result) =>
+      result.messages.map((m) => `L${m.line}:C${m.column} ${m.message} (${m.ruleId})`),
+    );
+    assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}\n${rewrittenHtml}`);
+  }
+  assert.isTrue(valid, 'HTMLValidate should pass');
+};
+
 // Find all question directories
 const allQuestionDirs = findQuestionDirectories(questionsPath);
 
-// Filter for questions that do NOT use External grading
+// Filter for questions that don't use Manual or External grading
 const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
@@ -100,9 +237,16 @@ const course = {
 
 const questionModule = questionServers.getModule('Freeform');
 
+// TODO: support '_files'
+const unsupportedQuestions = [
+  'element/code',
+  'element/fileDownload',
+  'element/fileEditor',
+  'element/codeDocumentation',
+];
+
 describe('Internally Graded Question Lifecycle Tests', () => {
   before(async () => {
-    console.log('Setting up before tests...');
     // Disable load estimator connecting to SQL
     loadEstimator.setLocalLoadEstimator(true);
 
@@ -118,23 +262,19 @@ describe('Internally Graded Question Lifecycle Tests', () => {
 
   after(async () => {
     await helperServer.after();
-    console.log('Cleaning up after tests...');
     await codeCaller.finish();
     loadEstimator.close();
     await assetServer.close();
-    console.log('Cleanup complete.');
+    // TODO: clean up
     setTimeout(function () {
       log.default(); // logs out active handles that are keeping node running
     }, 10000);
   });
 
-  const limitedInternallyGradedQuestions = internallyGradedQuestions; //.slice(0, 5);
-
-  const badQs = [
-    'element/fileEditor', // needs files
-  ];
-  // Dynamically create tests for each identified question
-  limitedInternallyGradedQuestions.forEach(({ relativePath, info }) => {
+  internallyGradedQuestions.forEach(({ relativePath, info }) => {
+    if (unsupportedQuestions.includes(relativePath)) {
+      return;
+    }
     it(`should succeed for ${relativePath}`, async () => {
       await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
         const question = {
@@ -187,197 +327,60 @@ describe('Internally Graded Question Lifecycle Tests', () => {
         );
         assert.isEmpty(renderIssues, 'Render courseIssues should be empty');
 
-        // 3. Lint HTML
-        const htmlHintMessages = HTMLHint.verify(questionHtml, {
-          'doctype-first': false, // Ignore doctype requirement for fragments
-        });
-        assert.isEmpty(htmlHintMessages, 'HTMLHint should pass');
+        // Validate HTML
+        await validateHtml(questionHtml);
 
-        const rewrittenHtml = await rewriteAccessibility(questionHtml);
-        const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
-          extends: ['html-validate:recommended', 'html-validate:document'],
-          rules: {
-            // https://html-validate.org/rules/no-raw-characters.html
-            // https://html.spec.whatwg.org/multipage/syntax.html#syntax-ambiguous-ampersand
-            'no-raw-characters': [
-              'error',
-              {
-                relaxed: true,
-              },
-            ],
-
-            // https://html-validate.org/rules/form-dup-name.html
-            'form-dup-name': [
-              'error',
-              {
-                shared: ['radio', 'checkbox', 'button'],
-              },
-            ],
-
-            // https://html-validate.org/rules/require-sri.html
-            'require-sri': [
-              'error',
-              {
-                target: 'crossorigin',
-              },
-            ],
-
-            // https://html-validate.org/rules/prefer-tbody.html
-            // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
-            'prefer-tbody': 'off',
-
-            // False positive https://getbootstrap.com/docs/5.3/components/modal/#accessibility
-            // https://html-validate.org/rules/hidden-focusable.html
-            'hidden-focusable': 'off',
-
-            // https://html-validate.org/rules/wcag/h63.html
-            // For simple tables that have the headers in the first row or column, it is sufficient to simply use the th elements without scope.
-            'wcag/h63': 'off',
-
-            // https://html-validate.org/rules/attribute-boolean-style.html
-            // https://html-validate.org/rules/attribute-empty-style.html
-            // Not fully controllable, artifacts of our rendering system
-            'attribute-boolean-style': ['off'],
-            'attribute-empty-style': 'off',
-
-            // TODO:
-            // 'wcag/h37': 'off', // https://github.com/PrairieLearn/PrairieLearn/issues/11841
-            // https://html-validate.org/rules/element-permitted-content.html
-            // TODO: Requires fixes in pl-multiple-choice
-            // 'element-permitted-content': 'off',
-
-            // Issues not worth solving
-            'no-inline-style': 'off',
-            'no-trailing-whitespace': 'off',
-            'missing-doctype': 'off',
-            'heading-level': 'off',
-            'input-missing-label': 'off',
-
-            // Solved issues
-            // 'element-required-attributes': 'off',
-            // 'no-deprecated-attr': 'off',
-            // deprecated: 'off',
-            // 'text-content': 'off',
-            // 'input-attributes': 'off',
-            'no-implicit-close': 'off',
-            'close-order': 'off',
-            'attribute-allowed-values': 'off',
-
-            // Add other relevant html-validate rules to ignore if necessary
-          },
-        });
-        if (!valid) {
-          const validationMessages = results.flatMap((result) =>
-            result.messages.map((m) => `L${m.line}:C${m.column} ${m.message} (${m.ruleId})`),
-          );
-          assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}\n${rewrittenHtml}`);
-        }
-        assert.isTrue(valid, 'HTMLValidate should pass');
-
-        // 4. Parse (using true_answer)
-        if (badQs.includes(relativePath)) {
-          return;
-        }
         if (!questionModule.test) {
           assert.fail('Test function not implemented for this question module');
         }
 
         const {
           data: { raw_submitted_answer, format_errors },
-        } = await questionModule.test(
-          variant as unknown as Variant, // Cast needed
-          question,
-          course,
-          'correct',
-        );
-        // buildSubmission(structuredClone(variant.true_answer));
-
-        // Mock submission object similar to render.test.ts
-        const submissionInput = {
-          submitted_answer: raw_submitted_answer,
-          raw_submitted_answer, // Keep original raw answer
-          gradable: true, // Assume gradable initially
-          // Add other properties only if strictly required by parse
-        } as unknown as Submission;
+        } = await questionModule.test(variant, question, course, 'correct');
 
         const { courseIssues: parseIssues, data: parsedData } = await questionModule.parse(
-          submissionInput,
-          variant as unknown as Variant, // Cast needed
+          {
+            submitted_answer: raw_submitted_answer,
+            raw_submitted_answer,
+            gradable: true,
+          },
+          variant,
           question,
           course,
         );
+
         assert.isEmpty(
           parseIssues,
           `Parse courseIssues should be empty for input ${JSON.stringify(
-            submissionInput.submitted_answer,
+            raw_submitted_answer,
             undefined,
             2,
-          )}, but it was ${JSON.stringify(parseIssues)}`,
+          )}`,
         );
-        // console.log(parsedData);
-        // if ((parsedData.format_errors as any).length > 0) {
-        //   console.log('Format errors for question directory:', relativePath);
-        // parsedData.format_errors = {};
-        // parsedData.submitted_answer = structuredClone(variant.true_answer);
-        // parsedData.gradable = true;
-        // }
-        // console.log(parsedData);
-        for (const issue of Object.keys(parseIssues)) {
-          if (issue === '_files') {
-            console.log("Can't handle file questions yet");
-            return;
-          }
-        }
-        for (const issue of Object.keys(parsedData.format_errors ?? {})) {
-          if (issue === '_files') {
-            console.log("Can't handle file questions yet");
-            return;
-          }
-        }
 
         assert.deepEqual(
           Object.keys(parsedData.format_errors ?? {}),
           Object.keys(format_errors),
-          `Parse format_errors should be equal
-          but it was ${JSON.stringify(parsedData.format_errors, undefined, 2)}`,
+          'Parse format_errors should be equal',
         );
-        /*
-         for submission ${JSON.stringify(
-            submissionInput.submitted_answer,
-            undefined,
-            2,
-          )}
-        */
-
-        // Update submission with parsed data
-        const submissionForGrading = { ...parsedData };
-        // if (Object.keys(submissionForGrading.format_errors ?? {}).length > 0) {
-        //   submissionForGrading.gradable = false;
-        // }
-
-        // assert.isTrue(submissionForGrading.gradable, 'Submission should be gradable after parse');
 
         // 5. Grade
         const { courseIssues: gradeIssues, data: gradeData } = await questionModule.grade(
-          submissionForGrading as unknown as Submission, // Cast needed
-          variant as unknown as Variant, // Cast needed
+          parsedData as unknown as Submission,
+          variant,
           question,
           course,
         );
 
         for (const issue of gradeIssues) {
-          if (issue.data.outputStderr) {
-            assert.fail(
-              JSON.stringify(submissionForGrading.submitted_answer, undefined, 2) +
-                '\n' +
-                issue.data.outputStderr,
-            );
-          }
+          assert.fail(
+            JSON.stringify(parsedData.submitted_answer, undefined, 2) +
+              '\n' +
+              (issue.data.outputStderr ?? ''),
+          );
         }
-        assert.isEmpty(
-          gradeIssues,
-          `Grade courseIssues should be empty but got ${JSON.stringify(gradeIssues)}`,
-        );
+
+        assert.isEmpty(gradeIssues, 'Grade courseIssues should be empty');
         assert.isEmpty(gradeData.format_errors ?? {}, 'Grade format_errors should be empty');
         if ((gradeData.true_answer as any).length > 0) {
           assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
