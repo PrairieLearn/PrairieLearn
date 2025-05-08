@@ -96,7 +96,7 @@ fi
 # Installing to a different directory is a preview feature
 uv python install --default --preview "cpython-3.10-${UV_ARCH}"
 uv venv --seed
-ls /usr/bin
+# https://github.com/astral-sh/uv/issues/12901
 # `uv` has the incorrect path to the system's compilers in its generated data:
 # /root/.local/share/uv/python/cpython-3.10.17-linux-aarch64-gnu/lib/python3.10/_sysconfigdata__linux_aarch64-linux-gnu.py
 # These contain references to paths like `/usr/bin/aarch64-linux-gnu-gcc`, which
