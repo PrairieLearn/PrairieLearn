@@ -1,0 +1,24 @@
+{
+  "uuid": "F158CCF4-48F8-42F9-BBE6-C761210EA540",
+  "title": "Workspace demo: JupyterLab",
+  "topic": "Workspace",
+  "tags": ["su20", "tyang15", "mfsilva", "nnytko2"],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-r",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": ["student.R"],
+    "environment": {
+      "LAUNCH_FILE_NAME": "student.R"
+    }
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-r",
+    "timeout": 20
+  }
+}
