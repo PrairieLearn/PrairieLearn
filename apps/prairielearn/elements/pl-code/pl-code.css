@@ -58,7 +58,7 @@
   overflow: auto;
 }
 
-.pl-code .prevent-select {
+.pl-code .pl-code-prevent-select {
   -moz-user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
