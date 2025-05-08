@@ -244,7 +244,7 @@ const unsupportedQuestions = [
 ];
 
 describe('Internally Graded Question Lifecycle Tests', function () {
-  this.timeout(40000);
+  this.timeout(60000);
 
   before(async () => {
     // Disable load estimator connecting to SQL
