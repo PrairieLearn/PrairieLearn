@@ -3871,6 +3871,7 @@ __metadata:
     "@types/express": "npm:^4.17.21"
     "@types/folder-hash": "npm:^4.0.4"
     "@types/fs-extra": "npm:^11.0.4"
+    "@types/htmlhint": "npm:^1"
     "@types/jju": "npm:^1.4.5"
     "@types/jquery": "npm:^3.5.32"
     "@types/js-cookie": "npm:^3.0.6"
@@ -3961,6 +3962,7 @@ __metadata:
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
     html-validate: "npm:^9.5.3"
+    htmlhint: "npm:^1.1.4"
     htmx.org: "npm:^1.9.12"
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
@@ -5821,6 +5823,13 @@ __metadata:
   dependencies:
     "@types/unist": "npm:*"
   checksum: 10c0/3249781a511b38f1d330fd1e3344eed3c4e7ea8eff82e835d35da78e637480d36fad37a78be5a7aed8465d237ad0446abc1150859d0fde395354ea634decf9f7
+  languageName: node
+  linkType: hard
+
+"@types/htmlhint@npm:^1":
+  version: 1.1.5
+  resolution: "@types/htmlhint@npm:1.1.5"
+  checksum: 10c0/6a738f4756205459a4c33526719616ec35f69c6c8ec6ca2a0baccb297924207c2dc532c00b4bc6bcff37f3d34ee98187737e37935e362d3e0437035539ed19ae
   languageName: node
   linkType: hard
 
