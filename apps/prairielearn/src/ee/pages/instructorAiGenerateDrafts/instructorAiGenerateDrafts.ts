@@ -42,7 +42,12 @@ router.get(
       DraftMetadataWithQidSchema,
     );
 
-    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+    res.send(
+      InstructorAIGenerateDrafts({
+        resLocals: res.locals,
+        drafts,
+      }),
+    );
   }),
 );
 
