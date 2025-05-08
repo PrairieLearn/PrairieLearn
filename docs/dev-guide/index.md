@@ -4,9 +4,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 ## High level view
 
-<div style="max-width: 500px;" markdown>
-![](./high-level.d2){pad="0"}
-</div>
+![High level overview](./high-level.d2){pad="0" scale="1"}
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and database data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the database. The instructor can view the student results on the website and download CSV files with the data.
 
@@ -290,14 +288,17 @@ WHERE
   const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
-- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc.) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
+- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. Locking can be performed with a query like:
 
-  | Locking function            | Argument                 |
-  | --------------------------- | ------------------------ |
-  | `assessment_instances_lock` | `assessment_instance_id` |
-  | `instance_questions_lock`   | `instance_question_id`   |
-  | `variants_lock`             | `variant_id`             |
-  | `submission_lock`           | `submission_id`          |
+```sql
+SELECT
+  *
+FROM
+  assessment_instances
+WHERE
+  id = $assessment_instance_id
+FOR NO KEY UPDATE;
+```
 
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 

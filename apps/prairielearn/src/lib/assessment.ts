@@ -6,16 +6,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
 import {
+  type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
+  DateFromISOString,
   IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -91,40 +96,62 @@ export function renderText(
 /**
  * Create a new assessment instance and all the questions in it.
  *
- * @param assessment_id - The assessment to create the assessment instance for.
+ * @param assessment - The assessment to create the assessment instance for.
  * @param user_id - The user who will own the new assessment instance.
- * @param group_work - If the assessment will support group work.
  * @param authn_user_id - The current authenticated user.
  * @param mode - The mode for the new assessment instance.
  * @param time_limit_min - The time limit for the new assessment instance.
  * @param date - The date of creation for the new assessment instance.
  * @returns The ID of the new assessment instance.
  */
-export async function makeAssessmentInstance(
-  assessment_id: string,
-  user_id: string,
-  group_work: boolean,
-  authn_user_id: string,
-  mode: AssessmentInstance['mode'],
-  time_limit_min: number | null,
-  date: Date,
-  client_fingerprint_id: string | null,
-): Promise<string> {
-  const assessment_instance_id = await sqldb.callRow(
-    'assessment_instances_insert',
-    [
-      assessment_id,
-      user_id,
-      group_work,
-      authn_user_id,
-      mode,
-      time_limit_min,
-      date,
-      client_fingerprint_id,
-    ],
-    IdSchema,
-  );
-  return assessment_instance_id;
+export async function makeAssessmentInstance({
+  assessment,
+  user_id,
+  authn_user_id,
+  mode,
+  time_limit_min,
+  date,
+  client_fingerprint_id,
+}: {
+  assessment: Assessment;
+  user_id: string;
+  authn_user_id: string;
+  mode: AssessmentInstance['mode'];
+  time_limit_min: number | null;
+  date: Date;
+  client_fingerprint_id: string | null;
+}): Promise<string> {
+  return await sqldb.runInTransactionAsync(async () => {
+    let group_id: string | null = null;
+    if (assessment.group_work) {
+      group_id = await getGroupId(assessment.id, user_id);
+      if (group_id == null) {
+        throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
+      }
+    }
+
+    const { assessment_instance_id, created } = await sqldb.queryRow(
+      sql.insert_assessment_instance,
+      {
+        assessment_id: assessment.id,
+        group_id,
+        user_id,
+        mode,
+        time_limit_min,
+        date,
+        client_fingerprint_id,
+        authn_user_id,
+      },
+      z.object({ assessment_instance_id: IdSchema, created: z.boolean() }),
+    );
+
+    // Only update the assessment instance if a new instance was created.
+    if (created) {
+      await updateAssessmentInstance(assessment_instance_id, authn_user_id, false);
+    }
+
+    return assessment_instance_id;
+  });
 }
 
 /**
@@ -140,13 +167,34 @@ export async function updateAssessmentInstance(
   authn_user_id: string,
   recomputeGrades = true,
 ): Promise<boolean> {
-  debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
-    const updateResult = await sqldb.callOneRowAsync('assessment_instances_update', [
-      assessment_instance_id,
-      authn_user_id,
-    ]);
-    if (!updateResult.rows[0].updated) return false; // skip if not updated
+    const assessmentInstance = await sqldb.queryOptionalRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema,
+    );
+    if (assessmentInstance == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    if (!assessmentInstance.open) {
+      // Silently return without updating
+      return false;
+    }
+
+    // Insert any new questions not previously in the assessment instance
+    const newInstanceQuestionIds = await sqldb.queryRows(
+      sql.insert_instance_questions,
+      { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
+      IdSchema,
+    );
+
+    const newMaxPoints = await sqldb.queryOptionalRow(
+      sql.update_assessment_instance_max_points,
+      { assessment_instance_id, authn_user_id },
+      AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
+    );
+    // If assessment was not updated, grades do not need to be recomputed.
+    if (newInstanceQuestionIds.length === 0 && newMaxPoints == null) return false;
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
@@ -260,12 +308,6 @@ export async function gradeAssessmentInstance(
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
 
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
-
 const InstancesToGradeSchema = z.object({
   assessment_instance_id: IdSchema,
   instance_number: z.number(),
@@ -290,11 +332,8 @@ export async function gradeAllAssessmentInstances(
   overrideGradeRate: boolean,
 ): Promise<string> {
   debug('gradeAllAssessmentInstances()');
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -549,5 +588,13 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
+}
+
+export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return await sqldb.queryRow(
+    sql.select_assessment_instance_last_submission_date,
+    { assessment_instance_id },
+    DateFromISOString.nullable(),
   );
 }

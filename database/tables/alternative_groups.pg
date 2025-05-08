@@ -2,7 +2,11 @@ columns
     advance_score_perc: double precision
     assessment_id: bigint not null
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
+    json_can_submit: text[]
+    json_can_view: text[]
+    json_comment: jsonb
     json_grade_rate_minutes: double precision
+    json_has_alternatives: boolean
     number: integer
     number_choose: integer
     zone_id: bigint not null

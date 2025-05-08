@@ -14,6 +14,15 @@ FROM
 WHERE
   uid = $uid;
 
+-- BLOCK select_user_by_uin
+SELECT
+  *
+FROM
+  users
+WHERE
+  uin = $uin
+  AND institution_id = $institution_id;
+
 -- BLOCK select_and_lock_user_by_id
 SELECT
   *

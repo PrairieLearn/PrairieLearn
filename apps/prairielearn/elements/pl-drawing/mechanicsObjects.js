@@ -1,4 +1,3 @@
-/* eslint-env browser, jquery */
 /* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 var $V = Sylvester.Vector.create;

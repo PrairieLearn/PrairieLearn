@@ -1,9 +1,12 @@
 FROM prairielearn/workspace-vscode-base:latest
-ARG CACHEBUST=2025-04-04-17-34-59
+ARG CACHEBUST=2025-04-15-14-15-50
 
-# Make sure to build using bash as the shell so that conda/mamba hooks will
-# work during installation.
-SHELL ["/bin/bash", "-c"]
+# Run the rest of the build commands in a bash shell in login mode so that
+# conda/mamba shell hooks will work. This also allows images derived from
+# this one to add "RUN pip install" commands without trouble. To complete
+# this setup, we also must run conda init with --system after conda is
+# installed, as a separate step below.
+SHELL ["/bin/bash", "-lc"]
 
 USER root
 
@@ -29,6 +32,7 @@ RUN curl -LO https://astral.sh/uv/install.sh \
     && uv pip install --no-cache-dir -r /requirements.txt && uv cache clean
 
 # After installing Python we install some VS Code extensions.
+USER coder
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
     --install-extension ms-python.python \
