@@ -57,11 +57,3 @@
 .pl-code > div {
   overflow: auto;
 }
-
-.pl-code .pl-code-prevent-select {
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  -o-user-select: none;
-}
