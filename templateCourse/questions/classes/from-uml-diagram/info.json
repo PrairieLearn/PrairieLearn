@@ -1,0 +1,13 @@
+{
+  "uuid": "ec9f68ae-6fe3-44b0-8f93-43fe91ba62b1",
+  "title": "Write a class hierarchy from a UML diagram",
+  "topic": "Default",
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "timeout": 20
+  }
+}

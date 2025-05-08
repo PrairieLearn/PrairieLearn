@@ -1,0 +1,25 @@
+<pl-question-panel>
+  <p>
+    You are debugging the following Python class. A user reports that the <code>total_price</code> is always 0, even when valid values are passed. Review the code and <strong>identify the best line to place a breakpoint</strong> to investigate the issue.
+  </p>
+
+
+  <pl-code normalize-whitespace="true" show-line-numbers="true" language="python">
+Class Order:
+    def __init__(self, item, quantity, price_per_unit):
+        self.item = item
+        self.quantity = quantity
+        self.price_per_unit = price_per_unit
+        self.total_price = 0
+        self.calculate_total()
+
+    def calculate_total(self):
+        self.total_price = self.quantity * self.price_per_unit
+
+order = Order("Notebook", 3, 5.0)
+print("Total:", order.total_price)
+  </pl-code>
+
+</pl-question-panel>
+
+<pl-integer-input answers-name="line_number" correct-answer="10" display="block" label="line number"></pl-integer-input>

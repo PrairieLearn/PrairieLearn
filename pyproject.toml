@@ -145,6 +145,7 @@ convention = "google"
 "scripts/**/*.py" = ["D100", "DOC"]
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
 "exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
+"templateCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]

@@ -1,0 +1,73 @@
+<pl-question-panel>
+  <p>Construct a class hierarchy matching the given UML diagram.</p>
+  
+  <pl-graph>
+digraph FootballUML {
+  // vertical (TB = Top‑to‑Bottom) layout
+  rankdir = TB;
+  nodesep = 0.60;   // horizontal padding between levels
+  ranksep = 0.75;   // vertical padding between levels
+
+  node [shape=record, fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10, labelfloat=true];
+
+  /* ---------- nodes ---------- */
+  FootballMatch [
+    label="{FootballMatch|
+            - home: Team\l
+            - away: Team\l|
+            + FootballMatch(home: Team, away: Team)\l
+            + get_home_team(): Team\l
+            + get_away_team(): Team\l}"
+  ];
+
+  Team [
+    label="{Team|
+            - name: str\l
+            - roster: Player[]\l|
+            + Team(name: str)\l
+            + add_player(player: Player): None\l
+            + get_player(number: int): Player \| None\l}"
+  ];
+
+  Player [
+    label="{Player|
+            - name: str\l
+            - number: int\l|
+            + Player(name: str, number: int)\l
+            + __str__(): str\l}"
+  ];
+
+  /* ---------- relationships ---------- */
+  FootballMatch -> Team   [
+    arrowtail=diamond, dir=both,
+    taillabel="2", headlabel="1",
+    label="hosts", labeldistance=1.2, labelangle=60
+  ];
+
+  Team -> Player [
+    arrowhead=none,
+    taillabel="1", headlabel="0..*",
+    label="roster", labeldistance=1.2, labelangle=-60
+  ];
+}
+  </pl-graph>
+  <p>Requirements:</p>
+  <ul>
+    <li>All functions, including constructors and member functions, should take arguments in exactly the listed order.</li>
+    <li>The <code>get_player()</code> method of <code>Team</code> should return the player with the corresponding number, or <code>None</code> if one doesn't exist.</li>
+  </ul>
+
+  <pl-external-grader-variables params-name="names_from_user">
+    <pl-variable name="FootballMatch" type="python class">Class representing a football match</pl-variable>
+    <pl-variable name="Team" type="python class">Class representing a football team</pl-variable>
+    <pl-variable name="Player" type="python class">Class representing a football player</pl-variable>
+  </pl-external-grader-variables>
+</pl-question-panel>
+
+<pl-file-editor file-name="user_code.py" ace-mode="ace/mode/python"></pl-file-editor>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
