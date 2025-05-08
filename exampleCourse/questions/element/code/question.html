@@ -19,7 +19,7 @@
           return x * x
     </pl-code>
 
-    You can disable selection using the <code>prevent-select="true"</code> attribute.
+    You can disable selection of the code region using the <code>prevent-select="true"</code> attribute.
     <pl-code language="python" prevent-select="true" normalize-whitespace="true">
       def square(x):
           return x * x
@@ -30,9 +30,8 @@
 <pl-card>
   <pl-question-panel>
     Another useful feature of <code>pl-code</code> is the ability to highlight specific lines. This is done by using
-    <code>highlight-lines="..." </code>attribute. Moreover, one can disable selecting the code region by
-    adding <code>prevent-select="true"</code>.
-    <pl-code language="python" highlight-lines="4-5" prevent-select="true" normalize-whitespace="true">
+    <code>highlight-lines="..." </code>attribute.
+    <pl-code language="python" highlight-lines="4-5" normalize-whitespace="true">
       def foo():
           return 'foo'
 
