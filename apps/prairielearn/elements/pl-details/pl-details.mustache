@@ -2,9 +2,7 @@
   <div class="accordion-item">
     <h2 class="accordion-header" id="pl-details-header-{{uuid}}">
       <button 
-        {{#show}}class="accordion-button"{{/show}}
-        {{^show}}class="accordion-button collapsed"{{/show}}
-
+        class="accordion-button {{^show}}collapsed{{/show}}"
         type="button"
         data-bs-toggle="collapse"
         data-bs-target="#pl-details-summary-{{uuid}}"
@@ -17,8 +15,7 @@
     </h2>
     <div
       id="pl-details-summary-{{uuid}}"
-      {{#show}}class="accordion-collapse collapse show"{{/show}}
-      {{^show}}class="accordion-collapse collapse"{{/show}}
+      class="accordion-collapse collapse {{#show}}show{{/show}}"
       aria-labelledby="pl-details-header-{{uuid}}"
       data-bs-parent="#pl-details-{{uuid}}"
     >
