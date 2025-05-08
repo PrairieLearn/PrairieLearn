@@ -93,7 +93,7 @@ router.post(
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
         aiQuestionGenerationCache,
-        userId: res.locals.user.user_id,
+        userId: res.locals.authn_user.user_id,
       });
 
       const approxPromptCost = approximatePromptCost(req.body.prompt);
