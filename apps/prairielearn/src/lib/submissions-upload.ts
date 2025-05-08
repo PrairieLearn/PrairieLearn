@@ -12,6 +12,7 @@ import { selectOrInsertUserByUid } from '../models/user.js';
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
 import { createServerJob } from './server-jobs.js';
+import { parseISO } from 'date-fns';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -34,19 +35,12 @@ const SubmissionCsvRowSchema = z.object({
   Options: ZodStringToJson,
   'Submission date': z
     .string()
-    .transform((val) => {
-      if (val.length === 22) {
-        // The datetime likely has a malformed offset like `+05` or `-05` instead of
-        // `+05:00` or `-05:00`. This is a bug in the submissions CSV export. Until
-        // that's fixed, we'll massage the date to make it valid.
-        //
-        // TODO: Remove this once the fix for the CSV export has been deployed.
-        return val + ':00';
-      }
-
-      return val;
-    })
-    .pipe(z.coerce.date()),
+    // We pipe the value through `parseISO` from `date-fns` because our CSV
+    // export uses timezone offsets like `-05` which, while valid per the
+    // ISO 8601 standard, aren't parseable by JavaScript's `Date` constructor
+    // or Zod's own date coercion.
+    .transform((val) => parseISO(val))
+    .pipe(z.date()),
   'Submitted answer': ZodStringToJson,
 });
 
