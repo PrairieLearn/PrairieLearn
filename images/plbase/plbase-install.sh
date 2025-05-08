@@ -12,7 +12,7 @@ dnf update -y
 # - `libjpeg-devel` is needed by the Pillow package
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-dnf -y install \
+dnf -y install -setopt=install_weak_deps=False \
     bash-completion \
     gcc \
     gcc-c++ \
