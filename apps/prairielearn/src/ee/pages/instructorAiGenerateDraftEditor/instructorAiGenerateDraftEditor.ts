@@ -272,7 +272,7 @@ router.post(
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimit) {
         res.send(
           RateLimitExceeded({
-            // If the user has more tokens than the threshold of 100 tokens,
+            // If the user has more than the threshold of 100 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
               config.aiQuestionGenerationRateLimit - intervalCost >

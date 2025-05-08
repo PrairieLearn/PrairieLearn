@@ -573,7 +573,7 @@ const ConfigSchema = z.object({
   /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
-   * */
+   */
   aiQuestionGenerationRateLimit: z.number().default(1),
   /**
    * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
