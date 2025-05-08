@@ -14,16 +14,14 @@ digraph FootballUML {
   /* ---------- nodes ---------- */
   FootballMatch [
     label="{FootballMatch|
-            - home: Team\l
-            - away: Team\l|
-            + FootballMatch(home: Team, away: Team)\l
-            + get_home_team(): Team\l
-            + get_away_team(): Team\l}"
+            + home: Team\l
+            + away: Team\l|
+            + FootballMatch(home: Team, away: Team)\l}"
   ];
 
   Team [
     label="{Team|
-            - name: str\l
+            + name: str\l
             - roster: Player[]\l|
             + Team(name: str)\l
             + add_player(player: Player): None\l
@@ -32,10 +30,9 @@ digraph FootballUML {
 
   Player [
     label="{Player|
-            - name: str\l
-            - number: int\l|
-            + Player(name: str, number: int)\l
-            + __str__(): str\l}"
+            + name: str\l
+            + number: int\l|
+            + Player(name: str, number: int)\l}"
   ];
 
   /* ---------- relationships ---------- */
@@ -54,9 +51,11 @@ digraph FootballUML {
   </pl-graph>
   <p>Requirements:</p>
   <ul>
-    <li>All functions, including constructors and member functions, should take arguments in exactly the listed order.</li>
+    <li>All functions, including constructors and methods, should take arguments in exactly the listed order.</li>
     <li>The <code>get_player()</code> method of <code>Team</code> should return the player with the corresponding number, or <code>None</code> if one doesn't exist.</li>
   </ul>
+
+  <p>Your code should define the following variables:</p>
 
   <pl-external-grader-variables params-name="names_from_user">
     <pl-variable name="FootballMatch" type="python class">Class representing a football match</pl-variable>
