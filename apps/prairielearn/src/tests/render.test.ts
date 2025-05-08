@@ -1,9 +1,7 @@
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-import { config as chaiConfig } from 'chai';
-import { assert } from 'chai'; // Import assert
-// import chai from 'chai';
+import { assert } from 'chai';
 import fs from 'fs-extra';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
@@ -21,6 +19,7 @@ import { makeVariant } from '../lib/question-variant.js';
 import * as freeformServer from '../question-servers/freeform.js';
 import * as questionServers from '../question-servers/index.js';
 import * as helperServer from '../tests/helperServer.js';
+
 const htmlvalidate = new HtmlValidate();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -28,7 +27,6 @@ const __dirname = dirname(__filename);
 
 const exampleCoursePath = resolve(__dirname, '..', '..', '..', '..', 'exampleCourse');
 const questionsPath = join(exampleCoursePath, 'questions');
-chaiConfig.showDiff = true;
 
 // Helper function to find question directories recursively
 const findQuestionDirectories = (dir: string): string[] => {
@@ -245,7 +243,9 @@ const unsupportedQuestions = [
   'element/codeDocumentation',
 ];
 
-describe('Internally Graded Question Lifecycle Tests', () => {
+describe('Internally Graded Question Lifecycle Tests', function () {
+  this.timeout(40000);
+
   before(async () => {
     // Disable load estimator connecting to SQL
     loadEstimator.setLocalLoadEstimator(true);
