@@ -16,7 +16,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
-    res.locals.course = await selectCourseById(res.locals.course_instanc.course_id);
+    res.locals.course = await selectCourseById(res.locals.course_instance.course_id);
     res.locals.urlPrefix = '/pl';
 
     try {
