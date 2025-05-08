@@ -123,14 +123,27 @@ export const IntegerFromStringSchema = z
 /**
  * A Zod schema that utilizes IntegerFromStringSchema to parse a string as an
  * integer. However, this wrapper also allows us to accept and empty string as a
- * valid value. If an empty string is passed, it will be transformed to 0.
- * This is useful for form inputs where an empty string is a valid.
+ * valid value. If an empty string is passed, it will be transformed to null.
+ * This is useful for form number inputs that are not required but we do not want to
+ * use an empty string to compute values.
  */
 
 export const IntegerFromStringOrEmptySchema = z
   .string()
-  .transform((s) => (s === '' ? '0' : s))
-  .pipe(IntegerFromStringSchema);
+  .transform((s) => (s === '' ? null : s))
+  .refine(
+    (s) => {
+      if (s === null) {
+        return true;
+      }
+      const n = Number.parseInt(s);
+      return !Number.isNaN(n) && Number.isSafeInteger(n);
+    },
+    {
+      message: 'must be a valid integer',
+    },
+  )
+  .transform((s) => (s === null ? null : Number.parseInt(s)));
 
 /**
  * A Zod schema for an arrray of string values from either a string or an array of

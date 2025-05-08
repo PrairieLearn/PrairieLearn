@@ -54,11 +54,9 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // If so, enable the save button and return. If there are no changes, disable the save button.
   function checkDifferences() {
     for (const element in valueHasChanged) {
-      if (valueHasChanged[element] === true && form.checkValidity()) {
+      if (valueHasChanged[element] === true) {
         saveButton.removeAttribute('disabled');
         return;
-      } else {
-        (document.getElementById(element) as HTMLInputElement)?.reportValidity();
       }
     }
     saveButton.setAttribute('disabled', 'true');

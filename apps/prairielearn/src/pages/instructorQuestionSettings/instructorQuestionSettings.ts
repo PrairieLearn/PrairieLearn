@@ -132,10 +132,13 @@ router.post(
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
           workspace_image: z.string().optional(),
-          workspace_port: IntegerFromStringOrEmptySchema,
+          workspace_port: IntegerFromStringOrEmptySchema.nullable(),
           workspace_home: z.string().optional(),
           workspace_args: z.string().transform((s) => shlex.split(s || '')),
           workspace_rewrite_url: BooleanFromCheckboxSchema,
+          // This will not correctly handle any filenames that have a comma in them.
+          // Currently, we do not have any such filenames in prod so we don't think that
+          // escaping commas in indiviudal filenames is necessary.
           workspace_graded_files: z.string().transform((s) =>
             s
               .split(',')
@@ -205,7 +208,7 @@ router.post(
           port: propertyValueWithDefault(
             questionInfo.workspaceOptions?.port,
             body.workspace_port,
-            0,
+            null,
           ),
           home: propertyValueWithDefault(
             questionInfo.workspaceOptions?.home,

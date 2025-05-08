@@ -21,8 +21,41 @@ onDocumentReady(() => {
   const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
     '#show-workspace-options-button',
   );
+  const workspaceOptions = document.querySelector<HTMLDivElement>('#workspace-options');
+  const workspaceImageInput = document.querySelector<HTMLInputElement>('#workspace_image');
+  const workspacePortInput = document.querySelector<HTMLInputElement>('#workspace_port');
+  const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
+  const workspaceGradedFilesInput =
+    document.querySelector<HTMLInputElement>('#workspace_graded_files');
+  const workspaceArgsInput = document.querySelector<HTMLInputElement>('#workspace_args');
   const workspaceEnvironmentInput =
     document.querySelector<HTMLInputElement>('#workspace_environment');
+  const workspaceEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
+    '#workspace_enable_networking',
+  );
+  const workspaceRewriteUrlCheckbox =
+    document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
+
+  function validateWorkspaceOptions() {
+    if (
+      workspaceImageInput?.value ||
+      workspacePortInput?.value ||
+      workspaceHomeInput?.value ||
+      workspaceGradedFilesInput?.value ||
+      workspaceArgsInput?.value ||
+      (workspaceEnvironmentInput?.value !== '{}' && workspaceEnvironmentInput?.value !== '') ||
+      workspaceEnableNetworkingCheckbox?.checked ||
+      workspaceRewriteUrlCheckbox?.checked
+    ) {
+      workspaceImageInput?.setAttribute('required', 'true');
+      workspacePortInput?.setAttribute('required', 'true');
+      workspaceHomeInput?.setAttribute('required', 'true');
+    } else {
+      workspaceImageInput?.removeAttribute('required');
+      workspacePortInput?.removeAttribute('required');
+      workspaceHomeInput?.removeAttribute('required');
+    }
+  }
 
   if (document.getElementById('topic')) {
     new TomSelect('#topic', {
@@ -97,8 +130,15 @@ onDocumentReady(() => {
   saveButtonEnabling(questionSettingsForm, saveButton);
 
   showWorkspaceOptionsButton?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.querySelector('#workspace-options')?.removeAttribute('hidden');
+    workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
+  });
+
+  questionSettingsForm.addEventListener('submit', (e) => {
+    validateWorkspaceOptions();
+    if (!questionSettingsForm.checkValidity()) {
+      e.preventDefault();
+      questionSettingsForm.reportValidity();
+    }
   });
 });

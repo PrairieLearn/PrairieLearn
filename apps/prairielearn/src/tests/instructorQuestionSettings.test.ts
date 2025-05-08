@@ -339,4 +339,78 @@ describe('Editing question settings', () => {
       assert.equal(response.status, 400);
     },
   );
+
+  step('verify workspace settings changes with minimal configuration', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'question2',
+        topic: 'Test',
+        grading_method: 'Internal',
+        workspace_image: 'test_image',
+        workspace_port: '1234',
+        workspace_home: '/home/test',
+        workspace_graded_files: 'test_file.txt',
+        workspace_args: '',
+        workspace_environment: '',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    assert.equal(questionInfo.workspaceOptions.image, 'test_image');
+    assert.equal(questionInfo.workspaceOptions.port, 1234);
+    assert.equal(questionInfo.workspaceOptions.home, '/home/test');
+    assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');
+    assert.notExists(questionInfo.workspaceOptions.args);
+    assert.notExists(questionInfo.workspaceOptions.environment);
+  });
+
+  step('verify workspace settings changes with full configuration', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'question2',
+        topic: 'Test',
+        grading_method: 'Internal',
+        workspace_image: 'test_image',
+        workspace_port: '1234',
+        workspace_home: '/home/test',
+        workspace_graded_files: 'test_file.txt',
+        workspace_args: 'test --test',
+        workspace_environment: '{"test": "value"}',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    assert.equal(questionInfo.workspaceOptions.image, 'test_image');
+    assert.equal(questionInfo.workspaceOptions.port, 1234);
+    assert.equal(questionInfo.workspaceOptions.home, '/home/test');
+    assert.equal(questionInfo.workspaceOptions.gradedFiles, 'test_file.txt');
+    assert.deepEqual(questionInfo.workspaceOptions.args, ['test', '--test']);
+    assert.deepEqual(questionInfo.workspaceOptions.environment, { test: 'value' });
+  });
 });
