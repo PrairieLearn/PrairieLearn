@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import DOMPurify from 'isomorphic-dompurify';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -26,6 +27,8 @@ import studentAssessmentAccess, {
 import studentAssessmentRedirect from '../../middlewares/studentAssessmentRedirect.js';
 
 import { StudentAssessment } from './studentAssessment.html.js';
+import { markdownToHtml } from '@prairielearn/markdown';
+import mustache from 'mustache';
 
 const router = Router({ mergeParams: true });
 
@@ -79,8 +82,24 @@ router.get(
       return;
     }
 
+    let customHonorCode = '';
+    if (res.locals.assessment.type === 'Exam' && res.locals.assessment.require_honor_code) {
+      if (res.locals.assessment.honor_code) {
+        customHonorCode = await markdownToHtml(
+          DOMPurify.sanitize(
+            mustache.render(res.locals.assessment.honor_code, {
+              name: res.locals.user.name,
+            }),
+            {
+              ALLOWED_TAGS: [''],
+            },
+          ),
+        );
+      }
+    }
+
     if (!res.locals.assessment.group_work) {
-      res.send(StudentAssessment({ resLocals: res.locals }));
+      res.send(StudentAssessment({ resLocals: res.locals, customHonorCode }));
       return;
     }
 
@@ -96,8 +115,15 @@ router.get(
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
+
     res.send(
-      StudentAssessment({ resLocals: res.locals, groupConfig, groupInfo, userCanAssignRoles }),
+      StudentAssessment({
+        resLocals: res.locals,
+        groupConfig,
+        groupInfo,
+        userCanAssignRoles,
+        customHonorCode,
+      }),
     );
   }),
 );

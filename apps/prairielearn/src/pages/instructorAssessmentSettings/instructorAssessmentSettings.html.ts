@@ -266,6 +266,31 @@ ${resLocals.assessment.text}</textarea
                   </div>
                 `
               : ''}
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div
+                    class="mb-3"
+                    id="honor_code_group"
+                    ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
+                  >
+                    <label for="honor_code">Custom honor Code</label>
+                    <textarea
+                      class="form-control"
+                      id="honor_code"
+                      name="honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                    >
+${resLocals.assessment.honor_code}</textarea
+                    >
+                    <small class="form-text text-muted">
+                      Custom honor code text that will be shown to students before starting the
+                      exam. This can use Markdown formatting and a user's name can be included by
+                      using Mustache templating, (i.e. <code>{{name}}</code>). To use the default
+                      honor code, leave this blank.
+                    </small>
+                  </div>
+                `
+              : ''}
             <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
