@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { beforeEach, describe, it, assert, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -101,10 +101,13 @@ async function findSyncedUndeletedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  // set up testing database
+  beforeAll(helperDb.before);
+  // tear down testing database
+  afterAll(helperDb.after);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  // reset testing database
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of assessments in subfolders', async () => {
     const courseData = util.getCourseData();
@@ -1802,10 +1805,12 @@ describe('Assessment syncing', () => {
   });
 
   describe('Test validating shared quesitons on sync', () => {
-    before('Temporarily enable validation of shared questions', () => {
+    // Temporarily enable validation of shared questions
+    beforeAll(() => {
       config.checkSharingOnSync = true;
     });
-    after('Disable again for other tests', () => {
+    // Disable again for other tests
+    afterAll(() => {
       config.checkSharingOnSync = false;
     });
 
@@ -2311,11 +2316,11 @@ describe('Assessment syncing', () => {
 
   describe('exam UUID validation', () => {
     let originalCheckAccessRulesExamUuid: boolean;
-    before(() => {
+    beforeAll(() => {
       originalCheckAccessRulesExamUuid = config.checkAccessRulesExamUuid;
       config.checkAccessRulesExamUuid = true;
     });
-    after(() => {
+    afterAll(() => {
       config.checkAccessRulesExamUuid = originalCheckAccessRulesExamUuid;
     });
 

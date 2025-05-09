@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
 import { type AssessmentJsonInput, type AssessmentSetJsonInput } from '../../schemas/index.js';
@@ -36,10 +37,13 @@ function makeAssessmentSet() {
 }
 
 describe('Assessment set syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  // set up testing database
+  beforeAll(helperDb.before);
+  // tear down testing database
+  afterAll(helperDb.after);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  // reset testing database
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new assessment set', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();

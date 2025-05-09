@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -584,10 +585,10 @@ const partialCreditTests = [
 ];
 
 describe('Exam assessment', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   let elemList;
 
@@ -1851,4 +1852,4 @@ describe('Exam assessment', function () {
       });
     });
   });
-});
+}, 60_000);

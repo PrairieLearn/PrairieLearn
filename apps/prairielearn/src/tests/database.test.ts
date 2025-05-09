@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import _ from 'lodash';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
@@ -17,13 +18,12 @@ class DatabaseError extends Error {
 }
 
 describe('database', function () {
-  this.timeout(20000);
-
-  before('set up testing database', helperDb.beforeOnlyCreate);
-  after('tear down testing database', helperDb.after);
+  // set up testing database
+  beforeAll(helperDb.beforeOnlyCreate);
+  // tear down testing database
+  afterAll(helperDb.after);
 
   it('should match the database described in /database', async function () {
-    this.timeout(20000);
     const options = {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
@@ -34,7 +34,7 @@ describe('database', function () {
     if (diff) {
       throw new DatabaseError(diff);
     }
-  });
+  }, 20_000);
 
   it('should not contain "ON DELETE CASCADE" foreign keys from soft-delete to hard-delete tables', async function () {
     /*
@@ -73,4 +73,4 @@ describe('database', function () {
       }
     }
   });
-});
+}, 20_000);

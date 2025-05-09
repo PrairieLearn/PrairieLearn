@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import fg from 'fast-glob';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -76,27 +77,29 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', function () {
-    this.timeout(60000);
-
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
+    // set up testing server
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+    // shut down testing server
+    afterAll(helperServer.after);
 
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
       helperQuestion.autoTestQuestion(locals, qid),
     );
-  });
+  }, 60_000);
 
   describe('Auto-test questions in exampleCourse with process-questions-in-server enabled', function () {
-    this.timeout(60000);
-
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
+    // set up testing server
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+    // shut down testing server
+    afterAll(helperServer.after);
 
     const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-    before('enable process-questions-in-server', () => {
+    // enable process-questions-in-server
+    beforeAll(() => {
       config.features['process-questions-in-server'] = true;
     });
-    after('restore process-questions-in-server', () => {
+    // restore process-questions-in-server
+    afterAll(() => {
       config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
     });
 
@@ -104,5 +107,5 @@ describe('Auto-test questions in exampleCourse', () => {
     [...qidsExampleCourse, ...templateQuestionQids]
       .slice(0, 10)
       .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-  });
+  }, 60_000);
 });

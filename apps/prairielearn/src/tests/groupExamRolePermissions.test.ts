@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import {
   loadSqlEquiv,
@@ -278,18 +278,20 @@ async function prepareGroup() {
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
   describe('valid group role configuration tests', function () {
-    this.timeout(20000);
-
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    // set up testing server
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    // set authenticated user
+    beforeAll(function (callback) {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
       callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    // shut down testing server
+    afterAll(helperServer.after);
+    // unset authenticated user
+    afterAll(function (callback) {
       Object.assign(config, storedConfig);
       callback(null);
     });
@@ -426,21 +428,23 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
     });
-  });
+  }, 20_000);
 
   describe('invalid role configuration tests', function () {
-    this.timeout(20000);
-
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    // set up testing server
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    // set authenticated user
+    beforeAll(function (callback) {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
       callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    // shut down testing server
+    afterAll(helperServer.after);
+    // unset authenticated user
+    afterAll(function (callback) {
       Object.assign(config, storedConfig);
       callback(null);
     });
@@ -530,5 +534,5 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assertAlert($, 'too many roles', 0);
       assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });
-  });
+  }, 20_000);
 });

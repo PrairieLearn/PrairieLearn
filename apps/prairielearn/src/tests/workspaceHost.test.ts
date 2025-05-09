@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import { v4 as uuidv4 } from 'uuid';
+import { beforeEach, describe, it, assert, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -93,13 +93,13 @@ async function getWorkspaceLogs(id: string | number) {
 }
 
 describe('workspaceHost utilities', function () {
-  before(async () => {
-    await helperDb.before.call(this);
-  });
+  beforeAll(async () => {
+    await helperDb.before();
+  }, 20_000);
 
-  after(async () => {
-    await helperDb.after.call(this);
-  });
+  afterAll(async () => {
+    await helperDb.after();
+  }, 20_000);
 
   beforeEach(async () => {
     await sqldb.queryAsync('DELETE FROM workspaces;', {});

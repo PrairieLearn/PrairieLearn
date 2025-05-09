@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { describe, it, assert, beforeAll, afterAll } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -17,8 +17,8 @@ async function testFile(urlPath: string, expectedContents: string) {
 }
 
 describe('Client files endpoints', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   // TODO: refactor this to be a function that we can call in a `before` hook.
   // Right now, this actually creates a bunch of `describe()` blocks and tests.

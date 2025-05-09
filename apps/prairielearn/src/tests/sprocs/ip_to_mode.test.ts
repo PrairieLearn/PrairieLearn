@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,12 +18,14 @@ async function createCourseExamReservation() {
 }
 
 describe('sproc ip_to_mode tests', function () {
-  before('set up testing server', async function () {
-    await helperDb.before.call(this);
+  // set up testing server
+  beforeAll(async function () {
+    await helperDb.before();
     const result = await sqldb.queryAsync(sql.setup, {});
     user_id = result.rows[0].user_id;
-  });
-  after('tear down testing database', helperDb.after);
+  }, 20_000);
+  // tear down testing database
+  afterAll(helperDb.after);
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {

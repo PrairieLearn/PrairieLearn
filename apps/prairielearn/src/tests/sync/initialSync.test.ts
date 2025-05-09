@@ -1,14 +1,18 @@
 import { assert } from 'chai';
+import { beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
 
 describe('Initial Sync', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  // set up testing database
+  beforeAll(helperDb.before);
+  // tear down testing database
+  afterAll(helperDb.after);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  // reset testing database
+  beforeEach(helperDb.resetDatabase);
 
   it('correctly syncs content from disk to the database', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();

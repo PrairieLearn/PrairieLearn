@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -10,16 +11,16 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
-  this.timeout(60000);
-
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', helperServer.before());
+  // set up testing server
+  beforeAll(helperServer.before());
 
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
   it('visits the landing page of default assessment', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam, {
@@ -52,4 +53,4 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-class-honor-code'), 0);
   });
-});
+}, 60_000);

@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -19,10 +19,10 @@ const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function () {
-  this.timeout(20000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   /*
       There are three nested time periods:
@@ -357,4 +357,4 @@ describe('Access control', function () {
       await postInstanceQuestion(cookiesStudentExam(), 200);
     });
   });
-});
+}, 20_000);

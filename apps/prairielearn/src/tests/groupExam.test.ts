@@ -1,8 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { assert, describe, it, test, beforeAll, afterAll } from 'vitest';
 
 import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
@@ -76,58 +75,66 @@ async function joinGroup(
 }
 
 describe('Group based exam assessments', function () {
-  this.timeout(20000);
-
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  before('set authenticated user', function (callback) {
+  // set up testing server
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  // set authenticated user
+  beforeAll(function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
     callback(null);
   });
 
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  // shut down testing server
+  afterAll(helperServer.after);
+  // unset authenticated user
+  afterAll(function (callback) {
     Object.assign(config, storedConfig);
     callback(null);
   });
 
   describe('instructor access for exam assessment', function () {
-    step("should load the group tab for the first assessment's instructor URL", async function () {
-      // Get exam assessment URL using ids from database
-      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-        assessment_tid: GROUP_EXAM_1_TID,
-      });
-      assert.lengthOf(result.rows, 1);
-      const assessmentId = result.rows[0].id;
-      assert.isDefined(assessmentId);
-      const instructorAssessmentsUrlGroupTab =
-        courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
+    test.sequential(
+      "should load the group tab for the first assessment's instructor URL",
+      async function () {
+        // Get exam assessment URL using ids from database
+        const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+          assessment_tid: GROUP_EXAM_1_TID,
+        });
+        assert.lengthOf(result.rows, 1);
+        const assessmentId = result.rows[0].id;
+        assert.isDefined(assessmentId);
+        const instructorAssessmentsUrlGroupTab =
+          courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
-      // Page should load successfully
-      const res = await fetch(instructorAssessmentsUrlGroupTab);
-      assert.isOk(res.ok);
-    });
+        // Page should load successfully
+        const res = await fetch(instructorAssessmentsUrlGroupTab);
+        assert.isOk(res.ok);
+      },
+    );
 
-    step("should load the group tab for the second assessment's instructor URL", async function () {
-      // Get exam assessment URLs using ids from database
-      const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
-        assessment_tid: GROUP_EXAM_2_TID,
-      });
-      assert.lengthOf(result.rows, 1);
-      const assessmentId = result.rows[0].id;
-      assert.isDefined(assessmentId);
-      const instructorAssessmentsUrlGroupTab =
-        courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
+    test.sequential(
+      "should load the group tab for the second assessment's instructor URL",
+      async function () {
+        // Get exam assessment URLs using ids from database
+        const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
+          assessment_tid: GROUP_EXAM_2_TID,
+        });
+        assert.lengthOf(result.rows, 1);
+        const assessmentId = result.rows[0].id;
+        assert.isDefined(assessmentId);
+        const instructorAssessmentsUrlGroupTab =
+          courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
-      // Page should load successfully
-      const res = await fetch(instructorAssessmentsUrlGroupTab);
-      assert.isOk(res.ok);
-    });
+        // Page should load successfully
+        const res = await fetch(instructorAssessmentsUrlGroupTab);
+        assert.isOk(res.ok);
+      },
+    );
   });
 
   describe('group config correctness', function () {
-    step('first assessment group config in database is correct', async function () {
+    test.sequential('first assessment group config in database is correct', async function () {
       const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
         assessment_tid: GROUP_EXAM_1_TID,
       });
@@ -144,7 +151,7 @@ describe('Group based exam assessments', function () {
       assert.equal(max, 2);
     });
 
-    step('second assessment group config in database is correct', async function () {
+    test.sequential('second assessment group config in database is correct', async function () {
       const result = await queryOneRowAsync(sql.select_group_exam_by_tid, {
         assessment_tid: GROUP_EXAM_2_TID,
       });
@@ -291,20 +298,23 @@ describe('Group based exam assessments', function () {
       assert.isOk(secondMemberResponse.ok);
     });
   });
-});
+}, 20_000);
 
 describe('cross group exam access', function () {
-  this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  before('set authenticated user', function (callback) {
+  // set up testing server
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  // set authenticated user
+  beforeAll(function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
     callback(null);
   });
 
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  // shut down testing server
+  afterAll(helperServer.after);
+  // unset authenticated user
+  afterAll(function (callback) {
     Object.assign(config, storedConfig);
     callback(null);
   });
@@ -391,20 +401,23 @@ describe('cross group exam access', function () {
     const secondAccessResponse = await fetch(assessmentInstanceURL);
     assert.equal(secondAccessResponse.status, 403, 'status should be forbidden');
   });
-});
+}, 20_000);
 
 describe('cross exam assessment access', function () {
-  this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  before('set authenticated user', function (callback) {
+  // set up testing server
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  // set authenticated user
+  beforeAll(function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
     callback(null);
   });
 
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  // shut down testing server
+  afterAll(helperServer.after);
+  // unset authenticated user
+  afterAll(function (callback) {
     Object.assign(config, storedConfig);
     callback(null);
   });
@@ -471,4 +484,4 @@ describe('cross exam assessment access', function () {
     // Error message should show
     assertAlert($, 'Group does not exist');
   });
-});
+}, 20_000);

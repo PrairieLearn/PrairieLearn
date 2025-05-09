@@ -3,12 +3,12 @@ import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';
+import { assert, describe, expect, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -256,25 +256,28 @@ const verifyFileData = [
 ];
 
 describe('test file editor', function () {
-  this.timeout(20000);
-
   describe('not the test course', function () {
-    before('create test course files', async () => {
+    // create test course files
+    beforeAll(async () => {
       await createCourseFiles();
     });
 
-    before('set up testing server', helperServer.before(courseDir));
+    // set up testing server
+    beforeAll(helperServer.before(courseDir));
 
-    before('update course repository in database', async () => {
+    // update course repository in database
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
     });
 
-    after('shut down testing server', helperServer.after);
+    // shut down testing server
+    afterAll(helperServer.after);
 
-    after('delete test course files', async () => {
+    // delete test course files
+    afterAll(async () => {
       await deleteCourseFiles();
     });
 
@@ -314,15 +317,17 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    // set up testing server
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
-    after('shut down testing server', helperServer.after);
+    // shut down testing server
+    afterAll(helperServer.after);
 
     describe('disallow edits inside exampleCourse', function () {
       badGet(badExampleCoursePathUrl, 403, true);
     });
   });
-});
+}, 20_000);
 
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
@@ -704,15 +709,18 @@ function pullAndVerifyFileNotInDev(fileName) {
         env: process.env,
       });
     });
-    it('should not exist', function (callback) {
-      fs.access(path.join(courseDevDir, fileName), (err) => {
-        if (err) {
-          if (err.code === 'ENOENT') callback(null);
-          else callback(new Error(`got wrong error: ${err}`));
+    it('should not exist', async () => {
+      try {
+        await fs.promises.access(path.join(courseDevDir, fileName));
+        throw new Error(`${fileName} should not exist, but does`);
+      } catch (err: any) {
+        if (err.code === 'ENOENT') {
+          // File does not exist, as expected
+          expect(true).toBe(true);
         } else {
-          callback(new Error(`${fileName} should not exist, but does`));
+          throw new Error(`got wrong error: ${err}`);
         }
-      });
+      }
     });
   });
 }

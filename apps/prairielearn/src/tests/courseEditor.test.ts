@@ -1,12 +1,12 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -297,25 +297,28 @@ const testEditData = [
 ];
 
 describe('test course editor', function () {
-  this.timeout(20000);
-
   describe('not the example course', function () {
-    before('create test course files', async () => {
+    // create test course files
+    beforeAll(async () => {
       await createCourseFiles();
     });
 
-    before('set up testing server', helperServer.before(courseDir));
+    // set up testing server
+    beforeAll(helperServer.before(courseDir));
 
-    before('update course repository in database', async () => {
+    // update course repository in database
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
     });
 
-    after('shut down testing server', helperServer.after);
+    // shut down testing server
+    afterAll(helperServer.after);
 
-    after('delete test course files', async () => {
+    // delete test course files
+    afterAll(async () => {
       await deleteCourseFiles();
     });
 
@@ -333,7 +336,7 @@ describe('test course editor', function () {
       });
     });
   });
-});
+}, 20_000);
 
 async function getFiles(options): Promise<Set<string>> {
   const files = new Set<string>();

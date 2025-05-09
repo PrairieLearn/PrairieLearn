@@ -1,6 +1,5 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { assert, describe, test, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -14,8 +13,6 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam and homework assessment with active access restriction', function () {
-  this.timeout(60000);
-
   const storedConfig: Record<string, any> = {};
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
@@ -28,7 +25,8 @@ describe('Exam and homework assessment with active access restriction', function
 
   const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
-  before('set authenticated user', function (callback) {
+  // set authenticated user
+  beforeAll(function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
@@ -37,7 +35,8 @@ describe('Exam and homework assessment with active access restriction', function
     config.authUin = '00000001';
     callback(null);
   });
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     await helperServer.before().call(this);
     context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
@@ -46,24 +45,26 @@ describe('Exam and homework assessment with active access restriction', function
     context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
     context.hwNumber = '8';
   });
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  // shut down testing server
+  afterAll(helperServer.after);
+  // unset authenticated user
+  afterAll(function (callback) {
     Object.assign(config, storedConfig);
     callback(null);
   });
 
-  step('visit home page', async () => {
+  test.sequential('visit home page', async () => {
     const response = await helperClient.fetchCheerio(context.baseUrl, {
       headers,
     });
     assert.isTrue(response.ok);
   });
 
-  step('enroll the test student user in the course', async () => {
+  test.sequential('enroll the test student user in the course', async () => {
     await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
   });
 
-  step(
+  test.sequential(
     'ensure that the exam is not visible on the assessments page when no access rule applies',
     async () => {
       headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
@@ -75,7 +76,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('try to access the exam when no access rule applies', async () => {
+  test.sequential('try to access the exam when no access rule applies', async () => {
     headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -84,7 +85,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 403);
   });
 
-  step(
+  test.sequential(
     'ensure that the exam is visible without a link on the assessments page if student has not started the exam and active is false',
     async () => {
       headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
@@ -97,7 +98,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('try to access the exam when it is not active', async () => {
+  test.sequential('try to access the exam when it is not active', async () => {
     headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -110,7 +111,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.match(msg.text(), /Assessment will become available on 2010-01-01 00:00:01/);
   });
 
-  step('check that an assessment instance was not created', async () => {
+  test.sequential('check that an assessment instance was not created', async () => {
     const results = await sqldb.queryRows(
       sql.select_assessment_instances,
       AssessmentInstanceSchema,
@@ -118,7 +119,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(results.length, 0);
   });
 
-  step(
+  test.sequential(
     'ensure that a link to the exam is visible on the assessments page if active is true',
     async () => {
       headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
@@ -130,7 +131,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('visit start exam page when the exam is active', async () => {
+  test.sequential('visit start exam page when the exam is active', async () => {
     headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
     const response = await helperClient.fetchCheerio(context.examUrl, {
@@ -143,7 +144,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam and access questions', async () => {
+  test.sequential('start the exam and access questions', async () => {
     const response = await helperClient.fetchCheerio(context.examUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -190,7 +191,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.isTrue(workspaceResponse.ok);
   });
 
-  step('count number of variants generated', async () => {
+  test.sequential('count number of variants generated', async () => {
     context.numberOfVariants = await sqldb.queryRow(
       sql.count_variants,
       {
@@ -201,7 +202,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(context.numberOfVariants, 2);
   });
 
-  step('simulate a time limit expiration', async () => {
+  test.sequential('simulate a time limit expiration', async () => {
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -221,7 +222,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('a:contains("Question 1")'), 1);
   });
 
-  step('check that the assessment instance is closed', async () => {
+  test.sequential('check that the assessment instance is closed', async () => {
     const results = await sqldb.queryRows(
       sql.select_assessment_instances,
       AssessmentInstanceSchema,
@@ -230,7 +231,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(results[0].open, false);
   });
 
-  step('access question with existing variant when exam is closed', async () => {
+  test.sequential('access question with existing variant when exam is closed', async () => {
     const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
       headers,
     });
@@ -241,7 +242,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('button.question-grade'), 0);
   });
 
-  step('access question without existing variant when exam is closed', async () => {
+  test.sequential('access question without existing variant when exam is closed', async () => {
     const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
       headers,
     });
@@ -249,7 +250,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
   });
 
-  step(
+  test.sequential(
     'ensure that a link to the exam is visible on the assessments page if student has started the exam and active is false',
     async () => {
       headers.cookie = 'pl_test_date=2010-01-02T00:01:01Z';
@@ -261,7 +262,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('access the exam when it is no longer active', async () => {
+  test.sequential('access the exam when it is no longer active', async () => {
     headers.cookie = 'pl_test_date=2010-01-10T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
@@ -274,7 +275,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
   });
 
-  step('access question with existing variant when exam is not active', async () => {
+  test.sequential('access question with existing variant when exam is not active', async () => {
     const response = await helperClient.fetchCheerio(context.examQuestionUrl, {
       headers,
     });
@@ -285,7 +286,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('button.question-grade'), 0);
   });
 
-  step('access question without existing variant when exam is not active', async () => {
+  test.sequential('access question without existing variant when exam is not active', async () => {
     const response = await helperClient.fetchCheerio(context.examQuestionWithoutVariantUrl, {
       headers,
     });
@@ -293,7 +294,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
   });
 
-  step('access clientFilesCourse when exam is not active', async () => {
+  test.sequential('access clientFilesCourse when exam is not active', async () => {
     const response = await fetch(`${context.examUrl}clientFilesCourse/data.txt`, {
       headers,
     });
@@ -301,7 +302,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(await response.text(), 'This data is specific to the course.');
   });
 
-  step('access clientFilesCourseInstance when exam is not active', async () => {
+  test.sequential('access clientFilesCourseInstance when exam is not active', async () => {
     const response = await fetch(`${context.examUrl}clientFilesCourseInstance/data.txt`, {
       headers,
     });
@@ -309,7 +310,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(await response.text(), 'This data is specific to the course instance.');
   });
 
-  step('access clientFilesAssessment when exam is not active', async () => {
+  test.sequential('access clientFilesAssessment when exam is not active', async () => {
     const response = await fetch(`${context.examUrl}clientFilesAssessment/data.txt`, {
       headers,
     });
@@ -317,7 +318,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(await response.text(), 'This data is specific to the assessment.');
   });
 
-  step('ensure that no new variants have been created', async () => {
+  test.sequential('ensure that no new variants have been created', async () => {
     const countVariantsResult = await sqldb.queryRow(
       sql.count_variants,
       {
@@ -328,7 +329,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(countVariantsResult, context.numberOfVariants);
   });
 
-  step('access the exam when active and showClosedAssessment are false', async () => {
+  test.sequential('access the exam when active and showClosedAssessment are false', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
@@ -338,7 +339,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('div.progress'), 1); // score should be shown
   });
 
-  step('access a workspace when active and showClosedAssessment are false', async () => {
+  test.sequential('access a workspace when active and showClosedAssessment are false', async () => {
     const response = await helperClient.fetchCheerio(context.examWorkspaceUrl, { headers });
     assert.equal(response.status, 403);
 
@@ -346,7 +347,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('div.progress'), 1); // score should be shown
   });
 
-  step(
+  test.sequential(
     'access the exam when active, showClosedAssessment, and showClosedAssessmentScore are false',
     async () => {
       headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
@@ -359,7 +360,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('try to access the homework when it is not active', async () => {
+  test.sequential('try to access the homework when it is not active', async () => {
     headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -372,7 +373,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
   });
 
-  step('access the homework when it is active', async () => {
+  test.sequential('access the homework when it is active', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwUrl, {
@@ -394,7 +395,7 @@ describe('Exam and homework assessment with active access restriction', function
     context.hwQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
   });
 
-  step('access a question when homework is active', async () => {
+  test.sequential('access a question when homework is active', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     // Access the question to create a variant.
@@ -407,7 +408,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('count number of variants generated', async () => {
+  test.sequential('count number of variants generated', async () => {
     context.numberOfVariants = await sqldb.queryRow(
       sql.count_variants,
       {
@@ -418,7 +419,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(context.numberOfVariants, 1);
   });
 
-  step('access the homework when it is no longer active', async () => {
+  test.sequential('access the homework when it is no longer active', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -431,7 +432,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
   });
 
-  step('access question with existing variant when homework is not active', async () => {
+  test.sequential('access question with existing variant when homework is not active', async () => {
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
       headers,
     });
@@ -442,15 +443,18 @@ describe('Exam and homework assessment with active access restriction', function
     assert.lengthOf(response.$('button.question-grade'), 0);
   });
 
-  step('access question without existing variant when homework is not active', async () => {
-    const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
-      headers,
-    });
-    assert.equal(response.status, 403);
-    assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
-  });
+  test.sequential(
+    'access question without existing variant when homework is not active',
+    async () => {
+      const response = await helperClient.fetchCheerio(context.hwQuestionWithoutVariantUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
+      assert.lengthOf(response.$(`div.card-body:contains(${VARIANT_FORBIDDEN_STRING})`), 1);
+    },
+  );
 
-  step('ensure that no new variants have been created', async () => {
+  test.sequential('ensure that no new variants have been created', async () => {
     const countVariantsResult = await sqldb.queryRow(
       sql.count_variants,
       {
@@ -461,7 +465,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(countVariantsResult, context.numberOfVariants);
   });
 
-  step(
+  test.sequential(
     'access the homework when active and showClosedAssessment are false, but the homework will be active later',
     async () => {
       headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
@@ -479,7 +483,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step(
+  test.sequential(
     'access the homework when an active and a non-active access rule are both satisfied, and both have nonzero credit',
     async () => {
       headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
@@ -491,7 +495,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step(
+  test.sequential(
     'access the homework when active and showClosedAssessment are false, and the homework will never be active again',
     async () => {
       headers.cookie = 'pl_test_date=2036-06-01T00:00:01Z';
@@ -509,7 +513,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('submit an answer to a question when active is false', async () => {
+  test.sequential('submit an answer to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -525,7 +529,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 400);
   });
 
-  step(
+  test.sequential(
     'check that no credit is received for an answer submitted when active is false',
     async () => {
       const points = await sqldb.queryRow(
@@ -539,7 +543,7 @@ describe('Exam and homework assessment with active access restriction', function
     },
   );
 
-  step('get CSRF token and variant ID for attaching file on question page', async () => {
+  test.sequential('get CSRF token and variant ID for attaching file on question page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -551,7 +555,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
   });
 
-  step('try to attach a file to a question when active is false', async () => {
+  test.sequential('try to attach a file to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -568,7 +572,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 403);
   });
 
-  step('get CSRF token for attaching file on assessment instance page', async () => {
+  test.sequential('get CSRF token for attaching file on assessment instance page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -579,7 +583,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
   });
 
-  step('try to attach a file to the assessment when active is false', async () => {
+  test.sequential('try to attach a file to the assessment when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -596,7 +600,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 403);
   });
 
-  step('get CSRF token and variant ID for attaching text on question page', async () => {
+  test.sequential('get CSRF token and variant ID for attaching text on question page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -608,7 +612,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
   });
 
-  step('try to attach text to a question when active is false', async () => {
+  test.sequential('try to attach text to a question when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
@@ -625,7 +629,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 403);
   });
 
-  step('get CSRF token for attaching text on assessment instance page', async () => {
+  test.sequential('get CSRF token for attaching text on assessment instance page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -636,7 +640,7 @@ describe('Exam and homework assessment with active access restriction', function
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
   });
 
-  step('try to attach text to the assessment when active is false', async () => {
+  test.sequential('try to attach text to the assessment when active is false', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
     const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
@@ -653,7 +657,7 @@ describe('Exam and homework assessment with active access restriction', function
     assert.equal(response.status, 403);
   });
 
-  step('check that no files or text were attached', async () => {
+  test.sequential('check that no files or text were attached', async () => {
     const numberOfFiles = await sqldb.queryRow(
       sql.get_attached_files,
       {
@@ -666,4 +670,4 @@ describe('Exam and homework assessment with active access restriction', function
     // that the files table is empty.
     assert.equal(numberOfFiles, 0);
   });
-});
+}, 60_000);

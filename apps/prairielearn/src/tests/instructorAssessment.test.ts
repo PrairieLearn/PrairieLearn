@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -11,10 +11,10 @@ const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
 describe('Instructor assessment editing', function () {
-  this.timeout(20000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   let page, elemList;
 
@@ -493,4 +493,4 @@ describe('Instructor assessment editing', function () {
       assert.equal(locals.pageData[0].score_perc, assessmentSetScorePerc2);
     });
   });
-});
+}, 20_000);

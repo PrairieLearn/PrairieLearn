@@ -1,6 +1,5 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { assert, describe, test, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -12,22 +11,22 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with bonus points', function () {
-  this.timeout(60000);
-
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
-  step('visit start exam page', async () => {
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -42,7 +41,7 @@ describe('Exam assessment with bonus points', function () {
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  step('visit first question', async () => {
+  test.sequential('visit first question', async () => {
     const response = await helperClient.fetchCheerio(context.question1Url);
     assert.isTrue(response.ok);
 
@@ -50,7 +49,7 @@ describe('Exam assessment with bonus points', function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('submit an answer to the first question', async () => {
+  test.sequential('submit an answer to the first question', async () => {
     const response = await fetch(context.question1Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -63,7 +62,7 @@ describe('Exam assessment with bonus points', function () {
     assert.isTrue(response.ok);
   });
 
-  step('check assessment points', async () => {
+  test.sequential('check assessment points', async () => {
     const params = {
       assessment_id: context.assessmentId,
     };
@@ -73,7 +72,7 @@ describe('Exam assessment with bonus points', function () {
     assert.equal(results.rows[0].score_perc, 60);
   });
 
-  step('visit second question', async () => {
+  test.sequential('visit second question', async () => {
     const response = await helperClient.fetchCheerio(context.question2Url);
     assert.isTrue(response.ok);
 
@@ -81,7 +80,7 @@ describe('Exam assessment with bonus points', function () {
     helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
   });
 
-  step('submit an answer to the second question', async () => {
+  test.sequential('submit an answer to the second question', async () => {
     const response = await fetch(context.question2Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -95,7 +94,7 @@ describe('Exam assessment with bonus points', function () {
     assert.isTrue(response.ok);
   });
 
-  step('check assessment points', async () => {
+  test.sequential('check assessment points', async () => {
     const params = {
       assessment_id: context.assessmentId,
     };
@@ -105,4 +104,4 @@ describe('Exam assessment with bonus points', function () {
     assert.equal(results.rows[0].points, 12);
     assert.equal(results.rows[0].score_perc, 120);
   });
-});
+}, 60_000);

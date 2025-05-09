@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -19,10 +19,10 @@ locals.ltiUrl = locals.baseUrl + '/lti';
 config.ltiRedirectUrl = locals.ltiUrl;
 
 describe('LTI', function () {
-  this.timeout(20000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   const body: Record<string, string> = {
     lti_message_type: 'basic-lti-launch-request',
@@ -65,7 +65,7 @@ describe('LTI', function () {
       assert.equal(res.status, 302);
     });
   });
-});
+}, 20_000);
 
 /* TODO
  * Test nonce reuse

@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import { type Context } from 'mocha';
 import pg from 'pg';
 
 import {
@@ -122,10 +121,9 @@ async function setupDatabases(): Promise<void> {
   });
 }
 
-export async function before(this: Context): Promise<void> {
+export async function before(): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  this.timeout?.(20000);
   await setupDatabases();
 }
 
@@ -135,18 +133,16 @@ export async function before(this: Context): Promise<void> {
  * schema verification, where databaseDiff will set up a connection to the
  * desired database.
  */
-export async function beforeOnlyCreate(this: Context): Promise<void> {
+export async function beforeOnlyCreate(): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  this.timeout?.(20000);
   await setupDatabases();
   await closeSql();
 }
 
-export async function after(this: Context): Promise<void> {
+export async function after(): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  this.timeout?.(20000);
   await closeSql();
   await postgresTestUtils.dropDatabase();
 }

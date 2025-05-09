@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -18,10 +18,10 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.newsItemsUrl = locals.baseUrl + '/news_items';
 
 describe('News items', function () {
-  this.timeout(15000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   describe('News item initialization', () => {
     it('should prepare by creating the student test user', async () => {
@@ -174,4 +174,4 @@ describe('News items', function () {
       assert.isOk(res.ok);
     });
   });
-});
+}, 15_000);
