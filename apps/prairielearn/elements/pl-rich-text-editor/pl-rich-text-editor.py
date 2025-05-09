@@ -64,22 +64,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     element_text = element_inner_html(element)
 
-    file_name = pl.get_string_attrib(element, "file-name", None)
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
-    # This is a special-case of the uniqueness test with a special message for the default file name.
-    elif (
-        file_name is None
-        and FILE_NAME_DEFAULT in data["params"]["_required_file_names"]
-    ):
-        raise RuntimeError(
-            "There is more than one rich-text editor. File names must be provided and unique."
-        )
     elif file_name in data["params"]["_required_file_names"]:
+        if not pl.has_attrib(element, "file-name"):
+            # This is a special-case of the uniqueness test with a special message for the default file name.
+            raise RuntimeError(
+                "There is more than one rich-text editor. File names must be provided and unique."
+            )
         raise RuntimeError(
             "There is more than one file editor with the same file name."
         )
-    data["params"]["_required_file_names"].append(file_name or FILE_NAME_DEFAULT)
+    data["params"]["_required_file_names"].append(file_name)
 
     if (
         source_file_name is not None
