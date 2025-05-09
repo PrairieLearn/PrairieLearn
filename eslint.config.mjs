@@ -6,7 +6,6 @@ import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
 import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
-import noOnlyTests from 'eslint-plugin-no-only-tests';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -42,9 +41,7 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       mocha,
-      // @ts-expect-error Missing types for this plugin
       'no-floating-promise': noFloatingPromise,
-      'no-only-tests': noOnlyTests,
       '@prairielearn': prairielearn,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
     },
@@ -70,14 +67,13 @@ export default tseslint.config([
     },
 
     linterOptions: {
-      reportUnusedDisableDirectives: true,
+      reportUnusedDisableDirectives: 'error',
     },
 
     rules: {
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
       'no-floating-promise/no-floating-promise': 'error',
-      'no-only-tests/no-only-tests': 'error',
       'handle-callback-err': 'error',
       'no-template-curly-in-string': 'error',
       'no-restricted-globals': [
@@ -192,6 +188,7 @@ export default tseslint.config([
   },
   globalIgnores([
     '.venv/*',
+    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'exampleCourse/*',
