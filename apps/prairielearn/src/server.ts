@@ -1903,12 +1903,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-
 let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
-export async function startServer() {
-  const app = await initExpress();
-
+export async function startServer(app: express.Express) {
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -1960,6 +1958,12 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
+
+  if ((import.meta as any).env?.DEV) {
+    return server;
+  }
+
+  // In production, startup the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2031,7 +2035,7 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (esMain(import.meta) && config.startServer) {
+if ((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer) {
   try {
     logger.verbose('PrairieLearn server start');
 
@@ -2187,7 +2191,7 @@ if (esMain(import.meta) && config.startServer) {
       directories: [path.join(import.meta.dirname, 'batched-migrations')],
     });
 
-    runner.on('error', (err) => {
+    runner?.on('error', (err) => {
       logger.error('Batched migration runner error', err);
       Sentry.captureException(err);
     });
@@ -2367,9 +2371,10 @@ if (esMain(import.meta) && config.startServer) {
     }
 
     logger.verbose('Starting server...');
-    const server = await startServer();
+    app = await initExpress();
+    const serverInstance = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(serverInstance);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2459,3 +2464,4 @@ if (esMain(import.meta) && config.startServer) {
     }
   });
 }
+export const viteNodeApp = app;

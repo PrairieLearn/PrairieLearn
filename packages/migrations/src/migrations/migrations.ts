@@ -53,8 +53,14 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
+let didMigration = false;
+
 export async function initWithLock(directories: string[], project: string) {
+  // For Vite HMR mode
+  if (didMigration && (import.meta as any).env?.DEV) return;
+
   logger.verbose('Starting DB schema migration');
+  didMigration = true;
 
   // Create the migrations table if needed
   await sqldb.queryAsync(sql.create_migrations_table, {});
@@ -140,7 +146,7 @@ export async function initWithLock(directories: string[], project: string) {
         throw err;
       }
     } else {
-      const migrationModule = await import(migrationPath);
+      const migrationModule = await import(/* @vite-ignore */ migrationPath);
       const implementation = migrationModule.default;
       if (typeof implementation !== 'function') {
         throw new Error(`Migration ${filename} does not export a default function`);
@@ -155,4 +161,7 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
+
+  // Mark that the migrations have finished, and shouldn't be run again
+  didMigration = true;
 }
