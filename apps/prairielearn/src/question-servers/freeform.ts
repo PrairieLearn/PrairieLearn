@@ -1185,9 +1185,10 @@ export async function generate(
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-
+    console.log("IN FREEFORM")
+    console.log(question.question_params)
     const data = {
-      params: {},
+      params: question.question_params ?? {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
@@ -1221,7 +1222,8 @@ export async function prepare(
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
-
+    // console.log('Context:', context);
+    // console.log('Variant:', variant);
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},

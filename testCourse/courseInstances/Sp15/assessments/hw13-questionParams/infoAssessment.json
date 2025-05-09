@@ -1,0 +1,20 @@
+{
+  "uuid": "fae50783-2b8a-4262-88a8-e2e7790c7938",
+  "type": "Homework",
+  "title": "Homework using question params",
+  "set": "Homework",
+  "number": "13",
+  "allowAccess": [{ "credit": 100 }],
+  "shareSourcePublicly": true,
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "questionParams",
+          "points": 2,
+          "questionParams": { "lower_bound": 30, "upper_bound": 50 }
+        }
+      ]
+    }
+  ]
+}

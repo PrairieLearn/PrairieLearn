@@ -81,6 +81,7 @@ function getParamsForAssessment(
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
         comment: accessRule.comment,
+        // questionParams: accessRule.questionParams
       };
     });
 
@@ -96,6 +97,7 @@ function getParamsForAssessment(
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
       comment: zone.comment,
+      // questionParams: zone.questionParams
     };
   });
 
@@ -124,12 +126,15 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
         comment?: CommentJson;
+        questionParams: Record<string, any> | undefined;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
+
         alternatives = question.alternatives.map((alternative) => {
+          console.log("QUEESTION PARAMS: ", alternative.questionParams)
           return {
             qid: alternative.id,
             maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
@@ -145,9 +150,11 @@ function getParamsForAssessment(
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            questionParams: alternative.questionParams ?? {}
           };
         });
       } else if (question.id) {
+        console.log("QUEESTION PARAMS: ", question.questionParams)
         alternatives = [
           {
             qid: question.id,
@@ -168,6 +175,7 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.alternatives ? undefined : question.comment,
+            questionParams: question.questionParams ?? {}
           },
         ];
       }
@@ -213,6 +221,7 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
+        console.log("SANITY CHECK: ",alternative.questionParams)
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -236,6 +245,7 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           comment: alternative.comment,
+          question_params: alternative.questionParams,
         };
       });
 
@@ -251,6 +261,7 @@ function getParamsForAssessment(
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
+        // question_param: question.questionParams,
       };
     });
   });
@@ -302,6 +313,7 @@ function getParamsForAssessment(
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
     share_source_publicly: assessment.shareSourcePublicly ?? false,
+
   };
 }
 

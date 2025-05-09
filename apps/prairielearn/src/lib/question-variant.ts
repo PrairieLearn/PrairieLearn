@@ -51,6 +51,7 @@ async function makeVariant(
   question: Question,
   course: Course,
   options: { variant_seed?: string | null },
+  question_params: Record<string, any> | null
 ): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -63,7 +64,12 @@ async function makeVariant(
   }
 
   const questionModule = questionServers.getModule(question.type);
+  question.question_params = {...question.question_params, question_params }
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
+  if (question_params) {
+    data.params = { ...data.params, ...question_params };
+    question.question_params = {...question.question_params ,...question_params}
+  }
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
@@ -219,12 +225,14 @@ async function makeAndInsertVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  question_params: Record<string,any> | null
 ): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
   const { courseIssues, variant: variantData } = await makeVariant(
     question,
     question_course,
     options,
+    question_params
   );
 
   const variant = await sqldb.runInTransactionAsync(async () => {
@@ -353,6 +361,7 @@ export async function ensureVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  question_params: Record<string, any> | null
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
@@ -376,6 +385,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
+    question_params
   );
 }
 

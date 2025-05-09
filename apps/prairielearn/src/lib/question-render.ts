@@ -283,6 +283,14 @@ function buildLocals({
     locals.showNewVariantButton = true;
   } else {
     // student question pages
+    // if (assessment_question && variant) {
+    //   variant.params = {
+    //     ...variant.params,
+    //     ...assessment_question.question_params,
+    //   };
+    // }
+    variant.params = { ...variant.params, ...assessment_question.question_params };
+
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;
@@ -331,6 +339,7 @@ function buildLocals({
       locals.showTrueAnswer = true;
     }
   }
+  console.log("Variant Details:", variant);
 
   if (variant.broken_at) {
     locals.showGradeButton = false;
@@ -348,7 +357,14 @@ function buildLocals({
   ) {
     locals.showGradeButton = false;
   }
-
+  console.log("ASSESSMENT QUESTION + ", assessment_question);
+  console.log("INSTANCE QUESTION", instance_question)
+  // if (assessment_question && variant) {
+  //   variant.params = {
+  //     ...variant.params,
+  //     ...assessment_question.question_params,
+  //   };
+  // }
   if (authz_result && !authz_result.active) {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
@@ -368,6 +384,14 @@ function buildLocals({
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
+
+  if (assessment_question) {
+    question.question_params = {
+      ...question.question_params,
+      ...assessment_question.question_params,
+    };
+  }
+
 
   return locals;
 }
@@ -417,7 +441,11 @@ export async function getAndRenderVariant(
     { question_id: locals.question.id },
     z.boolean(),
   );
+  // resultLocals.mergedParams = mergedParams;
+  console.log("QUESTION COURSE")
+  console.log(question_course)
 
+  // const savingquestionParams = resultLocals.variant.params
   const variant = await run(async () => {
     if (variant_id != null) {
       return await selectAndAuthzVariant({
@@ -448,12 +476,18 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        locals.assessment_question?.question_params
       );
     }
   });
-
   resultLocals.variant = variant;
-
+  if (locals.assessment_question && variant) {
+    variant.params = {
+      ...variant.params,
+      ...locals.assessment_question.question_params,
+    };
+  }
+  console.log("NEW VAR", variant)
   const {
     urlPrefix,
     course,
@@ -469,6 +503,9 @@ export async function getAndRenderVariant(
     authz_result,
   } = locals;
 
+  // resultLocals.variant  = { ...variant.params, ...assessment_question?.question_params };
+  // console.log(resultLocals.variant)
+  // variant.params = { ...variant.params, ...assessment_question?.question_params };
   const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
   Object.assign(urls, options?.urlOverrides);
   Object.assign(locals, urls);
@@ -586,7 +623,7 @@ export async function getAndRenderVariant(
     await manualGrading.populateRubricData(locals);
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
-
+  console.log(variant)
   if (locals.question.type !== 'Freeform') {
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,

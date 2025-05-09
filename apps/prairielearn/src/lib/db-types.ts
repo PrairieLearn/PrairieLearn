@@ -245,6 +245,7 @@ export const AssessmentQuestionSchema = z.object({
   submission_score_array_averages: z.array(z.number()).nullable(),
   submission_score_array_variances: z.array(z.number()).nullable(),
   tries_per_variant: z.number().nullable(),
+  question_params: z.any().optional(),
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
 
@@ -862,6 +863,7 @@ export const QuestionSchema = z.object({
   workspace_image: z.string().nullable(),
   workspace_port: z.number().nullable(),
   workspace_url_rewrite: z.boolean().nullable(),
+  question_params: z.any().optional(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
