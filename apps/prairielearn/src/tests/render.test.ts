@@ -7,15 +7,11 @@ import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
 import { HTMLHint } from 'htmlhint';
 
-import * as assetServer from '../lib/assets.js';
-import * as codeCaller from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
-import * as loadEstimator from '../lib/load.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
-import * as freeformServer from '../question-servers/freeform.js';
 import * as questionServers from '../question-servers/index.js';
 import * as helperServer from '../tests/helperServer.js';
 
@@ -245,26 +241,8 @@ const unsupportedQuestions = [
 describe('Internally Graded Question Lifecycle Tests', function () {
   this.timeout(60000);
 
-  before(async () => {
-    // Disable load estimator connecting to SQL
-    loadEstimator.setLocalLoadEstimator(true);
-
-    // Initialize asset server
-    config.devMode = false;
-    await assetServer.init();
-    config.devMode = true;
-
-    // Initialize code caller pool and question servers
-    await codeCaller.init();
-    await freeformServer.init();
-  });
-
-  after(async () => {
-    await helperServer.after();
-    await codeCaller.finish();
-    loadEstimator.close();
-    await assetServer.close();
-  });
+  before('set up testing server', helperServer.before());
+  after('shut down testing server', helperServer.after);
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function () {
