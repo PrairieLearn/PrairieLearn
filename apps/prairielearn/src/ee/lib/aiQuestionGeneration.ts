@@ -85,7 +85,10 @@ async function checkRender(
     authn_user: user, // We don't have a separate authn user in this case.
     is_administrator: false,
   };
-  await getAndRenderVariant(null, null, locals);
+  await getAndRenderVariant(null, null, locals, {
+    // Needed so that we can read the error output below.
+    issuesLoadExtraData: true,
+  });
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.

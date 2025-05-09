@@ -405,6 +405,15 @@ export async function getAndRenderVariant(
   options?: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
+    /**
+     * Whether or not any recorded issues should have their extra data loaded.
+     * If not specified, the default is to load extra data if we're in dev mode
+     * or if the user has permission to view course data.
+     *
+     * This toggle is useful mainly for AI question generation, where we always
+     * want to load issue data so we can provided it as context to the model.
+     */
+    issuesLoadExtraData?: boolean;
   },
 ) {
   // We write a fair amount of unstructured data back into locals,
@@ -571,7 +580,8 @@ export async function getAndRenderVariant(
   //
   // We'll only load the data that will be needed for this specific page render.
   // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
+  const loadExtraData =
+    options?.issuesLoadExtraData ?? (config.devMode || authz_data?.has_course_permission_view);
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
