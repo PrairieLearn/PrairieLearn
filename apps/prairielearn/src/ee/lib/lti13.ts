@@ -23,10 +23,12 @@ import {
   DateFromISOString,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
+  type User,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
+import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -625,11 +627,6 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-const UsersWithLti13SubSchema = UserSchema.extend({
-  lti13_sub: z.string().nullable(),
-});
-type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
-
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = z.object({
   user_id: z.string(),
@@ -704,13 +701,9 @@ class Lti13ContextMembership {
 
   /**
    * @param user The user to look up.
-   * @returns The LTI 1.3 sub (user_id) for the user, or null if not found.
+   * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  async lookup(user: UsersWithLti13Sub): Promise<string | null> {
-    if (user.lti13_sub !== null) {
-      return user.lti13_sub;
-    }
-
+  lookup(user: User): ContextMembership | null {
     for (const match of ['uid', 'email']) {
       const memberResults = this.#memberships[user[match]];
 
@@ -719,11 +712,10 @@ class Lti13ContextMembership {
       // member.email cannot be duplicated in memberships
       if (memberResults.length > 1) return null;
 
-      // The `user_id` that we get from the membership API is what we call `lti13_sub`.
-      return memberResults[0].user_id;
+      return memberResults[0];
     }
 
-    // The user wan't found.
+    // The user wasn't found.
     return null;
   }
 }
@@ -751,9 +743,7 @@ export async function updateLti13Scores(
     throw new HttpStatusError(403, 'Invalid assessment.id');
   }
 
-  job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
-
-  const token = await getAccessToken(instance.lti13_instance.id);
+  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
@@ -763,22 +753,56 @@ export async function updateLti13Scores(
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query
-      users: UsersWithLti13SubSchema.array(),
+      users: UserSchema.array(),
     }),
   );
 
+  const courseStaff = await selectUsersWithCourseInstanceAccess({
+    course_instance_id: assessment.course_instance_id,
+    minimal_role: 'Student Data Viewer',
+  });
+  const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
+
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
+
   const timestamp = new Date();
+  const counts = {
+    success: 0,
+    error: 0,
+    not_sent: 0,
+  };
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
-      job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
+      // Get/Refresh the token in the main loop in case it expires during the run.
+      const token = await getAccessToken(instance.lti13_instance.id);
 
-      const userId = await memberships.lookup(user);
-      if (userId === null) {
-        job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
+      const ltiUser = memberships.lookup(user);
+      const isCourseStaff = courseStaffUids.has(user.uid);
+
+      // User not found in LTI, reporting only
+      if (ltiUser === null) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+        );
+        counts.not_sent++;
         continue;
       }
+
+      // User is not a student in LTI, reporting only
+      if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+        );
+        counts.not_sent++;
+        continue;
+      }
+
+      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
 
       const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
 
@@ -793,7 +817,7 @@ export async function updateLti13Scores(
         scoreMaximum: 100,
         activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
         gradingProgress: 'FullyGraded',
-        userId,
+        userId: ltiUser.user_id,
         submission: {
           startedAt: assessment_instance.date,
           submittedAt: submittedAt ?? undefined,
@@ -809,10 +833,20 @@ export async function updateLti13Scores(
         body: JSON.stringify(score),
       });
 
-      job.info(`\t${res.statusText}`);
-      if (!res.ok) {
-        job.warn(`\t${await res.text()}`);
+      if (res.ok) {
+        counts.success++;
+      } else {
+        counts.error++;
+        const results = await res.json();
+
+        // Default to showing the whole error
+        job.warn(`\t${res.statusText}`);
+        job.warn(`\t${JSON.stringify(results)}`);
       }
     }
   }
+  job.info('Done.\n\nSummary:');
+  job.info(`${counts.success} score${counts.success === 1 ? '' : 's'} successfully posted.`);
+  job.info(`${counts.error} error${counts.error === 1 ? '' : 's'} posting.`);
+  job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }
