@@ -54,7 +54,8 @@ INSERT INTO
     name_attribute,
     uid_attribute,
     uin_attribute,
-    email_attribute
+    email_attribute,
+    require_linked_lti_user
   )
 VALUES
   (
@@ -62,7 +63,8 @@ VALUES
     $name_attr,
     $uid_attr,
     $uin_attr,
-    $email_attr
+    $email_attr,
+    $require_linked_lti_user
   )
 RETURNING
   id;
@@ -82,7 +84,8 @@ SET
   name_attribute = $name_attribute,
   uid_attribute = $uid_attribute,
   uin_attribute = $uin_attribute,
-  email_attribute = $email_attribute
+  email_attribute = $email_attribute,
+  require_linked_lti_user = $require_linked_lti_user
 WHERE
   institution_id = $institution_id
   AND id = $unsafe_lti13_instance_id
