@@ -47,7 +47,7 @@ interface VariantCreationData {
  * @param course - The course for the question.
  * @param options - Options controlling the creation: options = {variant_seed}
  */
-async function makeVariant(
+export async function makeVariant(
   question: Question,
   course: Course,
   options: { variant_seed?: string | null },
