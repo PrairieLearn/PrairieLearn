@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { CommentPopover } from '../../components/CommentPopover.html.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
@@ -41,6 +42,7 @@ export function InstructorInstanceAdminAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
+                <th></th>
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
@@ -74,6 +76,7 @@ function AccessRuleRow({
 }) {
   return html`
     <tr>
+      <td>${accessRule.json_comment ? CommentPopover(accessRule.json_comment.toString()) : ''}</td>
       <td>
         ${accessRule.uids == null
           ? html`&mdash;`

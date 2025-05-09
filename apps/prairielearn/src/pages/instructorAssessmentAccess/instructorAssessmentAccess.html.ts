@@ -2,9 +2,11 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
+import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
+import { JsonCommentSchema } from '../../lib/db-types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -20,6 +22,7 @@ export const AssessmentAccessRulesSchema = z.object({
   pt_exam_id: z.string().nullable(),
   pt_exam_name: z.string().nullable(),
   active: z.string(),
+  comment: JsonCommentSchema.nullable(),
 });
 type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 
@@ -59,6 +62,7 @@ export function InstructorAssessmentAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
+                <th></th>
                 <th>Mode</th>
                 <th>UIDs</th>
                 <th>Start date</th>
@@ -81,6 +85,9 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
+                    <td>
+                      ${access_rule.comment ? CommentPopover(access_rule.comment.toString()) : ''}
+                    </td>
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||
