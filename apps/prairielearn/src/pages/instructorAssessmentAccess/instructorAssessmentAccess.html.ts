@@ -62,7 +62,7 @@ export function InstructorAssessmentAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
-                <th></th>
+                <th><span class="visually-hidden">Comments</span></th>
                 <th>Mode</th>
                 <th>UIDs</th>
                 <th>Start date</th>
