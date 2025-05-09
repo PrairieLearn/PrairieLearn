@@ -4,9 +4,9 @@ import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import noOnlyTests from 'eslint-plugin-no-only-tests';
+import vitest from 'eslint-plugin-vitest';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -41,7 +41,7 @@ export default tseslint.config([
 
     plugins: {
       'import-x': importX,
-      mocha,
+      vitest,
       // @ts-expect-error Missing types for this plugin
       'no-floating-promise': noFloatingPromise,
       'no-only-tests': noOnlyTests,
@@ -158,6 +158,8 @@ export default tseslint.config([
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
+      // Use the recommended rules for vitest
+      ...vitest.configs.recommended.rules,
     },
   },
   {
