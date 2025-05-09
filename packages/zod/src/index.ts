@@ -102,3 +102,61 @@ export const DateFromISOString = z
     },
   )
   .transform((s) => new Date(s));
+
+/**
+ * A Zod schema for a string that can be parsed as a valid integer. This is
+ * useful for parsing body parameters from a request.
+ */
+export const IntegerFromStringSchema = z
+  .string()
+  .refine(
+    (s) => {
+      const n = Number.parseInt(s);
+      return !Number.isNaN(n) && Number.isSafeInteger(n);
+    },
+    {
+      message: 'must be a valid integer',
+    },
+  )
+  .transform((s) => Number.parseInt(s));
+
+/**
+ * A Zod schema that utilizes IntegerFromStringSchema to parse a string as an
+ * integer. However, this wrapper also allows us to accept and empty string as a
+ * valid value. If an empty string is passed, it will be transformed to null.
+ * This is useful for form number inputs that are not required but we do not want to
+ * use an empty string to compute values.
+ */
+
+export const IntegerFromStringOrEmptySchema = z
+  .string()
+  .transform((s) => (s === '' ? null : s))
+  .refine(
+    (s) => {
+      if (s === null) {
+        return true;
+      }
+      const n = Number.parseInt(s);
+      return !Number.isNaN(n) && Number.isSafeInteger(n);
+    },
+    {
+      message: 'must be a valid integer',
+    },
+  )
+  .transform((s) => (s === null ? null : Number.parseInt(s)));
+
+/**
+ * A Zod schema for an arrray of string values from either a string or an array of
+ * strings.
+ */
+export const ArrayFromStringOrArraySchema = z
+  .union([z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s === null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });

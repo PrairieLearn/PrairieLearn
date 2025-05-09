@@ -185,12 +185,19 @@ export function getUniqueNames({
  * than the default value.
  */
 export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  const isExistingDefault =
+    typeof defaultValue === 'function'
+      ? defaultValue(existingValue)
+      : existingValue === defaultValue;
+  const isNewDefault =
+    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
+
   if (existingValue === undefined) {
-    if (newValue !== defaultValue) {
+    if (!isNewDefault) {
       return newValue;
     }
   } else {
-    if (existingValue !== defaultValue && newValue === defaultValue) {
+    if (!isExistingDefault && isNewDefault) {
       return undefined;
     } else {
       return newValue;
