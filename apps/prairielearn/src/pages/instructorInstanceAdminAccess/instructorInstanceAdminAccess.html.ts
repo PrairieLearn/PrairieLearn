@@ -1,10 +1,10 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
+import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
-import { CommentPopover } from '../../components/CommentPopover.html.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
@@ -42,7 +42,7 @@ export function InstructorInstanceAdminAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
-                <th></th>
+                <th><span class="visually-hidden">Comments</span></th>
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
