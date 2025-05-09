@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import DOMPurify from 'isomorphic-dompurify';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -85,9 +86,14 @@ router.get(
     if (res.locals.assessment.type === 'Exam' && res.locals.assessment.require_honor_code) {
       if (res.locals.assessment.honor_code) {
         customHonorCode = await markdownToHtml(
-          mustache.render(res.locals.assessment.honor_code, {
-            name: res.locals.user.name,
-          }),
+          DOMPurify.sanitize(
+            mustache.render(res.locals.assessment.honor_code, {
+              name: res.locals.user.name,
+            }),
+            {
+              ALLOWED_TAGS: [''],
+            },
+          ),
         );
       }
     }

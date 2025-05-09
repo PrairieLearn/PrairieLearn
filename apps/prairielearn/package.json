@@ -118,6 +118,7 @@
     "ioredis": "^5.6.1",
     "is-plain-obj": "^4.1.0",
     "isbinaryfile": "^5.0.4",
+    "isomorphic-dompurify": "^2.24.0",
     "jju": "^1.4.0",
     "jose": "^6.0.10",
     "jquery": "^3.7.1",
