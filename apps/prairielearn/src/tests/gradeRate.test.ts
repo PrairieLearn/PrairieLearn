@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { describe, test, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -11,22 +11,22 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with grade rate set', function () {
-  this.timeout(60000);
-
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
-  step('visit start exam page', async () => {
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -35,7 +35,7 @@ describe('Exam assessment with grade rate set', function () {
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam', async () => {
+  test.sequential('start the exam', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -56,19 +56,22 @@ describe('Exam assessment with grade rate set', function () {
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  step('check for enabled grade button on a question page before submission', async () => {
-    const response = await helperClient.fetchCheerio(context.question1Url);
-    assert.isTrue(response.ok);
+  test.sequential(
+    'check for enabled grade button on a question page before submission',
+    async () => {
+      const response = await helperClient.fetchCheerio(context.question1Url);
+      assert.isTrue(response.ok);
 
-    const elemList = response.$('button[name="__action"][value="grade"]');
-    assert.lengthOf(elemList, 1);
-    assert.isFalse(elemList.is(':disabled'));
+      const elemList = response.$('button[name="__action"][value="grade"]');
+      assert.lengthOf(elemList, 1);
+      assert.isFalse(elemList.is(':disabled'));
 
-    helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
-    helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
-  });
+      helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
+      helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
+    },
+  );
 
-  step('submit an answer to the question', async () => {
+  test.sequential('submit an answer to the question', async () => {
     const response = await fetch(context.question1Url, {
       method: 'POST',
       body: new URLSearchParams({
@@ -82,16 +85,19 @@ describe('Exam assessment with grade rate set', function () {
     assert.isTrue(response.ok);
   });
 
-  step('check for disabled grade button on a question page after submission', async () => {
-    const response = await helperClient.fetchCheerio(context.question1Url);
-    assert.isTrue(response.ok);
+  test.sequential(
+    'check for disabled grade button on a question page after submission',
+    async () => {
+      const response = await helperClient.fetchCheerio(context.question1Url);
+      assert.isTrue(response.ok);
 
-    const elemList = response.$('button[name="__action"][value="grade"]');
-    assert.lengthOf(elemList, 1);
-    assert.isTrue(elemList.is(':disabled'));
-  });
+      const elemList = response.$('button[name="__action"][value="grade"]');
+      assert.lengthOf(elemList, 1);
+      assert.isTrue(elemList.is(':disabled'));
+    },
+  );
 
-  step('check for enabled grade button on another question page', async () => {
+  test.sequential('check for enabled grade button on another question page', async () => {
     const response = await helperClient.fetchCheerio(context.question2Url);
     assert.isTrue(response.ok);
 
@@ -99,4 +105,4 @@ describe('Exam assessment with grade rate set', function () {
     assert.lengthOf(elemList, 1);
     assert.isFalse(elemList.is(':disabled'));
   });
-});
+}, 60_000);

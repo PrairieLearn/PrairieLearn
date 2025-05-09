@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { io } from 'socket.io-client';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -87,8 +87,6 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 }
 
 describe('Grading method(s)', function () {
-  this.timeout(80000);
-
   let $hm1Body;
   let iqUrl;
   let gradeRes;
@@ -96,10 +94,13 @@ describe('Grading method(s)', function () {
   let questionsPage;
   let $questionsPage;
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
-  after('reset default user', () => setUser(defaultUser));
+  // reset default user
+  afterAll(() => setUser(defaultUser));
 
   describe('`gradingMethod` configuration', () => {
     describe('"Internal"', () => {
@@ -626,4 +627,4 @@ describe('Grading method(s)', function () {
       });
     });
   });
-});
+}, 80_000);

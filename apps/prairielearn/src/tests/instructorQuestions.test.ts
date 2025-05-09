@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -61,10 +61,10 @@ const testQuestions = [
 ];
 
 describe('Instructor questions', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   let questionData;
 
@@ -166,4 +166,4 @@ describe('Instructor questions', function () {
       );
     });
   });
-});
+}, 60_000);

@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -46,16 +47,18 @@ const customElement = {
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
 describe('Shared Question Preview', function () {
-  this.timeout(60000);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
-
-  before('ensure course has question sharing enabled', async () => {
+  // ensure course has question sharing enabled
+  beforeAll(async () => {
     await features.enable('question-sharing');
   });
 
-  before('Get question IDs from database', async () => {
+  // Get question IDs from database
+  beforeAll(async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
@@ -67,7 +70,8 @@ describe('Shared Question Preview', function () {
     }
   });
 
-  before('set up another course to consume shared questions from ', async () => {
+  // set up another course to consume shared questions from
+  beforeAll(async () => {
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
@@ -83,7 +87,7 @@ describe('Shared Question Preview', function () {
     };
 
     describe('When questions are share_source_publicly but not share_publicly', () => {
-      before(
+      beforeAll(
         'Make sure questions have share_source_publicly set but not share_publicly',
         async () => {
           for (const testQuestion of testQuestions) {
@@ -108,7 +112,8 @@ describe('Shared Question Preview', function () {
     });
 
     describe('When questions are share_publicly', () => {
-      before('Make sure questions have share_publicly set', async () => {
+      // Make sure questions have share_publicly set
+      beforeAll(async () => {
         for (const testQuestion of testQuestions) {
           await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
         }
@@ -159,4 +164,4 @@ describe('Shared Question Preview', function () {
 
     testElementClientFiles(previewPageInfo, customElement);
   });
-});
+}, 60_000);

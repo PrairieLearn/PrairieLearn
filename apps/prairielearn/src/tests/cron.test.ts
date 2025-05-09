@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import _ from 'lodash';
+import { assert, describe, it, vi, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -11,9 +11,8 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Cron', function () {
-  this.timeout(60000);
-
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -28,11 +27,14 @@ describe('Cron', function () {
 
     await helperServer.before().call(this);
   });
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
   describe('1. cron jobs', () => {
-    it('should wait for 20 seconds', (callback) => {
-      setTimeout(callback, 20000);
+    it('should wait for 20 seconds', async () => {
+      await vi.waitFor(() => {
+        return new Promise((resolve) => setTimeout(resolve, 20_000));
+      });
     });
 
     it('should all have started', async () => {
@@ -48,4 +50,4 @@ describe('Cron', function () {
       assert.lengthOf(result.rows, 0);
     });
   });
-});
+}, 60_000);

@@ -1,3 +1,5 @@
+import { describe, beforeAll, afterAll } from 'vitest';
+
 import { config } from '../lib/config.js';
 
 import * as helperQuestion from './helperQuestion.js';
@@ -23,10 +25,10 @@ const qidsTestCourse = [
 ];
 
 describe('Auto-test questions in testCourse', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-});
+}, 60_000);

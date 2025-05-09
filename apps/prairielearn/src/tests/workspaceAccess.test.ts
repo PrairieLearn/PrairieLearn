@@ -1,7 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { assert, describe, test, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -32,17 +31,20 @@ const studentNotEnrolled: AuthUser = {
 };
 
 describe('Test workspace authorization access', function () {
-  this.timeout(20000);
-
-  before('disable workspace containers', async function () {
+  // disable workspace containers
+  beforeAll(async function () {
     config.workspaceEnable = false;
   });
-  after('enable workspace containers', async function () {
+  // enable workspace containers
+  afterAll(async function () {
     config.workspaceEnable = true;
   });
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
-  before('add students to test course', async function () {
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
+  // add students to test course
+  beforeAll(async function () {
     await sqldb.queryAsync(sql.create_user, studentOne);
     await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentOne.uid });
 
@@ -54,7 +56,7 @@ describe('Test workspace authorization access', function () {
 
   describe('workspaces created by instructors in a course instance', function () {
     let workspace_id: string | undefined;
-    step('create instructor workspace', async () => {
+    test.sequential('create instructor workspace', async () => {
       const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
       const workspace_url =
         baseUrl + `/course_instance/1/instructor/question/${result.question_id}/preview`;
@@ -67,26 +69,26 @@ describe('Test workspace authorization access', function () {
       workspace_id = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
       assert.isDefined(workspace_id);
     });
-    step('can be accessed by the instructor', async () => {
+    test.sequential('can be accessed by the instructor', async () => {
       const url = baseUrl + `/workspace/${workspace_id}`;
       const response = await fetch(url);
       assert.equal(response.status, 200);
     });
-    step("can't be accessed by enrolled student one", async () => {
+    test.sequential("can't be accessed by enrolled student one", async () => {
       await withUser(studentOne, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 403);
       });
     });
-    step("can't be accessed by enrolled student two", async () => {
+    test.sequential("can't be accessed by enrolled student two", async () => {
       await withUser(studentTwo, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 403);
       });
     });
-    step("can't be accessed by an unenrolled user", async () => {
+    test.sequential("can't be accessed by an unenrolled user", async () => {
       await withUser(studentNotEnrolled, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
@@ -96,17 +98,19 @@ describe('Test workspace authorization access', function () {
   });
 
   describe('workspaces created by instructors in a course (no instance)', function () {
-    before('give the instructor owner access', async () => {
+    // give the instructor owner access
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.give_owner_access_to_uid, {
         uid: config.authUid,
       });
     });
-    after('revoke owner access from the instructor', async () => {
+    // revoke owner access from the instructor
+    afterAll(async () => {
       await sqldb.queryAsync(sql.revoke_owner_access, {});
     });
 
     let workspace_id: string | undefined;
-    step('create instructor workspace', async () => {
+    test.sequential('create instructor workspace', async () => {
       const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
       const workspace_url = baseUrl + `/course/1/question/${result.question_id}/preview`;
       const response = await fetch(workspace_url);
@@ -118,26 +122,26 @@ describe('Test workspace authorization access', function () {
       workspace_id = workspace_btns.attr('href')?.match('/pl/workspace/([0-9]+)')?.[1];
       assert.isDefined(workspace_id);
     });
-    step('can be accessed by the instructor', async () => {
+    test.sequential('can be accessed by the instructor', async () => {
       const url = baseUrl + `/workspace/${workspace_id}`;
       const response = await fetch(url);
       assert.equal(response.status, 200);
     });
-    step("can't be accessed by enrolled student one", async () => {
+    test.sequential("can't be accessed by enrolled student one", async () => {
       await withUser(studentOne, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 403);
       });
     });
-    step("can't be accessed by enrolled student two", async () => {
+    test.sequential("can't be accessed by enrolled student two", async () => {
       await withUser(studentTwo, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 403);
       });
     });
-    step("can't be accessed by an unenrolled user", async () => {
+    test.sequential("can't be accessed by an unenrolled user", async () => {
       await withUser(studentNotEnrolled, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
@@ -148,7 +152,7 @@ describe('Test workspace authorization access', function () {
 
   describe('workspaces created by students', function () {
     let workspace_id: string | undefined;
-    step('create student workspace', async () => {
+    test.sequential('create student workspace', async () => {
       await withUser(studentOne, async () => {
         const assessments_url = baseUrl + '/course_instance/1/assessments';
         const assessments_response = await fetch(assessments_url);
@@ -168,26 +172,26 @@ describe('Test workspace authorization access', function () {
         assert.isDefined(workspace_id);
       });
     });
-    step('can be accessed by the instructor', async () => {
+    test.sequential('can be accessed by the instructor', async () => {
       const url = baseUrl + `/workspace/${workspace_id}`;
       const response = await fetch(url);
       assert.equal(response.status, 200);
     });
-    step('can be accessed by the student owner', async () => {
+    test.sequential('can be accessed by the student owner', async () => {
       await withUser(studentOne, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 200);
       });
     });
-    step("can't be accessed by another enrolled student", async () => {
+    test.sequential("can't be accessed by another enrolled student", async () => {
       await withUser(studentTwo, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
         assert.equal(response.status, 403);
       });
     });
-    step("can't be accessed by an unenrolled user", async () => {
+    test.sequential("can't be accessed by an unenrolled user", async () => {
       await withUser(studentNotEnrolled, async () => {
         const url = baseUrl + `/workspace/${workspace_id}`;
         const response = await fetch(url);
@@ -195,4 +199,4 @@ describe('Test workspace authorization access', function () {
       });
     });
   });
-});
+}, 20_000);

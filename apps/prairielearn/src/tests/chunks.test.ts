@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { afterEach, assert, beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -261,8 +261,6 @@ describe('chunks', () => {
   });
 
   describe('ensureChunksForCourse', function () {
-    this.timeout(60000);
-
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
@@ -272,7 +270,8 @@ describe('chunks', () => {
     let questionId;
     let nestedQuestionId;
 
-    beforeEach('set up testing server', async () => {
+    // set up testing server
+    beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
@@ -326,7 +325,8 @@ describe('chunks', () => {
       nestedQuestionId = nestedQuestionResults.rows[0].id;
     });
 
-    afterEach('shut down testing server', async () => {
+    // shut down testing server
+    afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();
         await tempChunksDir.cleanup();
@@ -664,5 +664,5 @@ describe('chunks', () => {
         ),
       );
     });
-  });
+  }, 60_000);
 });

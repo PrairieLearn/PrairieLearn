@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -136,10 +136,10 @@ const zoneGradingTests: TestZone[][] = [
 ];
 
 describe('Zone grading homework assessment', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   function startAssessment() {
     describe('the locals object', function () {
@@ -315,4 +315,4 @@ describe('Zone grading homework assessment', function () {
       });
     });
   });
-});
+}, 60_000);

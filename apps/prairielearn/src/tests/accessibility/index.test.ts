@@ -3,8 +3,8 @@ import axe from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { test } from 'mocha';
 import fetch from 'node-fetch';
+import { describe, test, beforeAll, afterAll } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
@@ -371,7 +371,8 @@ function shouldSkipPath(path) {
 describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     config.cronActive = false;
     // We use the test course since editing functionality is disabled in the
     // example course.
@@ -432,11 +433,10 @@ describe('accessibility', () => {
       { sharing_name: 'test', course_id: courseId.rows[0].course_id },
     );
   });
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
   test('All pages pass accessibility checks', async function () {
-    this.timeout(240_000);
-
     const missingParamsEndpoints: Endpoint[] = [];
     const failingEndpoints: [Endpoint, string][] = [];
 
@@ -480,5 +480,5 @@ describe('accessibility', () => {
     if (errLines.length > 0) {
       throw new Error(errLines.join('\n'));
     }
-  });
+  }, 240_000);
 });

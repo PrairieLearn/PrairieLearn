@@ -9,7 +9,7 @@ describe('instrumented', () => {
   const exporter = new tracing.InMemorySpanExporter();
   const spanProcessor = new tracing.SimpleSpanProcessor(exporter);
 
-  before(async () => {
+  beforeAll(async () => {
     await init({
       openTelemetryEnabled: true,
       openTelemetryExporter: exporter,

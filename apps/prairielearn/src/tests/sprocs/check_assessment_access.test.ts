@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -38,10 +39,13 @@ async function checkAssessmentAccess(params: {
 }
 
 describe('sproc check_assessment_access* tests', function () {
-  before('set up testing server', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  // set up testing server
+  beforeAll(helperDb.before);
+  // tear down testing database
+  afterAll(helperDb.after);
 
-  before('setup sample environment', async () => {
+  // setup sample environment
+  beforeAll(async () => {
     await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
   });
 
@@ -179,10 +183,12 @@ describe('sproc check_assessment_access* tests', function () {
     });
 
     describe('with checked-in reservation', () => {
-      before('create checked-in reservation for student', async () => {
+      // create checked-in reservation for student
+      beforeAll(async () => {
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
-      after('delete checked-in reservation for student', async () => {
+      // delete checked-in reservation for student
+      afterAll(async () => {
         await sqldb.queryAsync(sql.delete_pt_reservation, { exam_id: 1 });
       });
 

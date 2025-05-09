@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import fetch from 'node-fetch';
+import { assert, describe, it, beforeAll, afterAll } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -12,10 +12,10 @@ const locals: Record<string, any> = {};
 const assessmentPoints = 5;
 
 describe('Instructor Assessment Downloads', function () {
-  this.timeout(60000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  // set up testing server
+  beforeAll(helperServer.before());
+  // shut down testing server
+  afterAll(helperServer.after);
 
   let elemList, page;
 
@@ -250,4 +250,4 @@ describe('Instructor Assessment Downloads', function () {
       assert.equal(data[0]['Question % score'], 100);
     });
   });
-});
+}, 60_000);

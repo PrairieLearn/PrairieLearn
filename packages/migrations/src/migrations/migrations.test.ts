@@ -60,11 +60,11 @@ describe('migrations', () => {
       database: 'prairielearn_migrations',
     });
 
-    before(async () => {
+    beforeAll(async () => {
       await postgresTestUtils.createDatabase();
     });
 
-    after(async () => {
+    afterAll(async () => {
       await postgresTestUtils.dropDatabase();
     });
 

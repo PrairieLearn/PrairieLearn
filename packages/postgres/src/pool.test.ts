@@ -35,7 +35,7 @@ const SprocTwoColumnsSchema = z.object({
 });
 
 describe('@prairielearn/postgres', function () {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
     await queryAsync(
       'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
@@ -60,7 +60,7 @@ describe('@prairielearn/postgres', function () {
     );
   });
 
-  after(async () => {
+  afterAll(async () => {
     await postgresTestUtils.dropDatabase();
   });
 

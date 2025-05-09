@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { describe, test, beforeAll, afterAll } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -11,8 +11,6 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules', function () {
-  this.timeout(60000);
-
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -28,27 +26,29 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
   };
 
-  before('set up testing server', async function () {
+  // set up testing server
+  beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam9, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
+  // shut down testing server
+  afterAll(helperServer.after);
 
   // we need to access the homepage to create the test_student user in the DB
-  step('visit home page', async () => {
+  test.sequential('visit home page', async () => {
     const response = await helperClient.fetchCheerio(context.baseUrl, {
       headers,
     });
     assert.isTrue(response.ok);
   });
 
-  step('enroll the test student user in the course', async () => {
+  test.sequential('enroll the test student user in the course', async () => {
     await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
   });
 
-  step('visit start exam page', async () => {
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       headers,
     });
@@ -59,7 +59,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam', async () => {
+  test.sequential('start the exam', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -82,7 +82,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
-  step('simulate a time limit expiration', async () => {
+  test.sequential('simulate a time limit expiration', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -105,23 +105,26 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     assert.match(msg.text(), /Assessment .* is no longer available/);
   });
 
-  step('check the assessment instance is closed', async () => {
+  test.sequential('check the assessment instance is closed', async () => {
     const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
     assert.equal(results.rowCount, 1);
     assert.equal(results.rows[0].open, false);
   });
 
-  step('check that accessing a question gives the "assessment closed" message', async () => {
-    const response = await helperClient.fetchCheerio(context.questionUrl, {
-      headers,
-    });
-    assert.equal(response.status, 403);
+  test.sequential(
+    'check that accessing a question gives the "assessment closed" message',
+    async () => {
+      const response = await helperClient.fetchCheerio(context.questionUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-    assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
-  });
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+    },
+  );
 
-  step('check that accessing assessment list shows score as withheld', async () => {
+  test.sequential('check that accessing assessment list shows score as withheld', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
     assert.equal(response.status, 200);
 
@@ -129,11 +132,11 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
   });
 
-  step('check that accessing gradebook shows score as withheld', async () => {
+  test.sequential('check that accessing gradebook shows score as withheld', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
     assert.equal(response.status, 200);
 
     assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
     assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
   });
-});
+}, 60_000);
