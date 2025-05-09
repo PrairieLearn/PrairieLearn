@@ -6,7 +6,6 @@ import fs from 'fs-extra';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
 import { HTMLHint } from 'htmlhint';
-import * as log from 'why-is-node-running';
 
 import * as assetServer from '../lib/assets.js';
 import * as codeCaller from '../lib/code-caller/index.js';
@@ -265,10 +264,6 @@ describe('Internally Graded Question Lifecycle Tests', function () {
     await codeCaller.finish();
     loadEstimator.close();
     await assetServer.close();
-    // TODO: clean up
-    setTimeout(function () {
-      log.default(); // logs out active handles that are keeping node running
-    }, 10000);
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
