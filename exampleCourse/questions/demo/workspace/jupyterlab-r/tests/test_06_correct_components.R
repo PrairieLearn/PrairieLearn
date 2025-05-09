@@ -1,5 +1,5 @@
-## @title Does 'x' contain the types we expect?
-## @score 1
+## @title Do we find 'x' to be as expected?
+## @score 2
 
 library(tinytest)                       # load testrunner
 using(ttdo)                             # enable its 'diffobj' extension
@@ -9,14 +9,14 @@ plr::source_and_eval_safe_with_hiding("/grade/student/student.R",
                                       NULL,
                                       "ag",
                                       "/grade/tests/ans.R")
-
-## response could be list or data.frame so enforce list
-x <- as.list(x)
-object_classes <- c(class(x[["ii"]]),
-                    class(x[["nn"]]),
-                    class(x[["cc"]]))
-
 ## to debug (see console)
-##print(object_classes)
+##print(str(x))
 
-expect_equal(object_classes, c("integer", "numeric", "character"))
+## we are being cute and support a list and a data.frame, but test only for the latter
+x <- as.data.frame(x)
+
+## Reference answer, contains expected_x
+source("/grade/tests/ans.R")
+
+## check
+expect_equal(x, expected_x)

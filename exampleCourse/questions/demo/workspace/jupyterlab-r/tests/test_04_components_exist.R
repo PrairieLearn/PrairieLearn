@@ -1,4 +1,4 @@
-## @title Does 'x' contain the types we expect?
+## @title Does 'x' contain the names we expect?
 ## @score 1
 
 library(tinytest)                       # load testrunner
@@ -10,13 +10,12 @@ plr::source_and_eval_safe_with_hiding("/grade/student/student.R",
                                       "ag",
                                       "/grade/tests/ans.R")
 
-## response could be list or data.frame so enforce list
-x <- as.list(x)
-object_classes <- c(class(x[["ii"]]),
-                    class(x[["nn"]]),
-                    class(x[["cc"]]))
+## check for names of 'x'
+objnames <- names(x)
 
 ## to debug (see console)
-##print(object_classes)
+##print(objnames)
 
-expect_equal(object_classes, c("integer", "numeric", "character"))
+expect_true("ii" %in% objnames &&
+            "nn" %in% objnames &&
+            "cc" %in% objnames)

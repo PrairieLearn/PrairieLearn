@@ -1,4 +1,4 @@
-## @title Does 'x' contain the types we expect?
+## @title Does 'x' have correct length?
 ## @score 1
 
 library(tinytest)                       # load testrunner
@@ -10,13 +10,5 @@ plr::source_and_eval_safe_with_hiding("/grade/student/student.R",
                                       "ag",
                                       "/grade/tests/ans.R")
 
-## response could be list or data.frame so enforce list
-x <- as.list(x)
-object_classes <- c(class(x[["ii"]]),
-                    class(x[["nn"]]),
-                    class(x[["cc"]]))
-
-## to debug (see console)
-##print(object_classes)
-
-expect_equal(object_classes, c("integer", "numeric", "character"))
+## check for length of 'x'
+expect_equal(length(x), 3)
