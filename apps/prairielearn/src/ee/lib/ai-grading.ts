@@ -39,6 +39,7 @@ export async function aiGrade({
   urlPrefix,
   authn_user_id,
   user_id,
+  instance_question_ids,
 }: {
   question: Question;
   course: Course;
@@ -47,6 +48,11 @@ export async function aiGrade({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
+  /**
+   * Limit grading to the specified instance questions. Omit to grade only
+   * the questions that are tagged as requiring manual grading.
+   */
+  instance_question_ids?: string[];
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.openAiApiKey || !config.openAiOrganization) {
@@ -107,7 +113,10 @@ export async function aiGrade({
 
     // Grade each instance question
     for (const instance_question of instance_questions) {
-      if (!instance_question.requires_manual_grading) {
+      if (
+        (instance_question_ids && !instance_question_ids.includes(instance_question.id)) || // Grade selected: skip non-selected
+        (!instance_question_ids && !instance_question.requires_manual_grading) // Grade all: skip graded
+      ) {
         continue;
       }
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
