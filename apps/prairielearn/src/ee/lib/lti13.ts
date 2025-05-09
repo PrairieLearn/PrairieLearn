@@ -205,7 +205,6 @@ export class Lti13Claim {
         status: 403,
       });
     }
-    console.log(this.claims);
     this.valid = true;
     this.req = req;
 
