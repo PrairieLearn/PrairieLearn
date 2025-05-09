@@ -8,12 +8,6 @@ import { config } from './config.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:load');
 
-// This prevents the load estimator from reporting to the database. This is useful for testing.
-let isLocalLoadEstimator = false;
-export function setLocalLoadEstimator(val: boolean) {
-  isLocalLoadEstimator = val;
-}
-
 interface JobLoad {
   startMS: number;
   warned?: boolean;
@@ -114,16 +108,8 @@ class LoadEstimator {
       average_jobs: this._getAndResetLoadEstimate(),
       max_jobs: this.maxJobCount,
     };
-
-    if (isLocalLoadEstimator) {
-      if (this.active) {
-        this.timeoutID = setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
-      }
-      return;
-    }
-
     sqldb.query(sql.insert_load, params, (err) => {
-      if (err) logger.error(`Error reporting load for ${this.jobType}`, { err });
+      if (err) logger.error('Error reporting load', { err });
       if (!this.active) return;
       debug(
         `LoadEstimator._reportLoad(): jobType = ${this.jobType}, scheduling next call for ${
