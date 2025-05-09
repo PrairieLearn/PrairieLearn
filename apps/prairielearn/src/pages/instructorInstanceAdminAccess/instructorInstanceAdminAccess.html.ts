@@ -1,6 +1,7 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
+import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
@@ -41,6 +42,7 @@ export function InstructorInstanceAdminAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
+                <th><span class="visually-hidden">Comments</span></th>
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
@@ -74,6 +76,7 @@ function AccessRuleRow({
 }) {
   return html`
     <tr>
+      <td>${accessRule.json_comment ? CommentPopover(accessRule.json_comment.toString()) : ''}</td>
       <td>
         ${accessRule.uids == null
           ? html`&mdash;`

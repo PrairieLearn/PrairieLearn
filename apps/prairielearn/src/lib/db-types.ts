@@ -20,7 +20,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
