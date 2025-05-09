@@ -81,7 +81,6 @@ function getParamsForAssessment(
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
         comment: accessRule.comment,
-        // questionParams: accessRule.questionParams
       };
     });
 
@@ -97,7 +96,6 @@ function getParamsForAssessment(
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
       comment: zone.comment,
-      // questionParams: zone.questionParams
     };
   });
 
@@ -154,7 +152,6 @@ function getParamsForAssessment(
           };
         });
       } else if (question.id) {
-        console.log("QUEESTION PARAMS: ", question.questionParams)
         alternatives = [
           {
             qid: question.id,
@@ -221,7 +218,6 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
-        console.log("SANITY CHECK: ",alternative.questionParams)
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,

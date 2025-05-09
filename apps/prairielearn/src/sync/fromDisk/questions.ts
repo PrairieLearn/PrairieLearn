@@ -83,7 +83,6 @@ export async function sync(
       getParamsForQuestion(qid, question.data),
     ]);
   });
-  console.log('questionParams:', questionParams);
   const result = await sqldb.callRow(
     'sync_questions',
     [questionParams, courseId],

@@ -1222,8 +1222,7 @@ export async function prepare(
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
-    // console.log('Context:', context);
-    // console.log('Variant:', variant);
+
     const data = {
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},

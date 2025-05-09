@@ -71,8 +71,6 @@ router.get(
     // grading interface. We need to include the `variant_id` in the URL so that
     // we show the current variant and not a new one.
     const manualGradingPreviewSearchParams = new URLSearchParams(searchParams);
-    console.log("Res.locals.variant in instructorQuestionPreview");
-    console.log(res.locals.variant);
     manualGradingPreviewSearchParams.set('variant_id', res.locals.variant.id.toString());
     manualGradingPreviewSearchParams.set('manual_grading_preview', 'true');
     manualGradingPreviewSearchParams.delete('variant_seed');
