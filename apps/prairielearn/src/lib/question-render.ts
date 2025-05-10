@@ -283,8 +283,6 @@ function buildLocals({
     locals.showNewVariantButton = true;
   } else {
     // student question pages
-    variant.params = { ...variant.params, ...assessment_question.question_params };
-
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;

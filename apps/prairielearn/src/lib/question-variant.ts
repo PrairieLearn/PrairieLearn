@@ -66,10 +66,6 @@ async function makeVariant(
   const questionModule = questionServers.getModule(question.type);
   question.question_params = { ...question.question_params, ...question_params };
   const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
-  if (question_params) {
-    data.params = { ...data.params, ...question_params };
-    question.question_params = { ...question.question_params, ...question_params };
-  }
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
