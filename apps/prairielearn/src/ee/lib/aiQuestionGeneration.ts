@@ -6,7 +6,11 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { IdSchema, type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { selectCourseById } from '../../models/course.js';
@@ -196,7 +200,7 @@ function extractFromCompletion(
 }
 
 /**
- * Compute the cost of a completion, in US dollars. 
+ * Compute the cost of a completion, in US dollars.
  */
 export function computeCompletionCost({
   promptTokens,
@@ -205,32 +209,34 @@ export function computeCompletionCost({
   promptTokens: number;
   completionTokens: number;
 }) {
-  return (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
+  return (
+    (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
       config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
-    1e6;
-};
+    1e6
+  );
+}
 
 /**
- * Create a new course instance usage record tracking the cost of an AI question generation request.
+ * Create a new course instance usage record for an AI question generation request.
  */
 async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,
   authnUserId,
   promptTokens = 0,
-  completionTokens = 0
+  completionTokens = 0,
 }: {
-  promptId: string,
-  authnUserId: string,
-  promptTokens?: number,
-  completionTokens?: number
+  promptId: string;
+  authnUserId: string;
+  promptTokens?: number;
+  completionTokens?: number;
 }) {
   await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: computeCompletionCost({
       promptTokens,
-      completionTokens
-    })
+      completionTokens,
+    }),
   });
 }
 
@@ -351,19 +357,23 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    const promptId = await queryRow(sql.insert_ai_question_generation_prompt, {
-      question_id: saveResults.question_id,
-      prompting_user_id: authnUserId,
-      prompt_type: 'initial',
-      user_prompt: prompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: serverJob.jobSequenceId,
-    }, IdSchema);
+    const promptId = await queryRow(
+      sql.insert_ai_question_generation_prompt,
+      {
+        question_id: saveResults.question_id,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: prompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+        job_sequence_id: serverJob.jobSequenceId,
+      },
+      IdSchema,
+    );
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId,
@@ -557,19 +567,23 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  const promptId = await queryRow(sql.insert_ai_question_generation_prompt, {
-    question_id: questionId,
-    prompting_user_id: authnUserId,
-    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-    user_prompt: revisionPrompt,
-    system_prompt: sysPrompt,
-    response: completion.choices[0].message.content,
-    html,
-    python,
-    errors,
-    completion,
-    job_sequence_id: jobSequenceId,
-  }, IdSchema);
+  const promptId = await queryRow(
+    sql.insert_ai_question_generation_prompt,
+    {
+      question_id: questionId,
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html,
+      python,
+      errors,
+      completion,
+      job_sequence_id: jobSequenceId,
+    },
+    IdSchema,
+  );
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId,

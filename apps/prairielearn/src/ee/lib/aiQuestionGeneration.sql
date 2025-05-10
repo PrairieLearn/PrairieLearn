@@ -64,7 +64,7 @@ VALUES
     $completion,
     $job_sequence_id
   )
-RETURNING 
+RETURNING
   id;
 
 -- BLOCK update_course_instance_usages_for_ai_question_generation
@@ -95,4 +95,3 @@ FROM
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   p.id = $prompt_id
-
