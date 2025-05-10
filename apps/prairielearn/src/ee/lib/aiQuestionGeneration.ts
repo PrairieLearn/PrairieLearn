@@ -45,7 +45,7 @@ A question may also have a \`server.py\` file that can randomly generate unique 
 
 Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
 
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
+If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters.
 
 If the question does not use random parameters, \`server.py\` can be omitted.
 
