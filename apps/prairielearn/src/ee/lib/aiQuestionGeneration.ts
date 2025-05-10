@@ -3,9 +3,10 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { estimateCompletionCost } from '../../lib/ai-grading.js';
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import { IdSchema, type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { selectCourseById } from '../../models/course.js';
@@ -229,6 +230,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of tokens in the prompt provided to the LLM.
+   */
+  promptTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -303,7 +312,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
+    const prompt_id = await queryRow(sql.insert_ai_question_generation_prompt, {
       question_id: saveResults.question_id,
       prompting_user_id: authnUserId,
       prompt_type: 'initial',
@@ -315,9 +324,26 @@ Keep in mind you are not just generating an example; you are generating an actua
       errors,
       completion,
       job_sequence_id: serverJob.jobSequenceId,
+    }, IdSchema);
+
+    await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
+      prompt_id,
+      authn_user_id: authnUserId,
+      cost_ai_question_generation: estimateCompletionCost({
+        promptTokens: completion?.usage?.prompt_tokens ?? 0,
+        completionTokens: completion?.usage?.completion_tokens ?? 0,
+      })
     });
+
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
+
+    if (completion?.usage?.prompt_tokens) {
+      job.data['promptTokens'] = completion?.usage?.prompt_tokens;
+    }
+    if (completion?.usage?.completion_tokens) {
+      job.data['completionTokens'] = completion?.usage?.completion_tokens;
+    }
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -358,6 +384,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 
@@ -531,6 +559,13 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
+  if (completion?.usage?.prompt_tokens) {
+    job.data['promptTokens'] = completion?.usage?.prompt_tokens;
+  }
+  if (completion?.usage?.completion_tokens) {
+    job.data['completionTokens'] = completion?.usage?.completion_tokens;
+  }
+
   job.data.html = html;
   job.data.python = python;
 
@@ -587,6 +622,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  promptTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -622,5 +659,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }

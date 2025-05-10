@@ -1,6 +1,7 @@
 columns
     course_id: bigint not null
     course_instance_id: bigint
+    cost_ai_question_generation: double precision not null default 0
     date: timestamp with time zone not null
     duration: interval not null default '00:00:00'::interval
     id: bigint not null default nextval('course_instance_usages_id_seq'::regclass)
