@@ -130,7 +130,6 @@ function getParamsForAssessment(
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
-
         alternatives = question.alternatives.map((alternative) => {
           return {
             qid: alternative.id,
@@ -147,7 +146,7 @@ function getParamsForAssessment(
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
-            questionParams: alternative.questionParams ?? {}
+            questionParams: alternative.questionParams ?? {},
           };
         });
       } else if (question.id) {
@@ -171,7 +170,7 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.alternatives ? undefined : question.comment,
-            questionParams: question.questionParams ?? {}
+            questionParams: question.questionParams ?? {},
           },
         ];
       }
@@ -308,7 +307,6 @@ function getParamsForAssessment(
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
     share_source_publicly: assessment.shareSourcePublicly ?? false,
-
   };
 }
 

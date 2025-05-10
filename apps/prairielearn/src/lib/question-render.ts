@@ -334,7 +334,6 @@ function buildLocals({
     }
   }
 
-
   if (variant.broken_at) {
     locals.showGradeButton = false;
     locals.showSaveButton = false;
@@ -378,7 +377,6 @@ function buildLocals({
       ...assessment_question.question_params,
     };
   }
-
 
   return locals;
 }
@@ -429,7 +427,6 @@ export async function getAndRenderVariant(
     z.boolean(),
   );
 
-
   const variant = await run(async () => {
     if (variant_id != null) {
       return await selectAndAuthzVariant({
@@ -460,7 +457,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
-        locals.assessment_question?.question_params
+        locals.assessment_question?.question_params,
       );
     }
   });
@@ -485,7 +482,6 @@ export async function getAndRenderVariant(
     authz_data,
     authz_result,
   } = locals;
-
 
   const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
   Object.assign(urls, options?.urlOverrides);

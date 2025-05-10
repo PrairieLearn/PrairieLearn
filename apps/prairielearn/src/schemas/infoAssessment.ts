@@ -150,9 +150,10 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  questionParams: z.record(z.string(), z.any())
+  questionParams: z
+    .record(z.string(), z.any())
     .describe('A set of key-value pairs for additional question parameters.')
-    .optional()
+    .optional(),
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -204,7 +205,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   questionParams: z
     .record(z.string(), z.any())
     .describe('A set of key-value pairs for additional question parameters.')
-    .optional()
+    .optional(),
 });
 
 export const ZoneAssessmentJsonSchema = z.object({
@@ -235,7 +236,7 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
     )
     .optional(),
-    
+
   questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
