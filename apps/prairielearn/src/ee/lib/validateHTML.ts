@@ -342,7 +342,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           assertInt('pl-symbolic-input', key, val, errors);
           break;
         case 'correct-answer':
-          assertFloat('pl-number-input', key, val, errors);
+          assertFloat('pl-symbolic-input', key, val, errors);
           if (val.match(mustacheTemplateExtractorRegex)) {
             errors.push(
               "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
