@@ -18,6 +18,9 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const showExternalGradingOptionsButton = document.querySelector<HTMLButtonElement>(
+    '#show-external-grading-options-button',
+  );
 
   if (document.getElementById('topic')) {
     new TomSelect('#topic', {
@@ -72,4 +75,10 @@ onDocumentReady(() => {
 
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);
+
+  showExternalGradingOptionsButton?.addEventListener('click', (e) => {
+    e.preventDefault();
+    document.querySelector('#external-grading-options')?.removeAttribute('hidden');
+    showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+  });
 });
