@@ -105,9 +105,9 @@ Most of these prerequisites can be installed using the package manager of your O
     ```sh
     brew services start postgresql@17
     # zsh
-    echo 'export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"' >> ~/.zshrc && . ~/.zshrc
+    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.zshrc && . ~/.zshrc
     # bash
-    echo 'export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"' >> ~/.bashrc && . ~/.bashrc
+    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.bashrc && . ~/.bashrc
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -170,32 +170,24 @@ Most of these prerequisites can be installed using the package manager of your O
 
   === "Ubuntu (WSL2)"
 
-      ```sh
-      sudo -u postgres psql -c "CREATE USER postgres;"
-      sudo -u postgres psql -c "ALTER USER postgres WITH SUPERUSER;"
-      sudo -u postgres createdb postgres
-      ```
+  ```sh
+  createdb postgres
+  psql postgres -c "CREATE USER postgres;"
+  psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+  ```
 
-  === "MacOS"
+  === "macOS"
 
-      ```sh
-      psql postgres -c "CREATE USER postgres;"
-      psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
-      ```
+  ```sh
+  psql postgres -c "CREATE USER postgres;"
+  psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+  ```
 
 - Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
 
-  === "Ubuntu (WSL2)"
-
-      ```sh
-      sudo -u postgres psql -c "SHOW hba_file;"
-      ```
-
-  === "MacOS"
-
-      ```sh
-      psql postgres -c "SHOW hba_file;"
-      ```
+  ```sh
+  psql postgres -c "SHOW hba_file;"
+  ```
 
   The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). If the last two lines already say "trust", no modifications are needed. This will typically be shown as:
 
