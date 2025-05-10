@@ -131,6 +131,8 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
         return checkStringInput(ast);
       case 'pl-checkbox':
         return checkCheckbox(ast);
+      case 'pl-symbolic-input':
+        return checkSymbolicInput(ast);
       case 'pl-question-panel':
         return { errors: [] };
       case 'pl-answer':
@@ -139,7 +141,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
         if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
           return {
             errors: [
-              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
             ],
           };
         }
@@ -310,6 +312,76 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   }
   if (!answersName) {
     errors.push('pl-integer-input: answers-name is a required attribute.');
+  }
+  return {
+    errors,
+    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+  };
+}
+
+/**
+ * Checks that a `pl-symbolic-input` element has valid attributes.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult {
+  const errors: string[] = [];
+  let answersName: string | null = null;
+  let usedBlank = false;
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          answersName = val;
+          break;
+        case 'weight':
+        case 'size':
+          assertInt('pl-symbolic-input', key, val, errors);
+          break;
+        case 'correct-answer':
+          assertFloat('pl-symbolic-input', key, val, errors);
+          if (val.match(mustacheTemplateExtractorRegex)) {
+            errors.push(
+              "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
+            );
+          }
+          break;
+        case 'label':
+        case 'aria-label':
+        case 'variables':
+        case 'placeholder':
+        case 'custom-functions':
+        case 'suffix':
+          break;
+        case 'display':
+          assertInChoices('pl-symbolic-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'imaginary-unit-for-display':
+          assertInChoices('pl-symbolic-input', key, val, ['i', 'j'], errors);
+          break;
+        case 'allow-complex':
+        case 'allow-trig-functions':
+        case 'show-help-text':
+        case 'show-score':
+          assertBool('pl-symbolic-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-symbolic-input', key, val, errors);
+          usedBlank = true;
+          break;
+        case 'blank-value':
+          if (!usedBlank) {
+            errors.push(
+              'pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`',
+            );
+          }
+          break;
+        default:
+          errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
+      }
+    }
   }
   return {
     errors,

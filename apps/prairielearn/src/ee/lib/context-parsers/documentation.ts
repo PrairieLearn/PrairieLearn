@@ -11,6 +11,7 @@ const ALLOWED_ELEMENTS = [
   'pl-integer-input',
   'pl-number-input',
   'pl-string-input',
+  'pl-symbolic-input',
 ];
 
 interface ElementSection {
