@@ -31,7 +31,7 @@ SELECT
   p.*
 FROM
   ai_question_generation_prompts AS p
-
+  JOIN questions AS q ON (q.id = p.question_id)
 WHERE
   q.course_id = $course_id
 ORDER BY
