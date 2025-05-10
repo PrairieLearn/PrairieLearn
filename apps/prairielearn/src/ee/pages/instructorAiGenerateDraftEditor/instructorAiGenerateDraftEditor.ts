@@ -24,13 +24,24 @@ import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  getIntervalUsage,
+  initializeAiQuestionGenerationCache,
+  regenerateQuestion,
+} from '../../lib/aiQuestionGeneration.js';
+import {
+  GenerationFailure,
+  RateLimitExceeded,
+} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+const aiQuestionGenerationCache = initializeAiQuestionGenerationCache();
 
 async function saveGeneratedQuestion(
   res: express.Response,
@@ -251,6 +262,26 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
+      const intervalCost = await getIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimit) {
+        res.send(
+          RateLimitExceeded({
+            // If the user has more than the threshold of 100 tokens,
+            // they can shorten their message to avoid reaching the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimit - intervalCost >
+              config.costPerMillionPromptTokens * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
@@ -263,6 +294,14 @@ router.post(
         res.locals.authn_user.user_id,
         res.locals.authz_data.has_course_permission_edit,
       );
+
+      addCompletionCostToIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+        promptTokens: result.promptTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
+      });
 
       if (result.htmlResult) {
         res.set({
