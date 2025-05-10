@@ -201,3 +201,64 @@ body:has(div.app-container) {
 .app-container.side-nav-enabled.collapsed #side-nav-toggler {
   padding: 0.5rem 1rem;
 }
+
+#assessment-switcher-container {
+  display: flex;
+  flex-direction: column;
+}
+
+#assessment-switcher-container .assessment-heading {
+  font-weight: bold;
+  margin-top: 0.75rem;
+}
+
+#assessment-switcher-container .assessment-heading.first {
+  margin-top: 0;
+}
+
+#assessment-switcher-container .assessment-row {
+  width: 100%;
+  display: grid;
+  /* Minmax handles the case that the assessment label is larger than 75px. */
+  grid-template-columns: minmax(75px, auto) 1fr 1fr;
+  gap: 10px;
+  text-decoration: none;
+  padding: 0.25rem;
+}
+
+#assessment-switcher-container .assessment-row.selected {
+  background-color: rgba(var(--bs-primary-rgb));
+  color: white;
+  border-radius: 5px;
+}
+
+#assessment-switcher-container .assessment-row.selected a {
+  color: white;
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 0.5rem;
+    row-gap: 0;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
