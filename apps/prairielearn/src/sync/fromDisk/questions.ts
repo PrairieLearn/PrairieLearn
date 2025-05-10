@@ -64,6 +64,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     workspace_comment: q.workspaceOptions?.comment,
     share_publicly: q.sharePublicly ?? false,
     share_source_publicly: q.shareSourcePublicly ?? false,
+    questionParams: q.questionParams ?? {},
   };
 }
 
@@ -72,6 +73,7 @@ export async function sync(
   courseData: CourseData,
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+    // console.log('question.data:', question.data);
     return JSON.stringify([
       qid,
       question.uuid,
@@ -80,7 +82,6 @@ export async function sync(
       getParamsForQuestion(qid, question.data),
     ]);
   });
-
   const result = await sqldb.callRow(
     'sync_questions',
     [questionParams, courseId],

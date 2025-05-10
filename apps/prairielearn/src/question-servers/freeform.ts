@@ -1185,9 +1185,8 @@ export async function generate(
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-
     const data = {
-      params: {},
+      params: question.question_params ?? {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
