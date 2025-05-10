@@ -720,8 +720,6 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
 
   for (const template of templates) {
     if (!mustacheTemplateChecker.test(template)) {
-      console.log(template);
-      console.log(mustacheTemplateChecker.test(template));
       errors.push(
         `Template of ${template} must be in mustache format. Please adjust so that any logic done in the template is instead done in server.py`,
       );
