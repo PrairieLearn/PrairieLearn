@@ -4,8 +4,13 @@ import * as parse5 from 'parse5';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { selectCourseById } from '../../models/course.js';
@@ -195,6 +200,47 @@ function extractFromCompletion(
 }
 
 /**
+ * Compute the cost of a completion, in US dollars.
+ */
+export function computeCompletionCost({
+  promptTokens,
+  completionTokens,
+}: {
+  promptTokens: number;
+  completionTokens: number;
+}) {
+  return (
+    (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
+      config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
+    1e6
+  );
+}
+
+/**
+ * Create a new course instance usage record for an AI question generation request.
+ */
+async function updateCourseInstanceUsagesForAiQuestionGeneration({
+  promptId,
+  authnUserId,
+  promptTokens = 0,
+  completionTokens = 0,
+}: {
+  promptId: string;
+  authnUserId: string;
+  promptTokens?: number;
+  completionTokens?: number;
+}) {
+  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
+    prompt_id: promptId,
+    authn_user_id: authnUserId,
+    cost_ai_question_generation: computeCompletionCost({
+      promptTokens,
+      completionTokens,
+    }),
+  });
+}
+
+/**
  * Generates the HTML and Python code for a new question using an LLM.
  *
  * @param client The OpenAI client to use.
@@ -229,6 +275,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of tokens in the prompt provided to the LLM.
+   */
+  promptTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -303,21 +357,40 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
-      question_id: saveResults.question_id,
-      prompting_user_id: authnUserId,
-      prompt_type: 'initial',
-      user_prompt: prompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: serverJob.jobSequenceId,
+    const promptId = await queryRow(
+      sql.insert_ai_question_generation_prompt,
+      {
+        question_id: saveResults.question_id,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: prompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+        job_sequence_id: serverJob.jobSequenceId,
+      },
+      IdSchema,
+    );
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId,
+      authnUserId,
+      promptTokens: completion?.usage?.prompt_tokens,
+      completionTokens: completion?.usage?.completion_tokens,
     });
+
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
+
+    if (completion?.usage?.prompt_tokens) {
+      job.data['promptTokens'] = completion?.usage?.prompt_tokens;
+    }
+    if (completion?.usage?.completion_tokens) {
+      job.data['completionTokens'] = completion?.usage?.completion_tokens;
+    }
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -358,6 +431,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 
@@ -492,18 +567,29 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
-    question_id: questionId,
-    prompting_user_id: authnUserId,
-    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-    user_prompt: revisionPrompt,
-    system_prompt: sysPrompt,
-    response: completion.choices[0].message.content,
-    html,
-    python,
-    errors,
-    completion,
-    job_sequence_id: jobSequenceId,
+  const promptId = await queryRow(
+    sql.insert_ai_question_generation_prompt,
+    {
+      question_id: questionId,
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html,
+      python,
+      errors,
+      completion,
+      job_sequence_id: jobSequenceId,
+    },
+    IdSchema,
+  );
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId,
+    authnUserId,
+    promptTokens: completion?.usage?.prompt_tokens,
+    completionTokens: completion?.usage?.completion_tokens,
   });
 
   const files: Record<string, string> = {};
@@ -529,6 +615,13 @@ Keep in mind you are not just generating an example; you are generating an actua
   if (result.status === 'error') {
     job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
     return;
+  }
+
+  if (completion?.usage?.prompt_tokens) {
+    job.data['promptTokens'] = completion?.usage?.prompt_tokens;
+  }
+  if (completion?.usage?.completion_tokens) {
+    job.data['completionTokens'] = completion?.usage?.completion_tokens;
   }
 
   job.data.html = html;
@@ -587,6 +680,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  promptTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -622,5 +717,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
