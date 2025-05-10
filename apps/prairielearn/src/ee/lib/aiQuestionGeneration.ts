@@ -3,8 +3,8 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { estimateCompletionCost } from '../../lib/ai-grading.js';
 import * as b64Util from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { IdSchema, type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
@@ -196,6 +196,45 @@ function extractFromCompletion(
 }
 
 /**
+ * Compute the cost of a completion, in US dollars. 
+ */
+export function computeCompletionCost({
+  promptTokens,
+  completionTokens,
+}: {
+  promptTokens: number;
+  completionTokens: number;
+}) {
+  return (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
+      config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
+    1e6;
+};
+
+/**
+ * Create a new course instance usage record tracking the cost of an AI question generation request.
+ */
+async function updateCourseInstanceUsagesForAiQuestionGeneration({
+  promptId,
+  authnUserId,
+  promptTokens = 0,
+  completionTokens = 0
+}: {
+  promptId: string,
+  authnUserId: string,
+  promptTokens?: number,
+  completionTokens?: number
+}) {
+  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
+    prompt_id: promptId,
+    authn_user_id: authnUserId,
+    cost_ai_question_generation: computeCompletionCost({
+      promptTokens,
+      completionTokens
+    })
+  });
+}
+
+/**
  * Generates the HTML and Python code for a new question using an LLM.
  *
  * @param client The OpenAI client to use.
@@ -312,7 +351,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    const prompt_id = await queryRow(sql.insert_ai_question_generation_prompt, {
+    const promptId = await queryRow(sql.insert_ai_question_generation_prompt, {
       question_id: saveResults.question_id,
       prompting_user_id: authnUserId,
       prompt_type: 'initial',
@@ -326,13 +365,11 @@ Keep in mind you are not just generating an example; you are generating an actua
       job_sequence_id: serverJob.jobSequenceId,
     }, IdSchema);
 
-    await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
-      prompt_id,
-      authn_user_id: authnUserId,
-      cost_ai_question_generation: estimateCompletionCost({
-        promptTokens: completion?.usage?.prompt_tokens ?? 0,
-        completionTokens: completion?.usage?.completion_tokens ?? 0,
-      })
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId,
+      authnUserId,
+      promptTokens: completion?.usage?.prompt_tokens,
+      completionTokens: completion?.usage?.completion_tokens,
     });
 
     job.data['questionId'] = saveResults.question_id;
@@ -520,7 +557,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
+  const promptId = await queryRow(sql.insert_ai_question_generation_prompt, {
     question_id: questionId,
     prompting_user_id: authnUserId,
     prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
@@ -532,6 +569,13 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors,
     completion,
     job_sequence_id: jobSequenceId,
+  }, IdSchema);
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId,
+    authnUserId,
+    promptTokens: completion?.usage?.prompt_tokens,
+    completionTokens: completion?.usage?.completion_tokens,
   });
 
   const files: Record<string, string> = {};
