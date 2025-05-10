@@ -131,7 +131,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
         return checkStringInput(ast);
       case 'pl-checkbox':
         return checkCheckbox(ast);
-      case 'pl-symbolic':
+      case 'pl-symbolic-input':
         return checkSymbolicInput(ast);
       case 'pl-question-panel':
         return { errors: [] };
