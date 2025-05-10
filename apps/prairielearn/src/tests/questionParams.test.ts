@@ -50,7 +50,7 @@ locals.questionBaseUrl = `${locals.courseInstanceBaseUrl}/instance_question`;
 locals.assessmentsUrl = `${locals.courseInstanceBaseUrl}/assessments`;
 locals.isStudentPage = true;
 
-const questionsArray: Question[] = [{ qid: 'addNumbersParameterized/2', type: 'Freeform' }];
+const questionsArray: Question[] = [{ qid: 'addNumbersParameterized', type: 'Freeform' }];
 
 describe('Parameterized questions', function () {
   this.timeout(40000);

@@ -132,7 +132,6 @@ function getParamsForAssessment(
       if (question.alternatives) {
 
         alternatives = question.alternatives.map((alternative) => {
-          console.log("QUEESTION PARAMS: ", alternative.questionParams)
           return {
             qid: alternative.id,
             maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,

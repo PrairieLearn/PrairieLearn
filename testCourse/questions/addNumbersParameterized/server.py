@@ -2,8 +2,8 @@ import random
 
 
 def generate(data):
-    lower_bound = data["params"]["question_params"].get("lower_bound", 10)
-    upper_bound = data["params"]["question_params"].get("upper_bound", 15)
+    lower_bound = data["params"].get("lower_bound", 10)
+    upper_bound = data["params"].get("upper_bound", 15)
 
     # Sample two random integers between 5 and 10 (inclusive)
     a = random.randint(lower_bound, upper_bound)

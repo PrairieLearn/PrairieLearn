@@ -1185,8 +1185,6 @@ export async function generate(
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
-    console.log("IN FREEFORM")
-    console.log(question.question_params)
     const data = {
       params: question.question_params ?? {},
       correct_answers: {},
