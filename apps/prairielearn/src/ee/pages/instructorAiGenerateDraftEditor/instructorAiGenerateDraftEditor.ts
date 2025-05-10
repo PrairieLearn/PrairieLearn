@@ -6,12 +6,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
-import {
-  addCompletionCostToIntervalUsage,
-  approximatePromptCost,
-  getIntervalUsage,
-  initializeAiQuestionGenerationCache,
-} from '../../../lib/ai-grading.js';
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
@@ -30,7 +24,13 @@ import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  getIntervalUsage,
+  initializeAiQuestionGenerationCache,
+  regenerateQuestion,
+} from '../../lib/aiQuestionGeneration.js';
 import {
   GenerationFailure,
   RateLimitExceeded,

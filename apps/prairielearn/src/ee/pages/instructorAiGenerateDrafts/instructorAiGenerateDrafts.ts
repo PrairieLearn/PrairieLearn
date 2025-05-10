@@ -5,16 +5,16 @@ import OpenAI from 'openai';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import {
-  addCompletionCostToIntervalUsage,
-  approximatePromptCost,
-  getIntervalUsage,
-  initializeAiQuestionGenerationCache,
-} from '../../../lib/ai-grading.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getIntervalUsage,
+  initializeAiQuestionGenerationCache,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
