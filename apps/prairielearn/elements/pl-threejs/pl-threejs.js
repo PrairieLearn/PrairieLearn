@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global THREE,async */
 function PLThreeJS(options) {
   // parse options
