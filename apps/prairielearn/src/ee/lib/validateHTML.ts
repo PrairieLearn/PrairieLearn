@@ -5,6 +5,7 @@ type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
+const mustacheTemplateChecker = /^\s*(((#|\/|\^|>|!|\$|>\*)?\s*(\w|\d|\.|_)*)|!.*)\s*$/;
 
 interface ValidationResult {
   /** Array of errors that we'll instruct the LLM to fix. */
@@ -643,6 +644,14 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
 
   if (!usesServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
+  }
+
+  for (const template of templates) {
+    if (!mustacheTemplateChecker.test(template)) {
+      errors.push(
+        `Template of ${template} must be in mustache format. Please adjust so that any logic done in the template is instead done in server.py`,
+      );
+    }
   }
 
   return errors;
