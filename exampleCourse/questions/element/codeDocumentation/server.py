@@ -13,7 +13,7 @@ import prairielearn as pl
 import sympy
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # Generate a random value
     x = random.uniform(1, 2)
 

@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Define a list of irregular singular words and their plural forms.
     words = {
         "mouse": "mice",

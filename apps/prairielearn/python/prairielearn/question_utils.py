@@ -27,17 +27,16 @@ class PartialScore(TypedDict):
     feedback: NotRequired[str | dict[str, str] | Any]
 
 
-# TODO: This type definition should not yet be seen as authoritative, it may
-# need to be modified as we expand type checking to cover more of the element code.
-# The fields below containing 'Any' in the types are ones which are used
+# TODO: The fields below containing 'Any' in the types are ones which are used
 # in different ways by different question elements. Ideally we would have
 # QuestionData be a generic type so that question elements could declare types
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
-# not yet supported: https://bugs.python.org/issue44863
+# not supported till we migrated to Python 3.11+: https://github.com/python/cpython/issues/89026
 class QuestionData(TypedDict):
     """The data dictionary passed to the question element throughout the lifecycle of the question.
 
     For more information see the [element developer guide](https://prairielearn.readthedocs.io/en/latest/devElements/).
+    This type definition should not yet be seen as authoritative, it may need to be modified as we expand type checking to cover more of the element code.
 
     Attributes:
         params: Parameters that describe the question variant.
@@ -100,6 +99,10 @@ class QuestionData(TypedDict):
 
     answers_names: dict[str, bool]
     """A dictionary whose keys list the names of the answers in the question."""
+
+
+class QuestionFileData(QuestionData):
+    filename: str
 
 
 class ElementTestData(QuestionData):

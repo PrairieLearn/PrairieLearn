@@ -3,9 +3,10 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # Select a random shape.
     shape = random.choice(["diamond", "circle"])
     data["params"]["shape"] = shape
@@ -26,7 +27,7 @@ def generate(data):
     data["correct_answers"]["dimension"] = 2 * radius
 
 
-def file(data):
+def file(data: pl.QuestionFileData):
     # This creates a dynamic figure (either a circle or diamond)
     # depending on the parameters defined in the `generate` function.
     if data["filename"] == "shape.png":

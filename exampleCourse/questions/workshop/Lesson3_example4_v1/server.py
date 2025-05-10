@@ -1,7 +1,9 @@
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     x = random.choice([0, 1])
     y = random.choice([0, 1])
     z = random.choice([0, 1])

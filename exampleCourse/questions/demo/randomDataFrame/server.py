@@ -12,7 +12,7 @@ def generate(data):
     n_digits = 2
 
     # Generate random integers up to a number
-    r = [float(random.randint(1, 100)) for i in range(x_events)]
+    r = [float(random.randint(1, 100)) for _ in range(x_events)]
 
     # Sum events
     s = sum(r)

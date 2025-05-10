@@ -2,7 +2,7 @@ import numpy as np
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # Dimensions
     n = np.random.randint(3, 5)
     m = np.random.randint(2, 4)

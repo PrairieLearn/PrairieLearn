@@ -1,9 +1,10 @@
 import random
 
 import numpy as np
+import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     T1C = random.randint(850, 950)  # temperature in Celsius
     T1 = T1C + 273
     # convert it to Kelvin

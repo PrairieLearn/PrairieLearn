@@ -1,8 +1,10 @@
 import math
 import random
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     # Sample an integer number between 2 and 20.
     a = random.randint(2, 20)
     data["params"]["a"] = a

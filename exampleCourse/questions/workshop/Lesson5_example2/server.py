@@ -5,7 +5,7 @@ import numpy.linalg as la
 import prairielearn as pl
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     website_list = [
         "Google",
         "Wikipedia",

@@ -1,9 +1,13 @@
 import random
+from typing import Literal
+
+import prairielearn as pl
+from typing_extensions import assert_never
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     size_limit = 20
-    concept = random.choice(["prime", "even", "odd"])
+    concept: Literal["prime", "even", "odd"] = random.choice(["prime", "even", "odd"])
     data["params"]["concept"] = concept
 
     if concept == "prime":
@@ -14,6 +18,8 @@ def generate(data):
         correct_set = {num for num in range(1, size_limit) if num % 2 == 0}
     elif concept == "odd":
         correct_set = {num for num in range(1, size_limit) if num % 2 != 0}
+    else:
+        assert_never(concept)
 
     data["params"]["options"] = [
         {"correct": num in correct_set, "answer": str(num)}

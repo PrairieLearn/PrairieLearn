@@ -13,6 +13,6 @@ def generate(data):
         data["params"][name] = pl.to_json(X)
     for i in range(4):
         M = random.choice([j for j in range(2, 5) if j != N])
-        X = np.random.rand(M, M)
+        X2 = np.random.rand(M, M)
         name = "M" + str(i + 1)
-        data["params"][name] = pl.to_json(X)
+        data["params"][name] = pl.to_json(X2)

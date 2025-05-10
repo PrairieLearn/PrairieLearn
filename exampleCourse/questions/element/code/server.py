@@ -1,7 +1,9 @@
 import pprint
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     complex_object = {
         (1, 2): "hi",
         (0, 0): "origin",

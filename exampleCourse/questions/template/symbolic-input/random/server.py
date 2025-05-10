@@ -1,8 +1,9 @@
 import numpy as np
+import prairielearn as pl
 import sympy
 
 
-def generate(data):
+def generate(data: pl.QuestionData):
     # Create a variable.
     x = sympy.symbols("x")
 

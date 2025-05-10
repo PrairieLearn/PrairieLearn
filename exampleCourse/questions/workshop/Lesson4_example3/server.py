@@ -1,7 +1,9 @@
 import math
 
+import prairielearn as pl
 
-def generate(data):
+
+def generate(data: pl.QuestionData):
     data["params"]["k"] = 20
     data["correct_answers"]["D"] = 0.01
     data["correct_answers"]["L"] = 0.3
@@ -10,7 +12,7 @@ def generate(data):
     data["correct_answers"]["T1"] = 55
 
 
-def parse(data):
+def parse(data: pl.QuestionData):
     variables = ["D", "L", "x1", "Tb", "T1", "qf"]
     for name in variables:
         var = data["submitted_answers"].get(name, None)
@@ -27,7 +29,7 @@ def parse(data):
             )
 
 
-def grade(data):
+def grade(data: pl.QuestionData):
     Ac = math.pi * data["submitted_answers"]["D"] ** 2 / 4
     qf = (
         -data["params"]["k"]
@@ -48,7 +50,7 @@ def grade(data):
     data["score"] = score / len(variables)
 
 
-def test(data):
+def test(data: pl.ElementTestData):
     if data["test_type"] == "invalid":
         return
     correct = data["correct_answers"]
