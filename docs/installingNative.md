@@ -95,12 +95,12 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@17 redis uv d2 node npm pgvector
+    brew install git graphviz postgresql@17 redis uv d2 node pgvector
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
     ```
 
-    You may want to startup the `postgresql` server on boot, and add binaries to your path:
+    You may want to start up the `postgresql` server on boot, and add binaries to your path:
 
     ```sh
     brew services start postgresql@17
@@ -168,20 +168,11 @@ Most of these prerequisites can be installed using the package manager of your O
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
-  === "Ubuntu (WSL2)"
-
-  ```sh
-  createdb postgres
-  psql postgres -c "CREATE USER postgres;"
-  psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
-  ```
-
-  === "macOS"
-
-  ```sh
-  psql postgres -c "CREATE USER postgres;"
-  psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
-  ```
+```sh
+createdb postgres
+psql postgres -c "CREATE USER postgres;"
+psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+```
 
 - Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
 
@@ -225,7 +216,7 @@ If you have your own [PrairieLearn course repository](./requestCourse/index.md),
   make dev
   ```
 
-  !!! warn "MacOS"
+  !!! warning "macOS"
 
       If you see the error `"Cannot start s3rver since port 5000 is already in use by process 645."`, toggle off the following setting:
 
@@ -262,7 +253,7 @@ make preview-docs
 
 ### Testing
 
-If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./dev-guide/index.md). Information on contribution can be found on the [contribution guide](./contributing.md).
+If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./dev-guide/index.md). Information on contributing can be found on the [contribution guide](./contributing.md).
 
 - Run the test suite (Docker must be installed and running):
 
