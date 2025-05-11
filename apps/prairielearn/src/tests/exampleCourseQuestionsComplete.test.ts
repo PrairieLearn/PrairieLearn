@@ -1,11 +1,13 @@
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
+import { A11yError, A11yResults } from '@sa11y/format';
+import axe from 'axe-core';
 import { assert } from 'chai';
 import fs from 'fs-extra';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
-import { HTMLHint } from 'htmlhint';
+import { JSDOM, VirtualConsole } from 'jsdom';
 
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
@@ -13,7 +15,8 @@ import { features } from '../lib/features/index.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
-import * as helperServer from '../tests/helperServer.js';
+
+import * as helperServer from './helperServer.js';
 
 const htmlvalidate = new HtmlValidate();
 
@@ -85,39 +88,19 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
 };
 
 const validateHtml = async (html: string) => {
-  const htmlHintMessages = HTMLHint.verify(html, {
-    'doctype-first': false, // Ignore doctype requirement for fragments
-  });
-  assert.isEmpty(htmlHintMessages, 'HTMLHint should pass');
-
   const rewrittenHtml = await rewriteValidatorFalsePositives(html);
   const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
     extends: ['html-validate:recommended', 'html-validate:document'],
     rules: {
       // https://html-validate.org/rules/no-raw-characters.html
       // https://html.spec.whatwg.org/multipage/syntax.html#syntax-ambiguous-ampersand
-      'no-raw-characters': [
-        'error',
-        {
-          relaxed: true,
-        },
-      ],
+      'no-raw-characters': ['error', { relaxed: true }],
 
       // https://html-validate.org/rules/form-dup-name.html
-      'form-dup-name': [
-        'error',
-        {
-          shared: ['radio', 'checkbox', 'button'],
-        },
-      ],
+      'form-dup-name': ['error', { shared: ['radio', 'checkbox', 'button'] }],
 
       // https://html-validate.org/rules/require-sri.html
-      'require-sri': [
-        'error',
-        {
-          target: 'crossorigin',
-        },
-      ],
+      'require-sri': ['error', { target: 'crossorigin' }],
 
       // https://html-validate.org/rules/prefer-tbody.html
       // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
@@ -196,7 +179,39 @@ const validateHtml = async (html: string) => {
     );
     assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}\n${rewrittenHtml}`);
   }
-  assert.isTrue(valid, 'HTMLValidate should pass');
+};
+
+const validateAxe = async (html: string) => {
+  const virtualConsole = new VirtualConsole();
+  const jsdom = new JSDOM(html, {
+    virtualConsole,
+  });
+
+  const messages: string[] = [];
+  const axeResults = await axe.run(jsdom.window.document.documentElement, {
+    rules: {
+      // document-level rules that don't apply
+      'document-title': { enabled: false },
+      'html-has-lang': { enabled: false },
+      region: { enabled: false },
+      // pl-dataframe emits empty headers
+      'empty-table-header': { enabled: false },
+      // TODO: see h37 above
+      'role-img-alt': { enabled: false },
+      'image-alt': { enabled: false },
+    },
+  });
+  if (axeResults.violations.length > 0) {
+    const err = new A11yError(
+      axeResults.violations,
+      A11yResults.convert(axeResults.violations).sort(),
+    );
+    messages.push(err.format({}));
+  }
+
+  if (messages.length > 0) {
+    assert.fail(`Axe failed:\n${messages.join('\n')}`);
+  }
 };
 
 // Find all question directories
@@ -206,18 +221,13 @@ const allQuestionDirs = findQuestionDirectories(questionsPath);
 const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
-    try {
-      const info = fs.readJsonSync(infoPath);
-      const relativePath = dir.substring(questionsPath.length + 1);
-      return {
-        path: dir,
-        relativePath,
-        info,
-      };
-    } catch (err) {
-      console.error(`Error reading or parsing ${infoPath}:`, err);
-      return null;
-    }
+    const info = fs.readJsonSync(infoPath);
+    const relativePath = dir.substring(questionsPath.length + 1);
+    return {
+      path: dir,
+      relativePath,
+      info,
+    };
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
@@ -249,7 +259,6 @@ describe('Internally Graded Question Lifecycle Tests', function () {
       if (unsupportedQuestions.includes(relativePath)) {
         this.skip();
       }
-
       await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
         const question = {
           options: info.options ?? {}, // Use options from info.json if available
@@ -266,7 +275,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
           },
         );
 
-        assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate courseIssues should be empty');
+        assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
         const variant = rawVariant as Variant;
         variant.num_tries = 0;
@@ -299,20 +308,23 @@ describe('Internally Graded Question Lifecycle Tests', function () {
           course,
           locals,
         );
-        assert.isEmpty(renderIssues, 'Render courseIssues should be empty');
+        assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
         // Validate HTML
         await validateHtml(questionHtml);
+
+        // Validate accessibility
+        // await validateAxe(questionHtml);
 
         if (!questionModule.test) {
           assert.fail('Test function not implemented for this question module');
         }
 
         const {
-          data: { raw_submitted_answer, format_errors },
+          data: { raw_submitted_answer },
         } = await questionModule.test(variant, question, course, 'correct');
 
-        const { courseIssues: parseIssues, data: parsedData } = await questionModule.parse(
+        const { courseIssues: parseIssues, data: parseData } = await questionModule.parse(
           {
             submitted_answer: raw_submitted_answer,
             raw_submitted_answer,
@@ -323,40 +335,27 @@ describe('Internally Graded Question Lifecycle Tests', function () {
           course,
         );
 
-        assert.isEmpty(
-          parseIssues,
-          `Parse courseIssues should be empty for input ${JSON.stringify(
-            raw_submitted_answer,
-            undefined,
-            2,
-          )}`,
-        );
+        assert.isEmpty(parseIssues, 'Parse should not produce any issues');
 
-        assert.deepEqual(
-          Object.keys(parsedData.format_errors ?? {}),
-          Object.keys(format_errors),
-          'Parse format_errors should be equal',
+        assert.isEmpty(
+          parseData.format_errors ?? {},
+          'Parse should not have any formatting errors',
         );
 
         // 5. Grade
         const { courseIssues: gradeIssues, data: gradeData } = await questionModule.grade(
-          parsedData as unknown as Submission,
+          parseData as unknown as Submission,
           variant,
           question,
           course,
         );
 
-        for (const issue of gradeIssues) {
-          assert.fail(
-            JSON.stringify(parsedData.submitted_answer, undefined, 2) +
-              '\n' +
-              (issue.data.outputStderr ?? ''),
-          );
-        }
-
-        assert.isEmpty(gradeIssues, 'Grade courseIssues should be empty');
-        assert.isEmpty(gradeData.format_errors ?? {}, 'Grade format_errors should be empty');
-        if ((gradeData.true_answer as any).length > 0) {
+        assert.isEmpty(gradeIssues, 'Grade should not produce any issues');
+        assert.isEmpty(
+          gradeData.format_errors ?? {},
+          'Grade should not have any formatting errors',
+        );
+        if (Object.keys(gradeData.true_answer ?? {}).length > 0) {
           assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
         }
       });

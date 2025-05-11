@@ -1,3 +1,7 @@
+import prairielearn as pl
+from typing_extensions import assert_never
+
+
 def generate(data):
     a = "01011"
     b = "10010"
@@ -43,3 +47,18 @@ def grade(data):
             data["feedback"]["c"] = (
                 "Your answer was has the correct length and format, but the value is wrong"
             )
+
+
+def test(data: pl.ElementTestData):
+    result = data["test_type"]
+    if result == "invalid":
+        data["raw_submitted_answers"]["c"] = "invalid"
+        data["format_errors"]["c"] = ""
+    elif result == "incorrect":
+        data["raw_submitted_answers"]["c"] = "10000"
+        data["score"] = 0
+    elif result == "correct":
+        data["raw_submitted_answers"]["c"] = data["correct_answers"]["c"]
+        data["score"] = 1
+    else:
+        assert_never(result)
