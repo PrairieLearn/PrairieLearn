@@ -65,11 +65,11 @@ export async function aiGradeTest({
   user_id: string;
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
-  if (!config.openAiApiKey || !config.openAiOrganization) {
+  if (!config.openAiApiKeyAiGrading || !config.openAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
   const openai = new OpenAI({
-    apiKey: config.openAiApiKey,
+    apiKey: config.openAiApiKeyAiGrading,
     organization: config.openAiOrganization,
   });
 

@@ -45,12 +45,12 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
-      if (!config.openAiApiKey || !config.openAiOrganization) {
+      if (!config.openAiApiKeyAiQuestionGeneration || !config.openAiOrganization) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
       const client = new OpenAI({
-        apiKey: config.openAiApiKey,
+        apiKey: config.openAiApiKeyAiQuestionGeneration,
         organization: config.openAiOrganization,
       });
 
@@ -60,12 +60,12 @@ router.post(
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute
       // the production database.
-      if (!config.openAiApiKey || !config.openAiOrganization || !config.devMode) {
+      if (!config.openAiApiKeyAiQuestionGeneration || !config.openAiOrganization || !config.devMode) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
       const client = new OpenAI({
-        apiKey: config.openAiApiKey,
+        apiKey: config.openAiApiKeyAiQuestionGeneration,
         organization: config.openAiOrganization,
       });
 
