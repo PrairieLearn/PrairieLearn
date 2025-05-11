@@ -255,7 +255,6 @@ function getParamsForAssessment(
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
-        // question_param: question.questionParams,
       };
     });
   });
