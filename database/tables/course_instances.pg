@@ -8,7 +8,6 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
-    question_params: jsonb default '{}'::jsonb
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint
