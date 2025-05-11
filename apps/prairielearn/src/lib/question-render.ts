@@ -460,12 +460,6 @@ export async function getAndRenderVariant(
     }
   });
   resultLocals.variant = variant;
-  if (locals.assessment_question && variant) {
-    variant.params = {
-      ...variant.params,
-      ...locals.assessment_question.question_params,
-    };
-  }
   const {
     urlPrefix,
     course,
