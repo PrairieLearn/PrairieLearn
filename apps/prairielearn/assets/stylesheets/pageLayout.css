@@ -219,11 +219,30 @@ body:has(div.app-container) {
 #assessment-switcher-container .assessment-row {
   width: 100%;
   display: grid;
-  /* Minmax handles the case that the assessment label is larger than 75px. */
-  grid-template-columns: minmax(75px, auto) 1fr 1fr;
+  grid-template-columns: 75px 1fr 1fr;
   gap: 10px;
   text-decoration: none;
   padding: 0.25rem;
+}
+
+#assessment-switcher-container .assessment-row .label {
+  display: flex;
+  align-items: center;
+}
+
+#assessment-switcher-container .assessment-row .label span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#assessment-switcher-container .assessment-row .tid {
+  overflow: hidden;
+  white-space: nowrap;
+  direction: rtl;
+  text-align: left;
+  text-overflow: ellipsis;
 }
 
 #assessment-switcher-container .assessment-row.selected {
@@ -234,6 +253,11 @@ body:has(div.app-container) {
 
 #assessment-switcher-container .assessment-row.selected a {
   color: white;
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+  border-radius: 5px;
 }
 
 @media (max-width: 768px) {

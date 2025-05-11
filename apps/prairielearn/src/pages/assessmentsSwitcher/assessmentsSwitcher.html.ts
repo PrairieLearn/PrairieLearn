@@ -73,7 +73,7 @@ export function AssessmentSwitcher({
                 issueAid: row.tid,
               })}
             </div>
-            <div>${row.tid}</div>
+            <div class="tid ${isActive ? '' : 'text-muted'}">${row.tid}</div>
           </div>
         `;
       })}
