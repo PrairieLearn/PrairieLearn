@@ -60,7 +60,11 @@ router.post(
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute
       // the production database.
-      if (!config.openAiApiKeyAiQuestionGeneration || !config.openAiOrganization || !config.devMode) {
+      if (
+        !config.openAiApiKeyAiQuestionGeneration ||
+        !config.openAiOrganization ||
+        !config.devMode
+      ) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 

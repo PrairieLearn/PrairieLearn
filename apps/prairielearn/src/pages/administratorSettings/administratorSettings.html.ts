@@ -5,7 +5,8 @@ import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
-  const showAiSettings = isEnterprise() && config.openAiApiKeyAiQuestionGeneration && config.openAiOrganization;
+  const showAiSettings =
+    isEnterprise() && config.openAiApiKeyAiQuestionGeneration && config.openAiOrganization;
 
   return PageLayout({
     resLocals,
