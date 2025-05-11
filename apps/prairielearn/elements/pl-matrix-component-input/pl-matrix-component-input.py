@@ -729,7 +729,8 @@ def create_table_for_html_display(
             if raw_submitted_answer is not None:
                 display_array += '  value= "'
                 display_array += escape(raw_submitted_answer)
-            display_array += '" /> </td>'
+                display_array += '" '
+            display_array += " /> </td>"
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         display_array += (
             '<td class="pl-matrix-component-input-close-right" rowspan="'
@@ -750,7 +751,8 @@ def create_table_for_html_display(
                 if raw_submitted_answer is not None:
                     display_array += '  value= "'
                     display_array += escape(raw_submitted_answer)
-                display_array += '" /> </td>'
+                    display_array += '" '
+                display_array += " /> </td>"
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"

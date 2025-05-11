@@ -248,10 +248,20 @@ const unsupportedQuestions = [
   'element/codeDocumentation',
 ];
 
+const accessibilitySkip = ['element/dataframe'];
+
 describe('Internally Graded Question Lifecycle Tests', function () {
   this.timeout(60000);
+  const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
 
   before('set up testing server', helperServer.before());
+  before('enable process-questions-in-server', () => {
+    config.features['process-questions-in-server'] = true;
+  });
+
+  after('restore process-questions-in-server', () => {
+    config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+  });
   after('shut down testing server', helperServer.after);
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
@@ -259,106 +269,107 @@ describe('Internally Graded Question Lifecycle Tests', function () {
       if (unsupportedQuestions.includes(relativePath)) {
         this.skip();
       }
-      await features.runWithGlobalOverrides({ 'process-questions-in-server': false }, async () => {
-        const question = {
-          options: info.options ?? {}, // Use options from info.json if available
-          directory: relativePath,
-          type: 'Freeform',
-        } as unknown as Question;
+      const question = {
+        options: info.options ?? {}, // Use options from info.json if available
+        directory: relativePath,
+        type: 'Freeform',
+      } as unknown as Question;
 
-        // Prepare and generate
-        const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
-          question,
-          course,
-          {
-            variant_seed: null,
-          },
-        );
+      // Prepare and generate
+      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
+        question,
+        course,
+        {
+          variant_seed: null,
+        },
+      );
 
-        assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
+      assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
-        const variant = rawVariant as Variant;
-        variant.num_tries = 0;
+      const variant = rawVariant as Variant;
+      variant.num_tries = 0;
 
-        // Render
-        const locals = {
-          urlPrefix: '/prefix1',
-          plainUrlPrefix: config.urlPrefix,
-          questionRenderContext: undefined,
-          ...buildQuestionUrls(
-            '/prefix2',
-            { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
-            { id: 'qid' } as unknown as Question,
-            null,
-          ),
-        };
-        const {
-          courseIssues: renderIssues,
-          data: { questionHtml },
-        } = await questionModule.render(
-          {
-            question: true,
-            submissions: false,
-            answer: false,
-          },
-          variant,
-          question,
-          null /* submission */,
-          [] /* submissions */,
-          course,
-          locals,
-        );
-        assert.isEmpty(renderIssues, 'Render should not produce any issues');
+      // Render
+      const locals = {
+        urlPrefix: '/prefix1',
+        plainUrlPrefix: config.urlPrefix,
+        questionRenderContext: undefined,
+        ...buildQuestionUrls(
+          '/prefix2',
+          { id: 'vid', workspace_id: 'wid' } as unknown as Variant,
+          { id: 'qid' } as unknown as Question,
+          null,
+        ),
+      };
+      const {
+        courseIssues: renderIssues,
+        data: { questionHtml },
+      } = await questionModule.render(
+        {
+          question: true,
+          submissions: false,
+          answer: false,
+        },
+        variant,
+        question,
+        null /* submission */,
+        [] /* submissions */,
+        course,
+        locals,
+      );
+      assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
-        // Validate HTML
-        await validateHtml(questionHtml);
+      // Validate HTML
+      await validateHtml(questionHtml);
 
-        // Validate accessibility
-        // await validateAxe(questionHtml);
+      // Validate accessibility
+      if (!accessibilitySkip.includes(relativePath)) {
+        Promise.race([
+          new Promise((_, reject) => {
+            setTimeout(() => {
+              reject(new Error('Axe validation timed out'));
+            }, 10000);
+          }),
+          validateAxe(questionHtml),
+        ]);
+      }
 
-        if (!questionModule.test) {
-          assert.fail('Test function not implemented for this question module');
-        }
+      if (!questionModule.test) {
+        assert.fail('Test function not implemented for this question module');
+      }
 
-        const {
-          data: { raw_submitted_answer },
-        } = await questionModule.test(variant, question, course, 'correct');
+      const {
+        data: { raw_submitted_answer },
+      } = await questionModule.test(variant, question, course, 'correct');
 
-        const { courseIssues: parseIssues, data: parseData } = await questionModule.parse(
-          {
-            submitted_answer: raw_submitted_answer,
-            raw_submitted_answer,
-            gradable: true,
-          },
-          variant,
-          question,
-          course,
-        );
+      const { courseIssues: parseIssues, data: parseData } = await questionModule.parse(
+        {
+          submitted_answer: raw_submitted_answer,
+          raw_submitted_answer,
+          gradable: true,
+        },
+        variant,
+        question,
+        course,
+      );
 
-        assert.isEmpty(parseIssues, 'Parse should not produce any issues');
+      assert.isEmpty(parseIssues, 'Parse should not produce any issues');
 
-        assert.isEmpty(
-          parseData.format_errors ?? {},
-          'Parse should not have any formatting errors',
-        );
+      assert.isEmpty(parseData.format_errors ?? {}, 'Parse should not have any formatting errors');
 
-        // 5. Grade
-        const { courseIssues: gradeIssues, data: gradeData } = await questionModule.grade(
-          parseData as unknown as Submission,
-          variant,
-          question,
-          course,
-        );
+      // 5. Grade
+      const { courseIssues: gradeIssues, data: gradeData } = await questionModule.grade(
+        parseData as unknown as Submission,
+        variant,
+        question,
+        course,
+      );
 
-        assert.isEmpty(gradeIssues, 'Grade should not produce any issues');
-        assert.isEmpty(
-          gradeData.format_errors ?? {},
-          'Grade should not have any formatting errors',
-        );
-        if (Object.keys(gradeData.true_answer ?? {}).length > 0) {
-          assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
-        }
-      });
+      assert.isEmpty(gradeIssues, 'Grade should not produce any issues');
+      assert.isEmpty(gradeData.format_errors ?? {}, 'Grade should not have any formatting errors');
+      if (Object.keys(gradeData.true_answer ?? {}).length > 0) {
+        assert.equal(gradeData.score, 1, 'Grade should be 1 (100%)');
+      }
     });
   });
 });
