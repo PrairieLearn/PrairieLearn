@@ -412,6 +412,11 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "questionParams": {
+          "description": "A set of key-value pairs for additional question parameters.",
+          "type": "object",
+          "additionalProperties": {}
         }
       }
     },
@@ -461,6 +466,11 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
+        },
+        "questionParams": {
+          "description": "A set of key-value pairs for additional question parameters.",
+          "type": "object",
+          "additionalProperties": {}
         }
       }
     },
