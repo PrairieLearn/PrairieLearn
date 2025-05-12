@@ -11,7 +11,6 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -248,7 +247,10 @@ const unsupportedQuestions = [
   'element/codeDocumentation',
 ];
 
-const accessibilitySkip = ['element/dataframe'];
+const accessibilitySkip = [
+  // Extremely large question
+  'element/dataframe',
+];
 
 describe('Internally Graded Question Lifecycle Tests', function () {
   this.timeout(60000);
@@ -324,14 +326,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
 
       // Validate accessibility
       if (!accessibilitySkip.includes(relativePath)) {
-        Promise.race([
-          new Promise((_, reject) => {
-            setTimeout(() => {
-              reject(new Error('Axe validation timed out'));
-            }, 10000);
-          }),
-          validateAxe(questionHtml),
-        ]);
+        validateAxe(questionHtml);
       }
 
       if (!questionModule.test) {
