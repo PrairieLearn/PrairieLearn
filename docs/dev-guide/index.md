@@ -111,7 +111,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 ## SQL usage
 
-- [PostgreSQL](https://www.postgresql.org) v17 is used as the database.
+- [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
 
 - The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
