@@ -27,6 +27,7 @@ import {
   queryAndLinkLineitem,
   syncLineitems,
   unlinkAssessment,
+  updateLineItemsByAssessment,
   updateLti13Scores,
   validateLti13CourseInstance,
 } from '../../lib/lti13.js';
@@ -176,6 +177,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
       });
+      await updateLineItemsByAssessment(instance, 3);
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'unlink_assessment') {
       await unlinkAssessment(instance.lti13_course_instance.id, req.body.unsafe_assessment_id);

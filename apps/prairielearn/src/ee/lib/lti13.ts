@@ -162,7 +162,8 @@ export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
       title: z.string().nullish(),
     }),
   }),
-).passthrough();
+);
+//).passthrough();
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
 export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
@@ -178,7 +179,8 @@ export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
       data: z.any().optional(),
     }),
   }),
-).passthrough();
+  //).passthrough();
+);
 
 export const Lti13ClaimSchema = z.discriminatedUnion(
   'https://purl.imsglobal.org/spec/lti/claim/message_type',
@@ -412,18 +414,24 @@ export async function getAccessToken(lti13_instance_id: string) {
   return tokenSet.access_token;
 }
 
-export async function getLineitems(instance: Lti13CombinedInstance) {
+export async function getLineitems(instance: Lti13CombinedInstance, filter = '') {
   if (instance.lti13_course_instance.lineitems_url == null) {
     throw new HttpStatusError(400, 'Lineitems not defined');
   }
+  let fetchUrl = instance.lti13_course_instance.lineitems_url;
+
+  // https://www.imsglobal.org/spec/lti-ags/v2p0#container-request-filters
+  if (filter) {
+    fetchUrl = `${fetchUrl}?${filter}`;
+  }
+
   const token = await getAccessToken(instance.lti13_instance.id);
-  const fetchArray = await fetchRetryPaginated(instance.lti13_course_instance.lineitems_url, {
+  const fetchArray = await fetchRetryPaginated(fetchUrl, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
 
   const lineitems = LineitemsSchema.array().parse(fetchArray);
-  console.log(lineitems);
   return lineitems.flat();
 }
 
@@ -435,7 +443,6 @@ export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_u
   });
 
   const lineitem = LineitemSchema.parse(await fetchRes.json());
-  console.log(lineitem);
   return lineitem;
 }
 
@@ -566,6 +573,20 @@ export async function linkAssessment(
     lineitem: JSON.stringify(lineitem),
     assessment_id: assessment.id,
   });
+}
+
+// We need a function that gets lineitems (filtered?) and stores them
+// associated with the assessment. This is different than knowing a
+// specific lineitem URL or creating one.
+// This logic assumes the lineitem.resourceId is the assessment.uuid
+export async function updateLineItemsByAssessment(
+  instance: Lti13CombinedInstance,
+  //job: ServerJob, // Do we need this?
+  assessment_id: string | number,
+) {
+  const lineitems = await getLineitems(instance, 'resource_id=foo');
+  console.log(lineitems);
+  console.log(`Found ${lineitems.length} assignments.`);
 }
 
 /* Throttling notes
