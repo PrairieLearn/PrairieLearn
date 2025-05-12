@@ -33,7 +33,7 @@ Another strategy to enhance collaborative learning is to provide activities that
 
 We can use PrairieLearn external grader to check content for correctness. This will help students self-manage their progress. Instructors can define `#grade` cells inside the JupyterLab notebook, which will be auto-graded for instant feedback (see image below).
 
-![](group-page1.png)
+![Screenshot showing how a workspace with autograding works with PrairieLearn](group-page1.png)
 
 Students in the same group will share the same JupyterLab, and the same submission history and scores. Currently the JupyterLab syncs upon saving (real-time synchronization is a work-in-progress).
 
