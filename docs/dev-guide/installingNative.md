@@ -196,7 +196,7 @@ psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
 
 ## Configuration
 
-If you have your own [PrairieLearn course repository](./requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:
+If you have your own [PrairieLearn course repository](../requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:
 
 ```json title="config.json"
 {

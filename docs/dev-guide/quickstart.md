@@ -19,7 +19,7 @@ To stop the server, use ++ctrl+c++.
 
 ## Production build
 
-You can also build and run using pre-compiled versions of the server code to more closely mimic what will happen in production environments. View the [running in production setup instructions](./running-in-production/setup.md) for more information.
+You can also build and run using pre-compiled versions of the server code to more closely mimic what will happen in production environments. View the [running in production setup instructions](../running-in-production/setup.md) for more information.
 
 ```sh
 make build
@@ -28,7 +28,7 @@ make start
 
 ## Workspaces
 
-If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
+If you need support for [workspaces](../workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
 
 ```sh
 sudo make dev-workspace-host # or sudo make start-workspace-host
@@ -44,7 +44,7 @@ make preview-docs
 
 ## Testing
 
-If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./dev-guide/index.md). Information on contributing can be found on the [contribution guide](./contributing.md).
+If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./guide.md). Information on contributing can be found on the [contribution guide](../contributing.md).
 
 Run the test suite (Docker must be installed and running):
 
@@ -127,4 +127,4 @@ yarn dev
 
 ## More information
 
-Most information about development is found in the [developer guide](./dev-guide/index.md). It outlines debugging and testing tips, best practices and style for coding, as well as details about various aspects of PrairieLearn (question rendering, databases schemas, etc.).
+Most information about development is found in the [developer guide](./guide.md). It outlines debugging and testing tips, best practices and style for coding, as well as details about various aspects of PrairieLearn (question rendering, databases schemas, etc.).

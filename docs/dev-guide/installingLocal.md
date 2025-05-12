@@ -12,7 +12,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
       prairielearn/prairielearn
     ```
 
-First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
+First install the Docker version of PrairieLearn as described in the [installation documentation](../installing.md).
 
 Then, clone PrairieLearn from the main repository:
 
@@ -48,11 +48,11 @@ make dev
 
 This will start the PrairieLearn server and automatically restart it when you make changes to the JavaScript code. To stop the server, press ++ctrl+c++. To exit the container, press ++ctrl+c++ and then ++ctrl+d++.
 
-To support workspaces in local development, use `make dev-all` or `make start-all` to run both PrairieLearn and a workspace server application. For these to work, you will need to modify your Docker invocation to support external graders and workspaces. More information is on the [instructor installation page](installing.md/#support-for-external-graders-and-workspaces).
+To support workspaces in local development, use `make dev-all` or `make start-all` to run both PrairieLearn and a workspace server application. For these to work, you will need to modify your Docker invocation to support external graders and workspaces. More information is on the [instructor installation page](../installing.md/#support-for-external-graders-and-workspaces).
 
 ## Development
 
-More information on the common commands and actions you do during development can be found on the [development quickstart](./dev-quickstart.md) page.
+More information on the common commands and actions you do during development can be found on the [development quickstart](./quickstart.md) page.
 
 ## Updating or building the Docker image
 
