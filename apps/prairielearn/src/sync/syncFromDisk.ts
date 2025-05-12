@@ -22,6 +22,7 @@ import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
   checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
   checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
@@ -71,9 +72,9 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
-  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
-
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
     !existInvalidRenames &&
@@ -82,6 +83,7 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
     !existInvalidSharedAssessment &&
+    !existInvalidSharedCourseInstance &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }

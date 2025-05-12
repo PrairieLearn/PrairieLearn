@@ -226,6 +226,35 @@ export function checkInvalidSharedAssessments(
   return existInvalidSharedAssessment;
 }
 
+export function checkInvalidSharedCourseInstance(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedCourseInstances = new Set<string>();
+
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) {
+      continue;
+    }
+
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        invalidSharedCourseInstances.add(courseInstance.courseInstance.data?.longName);
+      }
+    }
+  }
+
+  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
+  if (existInvalidSharedCourseInstance) {
+    logger.error(
+      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
+    );
+  }
+  return existInvalidSharedCourseInstance;
+}
+
 export function checkInvalidDraftQuestionSharing(
   courseData: CourseData,
   logger: ServerJobLogger,
