@@ -73,8 +73,8 @@ export default tseslint.config([
     rules: {
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
-      'no-floating-promise/no-floating-promise': 'error',
       'handle-callback-err': 'error',
+      'no-floating-promise/no-floating-promise': 'error',
       'no-template-curly-in-string': 'error',
       'no-restricted-globals': [
         'error',
@@ -84,6 +84,7 @@ export default tseslint.config([
       ],
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
+      'prefer-const': ['error', { destructuring: 'all' }],
 
       'import-x/order': [
         'error',
