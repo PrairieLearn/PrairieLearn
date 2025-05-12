@@ -95,7 +95,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@17 redis uv d2 node pgvector
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -104,11 +104,8 @@ Most of these prerequisites can be installed using the package manager of your O
     You may want to start up the `postgresql` server on boot, and add binaries to your path:
 
     ```sh
-    brew services start postgresql@17
-    # zsh
-    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
-    # bash
-    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+    brew services start postgresql@16
+    brew link postgresql@16
     ```
 
     Enable `corepack` to make `yarn` available:
