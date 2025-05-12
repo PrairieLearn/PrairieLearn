@@ -12,9 +12,9 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
       prairielearn/prairielearn
     ```
 
-- First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
+First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
 
-- Clone PrairieLearn from the main repository:
+Then, clone PrairieLearn from the main repository:
 
 ```sh
 git clone https://github.com/PrairieLearn/PrairieLearn.git
@@ -52,7 +52,7 @@ To support workspaces in local development, use `make dev-all` or `make start-al
 
 ## Development
 
-More information on the common commands and actions you do during development can be found on the [quickstart](./quickstart.md) page.
+More information on the common commands and actions you do during development can be found on the [development quickstart](./dev-quickstart.md) page.
 
 ## Updating or building the Docker image
 

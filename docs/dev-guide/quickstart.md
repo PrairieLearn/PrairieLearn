@@ -7,19 +7,19 @@ This page describes how to run, test, and develop PrairieLearn. Ensure that you 
 
 ## Development server
 
-- Run the server in development mode to automatically restart when changes are detected:
+Run the server in development mode to automatically restart when changes are detected:
 
-  ```sh
-  make dev
-  ```
+```sh
+make dev
+```
 
-- In a web-browser go to [http://localhost:3000](http://localhost:3000).
+In a web-browser go to [http://localhost:3000](http://localhost:3000).
 
-- To stop the server, use ++ctrl+c++.
+To stop the server, use ++ctrl+c++.
 
-## Production server
+## Production build
 
-You can build and run the code to more closely mimic what will happen in production environments:
+You can also build and run using pre-compiled versions of the server code to more closely mimic what will happen in production environments. View the [running in production setup instructions](./running-in-production/setup.md) for more information.
 
 ```sh
 make build
@@ -28,7 +28,7 @@ make start
 
 ## Workspaces
 
-- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
+If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
 
 ```sh
 sudo make dev-workspace-host # or sudo make start-workspace-host
@@ -46,18 +46,20 @@ make preview-docs
 
 If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./dev-guide/index.md). Information on contributing can be found on the [contribution guide](./contributing.md).
 
-- Run the test suite (Docker must be installed and running):
+Run the test suite (Docker must be installed and running):
 
 ```sh
 make test
 ```
 
-Or, more specifically:
+Or, to run tests for just a specific language:
 
 ```sh
 make test-js     # Javascript only
 make test-python # Python only
 ```
+
+### JavaScript tests
 
 The main JavaScript test suite can take on the order of 10+ minutes to run, so you may only run specific test files as you develop. To run specific test files, you first need to run `make start-support` to start the database and other services, and then you can run specific test files.
 
@@ -65,6 +67,15 @@ The main JavaScript test suite can take on the order of 10+ minutes to run, so y
 make start-support
 cd apps/prairielearn
 yarn mocha src/tests/getHomepage.test.ts
+```
+
+### Package tests
+
+To test specific packages, you can run it from the package directory you would like to test.
+
+```sh
+cd packages/csv
+yarn test
 ```
 
 ## Linting
@@ -96,7 +107,7 @@ If you develop code with VSCode, running these shouldn't be necessary, as we pro
 
 ## Updating dependencies
 
-If you switch branches, pull new code, or edit Python dependencies in `plbase` image, you will need to update the dependencies.
+If you switch branches, pull new code, or edit Python dependencies in the `images/plbase` directory, you will need to update the dependencies.
 
 ```sh
 make deps

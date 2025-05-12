@@ -254,13 +254,13 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element': schemas/infoElementCore.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
-  - Developer Guide:
-      - developer-guide/index.md
-      - installingLocal.md
-      - installingNative.md
-      - quickstart.md
+  - 'Developer Guide':
       - dev-guide/index.md
-      - 'Server configuration': 'configJson.md'
+      - dev-guide/installingLocal.md
+      - dev-guide/installingNative.md
+      - dev-guide/quickstart.md
+      - dev-guide/guide.md
+      - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'

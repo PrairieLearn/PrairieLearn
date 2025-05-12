@@ -89,7 +89,7 @@ docker run -it --rm -p 3000:3000 \
 
 ### Development
 
-If you want to contribute improvements or features to PrairieLearn, you will need to start up PrairieLearn differently. More information for developers can be found on the [Running in Docker](./installingLocal.md) page.
+If you want to contribute improvements or features to PrairieLearn, you will need to start up PrairieLearn differently. See the [local installation](./installingLocal.md) page for more details.
 
 #### Troubleshooting the --add-host option and network timeouts
 

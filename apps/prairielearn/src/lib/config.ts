@@ -316,6 +316,9 @@ const ConfigSchema = z.object({
       }),
     )
     .default([]),
+  /**
+   * Where uploaded files reside (e.g. uploads from students).
+   */
   filesRoot: z.string().default('/files'),
   /**
    * See the Express documentation for the `trust proxy` option:

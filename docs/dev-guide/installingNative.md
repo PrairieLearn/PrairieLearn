@@ -10,7 +10,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Node.js 20](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [PostgreSQL 17](https://www.postgresql.org)
+  - [PostgreSQL 16](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
@@ -196,7 +196,7 @@ psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
 
 ## Configuration
 
-If you have your own [PrairieLearn course repository](./requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved when using the in-browser file editor. Here is a sample configuration:
+If you have your own [PrairieLearn course repository](./requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:
 
 ```json title="config.json"
 {
@@ -207,8 +207,8 @@ If you have your own [PrairieLearn course repository](./requestCourse/index.md),
 }
 ```
 
-More information about the `config.json` can be found on the [server configuration](./configJson.md) page.
+More information about the `config.json` can be found in the [server configuration](./configJson.md) documentation.
 
 ## Development
 
-More information on the common commands and actions you do during development can be found on the [quickstart](./quickstart.md) page.
+More information on the development workflow can be found in the [quickstart](./quickstart.md) documentation.
