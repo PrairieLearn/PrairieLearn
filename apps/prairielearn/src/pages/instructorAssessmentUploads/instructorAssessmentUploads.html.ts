@@ -344,8 +344,8 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
       </p>
       <p>
         The download/upload process is lossy. Some information, such as <code>format_errors</code>,
-        <code>raw_submitted_answers</code>, and whether or not a submission was considered gradable,
-        will not be preserved.
+        <code>raw_submitted_answers</code>, whether or not a submission was considered gradable, and
+        scores (including manual grading and rubrics) will not be preserved.
       </p>
       <div class="alert alert-danger">
         This will delete all existing assessment instances and submissions for this assessment and

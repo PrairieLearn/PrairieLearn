@@ -175,6 +175,7 @@ export async function uploadSubmissions(
                 params: row.Params,
                 true_answer: row['True answer'],
                 options: row.Options,
+                number: row.Variant,
               },
               IdSchema,
             ),

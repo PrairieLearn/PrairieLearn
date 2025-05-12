@@ -41,6 +41,7 @@ RETURNING
 -- BLOCK insert_variant
 INSERT INTO
   variants (
+    course_id,
     instance_question_id,
     question_id,
     authn_user_id,
@@ -49,10 +50,11 @@ INSERT INTO
     params,
     true_answer,
     options,
-    course_id
+    number
   )
 VALUES
   (
+    $course_id,
     $instance_question_id,
     $question_id,
     $authn_user_id,
@@ -61,7 +63,7 @@ VALUES
     $params,
     $true_answer,
     $options,
-    $course_id
+    $number
   )
 RETURNING
   id AS variant_id;
