@@ -95,8 +95,8 @@ After students have completed their assessments, open the "Manual Grading" tab. 
 
     The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or group. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
 
-    - Wang, Zhihan (Helen) and Pei, Jiaxin and Li, Jun, *30 Million Canvas Grading Records Reveal Widespread Sequential Bias and System-Induced Surname Initial Disparity* (2023). https://ssrn.com/abstract=4603146
-    - Goldbach, C., Sickmann, J., & Pitz, T. *Sequential decision bias – evidence from grading exams*. Applied Economics (2021), 54(32), 3727–3739. https://doi.org/10.1080/00036846.2021.1976390
+    - Wang, Zhihan (Helen) and Pei, Jiaxin and Li, Jun, *30 Million Canvas Grading Records Reveal Widespread Sequential Bias and System-Induced Surname Initial Disparity* (2023). <https://ssrn.com/abstract=4603146>
+    - Goldbach, C., Sickmann, J., & Pitz, T. *Sequential decision bias – evidence from grading exams*. Applied Economics (2021), 54(32), 3727–3739. <https://doi.org/10.1080/00036846.2021.1976390>
 
 The list of student submissions for a question gives course staff the ability to tag individual student answers (or all answers for the question) to specific graders. This can be done by selecting the submissions to be tagged, then selecting the "Tag for grading" button and choosing the grader responsible for those submissions. Only staff members with [Editor permission for the course instance](../course/index.md#student-data-access-roles) are listed for tagging.
 
