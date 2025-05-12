@@ -327,7 +327,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
 function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
-  let usedBlank = false;
+  let allowBlank = false;
+  let setBlankVal = false;
+
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
@@ -341,7 +343,6 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           assertInt('pl-symbolic-input', key, val, errors);
           break;
         case 'correct-answer':
-          assertFloat('pl-symbolic-input', key, val, errors);
           if (val.match(mustacheTemplateExtractorRegex)) {
             errors.push(
               "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
@@ -369,19 +370,23 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           break;
         case 'allow-blank':
           assertBool('pl-symbolic-input', key, val, errors);
-          usedBlank = true;
+          if (
+            ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'].includes(val)
+          ) {
+            allowBlank = true;
+          }
+
           break;
         case 'blank-value':
-          if (!usedBlank) {
-            errors.push(
-              'pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`',
-            );
-          }
+          setBlankVal = true;
           break;
         default:
           errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
       }
     }
+  }
+  if (setBlankVal && !allowBlank) {
+    errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
   }
   return {
     errors,
