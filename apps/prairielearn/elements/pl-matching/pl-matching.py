@@ -270,6 +270,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         keyed_statement = {
             "key": str(i),
             "html": statement["html"],
+            "aria-label": statement["aria-label"],
             "match": statement["match"],
         }
         display_statements.append(keyed_statement)

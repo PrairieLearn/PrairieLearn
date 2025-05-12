@@ -8,7 +8,7 @@
                 name="{{name}}"
                 class="form-select"
                 {{^editable}}disabled{{/editable}}
-                {{aria-label}}aria-label="{{aria-label}}"{{/aria-label}}
+                {{#aria-label}}aria-label="{{aria-label}}"{{/aria-label}}
                 {{^aria-label}}aria-labelledby="statement-label-{{statement_id}}"{{/aria-label}}
                 >
                 {{#options}}
@@ -55,7 +55,7 @@
         <div class="pl-matching-answer">
             <strong>{{counter}}</strong> {{{option}}}
         </div>
-        <div class="pl-matching-statement-text" {{aria-label}}aria-label="{{aria-label}}"{{/aria-label}}>
+        <div class="pl-matching-statement-text" {{#aria-label}}aria-label="{{aria-label}}"{{/aria-label}}>
             {{{html}}}
         </div>
         {{#parse_error}}
@@ -103,7 +103,7 @@
         </div>
         <div
             class="pl-matching-statement-text"
-            {{aria-label}}aria-label="{{aria-label}}"{{/aria-label}}
+            {{#aria-label}}aria-label="{{aria-label}}"{{/aria-label}}
             >
             {{{html}}}
         </div>
