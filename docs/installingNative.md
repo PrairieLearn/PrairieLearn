@@ -10,7 +10,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Node.js 20](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [PostgreSQL 16](https://www.postgresql.org)
+  - [PostgreSQL 17](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
@@ -96,6 +96,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     brew install git graphviz postgresql@17 redis uv d2 node pgvector
+
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
     ```
@@ -105,9 +106,9 @@ Most of these prerequisites can be installed using the package manager of your O
     ```sh
     brew services start postgresql@17
     # zsh
-    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.zshrc && . ~/.zshrc
+    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
     # bash
-    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.bashrc && . ~/.bashrc
+    echo 'export PATH="$(brew --prefix postgresql@17)/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -206,9 +207,7 @@ If you have your own [PrairieLearn course repository](./requestCourse/index.md),
 }
 ```
 
-??? note "Advanced configuration"
-
-    More information about the `config.json` can be found on the [server configuration](./configJson.md) page.
+More information about the `config.json` can be found on the [server configuration](./configJson.md) page.
 
 ## Development
 
