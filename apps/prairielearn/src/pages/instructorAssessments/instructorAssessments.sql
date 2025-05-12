@@ -61,7 +61,6 @@ FROM
 WHERE
   ci.id = $course_instance_id
   AND a.deleted_at IS NULL
-  AND aa.authorized
 ORDER BY
   (
     CASE
@@ -86,8 +85,7 @@ FROM
 WHERE
   a.id = $assessment_id
   AND ci.id = $course_instance_id
-  AND a.deleted_at IS NULL
-  AND aa.authorized;
+  AND a.deleted_at IS NULL;
 
 -- BLOCK select_assessment_id_from_uuid
 SELECT
