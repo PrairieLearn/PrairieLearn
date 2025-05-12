@@ -1,10 +1,11 @@
-import { html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -205,7 +206,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <h2 class="h4">Sharing</h2>
-            ${CourseInstanceSharing({ courseInstance: resLocals.courseInstance, publicLink })}
+            ${CourseInstanceSharing({ courseInstance: resLocals.course_instance, publicLink })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
