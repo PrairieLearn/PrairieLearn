@@ -21,7 +21,7 @@ router.get(
     res.locals.course = await selectCourseById(res.locals.course_instance.course_id);
     res.locals.urlPrefix = '/pl';
 
-    const isPublic = await selectCourseInstanceIsPublic(res.locals.course_instance_id);
+    const isPublic = await selectCourseInstanceIsPublic(course_instance_id);
     if (!isPublic) {
       throw new error.HttpStatusError(404, 'Course instance not public.');
     }

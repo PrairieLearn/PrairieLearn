@@ -36,7 +36,7 @@ export function PublicAssessments({
       page: 'assessments',
     },
     options: {
-      fullWidth: true,
+      fullWidth: false,
     },
     content: html`
       <div class="card mb-4">
