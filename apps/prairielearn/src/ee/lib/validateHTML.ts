@@ -29,9 +29,8 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
         names.add(value);
       } else if (type === '#' || type === '^') {
         // Handles {{#section}}...{{/section}} and {{^inverted-section}}...{{/section}}
-
         // Record the section name itself.
-        names.add(value); // The section name itself
+        names.add(value);
 
         // Process any nested tokens.
         const children = token[4];
