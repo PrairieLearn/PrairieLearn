@@ -44,6 +44,11 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
   }
 
   collectNames(tokens);
+
+  // We deliberately ignore `.` (the current context). It's not a useful name
+  // as it doesn't correspond to a variable in the template in isolation.
+  names.delete('.');
+
   return names;
 }
 

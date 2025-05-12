@@ -23,6 +23,10 @@ describe('extractMustacheTemplateNames', () => {
     assertExtractsNames('Hello, {{ name }}!', ['name']);
   });
 
+  it('handles Mustache tags with dots', () => {
+    assertExtractsNames('Hello, {{foo.bar}}!', ['foo.bar']);
+  });
+
   it('handles triple-braced Mustache tags', () => {
     assertExtractsNames('Hello, {{{name}}}!', ['name']);
   });
@@ -41,6 +45,10 @@ describe('extractMustacheTemplateNames', () => {
 
   it('handles inverted Mustache sections with spaces', () => {
     assertExtractsNames('Hello, {{ ^ foo }}{{ name }}{{ / foo }}!', ['foo', 'name']);
+  });
+
+  it('handles Mustache sections with dots', () => {
+    assertExtractsNames('Hello, {{#foo}}{{.}}{{/foo}}!', ['foo']);
   });
 
   it('handles nested Mustache sections', () => {
