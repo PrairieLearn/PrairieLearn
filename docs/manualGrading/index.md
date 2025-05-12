@@ -89,9 +89,9 @@ The user interface for manual grading is built to encourage a workflow where all
 
 After students have completed their assessments, open the "Manual Grading" tab. This page will list all questions in this assessment, as well as the number of submissions that require grading. For questions that have at least one submission tagged for grading, the "Grade next submission" button will be shown, which will jump directly to one of the submissions that need to be graded. Alternatively, clicking on the question's title will open a list of all student answers for that question.
 
-!!! info
+!!! info "Order of student submissions"
 
-    The order in which student submissions are listed for a question is purposely not based on any deterministic information about the student or the submission data. Rather, submissions are listed in a pseudo-random order that is stable (i.e., the same order is used if the page is reloaded), but not predictable. Similarly, when a grader submits a grade or skips a submission, the next submission to be graded is based on the same order. Additionally, different questions in the same assessments will typically list the same set of students in a different order.
+    The order in which student submissions are listed for a question is purposely not based on any deterministic information about the student or the submission data. Rather, submissions are listed in a stable pseudo-random order(i.e., the same order is used if the page is reloaded). Similarly, when a grader submits a grade or skips a submission, the next submission to be graded is based on the same order. Different questions on the same assessment will list the same set of students in a different order.
 
     The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or group. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
 
