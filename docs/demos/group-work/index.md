@@ -1,3 +1,7 @@
+---
+icon: material/account-group
+---
+
 # Group work: Collaborative learning activities
 
 !!! tip

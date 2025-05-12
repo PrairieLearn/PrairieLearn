@@ -1,3 +1,7 @@
+---
+icon: material/file-question
+---
+
 # Exam: Summative assessments that are auto-graded with instant feedback and retry opportunities
 
 !!! tip

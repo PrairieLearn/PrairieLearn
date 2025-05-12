@@ -216,6 +216,7 @@ nav:
           - 'Accessibility': 'question/accessibility.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Demos':
+          - 'demos/index.md'
           - 'Homework': 'demos/homework/index.md'
           - 'Exam': 'demos/exam/index.md'
           - 'Group work': 'demos/group-work/index.md'

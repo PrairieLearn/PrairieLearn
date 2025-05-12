@@ -1,4 +1,8 @@
-# Mastery-based homework assessments
+---
+icon: material/school
+---
+
+# Homework: Mastery-based assessments
 
 !!! tip
 
@@ -16,7 +20,7 @@ PrairieLearn supports the development of **question generators**, defined by a s
 
 In this configuration, the question generator creates unlimited question variants, each one with a single attempt. Once students submit an answer to a question, they receive immediate feedback, indicating if the question was correct, partially correct, or incorrect. The feedback may also include more detailed explanation. No matter if a submission is correct or not, students have the ability to generate another question variant with a single attempt. Moreover, students are not penalized when submitting an incorrect attempt.
 
-![Unlimited variants with single attemp](./unlimited-variants.png)
+![Unlimited variants with single attempt](./unlimited-variants.png)
 
 Instructors can define the number of times a student needs to correctly answer a question variant to earn full credit. Since question variants present a different version of the question, this repetition provides students with the needed practice to achieve mastery. Even after students reach full credit for a given question, they can continue to work on other question variants for additional practice. We see students coming back to homework assessments when reviewing for exams.
 
