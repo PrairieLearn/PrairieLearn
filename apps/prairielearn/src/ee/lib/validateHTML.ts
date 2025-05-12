@@ -88,6 +88,13 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
+ * Checks if the given attribute value is a boolean `true` value.
+ */
+function isBooleanTrue(val: string): boolean {
+  return BOOLEAN_TRUE_VALUES.includes(val.trim());
+}
+
+/**
  * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
  * @param optimistic True if tags outside the subset are allowed, else false.
@@ -275,7 +282,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         case 'allow-blank':
           assertBool('pl-integer-input', key, val, errors);
-          allowsBlank = BOOLEAN_TRUE_VALUES.includes(val.trim());
+          allowsBlank = isBooleanTrue(val);
           break;
         case 'base':
           // TODO: validate that correct-answer is the right base
@@ -373,7 +380,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'allow-blank':
           assertBool('pl-number-input', key, val, errors);
-          allowsBlank = BOOLEAN_TRUE_VALUES.includes(val.trim());
+          allowsBlank = isBooleanTrue(val);
           break;
         case 'blank-value':
           usedBlankValue = true;
@@ -545,11 +552,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 
         case 'partial-credit':
           assertBool('pl-checkbox', key, val, errors);
-          if (
-            ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)
-          ) {
-            usedPartialCredit = false;
-          }
+          usedPartialCredit = isBooleanTrue(val);
           break;
         case 'partial-credit-method':
           assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
