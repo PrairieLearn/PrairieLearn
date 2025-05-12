@@ -10,6 +10,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
     docker run -it --rm -p 3000:3000 \
       -e DEV=true -v .:/PrairieLearn \
       prairielearn/prairielearn
+      /bin/bash -c "make deps && /PrairieLearn/scripts/init.sh"
     ```
 
 First install the Docker version of PrairieLearn as described in the [installation documentation](../installing.md).
@@ -25,7 +26,8 @@ To run without spawning a shell in the container, run:
 ```sh
 docker run -it --rm -p 3000:3000 \
   -e DEV=true -v .:/PrairieLearn \
-  prairielearn/prairielearn
+  prairielearn/prairielearn \
+  /bin/bash -c "make deps && /PrairieLearn/scripts/init.sh"
 ```
 
 For most development, you will need access to a shell in the container to run tests, linting, etc.
