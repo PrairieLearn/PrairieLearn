@@ -378,7 +378,7 @@ function CourseInstanceSharing({
         </button>
       </span>
       <small class="form-text text-muted">
-        The link that other instructors can use to view this assessment.
+        The link that other instructors can use to view this course instance.
       </small>
     </div>
   `;

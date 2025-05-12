@@ -440,7 +440,7 @@ function AssessmentSharing({
           </button>
         </span>
         <small class="form-text text-muted">
-          The link that other instructors can use to view this course instance.
+          The link that other instructors can use to view this assessment.
         </small>
       </div>
     `);
