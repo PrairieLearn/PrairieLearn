@@ -75,7 +75,7 @@ All changes to PrairieLearn must pass our linters before they get merged.
 make lint
 ```
 
-Or, more specifically:
+Or, to lint only specific kind of files:
 
 ```sh
 make lint-js     # JavaScript only
