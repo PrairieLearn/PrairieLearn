@@ -98,7 +98,7 @@ If you develop code with VSCode, running these shouldn't be necessary, as we pro
 
 If you switch branches, pull new code, or edit Python dependencies in `plbase` image, you will need to update the dependencies.
 
-```
+```sh
 make deps
 ```
 
