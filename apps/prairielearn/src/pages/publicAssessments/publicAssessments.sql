@@ -50,11 +50,3 @@ ORDER BY
   aset.number,
   a.order_by,
   a.id;
-
--- BLOCK check_is_public
-SELECT
-  ci.share_source_publicly
-FROM
-  course_instances AS ci
-WHERE
-  ci.id = $course_instance_id;

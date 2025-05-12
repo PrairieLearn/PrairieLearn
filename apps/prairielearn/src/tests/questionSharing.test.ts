@@ -611,6 +611,23 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = false;
     });
 
+    // step('Fail to sync a shared course instance containing a nonshared assessment', async () => {
+    //   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+    //   await fs.writeJSON(
+    //     path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+    //     sharingCourseData.courseInstances['Fa19'].courseInstance,
+    //   );
+
+    //   await ensureInvalidSharingOperationFailsToSync();
+
+    //   // Restore for now
+    //   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
+    //   await fs.writeJSON(
+    //     path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+    //     sharingCourseData.courseInstances['Fa19'].courseInstance,
+    //   );
+    // });
+
     step('Fail to sync a shared assessment containing a nonshared question', async () => {
       sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
       sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
