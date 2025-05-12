@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
@@ -54,23 +55,28 @@ export function InstructorAssessments({
             <tbody>
               ${rows.map(
                 (row) => html`
+                  ${row.start_new_assessment_group
+                    ? html`
+                        <tr>
+                          <th colspan="3" scope="row">
+                            ${assessmentsGroupBy === 'Set'
+                              ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                              : AssessmentModuleHeading({
+                                  assessment_module: row.assessment_module,
+                                })}
+                          </th>
+                        </tr>
+                      `
+                    : ''}
                   <tr id="row-${row.id}">
                     <td class="align-middle" style="width: 1%">
-                      <a
-                        href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
-                        class="badge color-${row.color} color-hover"
-                      >
-                        ${row.label}
-                      </a>
+                      <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
                     </td>
                     <td class="align-middle">
                       <a
                         href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
                         >${row.title}
-                        ${row.group_work
-                          ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                          : ''}</a
-                      >
+                      </a>
                     </td>
 
                     <td class="align-middle">${row.tid}</td>
@@ -84,3 +90,25 @@ export function InstructorAssessments({
     `,
   });
 }
+
+// <tr id="row-${row.id}">
+//                     <td class="align-middle" style="width: 1%">
+//                       <a
+//                         href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
+//                         class="badge color-${row.color} color-hover"
+//                       >
+//                         ${row.label}
+//                       </a>
+//                     </td>
+//                     <td class="align-middle">
+//                       <a
+//                         href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
+//                         >${row.title}
+//                         ${row.group_work
+//                           ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+//                           : ''}</a
+//                       >
+//                     </td>
+
+//                     <td class="align-middle">${row.tid}</td>
+//                   </tr>

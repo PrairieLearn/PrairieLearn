@@ -5,12 +5,29 @@ SELECT
   aset.name,
   aset.color,
   (aset.abbreviation || a.number) as label,
+  to_jsonb(aset) as assessment_set,
+  to_jsonb(am) as assessment_module,
   (
-    CASE
-      WHEN $assessments_group_by = 'Set' THEN aset.heading
-      ELSE am.heading
-    END
-  ) AS assessment_group_heading
+    LAG(
+      CASE
+        WHEN $assessments_group_by = 'Set' THEN aset.id
+        ELSE am.id
+      END
+    ) OVER (
+      PARTITION BY
+        (
+          CASE
+            WHEN $assessments_group_by = 'Set' THEN aset.id
+            ELSE am.id
+          END
+        )
+      ORDER BY
+        aset.number,
+        a.order_by,
+        a.id
+    ) IS NULL
+  ) AS start_new_assessment_group,
+  coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
