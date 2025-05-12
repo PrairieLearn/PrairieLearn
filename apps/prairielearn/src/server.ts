@@ -912,10 +912,6 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)/ai_grading_runs',
-    (await import('./ee/pages/instructorAiGradingRuns/instructorAiGradingRuns.js')).default,
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
       function (req: Request, res: Response, next: NextFunction) {
@@ -1737,16 +1733,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
-    function (req, res, next) {
-      res.locals.course_instance_id = req.params.course_instance_id;
-      res.locals.navPage = 'public_assessments';
-      res.locals.navSubPage = 'assessments';
-      res.locals.navbarType = 'public';
-      next();
-    },
-    (await import('./pages/publicAssessmentPreview/publicAssessmentPreview.js')).default,
-  ]);
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
+  );
 
   // Client files for questions
   app.use(
@@ -2395,6 +2385,7 @@ if (esMain(import.meta) && config.startServer) {
       nodeMetrics.start({
         awsConfig: makeAwsClientConfig(),
         intervalSeconds: config.nodeMetricsIntervalSec,
+        namespace: 'PrairieLearn',
         dimensions: [
           { Name: 'Server Group', Value: config.groupName },
           { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },

@@ -1,16 +1,6 @@
 <script>
 $(function() {
-    var rte = window.PLRTE('{{editor_uuid}}', {
-        readOnly: {{read_only}},
-        placeholder: '{{placeholder}}',
-        format: '{{format}}',
-        markdownShortcuts: {{markdown_shortcuts}},
-        counter: '{{counter}}',
-        modules: { clipboard: { {{^clipboard_enabled}}enabled: false{{/clipboard_enabled}} } },
-        {{#quill_theme}}
-        theme: '{{.}}',
-        {{/quill_theme}}
-    });
+    var rte = window.PLRTE('{{editor_uuid}}');
 });
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"
@@ -28,7 +18,7 @@ $(function() {
       </div>
     </div>
     {{/clipboard_enabled}}
-    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
     {{#counter_enabled}}
         <div class="pl-rich-text-editor-counter-container">
             <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>

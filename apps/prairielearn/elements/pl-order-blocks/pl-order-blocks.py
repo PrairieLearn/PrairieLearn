@@ -765,8 +765,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
     data["submitted_answers"][answer_name] = student_answer
-    if answer_raw_name in data["submitted_answers"]:
-        del data["submitted_answers"][answer_raw_name]
+    data["submitted_answers"].pop(answer_raw_name, None)
 
 
 def construct_feedback(

@@ -18,6 +18,7 @@ WEIGHT_DEFAULT = 1
 VARIABLES_DEFAULT = None
 CUSTOM_FUNCTIONS_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
@@ -40,6 +41,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "correct-answer",
         "variables",
         "label",
+        "aria-label",
         "display",
         "allow-complex",
         "imaginary-unit-for-display",
@@ -101,6 +103,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
@@ -189,6 +192,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,
@@ -413,27 +417,34 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
 
-    # Get raw correct answer
-    a_tru = data["correct_answers"][name]
-
-    # Parse correct answer based on type
-    if isinstance(a_tru, str):
-        a_tru = psu.convert_string_to_sympy(
-            a_tru,
-            variables,
-            allow_complex=allow_complex,
-            allow_trig_functions=allow_trig,
-            custom_functions=custom_functions,
-        )
-    else:
-        a_tru = psu.json_to_sympy(
-            a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
-        )
-
-    # Substitute in imaginary unit symbol
-    a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
-
     result = data["test_type"]
+    a_tru_str = ""
+
+    if result in ["correct", "incorrect"]:
+        if name not in data["correct_answers"]:
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+
+        # Get raw correct answer
+        a_tru = data["correct_answers"][name]
+
+        # Parse correct answer based on type
+        if isinstance(a_tru, str):
+            a_tru = psu.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru = psu.json_to_sympy(
+                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+            )
+
+        # Substitute in imaginary unit symbol
+        a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
+
     if result == "correct":
         correct_answers = [
             a_tru_str,

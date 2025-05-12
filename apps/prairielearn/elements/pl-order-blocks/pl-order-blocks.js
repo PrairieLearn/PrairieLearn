@@ -1,5 +1,3 @@
-/* eslint-env jquery, browser */
-
 window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
@@ -221,7 +219,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
     let leftDiff = ui.position.left - parent.position().left;
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
-    let currentIndent = ui.item[0].style.marginLeft;
+    const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
       leftDiff += parseInt(currentIndent);
     }
@@ -254,20 +252,20 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function placePairingIndicators() {
-    let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
-    let allAns = answerObjs.concat(
+    const answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    const allAns = answerObjs.concat(
       Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
-    let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
-    let distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
+    const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
+    const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
-    for (let binUuid of distractorBins) {
-      let blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
-      let indicator = getOrCreateIndicator(binUuid, blocks[0]);
-      let innerList = indicator.getElementsByClassName('inner-list')[0];
+    for (const binUuid of distractorBins) {
+      const blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
+      const indicator = getOrCreateIndicator(binUuid, blocks[0]);
+      const innerList = indicator.getElementsByClassName('inner-list')[0];
 
-      for (let block of blocks) {
+      for (const block of blocks) {
         innerList.insertAdjacentElement('beforeend', block);
       }
     }
@@ -278,16 +276,16 @@ window.PLOrderBlocks = function (uuid, options) {
       // there aren't pairing indicators in the dropzone
       return;
     }
-    let binUuid = block.getAttribute('data-distractor-bin');
-    let containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
-    let containingIndicatorUuid = containingIndicator
+    const binUuid = block.getAttribute('data-distractor-bin');
+    const containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
+    const containingIndicatorUuid = containingIndicator
       ? containingIndicator.getAttribute('data-distractor-bin')
       : null;
 
     if (!binUuid && containingIndicatorUuid) {
       containingIndicator.insertAdjacentElement('afterend', block);
     } else if (binUuid !== containingIndicatorUuid) {
-      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
+      const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
       properIndicatorList.insertAdjacentElement('beforeend', block);
@@ -307,7 +305,7 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
-  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
@@ -324,8 +322,8 @@ window.PLOrderBlocks = function (uuid, options) {
     },
     sort(event, ui) {
       // update the location of the placeholder as the item is dragged
-      let placeholder = ui.placeholder;
-      let leftDiff = calculateIndent(ui, placeholder.parent());
+      const placeholder = ui.placeholder;
+      const leftDiff = calculateIndent(ui, placeholder.parent());
       placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
 
@@ -336,7 +334,7 @@ window.PLOrderBlocks = function (uuid, options) {
     },
     stop(event, ui) {
       // when the user stops interacting with the list
-      let leftDiff = calculateIndent(ui, ui.item.parent());
+      const leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
 
