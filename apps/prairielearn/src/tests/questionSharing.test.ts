@@ -246,6 +246,9 @@ describe('Question Sharing', function () {
         ).rows[0].id;
         const sharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${questionId}`;
         const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
+        const text = await sharedQuestionPage.text();
+        console.log(sharedQuestionUrl);
+        console.log(text);
         assert(sharedQuestionPage.ok);
 
         // Question cannot be accessed through the consuming course, sharing permissions not yet set

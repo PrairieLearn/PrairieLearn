@@ -230,7 +230,6 @@ export function checkInvalidSharedCourseInstances(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): boolean {
-  return false;
   const invalidSharedCourseInstances = new Set<string>();
 
   for (const courseInstanceKey in courseData.courseInstances) {

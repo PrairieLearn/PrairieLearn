@@ -10,13 +10,14 @@ import { selectCourseById } from '../../models/course.js';
 
 import { AssessmentRowSchema, PublicAssessments } from './publicAssessments.html.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
+    const course_instance_id = req.params.course_instance_id;
+    res.locals.course_instance = await selectCourseInstanceById(course_instance_id);
     res.locals.course = await selectCourseById(res.locals.course_instance.course_id);
     res.locals.urlPrefix = '/pl';
 

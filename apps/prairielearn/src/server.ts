@@ -1733,16 +1733,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
-    function (req, res, next) {
-      res.locals.course_instance_id = req.params.course_instance_id;
-      res.locals.navPage = 'public_assessments';
-      res.locals.navSubPage = 'assessments';
-      res.locals.navbarType = 'public';
-      next();
-    },
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/publicAssessments/publicAssessments.js')).default,
-  ]);
+  );
 
   // Client files for questions
   app.use(
