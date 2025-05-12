@@ -255,7 +255,7 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
   - 'Developer Guide':
-      - dev-guide/index.md
+      - developer-guide/index.md
       - 'Running in Docker': dev-guide/installingLocal.md
       - dev-guide/installingNative.md
       - dev-guide/quickstart.md
