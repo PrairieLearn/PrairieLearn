@@ -56,7 +56,6 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
   LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
@@ -84,7 +83,6 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 WHERE
   a.id = $assessment_id
   AND ci.id = $course_instance_id
