@@ -177,7 +177,6 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
       });
-      await updateLineItemsByAssessment(instance, 3);
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'unlink_assessment') {
       await unlinkAssessment(instance.lti13_course_instance.id, req.body.unsafe_assessment_id);
@@ -295,6 +294,21 @@ router.post(
         job.info('Done.');
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
+    } else if (req.body.__action === 'search_lineitem') {
+      const assessment = await queryRow(
+        sql.select_assessment_in_course_instance,
+        {
+          unsafe_assessment_id: req.body.unsafe_assessment_id,
+          course_instance_id: res.locals.course_instance.id,
+        },
+        AssessmentSchema,
+      );
+      if (assessment === null) {
+        throw new error.HttpStatusError(403, 'Invalid assessment.id');
+      }
+      console.log(assessment);
+      await updateLineItemsByAssessment(instance, assessment.id);
+      return res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

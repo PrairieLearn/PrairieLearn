@@ -357,6 +357,9 @@ function LinkedAssessments({
                             </ul>
                           </div>
                         `}
+                    <button class="btn btn-secondary" name="__action" value="search_lineitem">
+                      Search
+                    </button>
                   </form>
                 </td>
                 <td class="align-middle">

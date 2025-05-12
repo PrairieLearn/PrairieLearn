@@ -103,6 +103,8 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             Confirmation: You selected PrairieLearn assessment <strong>${assessment.title}</strong>
           </p>
 
+          <p>Extra settings: Rename, set points, open in new window, ....?</p>
+
           <script>
             const dataToSend = { JWT: '${signed_jwt}', return_url: '${deep_link_return_url}' };
             function sendIt() {

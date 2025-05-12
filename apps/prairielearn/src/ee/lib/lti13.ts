@@ -582,11 +582,23 @@ export async function linkAssessment(
 export async function updateLineItemsByAssessment(
   instance: Lti13CombinedInstance,
   //job: ServerJob, // Do we need this?
-  assessment_id: string | number,
+  unsafe_assessment_id: string | number,
 ) {
-  const lineitems = await getLineitems(instance, 'resource_id=foo');
+  const assessment = await queryRow(
+    sql.select_assessment_in_lti13_course_instance,
+    {
+      unsafe_assessment_id,
+      lti13_course_instance_id: instance.lti13_course_instance.id,
+    },
+    AssessmentSchema,
+  );
+
+  const lineitems = await getLineitems(instance, `resource_id=${assessment.uuid}`);
   console.log(lineitems);
   console.log(`Found ${lineitems.length} assignments.`);
+  if (lineitems.length === 1) {
+    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, lineitems[0]);
+  }
 }
 
 /* Throttling notes

@@ -48,6 +48,7 @@ export function Lti13Test({
 }
 
 export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any> }) {
+  const isAssignmentSelection = parameters?.target_link_uri.endsWith('assignment_selection');
   return html`
     <!doctype html>
     <html lang="en">
@@ -69,7 +70,7 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
             </button>
           </form>
           <div id="message">
-            ${parameters?.target_link_uri.endsWith('assignment_selection')
+            ${isAssignmentSelection
               ? 'Come back here when finished to complete the assignment linking.'
               : 'If there are login errors, reload this page to start again.'}
           </div>
@@ -84,33 +85,40 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
               button.textContent = 'Opened PrairieLearn in a new window';
               messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
             });
-
-            window.addEventListener('message', function (event) {
-              const responseForm = document.createElement('form');
-              responseForm.method = 'POST';
-              responseForm.action = event.data.return_url;
-
-              const JWT = document.createElement('input');
-              JWT.type = 'hidden';
-              JWT.name = 'JWT';
-              JWT.value = event.data.JWT;
-              responseForm.appendChild(JWT);
-
-              const submit = document.createElement('button');
-              submit.type = 'submit';
-              submit.textContent = 'Finish the process';
-              submit.className = 'btn btn-primary';
-              responseForm.appendChild(submit);
-
-              messageDiv.replaceWith(responseForm);
-
-              responseForm.submit(); // works if we want to do it
-            });
           </script>
+          ${isAssignmentSelection ? AssignmentSelectionEventListener() : ''}
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function AssignmentSelectionEventListener() {
+  return html`
+    <script>
+      window.addEventListener('message', function (event) {
+        const responseForm = document.createElement('form');
+        responseForm.method = 'POST';
+        responseForm.action = event.data.return_url;
+
+        const JWT = document.createElement('input');
+        JWT.type = 'hidden';
+        JWT.name = 'JWT';
+        JWT.value = event.data.JWT;
+        responseForm.appendChild(JWT);
+
+        const submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = 'Finish the process';
+        submit.className = 'btn btn-primary';
+        responseForm.appendChild(submit);
+
+        messageDiv.replaceWith(responseForm);
+
+        responseForm.submit(); // Make this non-interactive
+      });
+    </script>
+  `;
 }
 
 export function Lti13AuthRequired({
