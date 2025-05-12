@@ -116,4 +116,4 @@ yarn dev
 
 ## More information
 
-Most information about development is found in the [developer guide](./dev-guide/index.md). It outlines debugging and testing tips, best practices and style for coding, as well as details about a variety of aspects of PrairieLearn (question rendering, databases schemas, etc.).
+Most information about development is found in the [developer guide](./dev-guide/index.md). It outlines debugging and testing tips, best practices and style for coding, as well as details about various aspects of PrairieLearn (question rendering, databases schemas, etc.).

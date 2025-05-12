@@ -1,6 +1,6 @@
 # Developer Guide
 
-This page outlines debugging and testing tips, best practices and style for coding, as well as details about a variety of aspects of PrairieLearn (question rendering, database schemas, etc.).
+This page outlines debugging and testing tips, best practices and style for coding, as well as details about various aspects of PrairieLearn (question rendering, database schemas, etc.).
 
 In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
 
