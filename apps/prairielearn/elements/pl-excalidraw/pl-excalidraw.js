@@ -57,7 +57,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     excalidrawAPI: (it) => setLib(it),
     viewModeEnabled: metadata.read_only,
     onChange: (elts) => {
-      let thisVersion = ExcalidrawLib.getSceneVersion(elts);
+      const thisVersion = ExcalidrawLib.getSceneVersion(elts);
       if (sceneVer >= thisVersion) return;
       setUnsaved(true);
       setSceneVer(thisVersion);

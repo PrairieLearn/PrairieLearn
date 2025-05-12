@@ -110,11 +110,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
-  let preview = this.element.find('.preview')[0];
+  const preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
+    const sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
