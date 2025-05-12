@@ -340,7 +340,7 @@ function CourseInstanceSharing({
   publicLink: string;
 }) {
   if (!courseInstance.share_source_publicly) {
-    return html`<p>This assessment is not being shared.</p>`;
+    return html`<p>This course instance is not being shared.</p>`;
   }
 
   const details: HtmlValue[] = [];
@@ -349,7 +349,7 @@ function CourseInstanceSharing({
     details.push(html`
       <p>
         <span class="badge color-green3 me-1">Public source</span>
-        This assessment's source is publicly shared.
+        This course instance's source is publicly shared.
       </p>
       <div>
         <label for="publicLink">Public Link</label>
