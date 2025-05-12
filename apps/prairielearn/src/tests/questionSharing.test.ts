@@ -179,7 +179,7 @@ describe('Question Sharing', function () {
     sharingCourse = await selectCourseById(syncResults.courseId);
     sharingCourseInstanceId = await sqldb.queryRow(
       sql.select_course_instance,
-      { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
+      { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: sharingCourse.id },
       IdSchema,
     );
 
@@ -205,7 +205,7 @@ describe('Question Sharing', function () {
     consumingCourse = await selectCourseById(consumingCourseResults.syncResults.courseId);
     consumingCourseInstanceId = await sqldb.queryRow(
       sql.select_course_instance,
-      { short_name: 'Fa19', sharing_course_id: consumingCourse.id },
+      { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: consumingCourse.id },
       IdSchema,
     );
   });
