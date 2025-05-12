@@ -26,8 +26,7 @@ SELECT
         a.order_by,
         a.id
     ) IS NULL
-  ) AS start_new_assessment_group,
-  coalesce(ic.open_issue_count, 0) AS open_issue_count
+  ) AS start_new_assessment_group
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

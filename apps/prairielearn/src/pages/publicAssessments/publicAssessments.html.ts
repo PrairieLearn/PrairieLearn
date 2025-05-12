@@ -5,27 +5,28 @@ import { html } from '@prairielearn/html';
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
+import {
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+} from '../../lib/db-types.js';
 
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
+export const AssessmentRowSchema = AssessmentSchema.extend({
+  start_new_assessment_group: z.boolean(),
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
   label: z.string(),
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
-export function InstructorAssessments({
+export function PublicAssessments({
   resLocals,
   rows,
+  assessmentsGroupBy,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
-  assessmentIdsNeedingStatsUpdate: string[];
+  assessmentsGroupBy: 'Set' | 'Module';
 }) {
   return PageLayout({
     resLocals,
@@ -90,25 +91,3 @@ export function InstructorAssessments({
     `,
   });
 }
-
-// <tr id="row-${row.id}">
-//                     <td class="align-middle" style="width: 1%">
-//                       <a
-//                         href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
-//                         class="badge color-${row.color} color-hover"
-//                       >
-//                         ${row.label}
-//                       </a>
-//                     </td>
-//                     <td class="align-middle">
-//                       <a
-//                         href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
-//                         >${row.title}
-//                         ${row.group_work
-//                           ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-//                           : ''}</a
-//                       >
-//                     </td>
-
-//                     <td class="align-middle">${row.tid}</td>
-//                   </tr>
