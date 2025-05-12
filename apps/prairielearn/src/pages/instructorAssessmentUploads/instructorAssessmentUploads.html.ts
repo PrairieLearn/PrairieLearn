@@ -337,7 +337,16 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
         Upload a CSV file to recreate users, assessment instances, questions, variants, and
         submissions.
       </p>
-      <p>You should upload one of the submissions CSV files from the Downloads page.</p>
+      <p>
+        You should upload one of the submissions CSV files (<code>*_all_submissions.csv</code>,
+        <code>*_final_submissions.csv</code>, or <code>*_best_submissions.csv</code>) from the
+        Downloads page.
+      </p>
+      <p>
+        The download/upload process is lossy. Some information, such as <code>format_errors</code>,
+        <code>raw_submitted_answers</code>, and whether or not a submission was considered gradable,
+        will not be preserved.
+      </p>
       <div class="alert alert-danger">
         This will delete all existing assessment instances and submissions for this assessment and
         replace them with the submissions from the CSV file. This action cannot be undone.
