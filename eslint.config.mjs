@@ -74,7 +74,6 @@ export default tseslint.config([
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
       'handle-callback-err': 'error',
-      'no-floating-promise/no-floating-promise': 'error',
       'no-template-curly-in-string': 'error',
       'no-restricted-globals': [
         'error',
@@ -85,6 +84,21 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      quotes: ['error', 'single', { avoidEscape: true }],
+
+      // Enforce alphabetical order of import specifiers within each import group.
+      // The import-x/order rule handles the overall sorting of the import groups.
+      'sort-imports': [
+        'error',
+        {
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+        },
+      ],
 
       'import-x/order': [
         'error',
@@ -107,21 +121,12 @@ export default tseslint.config([
         },
       ],
 
-      // Enforce alphabetical order of import specifiers within each import group.
-      // The import-x/order rule handles the overall sorting of the import groups.
-      'sort-imports': [
-        'error',
-        {
-          ignoreDeclarationSort: true,
-          ignoreMemberSort: false,
-          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
-        },
-      ],
-
       // The recommended Mocha rules are too strict for us; we'll only enable
       // these two rules.
       'mocha/no-exclusive-tests': 'error',
       'mocha/no-pending-tests': 'error',
+
+      'no-floating-promise/no-floating-promise': 'error',
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
@@ -129,15 +134,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // Replaces the standard `no-unused-vars` rule.
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-        },
-      ],
 
       // We use empty functions in quite a few places, so we'll disable this rule.
       '@typescript-eslint/no-empty-function': 'off',
@@ -149,9 +145,14 @@ export default tseslint.config([
       // TODO: fix the violations so we can enable this rule.
       '@typescript-eslint/no-dynamic-delete': 'off',
 
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      quotes: ['error', 'single', { avoidEscape: true }],
+      // Replaces the standard `no-unused-vars` rule.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
