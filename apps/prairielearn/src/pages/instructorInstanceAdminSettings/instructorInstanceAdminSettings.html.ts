@@ -1,4 +1,4 @@
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
