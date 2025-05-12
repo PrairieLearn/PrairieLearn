@@ -193,9 +193,9 @@ psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
 
   You may need to restart the PostgreSQL server after changing the file above.
 
-## Running
+## Configuration
 
-If you have your own [PrairieLearn course repository](./requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. Additionally, if you need support for workspaces, you should provide a path to a directory into which temporary files will be saved when using the in-browser file editor. Here is a sample configuration:
+If you have your own [PrairieLearn course repository](./requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved when using the in-browser file editor. Here is a sample configuration:
 
 ```json title="config.json"
 {
@@ -208,61 +208,8 @@ If you have your own [PrairieLearn course repository](./requestCourse/index.md),
 
 ??? note "Advanced configuration"
 
-    The full configuration can be found at [`apps/prairielearn/src/lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts).
+    More information about the `config.json` can be found on the [server configuration](./configJson.md) page.
 
-- Run the server in development mode to automatically restart when changes are detected:
+## Development
 
-  ```sh
-  make dev
-  ```
-
-  !!! warning "macOS"
-
-      If you see the error `"Cannot start s3rver since port 5000 is already in use by process 645."`, toggle off the following setting:
-
-      `"System Settings..." > General > AirDrop & Handoff > AirPlay Receiver"`
-
-- In a web-browser go to [http://localhost:3000](http://localhost:3000).
-
-- To stop the server, use `Ctrl-C`.
-
-### Production
-
-You can build and run the code to more closely mimic what will happen in production environments:
-
-```sh
-make build
-make start
-```
-
-### Workspaces
-
-- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
-
-```sh
-sudo make dev-workspace-host # or sudo make start-workspace-host
-```
-
-### Documentation
-
-If you want to preview the documentation, run:
-
-```sh
-make preview-docs
-```
-
-### Testing
-
-If you are contributing code to PrairieLearn, you must ensure that your changes work and pass our style guidelines. More information on debugging and testing can be found on the [developer guide](./dev-guide/index.md). Information on contributing can be found on the [contribution guide](./contributing.md).
-
-- Run the test suite (Docker must be installed and running):
-
-  ```sh
-  make test
-  ```
-
-- Run the linters:
-
-  ```sh
-  make lint # or lint-js for Javascript only, or lint-python for Python only
-  ```
+More information on the common commands and actions you do during development can be found on the [quickstart](./quickstart.md) page.

@@ -1,93 +1,58 @@
-# Running in Docker with local source
+# Running in Docker
 
 This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on macOS, Linux, and Windows. When using Windows, you are strongly encouraged to perform the steps below inside a WSL 2 container.
+
+!!! tip "Summary"
+
+    ```sh
+    git clone https://github.com/PrairieLearn/PrairieLearn.git
+    cd PrairieLearn
+    docker run -it --rm -p 3000:3000 \
+      -e DEV=true -v .:/PrairieLearn \
+      prairielearn/prairielearn
+    ```
 
 - First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
 
 - Clone PrairieLearn from the main repository:
 
-  ```sh
-  git clone https://github.com/PrairieLearn/PrairieLearn.git
-  ```
+```sh
+git clone https://github.com/PrairieLearn/PrairieLearn.git
+```
 
-- Run PrairieLearn with:
+To run without spawning a shell in the container, run:
 
-  ```sh
-  cd PrairieLearn
-  docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
-  ```
+```sh
+docker run -it --rm -p 3000:3000 \
+  -e DEV=true -v .:/PrairieLearn \
+  prairielearn/prairielearn
+```
 
-  This will launch a shell inside a Docker container running the PrairieLearn image, but using the current working directory for its code. If you'd rather run the command from somewhere other than the root of the repo, replace `.` with the path to the directory in `.:/PrairieLearn`.
+For most development, you will need access to a shell in the container to run tests, linting, etc.
+First, start a shell in the container with:
 
-  You can now run the following commands inside the container:
+```sh
+cd PrairieLearn
+docker run -it --rm -p 3000:3000 \
+  -w /PrairieLearn -v .:/PrairieLearn \
+  prairielearn/prairielearn /bin/bash
+```
 
-  ```sh
-  # Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
-  # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
-  # If editing code in `packages/`, you should also repeat either this command or `make build`.
-  make deps
-  
-  # Run the PrairieLearn server in development mode.
-  make dev
-  
-  # Or, run PrairieLearn like it is run in production.
-  make start
-  
-  # To support workspaces in local development, use `make dev-all` or `make start-all` to run
-  # both PrairieLearn and a workspace server application.
-  
-  # To stop the server, press Ctrl-C.
-  # To exit the container, press Ctrl-C and then Ctrl-D.
-  ```
+This will launch a shell inside a Docker container running the PrairieLearn image, but using the current working directory for its code. If you'd rather run the command from somewhere other than the root of the repo, replace `.` with the path to the directory in `.:/PrairieLearn`.
 
-## Auto-restarting the node server
-
-The steps above require you to manually stop and restart PrairieLearn after you have edited any JavaScript files. You can alternatively configure the server to automatically restart when changes are detected. To do this, run the PrairieLearn container as described at the start of this page and then run:
+To run the PrairieLearn server in development mode, use:
 
 ```sh
 make dev
 ```
 
-Alternatively, you can set the `DEV=true` environment variable while running PrairieLearn automatically:
+This will start the PrairieLearn server and automatically restart it when you make changes to the JavaScript code. To stop the server, press ++ctrl+c++. To exit the container, press ++ctrl+c++ and then ++ctrl+d++.
 
-```sh
-docker run -it --rm -p 3000:3000 -e DEV=true -v .:/PrairieLearn prairielearn/prairielearn
-```
+To support workspaces in local development, use `make dev-all` or `make start-all` to run both PrairieLearn and a workspace server application. For these to work, you will need to modify your Docker invocation to support external graders and workspaces. More information is on the [instructor installation page](installing.md/#support-for-external-graders-and-workspaces).
 
-## Running the test suite
+## Development
 
-The linters and tests for the JavaScript and Python code can be run with the following commands inside the container:
-
-```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
-
-# You can now run the following commands inside the container:
-make lint # or run "make lint-js" and "make lint-python" separately
-make test # or "make test-js" and "make test-python"
-```
-
-To run specific tests you first need to run `make start-support` to start the database and other services:
-
-```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
-
-# following commands are inside the container:
-make start-support
-cd apps/prairielearn
-yarn mocha src/tests/getHomepage.test.js
-```
-
-## Working on packages
-
-When working on something in the `packages/` directory, you'll need to rebuild the package before any changes will become visible to other packages or apps that use the package. You can build everything with `make build`, or you can run the `dev` script in a package to rebuild it automatically whenever there are changes.
-
-```sh
-# From the root of the repository:
-yarn workspace @prairielearn/postgres run dev
-
-# From a specific package directory, e.g. `packages/postgres`:
-yarn dev
-```
+More information on the common commands and actions you do during development can be found on the [quickstart](./quickstart.md) page.
 
 ## Updating or building the Docker image
 
@@ -127,17 +92,3 @@ The previous shells were launched in their own containers. If you want to open a
   ```sh
   docker exec -it CONTAINER_NAME /bin/bash
   ```
-
-## Using tmux in a container
-
-While developing, you might need or want to run multiple programs simultaneously (e.g., querying in `psql` without killing the `node` server). Rather than repeatedly canceling and restarting programs back and forth, you can use a terminal multiplexer like `tmux` to keep them running simultaneously.
-
-The PrairieLearn Docker images are built with `tmux` installed. If you start a container with a shell then you can first run `tmux` before running other commands.
-
-Tmux creates virtual windows which run simultaneously (you only see one window at a time). Tmux is controlled by typing a `Ctrl-b` and then another key. The basic commands are:
-
-- `Ctrl-b` `c` - create a new window
-- `Ctrl-b` `0` - switch to window number 0 (also `Ctrl-b` `1` switches to window 1, etc.)
-- `Ctrl-b` `d` - detaches from tmux back to the original shell, which you can exit to terminate the container
-
-Google `tmux` for tutorials that demonstrate many more capabilities.
