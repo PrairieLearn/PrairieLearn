@@ -211,4 +211,4 @@ More information about the `config.json` can be found in the [server configurati
 
 ## Development
 
-More information on the development workflow can be found in the [quickstart](./quickstart.md) documentation.
+More information on the development workflow can be found in the [development quickstart](./quickstart.md) documentation.
