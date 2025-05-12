@@ -12,6 +12,7 @@ export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
+  publicLink,
   infoCourseInstancePath,
   availableTimezones,
   origHash,
@@ -20,6 +21,7 @@ export function InstructorInstanceAdminSettings({
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
+  publicLink: string;
   infoCourseInstancePath: string;
   availableTimezones: Timezone[];
   origHash: string;
@@ -45,6 +47,11 @@ export function InstructorInstanceAdminSettings({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
+      })}
+      ${QRCodeModal({
+        id: 'publicLinkModal',
+        title: 'Public Link QR Code',
+        content: publicLink,
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -197,6 +204,8 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
+            <h2 class="h4">Sharing</h2>
+            ${CourseInstanceSharing({ courseInstance: resLocals.courseInstance, publicLink })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
@@ -320,4 +329,62 @@ function CopyCourseInstanceForm({
       })}
     </div>
   `;
+}
+
+function CourseInstanceSharing({
+  courseInstance,
+  publicLink,
+}: {
+  courseInstance: CourseInstance;
+  publicLink: string;
+}) {
+  if (!courseInstance.share_source_publicly) {
+    return html`<p>This assessment is not being shared.</p>`;
+  }
+
+  const details: HtmlValue[] = [];
+
+  if (courseInstance.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 me-1">Public source</span>
+        This assessment's source is publicly shared.
+      </p>
+      <div>
+        <label for="publicLink">Public Link</label>
+        <span class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            id="publicLink"
+            name="publicLink"
+            value="${publicLink}"
+            disabled
+          />
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary btn-copy"
+            data-clipboard-text="${publicLink}"
+            aria-label="Copy public link"
+          >
+            <i class="far fa-clipboard"></i>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary"
+            aria-label="Public Link QR Code"
+            data-bs-toggle="modal"
+            data-bs-target="#publicLinkModal"
+          >
+            <i class="fas fa-qrcode"></i>
+          </button>
+        </span>
+        <small class="form-text text-muted">
+          The link that other instructors can use to view this assessment.
+        </small>
+      </div>
+    `);
+  }
+
+  return details;
 }

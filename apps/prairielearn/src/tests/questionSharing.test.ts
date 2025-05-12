@@ -249,7 +249,7 @@ describe('Question Sharing', function () {
         const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
-        // Question can be accessed through the owning coursea
+        // Question can be accessed through the owning course
         const questionId = (
           await sqldb.queryOneRowAsync(sql.get_question_id, {
             course_id: sharingCourse.id,
@@ -623,22 +623,22 @@ describe('Question Sharing', function () {
       config.checkSharingOnSync = false;
     });
 
-    // step('Fail to sync a shared course instance containing a nonshared assessment', async () => {
-    //   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
-    //   await fs.writeJSON(
-    //     path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-    //     sharingCourseData.courseInstances['Fa19'].courseInstance,
-    //   );
+    step('Fail to sync a shared course instance containing a nonshared assessment', async () => {
+      sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+      await fs.writeJSON(
+        path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+        sharingCourseData.courseInstances['Fa19'].courseInstance,
+      );
 
-    //   await ensureInvalidSharingOperationFailsToSync();
+      await ensureInvalidSharingOperationFailsToSync();
 
-    //   // Restore for now
-    //   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
-    //   await fs.writeJSON(
-    //     path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-    //     sharingCourseData.courseInstances['Fa19'].courseInstance,
-    //   );
-    // });
+      // Restore for now
+      sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
+      await fs.writeJSON(
+        path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+        sharingCourseData.courseInstances['Fa19'].courseInstance,
+      );
+    });
 
     step('Fail to sync a shared assessment containing a nonshared question', async () => {
       sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
@@ -706,6 +706,29 @@ describe('Question Sharing', function () {
         const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
         assert(sharedAssessmentPage.ok);
+      },
+    );
+
+    step('Successfully sync a shared course instance', async () => {
+      sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+      await fs.writeJSON(
+        path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
+        sharingCourseData.courseInstances['Fa19'].courseInstance,
+      );
+
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+        throw new Error('Errors or warnings found during sync of sharing course');
+      }
+    });
+
+    step(
+      'Successfully access publicly shared course instance page for the shared course instance',
+      async () => {
+        const sharedCourseInstanceUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessments`;
+        const sharedCourseInstancePage = await fetchCheerio(sharedCourseInstanceUrl);
+
+        assert(sharedCourseInstancePage.ok);
       },
     );
 
