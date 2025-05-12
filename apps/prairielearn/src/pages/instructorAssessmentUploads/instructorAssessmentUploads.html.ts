@@ -132,9 +132,9 @@ function AssessmentUploadCard({
                       </div>
                     </td>
                   </tr>
-                  <tr>
-                    ${config.devMode
-                      ? html`
+                  ${config.devMode
+                    ? html`
+                        <tr>
                           <td style="width: 1%">
                             <button
                               type="button"
@@ -152,9 +152,9 @@ function AssessmentUploadCard({
                               <strong>Only available in development mode.</strong>
                             </p>
                           </td>
-                        `
-                      : ''}
-                  </tr>
+                        </tr>
+                      `
+                    : ''}
                 </tbody>
               </table>
             </div>
