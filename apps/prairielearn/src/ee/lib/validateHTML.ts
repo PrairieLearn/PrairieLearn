@@ -523,7 +523,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
 function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let usedAnswersName = false;
-  let usedPartialCredit = true;
+  let usedPartialCredit = false;
   let usedPartialCreditMethod = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
