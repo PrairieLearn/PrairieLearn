@@ -48,16 +48,9 @@ const SubmissionCsvRowSchema = z.object({
  * A utility function to help with inserting only a single row per combination of keys.
  */
 function makeDedupedInserter<T>() {
-  const inserted = new Map<string, T>();
-  return async (key: string[], fn: () => Promise<T>) => {
-    const keyString = key.join(':');
-    let value = inserted.get(keyString);
-    if (value != null) return value;
-
-    value = await fn();
-    inserted.set(keyString, value);
-    return value;
-  };
+  return memoize(async (key: string[], fn: () => Promise<T>) => await fn(), {
+    cacheKey: (args) => args[0].join(':'),
+  });
 }
 
 /**
