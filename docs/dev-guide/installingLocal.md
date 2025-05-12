@@ -45,6 +45,7 @@ This will launch a shell inside a Docker container running the PrairieLearn imag
 To run the PrairieLearn server in development mode, use:
 
 ```sh
+make deps
 make dev
 ```
 
