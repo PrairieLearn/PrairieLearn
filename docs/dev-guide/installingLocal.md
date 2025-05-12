@@ -1,4 +1,4 @@
-# Running in Docker
+# Running in Docker for development
 
 This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on macOS, Linux, and Windows. When using Windows, you are strongly encouraged to perform the steps below inside a WSL 2 container.
 
