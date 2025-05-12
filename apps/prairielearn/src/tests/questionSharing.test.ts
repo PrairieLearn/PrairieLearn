@@ -10,7 +10,7 @@ import * as tmp from 'tmp';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Course, type Id, IdSchema } from '../lib/db-types.js';
+import { type Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -126,8 +126,8 @@ describe('Question Sharing', function () {
   // to prevent all question sharing features from working.
   let sharingCourse: Course;
   let consumingCourse: Course;
-  let sharingCourseInstanceId: Id;
-  let consumingCourseInstanceId: Id;
+  let sharingCourseInstanceId: string;
+  let consumingCourseInstanceId: string;
   let sharingCourseData: syncUtil.CourseData;
   before('construct and sync course', async () => {
     sharingCourseData = syncUtil.getCourseData();
