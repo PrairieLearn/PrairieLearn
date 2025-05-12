@@ -1,5 +1,11 @@
 # @prairielearn/bind-mount
 
+## 1.1.6
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
 ## 1.1.5
 
 ### Patch Changes

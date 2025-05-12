@@ -1,5 +1,3 @@
-/* eslint-env jquery, browser */
-
 window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
