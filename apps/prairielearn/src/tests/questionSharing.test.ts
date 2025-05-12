@@ -10,7 +10,7 @@ import * as tmp from 'tmp';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Course, IdSchema } from '../lib/db-types.js';
+import { type Course, type Id, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -54,8 +54,8 @@ async function setSharingName(courseId: string, name: string) {
   });
 }
 
-async function accessSharedQuestionAssessment(course_id: string) {
-  const assessmentsUrl = `${baseUrl}/course_instance/${course_id}/instructor/instance_admin/assessments`;
+async function accessSharedQuestionAssessment(course_instance_id: string) {
+  const assessmentsUrl = `${baseUrl}/course_instance/${course_instance_id}/instructor/instance_admin/assessments`;
   const assessmentsPage = await fetchCheerio(assessmentsUrl);
   const assessmentLink = assessmentsPage.$('a:contains("Test assessment")');
   assert.lengthOf(assessmentLink, 1);
@@ -126,6 +126,8 @@ describe('Question Sharing', function () {
   // to prevent all question sharing features from working.
   let sharingCourse: Course;
   let consumingCourse: Course;
+  let sharingCourseInstanceId: Id;
+  let consumingCourseInstanceId: Id;
   let sharingCourseData: syncUtil.CourseData;
   before('construct and sync course', async () => {
     sharingCourseData = syncUtil.getCourseData();
@@ -175,6 +177,11 @@ describe('Question Sharing', function () {
     });
     const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
     sharingCourse = await selectCourseById(syncResults.courseId);
+    sharingCourseInstanceId = await sqldb.queryRow(
+      sql.select_course_instance,
+      { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
+      IdSchema,
+    );
 
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
@@ -196,6 +203,11 @@ describe('Question Sharing', function () {
     ];
     const consumingCourseResults = await syncUtil.writeAndSyncCourseData(consumingCourseData);
     consumingCourse = await selectCourseById(consumingCourseResults.syncResults.courseId);
+    consumingCourseInstanceId = await sqldb.queryRow(
+      sql.select_course_instance,
+      { short_name: 'Fa19', sharing_course_id: consumingCourse.id },
+      IdSchema,
+    );
   });
 
   describe('Test syncing code to identify missing shared question', function () {
@@ -234,25 +246,22 @@ describe('Question Sharing', function () {
       'Fail to access shared question, because permission has not yet been granted',
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
-        const res = await accessSharedQuestionAssessment(consumingCourse.id);
+        const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
-        // Question can be accessed through the owning course
+        // Question can be accessed through the owning coursea
         const questionId = (
           await sqldb.queryOneRowAsync(sql.get_question_id, {
             course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
           })
         ).rows[0].id;
-        const sharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${questionId}`;
+        const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
         const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
-        const text = await sharedQuestionPage.text();
-        console.log(sharedQuestionUrl);
-        console.log(text);
         assert(sharedQuestionPage.ok);
 
         // Question cannot be accessed through the consuming course, sharing permissions not yet set
-        const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${questionId}/settings`;
+        const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${questionId}/settings`;
         const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
         assert(!sharedQuestionSharedPage.ok);
       },
@@ -431,7 +440,7 @@ describe('Question Sharing', function () {
     });
 
     step('Fail to Access Questions Not-yet shared publicly', async () => {
-      const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
+      const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
     });
@@ -447,7 +456,7 @@ describe('Question Sharing', function () {
     });
 
     step('Successfully access publicly shared question through other course', async () => {
-      const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
+      const sharedQuestionSharedUrl = `${baseUrl}/course/${consumingCourse.id}/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(sharedQuestionSharedPage.ok);
     });
@@ -468,7 +477,7 @@ describe('Question Sharing', function () {
     });
 
     step('Successfully access shared question', async () => {
-      const res = await accessSharedQuestionAssessment(consumingCourse.id);
+      const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
       const sharedQuestionLink = res.$('a:contains("Shared via sharing set")');
       assert.lengthOf(sharedQuestionLink, 1);
       const sharedQuestionRes = await fetchCheerio(siteUrl + sharedQuestionLink.attr('href'));
@@ -688,17 +697,12 @@ describe('Question Sharing', function () {
     step(
       'Successfully access publicly shared assessment page for the shared assessment',
       async () => {
-        const courseInstanceId = await sqldb.queryRow(
-          sql.select_course_instance,
-          { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
-          IdSchema,
-        );
         const sharedAssessmentId = await sqldb.queryRow(
           sql.select_assessment,
-          { tid: 'test', course_instance_id: courseInstanceId },
+          { tid: 'test', course_instance_id: sharingCourseInstanceId },
           IdSchema,
         );
-        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
         const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
 
         assert(sharedAssessmentPage.ok);
