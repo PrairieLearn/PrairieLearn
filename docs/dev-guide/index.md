@@ -19,7 +19,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 - Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
 - Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
-- To run the tests during development, see [Running the test suite](../quickstart.md#testing).
+- See the [development quickstart guide](../quickstart.md#testing) for information on how to run the test suite.
 
 - The tests are run by GitHub Actions on every push to GitHub.
 
