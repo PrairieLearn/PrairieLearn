@@ -1,3 +1,4 @@
+import mustache from 'mustache';
 import * as parse5 from 'parse5';
 
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
@@ -8,7 +9,52 @@ const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n
 const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
-const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
+
+type MustacheTextToken = ['text', string, number, number];
+type MustacheNameToken = ['name', string, number, number];
+type MustacheSectionToken = ['#' | '^' | '&', string, number, number, MustacheToken[]];
+type MustacheToken = MustacheTextToken | MustacheNameToken | MustacheSectionToken;
+
+export function extractMustacheTemplateNames(str: string): Set<string> {
+  // We use a temporary writer to avoid any long-lived storage of the parsed
+  // template in Mustache's cache.
+  const writer = new mustache.Writer();
+  const tokens = writer.parse(str);
+
+  const names = new Set<string>();
+
+  // Helper function to recursively collect names.
+  function collectNames(tokensList: MustacheToken[]) {
+    for (const token of tokensList) {
+      const [type, value] = token;
+
+      if (type === 'name' || type === '&') {
+        // Handles {{variable}} and {{{variable}}} (unescaped)
+        names.add(value);
+      } else if (type === '#' || type === '^') {
+        // Handles {{#section}}...{{/section}} and {{^inverted-section}}...{{/section}}
+        // Record the section name itself.
+        names.add(value);
+
+        // Process any nested tokens.
+        const children = token[4];
+        if (Array.isArray(children)) {
+          collectNames(children);
+        }
+      } else {
+        // Other token types ('text', '!' for comments, '/' for closing tags) are implicitly ignored.
+      }
+    }
+  }
+
+  collectNames(tokens);
+
+  // We deliberately ignore `.` (the current context). It's not a useful name
+  // as it doesn't correspond to a variable in the template in isolation.
+  names.delete('.');
+
+  return names;
+}
 
 interface ValidationResult {
   /** Array of errors that we'll instruct the LLM to fix. */
@@ -266,7 +312,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
-          if (val.match(mustacheTemplateExtractorRegex)) {
+          if (val.match(mustacheTemplateRegex)) {
             errors.push(
               "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -340,7 +386,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
-          if (val.match(mustacheTemplateExtractorRegex)) {
+          if (val.match(mustacheTemplateRegex)) {
             errors.push(
               "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -594,13 +640,10 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(
-  ast: DocumentFragment | ChildNode,
-  optimistic: boolean,
-): ValidationResult {
-  let { errors, mandatoryPythonCorrectAnswers } = checkTag(ast, optimistic);
-
-  mandatoryPythonCorrectAnswers ??= new Set<string>();
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolean) {
+  // Will be resolved by https://github.com/PrairieLearn/PrairieLearn/pull/11963
+  // eslint-disable-next-line prefer-const
+  let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast, optimistic);
 
   if ('childNodes' in ast && ast.childNodes) {
     for (const child of ast.childNodes) {
@@ -612,7 +655,7 @@ function dfsCheckParseTree(
     }
   }
 
-  return { errors, mandatoryPythonCorrectAnswers };
+  return { errors, mandatoryPythonCorrectAnswers } satisfies ValidationResult;
 }
 
 /**
@@ -625,9 +668,10 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
   const tree = parse5.parseFragment(file);
   const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
 
-  const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
-    .map((x) => x[1])
-    .concat([...(mandatoryPythonCorrectAnswers ?? [])].map((x) => `correct_answers.${x}`));
+  const templates = [
+    ...extractMustacheTemplateNames(file),
+    ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
+  ];
 
   if (!usesServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
