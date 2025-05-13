@@ -27,11 +27,33 @@ class CustomSequencer extends BaseSequencer {
   }
 }
 
+// We support running our tests in two modes:
+//
+// - Directly against the source files in `src/`, in which case we rely on
+//   Vite to transpile files on the fly. Useful for quick iteration.
+//
+// - Against the compiled files in `dist/`, in which case we use the compiled
+// files directly without compilation. This is useful for CI and for ensuring
+// that the code that will actually run in production is tested.
+//
+// We use the presence of any arguments starting with `dist/` or containing
+// `/dist/` to determine whether we're running in the latter mode.
+const isRunningOnDist = process.argv
+  .slice(2)
+  .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
+
 export default defineConfig({
   test: {
-    include: [...configDefaults.include],
-    globalSetup: './src/tests/vitest.globalSetup.ts',
-    setupFiles: ['./src/tests/vitest.testSetup.ts'],
+    include: isRunningOnDist ? ['dist/**/*.test.js'] : [...configDefaults.include],
+    exclude: isRunningOnDist
+      ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
+      : configDefaults.exclude,
+    globalSetup: isRunningOnDist
+      ? './dist/tests/vitest.globalSetup.js'
+      : './src/tests/vitest.globalSetup.ts',
+    setupFiles: isRunningOnDist
+      ? ['./dist/tests/vitest.testSetup.js']
+      : ['./src/tests/vitest.testSetup.ts'],
     passWithNoTests: true,
     hookTimeout: 20_000,
     testTimeout: 10_000,
