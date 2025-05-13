@@ -713,8 +713,6 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
  * @returns A list of human-readable error messages, if any.
  */
 function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolean) {
-  // Will be resolved by https://github.com/PrairieLearn/PrairieLearn/pull/11963
-  // eslint-disable-next-line prefer-const
   let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast, optimistic);
 
   if ('childNodes' in ast && ast.childNodes) {
