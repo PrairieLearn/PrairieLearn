@@ -341,9 +341,8 @@ function LinkedAssessments({
                               class="btn btn-info dropdown-toggle dropdown-toggle-split"
                               data-bs-toggle="dropdown"
                               aria-expanded="false"
-                            >
-                              <span class="visually-hidden">Toggle Dropdown</span>
-                            </button>
+                              aria-label="Toggle Dropdown"
+                            ></button>
                             <ul class="dropdown-menu">
                               <li>
                                 <button
