@@ -445,7 +445,7 @@ export async function getAndRenderVariant(
         authn_user: locals.authn_user,
         user: locals.user,
         is_administrator: locals.is_administrator,
-        publicQuestionPreview: publicQuestionPreview,
+        publicQuestionPreview,
       });
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
@@ -480,7 +480,6 @@ export async function getAndRenderVariant(
     assessment_question,
     group_config,
     group_role_permissions,
-    authz_data,
     authz_result,
   } = locals;
 
@@ -583,8 +582,6 @@ export async function getAndRenderVariant(
   resultLocals.answerHtml = htmls.answerHtml;
 
   // Load issues last in case rendering produced any new ones.
-  const loadExtraData =
-    issuesLoadExtraData ?? (config.devMode || authz_data?.has_course_permission_view);
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
