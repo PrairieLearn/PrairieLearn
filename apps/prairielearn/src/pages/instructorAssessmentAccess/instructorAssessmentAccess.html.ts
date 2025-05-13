@@ -85,9 +85,7 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    <td>
-                      ${access_rule.comment ? CommentPopover(access_rule.comment.toString()) : ''}
-                    </td>
+                    <td>${CommentPopover(access_rule.comment)}</td>
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||

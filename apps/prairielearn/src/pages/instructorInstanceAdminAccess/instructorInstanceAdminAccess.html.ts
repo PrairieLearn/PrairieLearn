@@ -76,7 +76,7 @@ function AccessRuleRow({
 }) {
   return html`
     <tr>
-      <td>${accessRule.json_comment ? CommentPopover(accessRule.json_comment.toString()) : ''}</td>
+      <td>${CommentPopover(accessRule.json_comment)}</td>
       <td>
         ${accessRule.uids == null
           ? html`&mdash;`
