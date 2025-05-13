@@ -1,6 +1,3 @@
 {
-  "controller": "pl-details.py",
-  "dependencies": {
-    "elementStyles": ["pl-details.css"]
-  }
+  "controller": "pl-details.py"
 }
