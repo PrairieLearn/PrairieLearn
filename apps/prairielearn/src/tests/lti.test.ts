@@ -19,9 +19,8 @@ locals.ltiUrl = locals.baseUrl + '/lti';
 config.ltiRedirectUrl = locals.ltiUrl;
 
 describe('LTI', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   const body: Record<string, string> = {

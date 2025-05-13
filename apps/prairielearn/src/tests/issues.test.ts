@@ -16,9 +16,8 @@ const courseInstanceIssuesUrl = baseUrl + '/course_instance/1/instructor/course_
 const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 
 describe('Issues', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   doTest(courseInstanceIssuesUrl, 'course');

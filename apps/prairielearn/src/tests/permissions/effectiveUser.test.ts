@@ -34,7 +34,6 @@ describe('effective user', function () {
   context.pageUrlExampleCourseInstance = `${context.baseUrl}/course_instance/2/instructor`;
   context.pageUrlStudent = `${context.baseUrl}/course_instance/1`;
 
-  // set up testing server
   beforeAll(async function () {
     // We need two courses for this test so that we can validate behavior of
     // institution administrators, specifically what happens when an instructor
@@ -113,7 +112,6 @@ describe('effective user', function () {
     });
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
 
   test.sequential('student can access course instance', async () => {

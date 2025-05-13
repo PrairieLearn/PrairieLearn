@@ -27,9 +27,8 @@ const redirects = [
 ];
 
 describe('Redirects', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   redirects.forEach((redirect) => {

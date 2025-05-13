@@ -105,14 +105,13 @@ describe('Course with assessments grouped by Set vs Module', function () {
     return badgeText;
   }
 
-  // set up testing server
   beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
     await helperServer.before(courseDir).call(this);
     const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
     courseInstanceId = courseInstanceResult.rows[0].id;
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test.sequential('should default to grouping by Set', async function () {

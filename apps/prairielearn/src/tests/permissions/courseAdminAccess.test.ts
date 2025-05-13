@@ -86,7 +86,6 @@ function runTest(context) {
 
   let new_user = 'garbage@example.com';
 
-  // set up testing server
   beforeAll(helperServer.before().bind(this));
 
   // insert users and make instructor course owner
@@ -110,7 +109,6 @@ function runTest(context) {
     if (result.rowCount) new_user = result.rows[0].uid;
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
 
   test.sequential('permissions should match', async () => {

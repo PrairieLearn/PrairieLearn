@@ -39,7 +39,6 @@ async function checkAssessmentAccess(params: {
 }
 
 describe('sproc check_assessment_access* tests', function () {
-  // set up testing server
   beforeAll(helperDb.before);
   // tear down testing database
   afterAll(helperDb.after);

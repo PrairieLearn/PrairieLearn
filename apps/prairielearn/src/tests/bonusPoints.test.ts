@@ -16,14 +16,13 @@ describe('Exam assessment with bonus points', function () {
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  // set up testing server
   beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test.sequential('visit start exam page', async () => {

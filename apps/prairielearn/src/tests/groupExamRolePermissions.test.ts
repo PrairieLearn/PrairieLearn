@@ -278,7 +278,6 @@ async function prepareGroup() {
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
   describe('valid group role configuration tests', function () {
-    // set up testing server
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
     beforeAll(function () {
@@ -287,7 +286,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       storedConfig.authUin = config.authUin;
     });
 
-    // shut down testing server
     afterAll(helperServer.after);
     // unset authenticated user
     afterAll(function () {
@@ -429,7 +427,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
   }, 20_000);
 
   describe('invalid role configuration tests', function () {
-    // set up testing server
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
     beforeAll(function () {
@@ -438,7 +435,6 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       storedConfig.authUin = config.authUin;
     });
 
-    // shut down testing server
     afterAll(helperServer.after);
     // unset authenticated user
     afterAll(function () {

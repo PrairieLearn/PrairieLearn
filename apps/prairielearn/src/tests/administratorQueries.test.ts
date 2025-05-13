@@ -13,9 +13,8 @@ const queryUrl = `${baseUrl}/administrator/query/db_running_queries`;
 const queryUuidsUrl = `${baseUrl}/administrator/query/generate_uuids`;
 
 describe('AdministratorQuery page', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test.sequential('visit queries page', async () => {

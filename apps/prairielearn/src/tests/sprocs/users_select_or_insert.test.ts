@@ -38,7 +38,6 @@ const baseUser = {
 };
 
 describe('sproc users_select_or_insert tests', () => {
-  // set up testing server
   beforeAll(helperDb.before);
   // tear down testing database
   afterAll(helperDb.after);

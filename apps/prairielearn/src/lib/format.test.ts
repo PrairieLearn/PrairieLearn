@@ -58,7 +58,7 @@ describe('format library', () => {
     });
   });
 
-  it('formatPointsOrList', () => {
+  describe('formatPointsOrList', () => {
     it('should format numbers correctly', () => {
       assert.equal(formatPointsOrList(1), '1');
       assert.equal(formatPointsOrList(1.2345), '1.23');

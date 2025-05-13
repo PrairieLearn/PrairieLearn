@@ -19,9 +19,8 @@ const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   /*

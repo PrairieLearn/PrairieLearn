@@ -9,9 +9,8 @@ import * as helperServer from './helperServer.js';
 const baseUrl = 'http://localhost:' + config.serverPort;
 
 describe('GET /', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   it('should load and contain QA 101', async () => {

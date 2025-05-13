@@ -18,9 +18,8 @@ import * as helperServer from './helperServer.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 describe('Instructor group controls', () => {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   const siteUrl = 'http://localhost:' + config.serverPort;

@@ -12,9 +12,8 @@ const locals: Record<string, any> = {};
 const assessmentPoints = 5;
 
 describe('Instructor Assessment Downloads', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   let elemList, page;

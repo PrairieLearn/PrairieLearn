@@ -61,9 +61,8 @@ const testQuestions = [
 ];
 
 describe('Instructor questions', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   let questionData;

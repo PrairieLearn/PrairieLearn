@@ -94,9 +94,8 @@ describe('Grading method(s)', function () {
   let questionsPage;
   let $questionsPage;
 
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   // reset default user

@@ -37,9 +37,8 @@ describe('assessment instance group synchronization test', function () {
     Object.assign(config, storedConfig);
   });
 
-  // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
-  // shut down testing server
+
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {

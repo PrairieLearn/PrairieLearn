@@ -59,9 +59,8 @@ describe('institution administrators', () => {
   beforeAll(() => (config.isEnterprise = true));
   afterAll(() => (config.isEnterprise = false));
 
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   beforeAll(async () => {

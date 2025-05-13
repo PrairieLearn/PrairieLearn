@@ -22,7 +22,6 @@ describe('Generate chunks and use them for a student homework', function () {
   let tempChunksDir: tmp.DirectoryResult;
   const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
 
-  // set up testing server
   beforeAll(async () => {
     tempChunksDir = await tmp.dir({ unsafeCleanup: true });
 
@@ -35,7 +34,6 @@ describe('Generate chunks and use them for a student homework', function () {
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
-  // shut down testing server
   afterAll(async () => {
     await helperServer.after.call(this);
     await tempChunksDir.cleanup();

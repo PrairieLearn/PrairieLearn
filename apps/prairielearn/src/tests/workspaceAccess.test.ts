@@ -39,9 +39,9 @@ describe('Test workspace authorization access', function () {
   afterAll(async function () {
     config.workspaceEnable = true;
   });
-  // set up testing server
+
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
   // add students to test course
   beforeAll(async function () {

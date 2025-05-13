@@ -175,9 +175,9 @@ describe('Test group based assessments with custom group roles from student side
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  // set up testing server
+
   beforeAll(helperServer.before(locals.courseDir));
-  // shut down testing server
+
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {
@@ -1110,7 +1110,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     storedConfig.authUin = config.authUin;
   });
 
-  // set up testing server
   beforeAll(async function () {
     // Create a copy of the course that we can safely manipulate.
     tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
@@ -1128,7 +1127,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     assessmentUrl = locals.courseInstanceUrl + '/assessment/' + assessmentId;
   });
 
-  // shut down testing server
   afterAll(async function () {
     try {
       await tempTestCourseDir.cleanup();
@@ -1649,9 +1647,9 @@ describe('Test group role reassignment logic when user leaves', function () {
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  // set up testing server
+
   beforeAll(helperServer.before(locals.courseDir));
-  // shut down testing server
+
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {

@@ -16,10 +16,8 @@ describe('Exam assessment response to `requireHonorCode`', function () {
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  // set up testing server
   beforeAll(helperServer.before());
 
-  // shut down testing server
   afterAll(helperServer.after);
 
   it('visits the landing page of default assessment', async () => {

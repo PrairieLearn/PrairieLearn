@@ -75,7 +75,6 @@ async function joinGroup(
 }
 
 describe('Group based exam assessments', function () {
-  // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -84,7 +83,6 @@ describe('Group based exam assessments', function () {
     storedConfig.authUin = config.authUin;
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {
@@ -299,7 +297,6 @@ describe('Group based exam assessments', function () {
 }, 20_000);
 
 describe('cross group exam access', function () {
-  // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -308,7 +305,6 @@ describe('cross group exam access', function () {
     storedConfig.authUin = config.authUin;
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {
@@ -400,7 +396,6 @@ describe('cross group exam access', function () {
 }, 20_000);
 
 describe('cross exam assessment access', function () {
-  // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -409,7 +404,6 @@ describe('cross exam assessment access', function () {
     storedConfig.authUin = config.authUin;
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {

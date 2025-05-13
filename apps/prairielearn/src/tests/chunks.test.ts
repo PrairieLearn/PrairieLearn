@@ -270,7 +270,6 @@ describe('chunks', () => {
     let questionId;
     let nestedQuestionId;
 
-    // set up testing server
     beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
@@ -325,7 +324,6 @@ describe('chunks', () => {
       nestedQuestionId = nestedQuestionResults.rows[0].id;
     });
 
-    // shut down testing server
     afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();

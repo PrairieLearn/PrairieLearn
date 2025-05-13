@@ -371,7 +371,7 @@ function shouldSkipPath(path) {
 describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
-  // set up testing server
+
   beforeAll(async function () {
     config.cronActive = false;
     // We use the test course since editing functionality is disabled in the
@@ -433,7 +433,7 @@ describe('accessibility', () => {
       { sharing_name: 'test', course_id: courseId.rows[0].course_id },
     );
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test('All pages pass accessibility checks', async function () {

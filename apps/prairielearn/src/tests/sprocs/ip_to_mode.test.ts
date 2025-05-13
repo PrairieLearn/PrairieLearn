@@ -18,7 +18,6 @@ async function createCourseExamReservation() {
 }
 
 describe('sproc ip_to_mode tests', function () {
-  // set up testing server
   beforeAll(async function () {
     await helperDb.before();
     const result = await sqldb.queryAsync(sql.setup, {});

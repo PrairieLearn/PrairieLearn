@@ -27,9 +27,9 @@ describe('Test student auto-enrollment', function () {
     config.authName = 'Student User';
     config.authUin = '00000001';
   });
-  // set up testing server
+
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(() => {

@@ -262,7 +262,6 @@ describe('test file editor', function () {
       await createCourseFiles();
     });
 
-    // set up testing server
     beforeAll(helperServer.before(courseDir));
 
     // update course repository in database
@@ -273,7 +272,6 @@ describe('test file editor', function () {
       });
     });
 
-    // shut down testing server
     afterAll(helperServer.after);
 
     // delete test course files
@@ -317,10 +315,8 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    // set up testing server
     beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
-    // shut down testing server
     afterAll(helperServer.after);
 
     describe('disallow edits inside exampleCourse', function () {

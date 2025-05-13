@@ -477,7 +477,9 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
+  devMode: z
+    .boolean()
+    .default(['development', 'test'].includes(process.env.NODE_ENV ?? 'development')),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */

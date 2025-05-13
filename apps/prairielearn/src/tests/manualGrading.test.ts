@@ -376,9 +376,8 @@ function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
 }
 
 describe('Manual Grading', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   // build assessment manual grading page URL

@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { afterAll, beforeAll, describe, it, test } from 'vitest';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -16,7 +16,6 @@ describe('Assessment that forces students to complete questions in-order', funct
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  // set up testing server
   beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
@@ -24,7 +23,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
     context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/`;
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test.sequential(
@@ -86,31 +85,25 @@ describe('Assessment that forces students to complete questions in-order', funct
 
       const initialExpectedLocks = [false, false, true, true, true, true];
 
-      it('Locks in database should match assessment configuration', () => {
-        assert.deepEqual(
-          context.instanceQuestions.map((e) => {
-            return e.locked;
-          }),
-          initialExpectedLocks,
-        );
-      });
+      assert.deepEqual(
+        context.instanceQuestions.map((e) => {
+          return e.locked;
+        }),
+        initialExpectedLocks,
+      );
 
-      it('Locks in student assessment instance page should match those in database', () => {
-        const computedLocks = response
-          .$('table[data-testid="assessment-questions"] tbody tr')
-          .map((i, elem) => {
-            return response.$(elem).hasClass('pl-sequence-locked');
-          })
-          .get();
-        assert.deepEqual(computedLocks, initialExpectedLocks);
-      });
+      const computedLocks = response
+        .$('table[data-testid="assessment-questions"] tbody tr')
+        .map((i, elem) => {
+          return response.$(elem).hasClass('pl-sequence-locked');
+        })
+        .get();
+      assert.deepEqual(computedLocks, initialExpectedLocks);
 
-      it('Question 3 should require 60% on Question 2 to unlock', () => {
-        assert.include(
-          response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
-          '60% on Question 2',
-        );
-      });
+      assert.include(
+        response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
+        '60% on Question 2',
+      );
     },
   );
 

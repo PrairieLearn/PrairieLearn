@@ -11,9 +11,8 @@ const locals: Record<string, any> = {};
 const assessmentPoints = 5;
 
 describe('API', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   helperExam.startExam(locals);

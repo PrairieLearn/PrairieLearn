@@ -23,7 +23,6 @@ describe('student data access', function () {
   context.userIdInstructor = 2;
   context.userIdStudent = 2;
 
-  // set up testing server
   beforeAll(async function () {
     await helperServer.before().call(this);
     let result = await sqldb.queryOneRowAsync(sql.select_homework1, []);
@@ -62,7 +61,6 @@ describe('student data access', function () {
     });
   });
 
-  // shut down testing server
   afterAll(helperServer.after);
 
   test.sequential('student can start HW1', async () => {

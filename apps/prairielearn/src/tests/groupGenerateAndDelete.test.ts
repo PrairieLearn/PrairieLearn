@@ -14,9 +14,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
 describe('test random groups and delete groups', function () {
-  // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {

@@ -25,14 +25,13 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
     cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
   };
 
-  // set up testing server
   beforeAll(async function () {
     await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   // we need to access the homepage to create the test_student user in the DB

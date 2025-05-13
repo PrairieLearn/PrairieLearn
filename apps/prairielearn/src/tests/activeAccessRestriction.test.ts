@@ -34,7 +34,7 @@ describe('Exam and homework assessment with active access restriction', function
     config.authName = 'Student User';
     config.authUin = '00000001';
   });
-  // set up testing server
+
   beforeAll(async function () {
     await helperServer.before().call(this);
     context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
@@ -44,7 +44,7 @@ describe('Exam and homework assessment with active access restriction', function
     context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
     context.hwNumber = '8';
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
   // unset authenticated user
   afterAll(function () {

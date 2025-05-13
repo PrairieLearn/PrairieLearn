@@ -25,9 +25,8 @@ const qidsTestCourse = [
 ];
 
 describe('Auto-test questions in testCourse', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));

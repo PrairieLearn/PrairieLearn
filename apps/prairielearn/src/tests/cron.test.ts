@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { afterAll, assert, beforeAll, describe, it, vi } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -11,7 +11,6 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Cron', function () {
-  // set up testing server
   beforeAll(async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
     const now = Date.now();
@@ -27,14 +26,12 @@ describe('Cron', function () {
 
     await helperServer.before().call(this);
   });
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   describe('1. cron jobs', () => {
-    it('should wait for 20 seconds', async () => {
-      await vi.waitFor(() => {
-        return new Promise((resolve) => setTimeout(resolve, 20_000));
-      });
+    it('should wait for 20 seconds', { timeout: 30_000 }, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20_000));
     });
 
     it('should all have started', async () => {

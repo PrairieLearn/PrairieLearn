@@ -11,9 +11,8 @@ const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
 describe('Instructor assessment editing', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   let page, elemList;

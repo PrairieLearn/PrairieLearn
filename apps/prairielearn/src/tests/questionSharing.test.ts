@@ -112,9 +112,8 @@ async function syncSharingCourse(course_id) {
 }
 
 describe('Question Sharing', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   // ensure question sharing is globally enabled

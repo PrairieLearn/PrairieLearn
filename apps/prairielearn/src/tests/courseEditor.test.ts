@@ -303,7 +303,6 @@ describe('test course editor', function () {
       await createCourseFiles();
     });
 
-    // set up testing server
     beforeAll(helperServer.before(courseDir));
 
     // update course repository in database
@@ -314,7 +313,6 @@ describe('test course editor', function () {
       });
     });
 
-    // shut down testing server
     afterAll(helperServer.after);
 
     // delete test course files

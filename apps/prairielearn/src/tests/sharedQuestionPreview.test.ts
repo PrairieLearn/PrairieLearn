@@ -47,9 +47,8 @@ const customElement = {
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
 describe('Shared Question Preview', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   // ensure course has question sharing enabled

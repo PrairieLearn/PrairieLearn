@@ -136,9 +136,8 @@ const zoneGradingTests: TestZone[][] = [
 ];
 
 describe('Zone grading homework assessment', function () {
-  // set up testing server
   beforeAll(helperServer.before());
-  // shut down testing server
+
   afterAll(helperServer.after);
 
   function startAssessment() {

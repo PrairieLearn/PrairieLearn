@@ -8,7 +8,6 @@ import * as helperDb from '../helperDb.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('sproc check_course_instance_access* tests', function () {
-  // set up testing server
   beforeAll(helperDb.before);
   // tear down testing database
   afterAll(helperDb.after);
