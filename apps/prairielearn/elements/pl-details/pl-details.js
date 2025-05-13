@@ -9,7 +9,7 @@ const enableAccordionFind = () => {
     return;
   }
   const accordions = [...document.querySelectorAll('.accordion-collapse.collapse')];
-  accordions.map((item) => {
+  accordions.forEach((item) => {
     item.hidden = 'until-found';
     const collapse = new bootstrap.Collapse(item, { toggle: false });
     // Manually toggle if a match is found
