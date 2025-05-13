@@ -2,7 +2,8 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+// import database queries from course-instances model
+import { selectAssessments } from '../../models/course-instances.js';
 
 import { selectCourseInstanceIsPublic } from '../../models/course-instance.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
@@ -11,7 +12,6 @@ import { selectCourseById } from '../../models/course.js';
 import { AssessmentRowSchema, PublicAssessments } from './publicAssessments.html.js';
 
 const router = express.Router({ mergeParams: true });
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -26,8 +26,7 @@ router.get(
       throw new error.HttpStatusError(404, 'Course instance not public.');
     }
 
-    const rows = await sqldb.queryRows(
-      sql.select_assessments,
+    const rows = await selectAssessments(
       {
         course_instance_id: res.locals.course_instance.id,
         assessments_group_by: res.locals.course_instance.assessments_group_by,

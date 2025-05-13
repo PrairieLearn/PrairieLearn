@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows, queryCursor } from '@prairielearn/postgres';
 
 import {
   type CourseInstance,
@@ -107,4 +107,25 @@ export async function selectCourseHasCourseInstances({
   course_id: string;
 }): Promise<boolean> {
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
+}
+/**
+ * Retrieves assessments for a given course instance using the shared SQL block.
+ * @param params - Filtering parameters.
+ * @param schema - Zod schema to validate each assessment row.
+ */
+export async function selectAssessments(
+  { course_instance_id, assessments_group_by }: { course_instance_id: string; assessments_group_by: CourseInstance['assessments_group_by'] },
+  schema: z.ZodTypeAny,
+) {
+  return queryRows(sql.select_assessments, { course_instance_id, assessments_group_by }, schema);
+}
+
+/**
+ * Retrieves a cursor for streaming assessments query results.
+ * @param params - Filtering parameters.
+ */
+export function selectAssessmentsCursor(
+  { course_instance_id, assessments_group_by }: { course_instance_id: string; assessments_group_by: CourseInstance['assessments_group_by'] },
+) {
+  return queryCursor(sql.select_assessments, { course_instance_id, assessments_group_by });
 }

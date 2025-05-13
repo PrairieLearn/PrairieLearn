@@ -33,6 +33,7 @@ import {
   AssessmentStats,
   InstructorAssessments,
 } from './instructorAssessments.html.js';
+import { selectAssessments, selectAssessmentsCursor } from '../../models/course-instances.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -46,8 +47,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
-    const rows = await queryRows(
-      sql.select_assessments,
+    const rows = await selectAssessments(
       {
         course_instance_id: res.locals.course_instance.id,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
@@ -126,10 +126,12 @@ router.get(
       // update assessment statistics if needed
       await updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      const cursor = await queryCursor(sql.select_assessments, {
-        course_instance_id: res.locals.course_instance.id,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
-      });
+      const cursor = await selectAssessmentsCursor(
+        {
+          course_instance_id: res.locals.course_instance.id,
+          assessments_group_by: res.locals.course_instance.assessments_group_by,
+        }
+      );
 
       const stringifier = stringifyStream({
         header: true,
