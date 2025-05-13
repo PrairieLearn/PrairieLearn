@@ -1,4 +1,4 @@
-# Quickstart
+# Development quickstart
 
 This page describes how to run, test, and develop PrairieLearn. Ensure that you have already installed PrairieLearn either:
 

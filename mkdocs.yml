@@ -258,7 +258,7 @@ nav:
       - developer-guide/index.md
       - 'Running in Docker': dev-guide/installingLocal.md
       - dev-guide/installingNative.md
-      - dev-guide/quickstart.md
+      - 'Quickstart': dev-guide/quickstart.md
       - dev-guide/guide.md
       - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
