@@ -116,7 +116,6 @@ describe('Question Sharing', function () {
 
   afterAll(helperServer.after);
 
-  // ensure question sharing is globally enabled
   beforeAll(async () => {
     await features.enable('question-sharing');
   });
@@ -127,7 +126,7 @@ describe('Question Sharing', function () {
   let sharingCourse: Course;
   let consumingCourse: Course;
   let sharingCourseData: syncUtil.CourseData;
-  // construct and sync course
+
   beforeAll(async () => {
     sharingCourseData = syncUtil.getCourseData();
     sharingCourseData.course.name = 'SHARING 101';
@@ -200,11 +199,9 @@ describe('Question Sharing', function () {
   });
 
   describe('Test syncing code to identify missing shared question', function () {
-    // alter config to check sharing on sync
     beforeAll(() => {
       config.checkSharingOnSync = true;
     });
-    // reset config
     afterAll(() => {
       config.checkSharingOnSync = false;
     });
@@ -424,7 +421,6 @@ describe('Question Sharing', function () {
   describe('Test Sharing a Question Publicly', function () {
     let publiclySharedQuestionId;
 
-    // Get id for publicly shared question
     beforeAll(async () => {
       publiclySharedQuestionId = (
         await sqldb.queryOneRowAsync(sql.get_question_id, {
@@ -461,11 +457,9 @@ describe('Question Sharing', function () {
   });
 
   describe('Test syncing code succeeding once questions have been shared', function () {
-    // alter config to check sharing on sync
     beforeAll(() => {
       config.checkSharingOnSync = true;
     });
-    // reset config
     afterAll(() => {
       config.checkSharingOnSync = false;
     });
@@ -622,11 +616,9 @@ describe('Question Sharing', function () {
   });
 
   describe('Test publicly sharing an assessment', function () {
-    // alter config to check sharing on sync
     beforeAll(() => {
       config.checkSharingOnSync = true;
     });
-    // reset config
     afterAll(() => {
       config.checkSharingOnSync = false;
     });

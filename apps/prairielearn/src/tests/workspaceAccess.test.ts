@@ -31,19 +31,16 @@ const studentNotEnrolled: AuthUser = {
 };
 
 describe('Test workspace authorization access', { timeout: 20_000 }, function () {
-  // disable workspace containers
   beforeAll(async function () {
     config.workspaceEnable = false;
   });
-  // enable workspace containers
   afterAll(async function () {
     config.workspaceEnable = true;
   });
 
   beforeAll(helperServer.before());
-
   afterAll(helperServer.after);
-  // add students to test course
+
   beforeAll(async function () {
     await sqldb.queryAsync(sql.create_user, studentOne);
     await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentOne.uid });
@@ -98,14 +95,14 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   });
 
   describe('workspaces created by instructors in a course (no instance)', function () {
-    // give the instructor owner access
     beforeAll(async () => {
+      // Make the user a course owner.
       await sqldb.queryAsync(sql.give_owner_access_to_uid, {
         uid: config.authUid,
       });
     });
-    // revoke owner access from the instructor
     afterAll(async () => {
+      // Remove owner permissions.
       await sqldb.queryAsync(sql.revoke_owner_access, {});
     });
 

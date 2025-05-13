@@ -37,9 +37,8 @@ async function findSyncedUndeletedQuestion(qid) {
 }
 
 describe('Question syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database

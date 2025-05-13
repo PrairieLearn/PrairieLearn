@@ -298,26 +298,21 @@ const testEditData = [
 
 describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
-    // create test course files
     beforeAll(async () => {
       await createCourseFiles();
     });
+    afterAll(async () => {
+      await deleteCourseFiles();
+    });
 
     beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-    // update course repository in database
     beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
-    });
-
-    afterAll(helperServer.after);
-
-    // delete test course files
-    afterAll(async () => {
-      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {

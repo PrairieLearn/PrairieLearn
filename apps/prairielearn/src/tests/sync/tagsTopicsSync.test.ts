@@ -151,9 +151,8 @@ async function testImplicit(entityName: 'tags' | 'topics') {
 }
 
 describe('Tag/topic syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database

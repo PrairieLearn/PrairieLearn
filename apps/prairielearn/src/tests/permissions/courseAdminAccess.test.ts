@@ -88,8 +88,8 @@ function runTest(context) {
 
   beforeAll(helperServer.before().bind(this));
 
-  // insert users and make instructor course owner
   beforeAll(async function () {
+    // Insert necessary users.
     for (const user of users) {
       await sqldb.callAsync('users_select_or_insert', [
         user.uid,
@@ -99,6 +99,8 @@ function runTest(context) {
         'Shibboleth',
       ]);
     }
+
+    // Make the instructor a course owner.
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',

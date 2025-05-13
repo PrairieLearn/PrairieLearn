@@ -172,7 +172,6 @@ describe(
   'Test group based assessments with custom group roles from student side',
   { timeout: 20_000 },
   function () {
-    // set authenticated user
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
@@ -182,7 +181,7 @@ describe(
     beforeAll(helperServer.before(locals.courseDir));
 
     afterAll(helperServer.after);
-    // unset authenticated user
+
     afterAll(function () {
       Object.assign(config, storedConfig);
     });
@@ -1185,7 +1184,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   let assessmentId: string;
   let assessmentUrl;
 
-  // set authenticated user
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -1218,7 +1216,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await helperServer.after.call(this);
   });
 
-  // unset authenticated user
   afterAll(function () {
     Object.assign(config, storedConfig);
   });
@@ -1723,7 +1720,6 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 });
 
 describe('Test group role reassignment logic when user leaves', { timeout: 20_000 }, function () {
-  // set authenticated user
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -1733,7 +1729,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   beforeAll(helperServer.before(locals.courseDir));
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(function () {
     Object.assign(config, storedConfig);
   });

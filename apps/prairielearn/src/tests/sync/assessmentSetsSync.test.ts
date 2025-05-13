@@ -37,9 +37,8 @@ function makeAssessmentSet() {
 }
 
 describe('Assessment set syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database

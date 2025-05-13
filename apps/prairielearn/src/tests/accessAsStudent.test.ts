@@ -18,7 +18,6 @@ const assessmentsUrl = courseInstanceUrl + '/assessments';
 const storedConfig: Partial<Config> = {};
 
 describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
-  // set authenticated user
   beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -31,7 +30,7 @@ describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(() => {
     Object.assign(config, storedConfig);
   });

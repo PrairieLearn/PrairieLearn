@@ -23,9 +23,8 @@ function makeCourseInstance(): util.CourseInstanceData {
 }
 
 describe('Course instance syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database

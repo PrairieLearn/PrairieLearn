@@ -51,12 +51,10 @@ describe('Shared Question Preview', function () {
 
   afterAll(helperServer.after);
 
-  // ensure course has question sharing enabled
   beforeAll(async () => {
     await features.enable('question-sharing');
   });
 
-  // Get question IDs from database
   beforeAll(async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
@@ -69,8 +67,8 @@ describe('Shared Question Preview', function () {
     }
   });
 
-  // set up another course to consume shared questions from
   beforeAll(async () => {
+    // Set up another course to consume shared questions from.
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
@@ -108,12 +106,13 @@ describe('Shared Question Preview', function () {
     });
 
     describe('When questions are share_publicly', () => {
-      // Make sure questions have share_publicly set
       beforeAll(async () => {
+        // Publicly share all questions.
         for (const testQuestion of testQuestions) {
           await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
         }
       });
+
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);

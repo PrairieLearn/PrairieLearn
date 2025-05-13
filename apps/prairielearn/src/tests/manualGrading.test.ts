@@ -380,7 +380,6 @@ describe('Manual Grading', function () {
 
   afterAll(helperServer.after);
 
-  // build assessment manual grading page URL
   beforeAll(async () => {
     const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
@@ -388,7 +387,6 @@ describe('Manual Grading', function () {
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/instances`;
   });
 
-  // add staff users
   beforeAll(async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
@@ -410,7 +408,6 @@ describe('Manual Grading', function () {
     );
   });
 
-  // reset default user
   afterAll(() => setUser(defaultUser));
 
   describe('Submit and grade a manually graded question', () => {

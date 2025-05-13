@@ -29,9 +29,8 @@ function checkAssessmentModule(
 }
 
 describe('Assessment modules syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database

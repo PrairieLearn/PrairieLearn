@@ -24,7 +24,6 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 const storedConfig: Record<string, any> = {};
 
 describe('Group based homework assess control on student side', { timeout: 20_000 }, function () {
-  // set authenticated user
   beforeAll(async () => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -34,7 +33,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
   beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(async () => {
     Object.assign(config, storedConfig);
   });

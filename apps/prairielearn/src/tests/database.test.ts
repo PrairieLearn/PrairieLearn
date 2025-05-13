@@ -18,9 +18,8 @@ class DatabaseError extends Error {
 }
 
 describe('database', { timeout: 20_000 }, function () {
-  // set up testing database
   beforeAll(helperDb.beforeOnlyCreate);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   it('should match the database described in /database', { timeout: 20_000 }, async function () {

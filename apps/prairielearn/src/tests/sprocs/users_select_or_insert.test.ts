@@ -39,7 +39,7 @@ const baseUser = {
 
 describe('sproc users_select_or_insert tests', () => {
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   test.sequential('create new user', async () => {

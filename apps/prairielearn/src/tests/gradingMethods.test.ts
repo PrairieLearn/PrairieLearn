@@ -98,7 +98,6 @@ describe('Grading method(s)', function () {
 
   afterAll(helperServer.after);
 
-  // reset default user
   afterAll(() => setUser(defaultUser));
 
   describe('`gradingMethod` configuration', () => {

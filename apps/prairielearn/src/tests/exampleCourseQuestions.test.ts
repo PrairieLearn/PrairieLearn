@@ -92,11 +92,9 @@ describe('Auto-test questions in exampleCourse', () => {
     afterAll(helperServer.after);
 
     const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-    // enable process-questions-in-server
     beforeAll(() => {
       config.features['process-questions-in-server'] = true;
     });
-    // restore process-questions-in-server
     afterAll(() => {
       config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
     });

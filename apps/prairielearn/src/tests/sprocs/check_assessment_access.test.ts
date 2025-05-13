@@ -40,10 +40,8 @@ async function checkAssessmentAccess(params: {
 
 describe('sproc check_assessment_access* tests', function () {
   beforeAll(helperDb.before);
-  // tear down testing database
   afterAll(helperDb.after);
 
-  // setup sample environment
   beforeAll(async () => {
     await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
   });
@@ -182,12 +180,12 @@ describe('sproc check_assessment_access* tests', function () {
     });
 
     describe('with checked-in reservation', () => {
-      // create checked-in reservation for student
       beforeAll(async () => {
+        // Create checked-in reservation for student
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
-      // delete checked-in reservation for student
       afterAll(async () => {
+        // Delete checked-in reservation for student
         await sqldb.queryAsync(sql.delete_pt_reservation, { exam_id: 1 });
       });
 

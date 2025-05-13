@@ -76,7 +76,7 @@ async function joinGroup(
 
 describe('Group based exam assessments', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
-  // set authenticated user
+
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -84,7 +84,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   });
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(function () {
     Object.assign(config, storedConfig);
   });
@@ -298,7 +298,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
 
 describe('cross group exam access', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
-  // set authenticated user
+
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -306,7 +306,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
   });
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(function () {
     Object.assign(config, storedConfig);
   });
@@ -397,7 +397,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
 
 describe('cross exam assessment access', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
-  // set authenticated user
+
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -405,7 +405,7 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
   });
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(function () {
     Object.assign(config, storedConfig);
   });

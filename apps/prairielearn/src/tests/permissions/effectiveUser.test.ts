@@ -54,7 +54,6 @@ describe('effective user', function () {
   let staffId: string;
   let studentId: string;
 
-  // insert users
   beforeAll(async function () {
     const institutionAdmin = await sqldb.callValidatedOneRow(
       'users_select_or_insert',

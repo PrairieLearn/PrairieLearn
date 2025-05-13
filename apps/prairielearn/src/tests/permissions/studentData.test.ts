@@ -33,7 +33,6 @@ describe('student data access', function () {
     context.examAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examAssessmentId}/`;
   });
 
-  // insert users
   beforeAll(async function () {
     await sqldb.callAsync('users_select_or_insert', [
       'instructor@example.com',

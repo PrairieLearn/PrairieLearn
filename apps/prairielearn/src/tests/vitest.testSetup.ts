@@ -1,6 +1,5 @@
 import { beforeAll } from 'vitest';
 
-// Create a separate database for each worker.
 beforeAll(async () => {
   const logger = await import('@prairielearn/logger');
 

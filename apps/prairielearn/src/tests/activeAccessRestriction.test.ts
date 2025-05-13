@@ -25,7 +25,6 @@ describe('Exam and homework assessment with active access restriction', function
 
   const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
-  // set authenticated user
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -46,7 +45,7 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   afterAll(helperServer.after);
-  // unset authenticated user
+
   afterAll(function () {
     Object.assign(config, storedConfig);
   });

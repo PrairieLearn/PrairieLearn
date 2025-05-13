@@ -23,7 +23,7 @@ describe('sproc ip_to_mode tests', function () {
     const result = await sqldb.queryAsync(sql.setup, {});
     user_id = result.rows[0].user_id;
   });
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   describe('No reservations', () => {

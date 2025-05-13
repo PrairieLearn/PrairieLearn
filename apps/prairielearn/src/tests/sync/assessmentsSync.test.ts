@@ -101,9 +101,8 @@ async function findSyncedUndeletedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database
@@ -1804,13 +1803,13 @@ describe('Assessment syncing', () => {
     );
   });
 
-  describe('Test validating shared quesitons on sync', () => {
-    // Temporarily enable validation of shared questions
+  describe('Test validating shared questions on sync', () => {
     beforeAll(() => {
+      // Temporarily enable validation of shared questions
       config.checkSharingOnSync = true;
     });
-    // Disable again for other tests
     afterAll(() => {
+      // Disable again for other tests
       config.checkSharingOnSync = false;
     });
 

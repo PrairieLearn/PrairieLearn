@@ -279,7 +279,7 @@ async function prepareGroup() {
 describe('Assessment instance with group roles & permissions - Exam', function () {
   describe('valid group role configuration tests', { timeout: 20_000 }, function () {
     beforeAll(helperServer.before(TEST_COURSE_PATH));
-    // set authenticated user
+
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
@@ -287,7 +287,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     });
 
     afterAll(helperServer.after);
-    // unset authenticated user
+
     afterAll(function () {
       Object.assign(config, storedConfig);
     });
@@ -428,7 +428,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
 
   describe('invalid role configuration tests', { timeout: 20_000 }, function () {
     beforeAll(helperServer.before(TEST_COURSE_PATH));
-    // set authenticated user
+
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
@@ -436,7 +436,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     });
 
     afterAll(helperServer.after);
-    // unset authenticated user
+
     afterAll(function () {
       Object.assign(config, storedConfig);
     });

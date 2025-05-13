@@ -26,13 +26,13 @@ const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
   const storedConfig: Record<string, any> = {};
-  // store authenticated user
+
   beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  // unset authenticated user
+
   afterAll(() => {
     Object.assign(config, storedConfig);
   });

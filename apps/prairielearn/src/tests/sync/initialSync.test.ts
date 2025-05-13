@@ -6,9 +6,8 @@ import * as helperDb from '../helperDb.js';
 import * as util from './util.js';
 
 describe('Initial Sync', () => {
-  // set up testing database
   beforeAll(helperDb.before);
-  // tear down testing database
+
   afterAll(helperDb.after);
 
   // reset testing database
