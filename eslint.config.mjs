@@ -123,6 +123,14 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
+      // Use the recommended rules for vitest
+      ...vitest.configs.recommended.rules,
+
+      // This gives a lot of false positives; we sometimes author tests that
+      // have the assertion in a helper function. We could refactor them in
+      // the future, but for now we'll disable this rule.
+      'vitest/expect-expect': ['off'],
+
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
@@ -151,8 +159,6 @@ export default tseslint.config([
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
-      // Use the recommended rules for vitest
-      ...vitest.configs.recommended.rules,
     },
   },
   {
