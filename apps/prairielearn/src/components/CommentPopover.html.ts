@@ -1,4 +1,4 @@
-import { escapeHtml, html, HtmlSafeString, unsafeHtml } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
 export function CommentPopover(comment: string | string[] | Record<string, any> | null) {
   let content = '';
