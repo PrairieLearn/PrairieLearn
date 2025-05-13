@@ -36,6 +36,9 @@ reviews:
     # The version of ruff (0.8.2) used by coderabbit is not modern enough to support our config.
     ruff:
       enabled: false
+    # coderabbit is flagging lint issues in our test suite that aren't relevant (lint/suspicious/noDuplicateTestHooks)
+    biome:
+      enabled: false
 
 chat:
   auto_reply: true
