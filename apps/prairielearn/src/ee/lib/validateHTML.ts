@@ -57,7 +57,7 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
 }
 
 export function isValidMustacheTemplateName(name: string): boolean {
-  // Mustache template names must be alphanumeric and can contain dots.
+  // Mustache template names must be alphanumeric and can contain dots and underscores.
   return /^[a-zA-Z0-9_.]+$/.test(name);
 }
 
