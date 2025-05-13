@@ -532,9 +532,9 @@ function RubricItem({
                 data-bs-content="${item.explanation_rendered}"
                 data-bs-html="true"
                 data-testid="rubric-item-explanation"
+                aria-label="Details"
               >
                 <i class="fas fa-circle-info"></i>
-                <span class="visually-hidden">Details</span>
               </button>
             `
           : ''}
