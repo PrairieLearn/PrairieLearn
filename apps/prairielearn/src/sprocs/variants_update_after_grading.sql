@@ -12,6 +12,7 @@ BEGIN
     PERFORM variants_lock(variant_id);
 
     -- Increment num_tries
+    -- TODO: update `modified_at` here?
     UPDATE variants AS v SET num_tries = v.num_tries + 1 WHERE v.id = variant_id;
 
     -- Get (1) flag that says whether or not the question has only a single variant,
@@ -32,6 +33,7 @@ BEGIN
     -- Close the variant if it's on a homework assessment, if it's not of a
     -- question with only one variant, and if the max num tries has been reached
     IF assessment_type = 'Homework' AND NOT single_variant AND (used_all_tries OR correct) THEN
+        -- TODO: update `modified_at` here?
         UPDATE variants SET open = false WHERE id = variant_id;
     END IF;
 END;

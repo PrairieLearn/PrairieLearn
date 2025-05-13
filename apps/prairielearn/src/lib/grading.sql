@@ -51,7 +51,8 @@ WITH
     UPDATE variants
     SET
       params = $params,
-      true_answer = $true_answer
+      true_answer = $true_answer,
+      modified_at = now()
     WHERE
       id = $variant_id
     RETURNING
@@ -112,7 +113,8 @@ WITH
     UPDATE variants
     SET
       duration = duration + ($delta * interval '1 ms'),
-      first_duration = coalesce(first_duration, $delta * interval '1 ms')
+      first_duration = coalesce(first_duration, $delta * interval '1 ms'),
+      -- TODO: update `modified_at` here?
     WHERE
       id = $variant_id
   )
@@ -132,6 +134,8 @@ INSERT INTO
     gradable,
     broken,
     client_fingerprint_id
+    -- TODO: remove once this column has a default
+    modified_at
   )
 VALUES
   (
@@ -148,7 +152,8 @@ VALUES
     $feedback,
     $gradable,
     $broken,
-    $client_fingerprint_id
+    $client_fingerprint_id,
+    NOW()
   )
 RETURNING
   id;
