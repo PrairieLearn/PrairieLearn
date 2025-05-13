@@ -2,21 +2,10 @@
 
 // Modified from https://codepen.io/wdzajicek/pen/VYZawjX
 
-// Check browser support for the "beforematch" event
-function isEventSupported(eventName, element = document.createElement('div')) {
-  const onEventName = `on${eventName}`;
-  let isSupported = onEventName in element;
-
-  if (!isSupported) {
-    element.setAttribute(onEventName, 'return;');
-    isSupported = typeof element[onEventName] === 'function';
-  }
-
-  return isSupported;
-}
-
 const enableAccordionFind = () => {
-  if (!isEventSupported('beforematch')) {
+  // Check browser support for the "beforematch" event
+  // (only supported in Chrome and Firefox as of May 2025)
+  if (!('onbeforematch' in document.body)) {
     return;
   }
   const accordions = [...document.querySelectorAll('.accordion-collapse.collapse')];
