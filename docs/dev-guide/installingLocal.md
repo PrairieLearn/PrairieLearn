@@ -49,7 +49,7 @@ make deps
 make dev
 ```
 
-This will start the PrairieLearn server and automatically restart it when you make changes to the JavaScript code. To stop the server, press ++ctrl+c++. To exit the container, press ++ctrl+c++ and then ++ctrl+d++.
+This will start the PrairieLearn server and automatically restart it when you make changes to the JavaScript code. To stop the server, press ++ctrl+c++. To exit the container after the server is stopped, press ++ctrl+d++.
 
 To support workspaces in local development, use `make dev-all` or `make start-all` to run both PrairieLearn and a workspace server application. For these to work, you will need to modify your Docker invocation to support external graders and workspaces. More information is on the [instructor installation page](../installing.md/#support-for-external-graders-and-workspaces).
 
