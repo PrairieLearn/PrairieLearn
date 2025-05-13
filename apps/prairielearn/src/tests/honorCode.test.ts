@@ -51,4 +51,4 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-class-honor-code'), 0);
   });
-}, 60_000);
+});

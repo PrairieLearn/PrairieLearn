@@ -24,7 +24,7 @@ const UserWithIdSchema = z.object({
   user_id: z.string(),
 });
 
-describe('effective user', function () {
+describe('effective user', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -549,4 +549,4 @@ describe('effective user', function () {
       assert.equal(res.status, 403);
     },
   );
-}, 60_000);
+});

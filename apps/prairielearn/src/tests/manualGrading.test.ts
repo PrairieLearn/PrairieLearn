@@ -375,7 +375,7 @@ function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
   );
 }
 
-describe('Manual Grading', function () {
+describe('Manual Grading', { timeout: 80_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -1164,4 +1164,4 @@ describe('Manual Grading', function () {
       checkGradingResults(mockStaff[0], mockStaff[1]);
     });
   });
-}, 80_000);
+});

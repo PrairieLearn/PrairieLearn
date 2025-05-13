@@ -10,7 +10,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with bonus points', function () {
+describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -103,4 +103,4 @@ describe('Exam assessment with bonus points', function () {
     assert.equal(results.rows[0].points, 12);
     assert.equal(results.rows[0].score_perc, 120);
   });
-}, 60_000);
+});

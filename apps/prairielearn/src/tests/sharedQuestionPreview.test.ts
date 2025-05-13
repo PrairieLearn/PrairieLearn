@@ -46,7 +46,7 @@ const customElement = {
 };
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
-describe('Shared Question Preview', function () {
+describe('Shared Question Preview', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -159,4 +159,4 @@ describe('Shared Question Preview', function () {
 
     testElementClientFiles(previewPageInfo, customElement);
   });
-}, 60_000);
+});

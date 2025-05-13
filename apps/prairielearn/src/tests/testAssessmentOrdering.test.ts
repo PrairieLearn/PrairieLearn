@@ -16,7 +16,7 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Course with assessments grouped by Set vs Module', function () {
+describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
   let courseInstanceId = null;
   let assessmentBadges;
@@ -148,4 +148,4 @@ describe('Course with assessments grouped by Set vs Module', function () {
     // compare this new set of badges with the old one
     assert.sameMembers(badges, assessmentBadges);
   });
-}, 60_000);
+});

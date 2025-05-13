@@ -260,7 +260,7 @@ describe('chunks', () => {
     });
   });
 
-  describe('ensureChunksForCourse', function () {
+  describe('ensureChunksForCourse', { timeout: 60_000 }, function () {
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
@@ -662,5 +662,5 @@ describe('chunks', () => {
         ),
       );
     });
-  }, 60_000);
+  });
 });

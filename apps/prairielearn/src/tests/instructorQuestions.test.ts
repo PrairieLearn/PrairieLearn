@@ -60,7 +60,7 @@ const testQuestions = [
   customElement,
 ];
 
-describe('Instructor questions', function () {
+describe('Instructor questions', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -165,4 +165,4 @@ describe('Instructor questions', function () {
       );
     });
   });
-}, 60_000);
+});

@@ -584,7 +584,7 @@ const partialCreditTests = [
   ],
 ];
 
-describe('Exam assessment', function () {
+describe('Exam assessment', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -1851,4 +1851,4 @@ describe('Exam assessment', function () {
       });
     });
   });
-}, 60_000);
+});

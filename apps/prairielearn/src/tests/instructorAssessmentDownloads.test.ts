@@ -11,7 +11,7 @@ const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
-describe('Instructor Assessment Downloads', function () {
+describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -249,4 +249,4 @@ describe('Instructor Assessment Downloads', function () {
       assert.equal(data[0]['Question % score'], 100);
     });
   });
-}, 60_000);
+});

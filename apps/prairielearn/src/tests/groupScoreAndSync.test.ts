@@ -266,4 +266,4 @@ describe('assessment instance group synchronization test', function () {
       locals.assessment_instance = result.rows[0];
     });
   });
-}, 10_000);
+});

@@ -10,7 +10,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with grade rate set', function () {
+describe('Exam assessment with grade rate set', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -104,4 +104,4 @@ describe('Exam assessment with grade rate set', function () {
     assert.lengthOf(elemList, 1);
     assert.isFalse(elemList.is(':disabled'));
   });
-}, 60_000);
+});

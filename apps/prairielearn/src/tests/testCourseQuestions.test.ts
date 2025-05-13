@@ -24,10 +24,10 @@ const qidsTestCourse = [
   'orderBlocks',
 ];
 
-describe('Auto-test questions in testCourse', function () {
+describe('Auto-test questions in testCourse', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
   qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-}, 60_000);
+});

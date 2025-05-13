@@ -15,14 +15,14 @@ const baseUrl = siteUrl + '/pl';
 const courseInstanceIssuesUrl = baseUrl + '/course_instance/1/instructor/course_admin/issues';
 const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 
-describe('Issues', function () {
+describe('Issues', { timeout: 15_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
   doTest(courseInstanceIssuesUrl, 'course');
   doTest(courseIssuesUrl, 'course instance');
-}, 15_000);
+});
 
 function doTest(issuesUrl: string, label: string) {
   describe(`Report issue with question and close all issues in ${label}`, () => {

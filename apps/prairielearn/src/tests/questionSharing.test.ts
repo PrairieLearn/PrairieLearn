@@ -615,7 +615,7 @@ describe('Question Sharing', function () {
     );
   });
 
-  describe('Test publicly sharing an assessment', function () {
+  describe('Test publicly sharing an assessment', { timeout: 80_000 }, function () {
     beforeAll(() => {
       config.checkSharingOnSync = true;
     });
@@ -748,4 +748,4 @@ describe('Question Sharing', function () {
       },
     );
   });
-}, 80_000);
+});

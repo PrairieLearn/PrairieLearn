@@ -16,7 +16,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Course element extensions', function () {
+describe('Course element extensions', { timeout: 60_000 }, function () {
   describe('Extensions can be loaded', function () {
     const extDir = path.resolve(EXAMPLE_COURSE_PATH, 'elementExtensions');
     const element = 'extendable-element';
@@ -149,4 +149,4 @@ describe('Course element extensions', function () {
       assert.isTrue(image_response.ok, 'could not fetch image');
     });
   });
-}, 60_000);
+});

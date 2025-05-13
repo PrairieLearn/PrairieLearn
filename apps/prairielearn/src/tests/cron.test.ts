@@ -10,7 +10,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Cron', function () {
+describe('Cron', { timeout: 60_000 }, function () {
   beforeAll(async function () {
     // set config.cronDailyMS so that daily cron jobs will execute soon
     const now = Date.now();
@@ -47,4 +47,4 @@ describe('Cron', function () {
       assert.lengthOf(result.rows, 0);
     });
   });
-}, 60_000);
+});

@@ -17,7 +17,7 @@ locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.newsItemsUrl = locals.baseUrl + '/news_items';
 
-describe('News items', function () {
+describe('News items', { timeout: 15_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -173,4 +173,4 @@ describe('News items', function () {
       assert.isOk(res.ok);
     });
   });
-}, 15_000);
+});

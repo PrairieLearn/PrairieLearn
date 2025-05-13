@@ -179,7 +179,7 @@ const partialCreditTests = [
   ],
 ];
 
-describe('Homework assessment', function () {
+describe('Homework assessment', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -1303,4 +1303,4 @@ describe('Homework assessment', function () {
       });
     });
   });
-}, 60_000);
+});

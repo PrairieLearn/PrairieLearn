@@ -12,7 +12,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Generate chunks and use them for a student homework', function () {
+describe('Generate chunks and use them for a student homework', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -72,4 +72,4 @@ describe('Generate chunks and use them for a student homework', function () {
     // Check the question HTML is correct
     assert.isAtLeast(response.$(':contains("Consider two numbers")').length, 1);
   });
-}, 60_000);
+});

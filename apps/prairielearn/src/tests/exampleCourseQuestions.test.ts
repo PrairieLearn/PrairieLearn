@@ -76,7 +76,7 @@ describe('Auto-test questions in exampleCourse', () => {
     }
   });
 
-  describe('Auto-test questions in exampleCourse', function () {
+  describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
     beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
     afterAll(helperServer.after);
@@ -84,24 +84,28 @@ describe('Auto-test questions in exampleCourse', () => {
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
       helperQuestion.autoTestQuestion(locals, qid),
     );
-  }, 60_000);
+  });
 
-  describe('Auto-test questions in exampleCourse with process-questions-in-server enabled', function () {
-    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+  describe(
+    'Auto-test questions in exampleCourse with process-questions-in-server enabled',
+    { timeout: 60_000 },
+    function () {
+      beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
-    afterAll(helperServer.after);
+      afterAll(helperServer.after);
 
-    const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-    beforeAll(() => {
-      config.features['process-questions-in-server'] = true;
-    });
-    afterAll(() => {
-      config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
-    });
+      const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
+      beforeAll(() => {
+        config.features['process-questions-in-server'] = true;
+      });
+      afterAll(() => {
+        config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+      });
 
-    // Only test the first 10 questions so that this test doesn't take too long.
-    [...qidsExampleCourse, ...templateQuestionQids]
-      .slice(0, 10)
-      .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-  }, 60_000);
+      // Only test the first 10 questions so that this test doesn't take too long.
+      [...qidsExampleCourse, ...templateQuestionQids]
+        .slice(0, 10)
+        .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
+    },
+  );
 });

@@ -10,7 +10,7 @@ const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
-describe('API', function () {
+describe('API', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -336,4 +336,4 @@ describe('API', function () {
       assert.equal(res.status, 403);
     });
   });
-}, 60_000);
+});

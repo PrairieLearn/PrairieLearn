@@ -10,7 +10,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with showCloseAssessment access rule', function () {
+describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -121,4 +121,4 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
       assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     },
   );
-}, 60_000);
+});

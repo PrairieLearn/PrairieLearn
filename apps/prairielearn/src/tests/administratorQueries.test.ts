@@ -12,7 +12,7 @@ const queriesUrl = `${baseUrl}/administrator/queries`;
 const queryUrl = `${baseUrl}/administrator/query/db_running_queries`;
 const queryUuidsUrl = `${baseUrl}/administrator/query/generate_uuids`;
 
-describe('AdministratorQuery page', function () {
+describe('AdministratorQuery page', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -59,4 +59,4 @@ describe('AdministratorQuery page', function () {
     assert.lengthOf(table, 1);
     assert.lengthOf(table.find('tbody tr'), 3);
   });
-}, 60_000);
+});

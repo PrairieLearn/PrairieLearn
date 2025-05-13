@@ -86,7 +86,7 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
-describe('Grading method(s)', function () {
+describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body;
   let iqUrl;
   let gradeRes;
@@ -625,4 +625,4 @@ describe('Grading method(s)', function () {
       });
     });
   });
-}, 80_000);
+});

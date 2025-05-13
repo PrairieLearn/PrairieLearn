@@ -135,7 +135,7 @@ const zoneGradingTests: TestZone[][] = [
   ],
 ];
 
-describe('Zone grading homework assessment', function () {
+describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -314,4 +314,4 @@ describe('Zone grading homework assessment', function () {
       });
     });
   });
-}, 60_000);
+});
