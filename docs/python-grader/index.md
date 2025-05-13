@@ -1,6 +1,6 @@
 # Python Autograder
 
-This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default Python autograder included in the `prairielearn/grader-python` Docker image. For general information on how to set up an external grader, view the [external grading](../externalGrading.md) documentation.
 
 ## Setting up
 
