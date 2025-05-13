@@ -20,6 +20,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_DEFAULT = True
 BLANK_ANSWER = " "
 NOTA_DEFAULT = False
+ARIA_LABEL_DEFAULT = None
 COUNTER_TYPE_DEFAULT = "lower-alpha"
 
 
@@ -122,7 +123,7 @@ def categorize_matches(
             )
             child_html = pl.inner_html(child)
             match_name = pl.get_string_attrib(child, "match")
-            aria_label = pl.get_string_attrib(child, "aria-label", None)
+            aria_label = pl.get_string_attrib(child, "aria-label", ARIA_LABEL_DEFAULT)
             if match_name not in options:
                 new_option = make_option(match_name, match_name)
                 options[match_name] = new_option
@@ -357,7 +358,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             statement_html = {
                 "html": statement["html"].strip(),
-                "aria-label": statement.get("aria-label", None),
+                "aria-label": statement["aria-label"],
                 "options": get_select_options(
                     dropdown_options, student_answer, blank_start
                 ),
