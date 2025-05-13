@@ -3,6 +3,10 @@ import * as parse5 from 'parse5';
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
+const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
+const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
+const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
+
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
 
@@ -80,36 +84,14 @@ function assertInChoices(
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {
-  assertInChoices(
-    tag,
-    key,
-    val,
-    [
-      'true',
-      't',
-      '1',
-      'True',
-      'T',
-      'TRUE',
-      'yes',
-      'y',
-      'Yes',
-      'Y',
-      'YES',
-      'false',
-      'f',
-      '0',
-      'False',
-      'F',
-      'FALSE',
-      'no',
-      'n',
-      'No',
-      'N',
-      'NO',
-    ],
-    errors,
-  );
+  assertInChoices(tag, key, val, BOOLEAN_VALUES, errors);
+}
+
+/**
+ * Checks if the given attribute value is a boolean `true` value.
+ */
+function isBooleanTrue(val: string): boolean {
+  return BOOLEAN_TRUE_VALUES.includes(val.trim());
 }
 
 /**
@@ -266,6 +248,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
 function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
+  let allowsBlank = false;
+  let usedBlankValue = false;
+
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
@@ -291,10 +276,13 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'suffix':
         case 'placeholder':
           break;
-        case 'allow-blank':
         case 'show-help-text':
         case 'show-score':
           assertBool('pl-integer-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-integer-input', key, val, errors);
+          allowsBlank = isBooleanTrue(val);
           break;
         case 'base':
           // TODO: validate that correct-answer is the right base
@@ -303,6 +291,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'display':
           assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
           break;
+        case 'blank-value':
+          usedBlankValue = true;
+          break;
         default:
           errors.push(`pl-integer-input: ${key} is not a valid attribute.`);
       }
@@ -310,6 +301,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   }
   if (!answersName) {
     errors.push('pl-integer-input: answers-name is a required attribute.');
+  }
+  if (usedBlankValue && !allowsBlank) {
+    errors.push('pl-integer-input: you must set allow-blank to true to use blank-value.');
   }
   return {
     errors,
@@ -386,9 +380,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'allow-blank':
           assertBool('pl-number-input', key, val, errors);
-          if (val !== 'false') {
-            allowsBlank = true;
-          }
+          allowsBlank = isBooleanTrue(val);
           break;
         case 'blank-value':
           usedBlankValue = true;
@@ -531,7 +523,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): ValidationResult {
 function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let usedAnswersName = false;
-  let usedPartialCredit = true;
+  let usedPartialCredit = false;
   let usedPartialCreditMethod = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -560,11 +552,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 
         case 'partial-credit':
           assertBool('pl-checkbox', key, val, errors);
-          if (
-            ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)
-          ) {
-            usedPartialCredit = false;
-          }
+          usedPartialCredit = isBooleanTrue(val);
           break;
         case 'partial-credit-method':
           assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
