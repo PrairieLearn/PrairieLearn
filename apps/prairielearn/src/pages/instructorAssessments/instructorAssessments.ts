@@ -6,13 +6,7 @@ import asyncHandler from 'express-async-handler';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryCursor,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   updateAssessmentStatistics,
@@ -27,13 +21,13 @@ import {
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { selectAssessments, selectAssessmentsCursor } from '../../models/course-instance.js';
 
 import {
   AssessmentRowSchema,
   AssessmentStats,
   InstructorAssessments,
 } from './instructorAssessments.html.js';
-import { selectAssessments, selectAssessmentsCursor } from '../../models/course-instances.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -126,12 +120,10 @@ router.get(
       // update assessment statistics if needed
       await updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      const cursor = await selectAssessmentsCursor(
-        {
-          course_instance_id: res.locals.course_instance.id,
-          assessments_group_by: res.locals.course_instance.assessments_group_by,
-        }
-      );
+      const cursor = await selectAssessmentsCursor({
+        course_instance_id: res.locals.course_instance.id,
+        assessments_group_by: res.locals.course_instance.assessments_group_by,
+      });
 
       const stringifier = stringifyStream({
         header: true,
