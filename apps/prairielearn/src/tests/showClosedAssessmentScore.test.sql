@@ -8,8 +8,7 @@ FROM
   course_instances AS ci,
   users AS u
 WHERE
-  u.uid ~ 'student'
-  and ci.id = 1;
+  u.uid ~ 'student';
 
 -- BLOCK select_exam9
 SELECT
