@@ -3,7 +3,7 @@ import * as path from 'path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp';
-import { describe, test, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 

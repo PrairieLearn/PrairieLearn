@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { describe, it, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { type QuestionJsonInput } from '../../schemas/index.js';
 import * as courseDb from '../../sync/course-db.js';

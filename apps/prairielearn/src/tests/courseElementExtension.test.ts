@@ -3,7 +3,7 @@ import { promisify } from 'util';
 
 import fs from 'fs-extra';
 import _ from 'lodash';
-import { assert, describe, it, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

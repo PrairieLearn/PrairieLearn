@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { afterEach, beforeEach, describe, it, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../../lib/config.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';

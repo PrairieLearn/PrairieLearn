@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
-import { assert, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

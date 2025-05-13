@@ -1,5 +1,5 @@
 import express from 'express';
-import { assert, describe, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';

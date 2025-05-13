@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { afterEach, assert, beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';

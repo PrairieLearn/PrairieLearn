@@ -1,5 +1,5 @@
 import fetchCookie from 'fetch-cookie';
-import { describe, test, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 

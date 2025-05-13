@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { assert, describe, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

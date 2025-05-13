@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import fetch from 'node-fetch';
-import { assert, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';

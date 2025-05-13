@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { assert, describe, it, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';

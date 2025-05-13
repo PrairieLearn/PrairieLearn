@@ -4,7 +4,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
-import { assert, describe, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { describe, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

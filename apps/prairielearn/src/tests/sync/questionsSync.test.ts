@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
-import { assert, beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import {

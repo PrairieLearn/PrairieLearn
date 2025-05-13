@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import fetch from 'node-fetch';
-import { describe, it, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as assets from '../lib/assets.js';
 import { config } from '../lib/config.js';

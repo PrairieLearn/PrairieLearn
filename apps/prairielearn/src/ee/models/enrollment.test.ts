@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { afterEach, beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 

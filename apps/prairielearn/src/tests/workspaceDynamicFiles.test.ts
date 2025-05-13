@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 
 import * as tmp from 'tmp-promise';
-import { describe, it, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateWorkspaceFiles } from '../lib/workspace.js';

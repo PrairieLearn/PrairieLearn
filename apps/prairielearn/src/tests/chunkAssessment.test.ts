@@ -1,5 +1,5 @@
 import * as tmp from 'tmp-promise';
-import { assert, describe, test, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

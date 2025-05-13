@@ -1,5 +1,5 @@
 import stripAnsi from 'strip-ansi';
-import { describe, it, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { logger } from '@prairielearn/logger';
 

@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { beforeEach, describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import {
   type AssessmentModule,

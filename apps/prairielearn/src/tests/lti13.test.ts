@@ -3,7 +3,7 @@ import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import * as jose from 'jose';
 import nodeJose from 'node-jose';
-import { describe, test, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 

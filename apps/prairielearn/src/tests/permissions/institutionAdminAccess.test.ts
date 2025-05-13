@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { describe, test, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryAsync, queryRow } from '@prairielearn/postgres';
 

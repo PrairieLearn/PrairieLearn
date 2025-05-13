@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 
 import _ from 'lodash';
-import { describe, it, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 

@@ -1,5 +1,5 @@
 import type { CheerioAPI } from 'cheerio';
-import { describe, test, assert, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 

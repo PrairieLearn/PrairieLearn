@@ -1,4 +1,4 @@
-import { describe, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe } from 'vitest';
 
 import { config } from '../lib/config.js';
 

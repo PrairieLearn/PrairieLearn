@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { assert, describe, it, vi, beforeAll, afterAll } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, vi } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
