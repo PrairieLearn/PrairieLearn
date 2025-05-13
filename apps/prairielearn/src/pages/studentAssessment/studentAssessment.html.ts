@@ -6,8 +6,6 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
 import { type GroupInfo } from '../../lib/groups.js';
-import { markdownToHtml } from '@prairielearn/markdown';
-import mustache from 'mustache';
 
 export function StudentAssessment({
   resLocals,

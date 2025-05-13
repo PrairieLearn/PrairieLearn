@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import DOMPurify from 'isomorphic-dompurify';
+import mustache from 'mustache';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { markdownToHtml } from '@prairielearn/markdown';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
@@ -27,8 +29,6 @@ import studentAssessmentAccess, {
 import studentAssessmentRedirect from '../../middlewares/studentAssessmentRedirect.js';
 
 import { StudentAssessment } from './studentAssessment.html.js';
-import { markdownToHtml } from '@prairielearn/markdown';
-import mustache from 'mustache';
 
 const router = Router({ mergeParams: true });
 
