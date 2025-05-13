@@ -159,6 +159,8 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
         return checkStringInput(ast);
       case 'pl-checkbox':
         return checkCheckbox(ast);
+      case 'pl-symbolic-input':
+        return checkSymbolicInput(ast);
       case 'pl-question-panel':
         return { errors: [] };
       case 'pl-answer':
@@ -167,7 +169,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
         if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
           return {
             errors: [
-              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
             ],
           };
         }
@@ -294,7 +296,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): ValidationResul
 function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
-  let allowsBlank = false;
+  let allowBlank = false;
   let usedBlankValue = false;
 
   if ('attrs' in ast) {
@@ -328,7 +330,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         case 'allow-blank':
           assertBool('pl-integer-input', key, val, errors);
-          allowsBlank = isBooleanTrue(val);
+          allowBlank = isBooleanTrue(val);
           break;
         case 'base':
           // TODO: validate that correct-answer is the right base
@@ -348,8 +350,78 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   if (!answersName) {
     errors.push('pl-integer-input: answers-name is a required attribute.');
   }
-  if (usedBlankValue && !allowsBlank) {
+  if (usedBlankValue && !allowBlank) {
     errors.push('pl-integer-input: you must set allow-blank to true to use blank-value.');
+  }
+  return {
+    errors,
+    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+  };
+}
+
+/**
+ * Checks that a `pl-symbolic-input` element has valid attributes.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult {
+  const errors: string[] = [];
+  let answersName: string | null = null;
+  let allowBlank = false;
+  let usedBlankValue = false;
+
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          answersName = val;
+          break;
+        case 'weight':
+        case 'size':
+          assertInt('pl-symbolic-input', key, val, errors);
+          break;
+        case 'correct-answer':
+          if (val.match(mustacheTemplateRegex)) {
+            errors.push(
+              "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
+            );
+          }
+          break;
+        case 'label':
+        case 'aria-label':
+        case 'variables':
+        case 'placeholder':
+        case 'custom-functions':
+        case 'suffix':
+          break;
+        case 'display':
+          assertInChoices('pl-symbolic-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'imaginary-unit-for-display':
+          assertInChoices('pl-symbolic-input', key, val, ['i', 'j'], errors);
+          break;
+        case 'allow-complex':
+        case 'allow-trig-functions':
+        case 'show-help-text':
+        case 'show-score':
+          assertBool('pl-symbolic-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-symbolic-input', key, val, errors);
+          allowBlank = isBooleanTrue(val);
+          break;
+        case 'blank-value':
+          usedBlankValue = true;
+          break;
+        default:
+          errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
+      }
+    }
+  }
+  if (usedBlankValue && !allowBlank) {
+    errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
   }
   return {
     errors,
@@ -369,7 +441,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
   let usedRtol = false;
   let usedAtol = false;
   let usedDigits = false;
-  let allowsBlank = false;
+  let allowBlank = false;
   let usedBlankValue = false;
 
   if ('attrs' in ast) {
@@ -426,7 +498,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'allow-blank':
           assertBool('pl-number-input', key, val, errors);
-          allowsBlank = isBooleanTrue(val);
+          allowBlank = isBooleanTrue(val);
           break;
         case 'blank-value':
           usedBlankValue = true;
@@ -447,7 +519,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
   if (usedDigits && usedRelabs) {
     errors.push('pl-number-input: comparison mode relabs uses rtol and atol, not digits.');
   }
-  if (usedBlankValue && !allowsBlank) {
+  if (usedBlankValue && !allowBlank) {
     errors.push('pl-number-input: you must set allow-blank to true to use blank-value.');
   }
   return {
