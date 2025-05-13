@@ -92,7 +92,7 @@ async function insertTestBatchedMigration() {
 }
 
 describe('BatchedMigrationExecutor', () => {
-  beforeAll(async () => {
+  before(async () => {
     await postgresTestUtils.createDatabase();
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
       throw err;
@@ -104,7 +104,7 @@ describe('BatchedMigrationExecutor', () => {
     await postgresTestUtils.resetDatabase();
   });
 
-  afterAll(async () => {
+  after(async () => {
     await namedLocks.close();
     await postgresTestUtils.dropDatabase();
   });

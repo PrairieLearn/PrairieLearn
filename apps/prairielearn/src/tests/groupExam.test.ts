@@ -78,19 +78,17 @@ describe('Group based exam assessments', function () {
   // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
-  beforeAll(function (callback) {
+  beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    callback(null);
   });
 
   // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
-  afterAll(function (callback) {
+  afterAll(function () {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   describe('instructor access for exam assessment', function () {
@@ -304,19 +302,17 @@ describe('cross group exam access', function () {
   // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
-  beforeAll(function (callback) {
+  beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    callback(null);
   });
 
   // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
-  afterAll(function (callback) {
+  afterAll(function () {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
@@ -407,19 +403,17 @@ describe('cross exam assessment access', function () {
   // set up testing server
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
-  beforeAll(function (callback) {
+  beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    callback(null);
   });
 
   // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
-  afterAll(function (callback) {
+  afterAll(function () {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   it("prevents unauthorized users from accessing other groups' assessment instances", async function () {

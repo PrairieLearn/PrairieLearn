@@ -281,19 +281,17 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     // set up testing server
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
-    beforeAll(function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
     // shut down testing server
     afterAll(helperServer.after);
     // unset authenticated user
-    afterAll(function (callback) {
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('enforces correct permissions during valid group role configuration', async function () {
@@ -434,19 +432,17 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     // set up testing server
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
-    beforeAll(function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
     // shut down testing server
     afterAll(helperServer.after);
     // unset authenticated user
-    afterAll(function (callback) {
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('shows correct errors during invalid group role configuration', async function () {

@@ -26,14 +26,13 @@ describe('Exam and homework assessment with active access restriction', function
   const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
   // set authenticated user
-  beforeAll(function (callback) {
+  beforeAll(function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
     config.authUid = 'student@example.com';
     config.authName = 'Student User';
     config.authUin = '00000001';
-    callback(null);
   });
   // set up testing server
   beforeAll(async function () {
@@ -48,9 +47,8 @@ describe('Exam and homework assessment with active access restriction', function
   // shut down testing server
   afterAll(helperServer.after);
   // unset authenticated user
-  afterAll(function (callback) {
+  afterAll(function () {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   test.sequential('visit home page', async () => {

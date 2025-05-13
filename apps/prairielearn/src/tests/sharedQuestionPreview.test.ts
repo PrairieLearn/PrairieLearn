@@ -87,16 +87,13 @@ describe('Shared Question Preview', function () {
     };
 
     describe('When questions are share_source_publicly but not share_publicly', () => {
-      beforeAll(
-        'Make sure questions have share_source_publicly set but not share_publicly',
-        async () => {
-          for (const testQuestion of testQuestions) {
-            await sqldb.queryAsync(sql.update_share_source_publicly, {
-              question_id: testQuestion.id,
-            });
-          }
-        },
-      );
+      beforeAll(async () => {
+        for (const testQuestion of testQuestions) {
+          await sqldb.queryAsync(sql.update_share_source_publicly, {
+            question_id: testQuestion.id,
+          });
+        }
+      });
       testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
       testFileDownloads(previewPageInfo, downloadFile, false);
       testElementClientFiles(previewPageInfo, customElement);
