@@ -148,7 +148,7 @@ describe('Shared Question Preview', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + '/course_instance/2/instructor/question',
+      questionBaseUrl: baseUrl + '/course_instance/3/instructor/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };
