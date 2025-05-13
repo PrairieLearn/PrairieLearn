@@ -200,6 +200,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if svg_bytes is None:
             raise TypeError("Graph was not returned.")
         svg = svg_bytes.decode("utf-8", "strict")
+        # https://gitlab.com/graphviz/graphviz/-/issues/2466
+        # We can switch to svg_inline when we have use graphviz >= 10.0.1
         svg = re.sub(XML_DECLARATION, "", svg)
         svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
