@@ -9,7 +9,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
     cd PrairieLearn
     docker run -it --rm -p 3000:3000 \
       -e DEV=true -v .:/PrairieLearn \
-      prairielearn/prairielearn
+      prairielearn/prairielearn \
       /bin/bash -c "make deps && /PrairieLearn/scripts/init.sh"
     ```
 
