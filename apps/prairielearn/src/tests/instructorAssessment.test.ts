@@ -10,7 +10,7 @@ const locals: Record<string, any> = {};
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
-describe('Instructor assessment editing', function () {
+describe('Instructor assessment editing', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -492,4 +492,4 @@ describe('Instructor assessment editing', function () {
       assert.equal(locals.pageData[0].score_perc, assessmentSetScorePerc2);
     });
   });
-}, 20_000);
+});

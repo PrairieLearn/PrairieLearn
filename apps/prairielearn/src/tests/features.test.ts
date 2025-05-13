@@ -16,7 +16,7 @@ describe('features', () => {
       name: 'Test User',
       uid: 'test@example.com',
     });
-  }, 20_000);
+  });
 
   beforeEach(async () => {
     await queryAsync('DELETE FROM feature_grants', {});
@@ -24,7 +24,7 @@ describe('features', () => {
 
   afterAll(async function () {
     await helperDb.after();
-  }, 20_000);
+  });
 
   it('enables and disables a global feature flag', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);

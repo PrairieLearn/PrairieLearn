@@ -296,7 +296,7 @@ const testEditData = [
   },
 ];
 
-describe('test course editor', function () {
+describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
     // create test course files
     beforeAll(async () => {
@@ -334,7 +334,7 @@ describe('test course editor', function () {
       });
     });
   });
-}, 20_000);
+});
 
 async function getFiles(options): Promise<Set<string>> {
   const files = new Set<string>();

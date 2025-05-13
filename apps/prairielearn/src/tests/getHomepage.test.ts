@@ -20,4 +20,4 @@ describe('GET /', function () {
     const $ = cheerio.load(page);
     assert.ok($('td a:contains("QA 101")').length);
   });
-}, 20_000);
+});

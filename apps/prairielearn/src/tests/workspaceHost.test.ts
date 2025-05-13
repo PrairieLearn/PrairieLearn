@@ -95,11 +95,11 @@ async function getWorkspaceLogs(id: string | number) {
 describe('workspaceHost utilities', function () {
   beforeAll(async () => {
     await helperDb.before();
-  }, 20_000);
+  });
 
   afterAll(async () => {
     await helperDb.after();
-  }, 20_000);
+  });
 
   beforeEach(async () => {
     await sqldb.queryAsync('DELETE FROM workspaces;', {});

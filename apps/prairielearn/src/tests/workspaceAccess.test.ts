@@ -30,7 +30,7 @@ const studentNotEnrolled: AuthUser = {
   name: 'Not Enrolled',
 };
 
-describe('Test workspace authorization access', function () {
+describe('Test workspace authorization access', { timeout: 20_000 }, function () {
   // disable workspace containers
   beforeAll(async function () {
     config.workspaceEnable = false;
@@ -199,4 +199,4 @@ describe('Test workspace authorization access', function () {
       });
     });
   });
-}, 20_000);
+});

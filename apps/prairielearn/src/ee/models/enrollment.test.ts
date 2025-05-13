@@ -20,11 +20,11 @@ describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
-  }, 20_000);
+  });
 
   afterEach(async function () {
     await helperDb.after();
-  }, 20_000);
+  });
 
   it('returns zero enrollments by default', async () => {
     const result = await getEnrollmentCountsForInstitution({
@@ -125,11 +125,11 @@ describe('getEnrollmentCountsForCourse', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
-  }, 20_000);
+  });
 
   afterEach(async function () {
     await helperDb.after();
-  }, 20_000);
+  });
 
   it('returns zero enrollments by default', async () => {
     const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
@@ -210,11 +210,11 @@ describe('getEnrollmentCountsForCourseInstance', () => {
   beforeEach(async function () {
     await helperDb.before();
     await helperCourse.syncCourse();
-  }, 20_000);
+  });
 
   afterEach(async function () {
     await helperDb.after();
-  }, 20_000);
+  });
 
   it('returns zero enrollments by default', async () => {
     const result = await getEnrollmentCountsForCourseInstance('1');

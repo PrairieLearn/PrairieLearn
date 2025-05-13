@@ -22,7 +22,7 @@ describe('sproc ip_to_mode tests', function () {
     await helperDb.before();
     const result = await sqldb.queryAsync(sql.setup, {});
     user_id = result.rows[0].user_id;
-  }, 20_000);
+  });
   // tear down testing database
   afterAll(helperDb.after);
 

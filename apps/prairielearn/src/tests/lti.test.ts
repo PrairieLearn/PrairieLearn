@@ -18,7 +18,7 @@ locals.ltiUrl = locals.baseUrl + '/lti';
 
 config.ltiRedirectUrl = locals.ltiUrl;
 
-describe('LTI', function () {
+describe('LTI', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -64,7 +64,7 @@ describe('LTI', function () {
       assert.equal(res.status, 302);
     });
   });
-}, 20_000);
+});
 
 /* TODO
  * Test nonce reuse

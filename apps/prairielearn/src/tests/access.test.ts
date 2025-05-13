@@ -18,7 +18,7 @@ const courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
-describe('Access control', function () {
+describe('Access control', { timeout: 20000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -356,4 +356,4 @@ describe('Access control', function () {
       await postInstanceQuestion(cookiesStudentExam(), 200);
     });
   });
-}, 20_000);
+});

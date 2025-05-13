@@ -74,7 +74,7 @@ async function joinGroup(
   return $;
 }
 
-describe('Group based exam assessments', function () {
+describe('Group based exam assessments', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -294,9 +294,9 @@ describe('Group based exam assessments', function () {
       assert.isOk(secondMemberResponse.ok);
     });
   });
-}, 20_000);
+});
 
-describe('cross group exam access', function () {
+describe('cross group exam access', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -393,9 +393,9 @@ describe('cross group exam access', function () {
     const secondAccessResponse = await fetch(assessmentInstanceURL);
     assert.equal(secondAccessResponse.status, 403, 'status should be forbidden');
   });
-}, 20_000);
+});
 
-describe('cross exam assessment access', function () {
+describe('cross exam assessment access', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
   // set authenticated user
   beforeAll(function () {
@@ -472,4 +472,4 @@ describe('cross exam assessment access', function () {
     // Error message should show
     assertAlert($, 'Group does not exist');
   });
-}, 20_000);
+});

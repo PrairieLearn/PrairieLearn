@@ -9,7 +9,7 @@ import * as helperServer from './helperServer.js';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-describe('Administrator pages', function () {
+describe('Administrator pages', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -57,4 +57,4 @@ describe('Administrator pages', function () {
       assert(res.ok);
     });
   });
-}, 20_000);
+});

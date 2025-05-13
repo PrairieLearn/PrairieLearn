@@ -23,7 +23,7 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 
 const storedConfig: Record<string, any> = {};
 
-describe('Group based homework assess control on student side', function () {
+describe('Group based homework assess control on student side', { timeout: 20_000 }, function () {
   // set authenticated user
   beforeAll(async () => {
     storedConfig.authUid = config.authUid;
@@ -635,4 +635,4 @@ describe('Group based homework assess control on student side', function () {
       assertAlert(locals.$, 'does not exist');
     });
   });
-}, 20_000);
+});

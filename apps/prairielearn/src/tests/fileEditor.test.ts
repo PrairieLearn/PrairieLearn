@@ -255,7 +255,7 @@ const verifyFileData = [
   },
 ];
 
-describe('test file editor', function () {
+describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     // create test course files
     beforeAll(async () => {
@@ -323,7 +323,7 @@ describe('test file editor', function () {
       badGet(badExampleCoursePathUrl, 403, true);
     });
   });
-}, 20_000);
+});
 
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {

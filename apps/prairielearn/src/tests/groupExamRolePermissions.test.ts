@@ -277,7 +277,7 @@ async function prepareGroup() {
 }
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
-  describe('valid group role configuration tests', function () {
+  describe('valid group role configuration tests', { timeout: 20_000 }, function () {
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
     beforeAll(function () {
@@ -424,9 +424,9 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
     });
-  }, 20_000);
+  });
 
-  describe('invalid role configuration tests', function () {
+  describe('invalid role configuration tests', { timeout: 20_000 }, function () {
     beforeAll(helperServer.before(TEST_COURSE_PATH));
     // set authenticated user
     beforeAll(function () {
@@ -526,5 +526,5 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       assertAlert($, 'too many roles', 0);
       assertAlert($, '1 less student needs to be assigned to the role "Recorder"', 0);
     });
-  }, 20_000);
+  });
 });

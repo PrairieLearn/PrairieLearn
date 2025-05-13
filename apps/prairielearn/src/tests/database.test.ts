@@ -17,13 +17,13 @@ class DatabaseError extends Error {
   }
 }
 
-describe('database', function () {
+describe('database', { timeout: 20_000 }, function () {
   // set up testing database
   beforeAll(helperDb.beforeOnlyCreate);
   // tear down testing database
   afterAll(helperDb.after);
 
-  it('should match the database described in /database', async function () {
+  it('should match the database described in /database', { timeout: 20_000 }, async function () {
     const options = {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
@@ -34,7 +34,7 @@ describe('database', function () {
     if (diff) {
       throw new DatabaseError(diff);
     }
-  }, 20_000);
+  });
 
   it('should not contain "ON DELETE CASCADE" foreign keys from soft-delete to hard-delete tables', async function () {
     /*
@@ -73,4 +73,4 @@ describe('database', function () {
       }
     }
   });
-}, 20_000);
+});

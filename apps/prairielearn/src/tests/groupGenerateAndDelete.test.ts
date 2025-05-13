@@ -13,7 +13,7 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
-describe('test random groups and delete groups', function () {
+describe('test random groups and delete groups', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   afterAll(helperServer.after);
@@ -68,4 +68,4 @@ describe('test random groups and delete groups', function () {
     const groupUsers = await sqldb.queryAsync('SELECT * FROM group_users', {});
     assert.equal(groupUsers.rows.length, 0);
   });
-}, 20_000);
+});

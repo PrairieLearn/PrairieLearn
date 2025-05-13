@@ -26,7 +26,7 @@ const redirects = [
   },
 ];
 
-describe('Redirects', function () {
+describe('Redirects', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -46,4 +46,4 @@ describe('Redirects', function () {
       assert.equal(location.pathname + location.search, redirect.redirect);
     });
   });
-}, 20_000);
+});
