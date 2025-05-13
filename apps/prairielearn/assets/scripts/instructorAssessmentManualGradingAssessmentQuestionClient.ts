@@ -264,19 +264,13 @@ onDocumentReady(() => {
           title: 'Graded by',
           filterControl: 'select',
           formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.last_grader_name : '&mdash;',
+            value
+              ? row.is_ai_graded
+                ? html` <span class="badge text-bg-secondary">PrairieAI</span> `.toString()
+                : row.last_grader_name
+              : '&mdash;',
         },
-        aiGradingEnabled
-          ? {
-              field: 'is_ai_graded',
-              title: 'AI Graded',
-              filterControl: 'select',
-              visible: aiGradingEnabled,
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.is_ai_graded ? 'Yes' : 'No',
-            }
-          : null,
-      ].filter(Boolean),
+      ],
     ],
   });
 });
