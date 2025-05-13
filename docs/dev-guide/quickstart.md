@@ -71,7 +71,7 @@ yarn mocha src/tests/getHomepage.test.ts
 
 ### Package tests
 
-To test specific packages, you can run it from the package directory you would like to test.
+To test a specific package, you can run `yarn test` from the package's directory.
 
 ```sh
 cd packages/csv
