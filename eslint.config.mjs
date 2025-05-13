@@ -162,6 +162,7 @@ export default tseslint.config([
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
+      'lint/suspicious/noDuplicateTestHooks': 'off',
     },
   },
   {
