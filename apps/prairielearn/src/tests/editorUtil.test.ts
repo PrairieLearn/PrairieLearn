@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { describe, it } from 'vitest';
 
 import * as editor from '../lib/editorUtil.js';
 

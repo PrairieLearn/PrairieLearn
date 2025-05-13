@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -139,7 +139,7 @@ describe('chunks', () => {
       );
     });
 
-    it('should identify complex assessment in simple course instance', () => {
+    it('should identify complex assessment in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',

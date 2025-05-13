@@ -131,6 +131,9 @@ export default tseslint.config([
       // the future, but for now we'll disable this rule.
       'vitest/expect-expect': ['off'],
 
+      // We violate this rule in a lot of places. We'll turn it off for now.
+      'vitest/no-identical-title': ['off'],
+
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',

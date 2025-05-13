@@ -1,5 +1,5 @@
 import express from 'express';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { assert, describe, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
@@ -64,7 +64,7 @@ function productApi(req: express.Request, res: express.Response) {
   res.json(returning);
 }
 
-describe('fetchRetry()', async () => {
+describe('fetchRetry()', () => {
   const app = express();
 
   // Run a server to respond to API requests.
@@ -90,10 +90,6 @@ describe('fetchRetry()', async () => {
   app.get('/', productApi);
 
   let apiCount: number;
-
-  // Thanks chatGPT
-
-  beforeAll(async () => {});
 
   test.sequential('should return the full list by iterating', async () => {
     apiCount = 0;
