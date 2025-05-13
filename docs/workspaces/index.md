@@ -251,7 +251,7 @@ For development, run the Docker container as described in [Installing with local
 make dev-all
 ```
 
-Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development, it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/contrib/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently.
 
 ## Permissions in production
 
