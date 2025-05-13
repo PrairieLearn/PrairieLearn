@@ -28,6 +28,10 @@
     "@types/tar-stream": "^3.1.3",
     "get-stream": "^9.0.1",
     "node-gyp": "^11.2.0",
+    "preact-compat": "^3.19.0",
+    "react": "^19.1.0",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^19.1.0",
     "tar-stream": "^3.1.7"
   },
   "devDependencies": {
@@ -40,7 +44,6 @@
     "eslint-plugin-import-x": "^4.11.0",
     "eslint-plugin-mocha": "^11.0.0",
     "eslint-plugin-no-floating-promise": "^2.0.0",
-    "eslint-plugin-no-only-tests": "^3.3.0",
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
     "globby": "^14.1.0",
     "htmlhint": "^1.1.4",
@@ -56,6 +59,9 @@
     "typescript-eslint": "^8.31.1"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^25.0.0"
+    "notebookjs/jsdom": "^25.0.0",
+    "preact": "link:./packages/preact-cjs",
+    "react": "link:./packages/preact-cjs-compat",
+    "react-dom": "link:./packages/preact-cjs-compat"
   }
 }

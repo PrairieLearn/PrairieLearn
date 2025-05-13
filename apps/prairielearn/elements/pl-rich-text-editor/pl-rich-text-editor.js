@@ -110,8 +110,8 @@
     // https://quilljs.com/docs/configuration#bounds
     options.bounds = baseElement.closest('.question-container');
 
-    let inputElement = $('#rte-input-' + uuid);
-    let quill = new Quill(baseElement, options);
+    const inputElement = $('#rte-input-' + uuid);
+    const quill = new Quill(baseElement, options);
     let renderer = null;
     if (options.format === 'markdown') {
       renderer = new showdown.Converter({
@@ -151,7 +151,7 @@
       // the element continues to work if this method is removed, we use
       // optional chaining in the call. This would cause the empty check to
       // fail but not crash, so the element can continue working.
-      let contents = quill.editor?.isBlank?.()
+      const contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       inputElement.val(
