@@ -10,7 +10,7 @@ PrairieLearn can also be run in production mode in a Docker container [using Doc
 
 ## Getting started
 
-Follow the steps to [install PrairieLearn natively](../installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
+Follow the steps to [install PrairieLearn natively](../dev-guide/installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
 
 ### Configuration
 
