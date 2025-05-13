@@ -13,26 +13,3 @@ details.accordion-item[open] .accordion-button::after {
   background-image: var(--bs-accordion-btn-icon);
   transform: var(--bs-accordion-btn-icon-transform);
 }
-
-/* Taken from https://nerdy.dev/open-and-close-transitions-for-the-details-element */
-@media (prefers-reduced-motion: no-preference) {
-  details.accordion-item {
-    interpolate-size: allow-keywords;
-  }
-}
-
-details.accordion-item::details-content {
-  opacity: 0;
-  block-size: 0;
-  overflow-y: clip;
-  /* 0.35s mirrors https://getbootstrap.com/docs/5.0/components/collapse/#variables */
-  transition:
-    content-visibility 0.35s allow-discrete,
-    opacity 0.35s,
-    block-size 0.35s;
-}
-
-details.accordion-item[open]::details-content {
-  opacity: 1;
-  block-size: auto;
-}
