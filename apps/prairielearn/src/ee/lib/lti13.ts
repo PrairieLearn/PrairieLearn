@@ -597,7 +597,11 @@ export async function updateLineItemsByAssessment(
   console.log(lineitems);
   console.log(`Found ${lineitems.length} assignments.`);
   if (lineitems.length === 1) {
-    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, lineitems[0]);
+    await linkAssessment(
+      instance.lti13_course_instance.id,
+      unsafe_assessment_id,
+      lineitems[lineitems.length],
+    );
   }
 }
 

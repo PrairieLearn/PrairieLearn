@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
+import { LineitemSchema } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -12,6 +13,7 @@ export const AssessmentRowSchema = AssessmentSchema.merge(
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
   label: z.string(),
+  lineitem: LineitemSchema.nullish(),
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
@@ -27,7 +29,7 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
         <main id="content" class="m-3">
           <p>
             Do you want to overwrite the Canvas assignment name? Points count? Ask this before this
-            post so we can build the appropriate response. Show already linked assignments here?
+            post so we can build the appropriate response.
           </p>
 
           <p>Select an existing PrairieLearn assessment to use with this assignment.</p>
@@ -36,6 +38,10 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="confirm" />
             <table>
+              <tr>
+                <th colspan="2">Assessment by group</th>
+                <th>Linked in LMS</th>
+              </tr>
               ${assessments.map((row) => {
                 const start_new_assessment_group = row.start_new_assessment_group
                   ? html`<tr>
@@ -44,35 +50,36 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
                   : '';
 
                 return html`
-                ${start_new_assessment_group}
+                  ${start_new_assessment_group}
                   <tr>
                     <td>
                       <label for="option-${row.id}">
-                      <input
-                      type="radio"
-                      name="unsafe_assessment_id"
-                      id="option-${row.id}"
-                      value="${row.id}" required>
-                      <span class="badge color-${row.color}">${row.label}</span>
+                        <input
+                          type="radio"
+                          name="unsafe_assessment_id"
+                          id="option-${row.id}"
+                          value="${row.id}"
+                          required
+                        />
+                        <span class="badge color-${row.color}">${row.label}</span>
                       </label>
-                      </td>
-                      <td>
-                        <label for="option-${row.id}">
-                        ${row.title}
-                        ${
-                          row.group_work
-                            ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                            : ''
-                        }
-                        </label>
                     </td>
                     <td>
-                    <label for="option-${row.id}">
-                    ${row.tid}
-                    </label>
+                      <label for="option-${row.id}">
+                        ${row.title}
+                        ${row.group_work
+                          ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                          : ''}
+                      </label>
+                    </td>
+                    <td>
+                      <label for="option-${row.id}">
+                        <!-- ${row.tid} -->
+                        ${row.lineitem?.label ?? ''}
+                      </label>
                     </td>
                   </tr>
-                </label>`;
+                `;
               })}
             </table>
             <button class="btn btn-primary my-2">Continue</button>
@@ -81,6 +88,10 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
       </body>
     </html>
   `.toString();
+}
+
+export function InstructorInstanceAdminLti13AssignmentDetails({ resLocals, assessment }) {
+  return html`OK`.toString();
 }
 
 export function InstructorInstanceAdminLti13AssignmentConfirmation({

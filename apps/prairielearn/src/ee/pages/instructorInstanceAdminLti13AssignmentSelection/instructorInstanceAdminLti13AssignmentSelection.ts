@@ -1,12 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer } from 'openid-client';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectAssessmentInCourseInstance } from '../../../models/assessments.js';
 import {
@@ -19,6 +17,7 @@ import {
   InstructorInstanceAdminLti13AssignmentSelection,
   AssessmentRowSchema,
   InstructorInstanceAdminLti13AssignmentConfirmation,
+  InstructorInstanceAdminLti13AssignmentDetails,
 } from './instructorInstanceAdminLti13AssignmentSelection.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -39,6 +38,8 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+
+    console.log(req.params);
 
     const assessments = await queryRows(
       sql.select_assessments,
@@ -63,10 +64,18 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    res.removeHeader('content-security-policy');
-    res.removeHeader('x-frame-options');
+    if (req.body.__action === 'details') {
+      const assessment = await selectAssessmentInCourseInstance({
+        unsafe_assessment_id: req.body.unsafe_assessment_id,
+        course_instance_id: res.locals.course_instance.id,
+      });
 
-    if (req.body.__action === 'confirm') {
+      console.log(assessment);
+
+      res.send(
+        InstructorInstanceAdminLti13AssignmentDetails({ resLocals: res.locals, assessment }),
+      );
+    } else if (req.body.__action === 'confirm') {
       const assessment = await selectAssessmentInCourseInstance({
         unsafe_assessment_id: req.body.unsafe_assessment_id,
         course_instance_id: res.locals.course_instance.id,
