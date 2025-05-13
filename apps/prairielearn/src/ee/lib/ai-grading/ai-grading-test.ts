@@ -96,6 +96,9 @@ export async function aiGradeTest({
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+        continue;
+      }
       const submission_id = await selectLastSubmissionId(instance_question.id);
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
