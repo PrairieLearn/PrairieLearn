@@ -1,5 +1,7 @@
 # Developer Guide
 
+This page outlines debugging and testing tips, best practices and style for coding, as well as details about various aspects of PrairieLearn (question rendering, database schemas, etc.).
+
 In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
 
 ## High level view
@@ -17,7 +19,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 - Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
 - Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
-- To run the tests during development, see [Running the test suite](../installingLocal.md#running-the-test-suite).
+- See the [development quickstart guide](quickstart.md#testing) for information on how to run the test suite.
 
 - The tests are run by GitHub Actions on every push to GitHub.
 
