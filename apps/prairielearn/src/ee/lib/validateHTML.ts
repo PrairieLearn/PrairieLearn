@@ -9,7 +9,6 @@ const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n
 const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
-const mustacheTemplateChecker = /^\s*(((#|\/|\^|>|!|\$|>\*)?\s*(\w|\d|\.|_)*)|!.*)\s*$/;
 
 type MustacheTextToken = ['text', string, number, number];
 type MustacheNameToken = ['name', string, number, number];
@@ -55,6 +54,11 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
   names.delete('.');
 
   return names;
+}
+
+export function isValidMustacheTemplateName(name: string): boolean {
+  // Mustache template names must be alphanumeric and can contain dots.
+  return /^[a-zA-Z0-9_.]+$/.test(name);
 }
 
 interface ValidationResult {
@@ -669,8 +673,9 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
   const tree = parse5.parseFragment(file);
   const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
 
+  const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
-    ...extractMustacheTemplateNames(file),
+    ...usedTemplateNames,
     ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
   ];
 
@@ -678,8 +683,8 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
   }
 
-  for (const template of templates) {
-    if (!mustacheTemplateChecker.test(template)) {
+  for (const template of usedTemplateNames) {
+    if (!isValidMustacheTemplateName(template)) {
       errors.push(
         `Template of ${template} must be in mustache format. Please adjust so that any logic done in the template is instead done in server.py`,
       );
