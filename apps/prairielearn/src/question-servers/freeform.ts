@@ -535,7 +535,8 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  const err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+  const err =  checkProp('externalParams',         'object',  ['generate'],                         [])
+             || checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('variant_seed',          'integer', allPhases,                            [])
              || checkProp('options',               'object',  allPhases,                            [])
@@ -1186,7 +1187,8 @@ export async function generate(
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     const data = {
-      params: question.question_params ?? {},
+      externalParams: question.question_params,
+      params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
@@ -1203,6 +1205,7 @@ export async function generate(
       return {
         courseIssues,
         data: {
+          externalParams: resultData.question_params,
           params: resultData.params,
           true_answer: resultData.correct_answers,
         },
