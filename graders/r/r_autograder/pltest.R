@@ -53,12 +53,12 @@ result <- tryCatch({
         }
 
         # Define new R file path inside 'bin'
-        student_file <- file.path("bin", "student.R")
+        student_file <- file.path("..", "student", "student.R")
         writeLines(code, student_file)
         print(paste("[pltest] Extracted code written to", student_file))
 
         # Delete the original .ipynb file
-        file.remove("bin/student.ipynb")
+        file.remove(file.path("..", "student", "student.ipynb"))
         print("[pltest] Deleted original ipynb file")
     }
     
