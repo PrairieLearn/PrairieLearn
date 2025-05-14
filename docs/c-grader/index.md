@@ -1,6 +1,6 @@
 # C/C++ Autograder
 
-This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, view the [external grading](../externalGrading.md) documentation.
 
 ## Setting up
 
@@ -454,7 +454,7 @@ self.add_test_result("I am lazy, everyone gets 70%",
                      points=70, max_points=100)
 ```
 
-This method also allows you to add one or more images to the result. Images must follow the format described in the [external grading](../externalGrading.md) page.
+This method also allows you to add one or more images to the result. Images must follow the format described in the [external grading](../externalGrading.md) documentation.
 
 ```python
 self.add_test_result("Generated image", points=matched_pixels,
