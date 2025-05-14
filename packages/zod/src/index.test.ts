@@ -2,6 +2,7 @@ import { assert } from 'chai';
 import parsePostgresInterval from 'postgres-interval';
 
 import {
+  ArrayFromStringOrArraySchema,
   IdSchema,
   IntegerFromStringOrEmptySchema,
   IntegerFromStringSchema,
@@ -122,6 +123,28 @@ describe('IntegerFromStringOrEmptySchema', () => {
 
   it('rejects a decimal string', () => {
     const result = IntegerFromStringOrEmptySchema.safeParse('123.45');
+    assert.isFalse(result.success);
+  });
+});
+
+describe('ArrayFromStringOrArraySchema', () => {
+  it('parses a string to an array', () => {
+    const result = ArrayFromStringOrArraySchema.parse('a,b,c');
+    assert.deepEqual(result, ['a', 'b', 'c']);
+  });
+
+  it('parses an array to itself', () => {
+    const result = ArrayFromStringOrArraySchema.parse(['a', 'b', 'c']);
+    assert.deepEqual(result, ['a', 'b', 'c']);
+  });
+
+  it('rejects an integer', () => {
+    const result = ArrayFromStringOrArraySchema.safeParse(123);
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an object', () => {
+    const result = ArrayFromStringOrArraySchema.safeParse({ a: 1 });
     assert.isFalse(result.success);
   });
 });
