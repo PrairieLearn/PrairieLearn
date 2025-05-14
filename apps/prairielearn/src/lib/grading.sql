@@ -133,7 +133,7 @@ INSERT INTO
     feedback,
     gradable,
     broken,
-    client_fingerprint_id
+    client_fingerprint_id,
     -- TODO: remove once this column has a default
     modified_at
   )
