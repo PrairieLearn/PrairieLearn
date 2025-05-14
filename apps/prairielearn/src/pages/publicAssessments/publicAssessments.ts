@@ -17,7 +17,6 @@ router.get(
     const course_instance_id = req.params.course_instance_id;
     res.locals.course_instance = await selectCourseInstanceById(course_instance_id);
     res.locals.course = await selectCourseById(res.locals.course_instance.course_id);
-    res.locals.urlPrefix = '/pl';
 
     const isPublic = await selectCourseInstanceIsPublic(course_instance_id);
     if (!isPublic) {
@@ -37,6 +36,7 @@ router.get(
         resLocals: res.locals,
         rows,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        courseInstanceId: course_instance_id,
       }),
     );
   }),

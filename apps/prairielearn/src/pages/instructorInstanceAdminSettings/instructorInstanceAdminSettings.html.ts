@@ -348,8 +348,8 @@ function CourseInstanceSharing({
       <span class="badge color-green3 me-1">Public source</span>
       This course instance's source is publicly shared.
     </p>
-    <div>
-      <label for="publicLink">Public Link</label>
+    <div class="mb-3">
+      <label for="publicLink">Public link</label>
       <span class="input-group">
         <input
           type="text"

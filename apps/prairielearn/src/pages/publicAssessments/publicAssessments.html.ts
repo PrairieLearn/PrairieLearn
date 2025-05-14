@@ -23,10 +23,12 @@ export function PublicAssessments({
   resLocals,
   rows,
   assessmentsGroupBy,
+  courseInstanceId,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
+  courseInstanceId: string;
 }) {
   return PageLayout({
     resLocals,
@@ -75,7 +77,7 @@ export function PublicAssessments({
                     </td>
                     <td class="align-middle">
                       <a
-                        href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
+                        href="/pl/public/course_instance/${courseInstanceId}/assessment/${row.id}/questions"
                         >${row.title}
                       </a>
                     </td>

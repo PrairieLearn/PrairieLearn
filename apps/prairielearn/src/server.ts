@@ -1726,16 +1726,16 @@ export async function initExpress(): Promise<Express> {
       coreElements: false,
     }),
   );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
+  );
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
   });
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
-  );
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
-    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   );
 
   // Client files for questions

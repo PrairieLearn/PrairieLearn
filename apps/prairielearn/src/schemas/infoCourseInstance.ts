@@ -64,7 +64,9 @@ export const CourseInstanceJsonSchema = z
       .default('Set'),
     shareSourcePublicly: z
       .boolean()
-      .describe("If true, the course instance's source code is shared publicly.")
+      .describe(
+        "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
+      )
       .optional()
       .default(false),
   })
