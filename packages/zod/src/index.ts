@@ -128,22 +128,10 @@ export const IntegerFromStringSchema = z
  * use an empty string to compute values.
  */
 
-export const IntegerFromStringOrEmptySchema = z
-  .string()
-  .transform((s) => (s === '' ? null : s))
-  .refine(
-    (s) => {
-      if (s === null) {
-        return true;
-      }
-      const n = Number.parseInt(s);
-      return !Number.isNaN(n) && Number.isSafeInteger(n);
-    },
-    {
-      message: 'must be a valid integer',
-    },
-  )
-  .transform((s) => (s === null ? null : Number.parseInt(s)));
+export const IntegerFromStringOrEmptySchema = z.preprocess(
+  value => value === '' ? null : value,
+  z.union([ z.null(), z.coerce.number().int() ])
+);
 
 /**
  * A Zod schema for an arrray of string values from either a string or an array of
