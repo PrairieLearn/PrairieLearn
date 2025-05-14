@@ -3,8 +3,8 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { updateCourseInstanceUsagesForAiCompletion } from '../../lib/ai.js';
 import * as b64Util from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
   IdSchema,
@@ -200,47 +200,6 @@ function extractFromCompletion(
   }
 
   return out;
-}
-
-/**
- * Compute the cost of a completion, in US dollars.
- */
-export function computeCompletionCost({
-  promptTokens,
-  completionTokens,
-}: {
-  promptTokens: number;
-  completionTokens: number;
-}) {
-  return (
-    (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
-      config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
-    1e6
-  );
-}
-
-/**
- * Create a new course instance usage record for an AI question generation request.
- */
-async function updateCourseInstanceUsagesForAiQuestionGeneration({
-  promptId,
-  authnUserId,
-  promptTokens = 0,
-  completionTokens = 0,
-}: {
-  promptId: string;
-  authnUserId: string;
-  promptTokens?: number;
-  completionTokens?: number;
-}) {
-  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
-    prompt_id: promptId,
-    authn_user_id: authnUserId,
-    cost_ai_question_generation: computeCompletionCost({
-      promptTokens,
-      completionTokens,
-    }),
-  });
 }
 
 /**
@@ -588,7 +547,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     IdSchema,
   );
 
-  await updateCourseInstanceUsagesForAiQuestionGeneration({
+  await updateCourseInstanceUsagesForAiCompletion({
     promptId,
     authnUserId,
     promptTokens: completion?.usage?.prompt_tokens,
