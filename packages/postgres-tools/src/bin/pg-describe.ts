@@ -98,9 +98,10 @@ function printDescription(description: DatabaseDescription) {
 
 async function writeDescriptionToDisk(description: DatabaseDescription, dir: string) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput: false });
-  await fs.emptyDir(dir);
-  await fs.mkdir(path.join(dir, 'tables'));
-  await fs.mkdir(path.join(dir, 'enums'));
+  await fs.ensureDir(path.join(dir, 'tables'));
+  await fs.ensureDir(path.join(dir, 'enums'));
+  await fs.emptyDir(path.join(dir, 'tables'));
+  await fs.emptyDir(path.join(dir, 'enums'));
   await async.eachOf(formattedDescription.tables, async (value, key) => {
     await fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value);
   });
