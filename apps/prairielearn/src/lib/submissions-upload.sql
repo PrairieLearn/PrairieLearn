@@ -50,7 +50,9 @@ INSERT INTO
     params,
     true_answer,
     options,
-    number
+    number,
+    -- TODO: remove once this column has a default
+    modified_at
   )
 VALUES
   (
@@ -63,7 +65,8 @@ VALUES
     $params,
     $true_answer,
     $options,
-    $number
+    $number,
+    NOW()
   )
 RETURNING
   id AS variant_id;
@@ -78,6 +81,8 @@ INSERT INTO
     params,
     true_answer,
     date
+    -- TODO: remove once this column has a default
+    modified_at
   )
 VALUES
   (
@@ -87,7 +92,8 @@ VALUES
     '{}'::jsonb, -- We don't have any useful value for `raw_submitted_answer` here.
     $params,
     $true_answer,
-    $submission_date
+    $submission_date,
+    NOW()
   )
 RETURNING
   id AS submission_id;

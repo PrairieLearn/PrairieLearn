@@ -134,11 +134,11 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
   WHERE
     id = $question_id;
   
-  -- BLOCK insert_submission
+  -- BLOCK insert_user
   INSERT INTO
-    submissions (submitted_answer)
+    users (uid)
   VALUES
-    ($submitted_answer)
+    ($uid)
   RETURNING
     *;
   ```
