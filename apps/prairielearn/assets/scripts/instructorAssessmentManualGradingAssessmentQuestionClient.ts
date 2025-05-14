@@ -263,6 +263,14 @@ onDocumentReady(() => {
           field: 'last_grader',
           title: 'Graded by',
           filterControl: 'select',
+          filterCustomSearch: (text: string, value: string) => {
+            if (text === 'prairieai') {
+              return value
+                .toLowerCase()
+                .includes('<span class="badge text-bg-secondary">prairieai</span>');
+            }
+            return null;
+          },
           formatter: (value: string, row: InstanceQuestionRow) =>
             value
               ? row.is_ai_graded
