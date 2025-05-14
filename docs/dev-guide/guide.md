@@ -136,7 +136,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
   
   -- BLOCK insert_user
   INSERT INTO
-    submissions (uid)
+    users (uid)
   VALUES
     ($uid)
   RETURNING
