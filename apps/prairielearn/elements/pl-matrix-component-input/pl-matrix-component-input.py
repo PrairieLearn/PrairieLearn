@@ -559,15 +559,13 @@ def create_table_for_html_display(
 ) -> str:
     editable = data["editable"]
 
-    label_attr = (
-        f'aria-label="{aria_label}"'
-        if aria_label is not None
-        else (
-            f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
-            if label
-            else ""
-        )
-    )
+    label_attr = ""
+
+    if aria_label is not None:
+        label_attr = f'aria-label="{aria_label}"'
+    elif label is not None:
+        label_attr = f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
+
     if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
@@ -714,11 +712,9 @@ def create_table_for_html_display(
                 each_entry_name, None
             )
             disabled = "disabled" if not editable else ""
-            value = (
-                f'value="{escape(raw_submitted_answer)}"'
-                if raw_submitted_answer is not None
-                else ""
-            )
+            value = ""
+            if raw_submitted_answer is not None:
+                value = f'value="{escape(raw_submitted_answer)}"'
             display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {disabled} {value}/></td>'
         display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
@@ -734,11 +730,9 @@ def create_table_for_html_display(
                     each_entry_name, None
                 )
                 disabled = "disabled" if not editable else ""
-                value = (
-                    f'value="{escape(raw_submitted_answer)}"'
-                    if raw_submitted_answer is not None
-                    else ""
-                )
+                value = ""
+                if raw_submitted_answer is not None:
+                    value = f'value="{escape(raw_submitted_answer)}"'
                 display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {disabled} {value}/></td>'
                 display_array += " </td> "
             display_array += "</tr>"
