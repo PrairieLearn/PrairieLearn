@@ -2,6 +2,8 @@
 
 This page describes the procedure to install and run PrairieLearn fully natively without using Docker. Certain features, such as external graders and workspaces, still require Docker. PrairieLearn supports native execution on macOS, Linux, and Windows inside [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install).
 
+## Installation
+
 - Install the prerequisites:
 
   - [Git](https://git-scm.com)
@@ -93,9 +95,17 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql redis uv d2 node npm pgvector
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector
+
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
+    ```
+
+    You may want to start up the `postgresql` server on boot, and add binaries to your path:
+
+    ```sh
+    brew services start postgresql@16
+    brew link postgresql@16
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -156,19 +166,19 @@ Most of these prerequisites can be installed using the package manager of your O
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
-  ```sh
-  sudo -u postgres psql -c "CREATE USER postgres;"
-  sudo -u postgres psql -c "ALTER USER postgres WITH SUPERUSER;"
-  sudo -u postgres createdb postgres
-  ```
+```sh
+createdb postgres
+psql postgres -c "CREATE USER postgres;"
+psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+```
 
 - Ensure that your local `postgres` installation allows for local connections to bypass password authentication. First find the authentication configuration file with the command:
 
   ```sh
-  sudo -u postgres psql -c "SHOW hba_file;"
+  psql postgres -c "SHOW hba_file;"
   ```
 
-  The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). This will typically be shown as:
+  The command above will list the path to a file named `pg_hba.conf` or something equivalent. As either root or the `postgres` user, edit the file listed by the command above, such that lines that correspond to localhost connections are set up with the `trust` method (do not change the other lines). If the last two lines already say "trust", no modifications are needed. This will typically be shown as:
 
   ```text
   # TYPE  DATABASE        USER            ADDRESS                 METHOD
@@ -181,48 +191,21 @@ Most of these prerequisites can be installed using the package manager of your O
 
   You may need to restart the PostgreSQL server after changing the file above.
 
-- Run the test suite (Docker must be installed and running):
+## Configuration
 
-  ```sh
-  make test
-  ```
+If you have your own [PrairieLearn course repository](../requestCourse/index.md), you will need to create the file `PrairieLearn/config.json` with the path of your local course repository. If you need support for the in-browser file editor or file uploads, you should set `filesRoot`. If you need support for workspaces, you should provide a path to a directory into which temporary files will be saved. Here is a sample configuration:
 
-- Run the linters:
+```json title="config.json"
+{
+  "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
+  "filesRoot": "../filesRoot",
+  "workspaceHostHomeDirRoot": "/tmp/workspace",
+  "workspaceHomeDirRoot": "/tmp/workspace"
+}
+```
 
-  ```sh
-  make lint # or lint-js for Javascript only, or lint-python for Python only
-  ```
+More information about the `config.json` can be found in the [server configuration](./configJson.md) documentation.
 
-- Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):
+## Development
 
-  ```json title="config.json"
-  {
-    "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
-    "filesRoot": "../filesRoot",
-    "workspaceHostHomeDirRoot": "/tmp/workspace",
-    "workspaceHomeDirRoot": "/tmp/workspace"
-  }
-  ```
-
-- Run the server in development mode to automatically restart when changes are detected:
-
-  ```sh
-  make dev
-  ```
-
-  Alternatively, you can build and run the code to more closely mimic what will happen in production environments:
-
-  ```sh
-  make build
-  make start
-  ```
-
-- If you need support for [workspaces](workspaces/index.md), ensure Docker is installed and running, and then in a separate terminal run:
-
-  ```sh
-  sudo make dev-workspace-host # or sudo make start-workspace-host
-  ```
-
-- In a web-browser go to [http://localhost:3000](http://localhost:3000).
-
-- To stop the server, use `Ctrl-C`.
+More information on the development workflow can be found in the [development quickstart](./quickstart.md) documentation.

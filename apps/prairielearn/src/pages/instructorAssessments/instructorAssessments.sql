@@ -4,12 +4,10 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 WHERE
   a.id = $assessment_id
   AND ci.id = $course_instance_id
-  AND a.deleted_at IS NULL
-  AND aa.authorized;
+  AND a.deleted_at IS NULL;
 
 -- BLOCK select_assessment_id_from_uuid
 SELECT
