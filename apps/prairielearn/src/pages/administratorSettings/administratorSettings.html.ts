@@ -6,7 +6,9 @@ import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
   const showAiSettings =
-    isEnterprise() && config.openAiApiKeyAiQuestionGeneration && config.openAiOrganization;
+    isEnterprise() &&
+    config.aiQuestionGenerationOpenAiApiKey &&
+    config.aiQuestionGenerationOpenAiOrganization;
 
   return PageLayout({
     resLocals,

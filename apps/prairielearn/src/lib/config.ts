@@ -545,9 +545,10 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
-  openAiApiKeyAiGrading: z.string().nullable().default(null),
-  openAiApiKeyAiQuestionGeneration: z.string().nullable().default(null),
-  openAiOrganization: z.string().nullable().default(null),
+  aiGradingOpenAiApiKey: z.string().nullable().default(null),
+  aiGradingOpenAiOrganization: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
