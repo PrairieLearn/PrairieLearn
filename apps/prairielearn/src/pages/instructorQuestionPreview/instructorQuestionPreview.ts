@@ -63,8 +63,7 @@ router.get(
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
-    await setQuestionCopyTargets(res);
-
+    const questionCopyTargets = await setQuestionCopyTargets(res);
     const searchParams = getSearchParams(req);
 
     // Construct a URL to preview the question as it would appear in the manual
@@ -123,6 +122,7 @@ router.get(
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
         resLocals: res.locals,
+        questionCopyTargets,
       }),
     );
   }),

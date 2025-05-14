@@ -201,8 +201,8 @@ router.get(
         newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
       },
     });
-    await setQuestionCopyTargets(res);
     await logPageView('instructorQuestionPreview', req, res);
+    const questionCopyTargets = await setQuestionCopyTargets(res);
     setRendererHeader(res);
 
     res.send(
@@ -211,6 +211,7 @@ router.get(
         prompts,
         question: res.locals.question,
         variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+        questionCopyTargets,
       }),
     );
   }),

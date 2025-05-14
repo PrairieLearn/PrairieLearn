@@ -14,20 +14,28 @@ import { config } from './config.js';
 import { type Course, type Question } from './db-types.js';
 import { idsEqual } from './id.js';
 
+export interface QuestionCopyTarget {
+  id: string;
+  short_name: string | null;
+  copy_url: string;
+  __csrf_token: string;
+}
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function setQuestionCopyTargets(res: Response) {
+export async function setQuestionCopyTargets(res: Response): Promise<QuestionCopyTarget[] | null> {
   // Avoid querying for editable courses if we won't be able to copy this
   // question anyways.
   if (!res.locals.course.template_course && !res.locals.question.share_source_publicly) {
-    return;
+    return null;
   }
 
   const editableCourses = await selectCoursesWithEditAccess({
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
   });
-  res.locals.question_copy_targets = editableCourses
+
+  return editableCourses
     .filter(
       (course) =>
         // The example course cannot be updated in the web interface.

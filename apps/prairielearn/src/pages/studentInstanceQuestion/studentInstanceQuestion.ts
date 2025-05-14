@@ -323,7 +323,7 @@ router.get(
     await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
-    await setQuestionCopyTargets(res);
+    const questionCopyTargets = await setQuestionCopyTargets(res);
 
     res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
@@ -362,6 +362,7 @@ router.get(
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,
+        questionCopyTargets,
       }),
     );
   }),
