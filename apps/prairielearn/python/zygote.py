@@ -187,12 +187,12 @@ def worker_loop() -> None:
             json_inp = sys.stdin.readline()
 
             # Sometimes we seem to get an empty line, so we'll just ignore it.
+            # On the other hand if the input is empty, the parent process has died
+            # and we should exit to avoid becoming a zombie
             if json_inp == "\n":
                 continue
             if json_inp == "":
                 sys.exit()
-            # if not json_inp.strip():
-            # continue
 
             # Unpack the input line as JSON. If that fails, log the line for debugging.
             try:
