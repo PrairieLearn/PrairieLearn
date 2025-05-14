@@ -48,8 +48,8 @@ WITH
   canceled_job_submissions AS (
     UPDATE submissions AS s
     SET
-      -- TODO: update `modified_at` here?
-      grading_requested_at = NULL
+      grading_requested_at = NULL,
+      modified_at = now()
     FROM
       canceled_jobs
     WHERE
@@ -59,8 +59,8 @@ WITH
   updated_submission AS (
     UPDATE submissions AS s
     SET
-      -- TODO: update `modified_at` here?
-      grading_requested_at = now()
+      grading_requested_at = now(),
+      modified_at = now()
     FROM
       grading_job_data AS gjd
     WHERE

@@ -114,7 +114,7 @@ WITH
     SET
       duration = duration + ($delta * interval '1 ms'),
       first_duration = coalesce(first_duration, $delta * interval '1 ms'),
-      -- TODO: update `modified_at` here?
+      modified_at = now()
     WHERE
       id = $variant_id
   )
