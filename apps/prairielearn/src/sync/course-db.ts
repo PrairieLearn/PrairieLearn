@@ -949,6 +949,10 @@ async function validateAssessment(
     if (assessment.multipleInstance) {
       errors.push('"multipleInstance" cannot be used for Homework-type assessments');
     }
+
+    if (assessment.requireHonorCode || assessment.honorCode) {
+      errors.push('Honor code cannot be used for Homework-type assessments');
+    }
   }
 
   // Check assessment access rules.

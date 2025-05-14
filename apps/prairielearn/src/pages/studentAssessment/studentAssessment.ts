@@ -88,7 +88,7 @@ router.get(
         customHonorCode = await markdownToHtml(
           DOMPurify.sanitize(
             mustache.render(res.locals.assessment.honor_code, {
-              name: res.locals.user.name,
+              user_name: res.locals.user.name,
             }),
             {
               ALLOWED_TAGS: [''],

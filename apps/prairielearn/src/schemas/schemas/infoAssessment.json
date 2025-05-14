@@ -93,12 +93,12 @@
       "default": true
     },
     "requireHonorCode": {
-      "description": "Requires the student to accept an honor code before starting exam assessments.",
+      "description": "Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.",
       "type": "boolean",
       "default": true
     },
     "honorCode": {
-      "description": "Custom text for the honor code to be accepted before starting exam assessments.",
+      "description": "Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.",
       "type": "string"
     },
     "groupWork": {

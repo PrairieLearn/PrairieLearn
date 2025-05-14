@@ -208,7 +208,7 @@ router.post(
         );
         assessmentInfo.honorCode = propertyValueWithDefault(
           assessmentInfo.honorCode,
-          req.body.honor_code,
+          req.body.honor_code.trim(),
           '',
         );
       }
