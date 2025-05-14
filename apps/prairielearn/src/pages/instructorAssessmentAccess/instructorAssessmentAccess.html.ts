@@ -33,6 +33,10 @@ export function InstructorAssessmentAccess({
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];
 }) {
+  const showComments =
+    accessRules.filter(
+      (access_rule) => access_rule.comment && Object.keys(access_rule.comment).length > 0,
+    ).length > 0;
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
@@ -62,7 +66,9 @@ export function InstructorAssessmentAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
-                <th><span class="visually-hidden">Comments</span></th>
+                ${showComments
+                  ? html`<th style="width: 1%"><span class="visually-hidden">Comments</span></th>`
+                  : ''}
                 <th>Mode</th>
                 <th>UIDs</th>
                 <th>Start date</th>
@@ -85,7 +91,7 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    <td>${CommentPopover(access_rule.comment)}</td>
+                    ${showComments ? html`<td>${CommentPopover(access_rule.comment)}</td>` : ''}
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||

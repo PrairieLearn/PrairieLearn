@@ -14,6 +14,10 @@ export function InstructorInstanceAdminAccess({
   accessRules: CourseInstanceAccessRule[];
 }) {
   const { authz_data, course_instance } = resLocals;
+  const showComments =
+    accessRules.filter(
+      (access_rule) => access_rule.json_comment && Object.keys(access_rule.json_comment).length > 0,
+    ).length > 0;
 
   return PageLayout({
     resLocals,
@@ -42,7 +46,9 @@ export function InstructorInstanceAdminAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
-                <th><span class="visually-hidden">Comments</span></th>
+                ${showComments
+                  ? html`<th style="width: 1%"><span class="visually-hidden">Comments</span></th>`
+                  : ''}
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
@@ -55,6 +61,7 @@ export function InstructorInstanceAdminAccess({
                   accessRule,
                   timeZone: course_instance.display_timezone,
                   hasCourseInstancePermissionView: authz_data.has_course_instance_permission_view,
+                  showComments,
                 }),
               )}
             </tbody>
@@ -69,14 +76,16 @@ function AccessRuleRow({
   accessRule,
   timeZone,
   hasCourseInstancePermissionView,
+  showComments,
 }: {
   accessRule: CourseInstanceAccessRule;
   timeZone: string;
   hasCourseInstancePermissionView: boolean;
+  showComments: boolean;
 }) {
   return html`
     <tr>
-      <td>${CommentPopover(accessRule.json_comment)}</td>
+      ${showComments ? html`<td>${CommentPopover(accessRule.json_comment)}</td>` : ''}
       <td>
         ${accessRule.uids == null
           ? html`&mdash;`
