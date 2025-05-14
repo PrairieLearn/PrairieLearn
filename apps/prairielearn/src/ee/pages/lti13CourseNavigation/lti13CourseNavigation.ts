@@ -125,7 +125,6 @@ router.get(
     }
 
     const ltiClaim = new Lti13Claim(req);
-    ltiClaim.dump();
     const courseName = prettyCourseName(ltiClaim);
     const role_instructor = ltiClaim.isRoleInstructor();
 
