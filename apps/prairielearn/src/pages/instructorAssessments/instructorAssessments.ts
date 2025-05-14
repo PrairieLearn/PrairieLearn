@@ -40,8 +40,6 @@ router.get(
 
     const rows = await selectAssessmentsForCourseInstanceGrouped({
       course_instance_id: res.locals.course_instance.id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     });
 

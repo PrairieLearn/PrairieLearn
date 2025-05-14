@@ -616,21 +616,15 @@ export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
  */
 export async function selectAssessmentsForCourseInstanceGrouped({
   course_instance_id,
-  authz_data,
-  req_date,
   assessments_group_by,
 }: {
   course_instance_id: string;
-  authz_data: Record<string, any>;
-  req_date: Date;
   assessments_group_by: 'Set' | 'Module';
 }) {
   return await sqldb.queryRows(
     sql.select_assessments_for_course_instance_grouped,
     {
       course_instance_id,
-      authz_data,
-      req_date,
       assessments_group_by,
     },
     AssessmentRowSchema,
@@ -644,19 +638,13 @@ export async function selectAssessmentsForCourseInstanceGrouped({
  */
 export async function selectAssessmentsForCourseInstanceGroupedCursor({
   course_instance_id,
-  authz_data,
-  req_date,
   assessments_group_by,
 }: {
   course_instance_id: string;
-  authz_data: Record<string, any>;
-  req_date: Date;
   assessments_group_by: 'Set' | 'Module';
 }) {
   return await sqldb.queryCursor(sql.select_assessments_for_course_instance_grouped, {
     course_instance_id,
-    authz_data,
-    req_date,
     assessments_group_by,
   });
 }
