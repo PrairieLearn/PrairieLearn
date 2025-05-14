@@ -227,6 +227,7 @@ export function checkInvalidSharedAssessments(
 }
 
 export function checkInvalidSharedCourseInstances(
+  sharingEnabled: boolean,
   courseData: CourseData,
   logger: ServerJobLogger,
 ): boolean {
@@ -236,6 +237,11 @@ export function checkInvalidSharedCourseInstances(
     const courseInstance = courseData.courseInstances[courseInstanceKey];
     if (!courseInstance.courseInstance.data?.shareSourcePublicly) {
       continue;
+    } else if (!sharingEnabled) {
+      logger.error(
+        `✖ Course sync completely failed. You have attempted to share the course instance ${courseInstance.courseInstance.data?.longName} with 'shareSourcePublicly: "true"' but content sharing is not enabled for your course.",`,
+      );
+      return true;
     }
 
     for (const tid in courseInstance.assessments) {
