@@ -163,7 +163,6 @@ export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
     }),
   }),
 );
-//).passthrough();
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
 export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
@@ -172,14 +171,16 @@ export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
     'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
       deep_link_return_url: z.string(),
       accept_types: z.string().array(),
-      accept_presentation_document_targets: z.string().array(),
+      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+      accept_media_types: z.string().optional(),
       accept_multiple: z.boolean().optional(),
       accept_lineitem: z.boolean().optional(),
-      // There are more
+      auto_create: z.boolean().optional(),
+      title: z.string().optional(),
+      text: z.string().optional(),
       data: z.any().optional(),
     }),
   }),
-  //).passthrough();
 );
 
 export const Lti13ClaimSchema = z.discriminatedUnion(
