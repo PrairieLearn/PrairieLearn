@@ -129,5 +129,3 @@ error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succ
 
 ## Record results as the required JSON object
 jsonlite::write_json(result, path = "results.json", auto_unbox = TRUE, force = TRUE)
-
-
