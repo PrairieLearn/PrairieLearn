@@ -64,20 +64,31 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
+  strictSanitize = false,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
+  strictSanitize?: boolean;
 } = {}) {
-  const htmlConversion = (mdastVisitors ?? [])
-    .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      unified().use(remarkParse).use(remarkMath),
-    )
-    .use(makeHandler(visitMathBlock))
-    .use(remarkGfm)
-    .use(remark2rehype, { allowDangerousHtml: true })
-    .use(rehypeRaw);
+  const htmlConversion = strictSanitize
+    ? (mdastVisitors ?? [])
+        .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
+          (processor, visitor) => processor.use(makeHandler(visitor)),
+          unified().use(remarkParse).use(remarkMath),
+        )
+        .use(makeHandler(visitMathBlock))
+        .use(remarkGfm)
+        .use(remark2rehype)
+    : (mdastVisitors ?? [])
+        .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
+          (processor, visitor) => processor.use(makeHandler(visitor)),
+          unified().use(remarkParse).use(remarkMath),
+        )
+        .use(makeHandler(visitMathBlock))
+        .use(remarkGfm)
+        .use(remark2rehype, { allowDangerousHtml: true })
+        .use(rehypeRaw);
   return (hastVisitors ?? [])
     .reduce(
       (processor, visitor) => processor.use(makeHandler(visitor)),
@@ -95,4 +106,17 @@ const inlineProcessor = createProcessor({ hastVisitors: [visitCheckSingleParagra
  */
 export async function markdownToHtml(original: string, { inline }: { inline?: boolean } = {}) {
   return (await (inline ? inlineProcessor : defaultProcessor).process(original)).value.toString();
+}
+
+export async function markdownToHtmlStrict(
+  original: string,
+  { inline }: { inline?: boolean } = {},
+) {
+  return (
+    await (
+      inline
+        ? createProcessor({ hastVisitors: [visitCheckSingleParagraph], strictSanitize: true })
+        : createProcessor({ strictSanitize: true })
+    ).process(original)
+  ).value.toString();
 }
