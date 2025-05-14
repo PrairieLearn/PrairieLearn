@@ -8,7 +8,7 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "zacwarham/ipynbgrader:two",
+    "image": "prairielearn/grader-r",
     "timeout": 20
   }
 }
