@@ -4,6 +4,7 @@ export function CommentPopover(comment: string | string[] | Record<string, any> 
   let content = '';
   if (
     !comment ||
+    (typeof comment === 'string' && comment.trim() === '') ||
     (Array.isArray(comment) && comment.toString() === '[]') ||
     (typeof comment === 'object' && Object.keys(comment).length === 0)
   ) {
