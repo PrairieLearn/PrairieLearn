@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
@@ -323,7 +323,7 @@ router.get(
     await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
-    const questionCopyTargets = await setQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets(res);
 
     res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,

@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
@@ -202,7 +202,7 @@ router.get(
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
-    const questionCopyTargets = await setQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets(res);
     setRendererHeader(res);
 
     res.send(

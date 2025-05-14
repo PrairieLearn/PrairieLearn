@@ -23,7 +23,10 @@ export interface QuestionCopyTarget {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function setQuestionCopyTargets(res: Response): Promise<QuestionCopyTarget[] | null> {
+async function getCopyTargets(
+  res: Response,
+  urlSuffix: string,
+): Promise<QuestionCopyTarget[] | null> {
   // Avoid querying for editable courses if we won't be able to copy this
   // question anyways.
   if (!res.locals.course.template_course && !res.locals.question.share_source_publicly) {
@@ -44,7 +47,7 @@ export async function setQuestionCopyTargets(res: Response): Promise<QuestionCop
         !idsEqual(course.id, res.locals.course.id),
     )
     .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/copy_public_question`;
+      const copyUrl = `/pl/course/${course.id}/${urlSuffix}`;
 
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
@@ -63,6 +66,10 @@ export async function setQuestionCopyTargets(res: Response): Promise<QuestionCop
         __csrf_token: csrfToken,
       };
     });
+}
+
+export async function getQuestionCopyTargets(res: Response): Promise<QuestionCopyTarget[] | null> {
+  return getCopyTargets(res, 'copy_public_question');
 }
 
 export async function copyQuestionBetweenCourses(
