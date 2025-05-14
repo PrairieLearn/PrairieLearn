@@ -1,7 +1,12 @@
 import { assert } from 'chai';
 import parsePostgresInterval from 'postgres-interval';
 
-import { IdSchema, IntervalSchema } from './index.js';
+import {
+  IdSchema,
+  IntegerFromStringOrEmptySchema,
+  IntegerFromStringSchema,
+  IntervalSchema,
+} from './index.js';
 
 describe('IdSchema', () => {
   it('parses a valid id', () => {
@@ -74,5 +79,49 @@ describe('IntervalSchema', () => {
   it('parses a negative interval', () => {
     const interval = IntervalSchema.parse('-1 years -2 months -3 days -04:05:06.789');
     assert.equal(interval, -37015506789);
+  });
+});
+
+describe('IntegerFromStringSchema', () => {
+  it('parses a valid integer string', () => {
+    const result = IntegerFromStringSchema.parse('123');
+    assert.equal(result, 123);
+  });
+
+  it('parses an empty string as 0', () => {
+    const result = IntegerFromStringSchema.parse('');
+    assert.equal(result, 0);
+  });
+
+  it('rejects a non-integer string', () => {
+    const result = IntegerFromStringSchema.safeParse('abc');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects a decimal string', () => {
+    const result = IntegerFromStringSchema.safeParse('123.45');
+    assert.isFalse(result.success);
+  });
+});
+
+describe('IntegerFromStringOrEmptySchema', () => {
+  it('parses a valid integer string', () => {
+    const result = IntegerFromStringOrEmptySchema.parse('123');
+    assert.equal(result, 123);
+  });
+
+  it('parses an empty string as null', () => {
+    const result = IntegerFromStringOrEmptySchema.parse('');
+    assert.equal(result, null);
+  });
+
+  it('rejects a non-integer string', () => {
+    const result = IntegerFromStringOrEmptySchema.safeParse('abc');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects a decimal string', () => {
+    const result = IntegerFromStringOrEmptySchema.safeParse('123.45');
+    assert.isFalse(result.success);
   });
 });

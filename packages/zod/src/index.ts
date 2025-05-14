@@ -107,18 +107,7 @@ export const DateFromISOString = z
  * A Zod schema for a string that can be parsed as a valid integer. This is
  * useful for parsing body parameters from a request.
  */
-export const IntegerFromStringSchema = z
-  .string()
-  .refine(
-    (s) => {
-      const n = Number.parseInt(s);
-      return !Number.isNaN(n) && Number.isSafeInteger(n);
-    },
-    {
-      message: 'must be a valid integer',
-    },
-  )
-  .transform((s) => Number.parseInt(s));
+export const IntegerFromStringSchema = z.coerce.number().int();
 
 /**
  * A Zod schema that utilizes IntegerFromStringSchema to parse a string as an
@@ -129,8 +118,8 @@ export const IntegerFromStringSchema = z
  */
 
 export const IntegerFromStringOrEmptySchema = z.preprocess(
-  value => value === '' ? null : value,
-  z.union([ z.null(), z.coerce.number().int() ])
+  (value) => (value === '' ? null : value),
+  z.union([z.null(), z.coerce.number().int()]),
 );
 
 /**
