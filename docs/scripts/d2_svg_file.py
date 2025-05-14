@@ -9,6 +9,8 @@ from mkdocs.structure.files import Files
 from mkdocs.structure.pages import Page
 from mkdocs.utils import write_file
 
+IGNORE_HOOKING_FOR = []
+
 
 def on_config(config: MkDocsConfig) -> MkDocsConfig:
     """Hooks into the config to override the d2_img renderer."""
@@ -30,6 +32,12 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
         result, svg, ok = original_render(source, opts, alt)
         if ok:
             is_file = isinstance(source, Path)
+
+            # Check if this diagram should be ignored
+            if is_file and source.name in IGNORE_HOOKING_FOR:
+                # Return original result without adding hook data
+                return result, svg, ok
+
             if is_file:
                 key = f"{source}_{source.stat().st_mtime}"
             else:

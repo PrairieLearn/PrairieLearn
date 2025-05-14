@@ -1,4 +1,3 @@
-/* eslint-env browser,jquery */
 /* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify, bootstrap */
 
 (() => {
@@ -68,7 +67,10 @@
 
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
-  window.PLRTE = function (uuid, options) {
+  window.PLRTE = function (uuid) {
+    const baseElement = document.getElementById(`rte-${uuid}`);
+    const options = JSON.parse(baseElement.dataset.options);
+
     if (!options.modules) options.modules = {};
     if (!options.modules.clipboard) options.modules.clipboard = {};
     options.modules.clipboard.toast_id = 'rte-clipboard-toast-' + uuid;
@@ -106,10 +108,10 @@
     // Set the bounds for UI elements (e.g., the tooltip for the formula editor)
     // to the question container.
     // https://quilljs.com/docs/configuration#bounds
-    options.bounds = document.getElementById(`rte-${uuid}`).closest('.question-container');
+    options.bounds = baseElement.closest('.question-container');
 
-    let inputElement = $('#rte-input-' + uuid);
-    let quill = new Quill('#rte-' + uuid, options);
+    const inputElement = $('#rte-input-' + uuid);
+    const quill = new Quill(baseElement, options);
     let renderer = null;
     if (options.format === 'markdown') {
       renderer = new showdown.Converter({
@@ -149,7 +151,7 @@
       // the element continues to work if this method is removed, we use
       // optional chaining in the call. This would cause the empty check to
       // fail but not crash, so the element can continue working.
-      let contents = quill.editor?.isBlank?.()
+      const contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
       inputElement.val(
