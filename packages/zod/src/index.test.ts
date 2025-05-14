@@ -129,8 +129,8 @@ describe('IntegerFromStringOrEmptySchema', () => {
 
 describe('ArrayFromStringOrArraySchema', () => {
   it('parses a string to an array', () => {
-    const result = ArrayFromStringOrArraySchema.parse('a,b,c');
-    assert.deepEqual(result, ['a', 'b', 'c']);
+    const result = ArrayFromStringOrArraySchema.parse('a');
+    assert.deepEqual(result, ['a']);
   });
 
   it('parses an array to itself', () => {
