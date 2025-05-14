@@ -4,7 +4,7 @@ Now that you have access to your course in [https://us.prairielearn.com](https:/
 
 This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
-![](start-guide/homepage.png)
+![Screenshot of the menu bar for the course home page](start-guide/homepage.png)
 
 This tutorial will show you how to create:
 
@@ -20,7 +20,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click the button `Add course instance`.
 
-- click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name, for example, `Fa24`.
+- click the button `Change CIID` to change the course instance ID name. We typically recommend using a short version of the course instance name, for example, `Fa24`.
 
 - click the `Edit` button next to `infoCourseInstance.json`.
 
@@ -32,7 +32,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   }
   ```
 
-- in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
+- in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#access-controls)). For example:
 
   ```json title="infoCourseInstance.json"
   {
@@ -55,7 +55,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - go to the `Questions` tab. Your questions page should be similar to the example below:
 
-![](start-guide/question_tab.png)
+![Screenshot of the question tab](start-guide/question_tab.png)
 
 - click the button `Add question`.
 
@@ -91,9 +91,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click `Save and sync`.
 
-**Change the content of the question**
+### Change the content of the question
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
+To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question/index.md#html-questionhtml).
 
 - go to the `Files` tab.
 
@@ -141,9 +141,9 @@ Note that this question does not use any server side code, and for that reason, 
 
 - click `Save and sync`.
 
-**Change the content of the question**
+### Change the content of the question
 
-We will add randomization to the previous question, using the file [server.py](question.md#question-serverpy)
+We will add randomization to the previous question, using the file [server.py](question/index.md#custom-generation-and-grading-serverpy)
 
 - go to the `Files` tab.
 
@@ -207,7 +207,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 - That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
 
-### Copying questions from www.prairielearn.com
+### Copying questions from `www.prairielearn.com`
 
 - Go to <https://www.prairielearn.com/catalog/questions>
 
@@ -237,7 +237,7 @@ Before you create an assessment, make sure you are in the desired course instanc
   }
   ```
 
-- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
+- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (e.g. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
 
 - change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
 
@@ -288,6 +288,6 @@ Learn more:
 
 - [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
-- [Different ways to setup an assessment](assessment/index.md)
+- [Different ways to set up an assessment](assessment/index.md)
 
 - [Detailed list of PrairieLearn elements](elements.md)

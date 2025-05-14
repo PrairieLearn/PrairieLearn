@@ -39,6 +39,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             var_data = pl.from_json(var_data)
 
             if np.isscalar(var_data):
+                assert not isinstance(var_data, (memoryview, str, bytes))
                 prefix = ""
                 suffix = ""
             else:
@@ -57,14 +58,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             matlab_data += (
                 pl.inner_html(child)
                 + " = "
-                + pl.string_from_2darray(var_data, language="matlab", digits=digits)
+                + pl.string_from_numpy(var_data, language="matlab", digits=digits)
                 + ";\n"
             )
             python_data += (
                 pl.inner_html(child)
                 + " = "
                 + prefix
-                + pl.string_from_2darray(var_data, language="python", digits=digits)
+                + pl.string_from_numpy(var_data, language="python", digits=digits)
                 + suffix
                 + "\n"
             )

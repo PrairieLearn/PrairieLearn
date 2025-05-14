@@ -2,19 +2,19 @@ import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import {
+  type BatchedMigrationJobRow,
   BatchedMigrationJobRowSchema,
   type BatchedMigrationJobStatus,
-  type BatchedMigrationJobRow,
 } from './batched-migration-job.js';
 import {
-  type BatchedMigrationStatus,
-  type BatchedMigrationRow,
-  updateBatchedMigrationStatus,
-  BatchedMigrationStatusSchema,
   type BatchedMigrationImplementation,
+  type BatchedMigrationRow,
+  type BatchedMigrationStatus,
+  BatchedMigrationStatusSchema,
+  updateBatchedMigrationStatus,
 } from './batched-migration.js';
 
 const sql = loadSqlEquiv(import.meta.filename);

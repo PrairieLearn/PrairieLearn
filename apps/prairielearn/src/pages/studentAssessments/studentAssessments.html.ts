@@ -10,10 +10,10 @@ import {
   StudentAccessRulesPopover,
 } from '../../components/StudentAccessRulesPopover.html.js';
 import {
-  AssessmentSchema,
-  AssessmentSetSchema,
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
 } from '../../lib/db-types.js';
 
 export const StudentAssessmentsRowSchema = z.object({
@@ -49,7 +49,7 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessments' })}
       </head>
       <body>
         ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
@@ -62,8 +62,8 @@ export function StudentAssessments({
             <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Available credit</th>
                   <th class="text-center">Score</th>
                 </tr>

@@ -5,13 +5,12 @@ import path from 'path';
 import async from 'async';
 import chalk from 'chalk';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import yargs from 'yargs';
 
 import {
+  type DatabaseDescription,
   describeDatabase,
   formatDatabaseDescription,
-  type DatabaseDescription,
 } from '../describe.js';
 
 const args = yargs(process.argv.slice(2))
@@ -84,24 +83,25 @@ describeDatabase(argv._[0].toString(), options).then(
 
 function printDescription(description: DatabaseDescription) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput });
-  _.forEach(_.sortBy(_.keys(formattedDescription.tables)), (tableName) => {
+  for (const tableName of Object.keys(formattedDescription.tables).sort()) {
     process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.tables[tableName]);
     process.stdout.write('\n\n');
-  });
+  }
 
-  _.forEach(_.sortBy(_.keys(formattedDescription.enums)), (enumName) => {
+  for (const enumName of Object.keys(formattedDescription.enums).sort()) {
     process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
     process.stdout.write(formattedDescription.enums[enumName]);
     process.stdout.write('\n\n');
-  });
+  }
 }
 
 async function writeDescriptionToDisk(description: DatabaseDescription, dir: string) {
   const formattedDescription = formatDatabaseDescription(description, { coloredOutput: false });
-  await fs.emptyDir(dir);
-  await fs.mkdir(path.join(dir, 'tables'));
-  await fs.mkdir(path.join(dir, 'enums'));
+  await fs.ensureDir(path.join(dir, 'tables'));
+  await fs.ensureDir(path.join(dir, 'enums'));
+  await fs.emptyDir(path.join(dir, 'tables'));
+  await fs.emptyDir(path.join(dir, 'enums'));
   await async.eachOf(formattedDescription.tables, async (value, key) => {
     await fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value);
   });

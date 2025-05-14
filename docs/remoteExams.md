@@ -2,7 +2,7 @@
 
 This page lists sample assessment configurations for remote exams, where students are not physically present in the same location as the proctors.
 
-_See the [Access control](accessControl/index.md) page for details on `allowAccess` rules._
+_See the [Access control](accessControl/index.md) documentation for details on `allowAccess` rules._
 
 ## Exams in a PrairieTest-managed testing center
 
@@ -21,7 +21,7 @@ If you are using PrairieTest for remote proctoring then the access control shoul
 
 Some notes about this configuration:
 
-- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
+- The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid`, and it's vital that the correct value is used for each separate exam.
 - Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by PrairieTest on a per-student basis, taking into account conflict exams and disability accommodations.
 
 ## Testing center exams with a few students outside the testing center
@@ -113,7 +113,7 @@ Some notes about this configuration:
 - Students who are scheduled for a conflict exam will also be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict time slot.
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
-- Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
+- Before downloading final scores, wait at least 12 minutes after the last student would have finished (to ensure all exams are closed). You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
 - This configuration sets `"showClosedAssessment": false` to prevent students from seeing the details of their exam after it is over. This can help to mitigate cheating with students taking conflict exams. The final access rule containing only `"showClosedAssessment": false` is necessary because the earlier rules will only apply up until their `endDate` times. The additional `"active": false` restriction here prevents students from starting the exam after the `endDate`.
 
 ## Asynchronous, timed exams

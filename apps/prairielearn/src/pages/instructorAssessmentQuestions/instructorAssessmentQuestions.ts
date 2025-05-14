@@ -13,25 +13,20 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+
+import { AssessmentQuestionRowSchema } from './instructorAssessmentQuestions.types.js';
+
+import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
-import { AssessmentQuestionRowSchema } from './instructorAssessmentQuestions.types.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await queryRows(
-      sql.questions,
-      {
-        assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
-      },
-      AssessmentQuestionRowSchema,
-    );
+    const questions = await selectAssessmentQuestions(res.locals.assessment.id);
 
     const assessmentPath = path.join(
       res.locals.course.path,

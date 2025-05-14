@@ -1,6 +1,6 @@
 # FAQ (Frequently Asked Questions)
 
-Have a question or issue that wasn't listed here but you think it should be?
+Have a question or issue that wasn't listed here, but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
@@ -38,8 +38,8 @@ Note that when granting access via `"active": false`, students can still access 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
-2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
-3. Every semester a small number of secret questions are written and some of the older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
+2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
+3. Every semester a small number of secret questions are written, and some older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
 4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
 
@@ -67,44 +67,48 @@ The raw history of student answers can also be accessed in the "Data" column of 
 
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
-You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
+You need to give the student access to both the course instance itself for the completed semester and the specific assessments within that course instance.
 
-For example, suppose Fall 2017 is the completed semester and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
+For example, suppose Fall 2017 is the completed semester, and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
 
 First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "startDate": "2017-08-19T00:00:01",
-            "endDate": "2017-12-31T23:59:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2017-08-19T00:00:01",
+      "endDate": "2017-12-31T23:59:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 
-```
-    "allowAccess": [
-        {
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2017-12-14T00:00:01",
-            "endDate": "2017-12-22T22:10:59"
-        },
-        {
-            "uids": ["student@example.com"],
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2018-02-01T00:00:01",
-            "endDate": "2018-02-28T23:59:59"
-        }
-    ]
+```json title="infoAssessment.json"
+{
+  "allowAccess": [
+    {
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2017-12-14T00:00:01",
+      "endDate": "2017-12-22T22:10:59"
+    },
+    {
+      "uids": ["student@example.com"],
+      "mode": "Exam",
+      "credit": 100,
+      "startDate": "2018-02-01T00:00:01",
+      "endDate": "2018-02-28T23:59:59"
+    }
+  ]
+}
 ```
 
 See [Access control](accessControl/index.md) for more details.
@@ -125,8 +129,10 @@ unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,
 then the feature can be disabled by specifying in the `infoAssessment.json`:
 
-```
-"autoClose": false
+```json title="infoAssessment.json"
+{
+  "autoClose": false
+}
 ```
 
 See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
@@ -134,7 +140,7 @@ for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
 
-To make a cheatsheet available to students, place the cheatsheet inside of either:
+To make a cheatsheet available to students, place the cheatsheet inside either:
 
 - `clientFilesCourse` folder
   - Good if the cheatsheet will be used on other exams.
@@ -169,7 +175,7 @@ To learn more about where files are stored, please see [clientFiles and serverFi
 To reference a question in the `clientFilesQuestion` folder from `server.py`,
 use the relative path from the base of the question.
 
-```
+```text
 ./clientFilesQuestion/<your_file_here>
 ```
 
@@ -190,11 +196,11 @@ and displayed as an error.
 Error: invalid QID: "question_name"
 ```
 
-To resolve this issue, first check the name of the folder inside of `questions/`
+To resolve this issue, first check the name of the folder inside `questions/`
 and, then, check the question name listed in `infoAssessments.json`. Either
 rename the folder or change the name listed in assessments to be the same.
 
-See [Directory Structure](question.md#directory-structure) for more details.
+See [Directory Structure](question/index.md#directory-structure) for more details.
 
 ## Why do I have a Syntax Error in my JSON file?
 
@@ -265,34 +271,9 @@ will create a new variant of the question.
 
 See [UUIDs in JSON files](uuid.md) for more details.
 
-## How can I use a dollar sign ($) without triggering math mode?
-
-Dollar signs by default denote either **inline** (`$ x $`) or **display mode** (`$$ x $$`) environments.
-
-To escape either math environment, consider using PrairieLearn's markdown tag and inline code syntax.
-
-```html
-<markdown>
-  What happens if we use a `$` to reference the spreadsheet cell location `$A$1`?
-</markdown>
-```
-
-In scenarios that do not make sense for using the code environment, consider disabling math entirely by
-adding the `mathjax_ignore` class to an HTML element.
-
-```html
-<div class="mathjax_ignore">
-  Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1 dollar, then how many
-  pieces of fruit can Mary get?
-</div>
-```
-
-See [Using Markdown in questions](question.md#using-markdown-in-questions) for more details on
-how `markdown` is implemented in PrairieLearn.
-
 ## What steps do I have to take to access the parameter object in an external grader?
 
-By default, the external grader will receive a JSON dump of all values inside of the `data` object called
+By default, the external grader will receive a JSON dump of all values inside the `data` object called
 `data.json`. This file is located at:
 
 ```sh
@@ -306,10 +287,10 @@ See [The Grading Process section in Externally graded questions](externalGrading
 ## Why can't I launch PrairieLearn with docker?
 
 When previewing content within a local copy of PrairieLearn, the web version
-is powered by a docker container. At the end of a session, closing out of
-either the web browser or the terminal that launched the docker container
+is powered by a Docker container. At the end of a session, closing out of
+either the web browser or the terminal that launched the Docker container
 will **not** stop PrairieLearn from running. Therefore, when relaunching the
-docker version of PrairieLearn, the existing port may already be taken.
+Docker version of PrairieLearn, the existing port may already be taken.
 For example, we would have:
 
 ```bash
@@ -321,10 +302,10 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart docker
   - Click the Whale icon in the taskbar and select "Restart".
 - Restart your computer.
-- Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then,
+- Stop the process in terminal with ++ctrl+c++ and, then,
   close the terminal application.
 
-## Why do special characters like (<=) break my question display?
+## Why do special characters like `<` and `>` break my question display?
 
 The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
@@ -332,54 +313,17 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
 
-## How can I add comments in my `question.html` source that won't be visible to students?
-
-Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
-
-Example:
-
-```html
-<!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
-{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
-```
-
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
 
-1.  Put a file called `local_template.py` into `serverFilesCourse` that contains:
+!!! danger
 
-        import chevron, os
-
-        def render(data, template_filename, params):
-            with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
-                return chevron.render(f, params)
-
-2.  Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
-
-        <pl-question-panel>
-          <p>
-            All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
-          </p>
-        </pl-question-panel>
-
-3.  In the `server.py` for a question, render the template like this:
-
-        import local_template
-
-        def generate(data):
-            data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
-                "given_units": "US customary",
-                "answer_units": "metric",
-            })
-
-4.  In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
-
-        {{{params.units_instructions}}}
+    Elements that accept and/or grade student input used within this element will not work correctly with `<pl-template>`. Templates should only contain other decorative elements.
 
 ## How can I hide the correct answer when students see their grading results?
 
-Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question.md#question-infojson).
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#metadata-infojson).
 
 For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
@@ -395,13 +339,13 @@ For more information on this granular technique, see [the documentation for pl-h
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
 1. Download the `<Assessment-Name>_instances.csv` file from the "Downloads" tab.
-2. Edit the "Score (%)" column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
-3. Rename the "Score (%)" column to "score_perc" and delete all columns except "uid", "instance", and "score_perc".
+2. Edit the `"Score (%)"` column to reflect the new percentage scores. This would normally be "Points / Max points \* 100".
+3. Rename the `"Score (%)"` column to `"score_perc"` and delete all columns except `"uid"`, `"instance"`, and `"score_perc"`.
 4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
@@ -410,7 +354,7 @@ Changing total scores via CSV download/upload should only be done after the asse
 
 Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), changes in the `answers-name` option for graded elements, some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
 
-You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary and you expect students to have their variants reset after such a change, you may do so in one of two ways:
+You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary, and you expect students to have their variants reset after such a change, you may do so in one of two ways:
 
 - To reset all variants for a particular assessment question, go to the assessment page, click "Actions" on the relevant question, then "Reset question variants". This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the question.
 
@@ -419,3 +363,44 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
 For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+
+## When I open some CSV downloads, some data is in the wrong columns
+
+When loading some assessment download files, such as `*_all_submissions.csv`, in Excel, you may notice data appearing in the wrong column or wrapping incorrectly. This typically happens because Excel has a maximum cell size of 32,767 characters and does not always correctly parse complex CSV data, particularly when fields contain JSON or special characters. While the `Params` column is the most likely culprit, other columns such as true answers, submitted answers, or feedback may also be affected. To work with these files, you can use Pandas in Python to clean or restructure the data for easier processing in Excel. For example:
+
+```python
+import pandas as pd
+df = pd.read_csv("PREFIX_all_submissions.csv")
+
+# Strip the JSON Params data and save to a new CSV
+df2 = df.drop(columns=["Params"])
+df2.to_csv("PREFIX_all_submissions_no_params.csv", index=False)
+
+# Write all the data (including Params) to an Excel file,
+# while trimming the values in Params that are above the Excel limit
+df.to_excel("PREFIX_all_submissions.xlsx", index=False)
+```
+
+## I have files that should be included both in the workspace and in the tests. How do I store these files to avoid duplication?
+
+In these cases, you can store your files in the `tests` directory for the question and reference them from the workspace by adding them to the `_workspace_files` list. For example, suppose we want to include `xyz.c` and `xyz.h` in both the workspace home folder, and in `/grade/tests` in the autograder. To do this, save these files to `[QUESTION DIRECTORY]/tests`, and in `server.py`, include the following lines:
+
+```python
+def generate(data):
+    data["params"]["_workspace_files"] = [
+        {"name": "xyz.h", "questionFile": "tests/xyz.h"},
+        {"name": "xyz.c", "questionFile": "tests/xyz.c"},
+    ]
+```
+
+## When uploading grades via CSV, the upload process cannot match some group names. Why?
+
+The [manual grading documentation](./manualGrading/index.md#manual-grading-using-file-uploads) lists a process for manual grading using CSV files, that involves downloading a CSV file, changing the score/feedback in the file locally (via Excel or other tools), then uploading the changed file. However, when a group assessment includes group names comprised of numeric values with leading zeros or strings that can be interpreted as dates, Excel may change the group name to match its own representation of these values (e.g., by removing leading zeros). This causes the upload process to fail to recognize the group name.
+
+There are a few possible ways to address these cases:
+
+- Instead of opening the CSV file directly on Excel, you can import it to a blank new workbook, ensuring the group name column uses the "Text" data type. More details can be found in [the Microsoft Support page](https://support.microsoft.com/en-us/office/keeping-leading-zeros-and-large-numbers-1bf7b935-36e1-4985-842f-5dfa51f85fe7).
+
+- If the number of groups with this issue is relatively small, you can manually edit the CSV file to update the group name to the proper name. Note that you need to ensure Excel interprets the name you input as a string. One way to ensure this is to [add an apostrophe in front of the group name](https://support.microsoft.com/en-us/office/stop-automatically-changing-numbers-to-dates-452bd2db-cc96-47d1-81e4-72cec11c4ed8) when setting it on Excel, e.g., `'0123`.
+
+- Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found, the row can be identified with other columns such as the `submission_id`.

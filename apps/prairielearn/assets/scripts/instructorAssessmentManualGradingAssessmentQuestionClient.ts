@@ -56,23 +56,18 @@ onDocumentReady(() => {
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
     buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
-    theadClasses: 'thead-light',
+    theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
       aiGrade: {
-        text: 'AI Grade All',
-        icon: 'fa-pen',
         render: aiGradingEnabled,
         attributes: {
           id: 'js-ai-grade-button',
-          title: 'AI grade all instances',
+          title: 'AI grading',
         },
-        event: () => {
-          const form = document.getElementById('ai-grading') as HTMLFormElement;
-          form?.submit();
-        },
+        html: aiGradingDropdown(),
       },
       showStudentInfo: {
         text: 'Show student info',
@@ -126,11 +121,11 @@ onDocumentReady(() => {
       });
     },
     onPreBody: () => {
-      $('#grading-table [data-toggle="popover"]').popover('dispose');
+      $('#grading-table [data-bs-toggle="popover"]').popover('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]').on(
+      $('#grading-table [data-bs-toggle="popover"]').on(
         'shown.bs.popover',
         updatePointsPopoverHandlers,
       );
@@ -155,12 +150,12 @@ onDocumentReady(() => {
                 ? html`
                     <a
                       href="#"
-                      class="badge badge-pill badge-danger"
-                      title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      class="badge rounded-pill text-bg-danger"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
                       1
                         ? 'issues'
                         : 'issue'}"
-                      data-toggle="tooltip"
                     >
                       ${row.open_issue_count}
                     </a>
@@ -168,7 +163,11 @@ onDocumentReady(() => {
                 : ''}
               ${row.assessment_open
                 ? html`
-                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                    <a
+                      href="#"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Assessment instance is still open"
+                    >
                       <i class="fas fa-exclamation-triangle text-warning"></i>
                     </a>
                   `
@@ -267,17 +266,38 @@ onDocumentReady(() => {
           formatter: (value: string, row: InstanceQuestionRow) =>
             value ? row.last_grader_name : '&mdash;',
         },
-      ],
+        aiGradingEnabled
+          ? {
+              field: 'is_ai_graded',
+              title: 'AI Graded',
+              filterControl: 'select',
+              visible: aiGradingEnabled,
+              formatter: (value: boolean, row: InstanceQuestionRow) =>
+                row.is_ai_graded ? 'Yes' : 'No',
+            }
+          : null,
+      ].filter(Boolean),
     ],
   });
 });
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
+  const formData = new FormData(this, e.submitter);
+
+  // Access specific values from the form data (or other fields)
+  const action = formData.get('__action');
+  const batchAction = formData.get('batch_action');
+
+  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+    // We'll handle this with a normal form submission since it redirects to another page.
+    return;
+  }
+
   e.preventDefault();
 
   const postBody = new URLSearchParams(
     // https://github.com/microsoft/TypeScript/issues/30584
-    new FormData(this, e.submitter) as any,
+    formData as any,
   );
 
   const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
@@ -311,19 +331,50 @@ function updatePointsPopoverHandlers(this: Element) {
   });
 }
 
+function aiGradingDropdown() {
+  return html`
+    <div class="dropdown btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="ai-grading"
+      >
+        <i class="fa fa-pen" aria-hidden="true"></i> AI grading
+      </button>
+      <div class="dropdown-menu dropdown-menu-end">
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
+          Grade all ungraded
+        </button>
+        <button
+          class="dropdown-item grading-tag-button"
+          type="submit"
+          name="batch_action"
+          value="ai_grade_assessment_selected"
+        >
+          Grade selected
+        </button>
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading-test').submit();">
+          Test accuracy
+        </button>
+      </div>
+    </div>
+  `.toString();
+}
+
 function gradingTagDropdown(courseStaff: User[]) {
   return html`
     <div class="dropdown btn-group">
       <button
         type="button"
         class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-toggle="dropdown"
+        data-bs-toggle="dropdown"
         name="status"
         disabled
       >
         <i class="fas fa-tags"></i> Tag for grading
       </button>
-      <div class="dropdown-menu dropdown-menu-right">
+      <div class="dropdown-menu dropdown-menu-end">
         <div class="dropdown-header">Assign for grading</div>
         ${courseStaff?.map(
           (grader) => html`

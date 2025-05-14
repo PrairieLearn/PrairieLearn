@@ -15,7 +15,6 @@ import { config } from '../lib/config.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
-import * as localCache from '../lib/local-cache.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
@@ -126,9 +125,6 @@ export async function after(): Promise<void> {
     debug('after(): close cache');
     await cache.close();
 
-    debug('after(): close local cache');
-    localCache.close();
-
     debug('after(): finish DB');
     await helperDb.after.call(this);
   } finally {
@@ -138,7 +134,6 @@ export async function after(): Promise<void> {
 
 export async function waitForJobSequence(job_sequence_id) {
   let job_sequence;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
       job_sequence_id,

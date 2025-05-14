@@ -8,10 +8,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryRows,
-  queryOptionalRow,
   queryCursor,
+  queryOptionalRow,
   queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import {
@@ -50,8 +50,6 @@ router.get(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
       AssessmentRowSchema,
@@ -107,8 +105,6 @@ router.get(
       {
         course_instance_id: res.locals.course_instance.id, // for authz checking
         assessment_id: req.params.assessment_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       AssessmentSchema,
     );
@@ -132,8 +128,6 @@ router.get(
 
       const cursor = await queryCursor(sql.select_assessments, {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       });
 
@@ -224,7 +218,7 @@ router.post(
       }
 
       const editor = new AssessmentAddEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         title: req.body.title,
         aid: req.body.aid,
         type: req.body.type,

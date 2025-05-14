@@ -5,6 +5,11 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
+import {
+  type QuestionJsonInput,
+  type TagJsonInput,
+  type TopicJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -12,7 +17,7 @@ import * as util from './util.js';
 /**
  * Makes an empty question.
  */
-function makeQuestion(courseData: util.CourseData): util.Question {
+function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
     uuid: uuidv4(),
     title: 'Test question',
@@ -193,7 +198,7 @@ describe('Question syncing', () => {
 
   it('preserves question topic even if question topic is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTopic = {
+    const newTopic: TopicJsonInput = {
       name: 'test topic',
       color: 'green1',
       description: 'test topic description',
@@ -219,7 +224,7 @@ describe('Question syncing', () => {
 
   it('preserves question tag even if question tag is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTag = {
+    const newTag: TagJsonInput = {
       name: 'test tag',
       color: 'green1',
       description: 'test tag description',
@@ -444,5 +449,98 @@ describe('Question syncing', () => {
     const syncedQuestion = syncedQuestions.find((q) => q.qid === '__drafts__/draft_1');
     assert.isOk(syncedQuestion);
     assert.isTrue(syncedQuestion.draft);
+  });
+
+  it('syncs string comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].comment = 'Question comment';
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: 'Workspace comment',
+    };
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: 'External grading comment',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.json_comment, 'Question comment');
+    assert.equal(syncedQuestion?.json_workspace_comment, 'Workspace comment');
+    assert.equal(syncedQuestion?.json_external_grading_comment, 'External grading comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].comment = ['question comment 1', 'question comment 2'];
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: ['workspace comment 1', 'workspace comment 2'],
+    };
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: ['external grading comment 1', 'external grading comment 2'],
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.deepEqual(syncedQuestion?.json_comment, ['question comment 1', 'question comment 2']);
+    assert.deepEqual(syncedQuestion?.json_workspace_comment, [
+      'workspace comment 1',
+      'workspace comment 2',
+    ]);
+    assert.deepEqual(syncedQuestion?.json_external_grading_comment, [
+      'external grading comment 1',
+      'external grading comment 2',
+    ]);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].comment = {
+      comment: 'question comment 1',
+      comment2: 'question comment 2',
+    };
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      comment: {
+        comment: 'workspace comment 1',
+        comment2: 'workspace comment 2',
+      },
+    };
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      comment: {
+        comment: 'external grading comment 1',
+        comment2: 'external grading comment 2',
+      },
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.deepEqual(syncedQuestion?.json_comment, {
+      comment: 'question comment 1',
+      comment2: 'question comment 2',
+    });
+    assert.deepEqual(syncedQuestion?.json_workspace_comment, {
+      comment: 'workspace comment 1',
+      comment2: 'workspace comment 2',
+    });
+    assert.deepEqual(syncedQuestion?.json_external_grading_comment, {
+      comment: 'external grading comment 1',
+      comment2: 'external grading comment 2',
+    });
   });
 });

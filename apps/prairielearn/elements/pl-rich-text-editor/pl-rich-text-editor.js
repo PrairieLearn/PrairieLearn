@@ -1,5 +1,4 @@
-/* eslint-env browser,jquery */
-/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify */
+/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify, bootstrap */
 
 (() => {
   const rtePurify = DOMPurify();
@@ -43,8 +42,38 @@
     }
   }
 
-  window.PLRTE = function (uuid, options) {
+  const Clipboard = Quill.import('modules/clipboard');
+  class PotentiallyDisabledClipboard extends Clipboard {
+    onCaptureCopy(e, isCut = false) {
+      if (this.options.enabled ?? true) return super.onCaptureCopy(e, isCut);
+      if (!e.defaultPrevented) e.preventDefault();
+      this.showToast();
+    }
+
+    onCapturePaste(e) {
+      if (this.options.enabled ?? true) return super.onCapturePaste(e);
+      if (!e.defaultPrevented) e.preventDefault();
+      this.showToast();
+    }
+
+    showToast() {
+      if (!this.toast) {
+        const toastElement = document.getElementById(this.options.toast_id);
+        this.toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 2000 });
+      }
+      this.toast.show();
+    }
+  }
+
+  Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
+
+  window.PLRTE = function (uuid) {
+    const baseElement = document.getElementById(`rte-${uuid}`);
+    const options = JSON.parse(baseElement.dataset.options);
+
     if (!options.modules) options.modules = {};
+    if (!options.modules.clipboard) options.modules.clipboard = {};
+    options.modules.clipboard.toast_id = 'rte-clipboard-toast-' + uuid;
     if (options.readOnly) {
       options.modules.toolbar = false;
     } else {
@@ -76,8 +105,13 @@
       },
     };
 
-    let inputElement = $('#rte-input-' + uuid);
-    let quill = new Quill('#rte-' + uuid, options);
+    // Set the bounds for UI elements (e.g., the tooltip for the formula editor)
+    // to the question container.
+    // https://quilljs.com/docs/configuration#bounds
+    options.bounds = baseElement.closest('.question-container');
+
+    const inputElement = $('#rte-input-' + uuid);
+    const quill = new Quill(baseElement, options);
     let renderer = null;
     if (options.format === 'markdown') {
       renderer = new showdown.Converter({
@@ -117,10 +151,9 @@
       // the element continues to work if this method is removed, we use
       // optional chaining in the call. This would cause the empty check to
       // fail but not crash, so the element can continue working.
-      let contents = quill.editor?.isBlank?.()
+      const contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
-      if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
           he.encode(contents, {

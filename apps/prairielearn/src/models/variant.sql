@@ -10,7 +10,8 @@ WHERE
 UPDATE variants AS v
 SET
   broken_at = CURRENT_TIMESTAMP,
-  broken_by = $authn_user_id
+  broken_by = $authn_user_id,
+  modified_at = CURRENT_TIMESTAMP
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
@@ -25,7 +26,8 @@ WHERE
 UPDATE variants AS v
 SET
   broken_at = CURRENT_TIMESTAMP,
-  broken_by = $authn_user_id
+  broken_by = $authn_user_id,
+  modified_at = CURRENT_TIMESTAMP
 FROM
   instance_questions AS iq
 WHERE
@@ -73,3 +75,26 @@ WHERE
   AND v.broken_at IS NULL
 ORDER BY
   v.date;
+
+-- BLOCK select_user_owns_variant
+SELECT
+  (
+    CASE
+      WHEN ai.group_id IS NOT NULL THEN EXISTS (
+        SELECT
+          1
+        FROM
+          group_users AS gu
+        WHERE
+          gu.group_id = ai.group_id
+          AND gu.user_id = $user_id
+      )
+      ELSE (v.user_id = $user_id)
+    END
+  ) AS user_owns_variant
+FROM
+  variants AS v
+  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+  v.id = $variant_id;

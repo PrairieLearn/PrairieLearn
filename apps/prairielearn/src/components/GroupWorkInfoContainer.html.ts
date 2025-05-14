@@ -59,8 +59,8 @@ export function GroupWorkInfoContainer({
                   <button
                     type="button"
                     class="btn btn-danger"
-                    data-toggle="modal"
-                    data-target="#leaveGroupModal"
+                    data-bs-toggle="modal"
+                    data-bs-target="#leaveGroupModal"
                   >
                     Leave the Group
                   </button>
@@ -102,7 +102,7 @@ function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__action" value="leave_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });
@@ -140,7 +140,14 @@ function GroupRoleTable({
       <summary class="card-header bg-secondary text-light">
         ${userCanAssignRoles ? 'Manage group roles' : 'View group roles'}
         ${roleConfigProblems > 0
-          ? html`<span class="badge badge-pill badge-danger">${roleConfigProblems}</span>`
+          ? html`
+              <span
+                class="badge rounded-pill text-bg-danger"
+                data-testid="group-role-config-problems"
+              >
+                ${roleConfigProblems}
+              </span>
+            `
           : ''}
       </summary>
       <div class="card-body">
@@ -157,8 +164,8 @@ function GroupRoleTable({
           >
             <thead>
               <tr>
-                <th scope="col">User</th>
-                <th scope="col">Roles</th>
+                <th>User</th>
+                <th>Roles</th>
               </tr>
             </thead>
             <tbody>
@@ -170,7 +177,7 @@ function GroupRoleTable({
                       ${rolesInfo.groupRoles.map(
                         (role) => html`
                           <label
-                            class="ml-2 ${rolesInfo.disabledRoles.includes(role.role_name)
+                            class="ms-2 ${rolesInfo.disabledRoles.includes(role.role_name)
                               ? 'text-muted'
                               : ''}"
                           >
@@ -216,10 +223,10 @@ function GroupRoleTable({
         >
           <thead>
             <tr>
-              <th scope="col">Role</th>
-              <th scope="col">Minimum assignments</th>
-              <th scope="col">Maximum assignments</th>
-              <th scope="col">Can assign roles</th>
+              <th>Role</th>
+              <th>Minimum assignments</th>
+              <th>Maximum assignments</th>
+              <th>Can assign roles</th>
             </tr>
           </thead>
           <tbody>

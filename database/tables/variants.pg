@@ -1,5 +1,5 @@
 columns
-    authn_user_id: bigint
+    authn_user_id: bigint not null
     broken: boolean default false
     broken_at: timestamp with time zone
     broken_by: bigint
@@ -12,6 +12,7 @@ columns
     group_id: bigint
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
+    modified_at: timestamp with time zone
     num_tries: integer not null default 0
     number: integer
     open: boolean default true
@@ -20,7 +21,7 @@ columns
     question_id: bigint not null
     true_answer: jsonb
     user_id: bigint
-    variant_seed: text
+    variant_seed: text not null
     workspace_id: bigint
 
 indexes

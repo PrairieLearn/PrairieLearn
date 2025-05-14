@@ -5,7 +5,7 @@ import big_o_utils as bou
 import chevron
 import lxml.html
 import prairielearn as pl
-import python_helper_sympy as phs
+import prairielearn.sympy_utils as psu
 import sympy
 from typing_extensions import assert_never
 
@@ -34,6 +34,7 @@ GRADE_FUNCTION_DICT: dict[BigOType, bou.BigOGradingFunctionT] = {
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+ARIA_LABEL_DEFAULT = None
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
@@ -50,6 +51,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "correct-answer",
+        "aria-label",
         "variable",
         "size",
         "display",
@@ -65,7 +67,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    variables = phs.get_items_list(
+    variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
@@ -79,10 +81,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
         try:
-            phs.convert_string_to_sympy(
+            psu.convert_string_to_sympy(
                 a_true, variables, allow_complex=False, allow_trig_functions=False
             )
-        except phs.BaseSympyError as exc:
+        except psu.BaseSympyError as exc:
             raise ValueError(
                 f'Parsing correct answer "{a_true}" for "{name}" failed.'
             ) from exc
@@ -93,7 +95,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_items_list(
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
+    variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
@@ -106,9 +109,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     parse_error = data["format_errors"].get(name)
 
-    constants_class = phs._Constants()
+    constants_class = psu._Constants()
 
-    operators: list[str] = list(phs.STANDARD_OPERATORS)
+    operators: list[str] = list(psu.STANDARD_OPERATORS)
     operators.extend(constants_class.functions.keys())
 
     constants = list(constants_class.variables.keys())
@@ -133,7 +136,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = sympy.latex(
-            phs.convert_string_to_sympy(
+            psu.convert_string_to_sympy(
                 data["submitted_answers"][name],
                 variables,
                 allow_complex=False,
@@ -165,6 +168,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             display.value: True,
+            "aria_label": aria_label,
             "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
@@ -208,7 +212,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = phs.convert_string_to_sympy(
+        a_tru = psu.convert_string_to_sympy(
             a_tru, variables, allow_complex=False, allow_trig_functions=False
         )
         html_params = {
@@ -225,7 +229,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_items_list(
+    variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
@@ -240,7 +244,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    s = phs.validate_string_as_sympy(
+    s = psu.validate_string_as_sympy(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
@@ -254,7 +258,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_items_list(
+    variables = psu.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -278,11 +282,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-
-    # Get raw correct answer
-    a_tru = data["correct_answers"][name]
-
     result = data["test_type"]
+    a_tru = None
+
+    if result in ["correct", "incorrect"] and name not in data["correct_answers"]:
+        # This element cannot test itself. Defer the generation of test inputs to server.py
+        return
+    elif result in ["correct", "incorrect"]:
+        # Get raw correct answer
+        a_tru = data["correct_answers"][name]
+
     if result == "correct":
         data["raw_submitted_answers"][name] = a_tru
         data["partial_scores"][name] = {
@@ -309,17 +318,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             }
 
     elif result == "invalid":
-        invalid_answer = random.choice(
-            [
-                "n + 1.234",
-                "1 and 0",
-                "tan(n)",
-                "n + m",
-                "n +* 1",
-                "n + 1\\n",
-                "n # some text",
-            ]
-        )
+        invalid_answer = random.choice([
+            "n + 1.234",
+            "1 and 0",
+            "tan(n)",
+            "n + m",
+            "n +* 1",
+            "n + 1\\n",
+            "n # some text",
+        ])
 
         # TODO add detailed format errors if this gets checked in the future
         data["raw_submitted_answers"][name] = invalid_answer

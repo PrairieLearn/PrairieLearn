@@ -2,6 +2,7 @@ import os
 from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
+from textwrap import dedent
 from typing import Any
 
 import chevron
@@ -13,7 +14,6 @@ import pygments.lexer
 import pygments.lexers
 import pygments.style
 import pygments.util
-from code_utils import parse_highlight_lines
 from pygments.styles import STYLE_MAP, get_style_by_name
 from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
@@ -28,6 +28,7 @@ HIGHLIGHT_LINES_COLOR_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 SHOW_LINE_NUMBERS_DEFAULT = False
+NORMALIZE_WHITESPACE_DEFAULT = False
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -50,6 +51,32 @@ ANSI_COLORS = {
 }
 
 
+def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
+    """
+    Parse a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
+    [1], [1,2,3,4], and [1,2,3,5,7,8]
+    """
+    lines = []
+    components = highlight_lines.split(",")
+    for raw_component in components:
+        component = raw_component.replace(" ", "").split("-")
+        try:
+            if len(component) == 1:
+                line = int(component[0])
+                lines.append(line)
+            # Try parsing as "##-###"
+            elif len(component) == 2:
+                start = int(component[0])
+                end = int(component[1])
+                lines.extend(range(start, end + 1))
+            else:
+                return None
+        except ValueError:
+            return None
+
+    return lines
+
+
 class NoHighlightingLexer(pygments.lexer.Lexer):
     """
     Dummy lexer for when syntax highlighting is not wanted, but we still
@@ -66,7 +93,7 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
         return iter([(0, Token.Text, text)])
 
 
-class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
+class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter[str]):
     """
     Subclass of the default HTML formatter to provide more flexibility
     with highlighted lines.
@@ -109,9 +136,9 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
 @cache
 def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
-    Tries to find a lexer by both its proper name and any aliases it has.
+    Find a lexer by both its proper name and any aliases it has.
+    Returns None if no lexer is found.
     """
-
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
     lexer_class = pygments.lexers.find_lexer_class(name)
@@ -148,17 +175,15 @@ def get_formatter(
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
         )
 
-    formatter_opts = {
-        "style": CustomStyleWithAnsiColors,
-        "nobackground": True,
-        "noclasses": True,
+    return HighlightingHtmlFormatter(
+        style=CustomStyleWithAnsiColors,
+        nobackground=True,
+        noclasses=True,
         # We'll unconditionally render the line numbers, but we'll hide them if
         # they aren't specifically enabled. This means we only have to deal with
         # one markup "shape" in our CSS, not two.
-        "linenos": "table",
-    }
-
-    return HighlightingHtmlFormatter(**formatter_opts)
+        linenos="table",
+    )
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -175,6 +200,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "copy-code-button",
         "style",
         "show-line-numbers",
+        "normalize-whitespace",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -234,6 +260,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
     )
 
+    normalize_whitespace = pl.get_boolean_attrib(
+        element, "normalize-whitespace", NORMALIZE_WHITESPACE_DEFAULT
+    )
+
     # The no-highlight option is deprecated, but supported for backwards compatibility
     if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
         language = None
@@ -265,6 +295,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # which technically starts with a newline, but we probably
         # don't want a blank line at the start of the code block.
         code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
+
+    if normalize_whitespace:
+        code = dedent(code).rstrip()
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 

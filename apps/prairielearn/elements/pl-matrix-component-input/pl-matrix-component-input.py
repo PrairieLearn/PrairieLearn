@@ -1,15 +1,27 @@
 import math
 import random
+from enum import Enum
 from html import escape
+from typing import Literal
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+from sympy import Expr
+from typing_extensions import assert_never
+
+
+class ComparisonMode(Enum):
+    RELABS = "relabs"
+    SIGFIG = "sigfig"
+    DECDIG = "decdig"
+
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
-COMPARISON_DEFAULT = "relabs"
+ARIA_LABEL_DEFAULT = None
+COMPARISON_DEFAULT = ComparisonMode.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
@@ -67,6 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
     )
@@ -76,6 +89,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_fractions = pl.get_boolean_attrib(
         element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
     )
+    uuid = pl.get_uuid()
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -83,8 +97,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Get true answer
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
-            m = pl.get_integer_attrib(element, "rows", None)
-            n = pl.get_integer_attrib(element, "columns", None)
+            m = pl.get_integer_attrib(element, "rows")
+            n = pl.get_integer_attrib(element, "columns")
         else:
             if np.isscalar(a_tru):
                 raise ValueError(
@@ -98,11 +112,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
             m, n = np.shape(a_tru)
 
-        input_array = create_table_for_html_display(m, n, name, label, data, "input")
+        input_array = create_table_for_html_display(
+            m,
+            n,
+            name,
+            label=label,
+            aria_label=aria_label,
+            label_uuid=uuid,
+            data=data,
+            format_type="input",
+        )
 
         # Get comparison parameters and info strings
-        comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-        if comparison == "relabs":
+        comparison = pl.get_enum_attrib(
+            element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+        )
+        if comparison is ComparisonMode.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
@@ -115,7 +140,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "rtol": f"{rtol:g}",
                 "atol": f"{atol:g}",
             }
-        elif comparison == "sigfig":
+        elif comparison is ComparisonMode.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
@@ -125,7 +150,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
-        elif comparison == "decdig":
+        elif comparison is ComparisonMode.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
@@ -136,9 +161,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
-            raise ValueError(
-                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-            )
+            assert_never(comparison)
 
         info_params["allow_fractions"] = allow_fractions
         with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
@@ -148,7 +171,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
@@ -156,22 +179,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "info": info,
             "shortinfo": shortinfo,
             "input_array": input_array,
+            "uuid": uuid,
             "inline": True,
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + score) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -186,29 +202,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None:
             a_submitted = pl.from_json(data["submitted_answers"].get(name, None))
-            if a_submitted is not None and len(a_submitted.shape) == 2:
+            if (
+                a_submitted is not None
+                and isinstance(a_submitted, np.ndarray)
+                and len(a_submitted.shape) == 2
+            ):
                 m, n = np.shape(a_submitted)
+            else:
+                raise ValueError(
+                    f"submitted answer for {name} is not a 2D array or is not in the correct format"
+                )
         else:
             a_tru = np.array(pl.from_json(data["correct_answers"].get(name, None)))
-            if a_tru is not None and len(a_tru.shape) == 2:
+            if len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
-                m = pl.get_integer_attrib(element, "rows", None)
-                n = pl.get_integer_attrib(element, "columns", None)
+                m = pl.get_integer_attrib(element, "rows")
+                n = pl.get_integer_attrib(element, "columns")
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception as exc:
-                raise ValueError("invalid score" + score) from exc
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
@@ -227,7 +243,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
             # When allowing feedback, display submitted answers using html table
             sub_html_table = create_table_for_html_display(
-                m, n, name, label, data, "output-feedback"
+                m,
+                n,
+                name,
+                label=label,
+                aria_label=aria_label,
+                label_uuid=uuid,
+                data=data,
+                format_type="output-feedback",
             )
             if allow_feedback and score is not None:
                 if score < 1:
@@ -242,7 +265,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params["raw_submitted_answer"] = create_table_for_html_display(
-                m, n, name, label, data, "output-invalid"
+                m,
+                n,
+                name,
+                label=label,
+                aria_label=aria_label,
+                label_uuid=uuid,
+                data=data,
+                format_type="output-invalid",
             )
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
@@ -259,8 +289,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_tru = np.array(a_tru)
 
             # Get comparison parameters and create the display data
-            comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-            if comparison == "relabs":
+            comparison = pl.get_enum_attrib(
+                element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+            )
+            if comparison is ComparisonMode.RELABS:
                 rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
                 atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
                 # FIXME: render correctly with respect to rtol and atol
@@ -269,7 +301,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + pl.latex_from_2darray(a_tru, presentation_type="g", digits=12)
                     + "$"
                 )
-            elif comparison == "sigfig":
+            elif comparison is ComparisonMode.SIGFIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -278,7 +310,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     )
                     + "$"
                 )
-            elif comparison == "decdig":
+            elif comparison is ComparisonMode.DECDIG:
                 digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 latex_data = (
                     "$"
@@ -286,9 +318,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "$"
                 )
             else:
-                raise ValueError(
-                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-                )
+                assert_never(comparison)
 
             html_params = {
                 "answer": True,
@@ -319,8 +349,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get dimensions of the input matrix
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
     if a_tru is None:
-        m = pl.get_integer_attrib(element, "rows", None)
-        n = pl.get_integer_attrib(element, "columns", None)
+        m = pl.get_integer_attrib(element, "rows")
+        n = pl.get_integer_attrib(element, "columns")
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
@@ -338,15 +368,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
-            value, newdata = pl.string_fraction_to_number(
+            res = pl.string_fraction_to_number(
                 a_sub, allow_fractions=allow_fractions, allow_complex=False
             )
-            if value is not None:
+            if res[0] is not None:
+                value, newdata = res
                 matrix[i, j] = value
                 data["submitted_answers"][each_entry_name] = newdata[
                     "submitted_answers"
                 ]
             else:
+                _, newdata = res
                 invalid_format = True
                 data["format_errors"][each_entry_name] = newdata["format_errors"]
                 data["submitted_answers"][each_entry_name] = None
@@ -372,14 +404,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
-    if comparison == "relabs":
+    comparison = pl.get_enum_attrib(
+        element, "comparison", ComparisonMode, COMPARISON_DEFAULT
+    )
+
+    rtol, atol, digits = RTOL_DEFAULT, ATOL_DEFAULT, DIGITS_DEFAULT
+    if comparison is ComparisonMode.RELABS:
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison in ("sigfig", "decdig"):
+    elif comparison in (ComparisonMode.SIGFIG, ComparisonMode.DECDIG):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        raise ValueError(f'method of comparison "{comparison}" is not valid')
+        assert_never(comparison)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -407,14 +443,20 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
 
-            # Compare submitted answer with true answer
-            if comparison == "relabs":
-                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
-            elif comparison == "sigfig":
-                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
-            elif comparison == "decdig":
-                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
+            # If submitted answer is not a of valid type, score is zero
+            if isinstance(a_sub, (Expr, dict)):
+                data["partial_scores"][name] = {"score": 0, "weight": weight}
+                return
 
+            # Compare submitted answer with true answer
+            if comparison is ComparisonMode.RELABS:
+                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
+            elif comparison is ComparisonMode.SIGFIG:
+                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
+            elif comparison is ComparisonMode.DECDIG:
+                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
+            else:
+                assert_never(comparison)
             if correct:
                 number_of_correct += 1
                 feedback.update({each_entry_name: "correct"})
@@ -442,6 +484,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     allow_partial_credit = pl.get_boolean_attrib(
         element, "allow-partial-credit", ALLOW_PARTIAL_CREDIT_DEFAULT
     )
+
+    if name not in data["correct_answers"]:
+        # This element cannot test itself. Defer the generation of test inputs to server.py
+        return
 
     # Get correct answer
     a_tru = data["correct_answers"][name]
@@ -501,23 +547,37 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
 
-def create_table_for_html_display(m, n, name, label, data, format_type):
+def create_table_for_html_display(
+    m: int,
+    n: int,
+    name: str,
+    label: str | None,
+    aria_label: str | None,
+    label_uuid: str,
+    data: pl.QuestionData,
+    format_type: Literal["output-invalid", "output-feedback", "input"],
+) -> str:
     editable = data["editable"]
+
+    label_attr = ""
+
+    if aria_label is not None:
+        label_attr = f'aria-label="{aria_label}"'
+    elif label is not None:
+        label_attr = f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
 
     if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
-                each_entry_name, None
+                each_entry_name, ""
             )
             format_errors = data["format_errors"].get(each_entry_name, None)
             if format_errors is None:
@@ -528,11 +588,9 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
                 )
             display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             display_array += "</code></td> "
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
         # Add the other rows
         for i in range(1, m):
@@ -540,7 +598,7 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
-                    each_entry_name, None
+                    each_entry_name, ""
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
@@ -556,21 +614,21 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
 
     elif format_type == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
-        feedback_each_entry = partial_score_feedback.get("feedback", None)
-        score = partial_score_feedback.get("score", None)
+        feedback_each_entry = partial_score_feedback.get("feedback")
+        score = partial_score_feedback.get("score")
 
         if score is not None:
             score = float(score)
             if score >= 1:
-                score_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
             elif score > 0:
                 score_message = (
-                    '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i>'
+                    '&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i>'
                     + str(math.floor(score * 100))
                     + "%</span>"
                 )
             else:
-                score_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
         else:
             score_message = ""
 
@@ -578,37 +636,39 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
         display_array += "<tr>"
         # Add the prefix
         if label is not None:
-            display_array += '<td rowspan="0">' + label + "&nbsp;</td>"
+            display_array += f'<td rowspan="0">{label}&nbsp;</td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
-                each_entry_name, None
+                each_entry_name, ""
             )
             display_array += '<td class="allborder">'
             display_array += escape(raw_submitted_answer)
-            if feedback_each_entry is not None:
+            if feedback_each_entry is not None and isinstance(
+                feedback_each_entry, dict
+            ):
                 if feedback_each_entry[each_entry_name] == "correct":
-                    feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
-                    feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                else:
+                    raise ValueError(
+                        f"invalid feedback type: {feedback_each_entry[each_entry_name]}"
+                    )
                 display_array += feedback_message
             display_array += "</td> "
         # Add the suffix
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
-        if score_message is not None:
-            display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
+        if score_message:
+            display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
         display_array += "</tr>"
         # Add the other rows
         for i in range(1, m):
@@ -616,50 +676,51 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
-                    each_entry_name, None
+                    each_entry_name, ""
                 )
-                display_array += ' <td class="allborder"> '
+                display_array += (
+                    f' <td class="allborder" aria-label="Row {i + 1}, Column {j + 1}"> '
+                )
                 display_array += escape(raw_submitted_answer)
-                if feedback_each_entry is not None:
+                if feedback_each_entry is not None and isinstance(
+                    feedback_each_entry, dict
+                ):
                     if feedback_each_entry[each_entry_name] == "correct":
-                        feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == "incorrect":
-                        feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                    else:
+                        raise ValueError(
+                            "invalid feedback type: this should not happen"
+                        )
                     display_array += feedback_message
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"
 
     elif format_type == "input":
-        display_array = "<table>"
+        display_array = f'<table role="grid" {label_attr}>'
         display_array += "<tr>"
         # Add first row
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
-            display_array += (
-                ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
-            )
-            if not editable:
-                display_array += " disabled "
+            disabled = "disabled" if not editable else ""
+            value = ""
             if raw_submitted_answer is not None:
-                display_array += '  value= "'
-                display_array += escape(raw_submitted_answer)
-            display_array += '" /> </td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+                value = f'value="{escape(raw_submitted_answer)}"'
+            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {disabled} {value}/></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
+
         # Add other rows
         for i in range(1, m):
             display_array += " <tr>"
@@ -668,22 +729,16 @@ def create_table_for_html_display(m, n, name, label, data, format_type):
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
-                display_array += (
-                    ' <td> <input name= "'
-                    + each_entry_name
-                    + '" type="text" size="8"  '
-                )
-                if not editable:
-                    display_array += " disabled "
+                disabled = "disabled" if not editable else ""
+                value = ""
                 if raw_submitted_answer is not None:
-                    display_array += '  value= "'
-                    display_array += escape(raw_submitted_answer)
-                display_array += '" /> </td>'
+                    value = f'value="{escape(raw_submitted_answer)}"'
+                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {disabled} {value}/></td>'
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"
 
     else:
-        display_array = ""
+        assert_never(format_type)
 
     return display_array

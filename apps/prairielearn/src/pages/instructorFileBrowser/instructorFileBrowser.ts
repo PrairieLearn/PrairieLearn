@@ -77,7 +77,7 @@ router.post(
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any as any,
         container,
         deletePath,
       });
@@ -126,7 +126,7 @@ router.post(
       }
 
       const editor = new FileRenameEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container,
         oldPath,
         newPath,
@@ -165,7 +165,7 @@ router.post(
         }
       }
       const editor = new FileUploadEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container,
         filePath,
         fileContents: req.file.buffer,

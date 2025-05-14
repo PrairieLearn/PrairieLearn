@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
-import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { PageLayout } from '../../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
@@ -42,67 +41,71 @@ export function ManualGradingAssessment({
   courseStaff: User[];
   num_open_instances: number;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })}
-        ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        ${resLocals.authz_data.has_course_instance_permission_edit
-          ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
-          : ''}
-        <main id="content" class="container-fluid">
-          ${AssessmentSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            assessment: resLocals.assessment,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          ${AssessmentOpenInstancesAlert({
-            numOpenInstances: num_open_instances,
-            assessmentId: resLocals.assessment.id,
-            urlPrefix: resLocals.urlPrefix,
-          })}
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h1>
-                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading
-                Queue
-              </h1>
-            </div>
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Manual Grading',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'manual_grading',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: html`
+      ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
+    `,
+    preContent: html`
+      ${resLocals.authz_data.has_course_instance_permission_edit
+        ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
+        : ''}
+    `,
+    content: html`
+      ${AssessmentSyncErrorsAndWarnings({
+        authz_data: resLocals.authz_data,
+        assessment: resLocals.assessment,
+        courseInstance: resLocals.course_instance,
+        course: resLocals.course,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      ${AssessmentOpenInstancesAlert({
+        numOpenInstances: num_open_instances,
+        assessmentId: resLocals.assessment.id,
+        urlPrefix: resLocals.urlPrefix,
+      })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>
+            ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
+          </h1>
+        </div>
 
-            <div class="table-responsive">
-              <table
-                id="instanceQuestionGradingTable"
-                class="table table-sm table-hover"
-                aria-label="Questions for manual grading"
-              >
-                <thead>
-                  <tr>
-                    <th>Question</th>
-                    <th>QID</th>
-                    <th>Auto Points</th>
-                    <th>Manual Points</th>
-                    <th colspan="2">Submissions to grade</th>
-                    <th>Grading assigned to</th>
-                    <th>Graded by</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${questions.map((question) => AssessmentQuestionRow({ resLocals, question }))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+        <div class="table-responsive">
+          <table
+            id="instanceQuestionGradingTable"
+            class="table table-sm table-hover"
+            aria-label="Questions for manual grading"
+          >
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>QID</th>
+                <th>Auto Points</th>
+                <th>Manual Points</th>
+                <th colspan="2">Submissions to grade</th>
+                <th>Grading assigned to</th>
+                <th>Graded by</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${questions.map((question) => AssessmentQuestionRow({ resLocals, question }))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+  });
 }
 
 function AssessmentQuestionRow({
@@ -140,12 +143,11 @@ function AssessmentQuestionRow({
           : html`
               <a
                 href="#"
-                class="ml-2 text-info"
-                data-toggle="tooltip"
-                data-boundary="window"
-                title="This question uses a rubric"
+                class="ms-2 text-info"
+                data-bs-toggle="tooltip"
+                data-bs-title="This question uses a rubric"
               >
-                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+                <i class="fas fa-list-check"></i>
               </a>
             `}
       </td>
@@ -178,11 +180,12 @@ function AssessmentQuestionRow({
                     <button
                       type="button"
                       class="btn btn-sm btn-ghost"
-                      data-toggle="modal"
-                      data-target="#grader-assignment-modal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
+                      aria-label="Assign to graders"
                     >
-                      <i class="fas fa-pencil"></i><span class="sr-only">Assign to&hellip;</span>
+                      <i class="fas fa-pencil"></i>
                     </button>
                   `
                 : ''}
@@ -260,10 +263,10 @@ function GraderAssignmentModal({
       <input type="hidden" name="unsafe_assessment_question_id" value="" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      ${courseStaff.length > 0
-        ? html`<button type="submit" class="btn btn-primary">Assign</button>`
-        : ''}
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary" ${courseStaff.length === 0 ? 'disabled' : ''}>
+        Assign
+      </button>
     `,
   });
 }

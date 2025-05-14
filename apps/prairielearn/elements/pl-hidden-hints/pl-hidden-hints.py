@@ -31,7 +31,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             hints.append((priority, position, hint_name, pl.inner_html(child)))
 
-        elif child.tag is lxml.etree.Comment:
+        elif isinstance(child, lxml.etree._Comment):
             continue
 
         else:

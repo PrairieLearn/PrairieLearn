@@ -5,16 +5,18 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentModule,
+  AssessmentModuleSchema,
   AssessmentSchema,
   type AssessmentSet,
   AssessmentSetSchema,
@@ -27,11 +29,10 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 });
 type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
-export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
+export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
@@ -56,161 +57,181 @@ export function InstructorAssessments({
 }) {
   const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
-        ${EncodedData<StatsUpdateData>(
-          { assessmentIdsNeedingStatsUpdate, urlPrefix },
-          'stats-update-data',
-        )}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        ${CreateAssessmentModal({
-          csrfToken: __csrf_token,
-          urlPrefix,
-          assessmentSets,
-          assessmentModules,
-          assessmentsGroupBy,
-        })}
-        <main id="content" class="container-fluid">
-          ${CourseInstanceSyncErrorsAndWarnings({
-            authz_data,
-            courseInstance: resLocals.course_instance,
-            course,
-            urlPrefix,
-          })}
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1>Assessments</h1>
-              ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
-                ? html`
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Assessments',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'assessments',
+    },
+    options: {
+      fullWidth: true,
+    },
+    headContent: html`
+      ${compiledScriptTag('instructorAssessmentsClient.ts')}
+      ${EncodedData<StatsUpdateData>(
+        { assessmentIdsNeedingStatsUpdate, urlPrefix },
+        'stats-update-data',
+      )}
+    `,
+    content: html`
+      ${CourseInstanceSyncErrorsAndWarnings({
+        authz_data,
+        courseInstance: resLocals.course_instance,
+        course,
+        urlPrefix,
+      })}
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Assessments</h1>
+          ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
+            ? html`
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light ms-auto"
+                  data-bs-toggle="modal"
+                  data-bs-target="#createAssessmentModal"
+                >
+                  <i class="fa fa-plus" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Add assessment</span>
+                </button>
+              `
+            : ''}
+        </div>
+        ${rows.length > 0
+          ? html`
+              <div class="table-responsive">
+                <table class="table table-sm table-hover" aria-label="Assessments">
+                  <thead>
+                    <tr>
+                      <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                      <th><span class="visually-hidden">Title</span></th>
+                      <th>AID</th>
+                      <th class="text-center">Students</th>
+                      <th class="text-center">Scores</th>
+                      <th class="text-center">Mean Score</th>
+                      <th class="text-center">Mean Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows.map(
+                      (row) => html`
+                        ${row.start_new_assessment_group
+                          ? html`
+                              <tr>
+                                <th colspan="7" scope="row">
+                                  ${assessmentsGroupBy === 'Set'
+                                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
+                                    : AssessmentModuleHeading({
+                                        assessment_module: row.assessment_module,
+                                      })}
+                                </th>
+                              </tr>
+                            `
+                          : ''}
+                        <tr id="row-${row.id}">
+                          <td class="align-middle" style="width: 1%">
+                            <span class="badge color-${row.assessment_set.color}">
+                              ${row.label}
+                            </span>
+                          </td>
+                          <td class="align-middle">
+                            ${row.sync_errors
+                              ? SyncProblemButton({
+                                  type: 'error',
+                                  output: row.sync_errors,
+                                })
+                              : row.sync_warnings
+                                ? SyncProblemButton({
+                                    type: 'warning',
+                                    output: row.sync_warnings,
+                                  })
+                                : ''}
+                            <a href="${urlPrefix}/assessment/${row.id}/">
+                              ${row.title}
+                              ${row.group_work
+                                ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                : ''}
+                            </a>
+                            ${IssueBadge({
+                              count: row.open_issue_count,
+                              urlPrefix,
+                              issueAid: row.tid,
+                            })}
+                          </td>
+
+                          <td class="align-middle">${row.tid}</td>
+
+                          ${AssessmentStats({ row })}
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div class="card-footer">
+                Download
+                <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
+                  ${csvFilename}
+                </a>
+                (includes more statistics columns than displayed above)
+              </div>
+            `
+          : html`
+              <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                <p class="fw-bold">No assessments found.</p>
+                <p class="mb-0">
+                  An assessment is a collection of questions to build or assess a student's
+                  knowledge.
+                </p>
+                <p>
+                  Learn more in the
+                  <a
+                    href="https://prairielearn.readthedocs.io/en/latest/assessment/"
+                    target="_blank"
+                    >assessments documentation</a
+                  >.
+                </p>
+                ${run(() => {
+                  if (course.example_course) {
+                    return html`<p>You can't add assessments to the example course.</p>`;
+                  }
+                  if (!authz_data.has_course_permission_edit) {
+                    return html`<p>Course Editors can create new assessments.</p>`;
+                  }
+                  return html`
                     <button
-                      class="btn btn-sm btn-light ml-auto"
-                      data-toggle="modal"
-                      data-target="#createAssessmentModal"
+                      type="button"
+                      class="btn btn-sm btn-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#createAssessmentModal"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Add assessment</span>
                     </button>
-                  `
-                : ''}
-            </div>
-            ${rows.length > 0
-              ? html`
-                  <div class="table-responsive">
-                    <table class="table table-sm table-hover" aria-label="Assessments">
-                      <thead>
-                        <tr>
-                          <th style="width: 1%"><span class="sr-only">Label</span></th>
-                          <th><span class="sr-only">Title</span></th>
-                          <th>AID</th>
-                          <th class="text-center">Students</th>
-                          <th class="text-center">Scores</th>
-                          <th class="text-center">Mean Score</th>
-                          <th class="text-center">Mean Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${rows.map(
-                          (row) => html`
-                            ${row.start_new_assessment_group
-                              ? html`
-                                  <tr>
-                                    <th colspan="7" scope="row">${row.assessment_group_heading}</th>
-                                  </tr>
-                                `
-                              : ''}
-                            <tr id="row-${row.id}">
-                              <td class="align-middle" style="width: 1%">
-                                <span class="badge color-${row.color}">${row.label}</span>
-                              </td>
-                              <td class="align-middle">
-                                ${row.sync_errors
-                                  ? SyncProblemButton({
-                                      type: 'error',
-                                      output: row.sync_errors,
-                                    })
-                                  : row.sync_warnings
-                                    ? SyncProblemButton({
-                                        type: 'warning',
-                                        output: row.sync_warnings,
-                                      })
-                                    : ''}
-                                <a href="${urlPrefix}/assessment/${row.id}/">
-                                  ${row.title}
-                                  ${row.group_work
-                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                    : ''}
-                                </a>
-                                ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
-                              </td>
-
-                              <td class="align-middle">${row.tid}</td>
-
-                              ${AssessmentStats({ row })}
-                            </tr>
-                          `,
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="card-footer">
-                    Download
-                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                      ${csvFilename}
-                    </a>
-                    (includes more statistics columns than displayed above)
-                  </div>
-                `
-              : html`
-                  <div class="my-4 card-body text-center" style="text-wrap: balance;">
-                    <p class="font-weight-bold">No assessments found.</p>
-                    <p class="mb-0">
-                      An assessment is a collection of questions to build or assess a student's
-                      knowledge.
-                    </p>
-                    <p>
-                      Learn more in the
-                      <a
-                        href="https://prairielearn.readthedocs.io/en/latest/assessment/"
-                        target="_blank"
-                        >assessments documentation</a
-                      >.
-                    </p>
-                    ${run(() => {
-                      if (course.example_course) {
-                        return html`<p>You can't add assessments to the example course.</p>`;
-                      }
-                      if (!authz_data.has_course_permission_edit) {
-                        return html`<p>Course Editors can create new assessments.</p>`;
-                      }
-                      return html`
-                        <button
-                          class="btn btn-sm btn-primary"
-                          data-toggle="modal"
-                          data-target="#createAssessmentModal"
-                        >
-                          <i class="fa fa-plus" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Add assessment</span>
-                        </button>
-                      `;
-                    })}
-                  </div>
-                `}
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+                  `;
+                })}
+              </div>
+            `}
+      </div>
+    `,
+    postContent: html`
+      ${CreateAssessmentModal({
+        csrfToken: __csrf_token,
+        urlPrefix,
+        assessmentSets,
+        assessmentModules,
+        assessmentsGroupBy,
+      })}
+    `,
+  });
 }
 
 export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
   const spinner = html`
     <div class="spinner-border spinner-border-sm" role="status">
-      <span class="sr-only">Loading...</span>
+      <span class="visually-hidden">Loading...</span>
     </div>
   `;
   return html`
@@ -272,8 +293,8 @@ function CreateAssessmentModal({
     title: 'Create assessment',
     formMethod: 'POST',
     body: html`
-      <div class="form-group">
-        <label for="title">Title</label>
+      <div class="mb-3">
+        <label class="form-label" for="title">Title</label>
         <input
           type="text"
           class="form-control"
@@ -286,8 +307,8 @@ function CreateAssessmentModal({
           The full name of the assessment, visible to users.
         </small>
       </div>
-      <div class="form-group">
-        <label for="aid">Assessment identifier (AID)</label>
+      <div class="mb-3">
+        <label class="form-label" for="aid">Assessment identifier (AID)</label>
         <input
           type="text"
           class="form-control"
@@ -302,8 +323,8 @@ function CreateAssessmentModal({
           "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
-      <div class="form-group">
-        <label for="type">Type</label>
+      <div class="mb-3">
+        <label class="form-label" for="type">Type</label>
         <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
           <option value="Exam">Exam</option>
@@ -312,8 +333,8 @@ function CreateAssessmentModal({
           The type of the assessment. This can be either Homework or Exam.
         </small>
       </div>
-      <div class="form-group">
-        <label for="set">Set</label>
+      <div class="mb-3">
+        <label class="form-label" for="set">Set</label>
         <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
         </select>
@@ -324,8 +345,8 @@ function CreateAssessmentModal({
       </div>
       ${assessmentsGroupBy === 'Module'
         ? html`
-            <div class="form-group">
-              <label for="module">Module</label>
+            <div class="mb-3">
+              <label class="form-label" for="module">Module</label>
               <select
                 class="form-select"
                 id="module"
@@ -348,7 +369,7 @@ function CreateAssessmentModal({
     footer: html`
       <input type="hidden" name="__action" value="add_assessment" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Create</button>
     `,
   });
