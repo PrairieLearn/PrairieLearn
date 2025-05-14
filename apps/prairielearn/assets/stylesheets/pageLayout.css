@@ -219,6 +219,7 @@ body:has(div.app-container) {
 #assessment-switcher-container .assessment-row {
   width: 100%;
   display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
   grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   text-decoration: none;
