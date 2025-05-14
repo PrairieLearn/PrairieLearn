@@ -1,3 +1,4 @@
+import re
 import warnings
 
 import lxml.html
@@ -18,6 +19,7 @@ WEIGHTS_PRESENTATION_TYPE_DEFAULT = "f"
 NEGATIVE_WEIGHTS_DEFAULT = False
 DIRECTED_DEFAULT = True
 LOG_WARNINGS_DEFAULT = True
+DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
 
 def graphviz_from_networkx(
@@ -197,5 +199,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if svg_bytes is None:
             raise TypeError("Graph was not returned.")
         svg = svg_bytes.decode("utf-8", "strict")
+        svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
     return f'<div class="pl-graph">{svg}</div>'
