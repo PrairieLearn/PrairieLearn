@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { features } from '../../lib/features/index.js';
 import authnMiddleware from '../../middlewares/authn.js';
 import csrfToken from '../../middlewares/csrfToken.js';
+import lti13AssigninmentSelection from '../pages/lti13AssignmentSelection/lti13AssignmentSelection.js';
 import lti13Auth from '../auth/lti13/lti13Auth.js';
 import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -57,5 +58,6 @@ router.use(
   csrfToken,
   lti13CourseNavigation,
 );
+router.use('/:lti13_instance_id/assignment_selection', lti13AssigninmentSelection);
 
 export default router;

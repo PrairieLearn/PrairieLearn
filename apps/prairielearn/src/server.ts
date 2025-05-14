@@ -474,10 +474,6 @@ export async function initExpress(): Promise<Express> {
 
   if (isEnterprise()) {
     app.use('/pl/terms', (await import('./ee/pages/terms/terms.js')).default);
-
-    app.use('/pl/lti13_instance/:lti13_instance_id/assignment_selection', [
-      (await import('./ee/pages/lti13AssignmentSelection/lti13AssignmentSelection.js')).default,
-    ]);
   }
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The

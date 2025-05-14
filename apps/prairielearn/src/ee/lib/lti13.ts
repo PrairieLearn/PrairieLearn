@@ -443,8 +443,7 @@ export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_u
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const lineitem = LineitemSchema.parse(await fetchRes.json());
-  return lineitem;
+  return LineitemSchema.parse(await fetchRes.json());
 }
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
