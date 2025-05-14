@@ -419,9 +419,9 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                   ${canEdit ? '' : 'disabled'}
                   ${resLocals.question.workspace_enable_networking ? 'checked' : ''}
                 />
-                <label class="form-check-label" for="workspace_enable_networking"
-                  >Enable networking</label
-                >
+                <label class="form-check-label" for="workspace_enable_networking">
+                  Enable networking
+                </label>
                 <div class="small text-muted">
                   Whether the workspace should have network access. Access is disabled by default.
                 </div>
