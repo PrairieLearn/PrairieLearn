@@ -61,57 +61,24 @@ eval_safe_as <- function(expr, uid=NULL) {
 }
 
 #' @rdname source_and_eval_safe
-source_and_eval_safe_with_hiding <- function(file, expr, uid = NULL, path = NULL) {
-  if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
-  
-  if (!file.exists(file)) return(invisible(NULL))
-  
-  temp_file <- NULL
-  
-  if (grepl("\\.ipynb$", file)) {
-    
-    code <- extract_r_code_from_ipynb(file)
-    if (nchar(code) == 0) {
-      warning("No matching R code found in notebook.")
-      return(invisible(NULL))
-    }
-    
-    temp_file <- tempfile(fileext = ".R")
-    writeLines(code, temp_file)
-    file <- temp_file
-  }
-  
-  if (!is.null(path) && file.exists(path)) {
-    newpath <- tempfile(tmpdir = dirname(path))
-    oldpath <- path
-    file.rename(oldpath, newpath)
-    on.exit(file.rename(newpath, oldpath), add = TRUE)
-  }
-  
-  oldmode <- file.mode(file)
-  Sys.chmod(file, mode = "0664")
-  source(file)
-  
-  res <- eval_safe(expr, uid = uid)
-  Sys.chmod(file, mode = oldmode)
-  
-  if (!is.null(temp_file) && file.exists(temp_file)) file.remove(temp_file)
-  
-  res
-}
+source_and_eval_safe_with_hiding <- function(file, expr, uid=NULL, path=NULL) {
+    if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
 
-extract_r_code_from_ipynb <- function(file, ipynb_key = "#R") {
-  nb <- fromJSON(file, simplifyVector = FALSE)
-  content <- ""
-  
-  for (cell in nb$cells) {
-    if (cell$cell_type == "code") {
-      code <- paste(unlist(cell$source), collapse = "")
-      if (startsWith(trimws(code), ipynb_key)) {
-        content <- paste0(content, code, "\n")
-      }
+    if (!file.exists(file)) return(invisible(NULL))
+
+    if (!is.null(path) && file.exists(path)) {
+        newpath <- tempfile(tmpdir=dirname(path))
+        oldpath <- path
+        file.rename(oldpath, newpath)
+        on.exit(file.rename(newpath, oldpath), add=TRUE)
     }
-  }
-  
-  return(content)
+
+    oldmode <- file.mode(file)
+    Sys.chmod(file, mode="0664")
+    source(file)
+
+    res <- eval_safe(expr, uid=uid)
+    Sys.chmod(file, mode=oldmode)
+
+    res
 }

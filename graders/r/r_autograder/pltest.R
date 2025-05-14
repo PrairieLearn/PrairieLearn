@@ -2,6 +2,22 @@
 ##
 ## Alton Barbehenn and Dirk Eddelbuettel, 2019 - 2025
 
+extract_r_code_from_ipynb <- function(file, ipynb_key = "#R") {
+  nb <- jsonlite::fromJSON(file, simplifyVector = FALSE)
+  content <- ""
+  
+  for (cell in nb$cells) {
+    if (cell$cell_type == "code") {
+      code <- paste(unlist(cell$source), collapse = "")
+      if (startsWith(trimws(code), ipynb_key)) {
+        content <- paste0(content, code, "\n")
+      }
+    }
+  }
+  
+  return(content)
+}
+
 result <- tryCatch({
 
     debug <- FALSE
@@ -15,6 +31,7 @@ result <- tryCatch({
 
     ## Directory with test files
     tests_dir <- "/grade/tests"
+    print(list.files())
 
     ## Get question information on available points and displayed title
     question_details <- plr::get_question_details(tests_dir)
@@ -22,6 +39,27 @@ result <- tryCatch({
         cat("[pltest] showing question_details\n")
         print(question_details)
         cat("[pltest] done question_details\n\n")
+    }
+
+    ## Check for ipynb
+    if (file.exists("bin/student.ipynb")) {
+        print("[pltest] Found ipynb file")
+
+        # Extract code
+        code <- extract_r_code_from_ipynb("bin/student.ipynb")
+        if (nchar(code) == 0) {
+            warning("No matching R code found in notebook.")
+            return(invisible(NULL))
+        }
+
+        # Define new R file path inside 'bin'
+        student_file <- file.path("bin", "student.R")
+        writeLines(code, student_file)
+        print(paste("[pltest] Extracted code written to", student_file))
+
+        # Delete the original .ipynb file
+        file.remove("bin/student.ipynb")
+        print("[pltest] Deleted original ipynb file")
     }
     
     ## Run tests in the test directory
@@ -91,3 +129,5 @@ error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succ
 
 ## Record results as the required JSON object
 jsonlite::write_json(result, path = "results.json", auto_unbox = TRUE, force = TRUE)
+
+
