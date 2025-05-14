@@ -147,7 +147,7 @@ function AssessmentQuestionRow({
                 data-bs-toggle="tooltip"
                 data-bs-title="This question uses a rubric"
               >
-                <i class="fas fa-list-check"></i><span class="visually-hidden">(uses rubric)</span>
+                <i class="fas fa-list-check"></i>
               </a>
             `}
       </td>
@@ -183,9 +183,9 @@ function AssessmentQuestionRow({
                       data-bs-toggle="modal"
                       data-bs-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
+                      aria-label="Assign to graders"
                     >
-                      <i class="fas fa-pencil"></i
-                      ><span class="visually-hidden">Assign to&hellip;</span>
+                      <i class="fas fa-pencil"></i>
                     </button>
                   `
                 : ''}

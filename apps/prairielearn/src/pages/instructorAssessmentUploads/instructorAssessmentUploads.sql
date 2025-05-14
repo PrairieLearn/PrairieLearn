@@ -9,9 +9,10 @@ FROM
   JOIN users AS u on (u.user_id = js.user_id)
 WHERE
   js.assessment_id = $assessment_id
-  AND (
-    js.type = 'upload_instance_question_scores'
-    OR js.type = 'upload_assessment_instance_scores'
+  AND js.type IN (
+    'upload_instance_question_scores',
+    'upload_assessment_instance_scores',
+    'upload_submissions'
   )
 ORDER BY
   js.start_date DESC,
