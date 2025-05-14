@@ -36,7 +36,10 @@ export async function selectAssessmentInfoForJob(assessment_id: string) {
 export async function selectAssessmentInCourseInstance({
   unsafe_assessment_id,
   course_instance_id,
-}): Promise<Assessment | null> {
+}: {
+  unsafe_assessment_id: string;
+  course_instance_id: string;
+}): Promise<Assessment> {
   return queryRow(
     sql.select_assessment_in_course_instance,
     {
