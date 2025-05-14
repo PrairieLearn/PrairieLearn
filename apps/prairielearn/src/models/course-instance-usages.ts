@@ -1,5 +1,5 @@
 /**
- * Usage date in the `course_instance_usages` table is designed only for
+ * Usage data in the `course_instance_usages` table is designed only for
  * tracking billing information, not for general usage information that might be
  * of use to instructors, for example. This specialized use case means that:
  * 1. We can determine the number of unique users for any historical date range,
