@@ -1187,7 +1187,7 @@ export async function generate(
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
     const data = {
-      externalParams: question.question_params,
+      externalParams: question.question_params ?? {},
       params: {},
       correct_answers: {},
       variant_seed: parseInt(variant_seed, 36),
@@ -1205,7 +1205,7 @@ export async function generate(
       return {
         courseIssues,
         data: {
-          externalParams: resultData.question_params,
+          external_params: resultData.external_params,
           params: resultData.params,
           true_answer: resultData.correct_answers,
         },
