@@ -231,7 +231,6 @@ body:has(div.app-container) {
 }
 
 #assessment-switcher-container .assessment-row .label span {
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
