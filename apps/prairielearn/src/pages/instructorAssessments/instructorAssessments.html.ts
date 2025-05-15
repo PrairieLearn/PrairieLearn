@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';

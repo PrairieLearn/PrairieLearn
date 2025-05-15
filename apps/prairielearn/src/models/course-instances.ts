@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import {
   loadSqlEquiv,
-  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
+  queryValidatedCursor,
 } from '@prairielearn/postgres';
 
 import {
@@ -150,5 +150,5 @@ export async function selectAssessments({
 }
 
 export function selectAssessmentsCursor({ course_instance_id }: { course_instance_id: string }) {
-  return queryCursor(sql.select_assessments, { course_instance_id });
+  return queryValidatedCursor(sql.select_assessments, { course_instance_id }, AssessmentRowSchema);
 }

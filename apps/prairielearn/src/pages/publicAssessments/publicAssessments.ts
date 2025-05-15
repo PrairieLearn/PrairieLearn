@@ -8,7 +8,7 @@ import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
-import { AssessmentRowSchema, PublicAssessments } from './publicAssessments.html.js';
+import { PublicAssessments } from './publicAssessments.html.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -24,12 +24,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Course instance not public.');
     }
 
-    const rows = await selectAssessments(
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
-      AssessmentRowSchema,
-    );
+    const rows = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     res.send(
       PublicAssessments({
