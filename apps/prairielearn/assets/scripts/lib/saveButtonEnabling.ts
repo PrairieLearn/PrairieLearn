@@ -25,11 +25,11 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // set valueHasChanged{} to false. Then call checkDifferences() to see if the save
   // button should be enabled.
   form.addEventListener('input', (e) => {
+    if (!(e.target instanceof HTMLInputElement)) return;
+
     if (
-      ((e.target as HTMLInputElement).type === 'checkbox' &&
-        (e.target as HTMLInputElement).checked === (e.target as HTMLInputElement).defaultChecked) ||
-      ((e.target as HTMLInputElement).type !== 'checkbox' &&
-        (e.target as HTMLInputElement).value === (e.target as HTMLInputElement).defaultValue)
+      (e.target.type === 'checkbox' && e.target.checked === e.target.defaultChecked) ||
+      (e.target.type !== 'checkbox' && e.target.value === e.target.defaultValue)
     ) {
       valueHasChanged[(e.target as HTMLElement).id] = false;
     } else {
