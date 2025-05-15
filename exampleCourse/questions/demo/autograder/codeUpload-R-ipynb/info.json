@@ -1,6 +1,6 @@
 {
   "uuid": "7ee46cad-fc03-4d1e-948a-0ef7b16688fb",
-  "title": "Demo: R, .ipynb file upload, external grading",
+  "title": "Autograder demo: Upload R notebook",
   "topic": "Autograder",
   "tags": ["code"],
   "type": "v3",
