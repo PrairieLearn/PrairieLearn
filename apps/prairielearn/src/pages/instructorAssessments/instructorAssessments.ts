@@ -45,7 +45,6 @@ router.get(
     const rows = await selectAssessments(
       {
         course_instance_id: res.locals.course_instance.id,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
       AssessmentRowSchema,
     );
@@ -123,7 +122,6 @@ router.get(
 
       const cursor = await selectAssessmentsCursor({
         course_instance_id: res.locals.course_instance.id,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
       });
 
       const stringifier = stringifyStream({

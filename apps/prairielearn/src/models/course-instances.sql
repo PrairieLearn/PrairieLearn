@@ -143,14 +143,14 @@ SELECT
   (
     LAG(
       CASE
-        WHEN $assessments_group_by = 'Set' THEN aset.id
+        WHEN ci.assessments_group_by = 'Set' THEN aset.id
         ELSE am.id
       END
     ) OVER (
       PARTITION BY
         (
           CASE
-            WHEN $assessments_group_by = 'Set' THEN aset.id
+            WHEN ci.assessments_group_by = 'Set' THEN aset.id
             ELSE am.id
           END
         )
@@ -173,12 +173,12 @@ WHERE
 ORDER BY
   (
     CASE
-      WHEN $assessments_group_by = 'Module' THEN am.number
+      WHEN ci.assessments_group_by = 'Module' THEN am.number
     END
   ),
   (
     CASE
-      WHEN $assessments_group_by = 'Module' THEN am.id
+      WHEN ci.assessments_group_by = 'Module' THEN am.id
     END
   ),
   aset.number,

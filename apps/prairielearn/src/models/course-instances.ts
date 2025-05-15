@@ -127,22 +127,14 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
 export async function selectAssessments(
   {
     course_instance_id,
-    assessments_group_by,
   }: {
     course_instance_id: string;
-    assessments_group_by: 'Set' | 'Module';
   },
   schema: z.ZodTypeAny,
 ) {
-  return queryRows(sql.select_assessments, { course_instance_id, assessments_group_by }, schema);
+  return queryRows(sql.select_assessments, { course_instance_id }, schema);
 }
 
-export function selectAssessmentsCursor({
-  course_instance_id,
-  assessments_group_by,
-}: {
-  course_instance_id: string;
-  assessments_group_by: 'Set' | 'Module';
-}) {
-  return queryCursor(sql.select_assessments, { course_instance_id, assessments_group_by });
+export function selectAssessmentsCursor({ course_instance_id }: { course_instance_id: string }) {
+  return queryCursor(sql.select_assessments, { course_instance_id });
 }
