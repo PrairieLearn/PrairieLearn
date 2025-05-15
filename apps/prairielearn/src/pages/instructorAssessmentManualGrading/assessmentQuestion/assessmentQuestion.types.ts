@@ -15,6 +15,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
+  human_ai_agreement: z.string().nullish(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 

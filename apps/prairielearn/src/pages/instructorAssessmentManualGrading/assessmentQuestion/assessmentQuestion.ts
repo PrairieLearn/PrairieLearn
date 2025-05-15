@@ -46,6 +46,12 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
+
+    // fill in the ai-grading related things (difference, graded by human/ai? with latest rubric?) here?
+    for (const instance_question of instance_questions) {
+      instance_question.human_ai_agreement = '100%';
+      // Something else? And probably move to another file, lib/ai-grading.ts (non-ee version)?
+    }
     res.send({ instance_questions });
   }),
 );

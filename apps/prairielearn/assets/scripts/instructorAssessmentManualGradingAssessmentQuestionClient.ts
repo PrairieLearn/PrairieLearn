@@ -296,6 +296,13 @@ onDocumentReady(() => {
           formatter: (value: string, row: InstanceQuestionRow) =>
             value ? row.last_grader_name : '&mdash;',
         },
+        {
+          field: 'human_ai_agreement',
+          title: 'Human-AI',
+          filterControl: 'input',
+          formatter: (value: string, row: InstanceQuestionRow) =>
+            value ? row.human_ai_agreement : '&mdash;',
+        },
         aiGradingEnabled
           ? {
               field: 'is_ai_graded',
