@@ -264,7 +264,7 @@ onDocumentReady(() => {
           title: 'Graded by',
           filterControl: 'select',
           filterCustomSearch: (text: string, value: string) => {
-            if (text === 'prairieai') {
+            if (text === 'ai') {
               return value.includes('js-custom-search-ai-grading');
             }
             return null;
@@ -273,9 +273,7 @@ onDocumentReady(() => {
             value
               ? row.is_ai_graded
                 ? html`
-                    <span class="badge text-bg-secondary js-custom-search-ai-grading"
-                      >PrairieAI</span
-                    >
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading">AI</span>
                   `.toString()
                 : row.last_grader_name
               : '&mdash;',
