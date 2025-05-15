@@ -15,12 +15,12 @@
     <!-- Background map image  -->
     <pl-background>
         <!-- Use a normal img tag because pl-figure applies extra padding and scaling when the window gets small -->
-        <img src="{{options.client_files_question_url}}/europe_annotated.png" width="700px">
+        <img src="{{options.client_files_question_url}}/europe_annotated.png" width="700">
     </pl-background>
 
     <!-- Input -->
     <pl-location left="460" top="290">
        <pl-string-input answers-name="string_value" show-help-text="false" size="7"
-                        correct-answer="Ukraine" remove-leading-trailing="true" ignore-case="true"></pl-string-input>
+                        correct-answer="Ukraine" aria-label="Unlabeled country" remove-leading-trailing="true" ignore-case="true"></pl-string-input>
     </pl-location>
 </pl-overlay>

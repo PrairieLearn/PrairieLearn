@@ -21,13 +21,11 @@ Each assessment contains:
 
 ### Concept Map
 
-<div style="max-width: 500px;" markdown>
-![](./concept-map-example.d2){pad="0"}
-</div>
+![Concept map](./concept-map-example.d2){pad="0" scale="1"}
 
 ### Questions
 
-[**Questions**](../question.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
+[**Questions**](../question/index.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
 
 ![An example homework question](./hw-question.png)
 
@@ -153,7 +151,7 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 You can also:
 
 - learn more about [courses](../course/index.md) or [course instances](../courseInstance.md)
-- learn more about [questions](../question.md), [elements](../elements.md), or [custom elements](../devElements.md)
+- learn more about [questions](../question/index.md), [elements](../elements.md), or [custom elements](../devElements.md)
 - learn more about [assessments](../assessment/index.md)
 - learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
 - learn how to [develop locally](../installing.md)
