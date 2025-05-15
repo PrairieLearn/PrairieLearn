@@ -265,16 +265,18 @@ onDocumentReady(() => {
           filterControl: 'select',
           filterCustomSearch: (text: string, value: string) => {
             if (text === 'prairieai') {
-              return value
-                .toLowerCase()
-                .includes('<span class="badge text-bg-secondary">prairieai</span>');
+              return value.includes('js-custom-search-ai-grading');
             }
             return null;
           },
           formatter: (value: string, row: InstanceQuestionRow) =>
             value
               ? row.is_ai_graded
-                ? html` <span class="badge text-bg-secondary">PrairieAI</span> `.toString()
+                ? html`
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading"
+                      >PrairieAI</span
+                    >
+                  `.toString()
                 : row.last_grader_name
               : '&mdash;',
         },
