@@ -132,20 +132,26 @@ router.post(
           single_variant: BooleanFromCheckboxSchema,
           show_correct_answer: BooleanFromCheckboxSchema,
           workspace_image: z.string().optional(),
-          workspace_port: IntegerFromStringOrEmptySchema.nullable(),
+          workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
-          workspace_args: z.string().transform((s) => shlex.split(s || '')),
-          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_args: z
+            .string()
+            .transform((s) => shlex.split(s || ''))
+            .optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema.optional(),
           // This will not correctly handle any filenames that have a comma in them.
           // Currently, we do not have any such filenames in prod so we don't think that
           // escaping commas in indiviudal filenames is necessary.
-          workspace_graded_files: z.string().transform((s) =>
-            s
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s !== ''),
-          ),
-          workspace_enable_networking: BooleanFromCheckboxSchema,
+          workspace_graded_files: z
+            .string()
+            .transform((s) =>
+              s
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s !== ''),
+            )
+            .optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
           workspace_environment: z.string().optional(),
         })
         .parse(req.body);
@@ -188,74 +194,63 @@ router.post(
         true,
       );
 
-      if (
-        body.workspace_image ||
-        body.workspace_port ||
-        body.workspace_home ||
-        body.workspace_args ||
-        body.workspace_rewrite_url ||
-        body.workspace_graded_files ||
-        body.workspace_enable_networking ||
-        body.workspace_environment
-      ) {
-        const workspaceOptions = {
-          comment: questionInfo.workspaceOptions?.comment ?? undefined,
-          image: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.image,
-            body.workspace_image,
-            '',
-          ),
-          port: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.port,
-            body.workspace_port,
-            null,
-          ),
-          home: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.home,
-            body.workspace_home,
-            '',
-          ),
-          args: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.args,
-            body.workspace_args,
-            (v) => !v || v.length === 0,
-          ),
-          rewriteUrl: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.rewriteUrl,
-            body.workspace_rewrite_url,
-            false,
-          ),
-          gradedFiles: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.gradedFiles,
-            body.workspace_graded_files,
-            (v) => !v || v.length === 0,
-          ),
-          enableNetworking: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.enableNetworking,
-            body.workspace_enable_networking,
-            false,
-          ),
-          environment: propertyValueWithDefault(
-            questionInfo.workspaceOptions?.environment,
-            JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+      const workspaceOptions = {
+        comment: questionInfo.workspaceOptions?.comment ?? undefined,
+        image: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.image,
+          body.workspace_image,
+          '',
+        ),
+        port: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.port,
+          body.workspace_port,
+          null,
+        ),
+        home: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.home,
+          body.workspace_home,
+          '',
+        ),
+        args: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.args,
+          body.workspace_args,
+          (v) => !v || v.length === 0,
+        ),
+        rewriteUrl: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.rewriteUrl,
+          body.workspace_rewrite_url,
+          false,
+        ),
+        gradedFiles: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.gradedFiles,
+          body.workspace_graded_files,
+          (v) => !v || v.length === 0,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.enableNetworking,
+          body.workspace_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.environment,
+          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+
+      const filteredOptions = Object.fromEntries(
+        Object.entries(
+          propertyValueWithDefault(
+            questionInfo.workspaceOptions,
+            workspaceOptions,
             (val) => !val || Object.keys(val).length === 0,
           ),
-        };
-
-        const filteredOptions = Object.fromEntries(
-          Object.entries(
-            propertyValueWithDefault(
-              questionInfo.workspaceOptions,
-              workspaceOptions,
-              (val) => !val || Object.keys(val).length === 0,
-            ),
-          ).filter(([_, value]) => value !== undefined),
-        );
-        questionInfo.workspaceOptions =
-          Object.keys(filteredOptions).length > 0
-            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
-            : undefined;
-      }
+        ).filter(([_, value]) => value !== undefined),
+      );
+      questionInfo.workspaceOptions =
+        Object.keys(filteredOptions).length > 0
+          ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+          : undefined;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
