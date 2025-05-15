@@ -912,10 +912,6 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)/ai_grading_runs',
-    (await import('./ee/pages/instructorAiGradingRuns/instructorAiGradingRuns.js')).default,
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
       function (req: Request, res: Response, next: NextFunction) {
@@ -2385,6 +2381,7 @@ if (esMain(import.meta) && config.startServer) {
       nodeMetrics.start({
         awsConfig: makeAwsClientConfig(),
         intervalSeconds: config.nodeMetricsIntervalSec,
+        namespace: 'PrairieLearn',
         dimensions: [
           { Name: 'Server Group', Value: config.groupName },
           { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },

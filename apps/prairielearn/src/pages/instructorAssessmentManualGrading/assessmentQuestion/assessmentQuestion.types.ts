@@ -28,5 +28,4 @@ export interface InstanceQuestionTableData {
   aiGradingEnabled: boolean;
   courseStaff: User[];
   csrfToken: string;
-  aiGradingUrl: string;
 }

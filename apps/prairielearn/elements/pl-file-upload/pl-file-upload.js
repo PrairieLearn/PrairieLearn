@@ -1,5 +1,3 @@
-/* eslint-env browser,jquery */
-
 (() => {
   function escapeFileName(name) {
     return name

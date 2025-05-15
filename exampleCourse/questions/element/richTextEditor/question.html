@@ -18,9 +18,7 @@
 <pl-question-panel>
   <p>
     The default behavior for the <code>pl-rich-text-editor</code>
-    element is displayed here.  The only required parameter
-    is <code>file-name</code>, which is the name of the file where
-    the student answer will be saved to.
+    element is displayed here.
   </p>
   
   <p> 
@@ -28,16 +26,19 @@
   </p>
 </pl-question-panel>
 
-<pl-rich-text-editor file-name="meaning.html" >
-</pl-rich-text-editor>
+<pl-rich-text-editor></pl-rich-text-editor>
 
 <hr>
 
 <pl-question-panel>
   <p>
-    The rich text editor can be pre-populated with a starter
-    template by adding text into the element, or by
-    using <code>source-file-name="initial.html"</code>.
+    If there is more than one <code>pl-rich-text-editor</code> element on the
+    page, additional instances of the element must be given a unique
+    <code>file-name</code> attribute. This attribute is the name of the file
+    where the student answer will be saved to. Also, the rich text editor can be
+    pre-populated with a starter template by adding text into the element, or by
+    using
+    <code>source-file-name="initial.html"</code>.
   </p>
   
   <p>

@@ -46,6 +46,7 @@ SCORE_CORRECT_DEFAULT = 1.0
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
+ARIA_LABEL_DEFAULT = "Multiple choice options"
 NONE_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
 ALL_OF_THE_ABOVE_DEFAULT = AotaNotaType.FALSE
 EXTERNAL_JSON_DEFAULT = None
@@ -401,7 +402,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "size",
         "placeholder",
-        "label",
+        "aria-label",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -494,7 +495,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = display_type is not DisplayType.BLOCK
     display_radio = display_type in {DisplayType.BLOCK, DisplayType.INLINE}
     submitted_key = data["submitted_answers"].get(name, None)
-    aria_label = pl.get_string_attrib(element, "label", "Multiple choice options")
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -664,7 +665,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
-    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    correct_key = data["correct_answers"][name].get("key", None)
     if correct_key is None:
         raise ValueError("could not determine correct_key")
 

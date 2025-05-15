@@ -553,7 +553,6 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        console.log(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[0]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
