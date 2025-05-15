@@ -123,8 +123,8 @@ result <- tryCatch({
     ## And return components for JSON output
     list(tests = res, score = score, images = images, succeeded = TRUE)
 },
-warning = function(w) list(tests = plr::message_to_test_result(w), score = 0, succeeded = FALSE),
-error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succeeded = FALSE) )
+warning = function(w) list(tests = plr::message_to_test_result(w), score = 0, succeeded = FALSE, gradable = FALSE),
+error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succeeded = FALSE, gradable = FALSE) )
 
 ## Record results as the required JSON object
 jsonlite::write_json(result, path = "results.json", auto_unbox = TRUE, force = TRUE)
