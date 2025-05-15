@@ -449,6 +449,7 @@ SET
   partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
+  modified_at = now(),
   override_score = COALESCE($score, override_score),
   score = COALESCE($score, score),
   correct = COALESCE($correct, correct),

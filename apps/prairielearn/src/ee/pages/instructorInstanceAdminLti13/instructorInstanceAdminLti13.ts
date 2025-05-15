@@ -291,7 +291,6 @@ router.post(
         await queryAsync(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
-        job.info('Done.');
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'search_lineitem') {
