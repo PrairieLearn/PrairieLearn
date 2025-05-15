@@ -83,6 +83,7 @@ BEGIN
         AND caar.authorized
     ORDER BY
         aar.credit DESC NULLS LAST,
+        time_limit_min DESC NULLS FIRST,
         aar.number
     LIMIT 1;
 
@@ -98,7 +99,7 @@ BEGIN
         show_closed_assessment_score = TRUE;
         active = FALSE;
     END IF;
-    
+
     -- Select the *next* access rule with active = true that gives the user access
     IF active_access_rule_id IS NOT NULL AND check_assessment_access.date IS NOT NULL AND NOT active THEN
         SELECT
