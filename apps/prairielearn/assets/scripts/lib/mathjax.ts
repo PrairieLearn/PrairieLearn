@@ -12,7 +12,7 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
   if (window.MathJax) {
     // Something else already loaded MathJax on this page. Just resolve the promise
     // once MathJax reports that it is ready.
-    window.MathJax.startup.promise.then(() => resolve());
+    window.MathJax.startup.promise.then(resolve, reject);
     return;
   }
 
