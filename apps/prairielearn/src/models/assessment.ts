@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  type CursorIterator,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -71,7 +72,11 @@ export async function selectAssessments({
   );
 }
 
-export function selectAssessmentsCursor({ course_instance_id }: { course_instance_id: string }) {
+export function selectAssessmentsCursor({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}): Promise<CursorIterator<AssessmentRow>> {
   return queryValidatedCursor(
     sql.select_assessments_for_course_instance,
     { course_instance_id },
