@@ -2,6 +2,20 @@
 ##
 ## Alton Barbehenn and Dirk Eddelbuettel, 2019 - 2025
 
+#' Extract R code from a Jupyter notebook
+#'
+#' This function parses a Jupyter notebook file and extracts R code from cells
+#' that start with a specific key.
+#'
+#' @param file Path to a Jupyter notebook (.ipynb) file
+#' @param ipynb_key Character string that marks the beginning of R code cells to extract (default: "#R")
+#'
+#' @return A character string containing the concatenated R code from matching cells
+#'
+#' @examples
+#' \dontrun{
+#' code <- extract_r_code_from_ipynb("student.ipynb")
+#' }
 extract_r_code_from_ipynb <- function(file, ipynb_key = "#R") {
   nb <- jsonlite::fromJSON(file, simplifyVector = FALSE)
   content <- ""
