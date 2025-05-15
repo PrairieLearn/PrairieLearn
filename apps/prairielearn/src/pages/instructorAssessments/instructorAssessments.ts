@@ -24,11 +24,7 @@ import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectAssessmentsCursor } from '../../models/course-instances.js';
 import { selectAssessments } from '../../models/course-instances.js';
 
-import {
-  AssessmentRowSchema,
-  AssessmentStats,
-  InstructorAssessments,
-} from './instructorAssessments.html.js';
+import { AssessmentStats, InstructorAssessments } from './instructorAssessments.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -42,12 +38,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
-    const rows = await selectAssessments(
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
-      AssessmentRowSchema,
-    );
+    const rows = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     const assessmentIdsNeedingStatsUpdate = rows
       .filter((row) => row.needs_statistics_update)
