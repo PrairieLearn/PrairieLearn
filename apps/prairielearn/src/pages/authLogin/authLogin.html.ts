@@ -87,28 +87,6 @@ function LoginPageContainer({
             margin: auto;
           }
 
-          .btn-shib {
-            background-color: ${config.shibLinkColors.normal.background};
-            border-color: ${config.shibLinkColors.normal.border};
-            color: ${config.shibLinkColors.normal.text};
-          }
-
-          .btn-shib:hover {
-            background-color: ${config.shibLinkColors.hover.background};
-            border-color: ${config.shibLinkColors.hover.border};
-            color: ${config.shibLinkColors.hover.text};
-          }
-
-          .btn-shib:focus {
-            box-shadow: 0 0 0 0.2rem ${config.shibLinkColors.focus.shadow};
-          }
-
-          .btn-shib:active {
-            background-color: ${config.shibLinkColors.active.background};
-            border-color: ${config.shibLinkColors.active.border};
-            color: ${config.shibLinkColors.active.text};
-          }
-
           .institution-header {
             overflow: hidden;
             text-align: center;
@@ -168,17 +146,6 @@ function LoginPageContainer({
   `;
 }
 
-function ShibLoginButton() {
-  return html`
-    <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
-      ${config.shibLinkLogo != null
-        ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
-        : html`<span class="social-icon"></span>`}
-      <span class="fw-bold">${config.shibLinkText}</span>
-    </a>
-  `;
-}
-
 function GoogleLoginButton() {
   return html`
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
@@ -227,7 +194,6 @@ export function AuthLogin({
           `
         : ''}
       <div class="login-methods mt-4">
-        ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
       </div>
@@ -266,7 +232,6 @@ export function AuthLoginUnsupportedProvider({
   const supportsNonLti = supportedProviders.some((p) => p.name !== 'LTI');
 
   const supportsSaml = supportedProviders.some((p) => p.name === 'SAML');
-  const supportsShib = supportedProviders.some((p) => p.name === 'Shibboleth');
   const supportsGoogle = supportedProviders.some((p) => p.name === 'Google');
   const supportsAzure = supportedProviders.some((p) => p.name === 'Azure');
 
@@ -276,11 +241,6 @@ export function AuthLoginUnsupportedProvider({
   );
 
   const showSaml = supportsSaml && defaultProvider?.name !== 'SAML';
-  const showShib =
-    config.hasShib &&
-    !config.hideShibLogin &&
-    supportsShib &&
-    defaultProvider?.name !== 'Shibboleth';
   const showGoogle = config.hasOauth && supportsGoogle && defaultProvider?.name !== 'Google';
   const showAzure = config.hasAzure && supportsAzure && defaultProvider?.name !== 'Azure';
 
@@ -288,9 +248,6 @@ export function AuthLoginUnsupportedProvider({
   switch (defaultProvider?.name) {
     case 'SAML':
       defaultProviderButton = SamlLoginButton({ institutionId });
-      break;
-    case 'Shibboleth':
-      defaultProviderButton = ShibLoginButton();
       break;
     case 'Google':
       defaultProviderButton = GoogleLoginButton();
@@ -349,7 +306,6 @@ export function AuthLoginUnsupportedProvider({
       <div class="login-methods">
         ${[
           showSaml ? SamlLoginButton({ institutionId }) : '',
-          showShib ? ShibLoginButton() : '',
           showGoogle ? GoogleLoginButton() : '',
           showAzure ? MicrosoftLoginButton() : '',
         ]}

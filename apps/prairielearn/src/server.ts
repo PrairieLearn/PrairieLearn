@@ -379,10 +379,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/oauth2callback',
     (await import('./pages/authCallbackOAuth2/authCallbackOAuth2.js')).default,
   );
-  app.use(
-    /\/pl\/shibcallback/,
-    (await import('./pages/authCallbackShib/authCallbackShib.js')).default,
-  );
 
   if (isEnterprise()) {
     if (config.hasAzure) {

@@ -183,11 +183,6 @@ const SKIP_ROUTES = [
   // This is not a real page.
   '/*',
 
-  // Special-case: `express-list-endpoints` doesn't handle regexp routes well.
-  // This matches the serialized path for regexp routes. Yes, there is a trailing
-  // space here.
-  '/ RegExp(/\\/pl\\/shibcallback/) ',
-
   // This page is not user-visible.
   '/pl/webhooks/ping',
 

@@ -3,7 +3,7 @@ CREATE TABLE authn_providers (id bigserial PRIMARY KEY, name TEXT);
 INSERT INTO
   authn_providers (id, name)
 VALUES
-  (1, 'Shibboleth'),
+  (1, 'Unused'),
   (2, 'Google'),
   (3, 'Azure'),
   (4, 'LTI');

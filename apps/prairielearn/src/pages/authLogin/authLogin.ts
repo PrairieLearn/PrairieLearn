@@ -80,9 +80,6 @@ router.get(
           case 'Azure':
             url = '/pl/azure_login';
             break;
-          case 'Shibboleth':
-            url = '/pl/shibcallback';
-            break;
           default:
             return null;
         }

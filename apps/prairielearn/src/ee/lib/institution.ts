@@ -39,9 +39,6 @@ export async function getInstitutionAuthenticationProviders(
 export async function getSupportedAuthenticationProviders(): Promise<AuthnProvider[]> {
   const authProviders = await queryRows(sql.select_authentication_providers, AuthnProviderSchema);
   return authProviders.filter((row) => {
-    if (row.name === 'Shibboleth') {
-      return config.hasShib;
-    }
     if (row.name === 'Google') {
       return config.hasOauth;
     }

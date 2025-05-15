@@ -141,22 +141,6 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  step('user 2 create under Shibboleth', async () => {
-    const user = {
-      uid: 'joe@example.com',
-      name: 'Joe Bob',
-      uin: '444444444',
-      institution_id: '1',
-    };
-
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 2);
-
-    const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
-  });
-
   step('add an institution for example.com', async () => {
     await sqldb.queryAsync(sql.insert_example_com_institution, []);
   });
@@ -261,22 +245,6 @@ describe('sproc users_select_or_insert tests', () => {
     };
 
     const result = await usersSelectOrInsert(user, 'SAML', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 4);
-
-    const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
-  });
-
-  step('user 4 logs in with full correct credentials', async () => {
-    const user = {
-      uid: 'newstudent',
-      name: 'Johnny New Student',
-      uin: '888899990',
-      institution_id: '1',
-    };
-
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
 

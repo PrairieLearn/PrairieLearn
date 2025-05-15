@@ -95,7 +95,7 @@ function runTest(context) {
         user.name,
         user.uin,
         user.email,
-        'Shibboleth',
+        'Google',
       ]);
     }
     await insertCoursePermissionsByUserUid({

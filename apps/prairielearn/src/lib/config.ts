@@ -261,37 +261,6 @@ const ConfigSchema = z.object({
    * This is populated by `lib/aws.js` later.
    */
   awsServiceGlobalOptions: z.record(z.unknown()).default({}),
-  hasShib: z.boolean().default(false),
-  hideShibLogin: z.boolean().default(false),
-  shibLinkText: z.string().default('Sign in with Illinois'),
-  shibLinkLogo: z.string().default('/images/illinois_logo.svg'),
-  shibLinkColors: z
-    .object({
-      normal: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      hover: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      active: z.object({
-        background: z.string(),
-        border: z.string(),
-        text: z.string(),
-      }),
-      focus: z.object({
-        shadow: z.string(),
-      }),
-    })
-    .default({
-      normal: { background: '#E84A27', border: '#E84A27', text: 'white' },
-      hover: { background: '#D04223', border: '#D04223', text: 'white' },
-      active: { background: '#B93B1F', border: '#B93B1F', text: 'white' },
-      focus: { shadow: 'rgba(255, 83, 0, 0.35)' },
-    }),
   hasAzure: z.boolean().default(false),
   hasOauth: z.boolean().default(false),
   googleClientId: z.string().nullable().default(null),
