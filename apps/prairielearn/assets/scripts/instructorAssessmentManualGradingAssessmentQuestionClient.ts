@@ -55,7 +55,15 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
+    buttonsOrder: [
+      'columns',
+      'refresh',
+      'autoRefresh',
+      'showStudentInfo',
+      'status',
+      'toggleAiGradingMode',
+      'aiGrade',
+    ],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -83,6 +91,28 @@ onDocumentReady(() => {
         attributes: {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
+        },
+      },
+      toggleAiGradingMode: {
+        text: 'AI grading mode',
+        icon: 'fa-eye',
+        event: () => {
+          // First toggle ai-grading-mode for the assessment question and return the new state
+          // Through sql here? Or a hidden form in assessmentQuestion.html.ts, and get the result using a fetch()?
+          // Or maybe it is ok if we don't store in a database, just work similarly to show/hide student info?
+          const button = document.getElementById('js-toggle-ai-grading-mode-button');
+          // $('#grading-table').bootstrapTable(
+          //   button?.classList.contains('active') ? 'hideColumn' : 'showColumn',
+          //   ['graded_by'],
+          // );
+          button?.classList.toggle(
+            'active',
+            // force = true or false depending on the output
+          );
+        },
+        attributes: {
+          id: 'js-toggle-ai-grading-mode-button',
+          title: 'Start/stop AI grading mode',
         },
       },
       status: {
