@@ -360,10 +360,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             statement_set.append(statement_html)
 
         option_set = []
-        for index, option in enumerate(display_options):
+        for index, option in enumerate(display_options, start=1):
             option_html = {
                 "key": option["key"],
-                "counter": get_counter(index + 1, counter_type),
+                "counter": get_counter(index, counter_type),
                 "html": option["html"].strip(),
             }
             option_set.append(option_html)
