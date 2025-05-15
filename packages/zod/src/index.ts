@@ -116,7 +116,6 @@ export const IntegerFromStringSchema = z.coerce.number().int();
  * This is useful for form number inputs that are not required but we do not want to
  * use an empty string to compute values.
  */
-
 export const IntegerFromStringOrEmptySchema = z.preprocess(
   (value) => (value === '' ? null : value),
   z.union([z.null(), z.coerce.number().int()]),
