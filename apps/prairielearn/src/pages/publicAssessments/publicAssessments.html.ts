@@ -3,18 +3,17 @@ import { html } from '@prairielearn/html';
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { type AssessmentRow } from '../../models/course-instances.js';
+import type { CourseInstance } from '../../lib/db-types.js';
+import { type AssessmentRow } from '../../models/assessment.js';
 
 export function PublicAssessments({
   resLocals,
   rows,
-  assessmentsGroupBy,
-  courseInstanceId,
+  courseInstance,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
-  assessmentsGroupBy: 'Set' | 'Module';
-  courseInstanceId: string;
+  courseInstance: CourseInstance;
 }) {
   return PageLayout({
     resLocals,
@@ -48,7 +47,7 @@ export function PublicAssessments({
                     ? html`
                         <tr>
                           <th colspan="3" scope="row">
-                            ${assessmentsGroupBy === 'Set'
+                            ${courseInstance.assessments_group_by === 'Set'
                               ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                               : AssessmentModuleHeading({
                                   assessment_module: row.assessment_module,
@@ -63,7 +62,7 @@ export function PublicAssessments({
                     </td>
                     <td class="align-middle">
                       <a
-                        href="/pl/public/course_instance/${courseInstanceId}/assessment/${row.id}/questions"
+                        href="/pl/public/course_instance/${courseInstance.id}/assessment/${row.id}/questions"
                         >${row.title}
                       </a>
                     </td>

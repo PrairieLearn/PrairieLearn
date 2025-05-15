@@ -21,8 +21,7 @@ import {
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectAssessmentsCursor } from '../../models/course-instances.js';
-import { selectAssessments } from '../../models/course-instances.js';
+import { selectAssessments, selectAssessmentsCursor } from '../../models/assessment.js';
 
 import { AssessmentStats, InstructorAssessments } from './instructorAssessments.html.js';
 

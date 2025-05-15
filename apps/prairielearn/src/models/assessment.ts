@@ -1,8 +1,20 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryValidatedCursor,
+} from '@prairielearn/postgres';
 
-import { type Assessment, AssessmentSchema, IdSchema } from '../lib/db-types.js';
+import {
+  type Assessment,
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -30,5 +42,39 @@ export async function selectAssessmentInfoForJob(assessment_id: string) {
       course_instance_id: IdSchema,
       course_id: IdSchema,
     }),
+  );
+}
+
+export const AssessmentStatsRowSchema = AssessmentSchema.extend({
+  needs_statistics_update: z.boolean().optional(),
+});
+export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
+
+export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+  start_new_assessment_group: z.boolean(),
+  assessment_set: AssessmentSetSchema,
+  assessment_module: AssessmentModuleSchema,
+  label: z.string(),
+  open_issue_count: z.coerce.number(),
+});
+export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+
+export async function selectAssessments({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}): Promise<AssessmentRow[]> {
+  return queryRows(
+    sql.select_assessments_for_course_instance,
+    { course_instance_id },
+    AssessmentRowSchema,
+  );
+}
+
+export function selectAssessmentsCursor({ course_instance_id }: { course_instance_id: string }) {
+  return queryValidatedCursor(
+    sql.select_assessments_for_course_instance,
+    { course_instance_id },
+    AssessmentRowSchema,
   );
 }

@@ -1,17 +1,8 @@
 import { z } from 'zod';
 
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-  queryValidatedCursor,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
@@ -118,20 +109,6 @@ export async function selectCourseHasCourseInstances({
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
 }
 
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  label: z.string(),
-  open_issue_count: z.coerce.number(),
-});
-export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
-
 export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
   const isPublic = await queryRow(
     sql.check_course_instance_is_public,
@@ -139,16 +116,4 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
     z.boolean(),
   );
   return isPublic;
-}
-
-export async function selectAssessments({
-  course_instance_id,
-}: {
-  course_instance_id: string;
-}): Promise<AssessmentRow[]> {
-  return queryRows(sql.select_assessments, { course_instance_id }, AssessmentRowSchema);
-}
-
-export function selectAssessmentsCursor({ course_instance_id }: { course_instance_id: string }) {
-  return queryValidatedCursor(sql.select_assessments, { course_instance_id }, AssessmentRowSchema);
 }
