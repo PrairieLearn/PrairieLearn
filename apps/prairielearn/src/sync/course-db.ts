@@ -1285,7 +1285,7 @@ async function validateCourseInstance(
   });
 
   if (accessibleInFuture) {
-    // Only warn about new roles and invalid UIDs for current or future courses.
+    // Only warn about new roles and invalid UIDs for current or future course instances.
     (courseInstance.allowAccess || []).forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule));
       warnings.push(...checkAllowAccessUids(rule));
