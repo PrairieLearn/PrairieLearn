@@ -34,8 +34,7 @@ export function InstructorAssessmentAccess({
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];
 }) {
-  const showComments =
-    accessRules.filter((access_rule) => isRenderableComment(access_rule.comment)).length > 0;
+  const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
   return PageLayout({
     resLocals,
     pageTitle: 'Access',

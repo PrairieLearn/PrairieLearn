@@ -15,8 +15,9 @@ export function InstructorInstanceAdminAccess({
   accessRules: CourseInstanceAccessRule[];
 }) {
   const { authz_data, course_instance } = resLocals;
-  const showComments =
-    accessRules.filter((access_rule) => isRenderableComment(access_rule.json_comment)).length > 0;
+  const showComments = accessRules.some((access_rule) =>
+    isRenderableComment(access_rule.json_comment),
+  );
 
   return PageLayout({
     resLocals,
