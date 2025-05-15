@@ -2,7 +2,7 @@ import { assert } from 'chai';
 
 import { isRenderableComment } from '../lib/comments.js';
 
-describe('isRenderable should determine non-empty comments', function () {
+describe('isRenderableComment', function () {
   it('should return true for non-empty string', () => {
     assert.isTrue(isRenderableComment('Test comment'));
   });

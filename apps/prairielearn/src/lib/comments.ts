@@ -3,7 +3,6 @@
  *
  * @param comment - the comment being assessed
  */
-
 export function isRenderableComment(comment: string | string[] | Record<string, any> | null) {
   if (
     !comment ||
