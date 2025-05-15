@@ -559,24 +559,20 @@ def create_table_for_html_display(
 ) -> str:
     editable = data["editable"]
 
-    label_attr = (
-        f'aria-label="{aria_label}"'
-        if aria_label is not None
-        else (
-            f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
-            if label
-            else ""
-        )
-    )
+    label_attr = ""
+
+    if aria_label is not None:
+        label_attr = f'aria-label="{aria_label}"'
+    elif label is not None:
+        label_attr = f'aria-labelledby="pl-matrix-component-input-{label_uuid}-label"'
+
     if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -592,11 +588,9 @@ def create_table_for_html_display(
                 )
             display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             display_array += "</code></td> "
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
         # Add the other rows
         for i in range(1, m):
@@ -642,13 +636,11 @@ def create_table_for_html_display(
         display_array += "<tr>"
         # Add the prefix
         if label is not None:
-            display_array += '<td rowspan="0">' + label + "&nbsp;</td>"
+            display_array += f'<td rowspan="0">{label}&nbsp;</td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -671,14 +663,12 @@ def create_table_for_html_display(
                 display_array += feedback_message
             display_array += "</td> "
         # Add the suffix
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
         if score_message:
-            display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
+            display_array += f'<td rowspan="0">&nbsp;{score_message}</td>'
         display_array += "</tr>"
         # Add the other rows
         for i in range(1, m):
@@ -713,29 +703,24 @@ def create_table_for_html_display(
         display_array += "<tr>"
         # Add first row
         display_array += (
-            '<td class="pl-matrix-component-input-close-left" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-left" rowspan="{m}"></td>'
         )
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
-            display_array += f' <td> <input name= "{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" '
-            if not editable:
-                display_array += " disabled "
+            disabled = "disabled" if not editable else ""
+            value = ""
             if raw_submitted_answer is not None:
-                display_array += '  value= "'
-                display_array += escape(raw_submitted_answer)
-            display_array += '" /> </td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+                value = f'value="{escape(raw_submitted_answer)}"'
+            display_array += f'<td><input name="{each_entry_name}" type="text" size="8" aria-label="Row 1, Column {j + 1}" {disabled} {value}/></td>'
+        display_array += f'<td style="width:4px" rowspan="{m}"></td>'
         display_array += (
-            '<td class="pl-matrix-component-input-close-right" rowspan="'
-            + str(m)
-            + '"></td>'
+            f'<td class="pl-matrix-component-input-close-right" rowspan="{m}"></td>'
         )
+
         # Add other rows
         for i in range(1, m):
             display_array += " <tr>"
@@ -744,13 +729,11 @@ def create_table_for_html_display(
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
-                display_array += f' <td> <input name= "{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" '
-                if not editable:
-                    display_array += " disabled "
+                disabled = "disabled" if not editable else ""
+                value = ""
                 if raw_submitted_answer is not None:
-                    display_array += '  value= "'
-                    display_array += escape(raw_submitted_answer)
-                display_array += '" /> </td>'
+                    value = f'value="{escape(raw_submitted_answer)}"'
+                display_array += f' <td><input name="{each_entry_name}" type="text" size="8" aria-label="Row {i + 1}, Column {j + 1}" {disabled} {value}/></td>'
                 display_array += " </td> "
             display_array += "</tr>"
         display_array += "</table>"
