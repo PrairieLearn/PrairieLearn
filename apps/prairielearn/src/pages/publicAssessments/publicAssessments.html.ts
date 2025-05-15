@@ -1,23 +1,9 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
-
-export const AssessmentRowSchema = AssessmentSchema.extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  label: z.string(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+import { type AssessmentRow } from '../../models/course-instances.js';
 
 export function PublicAssessments({
   resLocals,
