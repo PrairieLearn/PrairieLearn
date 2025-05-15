@@ -4,8 +4,8 @@ import { html } from '@prairielearn/html';
 import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 import { isRenderableComment } from '../../lib/comments.js';
+import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,

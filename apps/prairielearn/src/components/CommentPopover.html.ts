@@ -1,4 +1,5 @@
 import { escapeHtml, html } from '@prairielearn/html';
+
 import { isRenderableComment } from '../lib/comments.js';
 
 export function CommentPopover(comment: string | string[] | Record<string, any> | null) {
