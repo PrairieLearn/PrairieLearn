@@ -104,15 +104,7 @@ export const DateFromISOString = z
   .transform((s) => new Date(s));
 
 /**
- * A Zod schema for a string that can be parsed as a valid integer. This is
- * useful for parsing body parameters from a request.
- */
-export const IntegerFromStringSchema = z.coerce.number().int();
-
-/**
- * A Zod schema that utilizes IntegerFromStringSchema to parse a string as an
- * integer. However, this wrapper also allows us to accept and empty string as a
- * valid value. If an empty string is passed, it will be transformed to null.
+ * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
  * This is useful for form number inputs that are not required but we do not want to
  * use an empty string to compute values.
  */
