@@ -28,13 +28,13 @@ and more. We also include a few command-line applications such as `git` and `sql
 
 ## File Support
 
-This grader primarily focuses on `.R` files for both the student submissions and test files. The `.R` file can be named anything provided it follows that name in the test files. Currently, `.ipynb` are supported for student submissions files (not tests) with the following caveats
+This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (not test files) with the following caveats:
 
 - the student code must be written in a notebook called `student.ipynb`
 - the answer code must be in a single cell of the notebook that starts with `#R`
 - the test files use `/grade/student/student.R`
 
-It is hoped to make the naming conventions more flexible for Notebook files in the future.
+We plan to support more flexible naming conventions for notebook files in the future.
 
 ## Authors
 
