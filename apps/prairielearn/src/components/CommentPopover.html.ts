@@ -9,11 +9,9 @@ export function CommentPopover(comment: string | string[] | Record<string, any> 
     (typeof comment === 'object' && Object.keys(comment).length === 0)
   ) {
     return '';
-  } else if (typeof comment === 'string') {
-    content = comment;
-  } else {
-    content = JSON.stringify(comment, null, 2);
   }
+  
+  const content = typeof comment === 'string' ? comment : JSON.stringify(comment, null, 2);
 
   return html`
     <button
