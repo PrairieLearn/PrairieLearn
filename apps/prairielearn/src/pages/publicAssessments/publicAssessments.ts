@@ -3,7 +3,8 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { selectAssessments, selectCourseInstanceIsPublic } from '../../models/course-instance.js';
+import { selectAssessments } from '../../models/course-instances.js';
+import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 

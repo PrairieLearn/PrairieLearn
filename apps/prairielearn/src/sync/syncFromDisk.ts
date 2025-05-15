@@ -1,8 +1,6 @@
 import async from 'async';
-import { z } from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import * as sqldb from '@prairielearn/postgres';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -33,8 +31,6 @@ import {
   getInvalidRenames,
   selectSharedQuestions,
 } from './sharing.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SyncResultSharingError {
   status: 'sharing_error';

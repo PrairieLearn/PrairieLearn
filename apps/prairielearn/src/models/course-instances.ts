@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryCursor,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type CourseInstance,
@@ -107,4 +113,36 @@ export async function selectCourseHasCourseInstances({
   course_id: string;
 }): Promise<boolean> {
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
+}
+
+export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
+  const isPublic = await queryRow(
+    sql.check_course_instance_is_public,
+    { course_instance_id },
+    z.boolean(),
+  );
+  return isPublic;
+}
+
+export async function selectAssessments(
+  {
+    course_instance_id,
+    assessments_group_by,
+  }: {
+    course_instance_id: string;
+    assessments_group_by: 'Set' | 'Module';
+  },
+  schema: z.ZodTypeAny,
+) {
+  return queryRows(sql.select_assessments, { course_instance_id, assessments_group_by }, schema);
+}
+
+export function selectAssessmentsCursor({
+  course_instance_id,
+  assessments_group_by,
+}: {
+  course_instance_id: string;
+  assessments_group_by: 'Set' | 'Module';
+}) {
+  return queryCursor(sql.select_assessments, { course_instance_id, assessments_group_by });
 }
