@@ -535,7 +535,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  const err =  checkProp('externalParams',         'object',  ['generate'],                         [])
+  const err =  checkProp('external_params',         'object',  ['generate'],                         [])
              || checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('variant_seed',          'integer', allPhases,                            [])
