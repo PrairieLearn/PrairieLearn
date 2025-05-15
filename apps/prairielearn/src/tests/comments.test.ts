@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+
 import { isRenderableComment } from '../lib/comments.js';
 
 describe('isRenderable should determine non-empty comments', function () {
