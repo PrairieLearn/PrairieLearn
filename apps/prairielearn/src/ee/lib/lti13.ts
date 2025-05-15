@@ -908,7 +908,9 @@ export async function updateLti13Scores(
   job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
   if (counts.error > 0 && counts.success === 0) {
     job.warn('\tNo scores successfully sent and errors are present.');
-    job.warn(`\tIs the ${instance.lti13_instance.name} course published?`);
+    job.warn(
+      `\tIs the ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label} course published?`,
+    );
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }
