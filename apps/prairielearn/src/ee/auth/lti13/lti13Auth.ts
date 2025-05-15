@@ -309,7 +309,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
+  const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
