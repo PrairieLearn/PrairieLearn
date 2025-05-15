@@ -101,19 +101,25 @@ SELECT
     WHEN a.group_work
     AND ai.group_id IS NOT NULL THEN (
       SELECT
-        jsonb_agg(to_jsonb(users))
+        jsonb_agg(
+          to_jsonb(users) || jsonb_build_object('lti13_sub', lti13_users.sub)
+        )
       FROM
         group_users
         JOIN users ON (group_users.user_id = users.user_id)
+        LEFT JOIN lti13_users ON (lti13_users.user_id = group_users.user_id)
       WHERE
         group_users.group_id = ai.group_id
     )
-    ELSE jsonb_build_array(to_jsonb(u))
+    ELSE jsonb_build_array(
+      to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub)
+    )
   END AS users
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN lti13_users AS lu ON (lu.user_id = ai.user_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.score_perc IS NOT NULL

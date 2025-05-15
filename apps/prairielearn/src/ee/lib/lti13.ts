@@ -23,7 +23,6 @@ import {
   DateFromISOString,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
-  type User,
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -675,6 +674,11 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
+const UserWithLti13SubSchema = UserSchema.extend({
+  lti13_sub: z.string().nullable(),
+});
+type UserWithLti13Sub = z.infer<typeof UserWithLti13SubSchema>;
+
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = z.object({
   user_id: z.string(),
@@ -693,17 +697,20 @@ const ContextMembershipContainerSchema = z.object({
 });
 
 class Lti13ContextMembership {
-  #memberships: Record<string, ContextMembership[]> = {};
+  #membershipsByEmail: Record<string, ContextMembership[]> = {};
+  #membershipsBySub: Record<string, ContextMembership> = {};
 
   private constructor(memberships: ContextMembership[]) {
     // Turn array into an object for efficient lookups. We need to retain duplicates
     // so that we can detect and handle the case where two users have the same email.
     for (const member of memberships) {
+      this.#membershipsBySub[member.user_id] = member;
+
       if (member.email === undefined) {
         continue;
       }
-      this.#memberships[member.email] ??= [];
-      this.#memberships[member.email].push(member);
+      this.#membershipsByEmail[member.email] ??= [];
+      this.#membershipsByEmail[member.email].push(member);
     }
   }
 
@@ -748,12 +755,15 @@ class Lti13ContextMembership {
   }
 
   /**
-   * @param user The user to look up.
+   * @param user The user to look up with optional lti13_sub
    * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  lookup(user: User): ContextMembership | null {
+  lookup(user: UserWithLti13Sub): ContextMembership | null {
+    if (user.lti13_sub !== null) {
+      return this.#membershipsBySub[user.lti13_sub] ?? null;
+    }
     for (const match of ['uid', 'email']) {
-      const memberResults = this.#memberships[user[match]];
+      const memberResults = this.#membershipsByEmail[user[match]];
 
       if (!memberResults) continue;
 
@@ -801,7 +811,7 @@ export async function updateLti13Scores(
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query
-      users: UserSchema.array(),
+      users: UserWithLti13SubSchema.array(),
     }),
   );
 
