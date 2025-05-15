@@ -891,13 +891,15 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   };
 }
 
+/**
+ * It seems to be relatively common for instructors to accidentally put multiple
+ * UIDs in the same string, like "uid1@example.com, uid2@example.com". While we
+ * are pretty loose in what we accept as UIDs, they should never contain commas or
+ * whitespace, so we'll warn about that.
+ */
 function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
   const warnings: string[] = [];
 
-  // It seems to be relatively common for instructors to accidentally put multiple
-  // UIDs in the same string, like "uid1@example.com, uid2@example.com". While we
-  // are pretty loose in what we accept as UIDs, they should never contain commas or
-  // whitespace, so we'll warn about that.
   const uidsWithWhitespace = (rule.uids ?? []).filter((uid) => /\s/.test(uid));
   if (uidsWithWhitespace.length > 0) {
     warnings.push(
