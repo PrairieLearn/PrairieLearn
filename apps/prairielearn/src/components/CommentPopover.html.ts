@@ -1,16 +1,10 @@
 import { escapeHtml, html } from '@prairielearn/html';
+import { isRenderableComment } from '../lib/comments.js';
 
 export function CommentPopover(comment: string | string[] | Record<string, any> | null) {
-  let content = '';
-  if (
-    !comment ||
-    (typeof comment === 'string' && comment.trim() === '') ||
-    (Array.isArray(comment) && comment.toString() === '[]') ||
-    (typeof comment === 'object' && Object.keys(comment).length === 0)
-  ) {
+  if (!isRenderableComment(comment)) {
     return '';
   }
-  
   const content = typeof comment === 'string' ? comment : JSON.stringify(comment, null, 2);
 
   return html`

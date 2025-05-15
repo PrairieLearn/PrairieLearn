@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 
@@ -34,9 +35,7 @@ export function InstructorAssessmentAccess({
   accessRules: AssessmentAccessRules[];
 }) {
   const showComments =
-    accessRules.filter(
-      (access_rule) => access_rule.comment && Object.keys(access_rule.comment).length > 0,
-    ).length > 0;
+    accessRules.filter((access_rule) => isRenderableComment(access_rule.comment)).length > 0;
   return PageLayout({
     resLocals,
     pageTitle: 'Access',

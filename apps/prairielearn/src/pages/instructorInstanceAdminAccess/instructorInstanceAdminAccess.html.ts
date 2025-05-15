@@ -5,6 +5,7 @@ import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { isRenderableComment } from '../../lib/comments.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
@@ -15,9 +16,7 @@ export function InstructorInstanceAdminAccess({
 }) {
   const { authz_data, course_instance } = resLocals;
   const showComments =
-    accessRules.filter(
-      (access_rule) => access_rule.json_comment && Object.keys(access_rule.json_comment).length > 0,
-    ).length > 0;
+    accessRules.filter((access_rule) => isRenderableComment(access_rule.json_comment)).length > 0;
 
   return PageLayout({
     resLocals,
