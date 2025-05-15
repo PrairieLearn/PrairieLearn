@@ -31,7 +31,6 @@ result <- tryCatch({
 
     ## Directory with test files
     tests_dir <- "/grade/tests"
-    print(list.files())
 
     ## Get question information on available points and displayed title
     question_details <- plr::get_question_details(tests_dir)
