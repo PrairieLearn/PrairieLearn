@@ -905,6 +905,6 @@ export async function updateLti13Scores(
   }
   job.info('Done.\n\nSummary:');
   job.info(`${counts.success} score${counts.success === 1 ? '' : 's'} successfully sent.`);
-  job.info(`${counts.error} error${counts.error === 1 ? '' : 's'} sent.`);
+  job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }
