@@ -54,25 +54,34 @@ result <- tryCatch({
         cat("[pltest] done question_details\n\n")
     }
 
+    print(list.files("bin/"))
+
+    # List all files in the 'bin/' directory
+    ipynb_files <- list.files("bin", pattern = "\\.ipynb$", full.names = TRUE)
+
     ## Check for ipynb
-    if (file.exists("bin/student.ipynb")) {
+    if (length(ipynb_files) == 1) {
+        ipynb_file <- ipynb_files[1]
         print("[pltest] Found ipynb file")
 
         # Extract code
-        code <- extract_r_code_from_ipynb("bin/student.ipynb")
+        code <- extract_r_code_from_ipynb(ipynb_file)
         if (nchar(code) == 0) {
             warning("No matching R code found in notebook.")
             return(invisible(NULL))
         }
 
         # Define new R file path inside 'bin'
-        student_file <- file.path("..", "student", "student.R")
+        base_name <- tools::file_path_sans_ext(basename(ipynb_file))
+        student_file <- file.path("..", "student", paste0(base_name, ".R"))
         writeLines(code, student_file)
         print(paste("[pltest] Extracted code written to", student_file))
 
         # Delete the original .ipynb file
-        file.remove(file.path("..", "student", "student.ipynb"))
+        file.remove(file.path("..", "student", basename(ipynb_file)))
         print("[pltest] Deleted original ipynb file")
+    } else if (length(ipynb_files) > 1) {
+        stop("This grader can only handle one notebook file")
     }
     
     ## Run tests in the test directory
