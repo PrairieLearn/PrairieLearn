@@ -47,7 +47,7 @@ describe(
     });
 
     test.sequential('enroll the test student user in the course', async () => {
-      await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
+      await sqldb.queryAsync(sql.enroll_student_in_course, []);
     });
 
     test.sequential('visit start exam page', async () => {
