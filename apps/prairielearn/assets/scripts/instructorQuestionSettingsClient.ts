@@ -172,7 +172,7 @@ onDocumentReady(() => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
   });
-  showExternalGradingOptionsButton?.addEventListener('click', (e) => {
+  showExternalGradingOptionsButton?.addEventListener('click', () => {
     externalGradingOptions?.removeAttribute('hidden');
     showExternalGradingOptionsButton.setAttribute('hidden', 'true');
   });
