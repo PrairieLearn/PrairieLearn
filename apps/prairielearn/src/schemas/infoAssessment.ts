@@ -386,7 +386,9 @@ export const AssessmentJsonSchema = z
       .optional(),
     shareSourcePublicly: z
       .boolean()
-      .describe("If true, the assessment's source code is shared publicly.")
+      .describe(
+        "If true, the assessment's JSON configuration and question list are available for others to view and copy.",
+      )
       .optional()
       .default(false),
   })
