@@ -298,7 +298,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         invalid_chars = [c for c in spec_char_list if c in tag]
         if len(invalid_chars) != 0:
             raise ValueError(
-                f"Tag: {tag} attribute may not contain special characters."
+                f'<pl-answer tag="{tag}"> tag attribute may not contain special characters.'
             )
 
         if is_correct:
