@@ -27,7 +27,10 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled }));
+    const aiGradingMode = false;
+    res.send(
+      AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled, aiGradingMode }),
+    );
   }),
 );
 
@@ -185,6 +188,8 @@ router.post(
         user_id: res.locals.user.user_id,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'toggle_ai_grading_mode') {
+      console.log('toggle');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

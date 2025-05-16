@@ -20,6 +20,7 @@ onDocumentReady(() => {
     groupWork,
     maxAutoPoints,
     aiGradingEnabled,
+    aiGradingMode,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -97,14 +98,12 @@ onDocumentReady(() => {
         text: 'AI grading mode',
         icon: 'fa-eye',
         event: () => {
+          $('#ai-grading-mode').trigger('submit');
           // First toggle ai-grading-mode for the assessment question and return the new state
           // Through sql here? Or a hidden form in assessmentQuestion.html.ts, and get the result using a fetch()?
+          // Hidden form it is, and refresh
           // Or maybe it is ok if we don't store in a database, just work similarly to show/hide student info?
           const button = document.getElementById('js-toggle-ai-grading-mode-button');
-          // $('#grading-table').bootstrapTable(
-          //   button?.classList.contains('active') ? 'hideColumn' : 'showColumn',
-          //   ['graded_by'],
-          // );
           button?.classList.toggle(
             'active',
             // force = true or false depending on the output
@@ -296,13 +295,17 @@ onDocumentReady(() => {
           formatter: (value: string, row: InstanceQuestionRow) =>
             value ? row.last_grader_name : '&mdash;',
         },
-        {
-          field: 'human_ai_agreement',
-          title: 'Human-AI',
-          filterControl: 'input',
-          formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.human_ai_agreement : '&mdash;',
-        },
+        aiGradingEnabled
+          ? {
+              field: 'human_ai_agreement',
+              title: 'Human-AI',
+              filterControl: 'input',
+              formatter: (value: string, row: InstanceQuestionRow) =>
+                value ? row.human_ai_agreement : '&mdash;',
+              visible: aiGradingMode,
+            }
+          : null,
+        // try separate columns for graded with latest rubric, see if we end up with too many columns
         aiGradingEnabled
           ? {
               field: 'is_ai_graded',
