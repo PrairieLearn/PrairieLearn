@@ -407,7 +407,7 @@ function AssessmentSharing({
       <span class="badge color-green3 me-1">Public source</span>
       This assessment's source is publicly shared.
     </p>
-    <div class="mb-3>
+    <div class="mb-3">
       <label for="publicLink">Public link</label>
       <span class="input-group">
         <input
