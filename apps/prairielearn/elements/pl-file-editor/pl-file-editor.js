@@ -1,4 +1,4 @@
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -291,12 +291,15 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    const markdownRenderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    return async (value) => markdownRenderer.makeHtml(value);
+    let marked = null;
+    return async (value) => {
+      if (marked == null) {
+        marked = (await import('marked')).marked;
+        await MathJax.startup.promise;
+        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
+      }
+      return marked.parse(value);
+    };
   })(),
   dot: (() => {
     let vizPromise = null;
