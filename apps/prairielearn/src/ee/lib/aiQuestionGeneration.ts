@@ -45,7 +45,7 @@ A question may also have a \`server.py\` file that can randomly generate unique 
 
 Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
 
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters.
+If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
 
 If the question does not use random parameters, \`server.py\` can be omitted.
 
@@ -85,7 +85,10 @@ async function checkRender(
     authn_user: user, // We don't have a separate authn user in this case.
     is_administrator: false,
   };
-  await getAndRenderVariant(null, null, locals);
+  await getAndRenderVariant(null, null, locals, {
+    // Needed so that we can read the error output below.
+    issuesLoadExtraData: true,
+  });
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.

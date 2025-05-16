@@ -89,6 +89,15 @@ The user interface for manual grading is built to encourage a workflow where all
 
 After students have completed their assessments, open the "Manual Grading" tab. This page will list all questions in this assessment, as well as the number of submissions that require grading. For questions that have at least one submission tagged for grading, the "Grade next submission" button will be shown, which will jump directly to one of the submissions that need to be graded. Alternatively, clicking on the question's title will open a list of all student answers for that question.
 
+!!! info "Order of student submissions"
+
+    The order in which student submissions are listed for a question is purposely not based on any deterministic information about the student or the submission data. Rather, submissions are listed in a stable pseudo-random order (i.e., the same order is used if the page is reloaded). Similarly, when a grader submits a grade or skips a submission, the next submission to be graded is based on the same order. Different questions on the same assessment will list the same set of students in a different order.
+
+    The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or group. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
+
+    - Wang, Zhihan (Helen) and Pei, Jiaxin and Li, Jun, [*30 Million Canvas Grading Records Reveal Widespread Sequential Bias and System-Induced Surname Initial Disparity*](https://ssrn.com/abstract=4603146) (2023).
+    - Goldbach, C., Sickmann, J., & Pitz, T. [*Sequential decision bias – evidence from grading exams*](https://doi.org/10.1080/00036846.2021.1976390). Applied Economics (2021), 54(32), 3727–3739.
+
 The list of student submissions for a question gives course staff the ability to tag individual student answers (or all answers for the question) to specific graders. This can be done by selecting the submissions to be tagged, then selecting the "Tag for grading" button and choosing the grader responsible for those submissions. Only staff members with [Editor permission for the course instance](../course/index.md#student-data-access-roles) are listed for tagging.
 
 In the grading page for individual submissions, the grader can assign a specific set of manual points to the question, and provide feedback as needed (Markdown formatting is allowed). For questions with auto points, it is also possible to override the auto-grading points assigned to the question. Graders also have the option to use a percentage score instead of points. Once these values are set, the grader can select "Submit", which will update the score and open the next question to be graded.

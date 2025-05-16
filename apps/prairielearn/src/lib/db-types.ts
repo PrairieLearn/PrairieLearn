@@ -20,11 +20,14 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
+
+export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
+export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
@@ -823,7 +826,7 @@ export const QuestionSchema = z.object({
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']),
+  grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_external_grading_comment: z
