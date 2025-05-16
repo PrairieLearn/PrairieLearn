@@ -1,8 +1,9 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { aiGradeTest } from '../../../ee/lib/ai-grading/ai-grading-test.js';
 import { aiGrade } from '../../../ee/lib/ai-grading.js';
@@ -27,7 +28,11 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingMode = false;
+    const aiGradingMode = await queryRow(
+      sql.check_ai_grading_mode,
+      { assessment_question_id: res.locals.assessment_question.id },
+      z.boolean(),
+    );
     res.send(
       AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled, aiGradingMode }),
     );
@@ -189,7 +194,10 @@ router.post(
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'toggle_ai_grading_mode') {
-      console.log('toggle');
+      await queryAsync(sql.toggle_ai_grading_mode, {
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

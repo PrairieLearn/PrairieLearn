@@ -94,31 +94,26 @@ onDocumentReady(() => {
           title: 'Show/hide student identification information',
         },
       },
-      toggleAiGradingMode: {
-        text: 'AI grading mode',
-        icon: 'fa-eye',
-        event: () => {
-          $('#ai-grading-mode').trigger('submit');
-          // First toggle ai-grading-mode for the assessment question and return the new state
-          // Through sql here? Or a hidden form in assessmentQuestion.html.ts, and get the result using a fetch()?
-          // Hidden form it is, and refresh
-          // Or maybe it is ok if we don't store in a database, just work similarly to show/hide student info?
-          const button = document.getElementById('js-toggle-ai-grading-mode-button');
-          button?.classList.toggle(
-            'active',
-            // force = true or false depending on the output
-          );
-        },
-        attributes: {
-          id: 'js-toggle-ai-grading-mode-button',
-          title: 'Start/stop AI grading mode',
-        },
-      },
       status: {
         text: 'Tag for grading',
         icon: 'fa-tags',
         render: hasCourseInstancePermissionEdit,
         html: () => gradingTagDropdown(courseStaff),
+      },
+      toggleAiGradingMode: {
+        render: aiGradingEnabled,
+        html: html`<button
+          class="btn btn-secondary ${aiGradingMode ? 'active' : ''}"
+          type="button"
+          name="toggleAiGradingMode"
+          id="js-toggle-ai-grading-mode-button"
+          title="Start/stop AI grading mode"
+        >
+          <i class="fa fa-eye" aria-hidden="true"></i> AI grading mode
+        </button>`.toString(),
+        event: () => {
+          $('#ai-grading-mode').trigger('submit');
+        },
       },
     },
     onUncheck: updateGradingTagButton,
@@ -232,6 +227,7 @@ onDocumentReady(() => {
           title: 'Assigned grader',
           filterControl: 'select',
           formatter: (_value: string, row: InstanceQuestionRow) => row.assigned_grader_name || '—',
+          visible: !aiGradingMode,
         },
         {
           field: 'auto_points',
@@ -287,6 +283,7 @@ onDocumentReady(() => {
           sortable: true,
           formatter: (score: number | null, row: InstanceQuestionRow) =>
             scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
+          visible: !aiGradingMode,
         },
         {
           field: 'last_grader',
@@ -310,7 +307,7 @@ onDocumentReady(() => {
         aiGradingEnabled
           ? {
               field: 'human_ai_agreement',
-              title: 'Human-AI',
+              title: 'Human-AI agreement',
               filterControl: 'input',
               formatter: (value: string, row: InstanceQuestionRow) =>
                 value ? row.human_ai_agreement : '&mdash;',
