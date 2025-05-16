@@ -38,8 +38,30 @@ onDocumentReady(() => {
   );
   const workspaceRewriteUrlCheckbox =
     document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
+  const externalGradingOptions = document.querySelector<HTMLDivElement>(
+    '#external-grading-options',
+  );
+  const externalGradingEnabledCheckbox = document.querySelector<HTMLInputElement>(
+    '#external_grading_enabled',
+  );
+  const externalGradingImageInput =
+    document.querySelector<HTMLInputElement>('#external_grading_image');
+  const externalGradingEntrypointInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_entrypoint',
+  );
+  const externalGradingFilesInput =
+    document.querySelector<HTMLInputElement>('#external_grading_files');
+  const externalGradingTimeoutInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_timeout',
+  );
+  const externalGradingEnableNewrokingCheckbox = document.querySelector<HTMLInputElement>(
+    '#external_grading_enable_networking',
+  );
+  const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_environment',
+  );
 
-  function validateWorkspaceOptions() {
+  function validateQuestionOptions() {
     if (
       workspaceImageInput?.value ||
       workspacePortInput?.value ||
@@ -57,6 +79,20 @@ onDocumentReady(() => {
       workspaceImageInput?.removeAttribute('required');
       workspacePortInput?.removeAttribute('required');
       workspaceHomeInput?.removeAttribute('required');
+    }
+    if (
+      externalGradingEnabledCheckbox?.checked ||
+      externalGradingImageInput?.value ||
+      externalGradingEntrypointInput?.value ||
+      externalGradingFilesInput?.value ||
+      externalGradingTimeoutInput?.value ||
+      (externalGradingEnvironmentInput?.value !== '{}' &&
+        externalGradingEnvironmentInput?.value !== '') ||
+      externalGradingEnableNewrokingCheckbox?.checked
+    ) {
+      externalGradingImageInput?.setAttribute('required', 'true');
+    } else {
+      externalGradingImageInput?.removeAttribute('required');
     }
   }
 
@@ -132,18 +168,17 @@ onDocumentReady(() => {
   if (!questionSettingsForm || !saveButton) return;
   saveButtonEnabling(questionSettingsForm, saveButton);
 
-  showExternalGradingOptionsButton?.addEventListener('click', (e) => {
-    e.preventDefault();
-    document.querySelector('#external-grading-options')?.removeAttribute('hidden');
-    showExternalGradingOptionsButton.setAttribute('hidden', 'true');
-  });
   showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
   });
+  showExternalGradingOptionsButton?.addEventListener('click', (e) => {
+    externalGradingOptions?.removeAttribute('hidden');
+    showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+  });
 
   questionSettingsForm.addEventListener('submit', (e) => {
-    validateWorkspaceOptions();
+    validateQuestionOptions();
     if (!questionSettingsForm.checkValidity()) {
       e.preventDefault();
       questionSettingsForm.reportValidity();

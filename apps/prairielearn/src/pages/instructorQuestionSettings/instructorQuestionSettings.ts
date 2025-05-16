@@ -164,13 +164,7 @@ router.post(
           external_grading_entrypoint: z.union([z.string(), z.array(z.string())]),
           external_grading_timeout: IntegerFromStringOrEmptySchema,
           external_grading_enable_networking: BooleanFromCheckboxSchema,
-          external_grading_environment: z.string().transform((s) => {
-            try {
-              return JSON.parse(s.replace(/\r\n/g, '\n') || '{}');
-            } catch {
-              throw new error.HttpStatusError(400, 'Invalid JSON format');
-            }
-          }),
+          external_grading_environment: z.string().optional(),
         })
         .parse(req.body);
 
@@ -256,7 +250,7 @@ router.post(
         ),
       };
 
-      const filteredOptions = Object.fromEntries(
+      const filteredWorkspaceOptions = Object.fromEntries(
         Object.entries(
           propertyValueWithDefault(
             questionInfo.workspaceOptions,
@@ -266,72 +260,62 @@ router.post(
         ).filter(([_, value]) => value !== undefined),
       );
       questionInfo.workspaceOptions =
-        Object.keys(filteredOptions).length > 0
-          ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+        Object.keys(filteredWorkspaceOptions).length > 0
+          ? applyKeyOrder(questionInfo.workspaceOptions, filteredWorkspaceOptions)
           : undefined;
 
-      if (
-        body.external_grading_enabled ||
-        body.external_grading_image ||
-        body.external_grading_files ||
-        body.external_grading_entrypoint ||
-        body.external_grading_timeout ||
-        body.external_grading_enable_networking ||
-        body.external_grading_environment
-      ) {
-        const externalGradingOptions = {
-          comment: questionInfo.externalGradingOptions?.comment ?? undefined,
-          enabled: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.enabled,
-            body.external_grading_enabled,
-            false,
-          ),
-          image: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.image,
-            body.external_grading_image,
-            '',
-          ),
-          entrypoint: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.entrypoint,
-            body.external_grading_entrypoint,
-            '',
-          ),
-          serverFilesCourse: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.serverFilesCourse,
-            body.external_grading_files,
-            (v) => !v || v.length === 0,
-          ),
-          timeout: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.timeout,
-            body.external_grading_timeout,
-            0,
-          ),
-          enableNetworking: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.enableNetworking,
-            body.external_grading_enable_networking,
-            false,
-          ),
-          environment: propertyValueWithDefault(
-            questionInfo.externalGradingOptions?.environment,
-            body.external_grading_environment,
+      const externalGradingOptions = {
+        comment: questionInfo.externalGradingOptions?.comment ?? undefined,
+        enabled: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enabled,
+          body.external_grading_enabled,
+          body.external_grading_image ? true : false,
+        ),
+        image: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.image,
+          body.external_grading_image,
+          '',
+        ),
+        entrypoint: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.entrypoint,
+          body.external_grading_entrypoint,
+          '',
+        ),
+        serverFilesCourse: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.serverFilesCourse,
+          body.external_grading_files,
+          (v) => !v || v.length === 0,
+        ),
+        timeout: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.timeout,
+          body.external_grading_timeout,
+          null,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enableNetworking,
+          body.external_grading_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.environment,
+          JSON.parse(body.external_grading_environment?.replace(/\r\n/g, '\n') || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+      const filteredExternalGradingOptions = Object.fromEntries(
+        Object.entries(
+          propertyValueWithDefault(
+            questionInfo.externalGradingOptions,
+            externalGradingOptions,
             (val) => !val || Object.keys(val).length === 0,
           ),
-        };
-        const filteredOptions = Object.fromEntries(
-          Object.entries(
-            propertyValueWithDefault(
-              questionInfo.externalGradingOptions,
-              externalGradingOptions,
-              (val) => !val || Object.keys(val).length === 0,
-            ),
-          ).filter(([_, value]) => value !== undefined),
-        );
+        ).filter(([_, value]) => value !== undefined),
+      );
 
-        questionInfo.externalGradingOptions =
-          Object.keys(filteredOptions).length > 0
-            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredOptions)
-            : undefined;
-      }
+      questionInfo.externalGradingOptions =
+        Object.keys(filteredExternalGradingOptions).length > 0
+          ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
+          : undefined;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 

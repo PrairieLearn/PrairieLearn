@@ -533,23 +533,6 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                     The number of seconds after which the grading job will timeout.
                   </small>
                 </div>
-                <div class="mb-3 form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="external_grading_enable_networking"
-                    name="external_grading_enable_networking"
-                    ${canEdit ? '' : 'disabled'}
-                    ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="external_grading_enable_networking"
-                    >Enable networking</label
-                  >
-                  <div class="small text-muted">
-                    Whether the grading containers should have network access. Access is disabled by
-                    default.
-                  </div>
-                </div>
                 <div class="mb-3">
                   <label class="form-label" for="external_grading_environment">Environment</label>
                   <textarea
@@ -567,6 +550,23 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                     Environment variables to set inside the grading container. Variables must be
                     specified as a JSON object (e.g. <code>{"key":"value"}</code>).
                   </small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enable_networking"
+                    name="external_grading_enable_networking"
+                    ${canEdit ? '' : 'disabled'}
+                    ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="external_grading_enable_networking"
+                    >Enable networking</label
+                  >
+                  <div class="small text-muted">
+                    Whether the grading containers should have network access. Access is disabled by
+                    default.
+                  </div>
                 </div>
               </div>
             </div>
