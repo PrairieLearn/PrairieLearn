@@ -5,8 +5,8 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import type { AssessmentRow } from '../../lib/assessment.js';
 import { idsEqual } from '../../lib/id.js';
+import type { AssessmentRow } from '../../models/assessment.js';
 
 export function AssessmentSwitcher({
   assessmentRows,
