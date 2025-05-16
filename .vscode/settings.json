@@ -48,6 +48,10 @@
     {
       "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+    },
+    {
+      "fileMatch": ["apps/prairielearn/elements/**/info.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoElementCore.json"
     }
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
