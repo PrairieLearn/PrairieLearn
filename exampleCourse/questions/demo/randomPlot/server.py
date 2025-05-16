@@ -26,7 +26,7 @@ def file(data):
         plt.xlabel("$x$", fontsize=18)
         plt.ylabel("$f(x)$", fontsize=18)
         plt.autoscale(enable=True, tight=True)
-        fig.set_tight_layout(True)
+        fig.set_layout_engine("tight")
 
         # Save the figure and return it as a buffer
         buf = io.BytesIO()

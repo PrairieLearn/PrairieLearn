@@ -805,12 +805,6 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     throw Error('Could not access workspace files.', { cause: err });
   }
 
-  debug(`Creating directory ${workspaceJobPath}`);
-  await fs.mkdir(workspaceJobPath, { recursive: true }).catch((err) => {
-    // Ignore the directory if it already exists. Otherwise, rethrow the error.
-    if (err && err.code !== 'EEXIST') throw err;
-  });
-
   await fs.chown(
     workspaceJobPath,
     config.workspaceJobsDirectoryOwnerUid,
