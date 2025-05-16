@@ -704,15 +704,8 @@ function pullAndVerifyFileNotInDev(fileName) {
         env: process.env,
       });
     });
-    it('should not exist', function (callback) {
-      fs.access(path.join(courseDevDir, fileName), (err) => {
-        if (err) {
-          if (err.code === 'ENOENT') callback(null);
-          else callback(new Error(`got wrong error: ${err}`));
-        } else {
-          callback(new Error(`${fileName} should not exist, but does`));
-        }
-      });
+    it('should not exist', async () => {
+      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
     });
   });
 }

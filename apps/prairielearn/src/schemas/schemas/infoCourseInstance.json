@@ -91,6 +91,11 @@
       "type": "string",
       "enum": ["Set", "Module"],
       "default": "Set"
+    },
+    "shareSourcePublicly": {
+      "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
+      "type": "boolean",
+      "default": false
     }
   },
   "definitions": {
