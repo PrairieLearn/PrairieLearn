@@ -594,61 +594,6 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
   );
 }
 
-export const AssessmentStatsRowSchema = AssessmentSchema.extend({
-  needs_statistics_update: z.boolean().optional(),
-});
-export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
-
-export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  label: z.string(),
-  open_issue_count: z.coerce.number(),
-});
-
-export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
-
-/**
- * Select assessments for a course instance grouped by set or module.
- * This query also adds the open issue count and a label derived from the set
- * and assessment number to each assessment.
- */
-export async function selectAssessmentsForCourseInstanceGrouped({
-  course_instance_id,
-  assessments_group_by,
-}: {
-  course_instance_id: string;
-  assessments_group_by: 'Set' | 'Module';
-}) {
-  return await sqldb.queryRows(
-    sql.select_assessments_for_course_instance_grouped,
-    {
-      course_instance_id,
-      assessments_group_by,
-    },
-    AssessmentRowSchema,
-  );
-}
-
-/**
- * Retrieve a cursor to a query selecting assessments for a course instance grouped
- * by set or module. The query also adds the open issue count and a label derived
- * from the set and assessment number to each assessment.
- */
-export async function selectAssessmentsForCourseInstanceGroupedCursor({
-  course_instance_id,
-  assessments_group_by,
-}: {
-  course_instance_id: string;
-  assessments_group_by: 'Set' | 'Module';
-}) {
-  return await sqldb.queryCursor(sql.select_assessments_for_course_instance_grouped, {
-    course_instance_id,
-    assessments_group_by,
-  });
-}
-
 export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
   return await sqldb.queryRow(
     sql.select_assessment_instance_last_submission_date,

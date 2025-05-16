@@ -2302,7 +2302,6 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('fail');
     assert.isOk(syncedData.assessment.sync_errors);
-    console.log(syncedData.assessment.sync_errors);
     assert.match(
       syncedData.assessment?.sync_errors,
       /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
@@ -2791,5 +2790,31 @@ describe('Assessment syncing', () => {
       comment: 'alternative question comment',
       comment2: 'alternative question comment 2',
     });
+  });
+
+  it('records a warning for UIDs containing commas or spaces', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess = [
+      {
+        startDate: '2024-01-01T00:00:00',
+        endDate: '3024-01-31T00:00:00',
+        uids: ['foo@example.com,bar@example.com', 'biz@example.com baz@example.com'],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === 'testAssessment');
+    assert.isOk(syncedAssessment);
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected whitespace: "biz@example.com baz@example.com"/,
+    );
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
+    );
   });
 });
