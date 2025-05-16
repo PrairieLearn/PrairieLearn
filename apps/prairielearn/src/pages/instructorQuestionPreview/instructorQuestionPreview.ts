@@ -7,7 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { run } from '@prairielearn/run';
 
-import { getQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';

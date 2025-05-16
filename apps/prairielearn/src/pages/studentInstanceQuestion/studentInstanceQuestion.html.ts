@@ -14,7 +14,7 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { type QuestionCopyTarget } from '../../lib/copy-question.js';
+import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
 
@@ -29,7 +29,7 @@ export function StudentInstanceQuestion({
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
-  questionCopyTargets?: QuestionCopyTarget[] | null;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';

@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
+import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { selectAssessments } from '../../models/assessment.js';
 import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
@@ -29,7 +30,7 @@ router.get(
 
     res.locals.user = res.locals.authn_user; // TEST, need res.locals.user for setCourseInstanceCopyTargets
 
-    await setCourseInstanceCopyTargets(res);
+    const courseInstanceCopyTargets = await getCourseInstanceCopyTargets(res);
     const rows = await selectAssessments({
       course_instance_id: courseInstance.id,
     });
@@ -39,6 +40,7 @@ router.get(
         resLocals: res.locals,
         rows,
         courseInstance,
+        courseInstanceCopyTargets,
       }),
     );
   }),

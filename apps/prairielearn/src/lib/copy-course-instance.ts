@@ -6,57 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
-
-import { selectCoursesWithEditAccess } from '../models/course.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance } from './db-types.js';
-import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-export async function setCourseInstanceCopyTargets(res: Response) {
-  // Avoid querying for editable courses if we won't be able to copy this
-  // course instance anyways.
-  if (!res.locals.course.template_course && !res.locals.course_instance.share_source_publicly) {
-    return;
-  }
-
-  const editableCourses = await selectCoursesWithEditAccess({
-    user_id: res.locals.user.user_id,
-    is_administrator: res.locals.is_administrator,
-  });
-
-  const courseInstanceCopyTargets = [];
-
-  for (const course of editableCourses) {
-    if (course.example_course || idsEqual(course.id, res.locals.course.id)) {
-      continue;
-    }
-
-    const copyUrl = `/pl/course/${course.id}/copy_public_course_instance`;
-
-    // The course instance copy form will POST to a different URL for each course instance, so
-    // we need to generate a corresponding CSRF token for each one.
-    const csrfToken = generateSignedToken(
-      {
-        url: copyUrl,
-        authn_user_id: res.locals.authn_user.user_id,
-      },
-      config.secretKey,
-    );
-
-    courseInstanceCopyTargets.push({
-      id: `${course.id}`,
-      short_name: `${course.short_name}`,
-      copy_url: copyUrl,
-      __csrf_token: csrfToken,
-    });
-  }
-
-  res.locals.course_instance_copy_targets = courseInstanceCopyTargets;
-}
 
 export async function copyCourseInstanceBetweenCourses(
   res: Response,

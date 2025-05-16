@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
-import { getQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';

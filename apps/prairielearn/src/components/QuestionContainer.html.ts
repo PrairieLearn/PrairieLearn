@@ -3,7 +3,7 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
-import { type QuestionCopyTarget } from '../lib/copy-question.js';
+import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
@@ -42,7 +42,7 @@ export function QuestionContainer({
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
-  questionCopyTargets: QuestionCopyTarget[] | null;
+  questionCopyTargets: CopyTarget[] | null;
 }) {
   const {
     question,
@@ -675,7 +675,7 @@ function QuestionPanel({
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
-  questionCopyTargets?: QuestionCopyTarget[] | null;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const { question, questionHtml, course, instance_question_info } = resLocals;
   // Show even when questionCopyTargets is empty.
@@ -805,7 +805,7 @@ function CopyQuestionModal({
   questionCopyTargets,
   resLocals,
 }: {
-  questionCopyTargets: QuestionCopyTarget[] | null;
+  questionCopyTargets: CopyTarget[] | null;
   resLocals: Record<string, any>;
 }) {
   const { question, course } = resLocals;

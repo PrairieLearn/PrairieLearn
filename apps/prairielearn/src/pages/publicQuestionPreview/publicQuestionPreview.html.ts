@@ -5,14 +5,14 @@ import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.j
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
-import type { QuestionCopyTarget } from '../../lib/copy-question.js';
+import type { CopyTarget } from '../../lib/copy-content.js';
 
 export function PublicQuestionPreview({
   resLocals,
   questionCopyTargets,
 }: {
   resLocals: Record<string, any>;
-  questionCopyTargets: QuestionCopyTarget[] | null;
+  questionCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({
     resLocals,

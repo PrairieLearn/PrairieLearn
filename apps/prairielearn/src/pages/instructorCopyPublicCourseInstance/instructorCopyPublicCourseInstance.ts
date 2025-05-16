@@ -5,9 +5,8 @@ import * as error from '@prairielearn/error';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-course-instance.js';
 import { idsEqual } from '../../lib/id.js';
-
-import { selectCourseById } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 
 const router = Router();
 
@@ -27,6 +26,9 @@ router.post(
     // This query will implicitly check that the course instance belongs to the given
     // course. We ensure below that the course instance is in fact in a template course.
     const courseInstance = await selectCourseInstanceById(req.body.course_instance_id);
+    if (courseInstance === null) {
+      throw new error.HttpStatusError(404, 'Not Found');
+    }
     const course = await selectCourseById(courseInstance.course_id);
 
     if (!course.template_course && !courseInstance.share_source_publicly) {

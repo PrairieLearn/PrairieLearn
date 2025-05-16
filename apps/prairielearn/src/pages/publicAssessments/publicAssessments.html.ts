@@ -6,18 +6,24 @@ import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeadin
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import type { CopyTarget } from '../../lib/copy-content.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
 
-function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any> }) {
-  const { course_instance_copy_targets, course_instance } = resLocals;
-  if (course_instance_copy_targets == null) return '';
+function CopyCourseInstanceModal({
+  courseInstance,
+  courseInstanceCopyTargets,
+}: {
+  courseInstance: CourseInstance;
+  courseInstanceCopyTargets: CopyTarget[] | null;
+}) {
+  if (courseInstanceCopyTargets == null) return '';
   return Modal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
-    formAction: course_instance_copy_targets[0]?.copy_url ?? '',
+    formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
     body:
-      course_instance_copy_targets.length === 0
+      courseInstanceCopyTargets.length === 0
         ? html`
             <p>
               You can't copy this course instance because you don't have editor permissions in any
@@ -32,7 +38,7 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
               Select one of your courses to copy this course instance to.
             </p>
             <select class="custom-select" name="to_course_id" required>
-              ${course_instance_copy_targets.map(
+              ${courseInstanceCopyTargets.map(
                 // TEST, use course instead of course_instance?
                 (course_instance, index) => html`
                   <option
@@ -51,11 +57,11 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
       <input
         type="hidden"
         name="__csrf_token"
-        value="${course_instance_copy_targets[0]?.__csrf_token ?? ''}"
+        value="${courseInstanceCopyTargets[0]?.__csrf_token ?? ''}"
       />
-      <input type="hidden" name="course_instance_id" value="${course_instance.id}" />
+      <input type="hidden" name="course_instance_id" value="${courseInstance.id}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      ${course_instance_copy_targets?.length > 0
+      ${courseInstanceCopyTargets?.length > 0
         ? html`
             <button
               type="submit"
@@ -75,10 +81,12 @@ export function PublicAssessments({
   resLocals,
   rows,
   courseInstance,
+  courseInstanceCopyTargets,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   courseInstance: CourseInstance;
+  courseInstanceCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({
     resLocals,
@@ -140,7 +148,7 @@ export function PublicAssessments({
           </table>
         </div>
       </div>
-      ${CopyCourseInstanceModal({ resLocals })}
+      ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets })}
     `,
   });
 }
