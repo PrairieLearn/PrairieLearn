@@ -145,4 +145,5 @@ export interface ExecutionData {
   filename?: string;
   gradable?: boolean;
   extensions?: Record<string, ElementExtensionJsonExtension>;
+  external_params?: Record<string, any>;
 }
