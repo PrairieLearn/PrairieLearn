@@ -122,8 +122,6 @@ async function setupDatabases(): Promise<void> {
 }
 
 export async function before(): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
   await setupDatabases();
 }
 
@@ -134,15 +132,11 @@ export async function before(): Promise<void> {
  * desired database.
  */
 export async function beforeOnlyCreate(): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
   await setupDatabases();
   await closeSql();
 }
 
 export async function after(): Promise<void> {
-  // long timeout because DROP DATABASE might take a long time to error
-  // if other processes have an open connection to that database
   await closeSql();
   await postgresTestUtils.dropDatabase();
 }

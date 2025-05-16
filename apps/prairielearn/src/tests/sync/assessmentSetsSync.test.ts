@@ -41,7 +41,6 @@ describe('Assessment set syncing', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('adds a new assessment set', async () => {

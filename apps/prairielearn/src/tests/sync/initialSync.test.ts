@@ -10,7 +10,6 @@ describe('Initial Sync', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('correctly syncs content from disk to the database', async () => {

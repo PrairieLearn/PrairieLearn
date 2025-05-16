@@ -105,7 +105,6 @@ describe('Assessment syncing', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of assessments in subfolders', async () => {

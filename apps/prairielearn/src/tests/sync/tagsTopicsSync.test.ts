@@ -155,7 +155,6 @@ describe('Tag/topic syncing', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('adds a new tag', async () => {

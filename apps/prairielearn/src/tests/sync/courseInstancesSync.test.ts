@@ -27,7 +27,6 @@ describe('Course instance syncing', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of course instances in subfolders', async () => {

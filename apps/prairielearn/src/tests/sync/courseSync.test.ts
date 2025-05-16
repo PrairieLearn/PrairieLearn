@@ -16,7 +16,6 @@ describe('Course syncing', () => {
 
   afterAll(helperDb.after);
 
-  // reset testing database
   beforeEach(helperDb.resetDatabase);
 
   it('syncs for known features as object', async () => {
