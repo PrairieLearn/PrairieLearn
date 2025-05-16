@@ -8,7 +8,14 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remark2rehype from 'remark-rehype';
-import { type Processor, type TransformCallback, type Transformer, unified } from 'unified';
+import {
+  type Plugin,
+  type PluginTuple,
+  type Processor,
+  type TransformCallback,
+  type Transformer,
+  unified,
+} from 'unified';
 import type { Node } from 'unist';
 import { visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
@@ -64,26 +71,30 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
+  strictSanitize = false,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
+  strictSanitize?: boolean;
 } = {}) {
-  const htmlConversion = (mdastVisitors ?? [])
-    .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      unified().use(remarkParse).use(remarkMath),
-    )
-    .use(makeHandler(visitMathBlock))
-    .use(remarkGfm)
-    .use(remark2rehype, { allowDangerousHtml: true })
-    .use(rehypeRaw);
-  return (hastVisitors ?? [])
-    .reduce(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      sanitize ? htmlConversion.use(rehypeSanitize) : htmlConversion,
-    )
-    .use(rehypeStringify);
+  const plugins: (Plugin<any, any, any> | PluginTuple<any, any, any>)[] = [
+    remarkParse,
+    remarkMath,
+    ...(mdastVisitors ?? []).map((visitor) => makeHandler(visitor)),
+    makeHandler(visitMathBlock),
+    remarkGfm,
+    [remark2rehype, { allowDangerousHtml: !strictSanitize }],
+    ...(strictSanitize ? [] : [rehypeRaw]),
+    ...(sanitize ? [rehypeSanitize] : []),
+    ...(hastVisitors ?? []).map((visitor) => makeHandler(visitor)),
+    rehypeStringify,
+  ];
+
+  return plugins.reduce((processor: Processor, plugin) => {
+    if (Array.isArray(plugin)) return processor.use(...plugin);
+    return processor.use(plugin);
+  }, unified());
 }
 
 const defaultProcessor = createProcessor();
@@ -95,4 +106,17 @@ const inlineProcessor = createProcessor({ hastVisitors: [visitCheckSingleParagra
  */
 export async function markdownToHtml(original: string, { inline }: { inline?: boolean } = {}) {
   return (await (inline ? inlineProcessor : defaultProcessor).process(original)).value.toString();
+}
+
+export async function markdownToHtmlStrict(
+  original: string,
+  { inline }: { inline?: boolean } = {},
+) {
+  return (
+    await (
+      inline
+        ? createProcessor({ hastVisitors: [visitCheckSingleParagraph], strictSanitize: true })
+        : createProcessor({ strictSanitize: true })
+    ).process(original)
+  ).value.toString();
 }

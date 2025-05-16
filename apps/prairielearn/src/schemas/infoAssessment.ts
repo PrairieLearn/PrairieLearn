@@ -331,9 +331,17 @@ export const AssessmentJsonSchema = z
       .default(true),
     requireHonorCode: z
       .boolean()
-      .describe('Requires the student to accept an honor code before starting exam assessments.')
+      .describe(
+        'Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.',
+      )
       .optional()
       .default(true),
+    honorCode: z
+      .string()
+      .describe(
+        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+      )
+      .optional(),
     groupWork: z
       .boolean()
       .describe('Whether the assessment will support group work.')
