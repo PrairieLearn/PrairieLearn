@@ -11,14 +11,16 @@ import {
   Lti13Claim,
   validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
+  updateLineItemsByAssessment,
 } from '../../lib/lti13.js';
 
 import {
-  InstructorInstanceAdminLti13AssignmentSelection,
   AssessmentRowSchema,
+  InstructorInstanceAdminLti13AssignmentSelection,
   InstructorInstanceAdminLti13AssignmentConfirmation,
   InstructorInstanceAdminLti13AssignmentDetails,
 } from './instructorInstanceAdminLti13AssignmentSelection.html.js';
+import { AssessmentSchema } from '../../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -38,8 +40,6 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
-
-    console.log(req.params);
 
     const assessments = await queryRows(
       sql.select_assessments,
@@ -64,6 +64,15 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
+    const instance = await queryRow(
+      sql.select_lti13_instance,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+      },
+      Lti13CombinedInstanceSchema,
+    );
+
     if (req.body.__action === 'details') {
       const assessment = await selectAssessmentInCourseInstance({
         unsafe_assessment_id: req.body.unsafe_assessment_id,
@@ -83,22 +92,19 @@ router.post(
 
       console.log(assessment);
 
-      const { lti13_instance, lti13_course_instance } = await queryRow(
-        sql.select_lti13_instance,
-        {
-          course_instance_id: res.locals.course_instance.id,
-          unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
-        },
-        Lti13CombinedInstanceSchema,
-      );
-
       const host = getCanonicalHost(req);
 
       //console.log(lti13_instance, lti13_course_instance);
       //console.log(req.session.lti13_claims);
 
-      const issuer = new Issuer(lti13_instance.issuer_params);
-      const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+      const issuer = new Issuer(instance.lti13_instance.issuer_params);
+      const client = new issuer.Client(
+        instance.lti13_instance.client_params,
+        instance.lti13_instance.keystore,
+      );
+
+      const ltiClaim = new Lti13Claim(req);
+      ltiClaim.dump();
 
       /* https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
        * and
@@ -106,31 +112,35 @@ router.post(
        * and
        * https://canvas.instructure.com/doc/api/file.content_item.html
        */
-      const signed_jwt = await client.requestObject({
+      const unsigned_jwt = {
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
         'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
         'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
-          lti13_course_instance.deployment_id,
+          instance.lti13_course_instance.deployment_id,
+        'https://purl.imsglobal.org/spec/lti-dl/claim/data': ltiClaim.get([
+          'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
+          'data',
+        ]),
         'https://purl.imsglobal.org/spec/lti-dl/claim/content_items': [
           {
             type: 'ltiResourceLink',
             url: `${host}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+            title: assessment.title,
             window: {
               targetName: '_blank',
             },
             lineItem: {
-              // Updates the points in Canvas
-              //scoreMaximum: assessment.max_points, // 100
-              // Updates the name in Canvas
-              label: assessment.title,
+              // assessment.max_points is NULL if no one has submitted
+              scoreMaximum: 100,
               resourceId: assessment.uuid,
             },
           },
         ],
         //'https://purl.imsglobal.org/spec/lti-dl/claim/msg': 'All done!',
-      });
+      };
 
-      const ltiClaim = new Lti13Claim(req);
+      console.log(JSON.stringify(unsigned_jwt, null, 2));
+
       const deep_link_return_url = ltiClaim.get([
         'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
         'deep_link_return_url',
@@ -140,8 +150,8 @@ router.post(
         InstructorInstanceAdminLti13AssignmentConfirmation({
           resLocals: res.locals,
           deep_link_return_url,
-          signed_jwt,
-          platform_name: lti13_instance.tool_platform_name,
+          signed_jwt: await client.requestObject(unsigned_jwt),
+          platform_name: instance.lti13_instance.tool_platform_name,
           assessment,
         }),
       );
@@ -150,9 +160,28 @@ router.post(
       // Search for it in the lineitems API (resourceId = uuid)
       // Link it automatically
 
+      // Sleep or loop here while the LTI call finishes
+
+      // Canvas doesn't create the line item until the assignment page is saved
+      // (user manual not when it returns from the call), so sleep polling is not
+      // going to be a good experience here.
+
+      // Tag the lineitem somehow associated with the assessment that we need to refresh?
+
       console.log('GOT HERE');
       console.log(req.body);
-      res.send('OK');
+
+      const assessment = await queryRow(
+        sql.select_assessment_in_course_instance,
+        {
+          unsafe_assessment_id: req.body.unsafe_assessment_id,
+          course_instance_id: res.locals.course_instance.id,
+        },
+        AssessmentSchema,
+      );
+      await updateLineItemsByAssessment(instance, assessment.id);
+
+      res.end('OK');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

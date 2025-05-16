@@ -594,15 +594,22 @@ export async function updateLineItemsByAssessment(
     AssessmentSchema,
   );
 
-  const lineitems = await getLineitems(instance, `resource_id=${assessment.uuid}`);
-  console.log(lineitems);
-  console.log(`Found ${lineitems.length} assignments.`);
-  if (lineitems.length === 1) {
-    await linkAssessment(
-      instance.lti13_course_instance.id,
-      unsafe_assessment_id,
-      lineitems[lineitems.length],
-    );
+  for (let i = 0; i < 5; i++) {
+    const all_lineitems = await getLineitems(instance);
+    console.log(JSON.stringify(all_lineitems, null, 2));
+
+    const lineitems = await getLineitems(instance, `resource_id=${assessment.uuid}`);
+    console.log(lineitems);
+    console.log(`Found ${lineitems.length} assignments for ${assessment.uuid}.`);
+
+    if (lineitems.length === 0) {
+      await sleep(2000); // milliseconds
+    }
+
+    if (lineitems.length === 1) {
+      await linkAssessment(instance.lti13_course_instance.id, assessment.id, lineitems[0]);
+      break;
+    }
   }
 }
 
