@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -179,11 +179,10 @@ const partialCreditTests = [
   ],
 ];
 
-describe('Homework assessment', function () {
-  this.timeout(60000);
+describe('Homework assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let page, elemList;
 

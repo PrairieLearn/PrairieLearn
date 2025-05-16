@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -583,11 +584,10 @@ const partialCreditTests = [
   ],
 ];
 
-describe('Exam assessment', function () {
-  this.timeout(60000);
+describe('Exam assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let elemList;
 

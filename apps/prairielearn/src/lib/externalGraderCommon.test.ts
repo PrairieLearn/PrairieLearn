@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it } from 'vitest';
 
 import { makeGradingResult } from './externalGraderCommon.js';
 

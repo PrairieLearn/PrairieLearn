@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import stripAnsi from 'strip-ansi';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { logger } from '@prairielearn/logger';
 
@@ -9,18 +9,18 @@ import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {
   let originalSilent;
-  before(() => {
+  beforeAll(() => {
     originalSilent = logger.silent;
     logger.silent = true;
   });
-  after(() => {
+  afterAll(() => {
     logger.silent = originalSilent;
   });
 }
 
 describe('server-jobs', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   disableLoggingForTests();
 

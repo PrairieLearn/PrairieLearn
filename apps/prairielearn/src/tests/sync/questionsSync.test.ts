@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import {
@@ -37,10 +37,11 @@ async function findSyncedUndeletedQuestion(qid) {
 }
 
 describe('Question syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of questions in subfolders', async () => {
     const courseData = util.getCourseData();

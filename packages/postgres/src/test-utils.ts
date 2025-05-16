@@ -126,7 +126,7 @@ async function dropDatabase(
 }
 
 function getDatabaseNameForCurrentMochaWorker(namespace: string): string {
-  const workerId = process.env.MOCHA_WORKER_ID ?? '1';
+  const workerId = process.env.MOCHA_WORKER_ID ?? process.env.VITEST_POOL_ID ?? '1';
   return `${namespace}_${workerId}`;
 }
 

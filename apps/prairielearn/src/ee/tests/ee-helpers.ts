@@ -1,15 +1,19 @@
+import { afterAll, beforeAll } from 'vitest';
+
 import { config } from '../../lib/config.js';
 
 export function enableEnterpriseEdition() {
   let originalIsEnterprise;
 
-  before(() => {
+  beforeAll(() => {
     originalIsEnterprise = config.isEnterprise;
     config.isEnterprise = true;
+    console.log('Enterprise edition enabled for tests');
   });
 
-  after(() => {
+  afterAll(() => {
     config.isEnterprise = originalIsEnterprise;
+    console.log('Enterprise edition disabled for tests');
   });
 }
 

@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -9,11 +9,10 @@ import * as helperServer from './helperServer.js';
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-describe('Administrator pages', function () {
-  this.timeout(20000);
+describe('Administrator pages', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   describe('view administrator admins list page', () => {
     it('should load successfully', async () => {

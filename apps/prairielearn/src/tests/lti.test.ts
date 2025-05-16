@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -18,11 +18,10 @@ locals.ltiUrl = locals.baseUrl + '/lti';
 
 config.ltiRedirectUrl = locals.ltiUrl;
 
-describe('LTI', function () {
-  this.timeout(20000);
+describe('LTI', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   const body: Record<string, string> = {
     lti_message_type: 'basic-lti-launch-request',
