@@ -292,8 +292,20 @@ onDocumentReady(() => {
           field: 'last_grader',
           title: 'Graded by',
           filterControl: 'select',
+          filterCustomSearch: (text: string, value: string) => {
+            if (text === 'ai') {
+              return value.includes('js-custom-search-ai-grading');
+            }
+            return null;
+          },
           formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.last_grader_name : '&mdash;',
+            value
+              ? row.is_ai_graded
+                ? html`
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading">AI</span>
+                  `.toString()
+                : row.last_grader_name
+              : '&mdash;',
         },
         aiGradingEnabled
           ? {
@@ -306,16 +318,6 @@ onDocumentReady(() => {
             }
           : null,
         // try separate columns for graded with latest rubric, see if we end up with too many columns
-        aiGradingEnabled
-          ? {
-              field: 'is_ai_graded',
-              title: 'AI Graded',
-              filterControl: 'select',
-              visible: aiGradingEnabled,
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.is_ai_graded ? 'Yes' : 'No',
-            }
-          : null,
       ].filter(Boolean),
     ],
   });

@@ -60,7 +60,7 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('enroll the test student user in the course', async () => {
-    await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
+    await sqldb.queryAsync(sql.enroll_student_in_course, []);
   });
 
   step(
