@@ -295,9 +295,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         tag, depends = get_graph_info(html_tags)
         spec_char_list = "".join(list("*&^$@!~[]{}()|:@?/\\"))
-        res = [c for c in spec_char_list if c in tag]
-        if len(res) != 0:
-            raise ValueError(f"{tag} Tag attribute may not contain special characters.")
+        invalid_chars = [c for c in spec_char_list if c in tag]
+        if len(invalid_chars) != 0:
+            raise ValueError(
+                f"Tag: {tag} attribute may not contain special characters."
+            )
 
         if is_correct:
             if tag in used_tags:
