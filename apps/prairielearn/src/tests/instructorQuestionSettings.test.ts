@@ -303,7 +303,7 @@ describe('Editing question settings', () => {
     },
   );
 
-  step('verify workspace settings changes with minimal configuration', async () => {
+  test.sequential('verify workspace settings changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -340,7 +340,7 @@ describe('Editing question settings', () => {
     assert.notExists(questionInfo.workspaceOptions.environment);
   });
 
-  step('verify workspace settings changes with full configuration', async () => {
+  test.sequential('verify workspace settings changes with full configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
