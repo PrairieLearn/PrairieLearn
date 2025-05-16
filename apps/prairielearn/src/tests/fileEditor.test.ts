@@ -701,17 +701,7 @@ function pullAndVerifyFileNotInDev(fileName) {
       });
     });
     it('should not exist', async () => {
-      try {
-        await fs.promises.access(path.join(courseDevDir, fileName));
-        throw new Error(`${fileName} should not exist, but does`);
-      } catch (err: any) {
-        if (err.code === 'ENOENT') {
-          // File does not exist, as expected
-          expect(true).toBe(true);
-        } else {
-          throw new Error(`got wrong error: ${err}`);
-        }
-      }
+      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
     });
   });
 }
