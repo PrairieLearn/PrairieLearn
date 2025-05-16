@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { run } from '@prairielearn/run';
 
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { selectAssessmentsForCourseInstanceGrouped } from '../../lib/assessment.js';
+import { selectAssessments } from '../../models/assessment.js';
 
 import { AssessmentSwitcher } from './assessmentsSwitcher.html.js';
 
@@ -25,9 +25,8 @@ router.get(
       return subPage;
     });
 
-    const assessmentRows = await selectAssessmentsForCourseInstanceGrouped({
+    const assessmentRows = await selectAssessments({
       course_instance_id: res.locals.course_instance.id,
-      assessments_group_by: res.locals.course_instance.assessments_group_by,
     });
 
     res.send(
