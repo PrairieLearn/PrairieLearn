@@ -34,6 +34,8 @@ If students click the left menu PrairieLearn link before you have connected a co
 they will see a 'come back later' message. After a course instance is connected, the link will
 take them into your course instance.
 
+Canvas courses must be "Published" for certain integration functionality, like grade reporting, to work.
+
 ## "LTI 1.3" tab in your PrairieLearn course instance
 
 Once a Canvas course is linked with your PrairieLearn course instance, you will see an
@@ -55,6 +57,8 @@ assessment with a Canvas assignment. There are two ways to do this:
 ### Sending grades from PrairieLearn to Canvas
 
 To send grades you first need to link the PrairieLearn assessment with a Canvas assignment, as described above. After doing this, go to your PrairieLearn assessment, select the "LTI 1.3" tab, and then click "Send grades". Grades are always sent as percentage scores out of 100. These are the percentage "Score" values that PrairieLearn shows on the "Gradebook" page and the "Students" tab inside each assessment. Canvas will scale those percentages to the total points configured in the Canvas assignment.
+
+If you receive errors about students not being found in the course, check that your Canvas course is published before sending grades.
 
 ### Unlinking assessments
 

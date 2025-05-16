@@ -6,19 +6,8 @@ import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeadin
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import {
-  AssessmentModuleSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
-
-export const AssessmentRowSchema = AssessmentSchema.extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  label: z.string(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+import type { CourseInstance } from '../../lib/db-types.js';
+import { type AssessmentRow } from '../../models/assessment.js';
 
 function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any> }) {
   const { course_instance_copy_targets, course_instance } = resLocals;
@@ -85,11 +74,11 @@ function CopyCourseInstanceModal({ resLocals }: { resLocals: Record<string, any>
 export function PublicAssessments({
   resLocals,
   rows,
-  assessmentsGroupBy,
+  courseInstance,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
-  assessmentsGroupBy: 'Set' | 'Module';
+  courseInstance: CourseInstance;
 }) {
   return PageLayout({
     resLocals,
@@ -123,7 +112,7 @@ export function PublicAssessments({
                     ? html`
                         <tr>
                           <th colspan="3" scope="row">
-                            ${assessmentsGroupBy === 'Set'
+                            ${courseInstance.assessments_group_by === 'Set'
                               ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                               : AssessmentModuleHeading({
                                   assessment_module: row.assessment_module,
@@ -138,7 +127,7 @@ export function PublicAssessments({
                     </td>
                     <td class="align-middle">
                       <a
-                        href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
+                        href="/pl/public/course_instance/${courseInstance.id}/assessment/${row.id}/questions"
                         >${row.title}
                       </a>
                     </td>
