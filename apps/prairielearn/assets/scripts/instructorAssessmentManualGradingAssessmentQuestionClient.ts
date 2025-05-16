@@ -306,11 +306,50 @@ onDocumentReady(() => {
         },
         aiGradingEnabled
           ? {
+              field: 'ai_graded',
+              title: 'Graded by AI',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'human_graded',
+              title: 'Graded by human',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'ai_graded_with_latest_rubric',
+              title: 'Graded by AI with latest rubric',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'human_graded_with_latest_rubric',
+              title: 'Graded by human with latest rubric',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
               field: 'human_ai_agreement',
-              title: 'Human-AI agreement',
+              title: 'Agreement',
               filterControl: 'input',
-              formatter: (value: string, row: InstanceQuestionRow) =>
-                value ? row.human_ai_agreement : '&mdash;',
+              formatter: (value: string | null | undefined) => (value ? value : '&mdash;'),
               visible: aiGradingMode,
             }
           : null,

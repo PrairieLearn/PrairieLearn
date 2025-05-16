@@ -7,6 +7,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import { aiGradeTest } from '../../../ee/lib/ai-grading/ai-grading-test.js';
 import { aiGrade } from '../../../ee/lib/ai-grading.js';
+import { fillInstanceQuestionColumns } from '../../../lib/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -56,10 +57,7 @@ router.get(
     );
 
     // fill in the ai-grading related things (difference, graded by human/ai? with latest rubric?) here?
-    for (const instance_question of instance_questions) {
-      instance_question.human_ai_agreement = '100%';
-      // Something else? And probably move to another file, lib/ai-grading.ts (non-ee version)?
-    }
+    await fillInstanceQuestionColumns(instance_questions, res.locals.assessment_question);
     res.send({ instance_questions });
   }),
 );

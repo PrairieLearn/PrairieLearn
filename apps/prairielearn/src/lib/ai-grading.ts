@@ -1,6 +1,23 @@
-import * as cheerio from 'cheerio';
+import assert from 'node:assert';
 
+import * as cheerio from 'cheerio';
+import { z } from 'zod';
+
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
+
+import type { InstanceQuestionRow } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
+
+import { type AssessmentQuestion, IdSchema } from './db-types.js';
 import { formatHtmlWithPrettier } from './prettier.js';
+
+const sql = loadSqlEquiv(import.meta.url);
+const GradingJobInfoSchema = z.object({
+  grading_job_id: IdSchema,
+  graded_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Internal', 'External', 'Manual', 'AI']).nullable(),
+  manual_rubric_grading_id: IdSchema.nullable(),
+});
 
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
@@ -53,4 +70,43 @@ export async function stripHtmlForAiGrading(html: string) {
   }
 
   return (await formatHtmlWithPrettier(result)).trim();
+}
+
+export async function fillInstanceQuestionColumns(
+  instance_questions: InstanceQuestionRow[],
+  assessment_question: AssessmentQuestion,
+): Promise<void> {
+  const rubric_time = await queryOptionalRow(
+    sql.select_rubric_time,
+    { manual_rubric_id: assessment_question.manual_rubric_id },
+    DateFromISOString,
+  );
+
+  for (const instance_question of instance_questions) {
+    instance_question.human_graded = false;
+    instance_question.ai_graded = false;
+
+    const grading_jobs = await queryRows(
+      sql.select_ai_and_human_grading_jobs,
+      {
+        instance_question_id: instance_question.id,
+      },
+      GradingJobInfoSchema,
+    );
+
+    for (const grading_job of grading_jobs) {
+      assert(grading_job.graded_at);
+      if (grading_job.grading_method === 'Manual') {
+        instance_question.human_graded = true;
+        instance_question.human_graded_with_latest_rubric =
+          rubric_time !== null && grading_job.graded_at > rubric_time;
+      } else {
+        instance_question.ai_graded = true;
+        instance_question.ai_graded_with_latest_rubric =
+          rubric_time !== null && grading_job.graded_at > rubric_time;
+      }
+    }
+
+    // instance_question.human_ai_agreement = '';
+  }
 }
