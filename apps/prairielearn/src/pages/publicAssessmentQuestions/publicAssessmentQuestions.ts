@@ -40,6 +40,9 @@ router.get(
         question.other_assessments?.filter((assessment) => assessment.share_source_publicly) ?? [];
     }
 
+    res.locals.user = res.locals.authn_user; // TEST, need res.locals.user for setAssessmentCopyTargets
+    await setAssessmentCopyTargets(res);
+
     res.send(
       PublicAssessmentQuestions({
         resLocals: res.locals,

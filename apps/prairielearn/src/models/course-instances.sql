@@ -6,6 +6,15 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
+-- BLOCK select_course_instances_by_course_id
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
