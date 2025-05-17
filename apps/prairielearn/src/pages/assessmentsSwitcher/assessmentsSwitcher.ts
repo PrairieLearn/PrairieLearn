@@ -8,9 +8,7 @@ import { selectAssessments } from '../../models/assessment.js';
 
 import { AssessmentSwitcher } from './assessmentsSwitcher.html.js';
 
-const router = Router({
-  mergeParams: true, // Ensures that assessmentsSwitcher can retrieve req.locals.course_instance and req.params.assessment_id from the parent router
-});
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',
