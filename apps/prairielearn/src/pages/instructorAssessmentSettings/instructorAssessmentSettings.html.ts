@@ -1,4 +1,4 @@
-import { type HtmlValue, html } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -402,49 +402,43 @@ function AssessmentSharing({
     return html`<p>This assessment is not being shared.</p>`;
   }
 
-  const details: HtmlValue[] = [];
-
-  if (assessment.share_source_publicly) {
-    details.push(html`
-      <p>
-        <span class="badge color-green3 me-1">Public source</span>
-        This assessment's source is publicly shared.
-      </p>
-      <div>
-        <label for="publicLink">Public Link</label>
-        <span class="input-group">
-          <input
-            type="text"
-            class="form-control"
-            id="publicLink"
-            name="publicLink"
-            value="${publicLink}"
-            disabled
-          />
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary btn-copy"
-            data-clipboard-text="${publicLink}"
-            aria-label="Copy public link"
-          >
-            <i class="far fa-clipboard"></i>
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            aria-label="Public Link QR Code"
-            data-bs-toggle="modal"
-            data-bs-target="#publicLinkModal"
-          >
-            <i class="fas fa-qrcode"></i>
-          </button>
-        </span>
-        <small class="form-text text-muted">
-          The link that other instructors can use to view this assessment.
-        </small>
-      </div>
-    `);
-  }
-
-  return details;
+  return html`
+    <p>
+      <span class="badge color-green3 me-1">Public source</span>
+      This assessment's source is publicly shared.
+    </p>
+    <div class="mb-3">
+      <label for="publicLink">Public link</label>
+      <span class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          id="publicLink"
+          name="publicLink"
+          value="${publicLink}"
+          disabled
+        />
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary btn-copy"
+          data-clipboard-text="${publicLink}"
+          aria-label="Copy public link"
+        >
+          <i class="far fa-clipboard"></i>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Public Link QR Code"
+          data-bs-toggle="modal"
+          data-bs-target="#publicLinkModal"
+        >
+          <i class="fas fa-qrcode"></i>
+        </button>
+      </span>
+      <small class="form-text text-muted">
+        The link that other instructors can use to view this assessment.
+      </small>
+    </div>
+  `;
 }
