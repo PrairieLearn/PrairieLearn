@@ -46,7 +46,6 @@ function AssessmentNavigationModal() {
   return Modal({
     id: 'assessmentNavigationModal',
     title: 'Select assessment',
-    formMethod: 'POST',
     body: html`
       <div id="assessmentNavigationModalContent">
         <div style="width: 100%;" class="d-flex justify-content-center align-items-center">

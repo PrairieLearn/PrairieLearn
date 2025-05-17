@@ -24,10 +24,6 @@ export function AssessmentSwitcher({
   /* The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
-  if (assessmentRows.length === 0) {
-    return html`<p class="m-0">No assessments</p>`.toString();
-  }
-
   return html`
     <div id="assessment-switcher-container" class="d-flex flex-column">
       ${assessmentRows.map((row, index) => {
