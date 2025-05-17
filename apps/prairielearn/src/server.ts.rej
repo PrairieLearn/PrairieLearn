@@ -1,0 +1,26 @@
+diff a/apps/prairielearn/src/server.ts b/apps/prairielearn/src/server.ts	(rejected hunks)
+@@ -1525,6 +1525,11 @@ export async function initExpress(): Promise<Express> {
+     (await import('./pages/instructorFileTransfer/instructorFileTransfer.js')).default,
+   ]);
+ 
++  // TEST, make it easier to differentiate between these 3 by renaming the files and/or url and/or combining the files
++  app.use('/pl/course/:course_id(\\d+)/course_instance/file_transfer', [
++    (await import('./pages/instructorFileTransferCourseInstance/instructorFileTransferCourseInstance.js')).default,
++  ]);
++
+   app.use('/pl/course_instance/:course_instance_id(\\d+)/file_transfer', [
+     (await import('./pages/instructorFileTransferToCourseInstance/instructorFileTransferToCourseInstance.js')).default,
+   ]);
+@@ -1648,6 +1653,12 @@ export async function initExpress(): Promise<Express> {
+     (await import('./pages/instructorCopyPublicAssessment/instructorCopyPublicAssessment.js')).default,
+   );
+ 
++  // Also not a page, like above. This route is used to initiate the transfer of a public course instance
++  app.use(
++    '/pl/course/:course_id(\\d+)/copy_public_course_instance',
++    (await import('./pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js')).default,
++  );
++
+   // Global client files
+   app.use(
+     '/pl/course/:course_id(\\d+)/clientFilesCourse',

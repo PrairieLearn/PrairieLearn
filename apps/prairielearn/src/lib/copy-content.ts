@@ -14,20 +14,22 @@ import { config } from './config.js';
 import { type Course, type Question } from './db-types.js';
 import { idsEqual } from './id.js';
 
+export interface CopyTarget {
+  id: string;
+  short_name: string | null;
+  copy_url: string;
+  __csrf_token: string;
+}
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function setQuestionCopyTargets(res: Response) {
-  // Avoid querying for editable courses if we won't be able to copy this
-  // question anyways.
-  if (!res.locals.course.template_course && !res.locals.question.share_source_publicly) {
-    return;
-  }
-
+async function getCopyTargets(res: Response, urlSuffix: string): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
   });
-  res.locals.question_copy_targets = editableCourses
+
+  return editableCourses
     .filter(
       (course) =>
         // The example course cannot be updated in the web interface.
@@ -36,7 +38,7 @@ export async function setQuestionCopyTargets(res: Response) {
         !idsEqual(course.id, res.locals.course.id),
     )
     .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/copy_public_question`;
+      const copyUrl = `/pl/course/${course.id}/${urlSuffix}`;
 
       // The question copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
@@ -55,6 +57,20 @@ export async function setQuestionCopyTargets(res: Response) {
         __csrf_token: csrfToken,
       };
     });
+}
+
+export async function getQuestionCopyTargets(res: Response): Promise<CopyTarget[] | null> {
+  if (!res.locals.course.template_course && !res.locals.question.share_source_publicly) {
+    return null;
+  }
+  return getCopyTargets(res, 'copy_public_question');
+}
+
+export async function getCourseInstanceCopyTargets(res: Response): Promise<CopyTarget[] | null> {
+  if (!res.locals.course.template_course && !res.locals.course_instance.share_source_publicly) {
+    return null;
+  }
+  return getCopyTargets(res, 'copy_public_course_instance');
 }
 
 export async function copyQuestionBetweenCourses(

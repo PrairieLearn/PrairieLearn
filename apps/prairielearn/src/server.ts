@@ -1627,6 +1627,15 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
+  // Also not a page, like above. This route is used to initiate the transfer of a public course instance
+  app.use(
+    '/pl/course/:course_id(\\d+)/copy_public_course_instance',
+    (
+      await import(
+        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
+      )
+    ).default,
+  );
 
   // Global client files
   app.use(
@@ -1736,6 +1745,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   );
 
   // Client files for questions
