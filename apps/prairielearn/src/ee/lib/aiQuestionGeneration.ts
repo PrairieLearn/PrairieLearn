@@ -273,8 +273,8 @@ export async function addCompletionCostToIntervalUsage({
   intervalCost: number;
 }) {
   const completionCost =
-    (config.costPerMillionPromptTokens * (promptTokens ?? 0) +
-      config.costPerMillionCompletionTokens * (completionTokens ?? 0)) /
+    (config.costPerMillionPromptTokens * promptTokens +
+      config.costPerMillionCompletionTokens * completionTokens) /
     1e6;
 
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
@@ -420,12 +420,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
 
-    if (completion?.usage?.prompt_tokens) {
-      job.data['promptTokens'] = completion?.usage?.prompt_tokens;
-    }
-    if (completion?.usage?.completion_tokens) {
-      job.data['completionTokens'] = completion?.usage?.completion_tokens;
-    }
+    job.data['promptTokens'] = completion.usage?.prompt_tokens;
+    job.data['completionTokens'] = completion.usage?.completion_tokens;
 
     job.data.html = html;
     job.data.python = results?.python;
