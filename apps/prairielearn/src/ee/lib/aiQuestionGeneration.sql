@@ -85,7 +85,7 @@ SELECT
   c.id,
   NULL,
   $cost_ai_question_generation,
-  now(),
+  date_trunc('day', now(), 'UTC'),
   $authn_user_id,
   false
 FROM
@@ -95,3 +95,12 @@ FROM
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   p.id = $prompt_id
+ON CONFLICT (
+  type,
+  course_id,
+  course_instance_id,
+  date,
+  user_id
+) DO UPDATE
+SET
+  cost_ai_question_generation = course_instance_usages.cost_ai_question_generation + EXCLUDED.cost_ai_question_generation
