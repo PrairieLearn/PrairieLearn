@@ -42,8 +42,8 @@ export default tseslint.config([
       'import-x': importX,
       mocha,
       'no-floating-promise': noFloatingPromise,
-      '@prairielearn': prairielearn,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+      '@prairielearn': prairielearn,
     },
 
     languageOptions: {
