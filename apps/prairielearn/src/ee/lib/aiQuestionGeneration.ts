@@ -641,7 +641,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
-  job.data['promptTokens'] = completion.usage?.prompt_tokens
+  job.data['promptTokens'] = completion.usage?.prompt_tokens;
   job.data['completionTokens'] = completion.usage?.completion_tokens;
 
   job.data.html = html;

@@ -72,10 +72,10 @@ const ConfigSchema = z.object({
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
-  /** 
+  /**
    * Used when nonVolatileCacheType is set to redis. If configured, should
-   * not evict data when facing memory pressure. The instance should be 
-   * appropriately sized such that it will not run out of memory during 
+   * not evict data when facing memory pressure. The instance should be
+   * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
   nonVolatileRedisUrl: z.string().nullable().default(null),
