@@ -200,10 +200,10 @@ function extractFromCompletion(
 }
 
 /**
- * Initializes the AI question generation cache used for rate limiting.
+ * Returns the AI question generation cache used for rate limiting.
  */
 let aiQuestionGenerationCache: Cache | undefined;
-export function initializeAiQuestionGenerationCache() {
+export function getAiQuestionGenerationCache() {
   // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();

@@ -27,8 +27,8 @@ import { selectQuestionById } from '../../../models/question.js';
 import {
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
+  getAiQuestionGenerationCache,
   getIntervalUsage,
-  initializeAiQuestionGenerationCache,
   regenerateQuestion,
 } from '../../lib/aiQuestionGeneration.js';
 import {
@@ -41,7 +41,7 @@ import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEdit
 const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-const aiQuestionGenerationCache = initializeAiQuestionGenerationCache();
+const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 async function saveGeneratedQuestion(
   res: express.Response,

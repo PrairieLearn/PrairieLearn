@@ -12,8 +12,8 @@ import {
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   generateQuestion,
+  getAiQuestionGenerationCache,
   getIntervalUsage,
-  initializeAiQuestionGenerationCache,
 } from '../../lib/aiQuestionGeneration.js';
 
 import {
@@ -26,7 +26,7 @@ import {
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-const aiQuestionGenerationCache = initializeAiQuestionGenerationCache();
+const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
