@@ -3,7 +3,6 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { computeCompletionCost } from '../../lib/ai.js';
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
@@ -13,6 +12,7 @@ import {
 } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
@@ -200,30 +200,6 @@ function extractFromCompletion(
   }
 
   return out;
-}
-
-/**
- * Create a new course instance usage record for an AI question generation request.
- */
-export async function updateCourseInstanceUsagesForAiQuestionGeneration({
-  promptId,
-  authnUserId,
-  promptTokens = 0,
-  completionTokens = 0,
-}: {
-  promptId: string;
-  authnUserId: string;
-  promptTokens?: number;
-  completionTokens?: number;
-}) {
-  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
-    prompt_id: promptId,
-    authn_user_id: authnUserId,
-    cost_ai_question_generation: computeCompletionCost({
-      promptTokens,
-      completionTokens,
-    }),
-  });
 }
 
 /**
