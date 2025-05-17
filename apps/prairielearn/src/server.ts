@@ -754,6 +754,14 @@ export async function initExpress(): Promise<Express> {
 
   // single assessment
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor', 
+    asyncHandler(async (req, res, next) => {
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      next();
+    })
+  )
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
@@ -1172,9 +1180,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
