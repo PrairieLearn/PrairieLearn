@@ -361,22 +361,18 @@ Keep in mind you are not just generating an example; you are generating an actua
       IdSchema,
     );
 
-    await updateCourseInstanceUsagesForAiQuestionGeneration({
-      promptId,
-      authnUserId,
-      promptTokens: completion?.usage?.prompt_tokens,
-      completionTokens: completion?.usage?.completion_tokens,
-    });
-
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
 
-    if (completion?.usage?.prompt_tokens) {
-      job.data['promptTokens'] = completion?.usage?.prompt_tokens;
-    }
-    if (completion?.usage?.completion_tokens) {
-      job.data['completionTokens'] = completion?.usage?.completion_tokens;
-    }
+    job.data['promptTokens'] = completion.usage?.prompt_tokens;
+    job.data['completionTokens'] = completion.usage?.completion_tokens;
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId,
+      authnUserId,
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
+    });
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -571,13 +567,6 @@ Keep in mind you are not just generating an example; you are generating an actua
     IdSchema,
   );
 
-  await updateCourseInstanceUsagesForAiQuestionGeneration({
-    promptId,
-    authnUserId,
-    promptTokens: completion?.usage?.prompt_tokens,
-    completionTokens: completion?.usage?.completion_tokens,
-  });
-
   const files: Record<string, string> = {};
   if (results?.html) {
     files['question.html'] = b64Util.b64EncodeUnicode(html);
@@ -603,12 +592,15 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
-  if (completion?.usage?.prompt_tokens) {
-    job.data['promptTokens'] = completion?.usage?.prompt_tokens;
-  }
-  if (completion?.usage?.completion_tokens) {
-    job.data['completionTokens'] = completion?.usage?.completion_tokens;
-  }
+  job.data['promptTokens'] = completion?.usage?.prompt_tokens;
+  job.data['completionTokens'] = completion?.usage?.completion_tokens;
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId,
+    authnUserId,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+  });
 
   job.data.html = html;
   job.data.python = python;
