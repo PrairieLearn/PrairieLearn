@@ -230,7 +230,10 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!config.openAiApiKey || !config.openAiOrganization) {
+    if (
+      !config.aiQuestionGenerationOpenAiApiKey ||
+      !config.aiQuestionGenerationOpenAiOrganization
+    ) {
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
@@ -244,8 +247,8 @@ router.post(
     assertCanCreateQuestion(res.locals);
 
     const client = new OpenAI({
-      apiKey: config.openAiApiKey,
-      organization: config.openAiOrganization,
+      apiKey: config.aiQuestionGenerationOpenAiApiKey,
+      organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'regenerate_question') {

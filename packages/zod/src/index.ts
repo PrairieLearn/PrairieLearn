@@ -102,3 +102,29 @@ export const DateFromISOString = z
     },
   )
   .transform((s) => new Date(s));
+
+/**
+ * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
+ * This is useful for form number inputs that are not required but we do not want to
+ * use an empty string to compute values.
+ */
+export const IntegerFromStringOrEmptySchema = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z.union([z.null(), z.coerce.number().int()]),
+);
+
+/**
+ * A Zod schema for an arrray of string values from either a string or an array of
+ * strings.
+ */
+export const ArrayFromStringOrArraySchema = z
+  .union([z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s === null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });

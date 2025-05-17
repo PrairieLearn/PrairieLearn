@@ -228,7 +228,7 @@ describe('sproc ip_to_mode tests', function () {
   });
 
   describe('Center exam without IP restrictions', () => {
-    describe('before check-in', async () => {
+    describe('before check-in', () => {
       it('should return "Public" for any IP address when session is starting soon', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
@@ -266,7 +266,7 @@ describe('sproc ip_to_mode tests', function () {
       });
     });
 
-    describe('after check-in, before access start', async () => {
+    describe('after check-in, before access start', () => {
       it('should return "Exam" for any IP address', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
@@ -283,7 +283,7 @@ describe('sproc ip_to_mode tests', function () {
       });
     });
 
-    describe('after access start', async () => {
+    describe('after access start', () => {
       it('should return "Exam" for any IP address, within the access date range', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
