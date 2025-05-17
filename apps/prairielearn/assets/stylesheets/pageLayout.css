@@ -201,3 +201,42 @@ body:has(div.app-container) {
 .app-container.side-nav-enabled.collapsed #side-nav-toggler {
   padding: 0.5rem 1rem;
 }
+
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 0.25rem;
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 0.5rem;
+    row-gap: 0;
+    padding: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
