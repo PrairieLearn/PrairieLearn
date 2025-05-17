@@ -29,7 +29,7 @@ export function AssessmentSwitcher({
   }
 
   return html`
-    <div id="assessment-switcher-container">
+    <div id="assessment-switcher-container" class="d-flex flex-column">
       ${assessmentRows.map((row, index) => {
         const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
@@ -38,7 +38,7 @@ export function AssessmentSwitcher({
         return html`
           ${row.start_new_assessment_group
             ? html`
-                <div class="assessment-heading ${index === 0 ? 'first' : ''}">
+                <div class="fw-bold ${index === 0 ? 'mt-0' : 'mt-3'}">
                   ${assessmentsGroupBy === 'Set'
                     ? AssessmentSetHeading({ assessment_set: row.assessment_set })
                     : AssessmentModuleHeading({
@@ -47,9 +47,9 @@ export function AssessmentSwitcher({
                 </div>
               `
             : ''}
-          <div class="assessment-row ${isActive ? 'selected' : ''}">
-            <div class="label">
-              <span class="badge color-${row.assessment_set.color}"> ${row.label} </span>
+          <div class="assessment-row w-100 rounded ${isActive ? 'bg-primary text-white' : ''}">
+            <div class="d-flex align-items-center">
+              <span class="badge overflow-hidden text-truncate text-nowrap color-${row.assessment_set.color}"> ${row.label} </span>
             </div>
             <div class="title">
               ${row.sync_errors
@@ -63,7 +63,7 @@ export function AssessmentSwitcher({
                       output: row.sync_warnings,
                     })
                   : ''}
-              <a href="${assessmentUrl}">
+              <a href="${assessmentUrl}" class="${isActive ? 'text-white' : ''}">
                 ${row.title}
                 ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
               </a>
@@ -73,8 +73,8 @@ export function AssessmentSwitcher({
                 issueAid: row.tid,
               })}
             </div>
-            <div class="tid ${isActive ? '' : 'text-muted'}">
-              <span> ${row.tid} </span>
+            <div class="d-flex overflow-hidden align-items-center ${isActive ? '' : 'text-muted'}">
+              <span class="text-nowrap text-truncate text-left" style="direction: rtl;"> ${row.tid} </span>
             </div>
           </div>
         `;

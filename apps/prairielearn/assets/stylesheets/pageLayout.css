@@ -202,67 +202,16 @@ body:has(div.app-container) {
   padding: 0.5rem 1rem;
 }
 
-#assessment-switcher-container {
-  display: flex;
-  flex-direction: column;
-}
-
-#assessment-switcher-container .assessment-heading {
-  font-weight: bold;
-  margin-top: 0.75rem;
-}
-
-#assessment-switcher-container .assessment-heading.first {
-  margin-top: 0;
-}
-
 #assessment-switcher-container .assessment-row {
-  width: 100%;
   display: grid;
   /* Use minmax(0, 1fr) to prevent content overflow */
   grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
-  text-decoration: none;
   padding: 0.25rem;
-}
-
-#assessment-switcher-container .assessment-row .label {
-  display: flex;
-  align-items: center;
-}
-
-#assessment-switcher-container .assessment-row .label span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#assessment-switcher-container .assessment-row .tid {
-  display: flex;
-  align-items: center;
-}
-
-#assessment-switcher-container .assessment-row .tid span {
-  overflow: hidden;
-  white-space: nowrap;
-  direction: rtl;
-  text-align: left;
-  text-overflow: ellipsis;
-}
-
-#assessment-switcher-container .assessment-row.selected {
-  background-color: rgba(var(--bs-primary-rgb));
-  color: white;
-  border-radius: 5px;
-}
-
-#assessment-switcher-container .assessment-row.selected a {
-  color: white;
 }
 
 #assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
   background-color: rgba(var(--bs-secondary-rgb), 0.2);
-  border-radius: 5px;
 }
 
 @media (max-width: 768px) {
