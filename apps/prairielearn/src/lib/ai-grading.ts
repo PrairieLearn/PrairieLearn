@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
 
 import { formatHtmlWithPrettier } from './prettier.js';
+
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
  * This includes removing scripts/stylesheets and attributes that aren't
