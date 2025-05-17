@@ -24,21 +24,6 @@ body:has(div.app-container) {
     'side-nav content' 1fr / 300px 1fr;
 }
 
-/* Styles when the side nav is enabled and collapsed */
-.app-container.side-nav-enabled.collapsed {
-  grid-template:
-    'top-nav top-nav' auto
-    'side-nav content' 1fr / 50px 1fr;
-}
-
-.app-container.side-nav-enabled.collapsed #course-dropdown {
-  display: none;
-}
-
-.app-container.side-nav-enabled.collapsed #course-instance-dropdown {
-  display: none;
-}
-
 .app-top-nav {
   grid-area: top-nav;
 }
@@ -52,10 +37,6 @@ body:has(div.app-container) {
   /* TODO: Use the native CSS variable when we upgrade to 5.3 */
   background-color: #cfe2ff;
   transition: 300ms;
-}
-
-.app-container.side-nav-enabled.collapsed .app-side-nav {
-  padding: 0.5rem 0;
 }
 
 .app-main {
@@ -76,10 +57,6 @@ body:has(div.app-container) {
   margin-bottom: 1.5rem;
 }
 
-.app-container.side-nav-enabled.collapsed .side-nav-group {
-  margin-bottom: 0;
-}
-
 .side-nav-link {
   display: flex;
   flex-direction: row;
@@ -91,10 +68,6 @@ body:has(div.app-container) {
   border-radius: 0.375rem;
   position: relative;
   white-space: nowrap;
-}
-
-.app-container.side-nav-enabled.collapsed .side-nav-link {
-  padding: 0.75rem;
 }
 
 .side-nav-link:hover,
@@ -118,16 +91,6 @@ body:has(div.app-container) {
   border-bottom-right-radius: 0.25rem;
 }
 
-/* Hide side nav link text when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
-  display: none;
-}
-
-/* Center the icons when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-link {
-  justify-content: center;
-}
-
 .side-nav-header {
   display: flex;
   justify-content: space-between;
@@ -140,23 +103,9 @@ body:has(div.app-container) {
   white-space: nowrap;
 }
 
-/* Center the side nav toggle button when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-header {
-  justify-content: center;
-}
-
 .app-container.side-nav-enabled .side-nav-header .header-text {
   font-size: 0.8rem;
   margin: 0;
-}
-
-/* .app-container.side-nav-enabled.collapsed .side-nav-header {
-  padding-bottom: 0.5rem;
-} */
-
-/* Hide the header text when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
-  display: none;
 }
 
 .side-nav-link .suffix {
@@ -164,27 +113,6 @@ body:has(div.app-container) {
   align-items: center;
   justify-content: flex-end;
   flex: 1;
-}
-
-/* When the side nav is collapsed, hide side nav link suffixes
-  (e.g. for the getting started side nav link, hide the getting started progess circle) */
-.app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
-  display: none;
-}
-
-/* When the side nav is collapsed, hide the expanded icon */
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
-  display: none;
-}
-
-/* When the side nav is expanded, hide the collapsed icon */
-.side-nav-toggler-icon.collapsed {
-  display: none;
-}
-
-/* When the side nav is collapsed, show the collapsed icon */
-.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
-  display: block;
 }
 
 #side-nav-toggler {
@@ -198,6 +126,93 @@ body:has(div.app-container) {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
 
-.app-container.side-nav-enabled.collapsed #side-nav-toggler {
-  padding: 0.5rem 1rem;
+/* Side nav collapsed styles do not appear on small/mobile screen sizes */
+@media (min-width: 768px) {
+  /* Styles when the side nav is enabled and collapsed */
+  .app-container.side-nav-enabled.collapsed {
+    grid-template:
+      'top-nav top-nav' auto
+      'side-nav content' 1fr / 50px 1fr;
+  }
+
+  .app-container.side-nav-enabled.collapsed #course-dropdown {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled.collapsed #course-instance-dropdown {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled.collapsed .app-side-nav {
+    padding: 0.5rem 0;
+  }
+
+  .app-container.side-nav-enabled.collapsed .side-nav-group {
+    margin-bottom: 0;
+  }
+
+  .app-container.side-nav-enabled.collapsed .side-nav-link {
+    padding: 0.75rem;
+  }
+
+  /* Hide side nav link text when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
+    display: none;
+  }
+
+  /* Center the icons when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-link {
+    justify-content: center;
+  }
+
+  /* Center the side nav toggle button when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-header {
+    justify-content: center;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Hide the header text when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, hide side nav link suffixes
+  (e.g. for the getting started side nav link, hide the getting started progess circle) */
+  .app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, hide the expanded icon */
+  .app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
+    display: none;
+  }
+
+  /* When the side nav is expanded, hide the collapsed icon */
+  .side-nav-toggler-icon.collapsed {
+    display: none;
+  }
+
+  /* When the side nav is collapsed, show the collapsed icon */
+  .app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
+    display: block;
+  }
+
+  .app-container.side-nav-enabled.collapsed #side-nav-toggler {
+    padding: 0.5rem 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container.side-nav-enabled {
+    display: block;
+  }
+
+  .app-side-nav {
+    padding-top: 1rem;
+    display: block;
+  }
+
+  #side-nav-toggler {
+    display: none;
+  }
 }

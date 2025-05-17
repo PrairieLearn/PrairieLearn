@@ -16,6 +16,7 @@ export function Navbar({
   navbarType,
   marginBottom = true,
   isInPageLayout = false,
+  sideNavEnabled = false
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
@@ -27,6 +28,10 @@ export function Navbar({
    * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
    */
   isInPageLayout?: boolean;
+  /**
+   * Indicates if the side nav is enabled for the current page.
+   */
+  sideNavEnabled?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -71,6 +76,19 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
+        ${sideNavEnabled ? (
+          html`
+            <button
+              class="navbar-toggler"
+              type="button"
+              aria-expanded="false"
+              aria-label="Toggle side nav"
+              style="height: 40px;"
+            >
+              <span class="navbar-toggler-icon"></span>
+            </button>
+          `
+        ) : ''}
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
@@ -84,8 +102,11 @@ export function Navbar({
           data-bs-target=".navbar-collapse"
           aria-expanded="false"
           aria-label="Toggle navigation"
+          style="height: 40px;"
         >
-          <span class="navbar-toggler-icon"></span>
+          <span class="${
+            sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'
+          }"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
           <ul class="nav navbar-nav me-auto" id="main-nav">
