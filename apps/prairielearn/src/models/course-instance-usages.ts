@@ -64,7 +64,9 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }
 
 /**
- * Update the course instance usages for an AI question generation request.
+ * Update the course instance usages for an AI question generation prompt.
+ * 
+ * @param param.prompt_id The ID of the AI question generation prompt.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,
