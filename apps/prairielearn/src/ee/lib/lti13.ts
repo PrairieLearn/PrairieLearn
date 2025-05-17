@@ -564,13 +564,6 @@ export async function linkAssessment(
   });
 }
 
-/* Throttling notes
-// https://canvas.instructure.com/doc/api/file.throttling.html
-// 403 Forbidden (Rate Limit Exceeded)
-// X-Request-Cost
-// X-Rate-Limit-Remaining
-*/
-
 /**
  * Make HTTP fetch requests with retries
  *
@@ -595,14 +588,9 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    switch (response.status) {
-      // 422 Unprocessable Entity, User not found in course or is not a student
-      case 422:
-        return response;
-    }
-
     if (!response.ok) {
-      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
+      throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}`, {
+        status: response.status,
         data: {
           status: response.status,
           statusText: response.statusText,
@@ -612,12 +600,20 @@ export async function fetchRetry(
     }
     return response;
   } catch (err) {
-    fetchRetryOpts.retryLeft -= 1;
-    if (fetchRetryOpts.retryLeft === 0) {
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    if (err.status === 403) {
+      // Retry logic
+      fetchRetryOpts.retryLeft -= 1;
+      if (fetchRetryOpts.retryLeft === 0) {
+        throw err;
+      }
+      await sleep(fetchRetryOpts.sleepMs);
+      return await fetchRetry(input, opts, fetchRetryOpts);
+    } else {
+      // Error immediately
       throw err;
     }
-    await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
   }
 }
 
@@ -882,24 +878,25 @@ export async function updateLti13Scores(
         },
       };
 
-      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-type': 'application/vnd.ims.lis.v1.score+json',
-        },
-        body: JSON.stringify(score),
-      });
+      try {
+        const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-type': 'application/vnd.ims.lis.v1.score+json',
+          },
+          body: JSON.stringify(score),
+        });
 
-      if (res.ok) {
-        counts.success++;
-      } else {
+        if (res.ok) {
+          counts.success++;
+        }
+      } catch (error) {
         counts.error++;
-        const results = await res.json();
 
         // Default to showing the whole error
-        job.warn(`\t${res.statusText}`);
-        job.warn(`\t${JSON.stringify(results)}`);
+        job.warn(`\t${error.data.statusText}`);
+        job.warn(`\t${error.data.body}`);
       }
     }
   }
