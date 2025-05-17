@@ -1765,3 +1765,13 @@ FROM
   deleted_assessment_instances AS ai
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);
+
+-- BLOCK select_assessment_instance_last_submission_date
+SELECT
+  max(s.date)
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id;
