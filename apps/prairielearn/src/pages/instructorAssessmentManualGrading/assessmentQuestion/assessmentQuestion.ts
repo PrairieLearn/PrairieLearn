@@ -1,11 +1,13 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { aiGradeTest } from '../../../ee/lib/ai-grading/ai-grading-test.js';
 import { aiGrade } from '../../../ee/lib/ai-grading.js';
+import { fillInstanceQuestionColumns } from '../../../lib/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -27,7 +29,14 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled }));
+    const aiGradingMode = await queryRow(
+      sql.check_ai_grading_mode,
+      { assessment_question_id: res.locals.assessment_question.id },
+      z.boolean(),
+    );
+    res.send(
+      AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled, aiGradingMode }),
+    );
   }),
 );
 
@@ -46,6 +55,9 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
+
+    // fill in the ai-grading related things (difference, graded by human/ai? with latest rubric?) here?
+    await fillInstanceQuestionColumns(instance_questions, res.locals.assessment_question);
     res.send({ instance_questions });
   }),
 );
@@ -179,6 +191,11 @@ router.post(
         user_id: res.locals.user.user_id,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'toggle_ai_grading_mode') {
+      await queryAsync(sql.toggle_ai_grading_mode, {
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

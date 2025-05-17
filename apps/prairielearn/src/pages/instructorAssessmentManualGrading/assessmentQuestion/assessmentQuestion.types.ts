@@ -15,6 +15,11 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
+  human_ai_agreement: z.string().nullish(),
+  ai_graded: z.boolean().nullish(),
+  human_graded: z.boolean().nullish(),
+  ai_graded_with_latest_rubric: z.boolean().nullish(),
+  human_graded_with_latest_rubric: z.boolean().nullish(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
@@ -26,6 +31,7 @@ export interface InstanceQuestionTableData {
   maxPoints: number | null;
   maxAutoPoints: number | null;
   aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
   courseStaff: User[];
   csrfToken: string;
 }

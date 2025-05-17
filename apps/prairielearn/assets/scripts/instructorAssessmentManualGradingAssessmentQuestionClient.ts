@@ -20,6 +20,7 @@ onDocumentReady(() => {
     groupWork,
     maxAutoPoints,
     aiGradingEnabled,
+    aiGradingMode,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,7 +56,15 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
+    buttonsOrder: [
+      'columns',
+      'refresh',
+      'autoRefresh',
+      'showStudentInfo',
+      'status',
+      'toggleAiGradingMode',
+      'aiGrade',
+    ],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -90,6 +99,21 @@ onDocumentReady(() => {
         icon: 'fa-tags',
         render: hasCourseInstancePermissionEdit,
         html: () => gradingTagDropdown(courseStaff),
+      },
+      toggleAiGradingMode: {
+        render: aiGradingEnabled,
+        html: html`<button
+          class="btn btn-secondary ${aiGradingMode ? 'active' : ''}"
+          type="button"
+          name="toggleAiGradingMode"
+          id="js-toggle-ai-grading-mode-button"
+          title="Start/stop AI grading mode"
+        >
+          <i class="fa fa-eye" aria-hidden="true"></i> AI grading mode
+        </button>`.toString(),
+        event: () => {
+          $('#ai-grading-mode').trigger('submit');
+        },
       },
     },
     onUncheck: updateGradingTagButton,
@@ -203,6 +227,7 @@ onDocumentReady(() => {
           title: 'Assigned grader',
           filterControl: 'select',
           formatter: (_value: string, row: InstanceQuestionRow) => row.assigned_grader_name || '—',
+          visible: !aiGradingMode,
         },
         {
           field: 'auto_points',
@@ -258,6 +283,7 @@ onDocumentReady(() => {
           sortable: true,
           formatter: (score: number | null, row: InstanceQuestionRow) =>
             scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
+          visible: !aiGradingMode,
         },
         {
           field: 'last_grader',
@@ -278,7 +304,57 @@ onDocumentReady(() => {
                 : row.last_grader_name
               : '&mdash;',
         },
-      ],
+        aiGradingEnabled
+          ? {
+              field: 'ai_graded',
+              title: 'Graded by AI',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'human_graded',
+              title: 'Graded by human',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'ai_graded_with_latest_rubric',
+              title: 'Graded by AI with latest rubric',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'human_graded_with_latest_rubric',
+              title: 'Graded by human with latest rubric',
+              filterControl: 'select',
+              formatter: (value: boolean | null | undefined) =>
+                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
+              visible: aiGradingMode,
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'human_ai_agreement',
+              title: 'Agreement',
+              filterControl: 'input',
+              formatter: (value: string | null | undefined) => (value ? value : '&mdash;'),
+              visible: aiGradingMode,
+            }
+          : null,
+        // try separate columns for graded with latest rubric, see if we end up with too many columns
+      ].filter(Boolean),
     ],
   });
 });
