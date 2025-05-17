@@ -18,7 +18,7 @@ export function AssessmentSwitcher({
 }: {
   assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
-  currentAssessmentId?: string;
+  currentAssessmentId: string;
   courseInstanceId: string;
   plainUrlPrefix: string;
   /* The subPage that assessment links should redirect to. */
@@ -33,7 +33,7 @@ export function AssessmentSwitcher({
       ${assessmentRows.map((row, index) => {
         const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
-        const isActive = currentAssessmentId ? idsEqual(currentAssessmentId, row.id) : false;
+        const isActive = idsEqual(currentAssessmentId, row.id);
 
         return html`
           ${row.start_new_assessment_group
@@ -49,7 +49,12 @@ export function AssessmentSwitcher({
             : ''}
           <div class="assessment-row w-100 rounded ${isActive ? 'bg-primary text-white' : ''}">
             <div class="d-flex align-items-center">
-              <span class="badge overflow-hidden text-truncate text-nowrap color-${row.assessment_set.color}"> ${row.label} </span>
+              <span
+                class="badge overflow-hidden text-truncate text-nowrap color-${row.assessment_set
+                  .color}"
+              >
+                ${row.label}
+              </span>
             </div>
             <div class="title">
               ${row.sync_errors
@@ -74,7 +79,9 @@ export function AssessmentSwitcher({
               })}
             </div>
             <div class="d-flex overflow-hidden align-items-center ${isActive ? '' : 'text-muted'}">
-              <span class="text-nowrap text-truncate text-left" style="direction: rtl;"> ${row.tid} </span>
+              <span class="text-nowrap text-truncate text-left" style="direction: rtl;">
+                ${row.tid}
+              </span>
             </div>
           </div>
         `;

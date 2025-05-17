@@ -27,7 +27,7 @@ export function AssessmentNavigation({
         aria-label="Change assessment"
         aria-haspopup="true"
         aria-expanded="false"
-        hx-get="/pl/assessments_switcher/course_instance/${courseInstanceId}/assessment/${assessment.id}${subPage
+        hx-get="/pl/navbar/course_instance/${courseInstanceId}/assessment/${assessment.id}/switcher${subPage
           ? `?subPage=${subPage}`
           : ''}"
         hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
