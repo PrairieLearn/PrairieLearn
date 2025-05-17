@@ -113,6 +113,7 @@ export function PageLayout({
               'app-container',
               sideNavEnabled && 'side-nav-enabled',
               !sideNavExpanded && 'collapsed',
+              'mobile-collapsed'
             )}"
           >
             <div class="app-top-nav">

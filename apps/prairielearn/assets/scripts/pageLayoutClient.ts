@@ -3,10 +3,11 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 // Handle when the user expands or collapses the side nav
 onDocumentReady(async () => {
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
+  const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
 
-  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon) return;
+  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton) return;
 
   sideNavTogglerButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
@@ -64,5 +65,24 @@ onDocumentReady(async () => {
         side_nav_expanded: !sideNavExpanded,
       }),
     });
+  });
+  
+  sideNavMobileButton.addEventListener('click', async () => {
+    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
+    if (sideNavExpanded) {
+      // Collapse the side nav
+      appContainerDiv.classList.add('mobile-collapsed');
+
+      // Update the side nav toggler button tooltip and icon
+      sideNavMobileButton.setAttribute('data-bs-title', 'Expand side nav');
+      sideNavMobileButton.setAttribute('aria-label', 'Expand side nav');
+    } else {
+      // Expand the side nav
+      appContainerDiv.classList.remove('mobile-collapsed');
+
+      // Update the side nav toggler button tooltip and icon
+      sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
+      sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
+    }
   });
 });

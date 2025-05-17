@@ -79,6 +79,7 @@ export function Navbar({
         ${sideNavEnabled ? (
           html`
             <button
+              id="side-nav-mobile-toggler"
               class="navbar-toggler"
               type="button"
               aria-expanded="false"
@@ -243,6 +244,7 @@ function UserDropdownMenu({
   return html`
     <ul
       class="nav navbar-nav"
+      style="height: 56px"
       id="username-nav"
       data-access-as-administrator="${access_as_administrator?.toString()}"
       data-view-type="${viewType ?? null}"

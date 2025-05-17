@@ -10,6 +10,7 @@ body:has(div.app-container) {
 /* Styles when the side nav is hidden */
 .app-container {
   display: block;
+  position: relative;
 }
 
 /* Styles when the side nav is enabled and expanded */
@@ -210,9 +211,34 @@ body:has(div.app-container) {
   .app-side-nav {
     padding-top: 1rem;
     display: block;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-100%); /* Start off-screen */
+    will-change: transform; /* Performance optimization */
   }
 
   #side-nav-toggler {
     display: none;
+  }
+
+  .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
+    transform: translateX(-100%);
+  }
+  
+  .app-container.side-nav-enabled:not(.mobile-collapsed) .app-side-nav {
+    transform: translateX(0);
+  }
+
+  .app-container.side-nav-enabled .app-side-nav {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999;
+  }
+
+  .app-main {
+    max-height: 100vh;
+    overflow: none;
   }
 }
