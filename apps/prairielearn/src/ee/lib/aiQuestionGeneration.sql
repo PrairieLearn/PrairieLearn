@@ -85,7 +85,7 @@ SELECT
   c.id,
   NULL,
   $cost_ai_question_generation,
-  date_trunc('day', now(), 'UTC'),
+  date_trunc('day', now() AT TIME ZONE 'UTC'),
   $authn_user_id,
   false
 FROM
