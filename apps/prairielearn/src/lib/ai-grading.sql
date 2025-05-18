@@ -17,7 +17,8 @@ SELECT
   grading_job_id,
   grading_method,
   graded_at,
-  manual_rubric_grading_id
+  manual_rubric_grading_id,
+  COALESCE(u.name, u.uid) AS grader_name
 FROM
   (
     SELECT
@@ -25,6 +26,7 @@ FROM
       gj.grading_method,
       gj.graded_at,
       gj.manual_rubric_grading_id,
+      gj.graded_by,
       ROW_NUMBER() OVER (
         PARTITION BY
           gj.grading_method
@@ -38,6 +40,7 @@ FROM
       s.id = $submission_id
       AND gj.grading_method IN ('Manual', 'AI')
   ) grouped_grading_jobs
+  JOIN users AS u ON (u.user_id = grouped_grading_jobs.graded_by)
 WHERE
   rn = 1;
 

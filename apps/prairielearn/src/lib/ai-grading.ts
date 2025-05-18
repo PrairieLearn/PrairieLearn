@@ -17,6 +17,7 @@ const GradingJobInfoSchema = z.object({
   graded_at: DateFromISOString.nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual', 'AI']).nullable(),
   manual_rubric_grading_id: IdSchema.nullable(),
+  grader_name: z.string(),
 });
 
 /**
@@ -101,7 +102,7 @@ export async function fillInstanceQuestionColumns(
     for (const grading_job of grading_jobs) {
       assert(grading_job.graded_at);
       if (grading_job.grading_method === 'Manual') {
-        instance_question.last_human_grader = 'Humannnn';
+        instance_question.last_human_grader = grading_job.grader_name;
       } else {
         instance_question.ai_graded = true;
         instance_question.ai_graded_with_latest_rubric =

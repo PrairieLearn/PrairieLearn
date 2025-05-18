@@ -309,9 +309,10 @@ onDocumentReady(() => {
         {
           field: 'last_grader',
           title: 'Graded by',
+          visible: !aiGradingMode,
           filterControl: 'select',
           filterCustomSearch: (text: string, value: string) => {
-            if (text === 'ai') {
+            if (text === generateAiGraderName().toLowerCase()) {
               return value.includes('js-custom-search-ai-grading');
             }
             return null;
@@ -320,7 +321,9 @@ onDocumentReady(() => {
             value
               ? row.is_ai_graded
                 ? html`
-                    <span class="badge text-bg-secondary js-custom-search-ai-grading">AI</span>
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading"
+                      >${generateAiGraderName()}</span
+                    >
                   `.toString()
                 : row.last_grader_name
               : '&mdash;',
@@ -358,8 +361,13 @@ onDocumentReady(() => {
   });
 });
 
-function generateAiGraderName(ai_graded_with_latest_rubric: boolean): string {
-  return 'AI' + (ai_graded_with_latest_rubric ? '' : ' (outdated)');
+function generateAiGraderName(ai_graded_with_latest_rubric?: boolean): string {
+  return (
+    'AI' +
+    (ai_graded_with_latest_rubric === undefined || ai_graded_with_latest_rubric
+      ? ''
+      : ' (outdated)')
+  );
 }
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
