@@ -236,6 +236,7 @@ body:has(div.app-container) {
     transition: transform 0.3s ease-in-out;
     transform: translateX(-100%); /* Start off-screen */
     will-change: transform; /* Performance optimization */
+    min-height: 100%;
   }
 
   #side-nav-toggler {
@@ -245,6 +246,13 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
     transform: translateX(-100%);
   }
+
+
+  .app-container.side-nav-enabled.mobile-collapsed .app-main {
+    max-height: 100%;
+    overflow: hidden;
+  }
+  
   
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-side-nav {
     transform: translateX(0);
@@ -255,7 +263,6 @@ body:has(div.app-container) {
     top: 56px;
     left: 0;
     width: 100%;
-    height: 100%;
     z-index: 999;
   }
 
