@@ -12,6 +12,13 @@ import type {
 
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 
+declare global {
+  interface Window {
+    gradersList: () => any;
+    gradersList2: (data: InstanceQuestionRow[]) => string[];
+  }
+}
+
 onDocumentReady(() => {
   const {
     hasCourseInstancePermissionEdit,
@@ -28,6 +35,20 @@ onDocumentReady(() => {
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
   });
+
+  window.gradersList = function () {
+    const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+
+    return Object.fromEntries(
+      data
+        .flatMap((row) =>
+          (row.is_ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
+            row.last_human_grader ? [row.last_human_grader] : [],
+          ),
+        )
+        .map((name) => [name, name]),
+    );
+  };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
@@ -307,57 +328,39 @@ onDocumentReady(() => {
         aiGradingEnabled
           ? {
               field: 'ai_graded',
-              title: 'Graded by AI',
+              title: 'Graded by',
+              visible: aiGradingMode,
               filterControl: 'select',
-              formatter: (value: boolean | null | undefined) =>
-                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
-              visible: aiGradingMode,
+              formatter: (value: boolean, row: InstanceQuestionRow) =>
+                html`${row.ai_graded
+                  ? html`<span
+                      class="badge text-bg-secondary ${row.ai_graded_with_latest_rubric
+                        ? 'js-custom-search-ai-grading-latest-rubric'
+                        : 'js-custom-search-ai-grading-nonlatest-rubric'}"
+                      >${generateAiGraderName(row.ai_graded_with_latest_rubric)}</span
+                    >`
+                  : ''}
+                ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}`.toString(),
+              filterData: 'func:gradersList',
+              filterCustomSearch: (text: string, value: string) => {
+                if (text === generateAiGraderName(true).toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading-latest-rubric');
+                } else if (text === generateAiGraderName(false).toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else {
+                  return value.toLowerCase().includes(text);
+                }
+              },
             }
           : null,
-        aiGradingEnabled
-          ? {
-              field: 'human_graded',
-              title: 'Graded by human',
-              filterControl: 'select',
-              formatter: (value: boolean | null | undefined) =>
-                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
-              visible: aiGradingMode,
-            }
-          : null,
-        aiGradingEnabled
-          ? {
-              field: 'ai_graded_with_latest_rubric',
-              title: 'Graded by AI with latest rubric',
-              filterControl: 'select',
-              formatter: (value: boolean | null | undefined) =>
-                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
-              visible: aiGradingMode,
-            }
-          : null,
-        aiGradingEnabled
-          ? {
-              field: 'human_graded_with_latest_rubric',
-              title: 'Graded by human with latest rubric',
-              filterControl: 'select',
-              formatter: (value: boolean | null | undefined) =>
-                value === undefined || value === null ? '&mdash;' : value ? 'Yes' : 'No',
-              visible: aiGradingMode,
-            }
-          : null,
-        aiGradingEnabled
-          ? {
-              field: 'human_ai_agreement',
-              title: 'Agreement',
-              filterControl: 'input',
-              formatter: (value: string | null | undefined) => (value ? value : '&mdash;'),
-              visible: aiGradingMode,
-            }
-          : null,
-        // try separate columns for graded with latest rubric, see if we end up with too many columns
       ].filter(Boolean),
     ],
   });
 });
+
+function generateAiGraderName(ai_graded_with_latest_rubric: boolean): string {
+  return 'AI' + (ai_graded_with_latest_rubric ? '' : ' (outdated)');
+}
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const formData = new FormData(this, e.submitter);

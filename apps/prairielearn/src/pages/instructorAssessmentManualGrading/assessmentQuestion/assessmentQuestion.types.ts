@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
+  RubricItemSchema,
   type User,
 } from '../../../lib/db-types.js';
 
@@ -15,11 +16,11 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
-  human_ai_agreement: z.string().nullish(),
-  ai_graded: z.boolean().nullish(),
-  human_graded: z.boolean().nullish(),
-  ai_graded_with_latest_rubric: z.boolean().nullish(),
-  human_graded_with_latest_rubric: z.boolean().nullish(),
+  ai_graded: z.boolean(),
+  last_human_grader: z.string().nullable(),
+  ai_graded_with_latest_rubric: z.boolean(),
+  rubric_difference: RubricItemSchema.array(),
+  score_difference: z.number(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 

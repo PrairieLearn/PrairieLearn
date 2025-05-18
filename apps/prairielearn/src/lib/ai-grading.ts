@@ -89,8 +89,6 @@ export async function fillInstanceQuestionColumns(
       { instance_question_id: instance_question.id },
       IdSchema,
     );
-    instance_question.human_graded = false;
-    instance_question.ai_graded = false;
 
     const grading_jobs = await queryRows(
       sql.select_ai_and_human_grading_jobs,
@@ -103,9 +101,7 @@ export async function fillInstanceQuestionColumns(
     for (const grading_job of grading_jobs) {
       assert(grading_job.graded_at);
       if (grading_job.grading_method === 'Manual') {
-        instance_question.human_graded = true;
-        instance_question.human_graded_with_latest_rubric =
-          rubric_time !== null && grading_job.graded_at > rubric_time;
+        instance_question.last_human_grader = 'Humannnn';
       } else {
         instance_question.ai_graded = true;
         instance_question.ai_graded_with_latest_rubric =
@@ -113,6 +109,8 @@ export async function fillInstanceQuestionColumns(
       }
     }
 
-    // instance_question.human_ai_agreement = '';
+    if (grading_jobs.length < 2) {
+      continue;
+    }
   }
 }
