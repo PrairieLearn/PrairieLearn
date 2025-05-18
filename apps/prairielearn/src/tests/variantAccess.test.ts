@@ -4,8 +4,14 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Assessment, AssessmentSchema, type Question } from '../lib/db-types.js';
+import {
+  type Assessment,
+  AssessmentSchema,
+  type CourseInstance,
+  type Question,
+} from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -157,6 +163,7 @@ describe('Variant access', () => {
 
   let question: Question;
   let assessment: Assessment;
+  let courseInstance: CourseInstance;
   let publicVariantId: string;
   let publicVariantWorkspaceUrl: string;
   let publicVariantSubmissionId: string;
@@ -175,12 +182,9 @@ describe('Variant access', () => {
   let instructorVariantWorkspaceUrl: string;
   let instructorVariantSubmissionId: string;
 
-  test.sequential('select relevant entities', async () => {
-    question = await selectQuestionByQid({
-      course_id: '1',
-      qid: 'variantAccess',
-    });
-
+  test.sequential('get relevant entities', async () => {
+    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(
       'SELECT * FROM assessments WHERE tid = $tid',
       { tid: 'hw11-variantAccess' },
@@ -260,7 +264,7 @@ describe('Variant access', () => {
 
   test.sequential('create variant from student assessment instance', async () => {
     await withUser(STUDENT_USER, async () => {
-      const assessmentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
+      const assessmentUrl = `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`;
       const assessmentRes = await fetchCheerio(assessmentUrl);
       assert.equal(assessmentRes.status, 200);
 
@@ -285,7 +289,7 @@ describe('Variant access', () => {
 
   test.sequential('create variant from other student assessment instance', async () => {
     await withUser(OTHER_STUDENT_USER, async () => {
-      const assessmentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
+      const assessmentUrl = `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}`;
       const assessmentRes = await fetchCheerio(assessmentUrl);
       assert.equal(assessmentRes.status, 200);
 
