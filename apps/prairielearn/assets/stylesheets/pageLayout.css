@@ -264,7 +264,7 @@ body:has(div.app-container) {
     top: 48px;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: fit-content;
     min-height: 100vh;
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
@@ -296,5 +296,18 @@ body:has(div.app-container) {
     max-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+  }
+  
+  body:has(#app-container:not(.mobile-collapsed)) .tooltip {
+    display: none;
+  }
+
+  .viewtype-dropdown-item {
+    display: flex;
+    align-items: center;
+  }
+  
+  .viewtype-dropdown-item .dropdown-item-text {
+    white-space: normal;
   }
 }

@@ -244,7 +244,6 @@ function UserDropdownMenu({
   return html`
     <ul
       class="nav navbar-nav"
-      style="height: 56px"
       id="username-nav"
       data-access-as-administrator="${access_as_administrator?.toString()}"
       data-view-type="${viewType ?? null}"
@@ -483,7 +482,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
-      <span class="ps-3">
+      <span class="ps-3 dropdown-item-text">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
@@ -493,14 +492,14 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="ps-3">Student view <span class="badge text-bg-warning">student</span></span>
+      <span class="ps-3 dropdown-item-text">Student view <span class="badge text-bg-warning">student</span></span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>
-      <span class="ps-3">
+      <span class="ps-3 dropdown-item-text">
         Student view without access restrictions
         <span class="badge text-bg-warning">student</span>
       </span>
