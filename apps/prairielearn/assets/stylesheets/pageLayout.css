@@ -143,11 +143,9 @@ body:has(div.app-container) {
   will-change: transform; /* Performance optimization */
 }
 
-/* transform: translateX(-100%); /* Start off-screen */
-
-/* #course-nav-mobile:not(.collapse) {
-  transform: translateX(0);
-} */
+.viewtype-dropdown-item .dropdown-item-text {
+  display: unset;
+}
 
 /* Side nav collapsed styles do not appear on small/mobile screen sizes */
 @media (min-width: 768px) {
