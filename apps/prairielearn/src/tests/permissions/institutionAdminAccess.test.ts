@@ -68,6 +68,7 @@ describe('institution administrators', () => {
   afterAll(() => (config.isEnterprise = false));
 
   beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   let courseInstance: CourseInstance;
   let assessment: Assessment;
