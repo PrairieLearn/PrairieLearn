@@ -9,6 +9,45 @@ import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
+function NavbarContent({
+  resLocals,
+  navPage,
+  navSubPage,
+  navbarType, 
+  isInPageLayout
+}: {
+  resLocals: Record<string, any>;
+  navPage: NavPage;
+  navSubPage?: NavSubPage;
+  navbarType?: NavbarType;
+  isInPageLayout?: boolean;
+}) {
+  return html`
+    <ul class="nav navbar-nav me-auto" id="main-nav">
+      ${NavbarByType({
+        resLocals,
+        navPage,
+        navSubPage,
+        navbarType,
+        isInPageLayout,
+      })}
+    </ul>
+
+    ${config.devMode
+      ? html`
+          <a
+            id="navbar-load-from-disk"
+            class="btn btn-success btn-sm"
+            href="${resLocals.urlPrefix}/loadFromDisk"
+          >
+            Load from disk
+          </a>
+        `
+      : ''}
+    ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+  `;
+}
+
 export function Navbar({
   resLocals,
   navPage,
@@ -33,7 +72,7 @@ export function Navbar({
    */
   sideNavEnabled?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -97,10 +136,23 @@ export function Navbar({
           </span>
         </a>
         <button
+          id="user-nav-mobile-toggler"
+          class="navbar-toggler"
+          type="button"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+          style="height: 40px;"
+        >
+          <span class="${
+            sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'
+          }"></span>
+        </button>
+        <button
+          id="user-nav-toggler"
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-bs-target=".navbar-collapse"
+          data-bs-target="#course-nav"
           aria-expanded="false"
           aria-label="Toggle navigation"
           style="height: 40px;"
@@ -110,28 +162,22 @@ export function Navbar({
           }"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav me-auto" id="main-nav">
-            ${NavbarByType({
-              resLocals,
-              navPage,
-              navSubPage,
-              navbarType,
-              isInPageLayout,
-            })}
-          </ul>
-
-          ${config.devMode
-            ? html`
-                <a
-                  id="navbar-load-from-disk"
-                  class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
-                >
-                  Load from disk
-                </a>
-              `
-            : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${NavbarContent({
+            resLocals,
+            navPage,
+            navSubPage,
+            navbarType,
+            isInPageLayout,
+          })}
+        </div>
+        <div id="course-nav-mobile">
+          ${NavbarContent({
+            resLocals,
+            navPage,
+            navSubPage,
+            navbarType,
+            isInPageLayout,
+          })}
         </div>
       </div>
     </nav>
