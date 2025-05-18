@@ -4,12 +4,10 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 onDocumentReady(async () => {
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
   const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
-  const userNavMobileToggleButton = document.querySelector<HTMLButtonElement>('#user-nav-mobile-toggler');
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
-  const courseNavMobileDiv = document.querySelector<HTMLDivElement>('#course-nav-mobile');
 
-  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton || !userNavMobileToggleButton || !courseNavMobileDiv) return;
+  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton) return;
 
   sideNavTogglerButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
@@ -85,25 +83,6 @@ onDocumentReady(async () => {
       // Update the side nav toggler button tooltip and icon
       sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
-    }
-  });
-
-  userNavMobileToggleButton.addEventListener('click', async () => {
-    const userMenuExpanded = !courseNavMobileDiv.classList.contains('collapse');
-    if (userMenuExpanded) {
-      // Collapse the user menu
-      courseNavMobileDiv.classList.add('collapse');
-
-      // Update the user menu toggler button tooltip and icon
-      userNavMobileToggleButton.setAttribute('data-bs-title', 'Expand user menu');
-      userNavMobileToggleButton.setAttribute('aria-label', 'Expand user menu');
-    } else {
-      // Expand the user menu
-      courseNavMobileDiv.classList.remove('collapse');
-
-      // Update the user menu toggler button tooltip and icon
-      userNavMobileToggleButton.setAttribute('data-bs-title', 'Collapse user menu');
-      userNavMobileToggleButton.setAttribute('aria-label', 'Collapse user menu');
     }
   });
 });

@@ -114,7 +114,7 @@ export function Navbar({
       : ''}
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
-      <div class="container-fluid">
+      <div class="container-fluid position-relative">
         ${sideNavEnabled ? (
           html`
             <button
@@ -136,18 +136,6 @@ export function Navbar({
           </span>
         </a>
         <button
-          id="user-nav-mobile-toggler"
-          class="navbar-toggler"
-          type="button"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-          style="height: 40px;"
-        >
-          <span class="${
-            sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'
-          }"></span>
-        </button>
-        <button
           id="user-nav-toggler"
           class="navbar-toggler"
           type="button"
@@ -162,15 +150,6 @@ export function Navbar({
           }"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          ${NavbarContent({
-            resLocals,
-            navPage,
-            navSubPage,
-            navbarType,
-            isInPageLayout,
-          })}
-        </div>
-        <div id="course-nav-mobile">
           ${NavbarContent({
             resLocals,
             navPage,
