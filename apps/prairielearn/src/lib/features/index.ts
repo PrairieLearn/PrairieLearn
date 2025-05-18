@@ -9,6 +9,9 @@ const featureNames = [
   'consume-public-questions',
   'ai-grading',
   'disable-public-workspaces',
+  // Should be applied to courses and users only.
+  'ai-question-generation-user-toggle',
+  // Can be applied to any context.
   'ai-question-generation',
   // Should only be applied to institutions.
   'lti13',

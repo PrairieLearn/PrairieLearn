@@ -11,6 +11,7 @@ import { flash } from '@prairielearn/flash';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
@@ -37,9 +38,25 @@ router.get(
       ).toString();
     }
 
+    const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
+      course_id: res.locals.course.id,
+      institution_id: res.locals.institution.id,
+    });
+
+    const aiQuestionGenerationUserToggleEnabled = await features.enabled(
+      'ai-question-generation-user-toggle',
+      {
+        course_id: res.locals.course.id,
+        institution_id: res.locals.institution.id,
+        user_id: res.locals.authn_user.user_id,
+      },
+    );
+
     res.send(
       InstructorCourseAdminSettings({
         resLocals: res.locals,
+        aiQuestionGenerationEnabled,
+        aiQuestionGenerationUserToggleEnabled,
         coursePathExists,
         courseInfoExists,
         availableTimezones,
@@ -72,6 +89,24 @@ router.post(
           course_id: res.locals.course.id,
           show_getting_started,
         });
+      }      
+
+      // TODO: Add the feature flag enabling user toggle for this
+
+      const context = {
+        course_id: res.locals.course.id,
+        institution_id: res.locals.institution.id
+      }
+
+      if (await features.enabled('ai-question-generation-user-toggle', {
+        ...context,
+        user_id: res.locals.authn_user.user_id,
+      })) {
+        if (req.body.ai_question_generation) {
+          await features.enable('ai-question-generation', context);
+        } else {
+          await features.disable('ai-question-generation', context);
+        }
       }
 
       const paths = getPaths(undefined, res.locals);
