@@ -8,6 +8,7 @@ import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -589,17 +590,20 @@ export async function fetchRetry(
     const response = await fetch(input, opts);
 
     if (!response.ok) {
+      const resObject = await response.json();
       throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}`, {
         status: response.status,
         data: {
           status: response.status,
           statusText: response.statusText,
-          body: await response.text(),
+          body: JSON.stringify(resObject),
         },
+        info: html`${JSON.stringify(resObject)}`,
       });
     }
     return response;
   } catch (err) {
+    console.error(err);
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
     if (err.status === 403) {
