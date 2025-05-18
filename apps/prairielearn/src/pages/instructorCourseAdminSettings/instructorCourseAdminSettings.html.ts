@@ -191,30 +191,32 @@ export function InstructorCourseAdminSettings({
                 Show the getting started checklist
               </label>
             </div>
-            ${aiQuestionGenerationUserToggleEnabled ? html`
-              <div class="form-check mb-3">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  name="ai_question_generation"
-                  value="1"
-                  id="ai_question_generation_toggle"
-                  ${aiQuestionGenerationEnabled ? 'checked' : ''}
-                />
-                <label
-                  class="form-check-label d-flex align-items-center"
-                  for="ai_question_generation_toggle"
-                >
-                  AI question generation
-                  <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
-                    Beta
-                  </span>
-                </label>
-                <div class="small text-muted">
-                  Generate custom, randomized questions using AI.
-                </div>
-              </div>
-            ` : ''}
+            ${aiQuestionGenerationUserToggleEnabled
+              ? html`
+                  <div class="form-check mb-3">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      name="ai_question_generation"
+                      value="1"
+                      id="ai_question_generation_toggle"
+                      ${aiQuestionGenerationEnabled ? 'checked' : ''}
+                    />
+                    <label
+                      class="form-check-label d-flex align-items-center"
+                      for="ai_question_generation_toggle"
+                    >
+                      AI question generation
+                      <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
+                        Beta
+                      </span>
+                    </label>
+                    <div class="small text-muted">
+                      Generate custom, randomized questions using AI.
+                    </div>
+                  </div>
+                `
+              : ''}
             ${EditActions({
               coursePathExists,
               courseInfoExists,

@@ -89,19 +89,19 @@ router.post(
           course_id: res.locals.course.id,
           show_getting_started,
         });
-      }      
-
-      // TODO: Add the feature flag enabling user toggle for this
+      }
 
       const context = {
         course_id: res.locals.course.id,
-        institution_id: res.locals.institution.id
-      }
+        institution_id: res.locals.institution.id,
+      };
 
-      if (await features.enabled('ai-question-generation-user-toggle', {
-        ...context,
-        user_id: res.locals.authn_user.user_id,
-      })) {
+      if (
+        await features.enabled('ai-question-generation-user-toggle', {
+          ...context,
+          user_id: res.locals.authn_user.user_id,
+        })
+      ) {
         if (req.body.ai_question_generation) {
           await features.enable('ai-question-generation', context);
         } else {
