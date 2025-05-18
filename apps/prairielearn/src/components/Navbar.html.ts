@@ -9,45 +9,6 @@ import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
-function NavbarContent({
-  resLocals,
-  navPage,
-  navSubPage,
-  navbarType, 
-  isInPageLayout
-}: {
-  resLocals: Record<string, any>;
-  navPage: NavPage;
-  navSubPage?: NavSubPage;
-  navbarType?: NavbarType;
-  isInPageLayout?: boolean;
-}) {
-  return html`
-    <ul class="nav navbar-nav me-auto" id="main-nav">
-      ${NavbarByType({
-        resLocals,
-        navPage,
-        navSubPage,
-        navbarType,
-        isInPageLayout,
-      })}
-    </ul>
-
-    ${config.devMode
-      ? html`
-          <a
-            id="navbar-load-from-disk"
-            class="btn btn-success btn-sm"
-            href="${resLocals.urlPrefix}/loadFromDisk"
-          >
-            Load from disk
-          </a>
-        `
-      : ''}
-    ${UserDropdownMenu({ resLocals, navPage, navbarType })}
-  `;
-}
-
 export function Navbar({
   resLocals,
   navPage,
@@ -55,7 +16,7 @@ export function Navbar({
   navbarType,
   marginBottom = true,
   isInPageLayout = false,
-  sideNavEnabled = false
+  sideNavEnabled = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
@@ -115,20 +76,20 @@ export function Navbar({
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid position-relative">
-        ${sideNavEnabled ? (
-          html`
-            <button
-              id="side-nav-mobile-toggler"
-              class="navbar-toggler"
-              type="button"
-              aria-expanded="false"
-              aria-label="Toggle side nav"
-              style="height: 40px;"
-            >
-              <span class="navbar-toggler-icon"></span>
-            </button>
-          `
-        ) : ''}
+        ${sideNavEnabled
+          ? html`
+              <button
+                id="side-nav-mobile-toggler"
+                class="navbar-toggler"
+                type="button"
+                aria-expanded="false"
+                aria-label="Toggle side nav"
+                style="height: 40px;"
+              >
+                <span class="navbar-toggler-icon"></span>
+              </button>
+            `
+          : ''}
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
@@ -136,27 +97,41 @@ export function Navbar({
           </span>
         </a>
         <button
-          id="user-nav-toggler"
+          id="course-nav-toggler"
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#course-nav"
+          data-bs-delay="0"
           aria-expanded="false"
           aria-label="Toggle navigation"
           style="height: 40px;"
         >
-          <span class="${
-            sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'
-          }"></span>
+          <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          ${NavbarContent({
-            resLocals,
-            navPage,
-            navSubPage,
-            navbarType,
-            isInPageLayout,
-          })}
+          <ul class="nav navbar-nav me-auto" id="main-nav">
+            ${NavbarByType({
+              resLocals,
+              navPage,
+              navSubPage,
+              navbarType,
+              isInPageLayout,
+            })}
+          </ul>
+
+          ${config.devMode
+            ? html`
+                <a
+                  id="navbar-load-from-disk"
+                  class="btn btn-success btn-sm"
+                  href="${resLocals.urlPrefix}/loadFromDisk"
+                >
+                  Load from disk
+                </a>
+              `
+            : ''}
+          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>

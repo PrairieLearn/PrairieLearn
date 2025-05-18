@@ -113,7 +113,7 @@ export function PageLayout({
               'app-container',
               sideNavEnabled && 'side-nav-enabled',
               !sideNavExpanded && 'collapsed',
-              'mobile-collapsed'
+              'mobile-collapsed',
             )}"
           >
             <div class="app-top-nav">
@@ -123,7 +123,7 @@ export function PageLayout({
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
                 isInPageLayout: true,
-                sideNavEnabled
+                sideNavEnabled,
               })}
             </div>
             ${sideNavEnabled

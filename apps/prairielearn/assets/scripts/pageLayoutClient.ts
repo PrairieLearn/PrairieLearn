@@ -7,7 +7,12 @@ onDocumentReady(async () => {
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
 
-  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton) return;
+  const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
+  const courseNavContent = document.querySelector<HTMLDivElement>('#course-nav');
+
+  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton || !courseNavToggler || !courseNavContent) {
+    return;
+  }
 
   sideNavTogglerButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
@@ -66,7 +71,7 @@ onDocumentReady(async () => {
       }),
     });
   });
- 
+
   sideNavMobileButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
@@ -84,5 +89,24 @@ onDocumentReady(async () => {
       sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
     }
+
+    const courseNavExpanded = courseNavContent.classList.contains('show');
+    if (courseNavExpanded) {
+      courseNavContent.classList.remove('show');
+      courseNavContent.classList.remove('collapse');
+      courseNavContent.classList.add('collapsing');
+      // Collapse the course nav
+      // courseNavContent.classList.remove('show');
+    } 
   });
+
+  // TODO: Documentation 
+  // TODO: Make the togglers more consistent??
+  courseNavToggler.addEventListener('click', async () => {
+    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
+    if (sideNavExpanded) {
+      // Collapse the other side nav
+      appContainerDiv.classList.add('mobile-collapsed');
+    } 
+  })
 });
