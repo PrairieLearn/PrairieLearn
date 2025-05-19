@@ -34,9 +34,10 @@ SELECT
   ((iq.id % 21317) * 45989) % 3767 as iq_stable_order,
   false AS ai_graded,
   NULL AS last_human_grader,
-  false AS ai_graded_with_latest_rubric,
-  ARRAY[]::jsonb[] AS rubric_difference,
-  0 AS score_difference
+  false AS graded_with_rubric,
+  NULL AS ai_graded_with_latest_rubric,
+  NULL AS rubric_difference,
+  NULL AS point_difference
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

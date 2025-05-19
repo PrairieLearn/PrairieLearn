@@ -18,9 +18,9 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   open_issue_count: z.number().nullable(),
   ai_graded: z.boolean(),
   last_human_grader: z.string().nullable(),
-  ai_graded_with_latest_rubric: z.boolean(),
-  rubric_difference: RubricItemSchema.array(),
-  score_difference: z.number(),
+  ai_graded_with_latest_rubric: z.boolean().nullable(), // null if not graded with rubric
+  rubric_difference: RubricItemSchema.array().nullable(),
+  point_difference: z.number().nullable(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 

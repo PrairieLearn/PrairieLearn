@@ -15,7 +15,7 @@ type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 declare global {
   interface Window {
     gradersList: () => any;
-    gradersList2: (data: InstanceQuestionRow[]) => string[];
+    rubricItemsList: () => any;
   }
 }
 
@@ -45,6 +45,18 @@ onDocumentReady(() => {
           (row.is_ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
             row.last_human_grader ? [row.last_human_grader] : [],
           ),
+        )
+        .map((name) => [name, name]),
+    );
+  };
+
+  window.rubricItemsList = function () {
+    const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+
+    return Object.fromEntries(
+      data
+        .flatMap((row) =>
+          row.rubric_difference ? row.rubric_difference.map((item) => item.description) : [],
         )
         .map((name) => [name, name]),
     );
@@ -356,15 +368,72 @@ onDocumentReady(() => {
               },
             }
           : null,
+        aiGradingEnabled
+          ? {
+              field: 'rubric_difference',
+              title: 'Agreement',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              formatter: (value: boolean, row: InstanceQuestionRow) =>
+                row.point_difference === null // missing grade from human and/or AI
+                  ? '&mdash;'
+                  : row.rubric_difference === null // not graded by rubric from human and/or AI
+                    ? html`<div>Point difference: ${row.point_difference}</div> `.toString()
+                    : html`<div>
+                          Rubric difference
+                          ${row.ai_graded_with_latest_rubric // AI using outdated rubric
+                            ? ''
+                            : ' (outdated)'}:
+                        </div>
+                        ${!row.rubric_difference.length
+                          ? html`<i class="fa fa-check" aria-hidden="true"></i>`
+                          : row.rubric_difference.map(
+                              (item) =>
+                                html`<div>
+                                  <i class="fa fa-times" aria-hidden="true"></i> ${item.description}
+                                </div>`,
+                            )}`.toString(),
+              filterData: 'func:rubricItemsList',
+              filterCustomSearch: (text: string, value: string) =>
+                value
+                  .toLowerCase()
+                  .includes(
+                    html`<i class="fa fa-times" aria-hidden="true"></i> ${text}`.toString(),
+                  ),
+              sortable: true,
+              sorter: (
+                fieldA: string,
+                fieldB: string,
+                rowA: InstanceQuestionRow,
+                rowB: InstanceQuestionRow,
+              ) => {
+                if (rowB.point_difference === null) {
+                  return -1;
+                }
+                if (rowA.point_difference === null) {
+                  return 1;
+                }
+                if (rowA.point_difference < rowB.point_difference) {
+                  return -1;
+                } else if (rowA.point_difference > rowB.point_difference) {
+                  return 1;
+                } else {
+                  return 0;
+                }
+              },
+            }
+          : null,
       ].filter(Boolean),
     ],
   });
 });
 
-function generateAiGraderName(ai_graded_with_latest_rubric?: boolean): string {
+function generateAiGraderName(ai_graded_with_latest_rubric?: boolean | null): string {
   return (
     'AI' +
-    (ai_graded_with_latest_rubric === undefined || ai_graded_with_latest_rubric
+    (ai_graded_with_latest_rubric === undefined ||
+    ai_graded_with_latest_rubric === null ||
+    ai_graded_with_latest_rubric
       ? ''
       : ' (outdated)')
   );

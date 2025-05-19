@@ -17,6 +17,7 @@ SELECT
   grading_job_id,
   grading_method,
   graded_at,
+  manual_points,
   manual_rubric_grading_id,
   COALESCE(u.name, u.uid) AS grader_name
 FROM
@@ -25,6 +26,7 @@ FROM
       gj.id grading_job_id,
       gj.grading_method,
       gj.graded_at,
+      gj.manual_points,
       gj.manual_rubric_grading_id,
       gj.graded_by,
       ROW_NUMBER() OVER (
@@ -51,3 +53,12 @@ FROM
   rubrics
 WHERE
   id = $manual_rubric_id;
+
+-- BLOCK select_rubric_grading_items
+SELECT
+  ri.*
+FROM
+  rubric_grading_items AS rgi
+  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
+WHERE
+  rgi.rubric_grading_id = $manual_rubric_grading_id;

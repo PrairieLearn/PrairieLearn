@@ -8,14 +8,20 @@ import { DateFromISOString } from '@prairielearn/zod';
 
 import type { InstanceQuestionRow } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
-import { type AssessmentQuestion, IdSchema } from './db-types.js';
+import {
+  type AssessmentQuestion,
+  IdSchema,
+  type RubricItem,
+  RubricItemSchema,
+} from './db-types.js';
 import { formatHtmlWithPrettier } from './prettier.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
   grading_job_id: IdSchema,
   graded_at: DateFromISOString.nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual', 'AI']).nullable(),
+  grading_method: z.enum(['Manual', 'AI']),
+  manual_points: z.number().nullable(),
   manual_rubric_grading_id: IdSchema.nullable(),
   grader_name: z.string(),
 });
@@ -77,7 +83,7 @@ export async function fillInstanceQuestionColumns(
   instance_questions: InstanceQuestionRow[],
   assessment_question: AssessmentQuestion,
 ): Promise<void> {
-  const rubric_time = await queryOptionalRow(
+  const rubric_modify_time = await queryOptionalRow(
     sql.select_rubric_time,
     { manual_rubric_id: assessment_question.manual_rubric_id },
     DateFromISOString,
@@ -105,13 +111,45 @@ export async function fillInstanceQuestionColumns(
         instance_question.last_human_grader = grading_job.grader_name;
       } else {
         instance_question.ai_graded = true;
-        instance_question.ai_graded_with_latest_rubric =
-          rubric_time !== null && grading_job.graded_at > rubric_time;
+        if (rubric_modify_time) {
+          instance_question.ai_graded_with_latest_rubric =
+            grading_job.graded_at > rubric_modify_time;
+        }
       }
     }
+    console.log(instance_question.ai_graded_with_latest_rubric);
 
     if (grading_jobs.length < 2) {
       continue;
     }
+    instance_question.point_difference = Math.abs(
+      (grading_jobs[0].manual_points ?? 0) - (grading_jobs[1].manual_points ?? 0),
+    );
+    if (!grading_jobs[0].manual_rubric_grading_id || !grading_jobs[1].manual_rubric_grading_id) {
+      continue;
+    }
+    const items1 = await queryRows(
+      sql.select_rubric_grading_items,
+      { manual_rubric_grading_id: grading_jobs[0].manual_rubric_grading_id },
+      RubricItemSchema,
+    );
+    const items2 = await queryRows(
+      sql.select_rubric_grading_items,
+      { manual_rubric_grading_id: grading_jobs[1].manual_rubric_grading_id },
+      RubricItemSchema,
+    );
+    const rubric_difference = items1
+      .filter((item) => !rubricListIncludes(items2, item))
+      .concat(items2.filter((item) => !rubricListIncludes(items1, item)));
+    instance_question.rubric_difference = rubric_difference;
   }
+}
+
+function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boolean {
+  for (const item of items) {
+    if (item.id === itemToCheck.id) {
+      return true;
+    }
+  }
+  return false;
 }
