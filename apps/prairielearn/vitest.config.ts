@@ -61,10 +61,10 @@ export default defineConfig({
     sequence: {
       sequencer: CustomSequencer,
     },
-    // coverage: {
-    //   all: true,
-    //   include: ['src/**'],
-    //   reporter: ['html', 'text-summary', 'cobertura'],
-    // },
+    coverage: {
+      all: true,
+      include: ['src/**'],
+      reporter: ['html', 'text-summary', 'cobertura'],
+    },
   },
 });
