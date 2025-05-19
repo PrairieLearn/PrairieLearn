@@ -1010,7 +1010,7 @@ export class CourseInstanceTransferEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = Array.prototype.map(result.rows, 'long_name');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(

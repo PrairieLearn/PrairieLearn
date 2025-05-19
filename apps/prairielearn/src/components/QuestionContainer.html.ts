@@ -33,7 +33,7 @@ export function QuestionContainer({
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
-  questionCopyTargets,
+  questionCopyTargets = null,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -42,7 +42,7 @@ export function QuestionContainer({
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
-  questionCopyTargets: CopyTarget[] | null;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const {
     question,

@@ -1,6 +1,3 @@
-// @ts-check
-import * as path from 'path';
-
 import debugfn from 'debug';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -53,10 +50,11 @@ router.get(
     );
 
     const editor = new CourseInstanceTransferEditor({
+      locals: res.locals as any,
       from_course: file_transfer.from_course,
-      course_instance: file_transfer.from_course_instance,
       from_path: file_transfer.from_filename,
       to_course_short_name: res.locals.course.short_name,
+      course_instance: file_transfer.from_course_instance,
     });
 
     const serverJob = await editor.prepareServerJob();

@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
