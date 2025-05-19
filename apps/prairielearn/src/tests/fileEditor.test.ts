@@ -8,7 +8,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';
-import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
