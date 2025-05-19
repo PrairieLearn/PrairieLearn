@@ -80,6 +80,7 @@ export function QuestionContainer({
                 showFooter,
                 manualGradingPreviewUrl,
                 aiGradingPreviewUrl,
+                questionCopyTargets,
               })}
             </form>
           `
@@ -680,6 +681,7 @@ function QuestionPanel({
   const { question, questionHtml, course, instance_question_info } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
+
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
     questionCopyTargets != null &&

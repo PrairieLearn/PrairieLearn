@@ -100,6 +100,20 @@ export function PublicAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
+          <div class="ms-auto d-flex flex-row gap-1">
+            <div class="btn-group">
+              <button
+                class="btn btn-sm btn-outline-light"
+                type="button"
+                aria-label="Copy course instance"
+                data-bs-toggle="modal"
+                data-bs-target="#copyCourseInstanceModal"
+              >
+                <i class="fa fa-fw fa-clone"></i>
+                <span class="d-none d-sm-inline">Copy course instance</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -147,6 +161,8 @@ export function PublicAssessments({
         </div>
       </div>
       ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets })}
+    </div>
+  </div>
     `,
   });
 }
