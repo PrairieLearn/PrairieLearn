@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _, { update } from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -987,15 +986,16 @@ export class CourseInstanceTransferEditor extends Editor {
       from_course: Course;
       from_path: string;
       to_course_short_name: string;
+      course_instance: any;
     },
   ) {
-    super(params);
+    const description = `Transfer public course instance ${params.to_course_short_name} from course ${params.from_course.sharing_name}`;
+    super({ ...params, description });
 
     this.course_instance = params.course_instance; // TEST, not allowed?
-    this.from_course = params.from_course
+    this.from_course = params.from_course;
     this.from_path = params.from_path;
     this.to_course_short_name = params.to_course_short_name;
-    this.description = `Transfer public course instance ${this.to_course_short_name} from course ${this.from_course.sharing_name}`;
 
     this.uuid = uuidv4();
   }
@@ -1010,7 +1010,7 @@ export class CourseInstanceTransferEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = Array.prototype.map(result.rows, 'long_name');
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
@@ -1034,6 +1034,9 @@ export class CourseInstanceTransferEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     // Update the infoAssessment.json files to include the course sharing name for each question
+    if (!this.from_course.sharing_name) {
+      throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
+    }
     await updateInfoAssessmentFiles(courseInstancePath, this.from_course.sharing_name);
 
     debug('Read infoCourseInstance.json');
@@ -1055,12 +1058,11 @@ export class CourseInstanceTransferEditor extends Editor {
   }
 }
 
-
-
-
-
 // TEST, move somewhere else
-async function updateInfoAssessmentFiles(courseInstancePath: string, fromCourseSharingName: string) {
+async function updateInfoAssessmentFiles(
+  courseInstancePath: string,
+  fromCourseSharingName: string,
+) {
   const assessmentsPath = path.join(courseInstancePath, 'assessments');
   const assessmentDirs = await fs.readdir(assessmentsPath);
 
@@ -1097,11 +1099,6 @@ async function updateInfoAssessmentFiles(courseInstancePath: string, fromCourseS
     }
   }
 }
-
-
-
-
-
 
 export class CourseInstanceDeleteEditor extends Editor {
   private course_instance: CourseInstance;

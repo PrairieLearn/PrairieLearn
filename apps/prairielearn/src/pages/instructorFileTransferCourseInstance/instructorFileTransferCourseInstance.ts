@@ -11,20 +11,18 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { CourseInstanceTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-
-import { selectCourseById } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 
 async function getFileTransfer(file_transfer_id, user_id) {
-  let file_transfer;
   const result = await sqldb.queryOneRowAsync(sql.select_file_transfer, {
     id: file_transfer_id,
   });
-  file_transfer = result.rows[0];
+  const file_transfer = result.rows[0];
   if (file_transfer.transfer_type !== 'CopyCourseInstance') {
     throw new Error(`bad transfer_type: ${file_transfer.transfer_type}`);
   }
@@ -35,9 +33,11 @@ async function getFileTransfer(file_transfer_id, user_id) {
       } and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`,
     );
   }
-  const courseResult = await selectCourseById(file_transfer.from_course_id)
-  const courseInstanceResult = await selectCourseInstanceById(file_transfer.from_course_instance_id);
-  
+  const courseResult = await selectCourseById(file_transfer.from_course_id);
+  const courseInstanceResult = await selectCourseInstanceById(
+    file_transfer.from_course_instance_id,
+  );
+
   file_transfer.from_course = courseResult;
   file_transfer.from_course_instance = courseInstanceResult;
   return file_transfer;
@@ -53,7 +53,6 @@ router.get(
     );
 
     const editor = new CourseInstanceTransferEditor({
-      locals: res.locals,
       from_course: file_transfer.from_course,
       course_instance: file_transfer.from_course_instance,
       from_path: file_transfer.from_filename,
@@ -83,7 +82,9 @@ router.get(
       'Course Instance copied successfully. You are now viewing your copy of the Course Instance.',
     );
     // Redirect to the copied course instance
-    res.redirect(`${req.protocol}://${req.get('host')}/pl/course_instance/${result.rows[0].course_instance_id}/instructor/instance_admin/assessments`);
+    res.redirect(
+      `${req.protocol}://${req.get('host')}/pl/course_instance/${result.rows[0].course_instance_id}/instructor/instance_admin/assessments`,
+    );
   }),
 );
 
