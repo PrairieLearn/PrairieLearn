@@ -127,22 +127,6 @@ body:has(div.app-container) {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
 
-#course-nav-mobile {
-  position: absolute;
-  top: 56px;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 999;
-  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
-  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
-  background-color: #cfe2ff;
-  color: black;
-
-  transition: transform 0.3s ease-in-out;
-  will-change: transform; /* Performance optimization */
-}
-
 /* Side nav collapsed styles apply only on medium screen sizes and larger (768px and above).
  * On smaller screens, the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
@@ -224,15 +208,6 @@ body:has(div.app-container) {
     display: block;
   }
 
-  .app-container.side-nav-enabled .app-side-nav {
-    padding-top: 1rem;
-    display: block;
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(-100%); /* Start off-screen to the left */
-    will-change: transform; /* Performance optimization */
-    min-height: 100%;
-  }
-
   .app-container.side-nav-enabled #side-nav-toggler {
     display: none;
   }
@@ -246,11 +221,17 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled .app-side-nav {
+    display: block;
     position: absolute;
+    padding-top: 1rem;
     top: 56px;
     left: 0;
     width: 100%;
     z-index: 999;
+    transition: transform 0.3s ease-in-out;
+    transform: translateX(-100%); /* Start off-screen to the left */
+    will-change: transform; /* Performance optimization */
+    min-height: 100vh;
   }
 
   .app-container.side-nav-enabled #course-nav {
@@ -263,7 +244,6 @@ body:has(div.app-container) {
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
-
     transition: transform 0.3s ease-in-out;
     transition-delay: 0;
     will-change: transform; /* Performance optimization */
