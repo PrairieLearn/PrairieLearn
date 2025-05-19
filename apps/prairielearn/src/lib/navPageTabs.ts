@@ -45,7 +45,8 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti_enabled && resLocals.authz_data.has_course_permission_edit,
           },
 
           {
@@ -87,7 +88,8 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti_enabled && resLocals.authz_data.has_course_permission_edit,
           },
           {
             activeSubPage: 'lti13',
