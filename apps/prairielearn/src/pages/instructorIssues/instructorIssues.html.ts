@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { html, joinHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
