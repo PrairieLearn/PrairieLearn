@@ -288,10 +288,7 @@ body:has(div.app-container) {
 
   .app-container.side-nav-enabled:has(#course-nav.show),
   .app-container.side-nav-enabled:not(.mobile-collapsed) {
-    height: 100%;
-    max-height: 100%;
     overflow-x: hidden;
-    overflow-y: auto;
   }
 
   /* If the side nav is collapsed on a medium screen size or larger,
