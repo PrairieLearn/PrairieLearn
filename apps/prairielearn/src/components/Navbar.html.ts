@@ -33,7 +33,7 @@ export function Navbar({
    */
   sideNavEnabled?: boolean;
 }) {
-  const { __csrf_token, course } = resLocals;
+  const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -102,7 +102,6 @@ export function Navbar({
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#course-nav"
-          data-bs-delay="0"
           aria-expanded="false"
           aria-label="Toggle navigation"
           style="height: 40px;"
@@ -125,7 +124,7 @@ export function Navbar({
                 <a
                   id="navbar-load-from-disk"
                   class="btn btn-success btn-sm"
-                  href="${resLocals.urlPrefix}/loadFromDisk"
+                  href="${urlPrefix}/loadFromDisk"
                 >
                   Load from disk
                 </a>
@@ -480,7 +479,11 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <h6 class="dropdown-header">${headingAuthnViewTypeMenu}</h6>
 
-    <a class="dropdown-item viewtype-dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${instructorLink}"
+      id="navbar-user-view-authn-instructor"
+    >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3 dropdown-item-text">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
@@ -490,12 +493,22 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       </span>
     </a>
 
-    <a class="dropdown-item viewtype-dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${studentLink}"
+      id="navbar-user-view-authn-student"
+    >
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="ps-3 dropdown-item-text">Student view <span class="badge text-bg-warning">student</span></span>
+      <span class="ps-3 dropdown-item-text"
+        >Student view <span class="badge text-bg-warning">student</span></span
+      >
     </a>
 
-    <a class="dropdown-item viewtype-dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${studentLink}"
+      id="navbar-user-view-authn-student-no-rules"
+    >
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>

@@ -2,15 +2,26 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 // Handle when the user expands or collapses the side nav
 onDocumentReady(async () => {
+  // Visible on md screen sizes and larger (768px and above)
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
+
+  // Visible on screen sizes smaller than md (less than 768px)
   const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
+
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
 
   const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
   const courseNavContent = document.querySelector<HTMLDivElement>('#course-nav');
 
-  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon || !sideNavMobileButton || !courseNavToggler || !courseNavContent) {
+  if (
+    !sideNavTogglerButton ||
+    !appContainerDiv ||
+    !sideNavTogglerIcon ||
+    !sideNavMobileButton ||
+    !courseNavToggler ||
+    !courseNavContent
+  ) {
     return;
   }
 
@@ -73,6 +84,8 @@ onDocumentReady(async () => {
   });
 
   sideNavMobileButton.addEventListener('click', async () => {
+    // Mobile collapsed is a separate state from the side nav collapsed state,
+    // and is not persisted.
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
       // Collapse the side nav
@@ -92,21 +105,18 @@ onDocumentReady(async () => {
 
     const courseNavExpanded = courseNavContent.classList.contains('show');
     if (courseNavExpanded) {
+      // Collapse the course nav
       courseNavContent.classList.remove('show');
       courseNavContent.classList.remove('collapse');
       courseNavContent.classList.add('collapsing');
-      // Collapse the course nav
-      // courseNavContent.classList.remove('show');
-    } 
+    }
   });
 
-  // TODO: Documentation 
-  // TODO: Make the togglers more consistent??
   courseNavToggler.addEventListener('click', async () => {
+    // In response to the course nav being expanded, collapse the side nav
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
-      // Collapse the other side nav
       appContainerDiv.classList.add('mobile-collapsed');
-    } 
-  })
+    }
+  });
 });

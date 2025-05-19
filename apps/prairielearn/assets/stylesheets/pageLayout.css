@@ -147,9 +147,9 @@ body:has(div.app-container) {
   display: unset;
 }
 
-/* Side nav collapsed styles do not appear on small/mobile screen sizes */
+/* Side nav collapsed styles apply only on medium screen sizes and larger (768px and above).
+ * On smaller screens, the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
-  /* Styles when the side nav is enabled and collapsed */
   .app-container.side-nav-enabled.collapsed {
     grid-template:
       'top-nav top-nav' auto
@@ -228,16 +228,16 @@ body:has(div.app-container) {
     display: block;
   }
 
-  .app-side-nav {
+  .app-container.side-nav-enabled .app-side-nav {
     padding-top: 1rem;
     display: block;
     transition: transform 0.3s ease-in-out;
-    transform: translateX(-100%); /* Start off-screen */
+    transform: translateX(-100%); /* Start off-screen to the left */
     will-change: transform; /* Performance optimization */
     min-height: 100%;
   }
 
-  #side-nav-toggler {
+  .app-container.side-nav-enabled #side-nav-toggler {
     display: none;
   }
 
@@ -257,7 +257,7 @@ body:has(div.app-container) {
     z-index: 999;
   }
 
-  #course-nav {
+  .app-container.side-nav-enabled #course-nav {
     position: absolute;
     top: 48px;
     left: 0;
@@ -271,41 +271,46 @@ body:has(div.app-container) {
     transition: transform 0.3s ease-in-out;
     transition-delay: 0;
     will-change: transform; /* Performance optimization */
-    transform: translateX(100%); /* Start off-screen */
+    transform: translateX(100%); /* Start off-screen to the right */
   }
 
-  #course-nav.show {
+  .app-container.side-nav-enabled #course-nav.show {
     transform: translateX(0);
   }
-  #course-nav:not(.show) {
+
+  .app-container.side-nav-enabled #course-nav:not(.show) {
     transform: translateX(100%);
   }
 
-  /* Prevent main content from being visible when either side menu is open */ 
-  #app-container:has(#course-nav.show) .app-main,
-  #app-container:not(.mobile-collapsed) .app-main {
+  /* Prevent content under the course/side nav from being visible when
+  either nav is open. */
+  #app-container.side-nav-enabled:has(#course-nav.show) .app-main,
+  #app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
-  #app-container:has(#course-nav.show),
-  #app-container:not(.mobile-collapsed) {
+  #app-container.side-nav-enabled:has(#course-nav.show),
+  #app-container.side-nav-enabled:not(.mobile-collapsed) {
     height: 100%;
     max-height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
   }
-  
-  body:has(#app-container:not(.mobile-collapsed)) .tooltip {
+
+  /* If the side nav is collapsed on a medium screen size or larger,
+  *  tooltips appear on the side nav links when hovered. This code 
+  *  hides the tooltips when the side nav is expanded on smaller screens. */
+  body:has(#app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
     display: none;
   }
 
-  .viewtype-dropdown-item {
+  .app-container.side-nav-enabled .viewtype-dropdown-item {
     display: flex;
     align-items: center;
   }
-  
-  .viewtype-dropdown-item .dropdown-item-text {
+
+  .app-container.side-nav-enabled .viewtype-dropdown-item .dropdown-item-text {
     white-space: normal;
   }
 }

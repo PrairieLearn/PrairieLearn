@@ -112,7 +112,11 @@ export function PageLayout({
             class="${clsx(
               'app-container',
               sideNavEnabled && 'side-nav-enabled',
+              // Collapsed state for desktop viewports (768px and above).
+              // Persisted in the user session.
               !sideNavExpanded && 'collapsed',
+              // Separate collapsed state for mobile viewports (768px and below).
+              // Not persisted.
               'mobile-collapsed',
             )}"
           >
