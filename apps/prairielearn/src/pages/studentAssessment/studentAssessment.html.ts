@@ -1,4 +1,4 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
@@ -27,6 +27,7 @@ export function StudentAssessment({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
+        ${compiledStylesheetTag('studentAssessment.css')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -134,7 +135,7 @@ function HonorPledge({
   return html`
     <div class="card card-secondary mb-4 test-class-honor-code">
       ${customHonorCode
-        ? html`<div class="mx-3 mt-2">${unsafeHtml(customHonorCode)}</div>`
+        ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
         : html`<ul class="list-group list-group-flush">
             <li class="list-group-item py-2">
               I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to

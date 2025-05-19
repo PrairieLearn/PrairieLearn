@@ -5,7 +5,7 @@ import * as markdown from './index.js';
 async function testMarkdown(
   original: string,
   expected: string,
-  options: { inline?: boolean } = {},
+  options: { inline?: boolean; allowHtml?: boolean } = {},
 ) {
   const actual = await markdown.markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
@@ -132,5 +132,17 @@ describe('Markdown processing', () => {
     const question = 'testing<iframe src="javascript:alert(\'delta\')"></iframe>';
     const expected = '<p>testing</p>';
     await testMarkdown(question, expected);
+  });
+
+  it('sanitizes HTML if allowHtml is false', async () => {
+    const question = 'testing <h1>html</h1>';
+    const expected = '<p>testing html</p>';
+    await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('renders markdown correctly if allowHtml is false', async () => {
+    const question = '# testing';
+    const expected = '<h1>testing</h1>';
+    await testMarkdown(question, expected, { allowHtml: false });
   });
 });

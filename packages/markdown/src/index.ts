@@ -71,12 +71,12 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
-  strictSanitize = false,
+  allowHtml = true,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
-  strictSanitize?: boolean;
+  allowHtml?: boolean;
 } = {}) {
   const plugins: (Plugin<any, any, any> | PluginTuple<any, any, any>)[] = [
     remarkParse,
@@ -84,8 +84,8 @@ export function createProcessor({
     ...(mdastVisitors ?? []).map((visitor) => makeHandler(visitor)),
     makeHandler(visitMathBlock),
     remarkGfm,
-    [remark2rehype, { allowDangerousHtml: !strictSanitize }],
-    ...(strictSanitize ? [] : [rehypeRaw]),
+    [remark2rehype, { allowDangerousHtml: allowHtml }],
+    ...(!allowHtml ? [] : [rehypeRaw]),
     ...(sanitize ? [rehypeSanitize] : []),
     ...(hastVisitors ?? []).map((visitor) => makeHandler(visitor)),
     rehypeStringify,
@@ -97,26 +97,29 @@ export function createProcessor({
   }, unified());
 }
 
-const defaultProcessor = createProcessor();
-const inlineProcessor = createProcessor({ hastVisitors: [visitCheckSingleParagraph] });
+const processorCache = new Map<string, Processor>();
+function getProcessor(options: { inline?: boolean; allowHtml?: boolean } = {}): Processor {
+  const key = JSON.stringify(options);
+  console.log('key: ', key);
+  if (!processorCache.has(key)) {
+    processorCache.set(
+      key,
+      createProcessor({
+        hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
+        allowHtml: options.allowHtml,
+      }),
+    );
+  }
+  return processorCache.get(key)!;
+}
 
 /**
  * Converts markdown to HTML. If `inline` is true, and the result fits a single
  * paragraph, the content is returned inline without the paragraph tag.
  */
-export async function markdownToHtml(original: string, { inline }: { inline?: boolean } = {}) {
-  return (await (inline ? inlineProcessor : defaultProcessor).process(original)).value.toString();
-}
-
-export async function markdownToHtmlStrict(
+export async function markdownToHtml(
   original: string,
-  { inline }: { inline?: boolean } = {},
+  { inline = false, allowHtml = true }: { inline?: boolean; allowHtml?: boolean } = {},
 ) {
-  return (
-    await (
-      inline
-        ? createProcessor({ hastVisitors: [visitCheckSingleParagraph], strictSanitize: true })
-        : createProcessor({ strictSanitize: true })
-    ).process(original)
-  ).value.toString();
+  return (await getProcessor({ inline, allowHtml }).process(original)).value.toString();
 }
