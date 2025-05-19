@@ -123,11 +123,15 @@ export async function fillInstanceQuestionColumns(
       }
     }
 
-    if (grading_jobs.length < 2) {
+    if (
+      grading_jobs.length < 2 ||
+      grading_jobs[0].manual_points === null ||
+      grading_jobs[1].manual_points === null
+    ) {
       continue;
     }
     instance_question.point_difference = Math.abs(
-      (grading_jobs[0].manual_points ?? 0) - (grading_jobs[1].manual_points ?? 0),
+      grading_jobs[0].manual_points - grading_jobs[1].manual_points,
     );
     if (!grading_jobs[0].manual_rubric_grading_id || !grading_jobs[1].manual_rubric_grading_id) {
       continue;

@@ -42,7 +42,7 @@ onDocumentReady(() => {
     return Object.fromEntries(
       data
         .flatMap((row) =>
-          (row.is_ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
+          (row.ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
             row.last_human_grader ? [row.last_human_grader] : [],
           ),
         )
