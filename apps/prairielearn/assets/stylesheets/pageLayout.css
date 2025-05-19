@@ -280,14 +280,14 @@ body:has(div.app-container) {
 
   /* Prevent content under the course/side nav from being visible when
   either nav is open. */
-  #app-container.side-nav-enabled:has(#course-nav.show) .app-main,
-  #app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
+  .app-container.side-nav-enabled:has(#course-nav.show) .app-main,
+  .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
-  #app-container.side-nav-enabled:has(#course-nav.show),
-  #app-container.side-nav-enabled:not(.mobile-collapsed) {
+  .app-container.side-nav-enabled:has(#course-nav.show),
+  .app-container.side-nav-enabled:not(.mobile-collapsed) {
     height: 100%;
     max-height: 100%;
     overflow-x: hidden;
@@ -297,7 +297,7 @@ body:has(div.app-container) {
   /* If the side nav is collapsed on a medium screen size or larger,
   *  tooltips appear on the side nav links when hovered. This code 
   *  hides the tooltips when the side nav is expanded on smaller screens. */
-  body:has(#app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
+  body:has(.app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
     display: none;
   }
 

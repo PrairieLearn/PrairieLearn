@@ -499,9 +499,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       id="navbar-user-view-authn-student"
     >
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <span class="ps-3"
-        >Student view <span class="badge text-bg-warning">student</span></span
-      >
+      <span class="ps-3">Student view <span class="badge text-bg-warning">student</span></span>
     </a>
 
     <a
