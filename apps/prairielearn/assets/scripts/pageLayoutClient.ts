@@ -2,10 +2,10 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 // Handle when the user expands or collapses the side nav
 onDocumentReady(async () => {
-  // Visible on desktop viewports (width of 768px and above)
+  // Visible on wider viewports (768px and up)
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
 
-  // Visible on mobile viewports (width of less than 768px)
+  // Visible on narrower viewports (less than 768px)
   const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
 
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
