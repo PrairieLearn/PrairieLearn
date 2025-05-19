@@ -127,7 +127,7 @@ body:has(div.app-container) {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
 
-/* Side nav collapsed styles apply only to wider viewports (768px and above).
+/* Side nav collapsed styles are applied on wider viewports (768px and above).
  * On narrower viewports (less than 768px), the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
   .app-container.side-nav-enabled.collapsed {
