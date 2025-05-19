@@ -56,7 +56,6 @@ router.get(
       InstanceQuestionRowSchema,
     );
 
-    // fill in the ai-grading related things (difference, graded by human/ai? with latest rubric?) here?
     await fillInstanceQuestionColumns(instance_questions, res.locals.assessment_question);
     res.send({ instance_questions });
   }),

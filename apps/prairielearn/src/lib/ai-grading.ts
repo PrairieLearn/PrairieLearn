@@ -79,6 +79,11 @@ export async function stripHtmlForAiGrading(html: string) {
   return (await formatHtmlWithPrettier(result)).trim();
 }
 
+/**
+ * Fills in missing columns for manual grading assessment question page.
+ * This includes organizing information about past graders
+ * and calculating point and/or rubric difference between human and AI.
+ */
 export async function fillInstanceQuestionColumns(
   instance_questions: InstanceQuestionRow[],
   assessment_question: AssessmentQuestion,
@@ -117,7 +122,6 @@ export async function fillInstanceQuestionColumns(
         }
       }
     }
-    console.log(instance_question.ai_graded_with_latest_rubric);
 
     if (grading_jobs.length < 2) {
       continue;
