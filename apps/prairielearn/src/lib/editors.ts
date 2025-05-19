@@ -1045,7 +1045,9 @@ export class CourseInstanceTransferEditor extends Editor {
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
-    // We do not want to preserve sharing settings when copying an assessment to another course
+
+    // We do not want to preserve sharing settings when copying a course instance to another course
+    console.log('before deleting share source public', infoJson);
     delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
       spaces: 4,
@@ -1078,6 +1080,10 @@ async function updateInfoAssessmentFiles(
       if (await fs.pathExists(infoAssessmentPath)) {
         // Read and process the infoAssessment.json file
         const infoJson = await fs.readJson(infoAssessmentPath);
+
+        // We do not want to preserve sharing settings when copying an assessment to another course
+        delete infoJson['shareSourcePublicly'];
+
         // Rewrite the question IDs to include the course sharing name
         for (const zone of infoJson.zones) {
           for (const question of zone.questions) {
