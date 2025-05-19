@@ -100,7 +100,6 @@ export function createProcessor({
 const processorCache = new Map<string, Processor>();
 function getProcessor(options: { inline?: boolean; allowHtml?: boolean } = {}): Processor {
   const key = JSON.stringify(options);
-  console.log('key: ', key);
   if (!processorCache.has(key)) {
     processorCache.set(
       key,
@@ -110,7 +109,7 @@ function getProcessor(options: { inline?: boolean; allowHtml?: boolean } = {}): 
       }),
     );
   }
-  return processorCache.get(key)!;
+  return processorCache.get(key) as Processor;
 }
 
 /**
