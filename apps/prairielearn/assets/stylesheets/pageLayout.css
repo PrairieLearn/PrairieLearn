@@ -143,10 +143,6 @@ body:has(div.app-container) {
   will-change: transform; /* Performance optimization */
 }
 
-.viewtype-dropdown-item .dropdown-item-text {
-  display: unset;
-}
-
 /* Side nav collapsed styles apply only on medium screen sizes and larger (768px and above).
  * On smaller screens, the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
@@ -305,12 +301,9 @@ body:has(div.app-container) {
     display: none;
   }
 
-  .app-container.side-nav-enabled .viewtype-dropdown-item {
+  .viewtype-dropdown-item {
     display: flex;
     align-items: center;
-  }
-
-  .app-container.side-nav-enabled .viewtype-dropdown-item .dropdown-item-text {
     white-space: normal;
   }
 }
