@@ -23,7 +23,7 @@ describe('Client files endpoints', () => {
   afterAll(helperServer.after);
 
   let courseInstance: CourseInstance;
-  before(async () => {
+  beforeAll(async () => {
     courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
   });
 
