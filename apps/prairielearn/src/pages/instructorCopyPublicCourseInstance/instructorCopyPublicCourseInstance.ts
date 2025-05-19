@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { copyCourseInstanceBetweenCourses } from '../../lib/copy-course-instance.js';
+import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
