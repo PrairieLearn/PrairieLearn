@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.2.0
+
+### Minor Changes
+
+- 8b1138e: Added schemas for parsing integers and arrays.
+
 ## 1.1.5
 
 ### Patch Changes

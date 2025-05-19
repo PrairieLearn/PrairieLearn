@@ -26,6 +26,9 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
+export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
+
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
@@ -347,6 +350,7 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -824,7 +828,7 @@ export const QuestionSchema = z.object({
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']),
+  grading_method: EnumGradingMethodSchema,
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_external_grading_comment: z
