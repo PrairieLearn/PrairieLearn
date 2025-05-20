@@ -65,7 +65,7 @@ function productApi(req: express.Request, res: express.Response) {
   res.json(returning);
 }
 
-describe('fetchRetry()', async () => {
+describe('fetchRetry()', () => {
   const app = express();
 
   // Run a server to respond to API requests.
@@ -91,10 +91,6 @@ describe('fetchRetry()', async () => {
   app.get('/', productApi);
 
   let apiCount: number;
-
-  // Thanks chatGPT
-
-  before(async () => {});
 
   step('should return the full list by iterating', async () => {
     apiCount = 0;
