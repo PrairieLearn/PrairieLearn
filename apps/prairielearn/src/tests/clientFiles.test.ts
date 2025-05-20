@@ -96,7 +96,7 @@ describe('Client files endpoints', () => {
 
     it('works for instance question URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instance_question/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instance_question/1/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
