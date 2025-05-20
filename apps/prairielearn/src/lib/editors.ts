@@ -38,6 +38,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
+import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
@@ -977,7 +978,6 @@ export class CourseInstanceTransferEditor extends Editor {
   private course_instance: CourseInstance;
   private from_course: Course;
   private from_path: string;
-  private to_course_short_name: string;
 
   public readonly uuid: string;
 
@@ -991,7 +991,7 @@ export class CourseInstanceTransferEditor extends Editor {
     const description = `Transfer public course instance from course ${params.from_course.sharing_name}`;
     super({ ...params, description });
 
-    this.course_instance = params.course_instance; // TEST, not allowed?
+    this.course_instance = params.course_instance;
     this.from_course = params.from_course;
     this.from_path = params.from_path;
 
@@ -1028,14 +1028,17 @@ export class CourseInstanceTransferEditor extends Editor {
 
     const toPath = courseInstancePath;
 
-    debug(`Transfer public course instance\n from ${this.from_path}\n to ${toPath}`);
+    debug(`Transfer course instance\n from ${this.from_path}\n to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     // Update the infoAssessment.json files to include the course sharing name for each question
     if (!this.from_course.sharing_name) {
       throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
     }
-    await updateInfoAssessmentFiles(courseInstancePath, this.from_course.sharing_name);
+
+    if (!idsEqual(this.course.id, this.from_course.id)) {
+      await updateInfoAssessmentFiles(courseInstancePath, this.from_course.sharing_name);
+    }
 
     debug('Read infoCourseInstance.json');
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
@@ -1044,11 +1047,11 @@ export class CourseInstanceTransferEditor extends Editor {
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
 
-    // We do not want to preserve sharing settings when copying a course instance to another course
+    // We do not want to preserve sharing settings when copying a course instance
     delete infoJson['shareSourcePublicly'];
-    await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
       pathsToAdd: [courseInstancePath],
