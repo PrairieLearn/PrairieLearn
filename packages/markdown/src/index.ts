@@ -99,17 +99,16 @@ export function createProcessor({
 
 const processorCache = new Map<string, Processor>();
 function getProcessor(options: { inline?: boolean; allowHtml?: boolean } = {}): Processor {
-  const key = JSON.stringify(options);
-  if (!processorCache.has(key)) {
-    processorCache.set(
-      key,
-      createProcessor({
-        hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
-        allowHtml: options.allowHtml,
-      }),
-    );
+  const key = `${options.inline}:${options.allowHtml}`;
+  let processor = processorCache.get(key);
+  if (!processor) {
+    processor = createProcessor({
+      hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
+      allowHtml: options.allowHtml,
+    });
+    processorCache.set(key, processor);
   }
-  return processorCache.get(key) as Processor;
+  return processor;
 }
 
 /**

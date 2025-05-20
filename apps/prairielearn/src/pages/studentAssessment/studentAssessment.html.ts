@@ -1,4 +1,4 @@
-import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
@@ -27,7 +27,11 @@ export function StudentAssessment({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
-        ${compiledStylesheetTag('studentAssessment.css')}
+        <style>
+          .honor-code :last-child {
+            margin-bottom: 0;
+          }
+        </style>
       </head>
       <body>
         ${Navbar({ resLocals })}
