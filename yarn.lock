@@ -3582,6 +3582,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@types/async": "npm:^3.2.24"
     "@types/chai": "npm:^5.2.1"
+    "@types/chai-as-promised": "npm:^8.0.2"
     "@types/dockerode": "npm:^3.3.38"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^20.17.32"
@@ -4236,6 +4237,8 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
+    "@types/chai": "npm:^5.2.2"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
@@ -5553,6 +5556,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/chai@npm:^5.2.2":
+  version: 5.2.2
+  resolution: "@types/chai@npm:5.2.2"
+  dependencies:
+    "@types/deep-eql": "npm:*"
+  checksum: 10c0/49282bf0e8246800ebb36f17256f97bd3a8c4fb31f92ad3c0eaa7623518d7e87f1eaad4ad206960fcaf7175854bdff4cb167e4fe96811e0081b4ada83dd533ec
+  languageName: node
+  linkType: hard
+
 "@types/connect@npm:*, @types/connect@npm:3.4.38":
   version: 3.4.38
   resolution: "@types/connect@npm:3.4.38"
@@ -6138,6 +6150,13 @@ __metadata:
   dependencies:
     mime: "npm:*"
   checksum: 10c0/c544ca670c2cb53b96c7e4a1b4ecfdf3777dad4b74f7bb305680eed82c753a7ccfdf03c8b06c9fba48bb10d2a96ae95c9a4007b6c83bc5fdc9cfa7250c07b85b
+  languageName: node
+  linkType: hard
+
+"@types/mocha@npm:^10.0.10":
+  version: 10.0.10
+  resolution: "@types/mocha@npm:10.0.10"
+  checksum: 10c0/d2b8c48138cde6923493e42b38e839695eb42edd04629abe480a8f34c0e3f50dd82a55832c2e8d2b6e6f9e4deb492d7d733e600fbbdd5a0ceccbcfc6844ff9d5
   languageName: node
   linkType: hard
 
