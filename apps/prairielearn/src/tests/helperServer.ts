@@ -67,9 +67,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       load.initEstimator('python', 1);
 
       debug('before(): initialize code callers');
-      await codeCaller.init({
-        lazyWorkers: true,
-      });
+      await codeCaller.init({ lazyWorkers: true });
       await assets.init();
 
       debug('before(): start server');
