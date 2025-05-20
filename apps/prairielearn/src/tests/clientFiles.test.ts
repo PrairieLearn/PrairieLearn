@@ -3,11 +3,11 @@ import fetch from 'node-fetch';
 
 import { config } from '../lib/config.js';
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperExam from './helperExam.js';
 import * as helperServer from './helperServer.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -89,7 +89,7 @@ describe('Client files endpoints', () => {
 
     it('works for assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
@@ -126,7 +126,7 @@ describe('Client files endpoints', () => {
 
     it('works for assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}/clientFilesCourseInstance/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}/clientFilesCourseInstance/data.txt`,
         'This data is specific to the course instance.',
       );
     });
