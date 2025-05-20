@@ -38,7 +38,7 @@ describe(
     });
 
     beforeAll(async function () {
-      await helperServer.before().call(this);
+      await helperServer.before()();
       context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 

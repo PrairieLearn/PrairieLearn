@@ -39,8 +39,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await opentelemetry.init({ openTelemetryEnabled: false });
 
       debug('before(): initializing DB');
-      // pass "this" explicitly to enable this.timeout() calls
-      await helperDb.before.call(this);
+      await helperDb.before();
 
       debug('before(): create tmp dir for config.filesRoot');
       const tmpDir = await tmp.dir({ unsafeCleanup: true });
@@ -126,7 +125,7 @@ export async function after(): Promise<void> {
     await cache.close();
 
     debug('after(): finish DB');
-    await helperDb.after.call(this);
+    await helperDb.after();
   } finally {
     debug('after(): complete');
   }

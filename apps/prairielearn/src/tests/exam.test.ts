@@ -1764,11 +1764,11 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       describe('server', function () {
         it('should shut down', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.after.call(this);
+          await helperServer.after();
         });
         it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before()();
         });
       });
 

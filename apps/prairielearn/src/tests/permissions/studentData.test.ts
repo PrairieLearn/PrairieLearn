@@ -24,7 +24,7 @@ describe('student data access', { timeout: 60_000 }, function () {
   context.userIdStudent = 2;
 
   beforeAll(async function () {
-    await helperServer.before().call(this);
+    await helperServer.before()();
     let result = await sqldb.queryOneRowAsync(sql.select_homework1, []);
     context.homeworkAssessmentId = result.rows[0].id;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;

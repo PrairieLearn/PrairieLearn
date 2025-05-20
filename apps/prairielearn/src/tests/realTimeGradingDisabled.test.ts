@@ -17,7 +17,7 @@ describe('Exam assessment with real-time grading disabled', { timeout: 60_000 },
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
   beforeAll(async function () {
-    await helperServer.before().call(this);
+    await helperServer.before()();
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

@@ -24,7 +24,7 @@ describe('Cron', { timeout: 60_000 }, function () {
     // set all other cron jobs to execute soon
     config.cronOverrideAllIntervalsSec = 3;
 
-    await helperServer.before().call(this);
+    await helperServer.before()();
   });
 
   afterAll(helperServer.after);

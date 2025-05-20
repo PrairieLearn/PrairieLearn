@@ -28,14 +28,14 @@ describe('Generate chunks and use them for a student homework', { timeout: 60_00
     config.chunksConsumer = true;
     config.chunksConsumerDirectory = tempChunksDir.path;
 
-    await helperServer.before().call(this);
+    await helperServer.before()();
     const results = await sqldb.queryOneRowAsync(sql.select_hw1, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
   afterAll(async () => {
-    await helperServer.after.call(this);
+    await helperServer.after();
     await tempChunksDir.cleanup();
     config.chunksConsumer = false;
     config.chunksConsumerDirectory = originalChunksConsumerDirectory;

@@ -46,7 +46,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     const secondCourseDir = await tmp.dir({ unsafeCleanup: true });
     await fs.copy(TEST_COURSE_PATH, secondCourseDir.path);
 
-    await helperServer.before([TEST_COURSE_PATH, secondCourseDir.path]).call(this);
+    await helperServer.before([TEST_COURSE_PATH, secondCourseDir.path])();
   });
 
   let institutionAdminId: string;

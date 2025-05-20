@@ -1197,7 +1197,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       overwrite: true,
     });
 
-    await helperServer.before(tempTestCourseDir.path).call(this);
+    await helperServer.before(tempTestCourseDir.path)();
 
     // Find the ID of an assessment that has group roles
     const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -1213,7 +1213,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     } catch (err) {
       console.error(err);
     }
-    await helperServer.after.call(this);
+    await helperServer.after();
   });
 
   afterAll(function () {
