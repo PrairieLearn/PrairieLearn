@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 
 import { assert } from 'chai';
 import { withFile } from 'tmp-promise';
+import { describe, it } from 'vitest';
 import { z } from 'zod';
 
 import { ConfigLoader, makeFileConfigSource, makeLiteralConfigSource } from './index.js';

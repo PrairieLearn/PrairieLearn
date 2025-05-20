@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as error from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -92,7 +92,7 @@ async function insertTestBatchedMigration() {
 }
 
 describe('BatchedMigrationExecutor', () => {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
       throw err;
@@ -104,7 +104,7 @@ describe('BatchedMigrationExecutor', () => {
     await postgresTestUtils.resetDatabase();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await namedLocks.close();
     await postgresTestUtils.dropDatabase();
   });
