@@ -6,6 +6,7 @@ import {
   type CourseInstance,
   type CourseInstancePermission,
   CourseInstanceSchema,
+  IdSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
@@ -130,4 +131,21 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
     z.boolean(),
   );
   return isPublic;
+}
+
+export async function selectCourseInstanceIdByUuid({
+  course_id,
+  uuid,
+}: {
+  course_id: string;
+  uuid: string;
+}) {
+  return await queryRow(
+    sql.select_course_instance_id_from_uuid,
+    {
+      uuid,
+      course_id,
+    },
+    IdSchema,
+  );
 }

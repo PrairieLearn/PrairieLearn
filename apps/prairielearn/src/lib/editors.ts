@@ -965,7 +965,10 @@ export class CourseInstanceCopyEditor extends Editor {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
       // Update the infoAssessment.json files to include the course sharing name for each question
-      await updateInfoAssessmentFiles(courseInstancePath, this.from_course.sharing_name);
+      await updateInfoAssessmentFilesForInstanceCopy(
+        courseInstancePath,
+        this.from_course.sharing_name,
+      );
     }
 
     debug('Read infoCourseInstance.json');
@@ -988,7 +991,7 @@ export class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-async function updateInfoAssessmentFiles(
+async function updateInfoAssessmentFilesForInstanceCopy(
   courseInstancePath: string,
   fromCourseSharingName: string,
 ) {

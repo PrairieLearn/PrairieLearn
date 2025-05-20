@@ -15,7 +15,10 @@ import {
   QuestionTransferEditor,
 } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import {
+  selectCourseInstanceByShortName,
+  selectCourseInstanceIdByUuid,
+} from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 
@@ -108,7 +111,7 @@ router.get(
 
       await doTransfer(res, editor, file_transfer.id);
 
-      const result = await sqldb.queryOneRowAsync(sql.select_course_instance_id_from_uuid, {
+      const courseInstanceId = selectCourseInstanceIdByUuid({
         uuid: editor.uuid,
         course_id: res.locals.course.id,
       });
@@ -119,7 +122,7 @@ router.get(
       );
       // Redirect to the copied course instance
       res.redirect(
-        `${res.locals.plainUrlPrefix}/course_instance/${result.rows[0].course_instance_id}/instructor/instance_admin/assessments`,
+        `${res.locals.plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`,
       );
     }
   }),
