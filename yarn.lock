@@ -3343,6 +3343,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3472,6 +3473,7 @@ __metadata:
   resolution: "@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3497,6 +3499,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.21"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3511,6 +3514,7 @@ __metadata:
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3576,6 +3580,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3591,6 +3596,7 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -3640,6 +3646,22 @@ __metadata:
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
     vfile: "npm:^6.0.3"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/marked-mathjax@workspace:^, @prairielearn/marked-mathjax@workspace:packages/marked-mathjax":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/chai": "npm:^5.2.1"
+    c8: "npm:^10.1.3"
+    chai: "npm:^5.2.0"
+    marked: "npm:^15.0.7"
+    mathjax: "npm:^3.2.2"
+    mocha: "npm:^11.1.0"
+    tsx: "npm:^4.19.4"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -3834,6 +3856,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/markdown": "workspace:^"
+    "@prairielearn/marked-mathjax": "workspace:^"
     "@prairielearn/migrations": "workspace:^"
     "@prairielearn/named-locks": "workspace:^"
     "@prairielearn/node-metrics": "workspace:^"
@@ -3979,6 +4002,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.1.0"
+    marked: "npm:^15.0.7"
     mathjax: "npm:^3.2.2"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
@@ -3986,7 +4010,7 @@ __metadata:
     mocha: "npm:^11.1.0"
     mocha-steps: "npm:^1.3.0"
     morphdom: "npm:^2.7.5"
-    multer: "npm:^1.4.5-lts.2"
+    multer: "npm:^2.0.0"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
@@ -3999,6 +4023,7 @@ __metadata:
     on-headers: "npm:^1.0.2"
     openai: "npm:^4.96.2"
     openid-client: "npm:^5.7.1"
+    p-memoize: "npm:^7.1.1"
     parse5: "npm:^7.3.0"
     passport: "npm:^0.7.0"
     passport-azure-ad: "npm:^4.3.5"
@@ -4091,6 +4116,7 @@ __metadata:
   resolution: "@prairielearn/run@workspace:packages/run"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -4105,6 +4131,7 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     c8: "npm:^10.1.3"
     chai: "npm:^5.2.0"
@@ -4138,6 +4165,7 @@ __metadata:
     "@types/cookie": "npm:^0.6.0"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.21"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     "@types/node-fetch": "npm:^2.6.12"
     "@types/on-headers": "npm:^1.0.3"
@@ -9422,13 +9450,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-no-only-tests@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "eslint-plugin-no-only-tests@npm:3.3.0"
-  checksum: 10c0/a04425d9d3bcd745267168782eb12a3a712b8357264ddd4e204204318975c2c21e2c1efe68113181de908548a85762205b61d8f92ec9dc5e0a5ae54c0240a24d
-  languageName: node
-  linkType: hard
-
 "eslint-plugin-react-debug@npm:1.48.5":
   version: 1.48.5
   resolution: "eslint-plugin-react-debug@npm:1.48.5"
@@ -12267,6 +12288,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"marked@npm:^15.0.7":
+  version: 15.0.7
+  resolution: "marked@npm:15.0.7"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/0b9d07bace37bbf0548bae356c4184765afa4d2296ed0be4418aa4bb0ce703f323dc1a475125d536581f9fe264797e6265dd0b57499d97c0fe0f29bc6d016343
+  languageName: node
+  linkType: hard
+
 "math-intrinsics@npm:^1.0.0":
   version: 1.1.0
   resolution: "math-intrinsics@npm:1.1.0"
@@ -12929,6 +12959,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mimic-fn@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "mimic-fn@npm:4.0.0"
+  checksum: 10c0/de9cc32be9996fd941e512248338e43407f63f6d497abe8441fa33447d922e927de54d4cc3c1a3c6d652857acd770389d5a3823f311a744132760ce2be15ccbf
+  languageName: node
+  linkType: hard
+
 "mimic-function@npm:^5.0.1":
   version: 5.0.1
   resolution: "mimic-function@npm:5.0.1"
@@ -13234,9 +13271,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:^1.4.5-lts.2":
-  version: 1.4.5-lts.2
-  resolution: "multer@npm:1.4.5-lts.2"
+"multer@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "multer@npm:2.0.0"
   dependencies:
     append-field: "npm:^1.0.0"
     busboy: "npm:^1.0.0"
@@ -13245,7 +13282,7 @@ __metadata:
     object-assign: "npm:^4.1.1"
     type-is: "npm:^1.6.4"
     xtend: "npm:^4.0.0"
-  checksum: 10c0/59c934621bde284e04e25aa35ef79f8a9ed0c2ac4c5bae4c2880670105ec1645480ae57a84ed92323b2a8d8f875ca3189ad8a18fa0ed0bdc6fd26553d9426883
+  checksum: 10c0/b1bb5faead3193f2bad5dc1dd3a89c195b3b95a178253d81636efee07538df761515b59fcd508037b8c0472a087f33d13002ed76e167a00ef7d32694e3038138
   languageName: node
   linkType: hard
 
@@ -13810,6 +13847,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"p-memoize@npm:^7.1.1":
+  version: 7.1.1
+  resolution: "p-memoize@npm:7.1.1"
+  dependencies:
+    mimic-fn: "npm:^4.0.0"
+    type-fest: "npm:^3.0.0"
+  checksum: 10c0/6adbdf0ac0e53d80ac3a2ff01fb39ae2053976295d15e3e614ff9e981eca9d4f8c28cf54e857c791cee48abd5c37849e9eca7deab18be1e4f064d5753e3d87b8
+  languageName: node
+  linkType: hard
+
 "p-try@npm:^2.0.0":
   version: 2.2.0
   resolution: "p-try@npm:2.2.0"
@@ -14326,7 +14373,6 @@ __metadata:
     eslint-plugin-import-x: "npm:^4.11.0"
     eslint-plugin-mocha: "npm:^11.0.0"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
-    eslint-plugin-no-only-tests: "npm:^3.3.0"
     eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     get-stream: "npm:^9.0.1"
     globby: "npm:^14.1.0"
@@ -16525,6 +16571,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"type-fest@npm:^3.0.0":
+  version: 3.13.1
+  resolution: "type-fest@npm:3.13.1"
+  checksum: 10c0/547d22186f73a8c04590b70dcf63baff390078c75ea8acd366bbd510fd0646e348bd1970e47ecf795b7cff0b41d26e9c475c1fedd6ef5c45c82075fbf916b629
+  languageName: node
+  linkType: hard
+
 "type-fest@npm:^4.31.0":
   version: 4.35.0
   resolution: "type-fest@npm:4.35.0"
@@ -16694,18 +16747,18 @@ __metadata:
   linkType: hard
 
 "undici@npm:^5.25.4":
-  version: 5.28.5
-  resolution: "undici@npm:5.28.5"
+  version: 5.29.0
+  resolution: "undici@npm:5.29.0"
   dependencies:
     "@fastify/busboy": "npm:^2.0.0"
-  checksum: 10c0/4dfaa13089fe4c0758f84ec0d34b257e58608e6be3aa540f493b9864b39e3fdcd0a1ace38e434fe79db55f833aa30bcfddd8d6cbe3e0982b0dcae8ec17b65e08
+  checksum: 10c0/e4e4d631ca54ee0ad82d2e90e7798fa00a106e27e6c880687e445cc2f13b4bc87c5eba2a88c266c3eecffb18f26e227b778412da74a23acc374fca7caccec49b
   languageName: node
   linkType: hard
 
 "undici@npm:^6.19.5":
-  version: 6.21.1
-  resolution: "undici@npm:6.21.1"
-  checksum: 10c0/d604080e4f8db89b35a63b483b5f96a5f8b19ec9f716e934639345449405809d2997e1dd7212d67048f210e54534143384d712bd9075e4394f0788895ef9ca8e
+  version: 6.21.3
+  resolution: "undici@npm:6.21.3"
+  checksum: 10c0/294da109853fad7a6ef5a172ad0ca3fb3f1f60cf34703d062a5ec967daf69ad8c03b52e6d536c5cba3bb65615769bf08e5b30798915cbccdddaca01045173dda
   languageName: node
   linkType: hard
 

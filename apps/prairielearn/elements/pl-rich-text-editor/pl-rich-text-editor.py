@@ -21,6 +21,7 @@ class InputFormat(Enum):
     MARKDOWN = "markdown"
 
 
+FILE_NAME_DEFAULT = "answer.html"
 QUILL_THEME_DEFAULT = "snow"
 PLACEHOLDER_DEFAULT = "Your answer here"
 ALLOW_BLANK_DEFAULT = False
@@ -44,8 +45,9 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["file-name"]
+    required_attribs = []
     optional_attribs = [
+        "file-name",
         "quill-theme",
         "source-file-name",
         "directory",
@@ -62,10 +64,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     element_text = element_inner_html(element)
 
-    file_name = pl.get_string_attrib(element, "file-name")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
+        if not pl.has_attrib(element, "file-name"):
+            # This is a special-case of the uniqueness test with a special message for the default file name.
+            raise RuntimeError(
+                "There is more than one rich-text editor. File names must be provided and unique."
+            )
         raise RuntimeError(
             "There is more than one file editor with the same file name."
         )
@@ -86,7 +93,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return ""
 
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, "file-name", "")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     answer_name = get_answer_name(file_name)
     quill_theme = pl.get_string_attrib(element, "quill-theme", QUILL_THEME_DEFAULT)
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
@@ -195,7 +202,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    file_name = pl.get_string_attrib(element, "file-name", "")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist

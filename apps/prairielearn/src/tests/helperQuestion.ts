@@ -459,7 +459,7 @@ export function checkQuestionFeedback(locals: Record<string, any>) {
 }
 
 export function regradeAssessment(locals: Record<string, any>) {
-  describe('GET to instructorAssessmentRegrading URL', async function () {
+  describe('GET to instructorAssessmentRegrading URL', function () {
     it('should succeed', async function () {
       locals.instructorAssessmentRegradingUrl =
         locals.courseInstanceBaseUrl +
