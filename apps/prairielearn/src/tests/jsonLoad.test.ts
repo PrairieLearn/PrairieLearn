@@ -1,7 +1,6 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import * as jsonLoad from '../lib/json-load.js';
 

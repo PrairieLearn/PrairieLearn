@@ -1,7 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch, { FormData } from 'node-fetch';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);

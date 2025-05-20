@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 

@@ -1,6 +1,5 @@
 import { Ajv } from 'ajv';
-import { assert } from 'chai';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import { ajvSchemas } from '../schemas/index.js';
 

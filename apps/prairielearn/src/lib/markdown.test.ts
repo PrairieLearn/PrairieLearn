@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import * as markdown from './markdown.js';
 

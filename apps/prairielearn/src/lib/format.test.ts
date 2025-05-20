@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import { formatFloat, formatPoints, formatPointsOrList } from './format.js';
 
