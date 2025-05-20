@@ -110,7 +110,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   before('set up testing server', async function () {
     courseDir = await writeCourseToTempDirectory(course);
-    await helperServer.before(courseDir).call(this);
+    await helperServer.before({ courseDir }).call(this);
     const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
     courseInstanceId = courseInstanceResult.rows[0].id;
   });

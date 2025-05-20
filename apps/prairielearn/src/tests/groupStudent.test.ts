@@ -30,7 +30,7 @@ describe('Group based homework assess control on student side', function () {
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', async () => {
     Object.assign(config, storedConfig);

@@ -263,7 +263,7 @@ describe('test file editor', function () {
       await createCourseFiles();
     });
 
-    before('set up testing server', helperServer.before(courseDir));
+    before('set up testing server', helperServer.before({ courseDir }));
 
     before('update course repository in database', async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
@@ -314,7 +314,7 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    before('set up testing server', helperServer.before({ courseDir: EXAMPLE_COURSE_PATH }));
 
     after('shut down testing server', helperServer.after);
 

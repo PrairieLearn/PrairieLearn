@@ -15,7 +15,7 @@ const locals: Record<string, any> = {};
 
 describe('test random groups and delete groups', function () {
   this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   after('shut down testing server', helperServer.after);
 
   step('get group-based homework assessment', async () => {

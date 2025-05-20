@@ -78,7 +78,7 @@ describe('Auto-test questions in exampleCourse', () => {
   describe('Auto-test questions in exampleCourse', function () {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    before('set up testing server', helperServer.before({ courseDir: EXAMPLE_COURSE_PATH }));
     after('shut down testing server', helperServer.after);
 
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
@@ -89,7 +89,7 @@ describe('Auto-test questions in exampleCourse', () => {
   describe('Auto-test questions in exampleCourse with process-questions-in-server enabled', function () {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    before('set up testing server', helperServer.before({ courseDir: EXAMPLE_COURSE_PATH }));
     after('shut down testing server', helperServer.after);
 
     const originalProcessQuestionsInServer = config.features['process-questions-in-server'];

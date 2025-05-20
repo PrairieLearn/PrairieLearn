@@ -176,7 +176,7 @@ describe('Test group based assessments with custom group roles from student side
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  before('set up testing server', helperServer.before(locals.courseDir));
+  before('set up testing server', helperServer.before({ courseDir: locals.courseDir }));
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function () {
     Object.assign(config, storedConfig);
@@ -1075,7 +1075,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       overwrite: true,
     });
 
-    await helperServer.before(tempTestCourseDir.path).call(this);
+    await helperServer.before({ courseDir: tempTestCourseDir.path }).call(this);
 
     // Find the ID of an assessment that has group roles
     const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
@@ -1598,7 +1598,7 @@ describe('Test group role reassignment logic when user leaves', function () {
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  before('set up testing server', helperServer.before(locals.courseDir));
+  before('set up testing server', helperServer.before({ courseDir: locals.courseDir }));
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function () {
     Object.assign(config, storedConfig);

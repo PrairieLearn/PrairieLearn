@@ -280,7 +280,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
   describe('valid group role configuration tests', function () {
     this.timeout(20000);
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+    before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
     before('set authenticated user', function (callback) {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
@@ -431,7 +431,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
   describe('invalid role configuration tests', function () {
     this.timeout(20000);
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+    before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
     before('set authenticated user', function (callback) {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;

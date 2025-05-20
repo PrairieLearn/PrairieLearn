@@ -37,7 +37,7 @@ describe('assessment instance group synchronization test', function () {
     Object.assign(config, storedConfig);
   });
 
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   after('shut down testing server', helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {

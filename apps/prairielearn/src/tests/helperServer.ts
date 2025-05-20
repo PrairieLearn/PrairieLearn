@@ -31,7 +31,15 @@ config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
-export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
+interface InitOptions {
+  courseDir?: string | string[];
+  withCodeCaller?: boolean;
+}
+
+export function before({
+  courseDir = TEST_COURSE_PATH,
+  withCodeCaller = true,
+}: InitOptions = {}): () => Promise<void> {
   return async () => {
     debug('before()');
     try {
@@ -66,8 +74,10 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       load.initEstimator('authed_request', 1);
       load.initEstimator('python', 1);
 
-      debug('before(): initialize code callers');
-      await codeCaller.init();
+      if (withCodeCaller) {
+        debug('before(): initialize code callers');
+        await codeCaller.init();
+      }
       await assets.init();
 
       debug('before(): start server');

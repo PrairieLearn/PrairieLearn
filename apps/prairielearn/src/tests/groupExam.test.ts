@@ -78,7 +78,7 @@ async function joinGroup(
 describe('Group based exam assessments', function () {
   this.timeout(20000);
 
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -295,7 +295,7 @@ describe('Group based exam assessments', function () {
 
 describe('cross group exam access', function () {
   this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
@@ -395,7 +395,7 @@ describe('cross group exam access', function () {
 
 describe('cross exam assessment access', function () {
   this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
+  before('set up testing server', helperServer.before({ courseDir: TEST_COURSE_PATH }));
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;

@@ -293,7 +293,7 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await helperServer.before(tempTestCourseDir.path).call(this);
+      await helperServer.before({ courseDir: tempTestCourseDir.path }).call(this);
 
       // Find the ID of this course
       const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
