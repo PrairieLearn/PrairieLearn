@@ -919,9 +919,7 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: any;
     },
   ) {
-    const description = `Copy course instance from course ${params.from_course.sharing_name}`;
-    super({ ...params, description });
-
+    super({ ...params, description: `Copy course instance ${params.course_instance.short_name}` });
     this.course_instance = params.course_instance;
     this.from_course = params.from_course;
     this.from_path = params.from_path;
@@ -959,7 +957,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const toPath = courseInstancePath;
 
-    debug(`Transfer course instance\n from ${this.from_path}\n to ${toPath}`);
+    debug(`Copy course instance\n from ${this.from_path}\n to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     if (!idsEqual(this.course.id, this.from_course.id)) {
@@ -985,12 +983,11 @@ export class CourseInstanceCopyEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `transfer public course instance ${this.course_instance.short_name} to ${short_name} from course ${this.from_course.sharing_name}`,
+      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
     };
   }
 }
 
-// TEST, move somewhere else
 async function updateInfoAssessmentFiles(
   courseInstancePath: string,
   fromCourseSharingName: string,
@@ -1001,14 +998,10 @@ async function updateInfoAssessmentFiles(
   for (const dir of assessmentDirs) {
     const assessmentPath = path.join(assessmentsPath, dir);
 
-    // Check if the item is a directory
     const stat = await fs.stat(assessmentPath);
     if (stat.isDirectory()) {
       const infoAssessmentPath = path.join(assessmentPath, 'infoAssessment.json');
-
-      // Check if the infoAssessment.json file exists
       if (await fs.pathExists(infoAssessmentPath)) {
-        // Read and process the infoAssessment.json file
         const infoJson = await fs.readJson(infoAssessmentPath);
 
         // We do not want to preserve sharing settings when copying an assessment to another course
@@ -1017,11 +1010,11 @@ async function updateInfoAssessmentFiles(
         // Rewrite the question IDs to include the course sharing name
         for (const zone of infoJson.zones) {
           for (const question of zone.questions) {
-            if (question.id) {
+            if (question.id && question.id[0] !== '@') {
               question.id = `@${fromCourseSharingName}/${question.id}`;
             } else if (question.alternatives) {
               for (const alternative of question.alternatives) {
-                if (alternative.id) {
+                if (alternative.id && alternative.id[0] !== '@') {
                   alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
                 }
               }
@@ -1029,7 +1022,6 @@ async function updateInfoAssessmentFiles(
           }
         }
 
-        // Write back the modified infoJson
         await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 4 });
       }
     }
