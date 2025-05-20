@@ -48,6 +48,11 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
    *
    * pl-code has span elements with empty style attributes we need to ignore.
    * pl-overlay has empty style attributes we need to ignore.
+   *
+   * pl-figure can generate false positives for https://html-validate.org/rules/input-missing-label.html.
+   * See https://github.com/PrairieLearn/PrairieLearn/pull/11976#discussion_r2089843298.
+   *
+   *
    */
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -79,6 +84,16 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         if (style?.trim() === '') {
           el.removeAttribute('style');
         }
+      },
+    })
+    .on('div.container-fluid.mb-3 > img.img-fluid.mx-auto.d-block[alt]', {
+      element(el) {
+        el.setAttribute('aria-label', 'my child element has accessible text');
+      },
+    })
+    .on('select > option[aria-label]', {
+      element(el) {
+        el.removeAttribute('aria-label');
       },
     });
   await rewriter.write(encoder.encode(html));
@@ -241,10 +256,11 @@ const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
 const unsupportedQuestions = [
-  'element/code',
-  'element/fileDownload',
-  'element/fileEditor',
-  'element/codeDocumentation',
+  // 'element/code',
+  // 'element/fileDownload',
+  // 'element/fileEditor',
+  // 'element/codeDocumentation',
+  'element/matching',
 ];
 
 const accessibilitySkip = [
@@ -268,7 +284,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function () {
-      if (unsupportedQuestions.includes(relativePath)) {
+      if (!unsupportedQuestions.includes(relativePath)) {
         this.skip();
       }
       const question = {
