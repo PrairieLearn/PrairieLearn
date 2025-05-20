@@ -2,6 +2,9 @@ import { assert } from 'chai';
 import fetch from 'node-fetch';
 
 import { config } from '../lib/config.js';
+import type { Assessment, CourseInstance } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperExam from './helperExam.js';
 import * as helperServer from './helperServer.js';
@@ -20,6 +23,16 @@ describe('Client files endpoints', () => {
   before(helperServer.before());
   after(helperServer.after);
 
+  let courseInstance: CourseInstance;
+  let assessment: Assessment;
+  before(async () => {
+    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw1-automaticTestSuite',
+    });
+  });
+
   // TODO: refactor this to be a function that we can call in a `before` hook.
   // Right now, this actually creates a bunch of `describe()` blocks and tests.
   helperExam.startExam({});
@@ -27,14 +40,14 @@ describe('Client files endpoints', () => {
   describe('clientFilesCourse', () => {
     it('works for instructor course instance URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
 
     it('works for instructor assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
@@ -48,14 +61,14 @@ describe('Client files endpoints', () => {
 
     it('works for instructor course instance question URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/question/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/question/1/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
 
     it('works for instructor instance question URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/instance_question/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/instance_question/1/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
@@ -76,14 +89,14 @@ describe('Client files endpoints', () => {
 
     it('works for assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/assessment/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
 
     it('works for instance question URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instance_question/1/clientFilesCourse/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instance_question/1/clientFilesCourse/data.txt`,
         'This data is specific to the course.',
       );
     });
@@ -92,28 +105,28 @@ describe('Client files endpoints', () => {
   describe('clientFilesCourseInstance', () => {
     it('works for instructor course instance URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/clientFilesCourseInstance/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/clientFilesCourseInstance/data.txt`,
         'This data is specific to the course instance.',
       );
     });
 
     it('works for instructor assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/instructor/assessment/1/clientFilesCourseInstance/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/clientFilesCourseInstance/data.txt`,
         'This data is specific to the course instance.',
       );
     });
 
     it('works for course instance URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/clientFilesCourseInstance/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/clientFilesCourseInstance/data.txt`,
         'This data is specific to the course instance.',
       );
     });
 
     it('works for assessment URL', async () => {
       await testFile(
-        `${siteUrl}/pl/course_instance/1/assessment/1/clientFilesCourseInstance/data.txt`,
+        `${siteUrl}/pl/course_instance/${courseInstance.id}/assessment/${assessment.id}/clientFilesCourseInstance/data.txt`,
         'This data is specific to the course instance.',
       );
     });

@@ -208,7 +208,7 @@ export function IssuePanel({
                 </tr>
                 <tr>
                   <th>Student message:</th>
-                  <td>${issue.student_message}</td>
+                  <td style="white-space: pre-wrap;">${issue.student_message}</td>
                 </tr>
                 <tr>
                   <th>Instructor message:</th>
@@ -219,7 +219,7 @@ export function IssuePanel({
               ? html`
                   <tr>
                     <th>Student message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                   <tr>
                     <th>Instructor message:</th>
@@ -229,7 +229,7 @@ export function IssuePanel({
               : html`
                   <tr>
                     <th>Message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                 `}
           <tr>

@@ -30,6 +30,20 @@ export async function selectCourseInstanceById(
   );
 }
 
+export async function selectCourseInstanceByShortName({
+  course_id,
+  short_name,
+}: {
+  course_id: string;
+  short_name: string;
+}): Promise<CourseInstance> {
+  return queryRow(
+    sql.select_course_instance_by_short_name,
+    { course_id, short_name },
+    CourseInstanceSchema,
+  );
+}
+
 /**
  * Returns all course instances to which the given user has staff access.
  *
