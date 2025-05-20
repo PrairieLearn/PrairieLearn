@@ -116,12 +116,3 @@ FROM
   course_instances AS ci
 WHERE
   ci.id = $course_instance_id;
-
--- BLOCK select_course_instance_by_short_name
-SELECT
-  ci.*
-FROM
-  course_instances AS ci
-WHERE
-  ci.course_id = $course_id
-  AND ci.short_name = $short_name;

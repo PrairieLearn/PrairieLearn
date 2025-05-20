@@ -907,18 +907,24 @@ export class AssessmentAddEditor extends Editor {
 
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
+  private from_course: Course;
+  private from_path: string;
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
-    const { course_instance } = params.locals;
+  constructor(
+    params: BaseEditorOptions & {
+      from_course: Course;
+      from_path: string;
+      course_instance: any;
+    },
+  ) {
+    const description = `Copy course instance from course ${params.from_course.sharing_name}`;
+    super({ ...params, description });
 
-    super({
-      ...params,
-      description: `Copy course instance ${course_instance.short_name}`,
-    });
-
-    this.course_instance = course_instance;
+    this.course_instance = params.course_instance;
+    this.from_course = params.from_course;
+    this.from_path = params.from_path;
 
     this.uuid = uuidv4();
   }
@@ -951,92 +957,16 @@ export class CourseInstanceCopyEditor extends Editor {
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
-    const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
-    const toPath = courseInstancePath;
-
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-
-    debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
-
-    debug('Write infoCourseInstance.json with new longName and uuid');
-    infoJson.longName = names.longName;
-    infoJson.uuid = this.uuid;
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
-
-    return {
-      pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
-    };
-  }
-}
-
-export class CourseInstanceTransferEditor extends Editor {
-  private course_instance: CourseInstance;
-  private from_course: Course;
-  private from_path: string;
-
-  public readonly uuid: string;
-
-  constructor(
-    params: BaseEditorOptions & {
-      from_course: Course;
-      from_path: string;
-      course_instance: any;
-    },
-  ) {
-    const description = `Transfer public course instance from course ${params.from_course.sharing_name}`;
-    super({ ...params, description });
-
-    this.course_instance = params.course_instance;
-    this.from_course = params.from_course;
-    this.from_path = params.from_path;
-
-    this.uuid = uuidv4();
-  }
-
-  async write() {
-    assert(this.course_instance.short_name, 'course_instance.short_name is required');
-
-    debug('CourseInstanceTransferEditor: write()');
-    const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
-
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
-
-    debug('Generate short_name and long_name');
-    const names = this.getNamesForCopy(
-      this.course_instance.short_name,
-      oldNamesShort,
-      this.course_instance.long_name,
-      oldNamesLong,
-    );
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
-
     const toPath = courseInstancePath;
 
     debug(`Transfer course instance\n from ${this.from_path}\n to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
-    // Update the infoAssessment.json files to include the course sharing name for each question
-    if (!this.from_course.sharing_name) {
-      throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
-    }
-
     if (!idsEqual(this.course.id, this.from_course.id)) {
+      if (!this.from_course.sharing_name) {
+        throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
+      }
+      // Update the infoAssessment.json files to include the course sharing name for each question
       await updateInfoAssessmentFiles(courseInstancePath, this.from_course.sharing_name);
     }
 

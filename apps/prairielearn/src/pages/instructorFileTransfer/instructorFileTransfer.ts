@@ -10,7 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import {
-  CourseInstanceTransferEditor,
+  CourseInstanceCopyEditor,
   type Editor,
   QuestionTransferEditor,
 } from '../../lib/editors.js';
@@ -96,12 +96,12 @@ router.get(
       const instance_dir_idx = instance_exploded.findIndex((x) => x === 'courseInstances');
       const shortName = instance_exploded.slice(instance_dir_idx + 1).join(path.sep);
 
-      const fromCourseInstance = await selectCourseInstanceByShortName(
-        shortName,
-        file_transfer.from_course_id,
-      );
+      const fromCourseInstance = await selectCourseInstanceByShortName({
+        course_id: file_transfer.from_course_id,
+        short_name: shortName,
+      });
 
-      const editor = new CourseInstanceTransferEditor({
+      const editor = new CourseInstanceCopyEditor({
         locals: res.locals as any,
         from_course: course,
         from_path: path.join(config.filesRoot, file_transfer.storage_filename),
