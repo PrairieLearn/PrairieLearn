@@ -8,6 +8,7 @@ import fs from 'fs-extra';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
@@ -257,24 +258,23 @@ const accessibilitySkip = [
   'element/dataframe',
 ];
 
-describe('Internally Graded Question Lifecycle Tests', function () {
-  this.timeout(60000);
+describe('Internally Graded Question Lifecycle Tests', { timeout: 60_000 }, function () {
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
 
-  before('set up', async function () {
+  beforeAll(async function () {
     config.features['process-questions-in-server'] = false;
     await helperServer.before()();
   });
 
-  after('shut down', async function () {
-    config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+  afterAll(async function () {
     await helperServer.after();
+    config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
-    it(`should succeed for ${relativePath}`, async function () {
+    it(`should succeed for ${relativePath}`, async function (context) {
       if (unsupportedQuestions.includes(relativePath)) {
-        this.skip();
+        context.skip();
       }
       const question = {
         options: info.options ?? {}, // Use options from info.json if available
