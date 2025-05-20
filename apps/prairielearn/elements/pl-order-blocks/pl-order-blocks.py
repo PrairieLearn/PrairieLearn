@@ -296,7 +296,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         tag, depends = get_graph_info(html_tags)
-        if SPEC_CHAR.intersection(frozenset(tag)):
+        if SPEC_CHAR.intersection(tag):
             raise ValueError(
                 f'<pl-answer tag="{tag}"> tag attribute may not contain special characters: "{SPEC_CHAR_STR}"'
             )
