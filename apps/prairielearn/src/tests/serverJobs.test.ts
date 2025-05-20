@@ -1,5 +1,5 @@
 import stripAnsi from 'strip-ansi';
-import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { logger } from '@prairielearn/logger';
 
@@ -58,13 +58,12 @@ describe('server-jobs', () => {
         description: 'test job sequence',
       });
 
-      await assert.isFulfilled(
+      await expect(
         serverJob.execute(async (job) => {
           job.info('testing info');
           throw new Error('failing job');
         }),
-        'failing job',
-      );
+      ).resolves.not.toThrow();
 
       const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
@@ -82,12 +81,11 @@ describe('server-jobs', () => {
         description: 'test job sequence',
       });
 
-      await assert.isFulfilled(
+      await expect(
         serverJob.execute(async (job) => {
           job.fail('failing job');
         }),
-        'failing job',
-      );
+      ).resolves.not.toThrow();
 
       const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
@@ -110,12 +108,12 @@ describe('server-jobs', () => {
         description: 'test job sequence',
       });
 
-      await assert.isRejected(
+      await expect(
         serverJob.executeUnsafe(async (job) => {
           job.info('testing info');
           throw new Error('failing job');
         }),
-      );
+      ).rejects.toThrow();
 
       await helperServer.waitForJobSequence(serverJob.jobSequenceId);
 

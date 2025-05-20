@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -293,7 +293,7 @@ describe('sproc users_select_or_insert tests', () => {
       uin: '666666666',
     };
 
-    await assert.isRejected(usersSelectOrInsert(user, 'SAML', '200'), /does not match policy/);
+    await expect(usersSelectOrInsert(user, 'SAML', '200')).rejects.toThrow(/does not match policy/);
   });
 
   // This test ensures that users in separate institutions can have the same UIN.
