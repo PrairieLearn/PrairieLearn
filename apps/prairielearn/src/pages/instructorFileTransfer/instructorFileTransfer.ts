@@ -15,6 +15,7 @@ import {
   QuestionTransferEditor,
 } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 
@@ -89,22 +90,39 @@ router.get(
       );
       res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
     } else if (file_transfer.transfer_type === 'CopyCourseInstance') {
-      console.log('TODO');
-      //   const courseResult = await selectCourseById(file_transfer.from_course_id);
-      //   const courseInstanceResult = await selectCourseInstanceById(
-      //     file_transfer.from_course_instance_id,
-      //   );
+      const course = await selectCourseById(file_transfer.from_course_id);
 
-      //   file_transfer.from_course = courseResult;
-      //   file_transfer.from_course_instance = courseInstanceResult;
+      const instance_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
+      const instance_dir_idx = instance_exploded.findIndex((x) => x === 'courseInstances');
+      const shortName = instance_exploded.slice(instance_dir_idx + 1).join(path.sep);
 
-      //   const editor = new CourseInstanceTransferEditor({
-      //     locals: res.locals as any,
-      //     from_course: file_transfer.from_course,
-      //     from_path: file_transfer.from_filename,
-      //     to_course_short_name: res.locals.course.short_name,
-      //     course_instance: file_transfer.from_course_instance,
-      //   });
+      const fromCourseInstance = await selectCourseInstanceByShortName(
+        shortName,
+        file_transfer.from_course_id,
+      );
+
+      const editor = new CourseInstanceTransferEditor({
+        locals: res.locals as any,
+        from_course: course,
+        from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+        course_instance: fromCourseInstance,
+      });
+
+      await doTransfer(res, editor, file_transfer.id);
+
+      const result = await sqldb.queryOneRowAsync(sql.select_course_instance_id_from_uuid, {
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
+
+      flash(
+        'success',
+        'Course Instance copied successfully. You are now viewing your copy of the Course Instance.',
+      );
+      // Redirect to the copied course instance
+      res.redirect(
+        `${res.locals.plainUrlPrefix}/course_instance/${result.rows[0].course_instance_id}/instructor/instance_admin/assessments`,
+      );
     }
   }),
 );

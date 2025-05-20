@@ -117,3 +117,14 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
   );
   return isPublic;
 }
+
+export async function selectCourseInstanceByShortName(
+  short_name: string,
+  course_id: string,
+): Promise<CourseInstance | null> {
+  return queryOptionalRow(
+    sql.select_course_instance_by_short_name,
+    { short_name, course_id },
+    CourseInstanceSchema,
+  );
+}

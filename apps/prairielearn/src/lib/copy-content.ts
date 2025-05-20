@@ -159,7 +159,5 @@ export async function copyCourseInstanceBetweenCourses(
     fromFilename,
   });
 
-  res.redirect(
-    `${res.locals.plainUrlPrefix}/course/${toCourseId}/course_instance/file_transfer/${fileTransferId}`,
-  );
+  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
 }

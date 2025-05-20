@@ -985,17 +985,15 @@ export class CourseInstanceTransferEditor extends Editor {
     params: BaseEditorOptions & {
       from_course: Course;
       from_path: string;
-      to_course_short_name: string;
       course_instance: any;
     },
   ) {
-    const description = `Transfer public course instance ${params.to_course_short_name} from course ${params.from_course.sharing_name}`;
+    const description = `Transfer public course instance from course ${params.from_course.sharing_name}`;
     super({ ...params, description });
 
     this.course_instance = params.course_instance; // TEST, not allowed?
     this.from_course = params.from_course;
     this.from_path = params.from_path;
-    this.to_course_short_name = params.to_course_short_name;
 
     this.uuid = uuidv4();
   }
@@ -1047,7 +1045,6 @@ export class CourseInstanceTransferEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     // We do not want to preserve sharing settings when copying a course instance to another course
-    console.log('before deleting share source public', infoJson);
     delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
       spaces: 4,

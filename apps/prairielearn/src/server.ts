@@ -1515,14 +1515,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileTransfer/instructorFileTransfer.js')).default,
   ]);
 
-  app.use('/pl/course/:course_id(\\d+)/course_instance/file_transfer', [
-    (
-      await import(
-        './pages/instructorFileTransferCourseInstance/instructorFileTransferCourseInstance.js'
-      )
-    ).default,
-  ]);
-
   app.use(
     '/pl/course/:course_id(\\d+)/edit_error',
     (await import('./pages/editError/editError.js')).default,
