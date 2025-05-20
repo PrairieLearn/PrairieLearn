@@ -1,4 +1,4 @@
-/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify, bootstrap */
+/* global Quill, he, MathJax, QuillMarkdown, DOMPurify, bootstrap */
 
 (() => {
   const rtePurify = DOMPurify();
@@ -67,7 +67,7 @@
 
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
-  window.PLRTE = function (uuid) {
+  window.PLRTE = async function (uuid) {
     const baseElement = document.getElementById(`rte-${uuid}`);
     const options = JSON.parse(baseElement.dataset.options);
 
@@ -112,18 +112,14 @@
 
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
-    let renderer = null;
-    if (options.format === 'markdown') {
-      renderer = new showdown.Converter({
-        literalMidWordUnderscores: true,
-        literalMidWordAsterisks: true,
-      });
-    }
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     let contents = atob(inputElement.val());
-    if (contents && renderer) contents = renderer.makeHtml(contents);
+    if (contents && options.format === 'markdown') {
+      const marked = (await import('marked')).marked;
+      contents = marked.parse(contents);
+    }
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
@@ -131,7 +127,7 @@
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
-    quill.on('text-change', function () {
+    const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
       // this is treated as blank by the element's parse code and tagged as
@@ -167,7 +163,10 @@
       if (counter) {
         counter.update();
       }
-    });
+    };
+
+    quill.on('text-change', updateHiddenInput);
+    updateHiddenInput();
   };
 
   // Override default implementation of 'formula'
