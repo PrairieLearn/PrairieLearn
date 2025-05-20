@@ -331,7 +331,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
 
       // Validate accessibility
       if (!accessibilitySkip.includes(relativePath)) {
-        validateAxe(questionHtml);
+        await validateAxe(questionHtml);
       }
 
       if (!questionModule.test) {
