@@ -603,7 +603,6 @@ export async function fetchRetry(
     }
     return response;
   } catch (err) {
-    console.error(err);
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
     if (err.status === 403) {

@@ -83,7 +83,11 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      res.send(LineitemsInputs(await getLineitems(instance)));
+      try {
+        res.send(LineitemsInputs(await getLineitems(instance)));
+      } catch (error) {
+        res.end(`<div class="alert alert-warning">Error loading LMS data: ${error.info}</div>`);
+      }
       return;
     }
 
