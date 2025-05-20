@@ -146,6 +146,7 @@ const validateHtml = async (html: string) => {
             'width',
             'height',
             'margin',
+            'display', // https://github.com/PrairieLearn/PrairieLearn/pull/11939#discussion_r2080325943
             // variables
             '--pl-code-background-color',
             '--pl-code-line-number-color',
@@ -249,12 +250,7 @@ const course = {
 const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
-const unsupportedQuestions = [
-  'element/code',
-  'element/fileDownload',
-  'element/fileEditor',
-  'element/codeDocumentation',
-];
+const unsupportedQuestions = ['element/fileEditor', 'element/codeDocumentation'];
 
 const accessibilitySkip = [
   // Extremely large question
@@ -277,7 +273,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function () {
-      if (!unsupportedQuestions.includes(relativePath)) {
+      if (unsupportedQuestions.includes(relativePath)) {
         this.skip();
       }
       const question = {
