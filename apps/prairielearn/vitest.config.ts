@@ -67,7 +67,7 @@ export default defineConfig({
     },
     coverage: {
       all: true,
-      include: [join(import.meta.dirname, 'src/**')],
+      include: ['src/**'],
       reporter: ['html', 'text-summary', 'cobertura'],
     },
   },
