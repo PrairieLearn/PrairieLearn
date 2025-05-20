@@ -1,4 +1,5 @@
 import { join } from 'path';
+
 import { configDefaults, defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -42,8 +43,6 @@ class CustomSequencer extends BaseSequencer {
 const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
-
-const CURRENT_DIR = import.meta.dirname;
 
 export default defineConfig({
   test: {
