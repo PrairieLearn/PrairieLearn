@@ -305,6 +305,143 @@ export function InstructorQuestionSettings({
                 have been exhausted.
               </div>
             </div>
+            <div class="d-flex align-items-center mb-3">
+              <h2 class="h4 mb-0 me-2">Workspace</h2>
+              <button
+                class="btn btn-sm btn-light"
+                type="button"
+                id="show-workspace-options-button"
+                ${resLocals.question.workspace_image ? 'hidden' : ''}
+              >
+                Configure workspace
+              </button>
+            </div>
+            <div id="workspace-options" ${resLocals.question.workspace_image ? '' : 'hidden'}>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_image">Image</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="workspace_image"
+                  name="workspace_image"
+                  value="${resLocals.question.workspace_image}"
+                  ${canEdit ? '' : 'disabled'}
+                />
+                <small class="form-text text-muted">
+                  The Docker image that will be used to serve this workspace. Only images from the
+                  Dockerhub registry are supported.
+                </small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_port">Port</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="workspace_port"
+                  name="workspace_port"
+                  value="${resLocals.question.workspace_port}"
+                  ${canEdit ? '' : 'disabled'}
+                />
+                <small class="form-text text-muted">
+                  The port number used in the Docker image.
+                </small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_home">Home</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="workspace_home"
+                  name="workspace_home"
+                  value="${resLocals.question.workspace_home}"
+                  ${canEdit ? '' : 'disabled'}
+                />
+                <small class="form-text text-muted">
+                  The home directory of the workspace container.
+                </small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_graded_files">Graded files</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="workspace_graded_files"
+                  name="workspace_graded_files"
+                  value="${resLocals.question.workspace_graded_files?.join(', ')}"
+                  ${canEdit ? '' : 'disabled'}
+                />
+                <small class="form-text text-muted">
+                  The list of files or directories that will be copied out of the workspace
+                  container when saving a submission. You may enter multiple files or directories,
+                  separated by commas.
+                </small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_args">Arguments</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  id="workspace_args"
+                  name="workspace_args"
+                  ${canEdit ? '' : 'disabled'}
+                  value="${resLocals.question.workspace_args}"
+                />
+                <small class="form-text text-muted">
+                  Command line arguments to pass to the Docker container. Multiple arguments should
+                  be separated by spaces and escaped as necessary using the same format as a typical
+                  shell.
+                </small>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="workspace_environment">Environment</label>
+                <textarea
+                  class="form-control"
+                  id="workspace_environment"
+                  name="workspace_environment"
+                  ${canEdit ? '' : 'disabled'}
+                >
+${Object.keys(resLocals.question.workspace_environment).length > 0 &&
+                  typeof resLocals.question.workspace_environment === 'object'
+                    ? JSON.stringify(resLocals.question.workspace_environment, null, 2)
+                    : '{}'}</textarea
+                >
+                <small class="form-text text-muted">
+                  Environment variables to set inside the workspace container. Variables must be
+                  specified as a JSON object (e.g. <code>{"key":"value"}</code>).
+                </small>
+              </div>
+              <div class="mb-3 form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="workspace_enable_networking"
+                  name="workspace_enable_networking"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.question.workspace_enable_networking ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="workspace_enable_networking">
+                  Enable networking
+                </label>
+                <div class="small text-muted">
+                  Whether the workspace should have network access. Access is disabled by default.
+                </div>
+              </div>
+              <div class="mb-3 form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="workspace_rewrite_url"
+                  name="workspace_rewrite_url"
+                  ${canEdit ? '' : 'disabled'}
+                  ${resLocals.question.workspace_url_rewrite ? 'checked' : ''}
+                />
+                <label class="form-check-label" for="workspace_rewrite_url">Rewrite URL</label>
+                <div class="small text-muted">
+                  If enabled, the URL will be rewritten such that the workspace container will see
+                  all requests as originating from "/".
+                </div>
+              </div>
+            </div>
             ${canEdit
               ? html`
                   <button
@@ -364,9 +501,8 @@ export function InstructorQuestionSettings({
                     data-testid="edit-question-configuration-link"
                     href="${resLocals.urlPrefix}/question/${resLocals.question
                       .id}/file_edit/${encodePath(infoPath)}"
+                    >Edit question configuration</a
                   >
-                    Edit question configuration
-                  </a>
                   in <code>info.json</code>
                 `
               : html`

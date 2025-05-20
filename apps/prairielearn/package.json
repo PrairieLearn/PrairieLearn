@@ -137,7 +137,7 @@
     "mersenne": "0.0.4",
     "mime": "^4.0.7",
     "morphdom": "^2.7.5",
-    "multer": "^1.4.5-lts.2",
+    "multer": "^2.0.0",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",

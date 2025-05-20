@@ -422,6 +422,11 @@ describe('accessibility', () => {
       { assessment_id: routeParams.assessment_id },
     );
 
+    await sqldb.queryOneRowAsync(
+      'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
+      { course_instance_id: routeParams.course_instance_id },
+    );
+
     const courseId = await sqldb.queryOneRowAsync(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },

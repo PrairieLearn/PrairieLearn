@@ -7,6 +7,8 @@ import fetch from 'node-fetch';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -380,10 +382,16 @@ describe('Manual Grading', function () {
   after('shut down testing server', helperServer.after);
 
   before('build assessment manual grading page URL', async () => {
-    const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
-    assert.lengthOf(assessments, 1);
-    manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/instances`;
+    const courseInstance = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
+    });
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: 'hw9-internalExternalManual',
+    });
+    manualGradingAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading`;
+    instancesAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/instances`;
   });
 
   before('add staff users', async () => {
@@ -553,7 +561,6 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
         assert.equal(nextUngraded.status, 302);
-        console.log(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         setUser(mockStaff[0]);
         nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
