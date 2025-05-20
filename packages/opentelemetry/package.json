@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "c8 vitest run src/**/*.test.ts"
+    "test": "vitest run src/**/*.test.ts"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.13.3",
@@ -45,16 +45,5 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vitest": "^3.1.4"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
   }
 }

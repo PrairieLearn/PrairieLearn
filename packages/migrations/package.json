@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc && tscp",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
-    "test": "c8 vitest run src/**/*.test.ts"
+    "test": "vitest run src/**/*.test.ts"
   },
   "dependencies": {
     "@prairielearn/error": "workspace:^",
@@ -32,16 +32,5 @@
     "typescript": "^5.8.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^3.1.4"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
   }
 }

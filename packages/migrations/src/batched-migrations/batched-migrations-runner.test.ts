@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import * as namedLocks from '@prairielearn/named-locks';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
