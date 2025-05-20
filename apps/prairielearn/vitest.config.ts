@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { configDefaults, defineConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -42,18 +43,22 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
+const CURRENT_DIR = import.meta.dirname;
+
 export default defineConfig({
   test: {
-    include: isRunningOnDist ? ['dist/**/*.test.js'] : [...configDefaults.include],
+    include: isRunningOnDist
+      ? [join(import.meta.dirname, 'dist/**/*.test.js')]
+      : [...configDefaults.include],
     exclude: isRunningOnDist
       ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
       : configDefaults.exclude,
     globalSetup: isRunningOnDist
-      ? './dist/tests/vitest.globalSetup.js'
-      : './src/tests/vitest.globalSetup.ts',
+      ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
+      : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
     setupFiles: isRunningOnDist
-      ? ['./dist/tests/vitest.testSetup.js']
-      : ['./src/tests/vitest.testSetup.ts'],
+      ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
+      : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
     passWithNoTests: true,
     hookTimeout: 20_000,
     testTimeout: 10_000,
@@ -63,7 +68,7 @@ export default defineConfig({
     },
     coverage: {
       all: true,
-      include: ['src/**'],
+      include: [join(import.meta.dirname, 'src/**')],
       reporter: ['html', 'text-summary', 'cobertura'],
     },
   },
