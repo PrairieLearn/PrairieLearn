@@ -33,13 +33,9 @@ config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 
 
 interface InitOptions {
   courseDir?: string | string[];
-  withCodeCaller?: boolean;
 }
 
-export function before({
-  courseDir = TEST_COURSE_PATH,
-  withCodeCaller = true,
-}: InitOptions = {}): () => Promise<void> {
+export function before({ courseDir = TEST_COURSE_PATH }: InitOptions = {}): () => Promise<void> {
   return async () => {
     debug('before()');
     const workersWereLazy = config.workersAreLazy;
@@ -78,10 +74,8 @@ export function before({
       load.initEstimator('authed_request', 1);
       load.initEstimator('python', 1);
 
-      if (withCodeCaller) {
-        debug('before(): initialize code callers');
-        await codeCaller.init();
-      }
+      debug('before(): initialize code callers');
+      await codeCaller.init();
       await assets.init();
 
       debug('before(): start server');
