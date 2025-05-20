@@ -261,15 +261,15 @@ describe('Internally Graded Question Lifecycle Tests', function () {
   this.timeout(60000);
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
 
-  before('set up testing server', helperServer.before());
-  before('enable process-questions-in-server', () => {
+  before('set up', async function () {
     config.features['process-questions-in-server'] = false;
+    await helperServer.before()();
   });
 
-  after('restore process-questions-in-server', () => {
+  after('shut down', async function () {
     config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+    await helperServer.after();
   });
-  after('shut down testing server', helperServer.after);
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function () {
