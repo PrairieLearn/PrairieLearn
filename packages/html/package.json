@@ -11,7 +11,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage src/**/*.test.ts"
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
