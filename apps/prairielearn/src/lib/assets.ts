@@ -146,6 +146,9 @@ export async function init() {
   // Specifically for tests, we avoid re-initializing things. The hashes typically
   // won't change during tests, and if they do, we won't actually care about them
   // since we won't try to load the assets from the tests.
+  //
+  // In production use cases, this should only be called once per process, so this
+  // guard won't have any effect.
   if (initialized) return;
 
   await Promise.all([computeElementsHash(), computePublicHash()]);
