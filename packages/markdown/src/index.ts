@@ -98,7 +98,7 @@ export function createProcessor({
 }
 
 const processorCache = new Map<string, Processor>();
-function getProcessor(options: { inline?: boolean; allowHtml?: boolean } = {}): Processor {
+function getProcessor(options: { inline: boolean; allowHtml: boolean }): Processor {
   const key = `${options.inline}:${options.allowHtml}`;
   let processor = processorCache.get(key);
   if (!processor) {
