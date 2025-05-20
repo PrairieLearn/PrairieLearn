@@ -88,7 +88,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
   private async loadMigrationImplementation(migrationFile: MigrationFile) {
     // We use dynamic imports to handle both CJS and ESM modules.
     const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
-    const migrationModule = await import(migrationModulePath);
+    const migrationModule = await import(/* @vite-ignore */ migrationModulePath);
 
     const migrationImplementation = migrationModule.default as BatchedMigrationImplementation;
     validateBatchedMigrationImplementation(migrationImplementation);
@@ -164,6 +164,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
   start(options: BatchedMigrationStartOptions = {}) {
     if (this.running) {
+      // For Vite HMR mode
+      if ((import.meta as any).env?.DEV) return;
       throw new Error('BatchedMigrationsRunner is already running');
     }
 
@@ -293,7 +295,11 @@ function assertRunner(
 }
 
 export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
-  if (runner) throw new Error('Batched migrations already initialized');
+  if (runner) {
+    // For Vite HMR mode
+    if ((import.meta as any).env?.DEV) return null;
+    throw new Error('Batched migrations already initialized');
+  }
   runner = new BatchedMigrationsRunner(options);
   return runner;
 }
