@@ -5,10 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Current Test File with Vitest",
-      "skipFiles": [
-        "<node_internals>/**",
-        "**/node_modules/**"
-      ],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
       "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
       "args": [
         "run",
@@ -16,7 +13,7 @@
         "${workspaceRoot}/apps/prairielearn/vitest.config.ts",
         "--test-timeout=0",
         "--no-file-parallelism",
-        "${relativeFile}",
+        "${relativeFile}"
       ],
       "smartStep": true,
       "console": "integratedTerminal"
