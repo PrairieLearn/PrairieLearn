@@ -25,7 +25,7 @@ const qidsTestCourse = [
 describe('Auto-test questions in testCourse', function () {
   this.timeout(60000);
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));

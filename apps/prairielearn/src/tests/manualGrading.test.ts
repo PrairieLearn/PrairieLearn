@@ -378,7 +378,7 @@ function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
 describe('Manual Grading', function () {
   this.timeout(80000);
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   before('build assessment manual grading page URL', async () => {

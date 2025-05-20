@@ -48,7 +48,7 @@ const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 describe('Shared Question Preview', function () {
   this.timeout(60000);
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   before('ensure course has question sharing enabled', async () => {

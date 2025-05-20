@@ -19,7 +19,7 @@ describe('Assessment that forces students to complete questions in-order', funct
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
   before('set up testing server', async function () {
-    await helperServer.before({ withCodeCaller: true }).call(this);
+    await helperServer.before().call(this);
     const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

@@ -19,7 +19,7 @@ const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 describe('Issues', function () {
   this.timeout(15000);
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   doTest(courseInstanceIssuesUrl, 'course');

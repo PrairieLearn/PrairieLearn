@@ -114,7 +114,7 @@ async function syncSharingCourse(course_id) {
 
 describe('Question Sharing', function () {
   this.timeout(80000);
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   before('ensure question sharing is globally enabled', async () => {

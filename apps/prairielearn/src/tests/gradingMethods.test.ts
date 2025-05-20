@@ -96,7 +96,7 @@ describe('Grading method(s)', function () {
   let questionsPage;
   let $questionsPage;
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   after('reset default user', () => setUser(defaultUser));

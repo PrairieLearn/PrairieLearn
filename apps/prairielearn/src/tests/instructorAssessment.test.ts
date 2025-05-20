@@ -13,7 +13,7 @@ const assessmentSetScorePerc2 = 83;
 describe('Instructor assessment editing', function () {
   this.timeout(20000);
 
-  before('set up testing server', helperServer.before({ withCodeCaller: true }));
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   let page, elemList;
