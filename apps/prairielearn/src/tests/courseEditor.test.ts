@@ -304,7 +304,7 @@ describe('test course editor', function () {
       await createCourseFiles();
     });
 
-    before('set up testing server', helperServer.before({ courseDir }));
+    before('set up testing server', helperServer.before(courseDir));
 
     before('update course repository in database', async () => {
       await sqldb.queryAsync(sql.update_course_repository, {

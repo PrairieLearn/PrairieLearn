@@ -31,11 +31,7 @@ config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
-interface InitOptions {
-  courseDir?: string | string[];
-}
-
-export function before({ courseDir = TEST_COURSE_PATH }: InitOptions = {}): () => Promise<void> {
+export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
     debug('before()');
     const workersWereLazy = config.workersAreLazy;

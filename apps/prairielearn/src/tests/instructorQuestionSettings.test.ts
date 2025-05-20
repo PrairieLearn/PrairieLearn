@@ -51,7 +51,7 @@ describe('Editing question settings', () => {
     await execa('git', ['push', 'origin', 'master'], execOptions);
     await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
 
-    await helperServer.before({ courseDir: courseLiveDir })();
+    await helperServer.before(courseLiveDir)();
 
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
   });

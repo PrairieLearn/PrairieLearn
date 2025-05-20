@@ -375,7 +375,7 @@ describe('accessibility', () => {
     config.cronActive = false;
     // We use the test course since editing functionality is disabled in the
     // example course.
-    await helperServer.before({ courseDir: TEST_COURSE_PATH }).call(this);
+    await helperServer.before(TEST_COURSE_PATH).call(this);
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
