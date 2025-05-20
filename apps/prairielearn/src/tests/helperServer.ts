@@ -1,8 +1,8 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { assert } from 'chai';
 import debugfn from 'debug';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 
 import { cache } from '@prairielearn/cache';
 import * as opentelemetry from '@prairielearn/opentelemetry';
