@@ -40,7 +40,7 @@ describe('Test workspace authorization access', function () {
   after('enable workspace containers', async function () {
     config.workspaceEnable = true;
   });
-  before('set up testing server', helperServer.before());
+  before('set up testing server', helperServer.before({ withCodeCaller: true }));
   after('shut down testing server', helperServer.after);
   before('add students to test course', async function () {
     await sqldb.queryAsync(sql.create_user, studentOne);

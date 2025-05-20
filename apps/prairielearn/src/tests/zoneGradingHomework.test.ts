@@ -138,7 +138,7 @@ const zoneGradingTests: TestZone[][] = [
 describe('Zone grading homework assessment', function () {
   this.timeout(60000);
 
-  before('set up testing server', helperServer.before());
+  before('set up testing server', helperServer.before({ withCodeCaller: true }));
   after('shut down testing server', helperServer.after);
 
   function startAssessment() {
@@ -268,7 +268,7 @@ describe('Zone grading homework assessment', function () {
         });
         it('should start up', async function () {
           // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before({ withCodeCaller: true }).call(this);
         });
       });
 

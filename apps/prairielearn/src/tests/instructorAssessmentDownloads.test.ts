@@ -14,7 +14,7 @@ const assessmentPoints = 5;
 describe('Instructor Assessment Downloads', function () {
   this.timeout(60000);
 
-  before('set up testing server', helperServer.before());
+  before('set up testing server', helperServer.before({ withCodeCaller: true }));
   after('shut down testing server', helperServer.after);
 
   let elemList, page;

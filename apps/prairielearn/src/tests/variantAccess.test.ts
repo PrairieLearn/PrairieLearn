@@ -159,7 +159,7 @@ async function assertVariantAccess({
 }
 
 describe('Variant access', () => {
-  before(helperServer.before());
+  before(helperServer.before({ withCodeCaller: true }));
   after(helperServer.after);
 
   let question: Question;

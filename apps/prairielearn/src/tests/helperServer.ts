@@ -38,7 +38,7 @@ interface InitOptions {
 
 export function before({
   courseDir = TEST_COURSE_PATH,
-  withCodeCaller = true,
+  withCodeCaller = false,
 }: InitOptions = {}): () => Promise<void> {
   return async () => {
     debug('before()');

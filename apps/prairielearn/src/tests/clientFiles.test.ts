@@ -19,7 +19,7 @@ async function testFile(urlPath: string, expectedContents: string) {
 }
 
 describe('Client files endpoints', () => {
-  before(helperServer.before());
+  before(helperServer.before({ withCodeCaller: true }));
   after(helperServer.after);
 
   let courseInstance: CourseInstance;

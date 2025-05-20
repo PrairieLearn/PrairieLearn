@@ -38,7 +38,7 @@ describe('Exam and homework assessment with active access restriction', function
     callback(null);
   });
   before('set up testing server', async function () {
-    await helperServer.before().call(this);
+    await helperServer.before({ withCodeCaller: true }).call(this);
     context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
     context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
