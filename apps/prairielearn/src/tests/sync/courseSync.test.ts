@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -11,10 +12,11 @@ const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';
 
 describe('Course syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('syncs for known features as object', async () => {
     const courseData = util.getCourseData();

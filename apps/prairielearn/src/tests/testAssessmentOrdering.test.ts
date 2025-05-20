@@ -1,6 +1,5 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,9 +16,7 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Course with assessments grouped by Set vs Module', function () {
-  this.timeout(60000);
-
+describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
   let courseInstanceId = null;
   let assessmentBadges;
@@ -108,20 +105,21 @@ describe('Course with assessments grouped by Set vs Module', function () {
     return badgeText;
   }
 
-  before('set up testing server', async function () {
+  beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
-    await helperServer.before(courseDir).call(this);
+    await helperServer.before(courseDir)();
     const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
     courseInstanceId = courseInstanceResult.rows[0].id;
   });
-  after('shut down testing server', helperServer.after);
 
-  step('should default to grouping by Set', async function () {
+  afterAll(helperServer.after);
+
+  test.sequential('should default to grouping by Set', async function () {
     const result = await sqldb.queryOneRowAsync(sql.get_test_course, []);
     assert.equal(result.rows[0].assessments_group_by, 'Set');
   });
 
-  step('should use correct order when grouping by Set', async function () {
+  test.sequential('should use correct order when grouping by Set', async function () {
     const response = await fetchAssessmentsPage();
     testHeadingOrder(response, ['Homeworks', 'Exams']);
 
@@ -129,7 +127,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
     assessmentBadges = extractAssessmentSetBadgeText(response);
   });
 
-  step('should use correct order when grouping by Module', async function () {
+  test.sequential('should use correct order when grouping by Module', async function () {
     // Update course to group by Module
     course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupAssessmentsBy = 'Module';
     await overwriteAndSyncCourseData(course, courseDir);

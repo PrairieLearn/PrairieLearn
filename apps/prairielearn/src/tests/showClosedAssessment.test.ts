@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -10,9 +10,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Exam assessment with showCloseAssessment access rule', function () {
-  this.timeout(60000);
-
+describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
@@ -27,27 +25,28 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
     cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
   };
 
-  before('set up testing server', async function () {
-    await helperServer.before().call(this);
+  beforeAll(async function () {
+    await helperServer.before()();
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
+
+  afterAll(helperServer.after);
 
   // we need to access the homepage to create the test_student user in the DB
-  step('visit home page', async () => {
+  test.sequential('visit home page', async () => {
     const response = await helperClient.fetchCheerio(context.baseUrl, {
       headers,
     });
     assert.isTrue(response.ok);
   });
 
-  step('enroll the test student user in the course', async () => {
+  test.sequential('enroll the test student user in the course', async () => {
     await sqldb.queryAsync(sql.enroll_student_in_course, []);
   });
 
-  step('visit start exam page', async () => {
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       headers,
     });
@@ -58,7 +57,7 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam', async () => {
+  test.sequential('start the exam', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -81,7 +80,7 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
     context.__csrf_token = response.$('span[id=test_csrf_token]').text();
   });
 
-  step('simulate a time limit expiration', async () => {
+  test.sequential('simulate a time limit expiration', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -104,19 +103,22 @@ describe('Exam assessment with showCloseAssessment access rule', function () {
     assert.match(msg.text(), /Assessment .* is no longer available/);
   });
 
-  step('check the assessment instance is closed', async () => {
+  test.sequential('check the assessment instance is closed', async () => {
     const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
     assert.equal(results.rowCount, 1);
     assert.equal(results.rows[0].open, false);
   });
 
-  step('check that accessing a question gives the "assessment closed" message', async () => {
-    const response = await helperClient.fetchCheerio(context.questionUrl, {
-      headers,
-    });
-    assert.equal(response.status, 403);
+  test.sequential(
+    'check that accessing a question gives the "assessment closed" message',
+    async () => {
+      const response = await helperClient.fetchCheerio(context.questionUrl, {
+        headers,
+      });
+      assert.equal(response.status, 403);
 
-    assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
-    assert.lengthOf(response.$('div.progress'), 1); // score should be shown
-  });
+      assert.lengthOf(response.$('[data-testid="assessment-closed-message"]'), 1);
+      assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    },
+  );
 });
