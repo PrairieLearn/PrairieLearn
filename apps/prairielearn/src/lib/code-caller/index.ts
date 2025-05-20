@@ -36,12 +36,10 @@ interface CodeCallerInitOptions {
    * If set to true, the code caller pool worker count will default to '0',
    * and workers will be created lazily.
    */
-  lazyWorkers?: boolean
+  lazyWorkers?: boolean;
 }
 
-export async function init({
-  lazyWorkers = false
-}: CodeCallerInitOptions = {}) {
+export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) {
   debug('init()');
 
   const { workersExecutionMode } = config;
