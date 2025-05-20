@@ -61,6 +61,7 @@ def get_select_options(
         return {
             "index": index,
             "value": opt,
+            "blank": index == -1,
             "selected": "selected" if index == selected_value else "",
         }
 
@@ -100,7 +101,6 @@ def categorize_matches(
 
     def make_option(name: str, html: str) -> dict[str, int | str]:
         nonlocal index
-
         option = {"index": index, "name": name, "html": html}
         index += 1
         return option
@@ -117,23 +117,16 @@ def categorize_matches(
             options[option_name] = option
 
         elif child.tag in ["pl-statement", "pl_statement"]:
-            pl.check_attribs(
-                child, required_attribs=["match"], optional_attribs=["aria-label"]
-            )
+            pl.check_attribs(child, required_attribs=["match"], optional_attribs=[])
             child_html = pl.inner_html(child)
             match_name = pl.get_string_attrib(child, "match")
-            aria_label = pl.get_string_attrib(child, "aria-label", None)
             if match_name not in options:
                 new_option = make_option(match_name, match_name)
                 options[match_name] = new_option
 
             # A statement object has: the name attribute of the correct matching option; and
             # the html content.
-            statement = {
-                "match": match_name,
-                "html": child_html,
-                "aria-label": aria_label,
-            }
+            statement = {"match": match_name, "html": child_html}
             statements.append(statement)
 
     return list(options.values()), statements
@@ -270,7 +263,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         keyed_statement = {
             "key": str(i),
             "html": statement["html"],
-            "aria-label": statement["aria-label"],
             "match": statement["match"],
         }
         display_statements.append(keyed_statement)
@@ -357,7 +349,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             statement_html = {
                 "html": statement["html"].strip(),
-                "aria-label": statement.get("aria-label", None),
                 "options": get_select_options(
                     dropdown_options, student_answer, blank_start
                 ),
@@ -369,8 +360,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             statement_set.append(statement_html)
 
         option_set = []
-        for option in display_options:
-            option_html = {"key": option["key"], "html": option["html"].strip()}
+        for index, option in enumerate(display_options, start=1):
+            option_html = {
+                "key": option["key"],
+                "counter": get_counter(index, counter_type),
+                "html": option["html"].strip(),
+            }
             option_set.append(option_html)
 
         html_params: dict[str, str | bool | float | list[Any]] = {
@@ -382,6 +377,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "no_counters": no_counters,
             "options_placement": options_placement.value,
             "editable": data["editable"],
+            "uuid": pl.get_uuid(),
         }
 
         if score is not None:
@@ -421,8 +417,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     "display_score_badge": display_score_badge,
                     "correct": display_score_badge and student_answer == correct_answer,
                     "parse_error": parse_error,
-                    "html": statement["html"],
-                    "aria-label": statement["aria-label"],
+                    "statement": statement["html"],
                 }
                 statement_set.append(statement_html)
 
@@ -462,9 +457,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     counter = f"{get_counter(correct_answer + 1, counter_type)}. "
                 statement_html = {
                     "option": display_options[correct_answer]["html"],
-                    "html": statement["html"],
+                    "statement": statement["html"],
                     "counter": counter,
-                    "aria-label": statement["aria-label"],
                 }
                 statement_set.append(statement_html)
 

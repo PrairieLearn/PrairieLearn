@@ -19,6 +19,7 @@ WEIGHTS_PRESENTATION_TYPE_DEFAULT = "f"
 NEGATIVE_WEIGHTS_DEFAULT = False
 DIRECTED_DEFAULT = True
 LOG_WARNINGS_DEFAULT = True
+XML_DECLARATION = r"<\?xml[^>\?]*\?>"
 DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
 
@@ -199,6 +200,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if svg_bytes is None:
             raise TypeError("Graph was not returned.")
         svg = svg_bytes.decode("utf-8", "strict")
+        # https://gitlab.com/graphviz/graphviz/-/merge_requests/3404
+        # We can switch to svg_inline when we have use graphviz >= 10.0.1
+        svg = re.sub(XML_DECLARATION, "", svg)
         svg = re.sub(DOCTYPE_DECLARATION, "", svg)
 
     return f'<div class="pl-graph">{svg}</div>'
