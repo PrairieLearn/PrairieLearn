@@ -54,7 +54,7 @@ onDocumentReady(() => {
   const externalGradingTimeoutInput = document.querySelector<HTMLInputElement>(
     '#external_grading_timeout',
   );
-  const externalGradingEnableNewrokingCheckbox = document.querySelector<HTMLInputElement>(
+  const externalGradingEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
     '#external_grading_enable_networking',
   );
   const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
@@ -88,11 +88,29 @@ onDocumentReady(() => {
       externalGradingTimeoutInput?.value ||
       (externalGradingEnvironmentInput?.value !== '{}' &&
         externalGradingEnvironmentInput?.value !== '') ||
-      externalGradingEnableNewrokingCheckbox?.checked
+      externalGradingEnableNetworkingCheckbox?.checked
     ) {
       externalGradingImageInput?.setAttribute('required', 'true');
     } else {
       externalGradingImageInput?.removeAttribute('required');
+    }
+  }
+
+  function validateJsonInput(input: HTMLInputElement) {
+    if (input.value === '') {
+      input.setCustomValidity('');
+      return;
+    }
+    try {
+      const value = JSON.parse(input.value);
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        input.setCustomValidity('Invalid JSON object format');
+      } else {
+        input.setCustomValidity('');
+      }
+      return;
+    } catch {
+      input.setCustomValidity('Invalid JSON object format');
     }
   }
 
@@ -148,21 +166,11 @@ onDocumentReady(() => {
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
   workspaceEnvironmentInput?.addEventListener('input', (e) => {
-    if ((e.target as HTMLInputElement).value === '') {
-      workspaceEnvironmentInput?.setCustomValidity('');
-      return;
-    }
-    try {
-      const value = JSON.parse((e.target as HTMLInputElement).value);
-      if (typeof value !== 'object' || Array.isArray(value)) {
-        workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-      } else {
-        workspaceEnvironmentInput?.setCustomValidity('');
-      }
-      return;
-    } catch {
-      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-    }
+    validateJsonInput(e.target as HTMLInputElement);
+  });
+
+  externalGradingEnvironmentInput?.addEventListener('input', (e) => {
+    validateJsonInput(e.target as HTMLInputElement);
   });
 
   if (!questionSettingsForm || !saveButton) return;

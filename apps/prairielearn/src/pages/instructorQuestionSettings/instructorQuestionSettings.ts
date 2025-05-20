@@ -153,17 +153,20 @@ router.post(
             .optional(),
           workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
           workspace_environment: z.string().optional(),
-          external_grading_enabled: BooleanFromCheckboxSchema,
-          external_grading_image: z.string(),
-          external_grading_files: z.string().transform((s) =>
-            s
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s !== ''),
-          ),
-          external_grading_entrypoint: z.union([z.string(), z.array(z.string())]),
-          external_grading_timeout: IntegerFromStringOrEmptySchema,
-          external_grading_enable_networking: BooleanFromCheckboxSchema,
+          external_grading_enabled: BooleanFromCheckboxSchema.optional(),
+          external_grading_image: z.string().optional(),
+          external_grading_files: z
+            .string()
+            .transform((s) =>
+              s
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s !== ''),
+            )
+            .optional(),
+          external_grading_entrypoint: z.union([z.string(), z.array(z.string())]).optional(),
+          external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
+          external_grading_enable_networking: BooleanFromCheckboxSchema.optional(),
           external_grading_environment: z.string().optional(),
         })
         .parse(req.body);
