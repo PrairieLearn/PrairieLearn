@@ -43,6 +43,10 @@ router.get(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
       host,
     ).href;
+    const publicLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessments`,
+      host,
+    ).href;
     const availableTimezones = await getCanonicalTimezones([
       res.locals.course_instance.display_timezone,
     ]);
@@ -68,6 +72,7 @@ router.get(
         resLocals: res.locals,
         shortNames,
         studentLink,
+        publicLink,
         infoCourseInstancePath,
         availableTimezones,
         origHash,

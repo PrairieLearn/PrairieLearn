@@ -139,7 +139,7 @@ describe('chunks', () => {
       );
     });
 
-    it('should identify complex assessment in simple course instance', () => {
+    it('should identify complex assessment in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',

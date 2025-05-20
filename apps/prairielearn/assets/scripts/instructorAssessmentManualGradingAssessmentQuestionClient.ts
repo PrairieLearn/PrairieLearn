@@ -263,20 +263,22 @@ onDocumentReady(() => {
           field: 'last_grader',
           title: 'Graded by',
           filterControl: 'select',
-          formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.last_grader_name : '&mdash;',
-        },
-        aiGradingEnabled
-          ? {
-              field: 'is_ai_graded',
-              title: 'AI Graded',
-              filterControl: 'select',
-              visible: aiGradingEnabled,
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.is_ai_graded ? 'Yes' : 'No',
+          filterCustomSearch: (text: string, value: string) => {
+            if (text === 'ai') {
+              return value.includes('js-custom-search-ai-grading');
             }
-          : null,
-      ].filter(Boolean),
+            return null;
+          },
+          formatter: (value: string, row: InstanceQuestionRow) =>
+            value
+              ? row.is_ai_graded
+                ? html`
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading">AI</span>
+                  `.toString()
+                : row.last_grader_name
+              : '&mdash;',
+        },
+      ],
     ],
   });
 });
