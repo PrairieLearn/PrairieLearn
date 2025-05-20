@@ -49,10 +49,6 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
    * pl-code has span elements with empty style attributes we need to ignore.
    * pl-overlay has empty style attributes we need to ignore.
    *
-   * pl-figure can generate false positives for https://html-validate.org/rules/input-missing-label.html.
-   * See https://github.com/PrairieLearn/PrairieLearn/pull/11976#discussion_r2089843298.
-   *
-   *
    */
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -86,13 +82,10 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
-    .on('div.container-fluid.mb-3 > img.img-fluid.mx-auto.d-block[alt]', {
-      element(el) {
-        el.setAttribute('aria-label', 'my child element has accessible text');
-      },
-    })
     .on('select > option[aria-label]', {
       element(el) {
+        // Our blank option has no text by default.
+        // html-validate claims that it's not recommended to set aria-label on an option.
         el.removeAttribute('aria-label');
       },
     });
@@ -250,17 +243,17 @@ const internallyGradedQuestions = allQuestionDirs
 
 const course = {
   path: exampleCoursePath,
+  // Note: this doesn't respect any course-level options set.
 } as unknown as Course;
 
 const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
 const unsupportedQuestions = [
-  // 'element/code',
-  // 'element/fileDownload',
-  // 'element/fileEditor',
-  // 'element/codeDocumentation',
-  'element/matching',
+  'element/code',
+  'element/fileDownload',
+  'element/fileEditor',
+  'element/codeDocumentation',
 ];
 
 const accessibilitySkip = [
@@ -274,7 +267,7 @@ describe('Internally Graded Question Lifecycle Tests', function () {
 
   before('set up testing server', helperServer.before());
   before('enable process-questions-in-server', () => {
-    config.features['process-questions-in-server'] = true;
+    config.features['process-questions-in-server'] = false;
   });
 
   after('restore process-questions-in-server', () => {
