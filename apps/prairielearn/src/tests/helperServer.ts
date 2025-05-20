@@ -67,6 +67,8 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
 
       debug('before(): initialize code callers');
       await codeCaller.init({ lazyWorkers: true });
+
+      debug('before(): initialize assets');
       await assets.init();
 
       debug('before(): start server');
