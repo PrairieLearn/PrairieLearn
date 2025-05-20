@@ -34,11 +34,7 @@ config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 
 export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
     debug('before()');
-    const workersWereLazy = config.workersAreLazy;
     try {
-      // A lazy code caller pool leads to faster tests
-      config.workersAreLazy = true;
-
       // We (currently) don't ever want tracing to run during tests.
       await opentelemetry.init({ openTelemetryEnabled: false });
 
@@ -71,7 +67,9 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       load.initEstimator('python', 1);
 
       debug('before(): initialize code callers');
-      await codeCaller.init();
+      await codeCaller.init({
+        lazyWorkers: true
+      });
       await assets.init();
 
       debug('before(): start server');
@@ -96,7 +94,6 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       externalGrader.init();
       externalGradingSocket.init();
     } finally {
-      config.workersAreLazy = workersWereLazy;
       debug('before(): completed');
     }
   };

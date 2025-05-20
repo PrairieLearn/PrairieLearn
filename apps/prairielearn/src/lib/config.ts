@@ -216,11 +216,6 @@ const ConfigSchema = z.object({
    */
   workersCount: z.number().nullable().default(null),
   workersPerCpu: z.number().default(1),
-  /**
-   * If set to true, the code caller pool worker count will default to '0',
-   * and workers will be created lazily.
-   */
-  workersAreLazy: z.boolean().default(false),
   workersExecutionMode: z.enum(['container', 'native', 'disabled']).default('native'),
   workerUseQueue: z.boolean().default(true),
   workerOverloadDelayMS: z.number().default(10_000),

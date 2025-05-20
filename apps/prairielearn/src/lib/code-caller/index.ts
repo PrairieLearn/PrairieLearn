@@ -31,10 +31,20 @@ const debug = debugfn('prairielearn:code-caller');
 
 let pool: Pool<CodeCaller> | null = null;
 
-export async function init() {
+interface CodeCallerInitOptions {
+  /**
+   * If set to true, the code caller pool worker count will default to '0',
+   * and workers will be created lazily.
+   */
+  lazyWorkers?: boolean
+}
+
+export async function init({
+  lazyWorkers = false
+}: CodeCallerInitOptions = {}) {
   debug('init()');
 
-  const { workersExecutionMode, workersAreLazy } = config;
+  const { workersExecutionMode } = config;
   if (!['container', 'native', 'disabled'].includes(workersExecutionMode)) {
     throw new Error(`unknown config.workersExecutionMode: ${workersExecutionMode}`);
   }
@@ -85,7 +95,7 @@ export async function init() {
       },
     },
     {
-      min: workersAreLazy ? 0 : numWorkers,
+      min: lazyWorkers ? 0 : numWorkers,
       max: numWorkers,
     },
   );
