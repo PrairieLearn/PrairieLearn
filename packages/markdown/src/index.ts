@@ -72,17 +72,19 @@ export function createProcessor({
   hastVisitors,
   sanitize = true,
   allowHtml = true,
+  allowMath = true,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
   allowHtml?: boolean;
+  allowMath?: boolean;
 } = {}) {
   const plugins: (Plugin<any, any, any> | PluginTuple<any, any, any>)[] = [
     remarkParse,
-    remarkMath,
+    ...(allowMath ? [remarkMath] : []),
     ...(mdastVisitors ?? []).map((visitor) => makeHandler(visitor)),
-    makeHandler(visitMathBlock),
+    ...(allowMath ? [makeHandler(visitMathBlock)] : []),
     remarkGfm,
     [remark2rehype, { allowDangerousHtml: allowHtml }],
     ...(!allowHtml ? [] : [rehypeRaw]),
@@ -98,13 +100,18 @@ export function createProcessor({
 }
 
 const processorCache = new Map<string, Processor>();
-function getProcessor(options: { inline: boolean; allowHtml: boolean }): Processor {
-  const key = `${options.inline}:${options.allowHtml}`;
+function getProcessor(options: {
+  inline: boolean;
+  allowHtml: boolean;
+  allowMath: boolean;
+}): Processor {
+  const key = `${options.inline}:${options.allowHtml}:${options.allowMath}`;
   let processor = processorCache.get(key);
   if (!processor) {
     processor = createProcessor({
       hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
       allowHtml: options.allowHtml,
+      allowMath: options.allowMath,
     });
     processorCache.set(key, processor);
   }
@@ -117,7 +124,11 @@ function getProcessor(options: { inline: boolean; allowHtml: boolean }): Process
  */
 export async function markdownToHtml(
   original: string,
-  { inline = false, allowHtml = true }: { inline?: boolean; allowHtml?: boolean } = {},
+  {
+    inline = false,
+    allowHtml = true,
+    allowMath = true,
+  }: { inline?: boolean; allowHtml?: boolean; allowMath?: boolean } = {},
 ) {
-  return (await getProcessor({ inline, allowHtml }).process(original)).value.toString();
+  return (await getProcessor({ inline, allowHtml, allowMath }).process(original)).value.toString();
 }

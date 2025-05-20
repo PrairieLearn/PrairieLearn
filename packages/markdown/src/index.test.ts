@@ -5,7 +5,7 @@ import * as markdown from './index.js';
 async function testMarkdown(
   original: string,
   expected: string,
-  options: { inline?: boolean; allowHtml?: boolean } = {},
+  options: { inline?: boolean; allowHtml?: boolean; allowMath?: boolean } = {},
 ) {
   const actual = await markdown.markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
@@ -27,7 +27,7 @@ describe('Markdown processing', () => {
   it('handles inline latex', async () => {
     const question = '$a_1 + a_2 = a_3$';
     const expected = '<p>$a_1 + a_2 = a_3$</p>';
-    await testMarkdown(question, expected);
+    await testMarkdown(question, expected, { allowMath: false });
   });
 
   it('handles multiple lines of inline latex', async () => {
@@ -144,5 +144,11 @@ describe('Markdown processing', () => {
     const question = '# testing';
     const expected = '<h1>testing</h1>';
     await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('does not treat math delimiters as math if allowMath is false', async () => {
+    const question = '$a _b=c_ d$';
+    const expected = '<p>$a <em>b=c</em> d$</p>';
+    await testMarkdown(question, expected, { allowMath: false });
   });
 });
