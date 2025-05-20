@@ -45,15 +45,15 @@ describe('BatchedMigrationsRunner', () => {
     const migrations = await selectAllBatchedMigrations('test');
 
     assert.lengthOf(migrations, 3);
-    expect(migrations[0].timestamp).to.equal('20230406184103');
-    expect(migrations[0].filename).to.equal('20230406184103_successful_migration.ts');
-    expect(migrations[0].status).to.equal('pending');
-    expect(migrations[1].timestamp).to.equal('20230406184107');
-    expect(migrations[1].filename).to.equal('20230406184107_failing_migration.ts');
-    expect(migrations[1].status).to.equal('pending');
-    expect(migrations[2].timestamp).to.equal('20230407230446');
-    expect(migrations[2].filename).to.equal('20230407230446_no_rows_migration.ts');
-    expect(migrations[2].status).to.equal('succeeded');
+    assert.equal(migrations[0].timestamp, '20230406184103');
+    assert.equal(migrations[0].filename, '20230406184103_successful_migration.ts');
+    assert.equal(migrations[0].status, 'pending');
+    assert.equal(migrations[1].timestamp, '20230406184107');
+    assert.equal(migrations[1].filename, '20230406184107_failing_migration.ts');
+    assert.equal(migrations[1].status, 'pending');
+    assert.equal(migrations[2].timestamp, '20230407230446');
+    assert.equal(migrations[2].filename, '20230407230446_no_rows_migration.ts');
+    assert.equal(migrations[2].status, 'succeeded');
   });
 
   it('safely enqueues migrations multiple times', async () => {
@@ -84,8 +84,8 @@ describe('BatchedMigrationsRunner', () => {
 
     const migrations = await selectAllBatchedMigrations('test');
     assert.lengthOf(migrations, 1);
-    expect(migrations[0].timestamp).to.equal('20230406184103');
-    expect(migrations[0].status).to.equal('succeeded');
+    assert.equal(migrations[0].timestamp, '20230406184103');
+    assert.equal(migrations[0].status, 'succeeded');
   });
 
   it('finalizes a failing migration', async () => {
@@ -101,10 +101,9 @@ describe('BatchedMigrationsRunner', () => {
         logProgress: false,
       }),
     ).rejects.toThrow("but it is 'failed'");
-
     const migrations = await selectAllBatchedMigrations('test');
     assert.lengthOf(migrations, 1);
-    expect(migrations[0].timestamp).to.equal('20230406184107');
-    expect(migrations[0].status).to.equal('failed');
+    assert.equal(migrations[0].timestamp, '20230406184107');
+    assert.equal(migrations[0].status, 'failed');
   });
 });

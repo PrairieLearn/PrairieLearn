@@ -27,7 +27,6 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.17.32",
     "@vitest/coverage-v8": "^3.1.4",
-    "chai-as-promised": "^8.0.1",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
