@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { describe, it } from 'vitest';
 
 import { getUniqueNames, propertyValueWithDefault } from './editors.js';
 

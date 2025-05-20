@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { queryAsync } from '@prairielearn/postgres';
 
@@ -8,8 +9,8 @@ import * as helperCourse from './helperCourse.js';
 import * as helperDb from './helperDb.js';
 
 describe('features', () => {
-  before(async function () {
-    await helperDb.before.call(this);
+  beforeAll(async function () {
+    await helperDb.before();
     await helperCourse.syncCourse();
     await queryAsync('INSERT INTO users (name, uid) VALUES ($name, $uid);', {
       name: 'Test User',
@@ -21,8 +22,8 @@ describe('features', () => {
     await queryAsync('DELETE FROM feature_grants', {});
   });
 
-  after(async function () {
-    await helperDb.after.call(this);
+  afterAll(async function () {
+    await helperDb.after();
   });
 
   it('enables and disables a global feature flag', async () => {
