@@ -28,9 +28,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Course instance not public.');
     }
 
-    res.locals.user = res.locals.authn_user; // TEST, need res.locals.user for setCourseInstanceCopyTargets
-
+    res.locals.user = res.locals.authn_user; // Need user to get copy targets. On public URLs, authn_user and user are always equal
     const courseInstanceCopyTargets = await getCourseInstanceCopyTargets(res);
+
     const rows = await selectAssessments({
       course_instance_id: courseInstance.id,
     });

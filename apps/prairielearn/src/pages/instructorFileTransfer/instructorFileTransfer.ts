@@ -53,6 +53,12 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
   });
 }
 
+function getContentFolder(fullPath: string, parentDir: string): string {
+  const path_exploded = path.normalize(fullPath).split(path.sep);
+  const content_dir_idx = path_exploded.findIndex((x) => x === parentDir);
+  return path_exploded.slice(content_dir_idx + 1).join(path.sep);
+}
+
 router.get(
   '/:file_transfer_id',
   asyncHandler(async (req, res) => {
@@ -64,10 +70,7 @@ router.get(
     const from_course = await selectCourseById(file_transfer.from_course_id);
 
     if (file_transfer.transfer_type === 'CopyQuestion') {
-      // Split the full path and grab everything after questions/ to get the QID
-      const question_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
-      const questions_dir_idx = question_exploded.findIndex((x) => x === 'questions');
-      const qid = question_exploded.slice(questions_dir_idx + 1).join(path.sep);
+      const qid = getContentFolder(file_transfer.from_filename, 'questions');
       const editor = new QuestionTransferEditor({
         locals: res.locals as any,
         from_qid: qid,
@@ -78,8 +81,6 @@ router.get(
       await doTransfer(res, editor, file_transfer.id);
 
       const question = await selectQuestionByUuid({
-        // TODO: we'll have to change something here once we allow instructors to
-        // copy questions that have been shared with their course.
         course_id: res.locals.course.id,
         uuid: editor.uuid,
       });
@@ -91,10 +92,7 @@ router.get(
       res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
     } else if (file_transfer.transfer_type === 'CopyCourseInstance') {
       const course = await selectCourseById(file_transfer.from_course_id);
-
-      const instance_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
-      const instance_dir_idx = instance_exploded.findIndex((x) => x === 'courseInstances');
-      const shortName = instance_exploded.slice(instance_dir_idx + 1).join(path.sep);
+      const shortName = getContentFolder(file_transfer.from_filename, 'courseInstances');
 
       const fromCourseInstance = await selectCourseInstanceByShortName({
         course_id: file_transfer.from_course_id,

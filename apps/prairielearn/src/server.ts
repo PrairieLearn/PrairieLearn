@@ -1746,10 +1746,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
-    (await import('./pages/publicAssessments/publicAssessments.js')).default,
-  );
 
   // Client files for questions
   app.use(
