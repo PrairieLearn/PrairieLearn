@@ -34,7 +34,7 @@ let pool: Pool<CodeCaller> | null = null;
 export async function init() {
   debug('init()');
 
-  const { workersExecutionMode } = config;
+  const { workersExecutionMode, workersAreLazy } = config;
   if (!['container', 'native', 'disabled'].includes(workersExecutionMode)) {
     throw new Error(`unknown config.workersExecutionMode: ${workersExecutionMode}`);
   }
@@ -85,7 +85,7 @@ export async function init() {
       },
     },
     {
-      min: numWorkers,
+      min: workersAreLazy ? 0 : numWorkers,
       max: numWorkers,
     },
   );

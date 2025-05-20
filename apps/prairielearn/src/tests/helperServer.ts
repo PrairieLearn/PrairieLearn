@@ -42,7 +42,11 @@ export function before({
 }: InitOptions = {}): () => Promise<void> {
   return async () => {
     debug('before()');
+    const workersWereLazy = config.workersAreLazy;
     try {
+      // A lazy code caller pool leads to faster tests
+      config.workersAreLazy = true;
+
       // We (currently) don't ever want tracing to run during tests.
       await opentelemetry.init({ openTelemetryEnabled: false });
 
@@ -102,6 +106,7 @@ export function before({
       externalGrader.init();
       externalGradingSocket.init();
     } finally {
+      config.workersAreLazy = workersWereLazy;
       debug('before(): completed');
     }
   };
