@@ -112,7 +112,7 @@ router.post(
         return;
       }
 
-      const courseInstanceId = selectCourseInstanceIdByUuid({
+      const courseInstanceId = await selectCourseInstanceIdByUuid({
         uuid: editor.uuid,
         course_id: res.locals.course.id,
       });

@@ -101,7 +101,7 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
-      const courseInstanceId = selectCourseInstanceIdByUuid({
+      const courseInstanceId = await selectCourseInstanceIdByUuid({
         uuid: editor.uuid,
         course_id: res.locals.course.id,
       });
