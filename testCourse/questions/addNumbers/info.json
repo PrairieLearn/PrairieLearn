@@ -4,6 +4,5 @@
   "topic": "Algebra",
   "tags": ["mwest", "tpl101", "fa17", "v3"],
   "type": "v3",
-  "sharingSets": ["final-exam"],
-  "externalGradingOptions": { "enabled": true, "image": "test", "timeout": 500 }
+  "sharingSets": ["final-exam"]
 }
