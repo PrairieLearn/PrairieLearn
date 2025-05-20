@@ -20,6 +20,8 @@ function CopyCourseInstanceModal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
     formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
+    form: courseInstanceCopyTargets?.length > 0,
     body:
       courseInstanceCopyTargets.length === 0
         ? html`
@@ -37,15 +39,14 @@ function CopyCourseInstanceModal({
             </p>
             <select class="custom-select" name="to_course_id" required>
               ${courseInstanceCopyTargets.map(
-                // TEST, use course instead of course_instance?
-                (course_instance, index) => html`
+                (course, index) => html`
                   <option
-                    value="${course_instance.id}"
-                    data-csrf-token="${course_instance.__csrf_token}"
-                    data-copy-url="${course_instance.copy_url}"
+                    value="${course.id}"
+                    data-csrf-token="${course.__csrf_token}"
+                    data-copy-url="${course.copy_url}"
                     ${index === 0 ? 'selected' : ''}
                   >
-                    ${course_instance.short_name}
+                    ${course.short_name}
                   </option>
                 `,
               )}
@@ -58,7 +59,7 @@ function CopyCourseInstanceModal({
         value="${courseInstanceCopyTargets[0]?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="course_instance_id" value="${courseInstance.id}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       ${courseInstanceCopyTargets?.length > 0
         ? html`
             <button
@@ -161,8 +162,6 @@ export function PublicAssessments({
         </div>
       </div>
       ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets })}
-    </div>
-  </div>
     `,
   });
 }
