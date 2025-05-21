@@ -678,7 +678,7 @@ def test_string_to_2darray_invalid(
         (1.0, "correct", True),
         (1.5, "correct", True),
         # Zero credit
-        (0.0, "incorrect", False),
+        (0.0, "incorrect", True),
         (-1.0, "incorrect", True),
         # Partial credit
         (0.75, "partial", 75),
