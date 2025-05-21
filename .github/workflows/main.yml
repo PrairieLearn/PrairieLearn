@@ -176,7 +176,8 @@ jobs:
       - name: Test code
         run: |
           POSTGRES_CI_PASSWORD=postgres make --assume-old=start-postgres test-js
-
+        env:
+          POSTGRES_CI_PASSWORD: postgres
   native-checks-js:
     runs-on: ubuntu-latest
     steps:
