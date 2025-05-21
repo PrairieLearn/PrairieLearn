@@ -566,7 +566,7 @@ export async function linkAssessment(
 
 function findValueByKey(obj: unknown, targetKey: string) {
   if (typeof obj !== 'object' || obj === null) return undefined;
-  if (obj.hasOwnProperty(targetKey)) {
+  if (Object.hasOwn(obj, targetKey)) {
     return obj[targetKey];
   }
   for (const key in obj) {
@@ -605,7 +605,7 @@ export async function fetchRetry(
     const response = await fetch(input, opts);
 
     if (!response.ok) {
-      const resObject = await response.json();
+      const resObject = (await response.json()) ?? {};
       /*
       Canvas error example with nested objects and message property.
       {
