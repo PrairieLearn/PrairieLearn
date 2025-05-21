@@ -1,9 +1,11 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
+import { Cache } from '@prairielearn/cache';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
@@ -198,6 +200,94 @@ function extractFromCompletion(
 }
 
 /**
+ * Returns the AI question generation cache used for rate limiting.
+ */
+let aiQuestionGenerationCache: Cache | undefined;
+export function getAiQuestionGenerationCache() {
+  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
+  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
+  aiQuestionGenerationCache = new Cache();
+  aiQuestionGenerationCache.init({
+    type: config.nonVolatileCacheType,
+    keyPrefix: config.cacheKeyPrefix,
+    redisUrl: config.nonVolatileRedisUrl,
+  });
+  return aiQuestionGenerationCache;
+}
+
+/**
+ * Approximate the cost of the prompt, in US dollars.
+ * Accounts for the cost of prompt, system, and completion tokens.
+ */
+export function approximatePromptCost(prompt: string) {
+  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
+  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
+  // Also, on average, we generate 3750 system tokens per prompt.
+  const approxPromptAndSystemTokenCost =
+    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
+
+  // On average, we generate 250 completion tokens per prompt.
+  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+
+  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
+}
+
+/**
+ * Retrieve the Redis key for a user's current AI question generation interval usage
+ */
+function getIntervalUsageKey(userId: number) {
+  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
+  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+}
+
+// 1 hour in milliseconds
+const intervalLengthMs = 3600 * 1000;
+
+/**
+ * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
+ */
+export async function getIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+}) {
+  return (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
+}
+
+/**
+ * Add the cost of a completion to the usage of the user for the current interval.
+ */
+export async function addCompletionCostToIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+  promptTokens,
+  completionTokens,
+  intervalCost,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+  promptTokens: number;
+  completionTokens: number;
+  intervalCost: number;
+}) {
+  const completionCost =
+    (config.costPerMillionPromptTokens * promptTokens +
+      config.costPerMillionCompletionTokens * completionTokens) /
+    1e6;
+
+  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
+  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
+
+  aiQuestionGenerationCache.set(
+    getIntervalUsageKey(userId),
+    intervalCost + completionCost,
+    timeRemainingInInterval,
+  );
+}
+
+/**
  * Generates the HTML and Python code for a new question using an LLM.
  *
  * @param client The OpenAI client to use.
@@ -232,6 +322,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of tokens in the prompt provided to the LLM.
+   */
+  promptTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -322,6 +420,9 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
 
+    job.data['promptTokens'] = completion.usage?.prompt_tokens;
+    job.data['completionTokens'] = completion.usage?.completion_tokens;
+
     job.data.html = html;
     job.data.python = results?.python;
     job.data.context = context;
@@ -361,6 +462,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 
@@ -534,6 +637,9 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
+  job.data['promptTokens'] = completion.usage?.prompt_tokens;
+  job.data['completionTokens'] = completion.usage?.completion_tokens;
+
   job.data.html = html;
   job.data.python = python;
 
@@ -590,6 +696,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  promptTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -625,5 +733,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
