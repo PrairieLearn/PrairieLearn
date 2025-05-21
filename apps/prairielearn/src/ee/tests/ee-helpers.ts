@@ -8,12 +8,10 @@ export function enableEnterpriseEdition() {
   beforeAll(() => {
     originalIsEnterprise = config.isEnterprise;
     config.isEnterprise = true;
-    console.log('Enterprise edition enabled for tests');
   });
 
   afterAll(() => {
     config.isEnterprise = originalIsEnterprise;
-    console.log('Enterprise edition disabled for tests');
   });
 }
 
