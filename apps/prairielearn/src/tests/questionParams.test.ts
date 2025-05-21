@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert } from 'vitest';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
