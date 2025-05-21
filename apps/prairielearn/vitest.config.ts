@@ -1,7 +1,8 @@
 import { join } from 'path';
 
+import type { File } from '@vitest/runner';
 import { configDefaults, defineConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification, type Vitest } from 'vitest/node';
+import { BaseSequencer, type Reporter, type TestSpecification, type Vitest } from 'vitest/node';
 import { GithubActionsReporter } from 'vitest/reporters';
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
@@ -29,16 +30,13 @@ class CustomSequencer extends BaseSequencer {
   }
 }
 
-class CustomGithubReporter extends GithubActionsReporter {
-  onInit(ctx: Vitest): void {
-    this.ctx = ctx;
-    const originalLog = this.ctx.logger.log;
-    const fileRewriteLog = (msg: string) => {
-      /* We want to strip the leading /PrairieLearn/ from the file reporting, because we run our tests inside a container. */
-      originalLog(msg.replaceAll(/(file=)\/PrairieLearn\//g, '$1'));
+export class CustomGithubReporter extends GithubActionsReporter {
+  override onInit(ctx: Vitest) {
+    super.onInit(ctx);
+    const origLog = this.ctx.logger.log;
+    this.ctx.logger.log = (msg: string) => {
+      origLog.call(this.ctx.logger, msg?.replaceAll(/(file=)\/PrairieLearn\//g, '$1'));
     };
-
-    this.ctx.logger.log = fileRewriteLog;
   }
 }
 
