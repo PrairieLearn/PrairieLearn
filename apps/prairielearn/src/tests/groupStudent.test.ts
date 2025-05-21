@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert, fetchCheerio } from './helperClient.js';
@@ -40,7 +41,17 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('1. the database', function () {
     it('should contain a group-based homework assessment', async () => {
-      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      const { id: course_instance_id } = await selectCourseInstanceByShortName({
+        course_id: '1',
+        short_name: 'Sp15',
+      });
+      const assessment_ids = await sqldb.queryRows(
+        sql.select_group_work_assessment,
+        {
+          course_instance_id,
+        },
+        IdSchema,
+      );
       assert.lengthOf(assessment_ids, 2);
       assert.isDefined(assessment_ids[0]);
       assert.isDefined(assessment_ids[1]);
