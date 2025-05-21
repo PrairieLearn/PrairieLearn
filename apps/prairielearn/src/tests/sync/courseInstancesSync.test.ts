@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
@@ -23,10 +23,11 @@ function makeCourseInstance(): util.CourseInstanceData {
 }
 
 describe('Course instance syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of course instances in subfolders', async () => {
     const courseData = util.getCourseData();

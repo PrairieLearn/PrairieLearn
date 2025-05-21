@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import {
   type AssessmentModule,
@@ -28,10 +28,11 @@ function checkAssessmentModule(
 }
 
 describe('Assessment modules syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new assessment module', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
