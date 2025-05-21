@@ -119,7 +119,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |
+          sudo apt install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt-get install -y git gcc libc6-dev graphviz libgraphviz-dev texlive \
+          redis postgresql-16 postgresql-16-contrib postgresql-16-server-dev-all postgresql-16-pgvector
 
       - name: Set up Node
         uses: actions/setup-node@v4
