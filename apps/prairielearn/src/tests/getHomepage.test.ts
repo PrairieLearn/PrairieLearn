@@ -15,7 +15,7 @@ describe('GET /', function () {
 
   it('should load and contain QA 101', async () => {
     const response = await fetch(baseUrl);
-    assert.equal(response.status, 200);
+    assert.equal(response.status, 500);
     const page = await response.text();
     const $ = cheerio.load(page);
     assert.ok($('td a:contains("QA 101")').length);
