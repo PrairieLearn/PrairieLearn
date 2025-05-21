@@ -271,13 +271,12 @@ body:has(div.app-container) {
     overflow-x: hidden;
   }
 
-  /* If the side nav is collapsed on a wider viewports,
-  *  tooltips appear above the side nav link icons when hovered. 
-  *  
-  *  If the user collapses the side nav on a wide viewport, then 
-  *  resizes their window to a narrow viewport (less than 768px), 
-  *  the tooltips should be hidden, since side nav link text
-  *  is displayed on narrow viewports. */
+  /**
+   * On wider viewports, when the side nav is collapsed,
+   * tooltips appear next to the side nav link icons when hovered. 
+   *
+   * This rule hides those tooltips on narrow viewports.
+   */
   body:has(.app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
     display: none;
   }
