@@ -206,8 +206,6 @@ body:has(div.app-container) {
   display: grid;
   /* Use minmax(0, 1fr) to prevent content overflow */
   grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
-  padding: 0.25rem;
 }
 
 #assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
@@ -219,10 +217,6 @@ body:has(div.app-container) {
     /* The title takes up the entire first row. The label and TID take up the second row. */
     grid-template-columns: auto 1fr;
     grid-template-rows: auto auto;
-    column-gap: 0.5rem;
-    row-gap: 0;
-    padding: 0.5rem;
-    margin-top: 0.25rem;
   }
 
   #assessment-switcher-container .assessment-row .title {

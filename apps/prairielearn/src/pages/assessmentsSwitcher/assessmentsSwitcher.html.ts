@@ -43,7 +43,11 @@ export function AssessmentSwitcher({
                 </div>
               `
             : ''}
-          <div class="assessment-row w-100 rounded ${isActive ? 'bg-primary text-white' : ''}">
+          <div
+            class="assessment-row column-gap-2 p-2 mt-1 gap-md-1 p-md-1 w-100 rounded ${isActive
+              ? 'bg-primary text-white'
+              : ''}"
+          >
             <div class="d-flex align-items-center">
               <span
                 class="badge overflow-hidden text-truncate text-nowrap color-${row.assessment_set
