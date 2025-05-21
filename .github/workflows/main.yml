@@ -171,6 +171,9 @@ jobs:
 
       - name: Test code
         run: |
+          git config --global user.email "dev@example.com"
+          git config --global user.name "Dev User"
+          git config --global safe.directory '*'
           make --assume-old=start-postgres test-js
   native-checks-js:
     runs-on: ubuntu-latest
