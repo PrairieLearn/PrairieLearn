@@ -319,7 +319,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    const promptId = await queryRow(
+    const ai_question_generation_prompt_id = await queryRow(
       sql.insert_ai_question_generation_prompt,
       {
         question_id: saveResults.question_id,
@@ -344,7 +344,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['completionTokens'] = completion.usage?.completion_tokens;
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
-      promptId,
+      promptId: ai_question_generation_prompt_id,
       authnUserId,
       promptTokens: completion.usage?.prompt_tokens,
       completionTokens: completion.usage?.completion_tokens,
@@ -525,7 +525,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  const promptId = await queryRow(
+  const ai_question_generation_prompt_id = await queryRow(
     sql.insert_ai_question_generation_prompt,
     {
       question_id: questionId,
@@ -572,7 +572,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data['completionTokens'] = completion.usage?.completion_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
-    promptId,
+    promptId: ai_question_generation_prompt_id,
     authnUserId,
     promptTokens: completion.usage?.prompt_tokens,
     completionTokens: completion.usage?.completion_tokens,
