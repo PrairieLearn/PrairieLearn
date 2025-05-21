@@ -28,13 +28,16 @@ describe(
 
     const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
-    beforeAll(function () {
+    beforeAll(async function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
       config.authUid = 'student@example.com';
       config.authName = 'Student User';
       config.authUin = '00000001';
+
+      const result = sqldb.queryAsync('SELECT * FROM course_instances;', {});
+      console.log('RESTRICTION_RESULT', result);
     });
 
     beforeAll(async function () {
