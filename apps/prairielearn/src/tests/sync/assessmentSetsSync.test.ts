@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
 import { type AssessmentJsonInput, type AssessmentSetJsonInput } from '../../schemas/index.js';

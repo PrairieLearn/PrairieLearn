@@ -1,7 +1,6 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
-import { describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import * as jsonLoad from '../lib/json-load.js';
 
@@ -29,11 +28,11 @@ describe('JSON loading', () => {
     });
 
     it("errors on a JSON file that doesn't exist", async () => {
-      await assert.isRejected(jsonLoad.readJSON(testfile('donotexist.json')));
+      await expect(jsonLoad.readJSON(testfile('donotexist.json'))).rejects.toThrow();
     });
 
     it('errors on a malformed JSON file', async () => {
-      await assert.isRejected(jsonLoad.readJSON(testfile('broken.json')));
+      await expect(jsonLoad.readJSON(testfile('broken.json'))).rejects.toThrow();
     });
   });
 
@@ -56,7 +55,9 @@ describe('JSON loading', () => {
     });
 
     it('errors for JSON that does not a schema', async () => {
-      await assert.isRejected(jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema));
+      await expect(
+        jsonLoad.readInfoJSON(testfile('forSchemaInvalid.json'), schema),
+      ).rejects.toThrow();
     });
   });
 });

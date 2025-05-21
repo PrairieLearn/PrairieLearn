@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as helperDb from '../helperDb.js';
 
