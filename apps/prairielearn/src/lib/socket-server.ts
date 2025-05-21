@@ -58,8 +58,7 @@ export async function init(server: http.Server) {
     attachEventListeners(sub, 'sub');
 
     debug('init(): initializing redis socket adapter');
-    const adapter = createAdapter(pub, sub);
-    io.adapter(adapter);
+    io.adapter(createAdapter(pub, sub));
   }
 }
 
