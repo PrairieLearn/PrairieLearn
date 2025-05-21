@@ -187,6 +187,7 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
       assert.equal(assessmentInstance.max_points, helperExam.assessmentMaxPoints);
+      assert.isDefined(assessmentInstance.assessment_instance_id);
 
       // Persist the assessment instance ID for later requests
       locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
@@ -205,6 +206,7 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
+      assert.isDefined(json.assessment_instance_id);
       assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
       assert.equal(json.assessment_id, locals.assessment_id);
       assert.equal(json.user_uid, 'dev@example.com');
