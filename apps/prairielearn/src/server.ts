@@ -752,7 +752,6 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
 
-  // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
@@ -761,6 +760,8 @@ export async function initExpress(): Promise<Express> {
       next();
     }),
   );
+
+  // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     [
