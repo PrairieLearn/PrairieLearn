@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import parsePostgresInterval from 'postgres-interval';
+import { assert, describe, it } from 'vitest';
 
 import {
   ArrayFromStringOrArraySchema,
