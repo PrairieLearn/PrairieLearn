@@ -2,7 +2,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import type { CourseInstance } from '../lib/db-types.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
@@ -15,32 +14,23 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
 describe('test random groups and delete groups', { timeout: 20_000 }, function () {
-  let courseInstance: CourseInstance;
-
-  beforeAll(async () => {
-    await helperServer.before(TEST_COURSE_PATH)();
-    courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
-  });
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {
-    const result = await sqldb.queryAsync(sql.select_group_work_assessment, {
-      course_instance_id: courseInstance.id,
+    const { id: course_instance_id } = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
     });
+    const result = await sqldb.queryAsync(sql.select_group_work_assessment, { course_instance_id });
     assert.notEqual(result.rows.length, 0);
     assert.notEqual(result.rows[0].id, undefined);
     locals.assessment_id = result.rows[0].id;
   });
 
   test.sequential('create 500 users', async () => {
-    const result = await generateAndEnrollUsers({
-      count: 500,
-      course_instance_id: courseInstance.id,
-    });
+    const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
     assert.equal(result.length, 500);
   });
 
