@@ -15,7 +15,10 @@ import * as sprocs from '../sprocs/index.js';
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
-const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres';
+const POSTGRES_PASSWORD = process.env.POSTGRES_CI_PASSWORD
+  ? `:${process.env.POSTGRES_CI_PASSWORD}`
+  : '';
+const POSTGRES_INIT_CONNECTION_STRING = `postgres://postgres${POSTGRES_PASSWORD}@localhost/postgres`;
 
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
