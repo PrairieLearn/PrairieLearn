@@ -10,6 +10,7 @@ onDocumentReady(async () => {
 
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
+  const appSideNavDiv = document.querySelector<HTMLDivElement>('.app-side-nav');
 
   const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
   const courseNavContent = document.querySelector<HTMLDivElement>('#course-nav');
@@ -20,7 +21,8 @@ onDocumentReady(async () => {
     !sideNavTogglerIcon ||
     !sideNavMobileButton ||
     !courseNavToggler ||
-    !courseNavContent
+    !courseNavContent || 
+    !appSideNavDiv
   ) {
     return;
   }
@@ -87,14 +89,31 @@ onDocumentReady(async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
       // Collapse the side nav
-      appContainerDiv.classList.add('mobile-collapsed');
+      appContainerDiv.classList.remove('open-animating');
+      appContainerDiv.classList.add('mobile-collapsed-animating');
+
+      // Respond to the end of the animation
+      appContainerDiv.addEventListener('transitionend', () => {
+        setTimeout(() => {
+          appContainerDiv.classList.toggle('mobile-collapsed-animating');
+          appContainerDiv.classList.toggle('mobile-collapsed');
+        }, 500);
+      }, { once: true });
 
       // Update the side nav mobile toggler button tooltip and icon
       sideNavMobileButton.setAttribute('data-bs-title', 'Expand side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Expand side nav');
     } else {
       // Expand the side nav
-      appContainerDiv.classList.remove('mobile-collapsed');
+      appContainerDiv.classList.remove('mobile-collapsed-animating');
+      appContainerDiv.classList.add('open-animating');
+
+      // Respond to the end of the animation
+      appContainerDiv.addEventListener('transitionend', () => {
+        setTimeout(() => {
+          appContainerDiv.classList.toggle('open-animating');
+        }, 500);
+      }, { once: true });
 
       // Update the side nav mobile toggler button tooltip and icon
       sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');

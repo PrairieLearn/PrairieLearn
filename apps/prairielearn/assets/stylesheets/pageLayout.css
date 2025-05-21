@@ -37,7 +37,6 @@ body:has(div.app-container) {
   /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
   /* TODO: Use the native CSS variable when we upgrade to 5.3 */
   background-color: #cfe2ff;
-  transition: 300ms;
 }
 
 .app-main {
@@ -201,11 +200,16 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.collapsed #side-nav-toggler {
     padding: 0.5rem 1rem;
   }
+
+  .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
+    transition: none;
+  }
 }
 
 @media (max-width: 768px) {
   .app-container.side-nav-enabled {
     display: block;
+    transition: none;
   }
 
   .app-container.side-nav-enabled #side-nav-toggler {
@@ -228,10 +232,19 @@ body:has(div.app-container) {
     left: 0;
     width: 100%;
     z-index: 999;
-    transition: transform 0.3s ease-in-out;
     transform: translateX(-100%); /* Start off-screen to the left */
-    will-change: transform; /* Performance optimization */
     min-height: 100vh;
+    transition: none;
+  }
+
+  .app-container.side-nav-enabled.mobile-collapsed-animating .app-side-nav {
+    transition: transform 1000ms;
+    transform: translateX(-100%);
+  }
+
+  .app-container.side-nav-enabled.open-animating .app-side-nav {
+    transition: transform 1000ms;
+    transform: translateX(0);
   }
 
   .app-container.side-nav-enabled #course-nav {
@@ -244,8 +257,6 @@ body:has(div.app-container) {
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
-    transition: transform 0.3s ease-in-out;
-    transition-delay: 0;
     will-change: transform; /* Performance optimization */
     transform: translateX(100%); /* Start off-screen to the right */
   }
