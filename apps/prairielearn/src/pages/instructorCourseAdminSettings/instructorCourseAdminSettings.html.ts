@@ -212,7 +212,7 @@ export function InstructorCourseAdminSettings({
                       </span>
                     </label>
                     <div class="small text-muted">
-                      Generate custom, randomized questions using AI.
+                      Generate questions with natural language using AI.
                     </div>
                   </div>
                 `
