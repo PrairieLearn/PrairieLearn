@@ -143,7 +143,7 @@ describe('Parameterized questions', function () {
     });
 
     questionsArray.forEach((question, index) => {
-      describe(question.qid, () => {
+      describe('Verify question parameters', () => {
         it(`should verify question #${index + 1} (${question.qid}) has correct parameters`, async function () {
           if (!question.url) {
             throw new Error(`URL for question #${index + 1} (${question.qid}) is undefined`);
