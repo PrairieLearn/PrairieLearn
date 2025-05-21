@@ -1,16 +1,14 @@
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Generate chunks and use them for a student homework', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -29,8 +27,15 @@ describe('Generate chunks and use them for a student homework', { timeout: 60_00
     config.chunksConsumerDirectory = tempChunksDir.path;
 
     await helperServer.before()();
-    const results = await sqldb.queryOneRowAsync(sql.select_hw1, []);
-    context.assessmentId = results.rows[0].id;
+    const { id: course_instance_id } = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
+    });
+    const { id: assessmentId } = await selectAssessmentByTid({
+      tid: 'hw1-automaticTestSuite',
+      course_instance_id,
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 

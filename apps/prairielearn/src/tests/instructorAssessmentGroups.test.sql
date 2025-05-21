@@ -5,7 +5,7 @@ FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
-  a.course_instance_id = 1
+  a.course_instance_id = $course_instance_id
   AND aset.abbreviation = 'HW'
   AND a.group_work is TRUE
 LIMIT

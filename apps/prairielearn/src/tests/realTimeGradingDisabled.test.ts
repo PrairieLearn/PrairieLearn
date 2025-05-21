@@ -1,14 +1,12 @@
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment with real-time grading disabled', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -18,8 +16,15 @@ describe('Exam assessment with real-time grading disabled', { timeout: 60_000 },
 
   beforeAll(async function () {
     await helperServer.before()();
-    const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
-    context.assessmentId = results.rows[0].id;
+    const { id: course_instance_id } = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
+    });
+    const { id: assessmentId } = await selectAssessmentByTid({
+      tid: 'exam8-disableRealTimeGrading',
+      course_instance_id,
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 

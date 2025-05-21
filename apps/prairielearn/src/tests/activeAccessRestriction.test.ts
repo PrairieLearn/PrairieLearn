@@ -5,7 +5,9 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -39,10 +41,22 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
+      const { id: course_instance_id } = await selectCourseInstanceByShortName({
+        course_id: '1',
+        short_name: 'Sp15',
+      });
+      const { id: examId } = await selectAssessmentByTid({
+        tid: 'exam11-activeAccessRestriction',
+        course_instance_id,
+      });
+      const { id: hwId } = await selectAssessmentByTid({
+        tid: 'hw8-activeAccessRestriction',
+        course_instance_id,
+      });
+      context.examId = examId;
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
-      context.hwId = await sqldb.queryRow(sql.select_homework8, IdSchema);
+      context.hwId = hwId;
       context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
       context.hwNumber = '8';
     });

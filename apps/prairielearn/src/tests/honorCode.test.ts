@@ -1,29 +1,35 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
+import type { CourseInstance } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
+  let courseInstance: CourseInstance;
 
-  beforeAll(helperServer.before());
+  beforeAll(async () => {
+    await helperServer.before()();
+    courseInstance = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
+    });
+  });
 
   afterAll(helperServer.after);
 
   it('visits the landing page of default assessment', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '1',
+    const { id: assessmentId } = await selectAssessmentByTid({
+      tid: 'exam1-automaticTestSuite',
+      course_instance_id: courseInstance.id,
     });
-    const assessmentId = results.rows[0].id;
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
     const response = await helperClient.fetchCheerio(assessmentUrl);
@@ -36,10 +42,10 @@ describe('Exam assessment response to `requireHonorCode`', function () {
   });
 
   it('visits landing page of assessment with disabled honor code', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '13',
+    const { id: assessmentId } = await selectAssessmentByTid({
+      tid: 'exam13-disableHonorCode',
+      course_instance_id: courseInstance.id,
     });
-    const assessmentId = results.rows[0].id;
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
     const response = await helperClient.fetchCheerio(assessmentUrl);

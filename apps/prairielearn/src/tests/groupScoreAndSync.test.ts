@@ -6,7 +6,9 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import type { CourseInstance } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -26,8 +28,13 @@ const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
   const storedConfig: Record<string, any> = {};
+  let courseInstance: CourseInstance;
 
-  beforeAll(() => {
+  beforeAll(async function () {
+    courseInstance = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Sp15',
+    });
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
@@ -42,7 +49,9 @@ describe('assessment instance group synchronization test', function () {
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment, {
+        course_instance_id: courseInstance.id,
+      });
       assert.notEqual(result.rowCount, 0);
       assert.notEqual(result.rows[0].id, undefined);
       locals.assessment_id = result.rows[0].id;

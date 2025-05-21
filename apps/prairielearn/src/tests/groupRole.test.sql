@@ -6,7 +6,7 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN group_configs as gc ON (gc.assessment_id = a.id)
 WHERE
-  a.course_instance_id = 1
+  a.course_instance_id = $course_instance_id
   AND aset.abbreviation = 'HW'
   AND a.group_work is TRUE
   AND gc.has_roles is TRUE;
@@ -20,7 +20,7 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN group_configs as gc ON (gc.assessment_id = a.id)
 WHERE
-  a.course_instance_id = 1
+  a.course_instance_id = $course_instance_id
   AND aset.abbreviation = 'HW'
   AND a.group_work is TRUE
   AND gc.has_roles is FALSE;
