@@ -6,7 +6,7 @@
     The goal of <a
       href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"><code>pl-hidden-hints</code></a>
     is to progressively show hints as students submit incorrect (but not invalid) answers. Submit incorrect answers to
-    see more hints.
+    see more hints. Try 10 to get a special hint.
     Newly revealed hints are first shown as open.
   </p>
 
@@ -27,24 +27,20 @@
 
     <!-- Comments are allowed inside the hints element -->
 
-    <pl-hint show-after-submission=3>
-      This is a hint that will be shown after <b>three</b> incorrect submissions for the current question.
-    </pl-hint>
-
     <pl-hint show-after-submission=5 hint-name="Final Hint">
       This is a hint that will be shown after <b>five</b> incorrect submissions for the current question.
     </pl-hint>
 
+    <pl-hint show-after-submission=3>
+      This is a hint that will be shown after <b>three</b> incorrect submissions for the current question.
+    </pl-hint>
 
-    <!-- Specific Wrong Answer Hints -->
 
-    {{#feedback.show_hint_35}}
-    <pl-hint hint-name="Answer 35">You should not use answer 35. This is bad.</pl-hint>
-    {{/feedback.show_hint_35}}
+    <!-- Specific Wrong Answer Hints, this value is computed on server.py -->
 
-    {{#feedback.show_hint_53}}
-    <pl-hint hint-name="Answer 53">You should not use answer 53. This is bad.</pl-hint>
-    {{/feedback.show_hint_53}}
+    {{#feedback.show_hint_10}}
+    <pl-hint hint-name="Answer 10">10 would be right if you are thinking in binary, you should instead think in decimal.</pl-hint>
+    {{/feedback.show_hint_10}}
 
 
   </pl-hidden-hints>
