@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
@@ -29,7 +28,7 @@ describe('Instructor force-breaking variants', () => {
   let partialCredit2VariantId: string;
   let assessmentStudentUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     await helperServer.before()();
 
     assessmentId = await queryRow(sql.select_break_variants_exam, {}, IdSchema);
@@ -46,9 +45,9 @@ describe('Instructor force-breaking variants', () => {
       IdSchema,
     );
   });
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('student starts assessment', async () => {
+  test.sequential('student starts assessment', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -64,7 +63,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  step('student creates and submits to first variant', async () => {
+  test.sequential('student creates and submits to first variant', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -91,7 +90,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  step('student creates and submits to second variant', async () => {
+  test.sequential('student creates and submits to second variant', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -118,7 +117,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  step('instructor breaks first variant via assessment question page', async () => {
+  test.sequential('instructor breaks first variant via assessment question page', async () => {
     const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`;
 
     const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
@@ -135,7 +134,7 @@ describe('Instructor force-breaking variants', () => {
     assert.equal(breakVariantsResponse.status, 200);
   });
 
-  step('instructor breaks second variant via student instance page', async () => {
+  test.sequential('instructor breaks second variant via student instance page', async () => {
     const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
     const instanceQuestion = await queryRow(
@@ -158,7 +157,7 @@ describe('Instructor force-breaking variants', () => {
     assert.equal(breakVariantsResponse.status, 200);
   });
 
-  step('student sees new variant when revisiting first question', async () => {
+  test.sequential('student sees new variant when revisiting first question', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -172,7 +171,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  step('student sees new variant when revisiting second question', async () => {
+  test.sequential('student sees new variant when revisiting second question', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);

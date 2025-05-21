@@ -287,3 +287,36 @@ body:has(div.app-container) {
     white-space: normal;
   }
 }
+
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
