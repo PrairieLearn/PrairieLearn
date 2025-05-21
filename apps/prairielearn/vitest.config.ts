@@ -7,7 +7,14 @@ import { BaseSequencer, type TestSpecification } from 'vitest/node';
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
-const SLOW_TESTS = ['src/tests/exampleCourseQuestions.test.ts', 'src/tests/cron.test.ts'];
+const SLOW_TESTS = [
+  'src/tests/exampleCourseQuestions.test.ts',
+  'src/tests/fileEditor.test.ts',
+  'src/tests/homework.test.ts',
+  'src/tests/exam.test.ts',
+  'src/tests/accessibility/index.test.ts',
+  'src/tests/cron.test.ts',
+];
 
 class CustomSequencer extends BaseSequencer {
   async sort(files: TestSpecification[]) {
