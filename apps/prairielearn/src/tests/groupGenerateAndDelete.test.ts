@@ -5,7 +5,6 @@ import * as sqldb from '@prairielearn/postgres';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -19,11 +18,7 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
-    const result = await sqldb.queryAsync(sql.select_group_work_assessment, { course_instance_id });
+    const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
     assert.notEqual(result.rows.length, 0);
     assert.notEqual(result.rows[0].id, undefined);
     locals.assessment_id = result.rows[0].id;

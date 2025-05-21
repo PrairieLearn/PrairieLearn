@@ -5,7 +5,6 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { IdSchema, type User } from '../lib/db-types.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import {
@@ -34,17 +33,7 @@ describe('Instructor group controls', () => {
   let group2RowId: string | undefined;
 
   test.sequential('has group-based homework assessment', async () => {
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
-    assessment_id = await queryRow(
-      sql.select_group_work_assessment,
-      {
-        course_instance_id,
-      },
-      IdSchema,
-    );
+    assessment_id = await queryRow(sql.select_group_work_assessment, {}, IdSchema);
     instructorAssessmentGroupsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
   });
 

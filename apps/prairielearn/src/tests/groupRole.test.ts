@@ -9,10 +9,8 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import type { CourseInstance } from '../lib/db-types.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupRoleJsonInput } from '../schemas/index.js';
 
@@ -174,13 +172,7 @@ describe(
   'Test group based assessments with custom group roles from student side',
   { timeout: 20_000 },
   function () {
-    let courseInstance: CourseInstance;
-
-    beforeAll(async function () {
-      courseInstance = await selectCourseInstanceByShortName({
-        course_id: '1',
-        short_name: 'Sp15',
-      });
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
@@ -195,9 +187,7 @@ describe(
     });
 
     test.sequential('contains a group-based homework assessment with roles', async function () {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, {
-        course_instance_id: courseInstance.id,
-      });
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, []);
       assert.lengthOf(result.rows, 1);
       assert.notEqual(result.rows[0].id, undefined);
       locals.assessment_id = result.rows[0].id;
@@ -205,9 +195,7 @@ describe(
     });
 
     test.sequential('contains a group-based homework assessment without roles', async function () {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment_without_roles, {
-        course_instance_id: courseInstance.id,
-      });
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment_without_roles, []);
       assert.lengthOf(result.rows, 1);
       assert.notEqual(result.rows[0].id, undefined);
       assert.equal(result.rows[0].has_roles, false);
