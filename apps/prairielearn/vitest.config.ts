@@ -1,8 +1,8 @@
 import { join } from 'path';
 
 import { configDefaults, defineConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification } from 'vitest/node';
-
+import { BaseSequencer, type TestSpecification, type Vitest } from 'vitest/node';
+import { GithubActionsReporter } from 'vitest/reporters';
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
@@ -29,6 +29,19 @@ class CustomSequencer extends BaseSequencer {
   }
 }
 
+class CustomGithubReporter extends GithubActionsReporter {
+  onInit(ctx: Vitest): void {
+    this.ctx = ctx;
+    const originalLog = this.ctx.logger.log;
+    const fileRewriteLog = (msg: string) => {
+      /* We want to strip the leading /PrairieLearn/ from the file reporting, because we run our tests inside a container. */
+      originalLog(msg.replaceAll(/(file=)\/PrairieLearn\//g, '$1'));
+    };
+
+    this.ctx.logger.log = fileRewriteLog;
+  }
+}
+
 // We support running our tests in two modes:
 //
 // - Directly against the source files in `src/`, in which case we rely on
@@ -46,6 +59,7 @@ const isRunningOnDist = process.argv
 
 export default defineConfig({
   test: {
+    reporters: process.env.GITHUB_ACTIONS ? ['default', new CustomGithubReporter()] : ['default'],
     include: isRunningOnDist
       ? [join(import.meta.dirname, 'dist/**/*.test.js')]
       : [...configDefaults.include],
