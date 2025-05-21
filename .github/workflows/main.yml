@@ -174,7 +174,7 @@ jobs:
         run: make build
 
       - name: Test code
-        run: make test-js
+        run: make --assume-old=start-postgres test-js
 
   native-checks-js:
     runs-on: ubuntu-latest
