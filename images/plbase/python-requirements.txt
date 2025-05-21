@@ -23,6 +23,7 @@ pygraphviz==1.14
 pyquaternion==0.9.9
 pytest-cov==6.1.1
 pytest-repeat==0.9.4
+pytest-github-actions-annotate-failures==0.3.0
 pytest==8.3.5
 recommonmark==0.7.1
 regex==2024.11.6

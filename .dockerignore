@@ -6,7 +6,6 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
-!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !.yarnrc.yml
