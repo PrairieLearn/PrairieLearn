@@ -91,7 +91,7 @@ router.get(
         mustache.render(res.locals.assessment.honor_code, {
           user_name: res.locals.user.name,
         }),
-        { allowHtml: false, allowMath: false },
+        { allowHtml: false, interpretMath: false },
       );
     }
     if (!res.locals.assessment.group_work) {

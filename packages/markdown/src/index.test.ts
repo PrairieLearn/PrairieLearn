@@ -5,7 +5,7 @@ import * as markdown from './index.js';
 async function testMarkdown(
   original: string,
   expected: string,
-  options: { inline?: boolean; allowHtml?: boolean; allowMath?: boolean } = {},
+  options: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
 ) {
   const actual = await markdown.markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
@@ -149,6 +149,6 @@ describe('Markdown processing', () => {
   it('does not treat math delimiters as math if allowMath is false', async () => {
     const question = '$a _b=c_ d$';
     const expected = '<p>$a <em>b=c</em> d$</p>';
-    await testMarkdown(question, expected, { allowMath: false });
+    await testMarkdown(question, expected, { interpretMath: false });
   });
 });

@@ -72,19 +72,19 @@ export function createProcessor({
   hastVisitors,
   sanitize = true,
   allowHtml = true,
-  allowMath = true,
+  interpretMath = true,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
   sanitize?: boolean;
   allowHtml?: boolean;
-  allowMath?: boolean;
+  interpretMath?: boolean;
 } = {}) {
   const plugins: (Plugin<any, any, any> | PluginTuple<any, any, any>)[] = [
     remarkParse,
-    ...(allowMath ? [remarkMath] : []),
+    ...(interpretMath ? [remarkMath] : []),
     ...(mdastVisitors ?? []).map((visitor) => makeHandler(visitor)),
-    ...(allowMath ? [makeHandler(visitMathBlock)] : []),
+    ...(interpretMath ? [makeHandler(visitMathBlock)] : []),
     remarkGfm,
     [remark2rehype, { allowDangerousHtml: allowHtml }],
     ...(!allowHtml ? [] : [rehypeRaw]),
@@ -103,15 +103,15 @@ const processorCache = new Map<string, Processor>();
 function getProcessor(options: {
   inline: boolean;
   allowHtml: boolean;
-  allowMath: boolean;
+  interpretMath: boolean;
 }): Processor {
-  const key = `${options.inline}:${options.allowHtml}:${options.allowMath}`;
+  const key = `${options.inline}:${options.allowHtml}:${options.interpretMath}`;
   let processor = processorCache.get(key);
   if (!processor) {
     processor = createProcessor({
       hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
       allowHtml: options.allowHtml,
-      allowMath: options.allowMath,
+      interpretMath: options.interpretMath,
     });
     processorCache.set(key, processor);
   }
@@ -127,8 +127,10 @@ export async function markdownToHtml(
   {
     inline = false,
     allowHtml = true,
-    allowMath = true,
-  }: { inline?: boolean; allowHtml?: boolean; allowMath?: boolean } = {},
+    interpretMath = true,
+  }: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
 ) {
-  return (await getProcessor({ inline, allowHtml, allowMath }).process(original)).value.toString();
+  return (
+    await getProcessor({ inline, allowHtml, interpretMath }).process(original)
+  ).value.toString();
 }
