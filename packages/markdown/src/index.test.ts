@@ -27,7 +27,7 @@ describe('Markdown processing', () => {
   it('handles inline latex', async () => {
     const question = '$a_1 + a_2 = a_3$';
     const expected = '<p>$a_1 + a_2 = a_3$</p>';
-    await testMarkdown(question, expected, { allowMath: false });
+    await testMarkdown(question, expected);
   });
 
   it('handles multiple lines of inline latex', async () => {
