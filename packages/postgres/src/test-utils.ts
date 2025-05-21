@@ -10,6 +10,7 @@ export interface PostgresTestUtilsOptions {
   database: string;
   user?: string;
   host?: string;
+  password?: string;
   poolConfig?: Pick<pg.PoolConfig, 'max' | 'idleTimeoutMillis'>;
   defaultDatabase?: string;
   prepareAfterReset?: (client: pg.Client) => Promise<void>;
@@ -68,6 +69,7 @@ async function createDatabase(
       {
         user: options.user ?? POSTGRES_USER,
         host: options.host ?? POSTGRES_HOST,
+        password: process.env.POSTGRES_CI_PASSWORD ?? undefined,
         database: getDatabaseNameForCurrentMochaWorker(options.database),
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,

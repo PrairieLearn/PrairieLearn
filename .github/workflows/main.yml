@@ -175,8 +175,7 @@ jobs:
 
       - name: Test code
         run: |
-          echo '{"postgresqlPassword": "postgres"}' > config.json
-          make --assume-old=start-postgres test-js
+          POSTGRES_CI_PASSWORD=postgres make --assume-old=start-postgres test-js
 
   native-checks-js:
     runs-on: ubuntu-latest
