@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { addData, augmentError, make, makeWithData, makeWithInfo, newMessage } from './index.js';
 

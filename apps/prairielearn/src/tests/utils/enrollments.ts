@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { assert } from 'vitest';
 import { z } from 'zod';
 
 import { queryRow } from '@prairielearn/postgres';
