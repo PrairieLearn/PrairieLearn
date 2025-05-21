@@ -43,8 +43,8 @@ router.get(
       institution_id: res.locals.institution.id,
     });
 
-    const aiQuestionGenerationUserToggleEnabled = await features.enabled(
-      'ai-question-generation-user-toggle',
+    const aiQuestionGenerationCourseToggleEnabled = await features.enabled(
+      'ai-question-generation-course-toggle',
       {
         course_id: res.locals.course.id,
         institution_id: res.locals.institution.id,
@@ -56,7 +56,7 @@ router.get(
       InstructorCourseAdminSettings({
         resLocals: res.locals,
         aiQuestionGenerationEnabled,
-        aiQuestionGenerationUserToggleEnabled,
+        aiQuestionGenerationCourseToggleEnabled,
         coursePathExists,
         courseInfoExists,
         availableTimezones,
@@ -97,10 +97,7 @@ router.post(
       };
 
       if (
-        await features.enabled('ai-question-generation-user-toggle', {
-          ...context,
-          user_id: res.locals.authn_user.user_id,
-        })
+        await features.enabled('ai-question-generation-course-toggle', context)
       ) {
         if (req.body.ai_question_generation) {
           await features.enable('ai-question-generation', context);

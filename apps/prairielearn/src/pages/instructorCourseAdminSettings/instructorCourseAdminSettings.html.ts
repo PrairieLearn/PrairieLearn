@@ -8,7 +8,7 @@ import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 export function InstructorCourseAdminSettings({
   resLocals,
   aiQuestionGenerationEnabled,
-  aiQuestionGenerationUserToggleEnabled,
+  aiQuestionGenerationCourseToggleEnabled,
   coursePathExists,
   courseInfoExists,
   availableTimezones,
@@ -16,7 +16,7 @@ export function InstructorCourseAdminSettings({
 }: {
   resLocals: Record<string, any>;
   aiQuestionGenerationEnabled: boolean;
-  aiQuestionGenerationUserToggleEnabled: boolean;
+  aiQuestionGenerationCourseToggleEnabled: boolean;
   coursePathExists: boolean;
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
@@ -191,7 +191,7 @@ export function InstructorCourseAdminSettings({
                 Show the getting started checklist
               </label>
             </div>
-            ${aiQuestionGenerationUserToggleEnabled
+            ${aiQuestionGenerationCourseToggleEnabled
               ? html`
                   <div class="form-check mb-3">
                     <input
