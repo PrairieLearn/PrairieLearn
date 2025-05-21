@@ -1,8 +1,8 @@
-import * as cheerio from 'cheerio';
 import { assert } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import type { User } from '../../lib/db-types.js';
+import * as cheerio from '../utils/cheerio.js';
 
 /**
  * Switches active user and loads assessment, returning the user's CSRF

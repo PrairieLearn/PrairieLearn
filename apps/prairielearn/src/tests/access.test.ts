@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -9,6 +8,7 @@ import { config } from '../lib/config.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import * as cheerio from './utils/cheerio.js';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';

@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import * as cheerio from './utils/cheerio.js';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';

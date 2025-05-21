@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import { queryAsync } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import * as helperServer from '../../../tests/helperServer.js';
+import * as cheerio from '../../../tests/utils/cheerio.js';
 import { getCsrfToken } from '../../../tests/utils/csrf.js';
 import { enrollRandomUsers } from '../../../tests/utils/enrollments.js';
 import {

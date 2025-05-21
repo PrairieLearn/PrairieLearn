@@ -1,10 +1,11 @@
 import { setTimeout as sleep } from 'timers/promises';
 
-import * as cheerio from 'cheerio';
 import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

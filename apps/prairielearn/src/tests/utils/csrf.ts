@@ -1,6 +1,7 @@
-import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { assert } from 'vitest';
+
+import * as cheerio from '../utils/cheerio.js';
 
 export async function getCsrfToken(url: string) {
   const res = await fetch(url);

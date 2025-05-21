@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import * as cheerio from 'cheerio';
+import * as cheerio from './utils/cheerio.js';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';

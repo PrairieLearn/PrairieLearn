@@ -3,7 +3,7 @@ import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
-import * as cheerio from 'cheerio';
+import * as cheerio from './utils/cheerio.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';

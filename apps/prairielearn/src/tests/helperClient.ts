@@ -1,8 +1,9 @@
-import * as cheerio from 'cheerio';
 import fetch, { type RequestInit, type Response } from 'node-fetch';
 import { assert } from 'vitest';
 
 import { config } from '../lib/config.js';
+
+import * as cheerio from './utils/cheerio.js';
 
 interface CheerioResponse extends Response {
   $: cheerio.CheerioAPI;
