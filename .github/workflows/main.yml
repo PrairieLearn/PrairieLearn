@@ -115,14 +115,29 @@ jobs:
 
   test-prairielearn-local:
     runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: pgvector/pgvector:pg16
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
     steps:
       - uses: actions/checkout@v4
 
       - name: Install OS packages
         run: |
-          echo | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
-          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive \
-          redis postgresql-16 postgresql-contrib-16 postgresql-server-dev-16 postgresql-16-pgvector
+          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive redis
 
       - name: Set up Node
         uses: actions/setup-node@v4
