@@ -920,10 +920,7 @@ export async function updateLti13Scores(
         }
       } catch (error) {
         counts.error++;
-
-        // Default to showing the whole error
-        job.warn(`\t${error.data.statusText}`);
-        job.warn(`\t${error.data.body}`);
+        job.warn(`\t${error.message}`);
       }
     }
   }
