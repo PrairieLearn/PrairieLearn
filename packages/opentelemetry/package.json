@@ -41,6 +41,7 @@
     "@opentelemetry/context-async-hooks": "^1.30.1",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/chai": "^5.2.1",
+    "@types/chai-as-promised": "^8.0.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.32",
     "c8": "^10.1.3",
