@@ -16,7 +16,8 @@ const SLOW_TESTS = [
   'src/tests/homework.test.ts',
   // 40s
   'src/tests/exam.test.ts',
-  // 20s
+  // 25s
+  'src/tests/accessibility/index.test.ts',
   'src/tests/cron.test.ts',
 ];
 
