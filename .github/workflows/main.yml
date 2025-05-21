@@ -175,7 +175,7 @@ jobs:
 
       - name: Test code
         run: |
-          psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+          psql postgres://postgres:postgres@localhost/postgres postgres -c "ALTER USER postgres WITH SUPERUSER;"
           make --assume-old=start-postgres test-js
         env:
           POSTGRES_CI_PASSWORD: postgres
