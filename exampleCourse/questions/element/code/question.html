@@ -1,8 +1,8 @@
 <pl-question-panel>
   <p>Questions below were designed to showcase the different features of
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>.
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>.
     The goal of <a
-      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>
+      href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element"><code>pl-code</code></a>
     is to display different programming languages with appropriate syntax highlighting and code line emphasis.
   </p>
 </pl-question-panel>
@@ -16,13 +16,13 @@
     setting <code>normalize-whitespace="true"</code>.
     <pl-code language="python" copy-code-button="True" normalize-whitespace="true">
       def square(x):
-          return x * x
+      return x * x
     </pl-code>
 
     You can disable selection of the code region using the <code>prevent-select="true"</code> attribute.
     <pl-code language="python" prevent-select="true" normalize-whitespace="true">
       def square(x):
-          return x * x
+      return x * x
     </pl-code>
   </pl-question-panel>
 </pl-card>
@@ -33,13 +33,13 @@
     <code>highlight-lines="..." </code>attribute.
     <pl-code language="python" highlight-lines="4-5" normalize-whitespace="true">
       def foo():
-          return 'foo'
+      return 'foo'
 
       def square(x):
-          return x * x
+      return x * x
 
       def bar(x):
-          return 'bar'
+      return 'bar'
     </pl-code>
   </pl-question-panel>
 </pl-card>
@@ -79,9 +79,9 @@
     easily. In particular, we used the <code>pprint.pformat()</code> function to generate the string to display below.
     We also enabled line numbers by setting
     <code>show-line-numbers="True"</code>.
-<pl-code language="python" show-line-numbers="True" copy-code-button="True">
-my_object = \
-{{params.my_object_string}}
-</pl-code>
+    <pl-code language="python" show-line-numbers="True" copy-code-button="True">
+      my_object = \
+      {{params.my_object_string}}
+    </pl-code>
   </pl-question-panel>
 </pl-card>
