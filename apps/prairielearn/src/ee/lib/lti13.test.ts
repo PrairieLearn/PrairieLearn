@@ -1,6 +1,5 @@
-import { assert } from 'chai';
 import express from 'express';
-import { step } from 'mocha-steps';
+import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
@@ -92,7 +91,7 @@ describe('fetchRetry()', () => {
 
   let apiCount: number;
 
-  step('should return the full list by iterating', async () => {
+  test.sequential('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
@@ -105,7 +104,7 @@ describe('fetchRetry()', () => {
     });
   });
 
-  step('should return the full list with a large limit', async () => {
+  test.sequential('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
@@ -119,15 +118,17 @@ describe('fetchRetry()', () => {
     });
   });
 
-  step('should throw an error on all 403s', async () => {
+  test.sequential('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      await assert.isRejected(fetchRetry(url + '/403all', {}, { sleepMs: 100 }), /fetch error/);
+      await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
+        /fetch error/,
+      );
       assert.equal(apiCount, 5);
     });
   });
 
-  step('should return the full list by iterating with intermittent 403s', async () => {
+  test.sequential('should return the full list by iterating with intermittent 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url + '/403oddAttempt', {}, { sleepMs: 100 });
