@@ -206,7 +206,7 @@ export function InstructorCourseAdminSettings({
                       class="form-check-label d-flex align-items-center"
                       for="ai_question_generation_toggle"
                     >
-                      AI question generation
+                      Enable AI question generation
                       <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
                         Beta
                       </span>
