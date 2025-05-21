@@ -120,7 +120,6 @@ jobs:
 
       - name: Install OS packages
         run: |
-          sudo apt-get install -y --no-install-recommends postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
           sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive \
           redis postgresql-16 postgresql-16-contrib postgresql-16-server-dev-all postgresql-16-pgvector
