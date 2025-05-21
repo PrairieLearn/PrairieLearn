@@ -95,9 +95,7 @@ router.post(
         institution_id: res.locals.institution.id,
       };
 
-      if (
-        await features.enabled('ai-question-generation-course-toggle', context)
-      ) {
+      if (await features.enabled('ai-question-generation-course-toggle', context)) {
         if (req.body.ai_question_generation) {
           await features.enable('ai-question-generation', context);
         } else {
