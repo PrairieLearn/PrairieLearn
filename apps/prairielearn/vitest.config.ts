@@ -8,15 +8,10 @@ import { BaseSequencer, type TestSpecification } from 'vitest/node';
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
 const SLOW_TESTS = [
-  // 120s
   'src/tests/exampleCourseQuestions.test.ts',
-  // 90s
   'src/tests/fileEditor.test.ts',
-  // 70s
   'src/tests/homework.test.ts',
-  // 40s
   'src/tests/exam.test.ts',
-  // 25s
   'src/tests/accessibility/index.test.ts',
   'src/tests/cron.test.ts',
 ];
