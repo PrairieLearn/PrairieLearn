@@ -175,7 +175,8 @@ jobs:
 
       - name: Test code
         run: |
-          POSTGRES_CI_PASSWORD=postgres make --assume-old=start-postgres test-js
+          psql postgres -c "ALTER USER postgres WITH SUPERUSER;"
+          make --assume-old=start-postgres test-js
         env:
           POSTGRES_CI_PASSWORD: postgres
   native-checks-js:
