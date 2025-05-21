@@ -150,7 +150,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     // The percentage input is not checked because its value is updated via client-side JS, which is
     // currently not supported by the test suite
     assert.equal(form.find('input[name=score_manual_points]').val(), score_points.toString());
-    assert.equal(form.find('textarea').text(), feedback_note);
+    assert.equal(form.find('textarea').text().trim(), feedback_note);
 
     if (rubric_items) {
       rubric_items.forEach((item, index) => {
