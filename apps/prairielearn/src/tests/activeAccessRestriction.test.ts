@@ -36,12 +36,9 @@ describe(
       config.authName = 'Student User';
       config.authUin = '00000001';
 
+      await helperServer.before()();
       const result = sqldb.queryAsync('SELECT * FROM course_instances;', {});
       console.log('RESTRICTION_RESULT', result);
-    });
-
-    beforeAll(async function () {
-      await helperServer.before()();
       context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
