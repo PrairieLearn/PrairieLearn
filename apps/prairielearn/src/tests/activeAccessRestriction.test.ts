@@ -22,9 +22,6 @@ describe(
     const context: Record<string, any> = {};
     context.siteUrl = `http://localhost:${config.serverPort}`;
     context.baseUrl = `${context.siteUrl}/pl`;
-    context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
-    context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
-    context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers: Record<string, string> = {};
 
@@ -53,6 +50,9 @@ describe(
         tid: 'hw8-activeAccessRestriction',
         course_instance_id,
       });
+      context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/${course_instance_id}`;
+      context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
+      context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
       context.examId = examId;
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
