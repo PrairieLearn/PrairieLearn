@@ -15,10 +15,19 @@
         "--config",
         "${workspaceRoot}/apps/prairielearn/vitest.config.ts",
         "${relativeFile}",
+        // Breakpoints can cause test timeouts
         "--testTimeout=0",
         "--no-file-parallelism",
+        // Long summaries can obscure error
+        "--reporter=dot",
+        // When debugging, we want to isolate on one failure, and hide skipped tests.
         "--bail",
         "1",
+      ],
+      "runtimeArgs": [
+        "--trace-uncaught",
+        "--trace-warnings",
+        "--trace-exit"
       ],
       "smartStep": true,
       "console": "integratedTerminal"
