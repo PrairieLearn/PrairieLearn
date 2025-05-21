@@ -5,10 +5,7 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Current Test File with Vitest",
-      "skipFiles": [
-        "<node_internals>/**",
-        "**/node_modules/**"
-      ],
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
       "program": "${workspaceRoot}/node_modules/vitest/vitest.mjs",
       "args": [
         "run",
@@ -22,15 +19,11 @@
         "--reporter=dot",
         // When debugging, we want to isolate on one failure, and hide skipped tests.
         "--bail",
-        "1",
+        "1"
       ],
-      "runtimeArgs": [
-        "--trace-uncaught",
-        "--trace-warnings",
-        "--trace-exit"
-      ],
+      "runtimeArgs": ["--trace-uncaught", "--trace-warnings", "--trace-exit"],
       "smartStep": true,
       "console": "integratedTerminal"
     }
-  ],
+  ]
 }
