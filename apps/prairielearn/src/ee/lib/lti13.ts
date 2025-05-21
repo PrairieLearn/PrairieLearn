@@ -8,7 +8,6 @@ import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { html } from '@prairielearn/html';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -565,6 +564,22 @@ export async function linkAssessment(
   });
 }
 
+function findValueByKey(obj: unknown, targetKey: string) {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  if (obj.hasOwnProperty(targetKey)) {
+    return obj[targetKey];
+  }
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      const result = findValueByKey(obj[key], targetKey);
+      if (result !== undefined) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
+
 /**
  * Make HTTP fetch requests with retries
  *
@@ -591,14 +606,23 @@ export async function fetchRetry(
 
     if (!response.ok) {
       const resObject = await response.json();
-      throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}`, {
+      /*
+      Canvas error example with nested objects and message property.
+      {
+        errors: {
+          type: 'unprocessable_entity',
+          message: 'This course has concluded. AGS requests will no longer be accepted for this course.'
+        }
+      }
+      */
+      const msg = findValueByKey(resObject, 'message');
+
+      throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${msg}`, {
         status: response.status,
         data: {
-          status: response.status,
           statusText: response.statusText,
-          body: JSON.stringify(resObject),
+          body: resObject,
         },
-        info: html`${JSON.stringify(resObject)}`,
       });
     }
     return response;
