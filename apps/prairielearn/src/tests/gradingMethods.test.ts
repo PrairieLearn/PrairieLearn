@@ -1,4 +1,3 @@
-import * as cheerio from './utils/cheerio.js';
 import fetch from 'node-fetch';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -9,6 +8,7 @@ import { config } from '../lib/config.js';
 
 import { type User, parseInstanceQuestionId, saveOrGrade, setUser } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

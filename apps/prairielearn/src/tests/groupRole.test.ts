@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as cheerio from './utils/cheerio.js';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
@@ -17,6 +16,7 @@ import { type GroupRoleJsonInput } from '../schemas/index.js';
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { syncCourseData } from './sync/util.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

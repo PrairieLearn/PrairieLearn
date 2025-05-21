@@ -1,4 +1,3 @@
-import * as cheerio from './utils/cheerio.js';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -7,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { type Config, config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

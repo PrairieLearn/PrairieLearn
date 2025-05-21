@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as cheerio from './utils/cheerio.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
@@ -13,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

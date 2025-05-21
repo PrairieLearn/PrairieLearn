@@ -3,7 +3,6 @@ import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
-import * as cheerio from './utils/cheerio.js';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
@@ -18,6 +17,7 @@ import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

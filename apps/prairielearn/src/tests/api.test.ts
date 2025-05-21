@@ -1,10 +1,10 @@
-import * as cheerio from './utils/cheerio.js';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import * as cheerio from './utils/cheerio.js';
 
 const locals: Record<string, any> = {};
 
