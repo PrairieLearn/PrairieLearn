@@ -122,7 +122,7 @@ jobs:
         run: |
           echo | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
           sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive \
-          redis postgresql-16 postgresql-contrib-16 postgresql-server-dev-all-16 postgresql-16-pgvector
+          redis postgresql-16 postgresql-contrib-16 postgresql-server-dev-16 postgresql-16-pgvector
 
       - name: Set up Node
         uses: actions/setup-node@v4
