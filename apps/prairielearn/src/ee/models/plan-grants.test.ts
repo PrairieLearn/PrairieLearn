@@ -1,11 +1,13 @@
+import { afterAll, beforeAll, describe, it } from 'vitest';
+
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
 
 import { ensurePlanGrant } from './plan-grants.js';
 
 describe('plan-grants', () => {
-  before(helperDb.before);
-  after(helperDb.after);
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
 
   describe('insertPlanGrant', () => {
     it('creates a plan grant with audit logs', async () => {

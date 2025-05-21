@@ -4,7 +4,6 @@
     "nodeModulesScripts": [
       "quill/dist/quill.js",
       "quilljs-markdown/dist/quilljs-markdown.js",
-      "showdown/dist/showdown.js",
       "he/he.js",
       "dompurify/dist/purify.min.js"
     ],
@@ -15,5 +14,10 @@
     ],
     "elementScripts": ["pl-rich-text-editor.js"],
     "elementStyles": ["pl-rich-text-editor.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "marked": "marked/lib/marked.esm.js"
+    }
   }
 }
