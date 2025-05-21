@@ -18,7 +18,7 @@ body:has(div.app-container) {
   display: grid;
   position: relative;
   height: 100%;
-  width: 100vw;
+  width: 100%;
   transition: 300ms;
   grid-template:
     'top-nav top-nav' auto
@@ -271,12 +271,13 @@ body:has(div.app-container) {
     overflow-x: hidden;
   }
 
-  /**
-   * On wider viewports, when the side nav is collapsed,
-   * tooltips appear next to the side nav link icons when hovered. 
-   *
-   * This rule hides those tooltips on narrow viewports.
-   */
+  /* If the side nav is collapsed on a wider viewports,
+  *  tooltips appear above the side nav link icons when hovered. 
+  *  
+  *  If the user collapses the side nav on a wide viewport, then 
+  *  resizes their window to a narrow viewport (less than 768px), 
+  *  the tooltips should be hidden, since side nav link text
+  *  is displayed on narrow viewports. */
   body:has(.app-container.side-nav-enabled:not(.mobile-collapsed)) .tooltip {
     display: none;
   }
@@ -285,38 +286,5 @@ body:has(div.app-container) {
     display: flex;
     align-items: center;
     white-space: normal;
-  }
-}
-
-#assessment-switcher-container .assessment-row {
-  display: grid;
-  /* Use minmax(0, 1fr) to prevent content overflow */
-  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
-}
-
-#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
-  background-color: rgba(var(--bs-secondary-rgb), 0.2);
-}
-
-@media (max-width: 768px) {
-  #assessment-switcher-container .assessment-row {
-    /* The title takes up the entire first row. The label and TID take up the second row. */
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto auto;
-  }
-
-  #assessment-switcher-container .assessment-row .title {
-    grid-column: 1/-1;
-    grid-row: 1;
-  }
-
-  #assessment-switcher-container .assessment-row .label {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  #assessment-switcher-container .assessment-row div:nth-child(3) {
-    grid-column: 2;
-    grid-row: 2;
   }
 }
