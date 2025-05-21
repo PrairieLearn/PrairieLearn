@@ -136,6 +136,7 @@ function getPoolConfig(options: PostgresTestUtilsOptions): pg.PoolConfig {
   return {
     user: options.user ?? POSTGRES_USER,
     host: options.host ?? POSTGRES_HOST,
+    password: process.env.POSTGRES_CI_PASSWORD ?? undefined,
     database: getDatabaseNameForCurrentMochaWorker(options.database),
   };
 }
