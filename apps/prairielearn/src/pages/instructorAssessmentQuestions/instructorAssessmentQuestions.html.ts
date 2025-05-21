@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
@@ -18,7 +19,7 @@ export function InstructorAssessmentQuestions({
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    headContent: [compiledScriptTag('instructorAssessmentQuestionsClient.ts')],
+    headContent: [compiledScriptTag('instructorAssessmentQuestionsClient.tsx')],
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -35,7 +36,7 @@ export function InstructorAssessmentQuestions({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
-
+      ${EncodedData(questions, 'assessment-questions-data')}
       <form method="POST" id="zonesForm">
         <input type="hidden" name="__action" value="edit_assessment_questions" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -46,7 +47,7 @@ export function InstructorAssessmentQuestions({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
-            ? html` <div class="js-edit-mode-buttons ml-auto"></div> `
+            ? html` <div class="js-edit-mode-buttons ms-auto"></div> `
             : ''}
         </div>
         <div

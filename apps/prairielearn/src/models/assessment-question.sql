@@ -59,6 +59,12 @@ SELECT
   q.sync_errors,
   q.sync_warnings,
   q.course_id,
+  ARRAY(
+    SELECT
+      points - aq.max_manual_points
+    FROM
+      UNNEST(aq.points_list) AS points
+  ) AS auto_points_list,
   c.sharing_name AS course_sharing_name
 FROM
   assessment_questions AS aq
