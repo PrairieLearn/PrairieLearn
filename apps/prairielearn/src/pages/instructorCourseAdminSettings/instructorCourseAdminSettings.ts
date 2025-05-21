@@ -48,7 +48,6 @@ router.get(
       {
         course_id: res.locals.course.id,
         institution_id: res.locals.institution.id,
-        user_id: res.locals.authn_user.user_id,
       },
     );
 
