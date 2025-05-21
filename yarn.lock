@@ -3399,10 +3399,8 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     commander: "npm:^13.1.0"
     esbuild: "npm:^0.25.3"
     express: "npm:^4.21.2"
@@ -3410,12 +3408,12 @@ __metadata:
     fs-extra: "npm:^11.3.0"
     get-port: "npm:^7.1.0"
     globby: "npm:^14.1.0"
-    mocha: "npm:^11.1.0"
     node-fetch: "npm:^3.3.2"
     pretty-bytes: "npm:^7.0.0"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   bin:
     compiled-assets: dist/cli.js
   languageName: unknown
@@ -3431,16 +3429,14 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.16"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     fs-extra: "npm:^11.3.0"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^11.1.0"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
     zod: "npm:^3.24.3"
   languageName: unknown
   linkType: soft
@@ -3450,17 +3446,15 @@ __metadata:
   resolution: "@prairielearn/csv@workspace:packages/csv"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     csv-stringify: "npm:^6.5.2"
-    mocha: "npm:^11.1.0"
     multipipe: "npm:^4.0.0"
     stream-transform: "npm:^3.3.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3471,14 +3465,12 @@ __metadata:
     "@aws-sdk/client-ecr": "npm:^3.800.0"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     date-fns: "npm:^4.1.0"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3488,14 +3480,12 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3504,16 +3494,13 @@ __metadata:
   resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     "@typescript-eslint/rule-tester": "npm:^8.32.1"
     "@typescript-eslint/utils": "npm:^8.32.1"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3529,14 +3516,12 @@ __metadata:
   resolution: "@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     express: "npm:^4.21.2"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3555,13 +3540,11 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.21"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3570,14 +3553,12 @@ __metadata:
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     lodash: "npm:^4.17.21"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3601,6 +3582,7 @@ __metadata:
     "@prairielearn/sentry": "workspace:^"
     "@types/async": "npm:^3.2.24"
     "@types/chai": "npm:^5.2.1"
+    "@types/chai-as-promised": "npm:^8.0.2"
     "@types/dockerode": "npm:^3.3.38"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^20.17.32"
@@ -3636,14 +3618,12 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     ejs: "npm:^3.1.10"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3652,13 +3632,11 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3680,16 +3658,12 @@ __metadata:
   resolution: "@prairielearn/markdown@workspace:packages/markdown"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
     "@types/hast": "npm:^3.0.4"
     "@types/mdast": "npm:^4.0.4"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     "@types/unist": "npm:^3.0.3"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     mdast-util-math: "npm:^3.0.0"
-    mocha: "npm:^11.1.0"
     rehype-raw: "npm:^7.0.0"
     rehype-sanitize: "npm:^6.0.0"
     rehype-stringify: "npm:^10.0.1"
@@ -3702,6 +3676,7 @@ __metadata:
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
     vfile: "npm:^6.0.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3710,14 +3685,12 @@ __metadata:
   resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     marked: "npm:^15.0.7"
     mathjax: "npm:^3.2.2"
-    mocha: "npm:^11.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3731,18 +3704,15 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    chai-as-promised: "npm:^8.0.1"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     fs-extra: "npm:^11.3.0"
-    mocha: "npm:^11.1.0"
     serialize-error: "npm:^12.0.0"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
+    vitest: "npm:^3.1.4"
     zod: "npm:^3.24.3"
   languageName: unknown
   linkType: soft
@@ -3800,15 +3770,11 @@ __metadata:
     "@opentelemetry/sdk-trace-node": "npm:^1.30.1"
     "@opentelemetry/semantic-conventions": "npm:^1.30.0"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    chai-as-promised: "npm:^8.0.1"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3817,14 +3783,11 @@ __metadata:
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -3861,14 +3824,10 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
     "@types/lodash": "npm:^4.17.16"
-    "@types/mocha": "npm:^10.0.10"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^20.17.32"
     "@types/pg-cursor": "npm:^2.7.2"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    chai-as-promised: "npm:^8.0.1"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.15.6"
     pg-cursor: "npm:^2.14.6"
@@ -3876,6 +3835,7 @@ __metadata:
     pg-protocol: "npm:^1.9.5"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
     zod: "npm:^3.24.3"
   languageName: unknown
   linkType: soft
@@ -3941,8 +3901,6 @@ __metadata:
     "@types/body-parser": "npm:^1.19.5"
     "@types/bootstrap": "npm:^5.2.10"
     "@types/byline": "npm:^4.2.36"
-    "@types/chai": "npm:^5.2.1"
-    "@types/chai-as-promised": "npm:^8.0.2"
     "@types/cookie-parser": "npm:^1.4.8"
     "@types/crypto-js": "npm:^4.2.2"
     "@types/d3": "npm:^7.4.3"
@@ -4002,8 +3960,6 @@ __metadata:
     bootstrap-table: "npm:1.21.2"
     byline: "npm:^5.0.0"
     c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    chai-as-promised: "npm:^8.0.1"
     chalk: "npm:^5.4.1"
     cheerio: "npm:^1.0.0"
     clipboard: "npm:^2.0.11"
@@ -4171,13 +4127,11 @@ __metadata:
   resolution: "@prairielearn/run@workspace:packages/run"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -4186,13 +4140,11 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -4216,24 +4168,20 @@ __metadata:
   dependencies:
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
     "@types/cookie": "npm:^0.6.0"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.21"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     "@types/node-fetch": "npm:^2.6.12"
     "@types/on-headers": "npm:^1.0.3"
     "@types/set-cookie-parser": "npm:^2.4.10"
     "@types/uid-safe": "npm:^2.1.5"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     cookie: "npm:^0.7.2"
     cookie-signature: "npm:^1.2.2"
     express: "npm:^4.21.2"
     express-async-handler: "npm:^1.2.0"
     fetch-cookie: "npm:^3.1.0"
-    mocha: "npm:^11.1.0"
     node-fetch: "npm:^3.3.2"
     on-headers: "npm:^1.0.2"
     set-cookie-parser: "npm:^2.7.1"
@@ -4241,6 +4189,7 @@ __metadata:
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     uid-safe: "npm:^2.1.5"
+    vitest: "npm:^3.1.4"
   languageName: unknown
   linkType: soft
 
@@ -4284,6 +4233,8 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
+    "@types/chai": "npm:^5.2.2"
+    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
@@ -4334,15 +4285,12 @@ __metadata:
   resolution: "@prairielearn/zod@workspace:packages/zod"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": "npm:^5.2.1"
-    "@types/mocha": "npm:^10.0.10"
     "@types/node": "npm:^20.17.32"
-    c8: "npm:^10.1.3"
-    chai: "npm:^5.2.0"
-    mocha: "npm:^11.1.0"
+    "@vitest/coverage-v8": "npm:^3.1.4"
     postgres-interval: "npm:^4.0.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.1.4"
     zod: "npm:^3.24.3"
   languageName: unknown
   linkType: soft
@@ -4504,142 +4452,142 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@rollup/rollup-android-arm-eabi@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-android-arm-eabi@npm:4.40.2"
+"@rollup/rollup-android-arm-eabi@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-android-arm-eabi@npm:4.41.0"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@rollup/rollup-android-arm64@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-android-arm64@npm:4.40.2"
+"@rollup/rollup-android-arm64@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-android-arm64@npm:4.41.0"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-darwin-arm64@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-darwin-arm64@npm:4.40.2"
+"@rollup/rollup-darwin-arm64@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-darwin-arm64@npm:4.41.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-darwin-x64@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-darwin-x64@npm:4.40.2"
+"@rollup/rollup-darwin-x64@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-darwin-x64@npm:4.41.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-freebsd-arm64@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-freebsd-arm64@npm:4.40.2"
+"@rollup/rollup-freebsd-arm64@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-freebsd-arm64@npm:4.41.0"
   conditions: os=freebsd & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-freebsd-x64@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-freebsd-x64@npm:4.40.2"
+"@rollup/rollup-freebsd-x64@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-freebsd-x64@npm:4.41.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-arm-gnueabihf@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-arm-gnueabihf@npm:4.40.2"
+"@rollup/rollup-linux-arm-gnueabihf@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-arm-gnueabihf@npm:4.41.0"
   conditions: os=linux & cpu=arm & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-arm-musleabihf@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-arm-musleabihf@npm:4.40.2"
+"@rollup/rollup-linux-arm-musleabihf@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-arm-musleabihf@npm:4.41.0"
   conditions: os=linux & cpu=arm & libc=musl
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-arm64-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-arm64-gnu@npm:4.40.2"
+"@rollup/rollup-linux-arm64-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-arm64-gnu@npm:4.41.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-arm64-musl@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-arm64-musl@npm:4.40.2"
+"@rollup/rollup-linux-arm64-musl@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-arm64-musl@npm:4.41.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-loongarch64-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-loongarch64-gnu@npm:4.40.2"
+"@rollup/rollup-linux-loongarch64-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-loongarch64-gnu@npm:4.41.0"
   conditions: os=linux & cpu=loong64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-powerpc64le-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-powerpc64le-gnu@npm:4.40.2"
+"@rollup/rollup-linux-powerpc64le-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-powerpc64le-gnu@npm:4.41.0"
   conditions: os=linux & cpu=ppc64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-riscv64-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-riscv64-gnu@npm:4.40.2"
+"@rollup/rollup-linux-riscv64-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-riscv64-gnu@npm:4.41.0"
   conditions: os=linux & cpu=riscv64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-riscv64-musl@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-riscv64-musl@npm:4.40.2"
+"@rollup/rollup-linux-riscv64-musl@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-riscv64-musl@npm:4.41.0"
   conditions: os=linux & cpu=riscv64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-s390x-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-s390x-gnu@npm:4.40.2"
+"@rollup/rollup-linux-s390x-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-s390x-gnu@npm:4.41.0"
   conditions: os=linux & cpu=s390x & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-x64-gnu@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-x64-gnu@npm:4.40.2"
+"@rollup/rollup-linux-x64-gnu@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-x64-gnu@npm:4.41.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@rollup/rollup-linux-x64-musl@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-linux-x64-musl@npm:4.40.2"
+"@rollup/rollup-linux-x64-musl@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-linux-x64-musl@npm:4.41.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@rollup/rollup-win32-arm64-msvc@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-win32-arm64-msvc@npm:4.40.2"
+"@rollup/rollup-win32-arm64-msvc@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-win32-arm64-msvc@npm:4.41.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@rollup/rollup-win32-ia32-msvc@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-win32-ia32-msvc@npm:4.40.2"
+"@rollup/rollup-win32-ia32-msvc@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-win32-ia32-msvc@npm:4.41.0"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@rollup/rollup-win32-x64-msvc@npm:4.40.2":
-  version: 4.40.2
-  resolution: "@rollup/rollup-win32-x64-msvc@npm:4.40.2"
+"@rollup/rollup-win32-x64-msvc@npm:4.41.0":
+  version: 4.41.0
+  resolution: "@rollup/rollup-win32-x64-msvc@npm:4.41.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -5595,12 +5543,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:*, @types/chai@npm:^5.2.1":
-  version: 5.2.1
-  resolution: "@types/chai@npm:5.2.1"
+"@types/chai@npm:*, @types/chai@npm:^5.2.1, @types/chai@npm:^5.2.2":
+  version: 5.2.2
+  resolution: "@types/chai@npm:5.2.2"
   dependencies:
     "@types/deep-eql": "npm:*"
-  checksum: 10c0/f8a03c9f8450b7ab8df11f658c4194be17a6316b870490d5ffaf5289a3c0c0591ed6291b2d6551e181887c3eed89d0490744b3e569d9b23cf611b05f93e775b6
+  checksum: 10c0/49282bf0e8246800ebb36f17256f97bd3a8c4fb31f92ad3c0eaa7623518d7e87f1eaad4ad206960fcaf7175854bdff4cb167e4fe96811e0081b4ada83dd533ec
   languageName: node
   linkType: hard
 
@@ -15609,29 +15557,29 @@ __metadata:
   linkType: hard
 
 "rollup@npm:^4.34.9":
-  version: 4.40.2
-  resolution: "rollup@npm:4.40.2"
+  version: 4.41.0
+  resolution: "rollup@npm:4.41.0"
   dependencies:
-    "@rollup/rollup-android-arm-eabi": "npm:4.40.2"
-    "@rollup/rollup-android-arm64": "npm:4.40.2"
-    "@rollup/rollup-darwin-arm64": "npm:4.40.2"
-    "@rollup/rollup-darwin-x64": "npm:4.40.2"
-    "@rollup/rollup-freebsd-arm64": "npm:4.40.2"
-    "@rollup/rollup-freebsd-x64": "npm:4.40.2"
-    "@rollup/rollup-linux-arm-gnueabihf": "npm:4.40.2"
-    "@rollup/rollup-linux-arm-musleabihf": "npm:4.40.2"
-    "@rollup/rollup-linux-arm64-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-arm64-musl": "npm:4.40.2"
-    "@rollup/rollup-linux-loongarch64-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-powerpc64le-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-riscv64-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-riscv64-musl": "npm:4.40.2"
-    "@rollup/rollup-linux-s390x-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-x64-gnu": "npm:4.40.2"
-    "@rollup/rollup-linux-x64-musl": "npm:4.40.2"
-    "@rollup/rollup-win32-arm64-msvc": "npm:4.40.2"
-    "@rollup/rollup-win32-ia32-msvc": "npm:4.40.2"
-    "@rollup/rollup-win32-x64-msvc": "npm:4.40.2"
+    "@rollup/rollup-android-arm-eabi": "npm:4.41.0"
+    "@rollup/rollup-android-arm64": "npm:4.41.0"
+    "@rollup/rollup-darwin-arm64": "npm:4.41.0"
+    "@rollup/rollup-darwin-x64": "npm:4.41.0"
+    "@rollup/rollup-freebsd-arm64": "npm:4.41.0"
+    "@rollup/rollup-freebsd-x64": "npm:4.41.0"
+    "@rollup/rollup-linux-arm-gnueabihf": "npm:4.41.0"
+    "@rollup/rollup-linux-arm-musleabihf": "npm:4.41.0"
+    "@rollup/rollup-linux-arm64-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-arm64-musl": "npm:4.41.0"
+    "@rollup/rollup-linux-loongarch64-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-powerpc64le-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-riscv64-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-riscv64-musl": "npm:4.41.0"
+    "@rollup/rollup-linux-s390x-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-x64-gnu": "npm:4.41.0"
+    "@rollup/rollup-linux-x64-musl": "npm:4.41.0"
+    "@rollup/rollup-win32-arm64-msvc": "npm:4.41.0"
+    "@rollup/rollup-win32-ia32-msvc": "npm:4.41.0"
+    "@rollup/rollup-win32-x64-msvc": "npm:4.41.0"
     "@types/estree": "npm:1.0.7"
     fsevents: "npm:~2.3.2"
   dependenciesMeta:
@@ -15679,7 +15627,7 @@ __metadata:
       optional: true
   bin:
     rollup: dist/bin/rollup
-  checksum: 10c0/cbe9b766891da74fbf7c3b50420bb75102e5c59afc0ea45751f7e43a581d2cd93367763f521f820b72e341cf1f6b9951fbdcd3be67a1b0aa774b754525a8b9c7
+  checksum: 10c0/4c3d361f400317cb18f5e3912553a514bb1dcc7ce0c92ff66b9786b598632eb1d56f7bb1cc11ed16a4ccdbe6808ae851bc6bde5d2305cc587450c6212e69617f
   languageName: node
   linkType: hard
 

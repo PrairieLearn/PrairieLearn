@@ -1,5 +1,5 @@
 import express from 'express';
-import { assert, describe, test } from 'vitest';
+import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
@@ -121,7 +121,9 @@ describe('fetchRetry()', () => {
   test.sequential('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      await assert.isRejected(fetchRetry(url + '/403all', {}, { sleepMs: 100 }), /fetch error/);
+      await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
+        /fetch error/,
+      );
       assert.equal(apiCount, 5);
     });
   });

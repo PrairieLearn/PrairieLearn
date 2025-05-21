@@ -1,8 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
-import { describe, it } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
