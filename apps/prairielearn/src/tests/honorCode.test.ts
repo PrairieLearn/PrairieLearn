@@ -8,6 +8,10 @@ import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const defaultHonorCode =
+  'I certify that I am Dev User and I am allowed to take this assessment. I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.';
+
+const customHonorCode = `I, Dev User, pledge that I am allowed to take the following assessment and will not receive any unauthorized assistance.`;
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);
@@ -35,6 +39,10 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
     // We should see the honor code div by default
     assert.lengthOf(response.$('div.test-class-honor-code'), 1);
+    assert.equal(
+      response.$('div.test-class-honor-code').children().first().text().replace(/\s+/g, ' ').trim(),
+      defaultHonorCode,
+    );
   });
 
   it('visits landing page of assessment with disabled honor code', async () => {
@@ -51,5 +59,25 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-class-honor-code'), 0);
+  });
+
+  it('visits the landing page of assessment with a custom honor code', async () => {
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
+      number: '2',
+    });
+    const assessmentId = results.rows[0].id;
+    const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
+
+    const response = await helperClient.fetchCheerio(assessmentUrl);
+    assert.isTrue(response.ok);
+
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
+
+    // We should see the honor code div by default
+    assert.lengthOf(response.$('div.test-class-honor-code'), 1);
+    assert.equal(
+      response.$('div.test-class-honor-code').children().first().text().replace(/\s+/g, ' ').trim(),
+      customHonorCode,
+    );
   });
 });

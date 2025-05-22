@@ -134,9 +134,15 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected);
   });
 
-  it('sanitizes HTML if allowHtml is false', async () => {
-    const question = 'testing <h1>html</h1>';
+  it('sanitizes inline HTML tags if allowHtml is false', async () => {
+    const question = 'testing <em>html</em>';
     const expected = '<p>testing html</p>';
+    await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('sanitizes an HTML block if allowHtml is false', async () => {
+    const question = '<div>testing</div>';
+    const expected = '';
     await testMarkdown(question, expected, { allowHtml: false });
   });
 

@@ -71,6 +71,8 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
+  // If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
+  // See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
   allowHtml = true,
   interpretMath = true,
 }: {
