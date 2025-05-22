@@ -398,35 +398,45 @@ onDocumentReady(() => {
               filterData: 'func:rubricItemsList',
               filterCustomSearch: (text: string, value: string) => {
                 console.log(value);
-                return value.toLowerCase().includes(
-                  html`<span>${text}</span>`.toString(), // TODO: fix
-                );
+                return value.toLowerCase().includes(html`<span>${text}</span>`.toString());
               },
               sortable: true,
-              sorter: (
-                fieldA: string,
-                fieldB: string,
-                rowA: InstanceQuestionRow,
-                rowB: InstanceQuestionRow,
-              ) => {
-                if (rowB.point_difference === null) {
-                  return -1;
-                }
-                if (rowA.point_difference === null) {
-                  return 1;
-                }
-                if (rowA.point_difference < rowB.point_difference) {
-                  return -1;
-                } else if (rowA.point_difference > rowB.point_difference) {
-                  return 1;
-                } else {
-                  return 0;
-                }
-              },
             }
           : null,
       ].filter(Boolean),
     ],
+    customSort: (sortName: string, sortOrder: string, data: any[]) => {
+      const order = sortOrder === 'desc' ? -1 : 1;
+      if (sortName === 'rubric_difference') {
+        data.sort(function (a, b) {
+          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
+          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          if (a_diff === null && b_diff === null) {
+            // Can't compare if both are null
+            return 0;
+          } else if (a_diff !== null && b_diff !== null) {
+            // Normal comparison using point difference
+            return (a_diff - b_diff) * order;
+          } else if (a_diff !== null) {
+            // Make b appear in the end regardless of sort order
+            return -1;
+          } else {
+            // Make a appear in the end regardless of sort order
+            return 1;
+          }
+        });
+      } else {
+        data.sort(function (a, b) {
+          if (a[sortName] < b[sortName]) {
+            return order * -1;
+          } else if (a[sortName] > b[sortName]) {
+            return order;
+          } else {
+            return 0;
+          }
+        });
+      }
+    },
   });
 });
 
