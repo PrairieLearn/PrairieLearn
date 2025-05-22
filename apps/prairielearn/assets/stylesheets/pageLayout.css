@@ -204,6 +204,10 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
     transition: none;
   }
+
+  .app-container.side-nav-enabled #course-side-nav {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -237,17 +241,15 @@ body:has(div.app-container) {
     transition: none;
   }
 
-  .app-container.side-nav-enabled.mobile-collapsed-animating .app-side-nav {
-    transition: transform 1000ms;
-    transform: translateX(-100%);
-  }
-
-  .app-container.side-nav-enabled.open-animating .app-side-nav {
-    transition: transform 1000ms;
-    transform: translateX(0);
+  .app-container.side-nav-enabled .app-side-nav.animate {
+    transition: transform 300ms;
   }
 
   .app-container.side-nav-enabled #course-nav {
+    display: none;
+  }
+
+  .app-container.side-nav-enabled #course-side-nav {
     position: absolute;
     top: 48px;
     left: 0;
@@ -261,23 +263,27 @@ body:has(div.app-container) {
     transform: translateX(100%); /* Start off-screen to the right */
   }
 
-  .app-container.side-nav-enabled #course-nav.show {
-    transform: translateX(0);
+  .app-container.side-nav-enabled #course-side-nav.animate {
+    transition: transform 300ms;
   }
 
-  .app-container.side-nav-enabled #course-nav:not(.show) {
+  .app-container.side-nav-enabled #course-side-nav.mobile-collapsed {
     transform: translateX(100%);
+  }
+  
+  .app-container.side-nav-enabled #course-side-nav:not(.mobile-collapsed) {
+    transform: translateX(0);
   }
 
   /* Prevent content under the course/side nav from being visible when
   either nav is open. */
-  .app-container.side-nav-enabled:has(#course-nav.show) .app-main,
+  .app-container.side-nav-enabled:has(#course-side-nav.show) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
-  .app-container.side-nav-enabled:has(#course-nav.show),
+  .app-container.side-nav-enabled:has(#course-side-nav.show),
   .app-container.side-nav-enabled:not(.mobile-collapsed) {
     overflow-x: hidden;
   }

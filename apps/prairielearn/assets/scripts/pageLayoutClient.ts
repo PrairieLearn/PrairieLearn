@@ -13,7 +13,7 @@ onDocumentReady(async () => {
   const appSideNavDiv = document.querySelector<HTMLDivElement>('.app-side-nav');
 
   const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
-  const courseNavContent = document.querySelector<HTMLDivElement>('#course-nav');
+  const courseSideNavDiv = document.querySelector<HTMLDivElement>('#course-side-nav');
 
   if (
     !sideNavTogglerButton ||
@@ -21,7 +21,7 @@ onDocumentReady(async () => {
     !sideNavTogglerIcon ||
     !sideNavMobileButton ||
     !courseNavToggler ||
-    !courseNavContent || 
+    !courseSideNavDiv || 
     !appSideNavDiv
   ) {
     return;
@@ -88,31 +88,30 @@ onDocumentReady(async () => {
   sideNavMobileButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
-      // Collapse the side nav
-      appContainerDiv.classList.remove('open-animating');
-      appContainerDiv.classList.add('mobile-collapsed-animating');
+      // Animate the side nav collapse
+      appSideNavDiv.classList.add('animate');
 
-      // Respond to the end of the animation
-      appContainerDiv.addEventListener('transitionend', () => {
-        setTimeout(() => {
-          appContainerDiv.classList.toggle('mobile-collapsed-animating');
-          appContainerDiv.classList.toggle('mobile-collapsed');
-        }, 500);
+      // Collapse the side nav
+      appContainerDiv.classList.add('mobile-collapsed');
+
+      appSideNavDiv.addEventListener('transitionend', () => {
+        // Remove the animation class after the transition ends
+        appSideNavDiv.classList.remove('animate');
       }, { once: true });
 
       // Update the side nav mobile toggler button tooltip and icon
       sideNavMobileButton.setAttribute('data-bs-title', 'Expand side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Expand side nav');
     } else {
-      // Expand the side nav
-      appContainerDiv.classList.remove('mobile-collapsed-animating');
-      appContainerDiv.classList.add('open-animating');
+      // Animate the side nav collapse
+      appSideNavDiv.classList.add('animate');
 
-      // Respond to the end of the animation
-      appContainerDiv.addEventListener('transitionend', () => {
-        setTimeout(() => {
-          appContainerDiv.classList.toggle('open-animating');
-        }, 500);
+      // Expand the side nav
+      appContainerDiv.classList.remove('mobile-collapsed');
+
+      appSideNavDiv.addEventListener('transitionend', () => {
+        // Remove the animation class after the transition ends
+        appSideNavDiv.classList.remove('animate');
       }, { once: true });
 
       // Update the side nav mobile toggler button tooltip and icon
@@ -120,12 +119,12 @@ onDocumentReady(async () => {
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
     }
 
-    const courseNavExpanded = courseNavContent.classList.contains('show');
-    if (courseNavExpanded) {
-      // Collapse the course nav when the side nav is expanded
-      courseNavContent.classList.remove('show');
-      courseNavContent.classList.remove('collapse');
-      courseNavContent.classList.add('collapsing');
+    const courseSideNavExpanded = courseSideNavDiv.classList.contains('show');
+    if (courseSideNavExpanded) {
+      // Collapse the course side nav when the side nav is expanded
+      courseSideNavDiv.classList.remove('show');
+      courseSideNavDiv.classList.remove('collapse');
+      courseSideNavDiv.classList.add('collapsing');
     }
   });
 
@@ -135,5 +134,22 @@ onDocumentReady(async () => {
       // Collapse the side nav when the course nav is expanded
       appContainerDiv.classList.add('mobile-collapsed');
     }
+
+    const courseSideNavExpanded = !courseSideNavDiv.classList.contains('mobile-collapsed');
+
+    // Animate the course side nav
+    courseSideNavDiv.classList.add('animate');
+    if (courseSideNavExpanded) {
+      // Collapse the course side nav
+      courseSideNavDiv.classList.add('mobile-collapsed');
+    } else {
+      // Expand the course side nav
+      courseSideNavDiv.classList.remove('mobile-collapsed');
+    }
+
+    courseSideNavDiv.addEventListener('transitionend', () => {
+      // Remove the animation class after the transition ends
+      courseSideNavDiv.classList.remove('animate');
+    }, { once: true });
   });
 });

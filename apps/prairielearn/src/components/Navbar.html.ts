@@ -38,6 +38,31 @@ export function Navbar({
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
+  const navbarContent = html`
+    <ul class="nav navbar-nav me-auto" id="main-nav">
+      ${NavbarByType({
+        resLocals,
+        navPage,
+        navSubPage,
+        navbarType,
+        isInPageLayout,
+      })}
+    </ul>
+
+    ${config.devMode
+      ? html`
+          <a
+            id="navbar-load-from-disk"
+            class="btn btn-success btn-sm"
+            href="${urlPrefix}/loadFromDisk"
+          >
+            Load from disk
+          </a>
+        `
+      : ''}
+    ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+  `
+
   return html`
     ${config.devMode && __csrf_token
       ? // Unit tests often need access to the CSRF token even when the page contains
@@ -102,6 +127,7 @@ export function Navbar({
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#course-nav"
+          data-bs-animation="false"
           aria-expanded="false"
           aria-label="Toggle navigation"
           style="height: 40px;"
@@ -109,28 +135,10 @@ export function Navbar({
           <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav me-auto" id="main-nav">
-            ${NavbarByType({
-              resLocals,
-              navPage,
-              navSubPage,
-              navbarType,
-              isInPageLayout,
-            })}
-          </ul>
-
-          ${config.devMode
-            ? html`
-                <a
-                  id="navbar-load-from-disk"
-                  class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
-                >
-                  Load from disk
-                </a>
-              `
-            : ''}
-          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${navbarContent}
+        </div>
+        <div id="course-side-nav" class="mobile-collapsed">
+          ${navbarContent}
         </div>
       </div>
     </nav>
