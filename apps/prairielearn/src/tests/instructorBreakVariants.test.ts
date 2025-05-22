@@ -96,7 +96,28 @@ describe('Instructor force-breaking variants', () => {
   });
 
   test.sequential('student creates and submits to second variant', async () => {
+    let originalName = config.authName;
+    let originalUid = config.authUid;
+    let originalUin = config.authUin;
+    let originalEmail = config.authEmail;
+    console.log('BEFORE', {
+      originalName,
+      originalUid,
+      originalUin,
+      originalEmail,
+    });
+
     await withUser(studentUser, async () => {
+      originalName = config.authName;
+      originalUid = config.authUid;
+      originalUin = config.authUin;
+      originalEmail = config.authEmail;
+      console.log('DURING', {
+        originalName,
+        originalUid,
+        originalUin,
+        originalEmail,
+      });
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
       const partialCredit2Url = assessmentResponse.$('a:contains("Question 2")').attr('href');
@@ -124,6 +145,16 @@ describe('Instructor force-breaking variants', () => {
         }),
       });
       assert.equal(submissionResponse.status, 200);
+    });
+    originalName = config.authName;
+    originalUid = config.authUid;
+    originalUin = config.authUin;
+    originalEmail = config.authEmail;
+    console.log('AFTER', {
+      originalName,
+      originalUid,
+      originalUin,
+      originalEmail,
     });
   });
 
