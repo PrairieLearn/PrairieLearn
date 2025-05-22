@@ -38,28 +38,27 @@ onDocumentReady(() => {
 
   window.gradersList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
-
-    return Object.fromEntries(
-      data
-        .flatMap((row) =>
-          (row.ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
-            row.last_human_grader ? [row.last_human_grader] : [],
-          ),
-        )
-        .map((name) => [name, name]),
+    const graders = data.flatMap((row) =>
+      (row.ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
+        row.last_human_grader ? [row.last_human_grader] : [],
+      ),
     );
+    const aiGraders = graders.filter(
+      (value) => value === generateAiGraderName(true) || value === generateAiGraderName(false),
+    );
+    aiGraders.sort();
+    const humanGraders = graders.filter(
+      (value) => value !== generateAiGraderName(true) && value !== generateAiGraderName(false),
+    );
+    humanGraders.sort();
+    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
   };
 
   window.rubricItemsList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
-
-    return Object.fromEntries(
-      data
-        .flatMap((row) =>
-          row.rubric_difference ? row.rubric_difference.map((item) => item.description) : [],
-        )
-        .map((name) => [name, name]),
-    );
+    const rubricItems = data.flatMap((row) => (row.rubric_difference ? row.rubric_difference : []));
+    rubricItems.sort((a, b) => a.number - b.number);
+    return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
   };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
