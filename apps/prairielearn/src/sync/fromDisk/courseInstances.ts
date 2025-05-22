@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -84,38 +83,18 @@ export async function sync(
     });
   }
 
-  const entries = run(() => {
-    // This is a total hack, but the test suite hardcoded course instance ID 1
-    // for the test course in a lot of places. To avoid having to change tons
-    // of tests after adding a new course instance to the test course, we'll
-    // alphabetically sort the course instances by name to ensure that `Sp15`
-    // will have ID 1. This assumes that it is in fact that first course instance,
-    // which is currently true.
-    //
-    // Mainly, this ensures that the tests are deterministic. So even if we do
-    // add a new course instance, the tests will fail if a new course instance
-    // would be assigned ID 1.
-    if (
-      courseData.course.uuid === '28760b11-beb1-4507-bb0a-a15bc8eaf091' &&
-      courseData.course.data?.title === 'Test Course' &&
-      courseData.course.data?.name === 'QA 101'
-    ) {
-      return Object.entries(courseData.courseInstances).sort((a, b) => a[0].localeCompare(b[0]));
-    }
-
-    return Object.entries(courseData.courseInstances);
-  });
-
-  const courseInstanceParams = entries.map(([shortName, courseInstanceData]) => {
-    const { courseInstance } = courseInstanceData;
-    return JSON.stringify([
-      shortName,
-      courseInstance.uuid,
-      infofile.stringifyErrors(courseInstance),
-      infofile.stringifyWarnings(courseInstance),
-      getParamsForCourseInstance(courseInstance.data),
-    ]);
-  });
+  const courseInstanceParams = Object.entries(courseData.courseInstances).map(
+    ([shortName, courseInstanceData]) => {
+      const { courseInstance } = courseInstanceData;
+      return JSON.stringify([
+        shortName,
+        courseInstance.uuid,
+        infofile.stringifyErrors(courseInstance),
+        infofile.stringifyWarnings(courseInstance),
+        getParamsForCourseInstance(courseInstance.data),
+      ]);
+    },
+  );
 
   const result = await sqldb.callRow(
     'sync_course_instances',
