@@ -2,8 +2,8 @@ services:
   pl:
     build:
       context: .
-    image: prairielearn/prairielearn:local
-    # image: prairielearn:wilfredo
+    # image: prairielearn/prairielearn:local
+    image: prairielearn:wilfredo
     ports:
       - 3000:3000
     volumes:
@@ -19,3 +19,4 @@ services:
     # i.e., "default-address-pools" in /etc/docker/daemon.json
     extra_hosts:
       - 'host.docker.internal:172.17.0.1'
+    command: ["tail", "-f", "/dev/null"]
