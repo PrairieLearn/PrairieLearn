@@ -39,6 +39,14 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
+
+      //
+      const result = await sqldb.queryAsync(
+        'SELECT * FROM course_instances ORDER BY short_name COLLATE "C" ASC;',
+        {},
+      );
+      console.log('RESTRICTION_RESULT', result);
+
       context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
