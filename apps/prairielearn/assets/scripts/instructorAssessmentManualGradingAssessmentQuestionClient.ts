@@ -450,9 +450,7 @@ onDocumentReady(() => {
   });
 });
 
-function generateAiGraderName(
-  ai_grading_status?: 'None' | 'Graded' | 'Outdated' | 'Latest',
-): string {
+function generateAiGraderName(ai_grading_status?: 'Graded' | 'Outdated' | 'Latest'): string {
   return (
     'AI' +
     (ai_grading_status === undefined ||
