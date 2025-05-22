@@ -168,15 +168,14 @@ jobs:
       - name: Build all code
         run: make build
 
-      - name: Test code
+      - name: Test preparation
         run: |
           git config --global user.email "dev@example.com"
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
-          sudo -u postgres sh -c "createuser --host=localhost --username=postgres --no-password --superuser root"
-          sudo -u postgres sh -c "createdb --host=localhost --username=postgres --no-password root"
-          make --assume-old=start-postgres start-support
-          cd apps/prairielearn && yarn vitest src/tests/activeAccessRestriction.test.ts
+
+      - name: Test code
+        run: make --assume-old=start-postgres test-js
   native-checks-js:
     runs-on: ubuntu-latest
     steps:
