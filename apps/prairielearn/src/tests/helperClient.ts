@@ -29,6 +29,12 @@ export async function fetchCheerio(
   const cheerioResponse = response as CheerioResponse;
   cheerioResponse.$ = cheerio.load(text);
   cheerioResponse.text = () => Promise.resolve(text);
+
+  if (!cheerioResponse.ok) {
+    console.trace('Error fetching URL:', url);
+    console.trace('Response:', response);
+    console.trace('Response text:', text);
+  }
   return cheerioResponse;
 }
 
