@@ -254,7 +254,7 @@ function UserDropdownMenu({
       data-authn-course-instance-role="${authz_data?.authn_course_instance_role}"
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
-      <li class="nav-item dropdown mb-2 mb-md-0 me-2 ${navPage === 'effective' ? 'active' : ''}">
+      <li class="nav-item dropdown mb-2 mb-md-0 ${navPage === 'effective' ? 'active' : ''}">
         <a
           class="nav-link dropdown-toggle"
           id="navbarDropdown"
