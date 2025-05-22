@@ -140,8 +140,6 @@ onDocumentReady(() => {
         html: html`<button
           class="btn btn-secondary ${aiGradingMode ? 'active' : ''}"
           type="button"
-          name="toggleAiGradingMode"
-          id="js-toggle-ai-grading-mode-button"
           title="Start/stop AI grading mode"
         >
           <i class="fa fa-eye" aria-hidden="true"></i> AI grading mode
