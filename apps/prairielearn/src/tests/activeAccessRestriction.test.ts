@@ -41,10 +41,7 @@ describe(
       await helperServer.before()();
 
       //
-      const result = await sqldb.queryAsync(
-        'SELECT * FROM course_instances ORDER BY short_name COLLATE "C" ASC;',
-        {},
-      );
+      const result = await sqldb.queryAsync('SELECT * FROM assessments;', {});
       console.log('RESTRICTION_RESULT', result);
 
       context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
