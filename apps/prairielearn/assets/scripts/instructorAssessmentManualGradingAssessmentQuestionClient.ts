@@ -406,7 +406,7 @@ onDocumentReady(() => {
           : null,
       ].filter(Boolean),
     ],
-    customSort: (sortName: string, sortOrder: string, data: any[]) => {
+    customSort: (sortName: string, sortOrder: string, data: InstanceQuestionRow[]) => {
       const order = sortOrder === 'desc' ? -1 : 1;
       if (sortName === 'rubric_difference') {
         data.sort(function (a, b) {
@@ -416,8 +416,17 @@ onDocumentReady(() => {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
-            // Normal comparison using point difference
-            return (a_diff - b_diff) * order;
+            if (a_diff === b_diff) {
+              // Same difference: compare number of disagreeing rubrics
+              return (
+                ((a['rubric_difference'] ? a['rubric_difference'].length : 0) -
+                  (b['rubric_difference'] ? b['rubric_difference'].length : 0)) *
+                order
+              );
+            } else {
+              // Normal comparison using point difference
+              return (a_diff - b_diff) * order;
+            }
           } else if (a_diff !== null) {
             // Make b appear in the end regardless of sort order
             return -1;
@@ -427,7 +436,7 @@ onDocumentReady(() => {
           }
         });
       } else {
-        data.sort(function (a, b) {
+        (data as any[]).sort(function (a, b) {
           if (a[sortName] < b[sortName]) {
             return order * -1;
           } else if (a[sortName] > b[sortName]) {
