@@ -92,6 +92,17 @@ export function startExam(locals: Record<string, any>) {
           red: ['td a'],
         }),
       );
+      console.log(
+        'START_EXAM_RESULTS-4AGAIN2',
+        locals.$.extract({
+          red: [
+            {
+              selector: 'td a',
+              value: 'href',
+            },
+          ],
+        }),
+      );
       // const elemList2 = locals.$('td a');
       // const data: any[] = [];
       // for (const e of elemList2) {
