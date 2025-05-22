@@ -127,7 +127,7 @@ export function PageLayout({
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
                 isInPageLayout: true,
-                sideNavEnabled,
+                sideNavEnabled
               })}
             </div>
             ${sideNavEnabled
