@@ -97,9 +97,7 @@ BEGIN
         -- Mainly, this ensures that the tests are deterministic. So even if we do
         -- add a new course instance, the tests will fail if a new course instance
         -- would be assigned ID 1.
-
-        -- Insert course instance z before a
-        ORDER BY lower(src_short_name) DESC
+        ORDER BY src_short_name ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller
