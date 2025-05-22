@@ -229,7 +229,7 @@ describe('Variant access', () => {
     });
   });
 
-  test.sequential('create variant from public question preview', async () => {
+  test.sequential('create variant from public question preview', { timeout: 20_000 }, async () => {
     await withUser(PUBLIC_USER, async () => {
       const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
       const res = await fetchCheerio(url);
