@@ -17,6 +17,9 @@ describe('Administrator pages', { timeout: 20_000 }, function () {
   describe('view administrator admins list page', () => {
     it('should load successfully', async () => {
       const res = await fetch(baseUrl + '/administrator/admins');
+      const text = await res.text();
+      console.log(res);
+      console.log(text);
       assert(res.ok);
       const $ = cheerio.load(await res.text());
       const elemList = $('button[data-testid="administrator-insert-button"]');
