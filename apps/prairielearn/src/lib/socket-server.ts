@@ -51,12 +51,8 @@ export async function init(server: http.Server) {
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers
     debug('init(): initializing redis pub/sub clients');
-    pub = new Redis(config.redisUrl, {
-      retryStrategy: (_) => null,
-    });
-    sub = new Redis(config.redisUrl, {
-      retryStrategy: (_) => null,
-    });
+    pub = new Redis(config.redisUrl);
+    sub = new Redis(config.redisUrl);
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');
@@ -81,9 +77,6 @@ export async function close() {
   await Promise.all([...io._nsps.values()].map((nsp) => nsp.adapter.close()));
   io.engine.close();
 
-  try {
-    await Promise.all([pub?.quit(), sub?.quit()]);
-  } catch (error) {
-    console.log('SOCKET_SERVER', error);
-  }
+  await pub?.quit();
+  await sub?.quit();
 }
