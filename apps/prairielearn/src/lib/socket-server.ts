@@ -81,5 +81,9 @@ export async function close() {
   await Promise.all([...io._nsps.values()].map((nsp) => nsp.adapter.close()));
   io.engine.close();
 
-  await Promise.all([pub?.quit(), sub?.quit()]);
+  try {
+    await Promise.all([pub?.quit(), sub?.quit()]);
+  } catch (error) {
+    console.log('SOCKET_SERVER', error);
+  }
 }
