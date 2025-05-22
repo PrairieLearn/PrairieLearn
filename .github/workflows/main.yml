@@ -176,7 +176,7 @@ jobs:
 
       - name: Test code
         run: |
-          # make --assume-old=start-postgres test-js
+          make --assume-old=start-postgres test-js
           # make --assume-old=start-postgres start-support
           # cd apps/prairielearn && yarn vitest src/tests/activeAccessRestriction.test.ts
   native-checks-js:
