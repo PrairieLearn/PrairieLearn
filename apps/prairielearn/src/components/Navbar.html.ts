@@ -137,7 +137,7 @@ export function Navbar({
         <div id="course-nav" class="collapse navbar-collapse">
           ${navbarContent}
         </div>
-        <div id="course-side-nav" class="mobile-collapsed">
+        <div id="course-side-nav" class="mobile-collapsed d-none">
           ${navbarContent}
         </div>
       </div>
