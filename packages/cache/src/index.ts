@@ -29,7 +29,9 @@ export class Cache {
     if (this.type === 'redis') {
       if (!config.redisUrl) throw new Error('redisUrl not set in config');
       this.enabled = true;
-      this.redisClient = new Redis(config.redisUrl);
+      this.redisClient = new Redis(config.redisUrl, {
+        retryStrategy: (_) => null,
+      });
       this.redisClient.on('error', (err) => {
         logger.error('Redis error', err);
         Sentry.captureException(err);

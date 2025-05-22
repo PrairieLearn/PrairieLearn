@@ -8,7 +8,9 @@ export let io: Emitter;
 let client: Redis;
 
 export function init() {
-  client = new Redis(config.redisUrl);
+  client = new Redis(config.redisUrl, {
+    retryStrategy: (_) => null,
+  });
   io = new Emitter(client);
 }
 

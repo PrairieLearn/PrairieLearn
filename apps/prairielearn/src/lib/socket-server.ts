@@ -51,8 +51,12 @@ export async function init(server: http.Server) {
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers
     debug('init(): initializing redis pub/sub clients');
-    pub = new Redis(config.redisUrl);
-    sub = new Redis(config.redisUrl);
+    pub = new Redis(config.redisUrl, {
+      retryStrategy: (_) => null,
+    });
+    sub = new Redis(config.redisUrl, {
+      retryStrategy: (_) => null,
+    });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');
