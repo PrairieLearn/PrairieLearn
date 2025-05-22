@@ -272,11 +272,7 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled #course-nav {
-    display: none;
-  }
-
-  .app-container.side-nav-enabled #course-nav {
-    display: block !important;
+    display: block;
     position: absolute;
     top: 48px;
     left: 0;
@@ -286,12 +282,11 @@ body:has(div.app-container) {
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
-    will-change: transform; /* Performance optimization */
-    transform: translateX(100%); /* Start off-screen to the right */
   }
 
   .app-container.side-nav-enabled.animate #course-nav {
     transition: transform 300ms;
+    will-change: transform; /* Performance optimization */
   }
 
   .app-container.side-nav-enabled #course-nav.mobile-collapsed {
@@ -303,13 +298,15 @@ body:has(div.app-container) {
   }
 
   /* Prevent content under the course/side nav from being visible when
-  either nav is open. */
+  *  either nav is open. */
   .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
+  /* Prevent content to the side of the course/side nav from being visible when
+  *  either nav is open. */
   .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)),
   .app-container.side-nav-enabled:not(.mobile-collapsed) {
     overflow-x: hidden;
@@ -326,7 +323,7 @@ body:has(div.app-container) {
     display: none;
   }
 
-  .viewtype-dropdown-item {
+  .app-container.side-nav-enabled .viewtype-dropdown-item {
     display: flex;
     align-items: center;
     white-space: normal;

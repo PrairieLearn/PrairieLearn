@@ -9,6 +9,7 @@ onDocumentReady(async () => {
   const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
 
   const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
+
   const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
   const appSideNavDiv = document.querySelector<HTMLDivElement>('.app-side-nav');
 
@@ -17,12 +18,12 @@ onDocumentReady(async () => {
 
   if (
     !sideNavTogglerButton ||
-    !appContainerDiv ||
-    !sideNavTogglerIcon ||
     !sideNavMobileButton ||
+    !sideNavTogglerIcon ||
+    !appContainerDiv ||
+    !appSideNavDiv ||
     !courseNavToggler ||
-    !courseNavDiv ||
-    !appSideNavDiv
+    !courseNavDiv
   ) {
     return;
   }
@@ -116,27 +117,21 @@ onDocumentReady(async () => {
 
     const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
     if (courseNavExpanded) {
-      // Collapse the course side nav when the side nav is expanded
+      // Collapse the course nav when the side nav is expanded
       courseNavDiv.classList.add('mobile-collapsed');
     }
   });
 
   courseNavToggler.addEventListener('click', async () => {
-    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
-    if (sideNavExpanded) {
-      // Collapse the side nav when the course nav is expanded
-      appContainerDiv.classList.add('mobile-collapsed');
-    }
-
     const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
 
-    // Animate the course side nav
+    // Animate the course nav
     appContainerDiv.classList.add('animate');
     if (courseNavExpanded) {
-      // Collapse the course side nav
+      // Collapse the course nav
       courseNavDiv.classList.add('mobile-collapsed');
     } else {
-      // Expand the course side nav
+      // Expand the course nav
       courseNavDiv.classList.remove('mobile-collapsed');
     }
 
@@ -148,5 +143,11 @@ onDocumentReady(async () => {
       },
       { once: true },
     );
+
+    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
+    if (sideNavExpanded) {
+      // Collapse the side nav when the course nav is expanded
+      appContainerDiv.classList.add('mobile-collapsed');
+    }
   });
 });
