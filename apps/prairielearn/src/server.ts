@@ -492,6 +492,13 @@ export async function initExpress(): Promise<Express> {
         .default,
     ],
   );
+  app.use(
+    '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
+    ],
+  );
 
   // Handles updates to the side nav expanded state.
   app.use(
@@ -751,6 +758,15 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor',
+    asyncHandler(async (req, res, next) => {
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      next();
+    }),
+  );
 
   // single assessment
   app.use(
@@ -1172,9 +1188,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );

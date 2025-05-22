@@ -1,12 +1,12 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -296,27 +296,23 @@ const testEditData = [
   },
 ];
 
-describe('test course editor', function () {
-  this.timeout(20000);
-
+describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
-    before('create test course files', async () => {
+    beforeAll(async () => {
       await createCourseFiles();
     });
+    afterAll(async () => {
+      await deleteCourseFiles();
+    });
 
-    before('set up testing server', helperServer.before(courseDir));
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-    before('update course repository in database', async () => {
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
-    });
-
-    after('shut down testing server', helperServer.after);
-
-    after('delete test course files', async () => {
-      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {
