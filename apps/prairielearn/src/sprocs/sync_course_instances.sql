@@ -97,6 +97,8 @@ BEGIN
         -- Mainly, this ensures that the tests are deterministic. So even if we do
         -- add a new course instance, the tests will fail if a new course instance
         -- would be assigned ID 1.
+        --
+        -- We specifically use C collation to ensure that "Sp15" ends up before "public".
         ORDER BY src_short_name COLLATE "C" ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
