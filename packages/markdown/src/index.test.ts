@@ -141,8 +141,8 @@ describe('Markdown processing', () => {
   });
 
   it('sanitizes an HTML block if allowHtml is false', async () => {
-    const question = '<div>testing</div>';
-    const expected = '';
+    const question = '_Before_ the block\n\n<div>HTML block to be sanitized</div>\n\n**After** the block';
+    const expected = '<p><em>Before</em> the block</p>\n<p><strong>After</strong> the block</p>';
     await testMarkdown(question, expected, { allowHtml: false });
   });
 
