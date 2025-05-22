@@ -1,17 +1,3 @@
--- BLOCK select_last_submission_id
-SELECT
-  s.id
-FROM
-  variants AS v
-  JOIN submissions AS s ON (s.variant_id = v.id)
-WHERE
-  v.instance_question_id = $instance_question_id
-ORDER BY
-  v.date DESC,
-  s.date DESC
-LIMIT
-  1;
-
 -- BLOCK select_ai_and_human_grading_jobs
 SELECT
   grading_job_id,
@@ -39,7 +25,20 @@ FROM
       submissions s
       JOIN grading_jobs gj ON s.id = gj.submission_id
     WHERE
-      s.id = $submission_id
+      s.id = (
+        SELECT
+          s.id
+        FROM
+          variants AS v
+          JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+          v.instance_question_id = $instance_question_id
+        ORDER BY
+          v.date DESC,
+          s.date DESC
+        LIMIT
+          1
+      )
       AND gj.grading_method IN ('Manual', 'AI')
   ) grouped_grading_jobs
   JOIN users AS u ON (u.user_id = grouped_grading_jobs.graded_by)

@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import type { InstanceQuestionRow } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
@@ -96,18 +96,9 @@ export async function fillInstanceQuestionColumns(
   );
 
   for (const instance_question of instance_questions) {
-    // Only look at grading jobs for the last submission
-    const submission_id = await queryRow(
-      sql.select_last_submission_id,
-      { instance_question_id: instance_question.id },
-      IdSchema,
-    );
-
     const grading_jobs = await queryRows(
       sql.select_ai_and_human_grading_jobs,
-      {
-        submission_id,
-      },
+      { instance_question_id: instance_question.id },
       GradingJobInfoSchema,
     );
     let manualGradingJob: GradingJobInfo | null = null;
