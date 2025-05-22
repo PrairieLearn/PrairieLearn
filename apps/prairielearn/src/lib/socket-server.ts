@@ -77,5 +77,6 @@ export async function close() {
   await Promise.all([...io._nsps.values()].map((nsp) => nsp.adapter.close()));
   io.engine.close();
 
-  await Promise.all([pub?.quit(), sub?.quit()]);
+  await pub?.quit();
+  await sub?.quit();
 }
