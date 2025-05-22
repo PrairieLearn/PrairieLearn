@@ -28,17 +28,17 @@ describe(
 
     const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
-    beforeAll(async function () {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
       config.authUid = 'student@example.com';
       config.authName = 'Student User';
       config.authUin = '00000001';
+    });
 
+    beforeAll(async function () {
       await helperServer.before()();
-      const result = await sqldb.queryAsync('SELECT * FROM course_instances;', {});
-      console.log('RESTRICTION_RESULT', result);
       context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 

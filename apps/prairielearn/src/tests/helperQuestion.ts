@@ -411,10 +411,8 @@ export function checkQuestionStats(locals: Record<string, any>) {
 export function checkAssessmentScore(locals: Record<string, any>) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
-      const assessment_instance_id = locals.assessment_instance?.id;
-      assert.isDefined(assessment_instance_id);
       const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {
-        assessment_instance_id,
+        assessment_instance_id: locals.assessment_instance?.id,
       });
       locals.assessment_instance = result.rows[0];
     });
