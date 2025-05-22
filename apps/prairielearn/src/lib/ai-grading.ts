@@ -25,6 +25,7 @@ const GradingJobInfoSchema = z.object({
   manual_rubric_grading_id: IdSchema.nullable(),
   grader_name: z.string(),
 });
+type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
@@ -109,12 +110,16 @@ export async function fillInstanceQuestionColumns(
       },
       GradingJobInfoSchema,
     );
+    let manualGradingJob: GradingJobInfo | null = null;
+    let aiGradingJob: GradingJobInfo | null = null;
 
     for (const grading_job of grading_jobs) {
       assert(grading_job.graded_at);
       if (grading_job.grading_method === 'Manual') {
+        manualGradingJob = grading_job;
         instance_question.last_human_grader = grading_job.grader_name;
       } else {
+        aiGradingJob = grading_job;
         instance_question.ai_graded = true;
         if (rubric_modify_time) {
           instance_question.ai_graded_with_latest_rubric =
@@ -124,32 +129,36 @@ export async function fillInstanceQuestionColumns(
     }
 
     if (
-      grading_jobs.length < 2 ||
-      grading_jobs[0].manual_points === null ||
-      grading_jobs[1].manual_points === null
+      !manualGradingJob ||
+      !aiGradingJob ||
+      manualGradingJob.manual_points === null ||
+      aiGradingJob.manual_points === null
     ) {
       continue;
     }
-    instance_question.point_difference = Math.abs(
-      grading_jobs[0].manual_points - grading_jobs[1].manual_points,
-    );
-    if (!grading_jobs[0].manual_rubric_grading_id || !grading_jobs[1].manual_rubric_grading_id) {
+    instance_question.point_difference =
+      aiGradingJob.manual_points - manualGradingJob.manual_points;
+
+    if (!manualGradingJob.manual_rubric_grading_id || !aiGradingJob.manual_rubric_grading_id) {
       continue;
     }
-    const items1 = await queryRows(
+    const manualItems = await queryRows(
       sql.select_rubric_grading_items,
-      { manual_rubric_grading_id: grading_jobs[0].manual_rubric_grading_id },
+      { manual_rubric_grading_id: manualGradingJob.manual_rubric_grading_id },
       RubricItemSchema,
     );
-    const items2 = await queryRows(
+    const aiItems = await queryRows(
       sql.select_rubric_grading_items,
-      { manual_rubric_grading_id: grading_jobs[1].manual_rubric_grading_id },
+      { manual_rubric_grading_id: aiGradingJob.manual_rubric_grading_id },
       RubricItemSchema,
     );
-    const rubric_difference = items1
-      .filter((item) => !rubricListIncludes(items2, item))
-      .concat(items2.filter((item) => !rubricListIncludes(items1, item)));
-    instance_question.rubric_difference = rubric_difference;
+    const fpItems = aiItems
+      .filter((item) => !rubricListIncludes(manualItems, item))
+      .map((item) => ({ ...item, false_positive: true }));
+    const fnItems = manualItems
+      .filter((item) => !rubricListIncludes(aiItems, item))
+      .map((item) => ({ ...item, false_positive: false }));
+    instance_question.rubric_difference = fnItems.concat(fpItems);
   }
 }
 

@@ -371,35 +371,37 @@ onDocumentReady(() => {
         aiGradingEnabled
           ? {
               field: 'rubric_difference',
-              title: 'Agreement',
+              title: 'AI accuracy',
               visible: aiGradingMode,
               filterControl: 'select',
               formatter: (value: boolean, row: InstanceQuestionRow) =>
                 row.point_difference === null // missing grade from human and/or AI
                   ? '&mdash;'
-                  : row.rubric_difference === null // not graded by rubric from human and/or AI
-                    ? html`<div>Point difference: ${row.point_difference}</div> `.toString()
-                    : html`<div>
-                          Rubric difference
-                          ${row.ai_graded_with_latest_rubric // AI using outdated rubric
-                            ? ''
-                            : ' (outdated)'}:
-                        </div>
-                        ${!row.rubric_difference.length
-                          ? html`<i class="fa fa-check" aria-hidden="true"></i>`
-                          : row.rubric_difference.map(
-                              (item) =>
-                                html`<div>
-                                  <i class="fa fa-times" aria-hidden="true"></i> ${item.description}
-                                </div>`,
-                            )}`.toString(),
+                  : html`${row.rubric_difference === null // not graded by rubric from human and/or AI
+                      ? !row.point_difference
+                        ? html`<i class="bi bi-check-square-fill" style="color: green;"></i>`
+                        : html`<span style="color:red;">${row.point_difference}</span>`
+                      : !row.rubric_difference.length
+                        ? html`<i class="bi bi-check-square-fill" style="color: green;"></i>`
+                        : row.rubric_difference.map(
+                            (item) =>
+                              html`<div>
+                                ${item.false_positive
+                                  ? html`<i class="bi bi-plus-square-fill" style="color: red;"></i>`
+                                  : html`<i
+                                      class="bi bi-dash-square-fill"
+                                      style="color: red;"
+                                    ></i>`}
+                                <span>${item.description}</span>
+                              </div>`,
+                          )}`.toString(),
               filterData: 'func:rubricItemsList',
-              filterCustomSearch: (text: string, value: string) =>
-                value
-                  .toLowerCase()
-                  .includes(
-                    html`<i class="fa fa-times" aria-hidden="true"></i> ${text}`.toString(),
-                  ),
+              filterCustomSearch: (text: string, value: string) => {
+                console.log(value);
+                return value.toLowerCase().includes(
+                  html`<span>${text}</span>`.toString(), // TODO: fix
+                );
+              },
               sortable: true,
               sorter: (
                 fieldA: string,
