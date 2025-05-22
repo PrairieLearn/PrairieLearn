@@ -395,9 +395,8 @@ onDocumentReady(() => {
                               </div>`,
                           )}`.toString(),
               filterData: 'func:rubricItemsList',
-              filterCustomSearch: (text: string, value: string) => {
-                return value.toLowerCase().includes(html`<span>${text}</span>`.toString());
-              },
+              filterCustomSearch: (text: string, value: string) =>
+                value.toLowerCase().includes(html`<span>${text}</span>`.toString()),
               sortable: true,
             }
           : null,
