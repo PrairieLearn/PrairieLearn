@@ -1,11 +1,12 @@
 <pl-question-panel>
   <p>
     Questions below were designed to showcase the different features of
-    <a
-      href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>.
-    The goal of
-    <a
-      href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      ><code>pl-integer-input</code></a
+    >. The goal of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+      ><code>pl-integer-input</code></a
+    >
     is to allow users to enter only <b>integer values</b>. That is, users are only able to enter
     whole numbers like -10, 0, 3, 44, and so on. The correct value of $c$ in all questions below is
     <samp>{{correct_answers.c_1}}</samp>.
@@ -16,8 +17,9 @@
   <pl-question-panel>
     <p>
       Within this question, you can observe the default behavior of the
-      <a
-        href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
+      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+        ><code>pl-integer-input</code></a
+      >
       element. In particular, the default input field has help text of "integer" as a placeholder
       as well as a question button.
     </p>
@@ -30,8 +32,9 @@
   <pl-question-panel>
     <p>
       Under this variant, we opt to provide a label for
-      <a
-        href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
+      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+        ><code>pl-integer-input</code></a
+      >
       In addition, we've opted to add a suffix or a unit classification to the input via
       <code>suffix="units"</code>.
     </p>
@@ -44,8 +47,9 @@
   <pl-question-panel>
     <p>
       Within this variant, the different display options for
-      <a
-        href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
+      <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"
+        ><code>pl-integer-input</code></a
+      >
       on the page are displayed. Specifically, this question uses the block option
       (<code>display="block"</code>) to display the input field on its own line instead of being
       inline with the question. Moreover, the weight for answering this question is higher than
@@ -79,8 +83,13 @@
       value is zero).
     </p>
   </pl-question-panel>
-  <pl-integer-input aria-label="c" answers-name="c_6" allow-blank="true" blank-value="0"
-    correct-answer="0"></pl-integer-input>
+  <pl-integer-input
+    aria-label="c"
+    answers-name="c_6"
+    allow-blank="true"
+    blank-value="0"
+    correct-answer="0"
+  ></pl-integer-input>
 </pl-card>
 
 <pl-card>
@@ -104,8 +113,7 @@
     </p>
     <p>Submit <code>{{correct_answers.c_large}}</code>.</p>
   </pl-question-panel>
-  <pl-integer-input aria-label="c in base 16" answers-name="c_large" placeholder="very large integer"
-    base="16"></pl-integer-input>
+  <pl-integer-input aria-label="c in base 16" answers-name="c_large" placeholder="very large integer" base="16"></pl-integer-input>
 </pl-card>
 
 <pl-card>

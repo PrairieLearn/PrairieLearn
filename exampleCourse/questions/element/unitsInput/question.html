@@ -1,11 +1,10 @@
 <pl-question-panel>
     <p>
         Questions below were designed to showcase the different features of
-        <a
-            href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>.
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>.
         The goal of <code>pl-units-input</code>
         is to allow users to enter <b>real values with units</b>. This element has similar behavior to the <a
-            href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>
+            href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>
         element, with the added benefit of being able to interact with units.
     </p>
 </pl-question-panel>
@@ -13,7 +12,7 @@
 <pl-card>
     <pl-question-panel>
         <p> Within this question, you can observe the default behavior of the <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
             element. The submitted answer and reference solutions will be first be converted to base units and then
             compared. Submitting units of incorrect dimensionality will not be given any credit.
         </p>
@@ -41,7 +40,7 @@
     <pl-question-panel>
         <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of
             <code>1e-8</code>) underneath <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
             element. Furthermore, we add a label to the front of the input field to specify what the field should
             receive.
         </p>
@@ -54,7 +53,7 @@
 <pl-card>
     <pl-question-panel>
         <p>In this question, we opt to change the default comparison of <a
-                href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
+                href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
             from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits
             (<code>comparison="sigfigs"</code>), which has a default of two digits. In additon, this question
             showcases some of the more complex units that this element can handle.
@@ -72,7 +71,8 @@
         </p>
         <p> What is the acceleration due to gravity at Earth's surface? </p>
     </pl-question-panel>
-    <pl-units-input answers-name="c_5" label="$9.8$" grading-mode="only-units" correct-answer="m/s^2"></pl-units-input>
+    <pl-units-input answers-name="c_5" label="$9.8$" grading-mode="only-units"
+        correct-answer="m/s^2"></pl-units-input>
 </pl-card>
 
 <pl-card>
@@ -85,9 +85,8 @@
         <p>Express the distance of one mile in feet (include unit).</p>
     </pl-question-panel>
     Distance of 1 mile =
-    <pl-units-input aria-label="Distance with units" answers-name="c_6" placeholder="" show-help-text="false" size="10"
-        comparison="exact" allow-feedback="false" grading-mode="exact-units" digits="4"
-        custom-format=".3g"></pl-units-input>
+    <pl-units-input aria-label="Distance with units" answers-name="c_6" placeholder="" show-help-text="false" size="10" comparison="exact"
+        allow-feedback="false" grading-mode="exact-units" digits="4" custom-format=".3g"></pl-units-input>
 </pl-card>
 
 <pl-card>
@@ -98,6 +97,6 @@
         </p>
         <p>How long is a meter stick? Leave the box blank to submit "1 meter".</p>
     </pl-question-panel>
-    <pl-units-input aria-label="Distance with units" answers-name="c_7" display="block" correct-answer="1m"
-        allow-blank="True" atol="1cm" blank-value="1m" placeholder="1 meter" show-score="false"></pl-units-input>
+    <pl-units-input aria-label="Distance with units" answers-name="c_7" display="block" correct-answer="1m" allow-blank="True" atol="1cm"
+        blank-value="1m" placeholder="1 meter" show-score="false"></pl-units-input>
 </pl-card>
