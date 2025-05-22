@@ -4,5 +4,5 @@
 # which would cause the hint to be shown in case of a "Save only" submission or
 # if the submission is invalid (e.g., blank or with non-numeric values).
 def grade(data):
-    if "c_2" in data["submitted_answers"] and data["submitted_answers"]["c_2"] == 10:
+    if data["submitted_answers"].get("c_2") == 10:
         data["feedback"]["show_hint_10"] = True
