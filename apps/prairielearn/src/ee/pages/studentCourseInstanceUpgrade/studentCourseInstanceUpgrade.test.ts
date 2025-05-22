@@ -1,4 +1,4 @@
-import { fetch } from 'undici';
+import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../../lib/config.js';

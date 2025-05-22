@@ -3,7 +3,7 @@ import axe from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { fetch } from 'undici';
+import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';

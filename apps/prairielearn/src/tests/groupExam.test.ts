@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
-import { fetch } from 'undici';
+import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';

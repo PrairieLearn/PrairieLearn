@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { fetch } from 'undici';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
