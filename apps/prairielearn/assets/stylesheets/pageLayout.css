@@ -126,6 +126,16 @@ body:has(div.app-container) {
   background-color: rgba(var(--bs-primary-rgb), 0.1);
 }
 
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
 /* Side nav collapsed styles are applied on wider viewports (768px and above).
  * On narrower viewports (less than 768px), the side nav is not visible when collapsed. */
 @media (min-width: 768px) {
@@ -207,6 +217,27 @@ body:has(div.app-container) {
 }
 
 @media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   .app-container.side-nav-enabled {
     display: block;
     transition: none;
@@ -234,7 +265,6 @@ body:has(div.app-container) {
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
     min-height: 100vh;
-    transition: none;
   }
 
   .app-container.side-nav-enabled.animate .app-side-nav {
@@ -274,13 +304,13 @@ body:has(div.app-container) {
 
   /* Prevent content under the course/side nav from being visible when
   either nav is open. */
-  .app-container.side-nav-enabled:has(#course-side-nav.show) .app-main,
+  .app-container.side-nav-enabled:has(#course-side-nav:not(.mobile-collapsed)) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
-  .app-container.side-nav-enabled:has(#course-side-nav.show),
+  .app-container.side-nav-enabled:has(#course-side-nav:not(.mobile-collapsed)),
   .app-container.side-nav-enabled:not(.mobile-collapsed) {
     overflow-x: hidden;
   }
