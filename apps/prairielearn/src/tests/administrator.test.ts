@@ -21,7 +21,7 @@ describe('Administrator pages', { timeout: 20_000 }, function () {
       console.log(res);
       console.log(text);
       assert(res.ok);
-      const $ = cheerio.load(await res.text());
+      const $ = cheerio.load(text);
       const elemList = $('button[data-testid="administrator-insert-button"]');
       assert.lengthOf(elemList, 1);
     });
