@@ -13,7 +13,7 @@ onDocumentReady(async () => {
   const appSideNavDiv = document.querySelector<HTMLDivElement>('.app-side-nav');
 
   const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
-  const courseSideNavDiv = document.querySelector<HTMLDivElement>('#course-side-nav');
+  const courseNavDiv = document.querySelector<HTMLDivElement>('#course-nav');
 
   if (
     !sideNavTogglerButton ||
@@ -21,7 +21,7 @@ onDocumentReady(async () => {
     !sideNavTogglerIcon ||
     !sideNavMobileButton ||
     !courseNavToggler ||
-    !courseSideNavDiv ||
+    !courseNavDiv ||
     !appSideNavDiv
   ) {
     return;
@@ -114,10 +114,10 @@ onDocumentReady(async () => {
       { once: true },
     );
 
-    const courseSideNavExpanded = !courseSideNavDiv.classList.contains('mobile-collapsed');
-    if (courseSideNavExpanded) {
+    const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
+    if (courseNavExpanded) {
       // Collapse the course side nav when the side nav is expanded
-      courseSideNavDiv.classList.add('mobile-collapsed');
+      courseNavDiv.classList.add('mobile-collapsed');
     }
   });
 
@@ -128,19 +128,19 @@ onDocumentReady(async () => {
       appContainerDiv.classList.add('mobile-collapsed');
     }
 
-    const courseSideNavExpanded = !courseSideNavDiv.classList.contains('mobile-collapsed');
+    const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
 
     // Animate the course side nav
     appContainerDiv.classList.add('animate');
-    if (courseSideNavExpanded) {
+    if (courseNavExpanded) {
       // Collapse the course side nav
-      courseSideNavDiv.classList.add('mobile-collapsed');
+      courseNavDiv.classList.add('mobile-collapsed');
     } else {
       // Expand the course side nav
-      courseSideNavDiv.classList.remove('mobile-collapsed');
+      courseNavDiv.classList.remove('mobile-collapsed');
     }
 
-    courseSideNavDiv.addEventListener(
+    courseNavDiv.addEventListener(
       'transitionend',
       () => {
         // Remove the animation class after the transition ends

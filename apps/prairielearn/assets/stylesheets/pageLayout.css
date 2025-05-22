@@ -275,7 +275,7 @@ body:has(div.app-container) {
     display: none;
   }
 
-  .app-container.side-nav-enabled #course-side-nav {
+  .app-container.side-nav-enabled #course-nav {
     display: block !important;
     position: absolute;
     top: 48px;
@@ -290,27 +290,27 @@ body:has(div.app-container) {
     transform: translateX(100%); /* Start off-screen to the right */
   }
 
-  .app-container.side-nav-enabled.animate #course-side-nav {
+  .app-container.side-nav-enabled.animate #course-nav {
     transition: transform 300ms;
   }
 
-  .app-container.side-nav-enabled #course-side-nav.mobile-collapsed {
+  .app-container.side-nav-enabled #course-nav.mobile-collapsed {
     transform: translateX(100%);
   }
 
-  .app-container.side-nav-enabled #course-side-nav:not(.mobile-collapsed) {
+  .app-container.side-nav-enabled #course-nav:not(.mobile-collapsed) {
     transform: translateX(0);
   }
 
   /* Prevent content under the course/side nav from being visible when
   either nav is open. */
-  .app-container.side-nav-enabled:has(#course-side-nav:not(.mobile-collapsed)) .app-main,
+  .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
     height: 100%;
     overflow-y: hidden;
   }
 
-  .app-container.side-nav-enabled:has(#course-side-nav:not(.mobile-collapsed)),
+  .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)),
   .app-container.side-nav-enabled:not(.mobile-collapsed) {
     overflow-x: hidden;
   }
@@ -335,7 +335,7 @@ body:has(div.app-container) {
 
 @media (prefers-reduced-motion) {
   .app-container.side-nav-enabled.animate .app-side-nav,
-  .app-container.side-nav-enabled.animate #course-side-nav,
+  .app-container.side-nav-enabled.animate #course-nav,
   .app-container.side-nav-enabled {
     transition: none;
   }
