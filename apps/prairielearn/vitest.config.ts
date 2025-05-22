@@ -29,13 +29,16 @@ class CustomSequencer extends BaseSequencer {
   }
 }
 
+/**
+ * GitHub expects that when formatting an error message, the filename is relative to the project root.
+ * Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
+ * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
+ *
+ * Vitest may add a first-party API to make this easier:
+ * https://github.com/vitest-dev/vitest/issues/8008
+ */
 export class CustomGithubReporter extends GithubActionsReporter {
   override onInit(ctx: Vitest) {
-    /**
-     * GitHub expects that when formatting an error message, the filename is relative to the project root.
-     * Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
-     * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
-     */
     super.onInit(ctx);
     const origLog = this.ctx.logger.log;
     this.ctx.logger.log = (...args: any[]) => {
