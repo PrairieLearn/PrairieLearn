@@ -16,9 +16,8 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
-  ai_graded: z.boolean(),
+  ai_grading_status: z.enum(['None', 'Graded', 'Outdated', 'Latest']),
   last_human_grader: z.string().nullable(), // null if not graded by human
-  ai_graded_with_latest_rubric: z.boolean().nullable(), // null if not graded with rubric
   rubric_difference: RubricItemSchema.extend({ false_positive: z.boolean() }).array().nullable(),
   point_difference: z.number().nullable(),
 });

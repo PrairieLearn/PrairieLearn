@@ -39,16 +39,19 @@ onDocumentReady(() => {
   window.gradersList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
     const graders = data.flatMap((row) =>
-      (row.ai_graded ? [generateAiGraderName(row.ai_graded_with_latest_rubric)] : []).concat(
-        row.last_human_grader ? [row.last_human_grader] : [],
-      ),
+      (row.ai_grading_status !== 'None'
+        ? [generateAiGraderName(row.ai_grading_status)]
+        : []
+      ).concat(row.last_human_grader ? [row.last_human_grader] : []),
     );
     const aiGraders = graders.filter(
-      (value) => value === generateAiGraderName(true) || value === generateAiGraderName(false),
+      (value) =>
+        value === generateAiGraderName('Latest') || value === generateAiGraderName('Outdated'),
     );
     aiGraders.sort();
     const humanGraders = graders.filter(
-      (value) => value !== generateAiGraderName(true) && value !== generateAiGraderName(false),
+      (value) =>
+        value !== generateAiGraderName('Latest') && value !== generateAiGraderName('Outdated'),
     );
     humanGraders.sort();
     return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
@@ -346,20 +349,21 @@ onDocumentReady(() => {
               visible: aiGradingMode,
               filterControl: 'select',
               formatter: (value: boolean, row: InstanceQuestionRow) =>
-                html`${row.ai_graded
+                html`${row.ai_grading_status !== 'None'
                   ? html`<span
-                      class="badge text-bg-secondary ${row.ai_graded_with_latest_rubric
+                      class="badge text-bg-secondary ${row.ai_grading_status === 'Graded' ||
+                      row.ai_grading_status === 'Latest'
                         ? 'js-custom-search-ai-grading-latest-rubric'
                         : 'js-custom-search-ai-grading-nonlatest-rubric'}"
-                      >${generateAiGraderName(row.ai_graded_with_latest_rubric)}</span
+                      >${generateAiGraderName(row.ai_grading_status)}</span
                     >`
                   : ''}
                 ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}`.toString(),
               filterData: 'func:gradersList',
               filterCustomSearch: (text: string, value: string) => {
-                if (text === generateAiGraderName(true).toLowerCase()) {
+                if (text === generateAiGraderName('Latest').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
-                } else if (text === generateAiGraderName(false).toLowerCase()) {
+                } else if (text === generateAiGraderName('Outdated').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
                 } else {
                   return value.toLowerCase().includes(text);
@@ -437,12 +441,14 @@ onDocumentReady(() => {
   });
 });
 
-function generateAiGraderName(ai_graded_with_latest_rubric?: boolean | null): string {
+function generateAiGraderName(
+  ai_grading_status?: 'None' | 'Graded' | 'Outdated' | 'Latest',
+): string {
   return (
     'AI' +
-    (ai_graded_with_latest_rubric === undefined ||
-    ai_graded_with_latest_rubric === null ||
-    ai_graded_with_latest_rubric
+    (ai_grading_status === undefined ||
+    ai_grading_status === 'Graded' ||
+    ai_grading_status === 'Latest'
       ? ''
       : ' (outdated)')
   );

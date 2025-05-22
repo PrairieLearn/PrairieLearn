@@ -120,10 +120,10 @@ export async function fillInstanceQuestionColumns(
         instance_question.last_human_grader = grading_job.grader_name;
       } else {
         aiGradingJob = grading_job;
-        instance_question.ai_graded = true;
+        instance_question.ai_grading_status = 'Graded';
         if (rubric_modify_time) {
-          instance_question.ai_graded_with_latest_rubric =
-            grading_job.graded_at > rubric_modify_time;
+          instance_question.ai_grading_status =
+            grading_job.graded_at > rubric_modify_time ? 'Latest' : 'Outdated';
         }
       }
     }
