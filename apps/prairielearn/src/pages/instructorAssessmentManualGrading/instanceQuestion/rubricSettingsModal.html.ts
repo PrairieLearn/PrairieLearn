@@ -1,6 +1,37 @@
+import { filesize } from 'filesize';
+
 import { html } from '@prairielearn/html';
 
+import { config } from '../../../lib/config.js';
 import { type RubricData } from '../../../lib/manualGrading.js';
+
+function ImportRubricSettingsPopover() {
+  return html`
+    <div id="import-rubric-settings-popover">
+      <div class="mb-3">
+        <label class="form-label" for="rubric-settings-file-input">Choose file</label>
+        <input
+          id="rubric-file-input"
+          type="file"
+          name="file"
+          class="form-control"
+          id="rubric-settings-file-input"
+          accept="application/json,.json"
+          required
+        />
+        <small class="form-text text-muted">
+          Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+        </small>
+        <div class="mb-3">
+          <div class="text-right">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+            <button id="upload-rubric-file-button" type="submit" class="btn btn-primary">Upload file</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
@@ -8,6 +39,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
         <form
+          id="rubric-settings-form"
           name="rubric-settings"
           method="POST"
           class="needs-validation"
@@ -16,6 +48,13 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
+          <input type="hidden" name="use_rubric" value="true" />
+
+          <input type="hidden" name="course_short_name" value="${resLocals.course.short_name}" />
+          <input type="hidden" name="course_instance_short_name" value="${resLocals.course_instance.short_name}" />
+          <input type="hidden" name="assessment_tid" value="${resLocals.assessment.tid}" />
+          <input type="hidden" name="question_qid" value="${resLocals.question.qid}" />
+          
           <input type="hidden" name="use_rubric" value="true" />
 
           <div class="modal-content">
@@ -221,6 +260,24 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
+                <button 
+                  id="import-rubric-button" 
+                  type="button" 
+                  class="btn btn-sm btn-primary"
+                  data-bs-title="Import rubric settings"
+                >
+                  <i class="fas fa-upload"></i>
+                  Import rubric
+                </button>
+                <button 
+                  id="export-rubric-button" 
+                  type="button" 
+                  class="btn btn-sm btn-primary"
+                  
+                >
+                  <i class="fas fa-download"></i>
+                  Export rubric
+                </button>
                 <template class="js-new-row-rubric-item">
                   ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
                 </template>
@@ -276,6 +333,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           </div>
         </form>
       </div>
+      ${ImportRubricSettingsPopover()}
     </div>
   `;
 }

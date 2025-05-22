@@ -67,6 +67,7 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+      ${compiledScriptTag('rubricSettingsClient.ts')}
     `,
     preContent: html`
       <div class="container-fluid">
