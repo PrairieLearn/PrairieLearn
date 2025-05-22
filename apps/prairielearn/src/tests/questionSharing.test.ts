@@ -2,7 +2,7 @@ import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 

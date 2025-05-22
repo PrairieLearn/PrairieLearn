@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';

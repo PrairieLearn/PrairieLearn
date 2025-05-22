@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';

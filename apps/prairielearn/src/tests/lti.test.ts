@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import oauthSignature from 'oauth-signature';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 

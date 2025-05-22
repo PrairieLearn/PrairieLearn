@@ -1,7 +1,7 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import fetchCookie from 'fetch-cookie';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import setCookie from 'set-cookie-parser';
 import { assert, describe, it } from 'vitest';
 

@@ -3,7 +3,7 @@ import path from 'path';
 import express from 'express';
 import fs from 'fs-extra';
 import getPort from 'get-port';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import tmp from 'tmp-promise';
 import { afterEach, assert, describe, it } from 'vitest';
 

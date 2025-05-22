@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import { io } from 'socket.io-client';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 

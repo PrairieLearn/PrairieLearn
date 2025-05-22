@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import { fetch } from 'undici';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryAsync, queryRow } from '@prairielearn/postgres';
