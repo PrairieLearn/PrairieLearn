@@ -87,6 +87,8 @@ BEGIN
         SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
         FROM matched_rows
         WHERE dest_id IS NULL
+        -- Insert course instance A before Z
+        ORDER BY src_short_name ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller
