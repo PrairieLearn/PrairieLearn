@@ -39,7 +39,7 @@ export function startExam(locals: Record<string, any>) {
         delete locals[prop];
       }
     });
-    it('should be initialized', function () {
+    it('should be initialized', async function () {
       locals.siteUrl = 'http://localhost:' + config.serverPort;
       locals.baseUrl = locals.siteUrl + '/pl';
       locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
@@ -50,6 +50,8 @@ export function startExam(locals: Record<string, any>) {
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
       locals.isStudentPage = true;
       locals.totalPoints = 0;
+      const result = await sqldb.queryAsync('SELECT * FROM course_instances;', {});
+      console.log('START_EXAM_RESULTS', result);
     });
   });
 
