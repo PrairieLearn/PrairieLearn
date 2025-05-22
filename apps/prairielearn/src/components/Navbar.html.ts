@@ -61,7 +61,7 @@ export function Navbar({
         `
       : ''}
     ${UserDropdownMenu({ resLocals, navPage, navbarType })}
-  `
+  `;
 
   return html`
     ${config.devMode && __csrf_token
@@ -134,12 +134,8 @@ export function Navbar({
         >
           <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
-        <div id="course-nav" class="collapse navbar-collapse">
-          ${navbarContent}
-        </div>
-        <div id="course-side-nav" class="mobile-collapsed d-none">
-          ${navbarContent}
-        </div>
+        <div id="course-nav" class="collapse navbar-collapse">${navbarContent}</div>
+        <div id="course-side-nav" class="mobile-collapsed d-none">${navbarContent}</div>
       </div>
     </nav>
 

@@ -21,7 +21,7 @@ onDocumentReady(async () => {
     !sideNavTogglerIcon ||
     !sideNavMobileButton ||
     !courseNavToggler ||
-    !courseSideNavDiv || 
+    !courseSideNavDiv ||
     !appSideNavDiv
   ) {
     return;
@@ -105,10 +105,14 @@ onDocumentReady(async () => {
       sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
     }
-    appSideNavDiv.addEventListener('transitionend', () => {
-      // Remove the animation class after the transition ends
-      appContainerDiv.classList.remove('animate');
-    }, { once: true });
+    appSideNavDiv.addEventListener(
+      'transitionend',
+      () => {
+        // Remove the animation class after the transition ends
+        appContainerDiv.classList.remove('animate');
+      },
+      { once: true },
+    );
 
     const courseSideNavExpanded = !courseSideNavDiv.classList.contains('mobile-collapsed');
     if (courseSideNavExpanded) {
@@ -136,9 +140,13 @@ onDocumentReady(async () => {
       courseSideNavDiv.classList.remove('mobile-collapsed');
     }
 
-    courseSideNavDiv.addEventListener('transitionend', () => {
-      // Remove the animation class after the transition ends
-      appContainerDiv.classList.remove('animate');
-    }, { once: true });
+    courseSideNavDiv.addEventListener(
+      'transitionend',
+      () => {
+        // Remove the animation class after the transition ends
+        appContainerDiv.classList.remove('animate');
+      },
+      { once: true },
+    );
   });
 });

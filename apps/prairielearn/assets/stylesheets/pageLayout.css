@@ -267,7 +267,7 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled #course-side-nav.mobile-collapsed {
     transform: translateX(100%);
   }
-  
+
   .app-container.side-nav-enabled #course-side-nav:not(.mobile-collapsed) {
     transform: translateX(0);
   }
@@ -300,5 +300,13 @@ body:has(div.app-container) {
     display: flex;
     align-items: center;
     white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion) {
+  .app-container.side-nav-enabled.animate .app-side-nav,
+  .app-container.side-nav-enabled.animate #course-side-nav,
+  .app-container.side-nav-enabled {
+    transition: none;
   }
 }
