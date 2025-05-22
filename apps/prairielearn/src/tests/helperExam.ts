@@ -50,8 +50,6 @@ export function startExam(locals: Record<string, any>) {
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
       locals.isStudentPage = true;
       locals.totalPoints = 0;
-      const result = await sqldb.queryAsync('SELECT * FROM course_instances;', {});
-      console.log('START_EXAM_RESULTS', result);
     });
   });
 
@@ -81,6 +79,9 @@ export function startExam(locals: Record<string, any>) {
       const response = await fetch(locals.assessmentsUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
+      const result = await sqldb.queryAsync('SELECT * FROM course_instances;', {});
+      console.log('START_EXAM_RESULTS-4', result.rows);
+      console.log({ page, assessmentUrl: locals.assessmentsUrl });
       locals.$ = cheerio.load(page);
     });
     it('should contain E1 and have the correct link', function () {
