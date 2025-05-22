@@ -152,7 +152,7 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected, { allowHtml: false });
   });
 
-  it('does not treat math delimiters as math if allowMath is false', async () => {
+  it('does not treat math delimiters as math if interpretMath is false', async () => {
     const question = '$a _b=c_ d$';
     const expected = '<p>$a <em>b=c</em> d$</p>';
     await testMarkdown(question, expected, { interpretMath: false });
