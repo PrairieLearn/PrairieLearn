@@ -86,6 +86,12 @@ export function startExam(locals: Record<string, any>) {
     });
     it('should contain E1 and have the correct link', function () {
       assert(locals.$);
+      const elemList2 = locals.$('td a');
+      const data: any[] = [];
+      for (const e of elemList2) {
+        data.push({ text: e.text(), href: e.attr('href') });
+      }
+      console.log('START_EXAM_RESULTS-4AGAIN', data);
       const elemList = locals.$('td a:contains("Exam for automatic test suite")');
       assert.lengthOf(elemList, 1);
       locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
