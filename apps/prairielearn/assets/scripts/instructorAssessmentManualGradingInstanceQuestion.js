@@ -631,8 +631,9 @@ function rowDragOver(event) {
 }
 
 function addRubricItemRow(
-  rubricItem
+  rubricItem = null
 ) {
+  console.log('rubricItem', rubricItem);
   const modal = document.querySelector('#rubric-settings-form');
   if (!modal) return;
   const table = modal.querySelector('.js-rubric-items-table');
