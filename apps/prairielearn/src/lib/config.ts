@@ -621,6 +621,10 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
+export async function resetConfig() {
+  loader.reset();
+}
+
 export function setLocalsFromConfig(locals: Record<string, any>) {
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
