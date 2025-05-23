@@ -1375,7 +1375,9 @@ async function renderPanel(
       // out any data that isn't relevant during AI grading.
       const resultHtml = await run(async () => {
         if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
-          const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-util.js');
+          const { stripHtmlForAiGrading } = await import(
+            '../ee/lib/ai-grading/ai-grading-render.js'
+          );
           return await stripHtmlForAiGrading(html);
         }
         return html;

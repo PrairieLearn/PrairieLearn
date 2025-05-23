@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
 import { z } from 'zod';
@@ -26,7 +25,6 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
-import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -414,57 +412,4 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
-}
-
-/**
- * Processes rendered question HTML to make it suitable for AI grading.
- * This includes removing scripts/stylesheets and attributes that aren't
- * relevant to grading.
- */
-export async function stripHtmlForAiGrading(html: string) {
-  const $ = cheerio.load(html, null, false);
-
-  // Remove elements that are guaranteed to be irrelevant to grading.
-  $('script').remove();
-  $('style').remove();
-  $('link').remove();
-  $('noscript').remove();
-  $('svg').remove();
-
-  // Filter out more irrelevant elements/attributes.
-  $('*').each((_, el) => {
-    if (el.type !== 'tag') return;
-
-    // Remove elements that are hidden from screen readers.
-    if ($(el).attr('aria-hidden') === 'true') {
-      $(el).remove();
-      return;
-    }
-
-    $(el).removeAttr('id');
-    $(el).removeAttr('class');
-    $(el).removeAttr('style');
-    for (const name of Object.keys(el.attribs)) {
-      if (name.startsWith('data-bs-')) {
-        $(el).removeAttr(name);
-      }
-    }
-  });
-
-  // Remove all elements that have no text content.
-  $('*').each((_, el) => {
-    if (el.type !== 'tag') return;
-    if ($(el).text().trim() === '') {
-      $(el).remove();
-    }
-  });
-
-  const result = $.html();
-  if (result.length > 10000) {
-    // Prevent denial of service attacks by skipping Prettier formatting
-    // if the HTML is too large. 10,000 characters was chosen arbitrarily.
-    return html.trim();
-  }
-
-  return (await formatHtmlWithPrettier(result)).trim();
 }
