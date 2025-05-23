@@ -138,6 +138,15 @@ jobs:
         run: |
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          cat /etc/postgresql/16/main/postgresql.conf || true
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          wal_level = minimal
+          EOF
+
           sudo systemctl restart postgresql.service
 
       - name: Install OS packages
