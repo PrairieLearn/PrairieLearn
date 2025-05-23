@@ -697,6 +697,7 @@ function QuestionPanel({
             ${showCopyQuestionButton
               ? html`
                   <button
+                    id="copyQuestionButton"
                     class="btn btn-sm btn-outline-light"
                     type="button"
                     aria-label="Copy question"
@@ -799,12 +800,14 @@ function SubmissionList({
 
 function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
   const { question_copy_targets, question, course } = resLocals;
+  console.log('question copy targets', question_copy_targets);
   if (question_copy_targets == null) return '';
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
     formClass: 'js-copy-question-form',
+    formName: 'copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`

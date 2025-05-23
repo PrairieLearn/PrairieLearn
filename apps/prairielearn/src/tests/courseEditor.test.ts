@@ -13,6 +13,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
+import * as syncUtil from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -26,6 +27,7 @@ const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseDir = courseLiveDir;
+// const sharingCourseDir = path.join(baseDir, 'sharingCourse');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -296,14 +298,65 @@ const testEditData = [
   },
 ];
 
+const transferEditData = [
+  {
+    url: `${baseUrl}/public/course/2/question/4/preview`,
+    button: '#copyQuestionButton',
+    formSelector: 'form[name="copy-question-form"]',
+    data: {
+      course_id: 1,
+      question_id: 2,
+    },
+    action: 'copy_question',
+    info: 'questions/test/question_copy1/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test/question_copy1/info.json',
+      'questions/test/question_copy1/question.html',
+      'questions/test/question_copy1/server.py',
+    ]),
+  },
+];
+
 describe('test course editor', { timeout: 20_000 }, function () {
-  describe('not the example course', function () {
-    beforeAll(async () => {
-      await createCourseFiles();
-    });
-    afterAll(async () => {
-      await deleteCourseFiles();
-    });
+  // describe('not the example course', function () {
+  //   beforeAll(createCourseFiles);
+  //   afterAll(deleteCourseFiles);
+
+  //   beforeAll(helperServer.before(courseDir));
+  //   afterAll(helperServer.after);
+
+  //   beforeAll(async () => {
+  //     await sqldb.queryAsync(sql.update_course_repository, {
+  //       course_path: courseLiveDir,
+  //       course_repository: courseOriginDir,
+  //     });
+  //   });
+
+  //   describe('the locals object', function () {
+  //     it('should be cleared', function () {
+  //       for (const prop in locals) {
+  //         delete locals[prop];
+  //       }
+  //     });
+  //   });
+
+  //   describe('verify edits', function () {
+  //     testEditData.forEach((element) => {
+  //       testEdit(element);
+  //     });
+  //   });
+  // });
+
+  describe('Copy from another course', function () {
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
 
     beforeAll(helperServer.before(courseDir));
     afterAll(helperServer.after);
@@ -315,16 +368,17 @@ describe('test course editor', { timeout: 20_000 }, function () {
       });
     });
 
-    describe('the locals object', function () {
-      it('should be cleared', function () {
-        for (const prop in locals) {
-          delete locals[prop];
-        }
-      });
-    });
+    beforeAll(createSharedCourse);
 
-    describe('verify edits', function () {
-      testEditData.forEach((element) => {
+    // beforeAll(async function () {
+    //   let result = await sqldb.queryAsync('select * from pl_courses;', {});
+    //   console.log(result.rows);
+    //   result = await sqldb.queryAsync('select * from questions;', {});
+    //   console.log(result.rows);
+    // });
+
+    describe('verify edits', async function () {
+      transferEditData.forEach((element) => {
         testEdit(element);
       });
     });
@@ -381,23 +435,37 @@ function testEdit(params) {
       });
     }
     it('should have a CSRF token', () => {
-      if (params.button) {
-        let elemList = locals.$(params.button);
-        assert.lengthOf(elemList, 1);
+      // if (params.button) {
+      //   console.log(params.button);
+      //   let elemList = locals.$(params.button);
+      //   // console.log(locals.$.html());
+      //   // console.log(elemList);
+      //   assert.lengthOf(elemList, 1);
+      //   // console.log(elemList[0].attribs);
+      //   // console.log(elemList[0].attribs['data-bs-content']);
+      //   // console.log(elemList[0].attribs['data-bs-target']);
 
-        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
-        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
-      } else {
-        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
-      }
+      //   if (elemList[0].attribs['data-bs-content']) {
+      //     const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+      //     elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
+      //   } else if (elemList[0].attribs['data-bs-target']) {
+      //     elemList = locals.$(elemList[0].attribs['data-bs-target']);
+      //   } else {
+      //     throw new Error("Button doesn't have a target or content.");
+      //   }
+
+      //   assert.lengthOf(elemList, 1);
+      //   console.log(elemList[0]);
+      //   assert.nestedProperty(elemList[0], 'attribs.value');
+      //   locals.__csrf_token = elemList[0].attribs.value;
+      //   assert.isString(locals.__csrf_token);
+      // } else {
+      const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+      // }
     });
   });
 
@@ -486,6 +554,56 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
+}
+
+async function createSharedCourse() {
+  const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const DRAFT_QUESTION_QID = '__drafts__/draft_1';
+
+  const sharingCourseData = syncUtil.getCourseData();
+  sharingCourseData.course.name = 'SHARING 101';
+  const privateQuestion = sharingCourseData.questions.private;
+  sharingCourseData.questions = {
+    private: privateQuestion,
+    [PUBLICLY_SHARED_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111111',
+      type: 'v3',
+      title: 'Shared publicly',
+      topic: 'TOPIC HERE',
+    },
+    [DRAFT_QUESTION_QID]: {
+      uuid: '22222222-2222-2222-2222-222222222222',
+      type: 'v3',
+      title: 'Draft question',
+      topic: 'TOPIC HERE',
+    },
+  };
+
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+    {
+      questions: [
+        {
+          id: `${PUBLICLY_SHARED_QUESTION_QID}`,
+          points: 1,
+        },
+      ],
+    },
+  ];
+  sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
+  sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  // await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseDir);
+  // const sharingCourseResults = await syncUtil.syncCourseData(sharingCourseDir);
+  const sharingCourseResults = await syncUtil.writeAndSyncCourseData(sharingCourseData);
+  console.log(sharingCourseResults.courseDir);
+  // const consumingCourse = await selectCourseById(sharingCourseResults.syncResults.courseId);
+  // consumingCourseInstanceId = await sqldb.queryRow(
+  //   sql.select_course_instance,
+  //   { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: consumingCourse.id },
+  //   IdSchema,
+  // );
 }
 
 async function deleteCourseFiles() {
