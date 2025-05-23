@@ -18,8 +18,6 @@ describe('AdministratorQuery page', { timeout: 60_000 }, function () {
 
   test.sequential('visit queries page', async () => {
     const response = await helperClient.fetchCheerio(queriesUrl);
-    console.log(response);
-    console.log(await response.text());
     assert.isTrue(response.ok);
 
     // we should have the "db_running_queries.sql" entry

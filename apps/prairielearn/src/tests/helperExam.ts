@@ -39,7 +39,7 @@ export function startExam(locals: Record<string, any>) {
         delete locals[prop];
       }
     });
-    it('should be initialized', async function () {
+    it('should be initialized', function () {
       locals.siteUrl = 'http://localhost:' + config.serverPort;
       locals.baseUrl = locals.siteUrl + '/pl';
       locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
@@ -79,36 +79,10 @@ export function startExam(locals: Record<string, any>) {
       const response = await fetch(locals.assessmentsUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
-      const result = await sqldb.queryAsync('SELECT * FROM course_instances;', {});
-      console.log('START_EXAM_RESULTS-4', result.rows);
-      console.log({ page, assessmentUrl: locals.assessmentsUrl });
       locals.$ = cheerio.load(page);
     });
     it('should contain E1 and have the correct link', function () {
       assert(locals.$);
-      console.log(
-        'START_EXAM_RESULTS-4AGAIN',
-        locals.$.extract({
-          red: ['td a'],
-        }),
-      );
-      console.log(
-        'START_EXAM_RESULTS-4AGAIN2',
-        locals.$.extract({
-          red: [
-            {
-              selector: 'td a',
-              value: 'href',
-            },
-          ],
-        }),
-      );
-      // const elemList2 = locals.$('td a');
-      // const data: any[] = [];
-      // for (const e of elemList2) {
-      //   data.push({ text: e.text(), href: e.attr('href') });
-      // }
-      // console.log('START_EXAM_RESULTS-4AGAIN', data);
       const elemList = locals.$('td a:contains("Exam for automatic test suite")');
       assert.lengthOf(elemList, 1);
       locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;

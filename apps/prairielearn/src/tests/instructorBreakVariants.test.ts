@@ -44,11 +44,6 @@ describe('Instructor force-breaking variants', () => {
       { qid: 'partialCredit2', assessment_id: assessmentId },
       IdSchema,
     );
-    console.log('BREAK_VARIANT', {
-      assessmentId,
-      partialCredit1AssessmentQuestionId,
-      partialCredit2AssessmentQuestionId,
-    });
   });
   afterAll(helperServer.after);
 
@@ -96,28 +91,7 @@ describe('Instructor force-breaking variants', () => {
   });
 
   test.sequential('student creates and submits to second variant', async () => {
-    let originalName = config.authName;
-    let originalUid = config.authUid;
-    let originalUin = config.authUin;
-    let originalEmail = config.authEmail;
-    console.log('BEFORE', {
-      originalName,
-      originalUid,
-      originalUin,
-      originalEmail,
-    });
-
     await withUser(studentUser, async () => {
-      originalName = config.authName;
-      originalUid = config.authUid;
-      originalUin = config.authUin;
-      originalEmail = config.authEmail;
-      console.log('DURING', {
-        originalName,
-        originalUid,
-        originalUin,
-        originalEmail,
-      });
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
       const partialCredit2Url = assessmentResponse.$('a:contains("Question 2")').attr('href');
@@ -130,11 +104,6 @@ describe('Instructor force-breaking variants', () => {
         .val()
         ?.toString() as string;
 
-      console.log('BREAK_VARIANT', {
-        url: `${siteUrl}${partialCredit2Url}`,
-        __csrf_token: getCSRFToken(questionResponse.$),
-        __variant_id: partialCredit2VariantId,
-      });
       const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`, {
         method: 'POST',
         body: new URLSearchParams({
@@ -145,16 +114,6 @@ describe('Instructor force-breaking variants', () => {
         }),
       });
       assert.equal(submissionResponse.status, 200);
-    });
-    originalName = config.authName;
-    originalUid = config.authUid;
-    originalUin = config.authUin;
-    originalEmail = config.authEmail;
-    console.log('AFTER', {
-      originalName,
-      originalUid,
-      originalUin,
-      originalEmail,
     });
   });
 

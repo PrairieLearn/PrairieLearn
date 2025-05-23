@@ -24,7 +24,7 @@ env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  test-prairielearn-docker:
+  test-prairielearn:
     runs-on: ubuntu-latest
 
     env:
