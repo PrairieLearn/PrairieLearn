@@ -800,7 +800,6 @@ function SubmissionList({
 
 function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
   const { question_copy_targets, question, course } = resLocals;
-  console.log('question copy targets', question_copy_targets);
   if (question_copy_targets == null) return '';
   return Modal({
     id: 'copyQuestionModal',

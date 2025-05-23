@@ -31,13 +31,7 @@ export function Modal({
 }: ModalProps): HtmlSafeString {
   const titleId = `${id}-title`;
   const modal = html`
-    <div
-      class="modal fade"
-      tabindex="-1"
-      role="dialog"
-      ${form ? '' : `id="${id}"`}
-      aria-labelledby="${titleId}"
-    >
+    <div class="modal fade" tabindex="-1" role="dialog" id="${id}" aria-labelledby="${titleId}">
       <div class="modal-dialog ${size === 'default' ? '' : size}" role="document">
         <div class="modal-content">
           <div class="modal-header">
@@ -54,7 +48,6 @@ export function Modal({
 
   return html`
     <form
-      ${form ? `id="${id}"` : ''}
       method="${formMethod}"
       autocomplete="off"
       ${formName ? html`name="${formName}"` : ''}

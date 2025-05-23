@@ -301,58 +301,54 @@ const testEditData = [
 const transferEditData = [
   {
     url: `${baseUrl}/public/course/2/question/4/preview`,
-    button: '#copyQuestionButton',
     formSelector: 'form[name="copy-question-form"]',
     data: {
-      course_id: 1,
-      question_id: 2,
+      course_id: 2,
+      question_id: 4,
     },
-    action: 'copy_question',
-    info: 'questions/test/question_copy1/info.json',
+    info: 'questions/shared-publicly/info.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
       'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/shared-publicly/info.json',
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'questions/test/question_copy1/info.json',
-      'questions/test/question_copy1/question.html',
-      'questions/test/question_copy1/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
     ]),
   },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
-  // describe('not the example course', function () {
-  //   beforeAll(createCourseFiles);
-  //   afterAll(deleteCourseFiles);
+  //   describe('not the example course', function () {
+  //     beforeAll(createCourseFiles);
+  //     afterAll(deleteCourseFiles);
 
-  //   beforeAll(helperServer.before(courseDir));
-  //   afterAll(helperServer.after);
+  //     beforeAll(helperServer.before(courseDir));
+  //     afterAll(helperServer.after);
 
-  //   beforeAll(async () => {
-  //     await sqldb.queryAsync(sql.update_course_repository, {
-  //       course_path: courseLiveDir,
-  //       course_repository: courseOriginDir,
+  //     beforeAll(async () => {
+  //       await sqldb.queryAsync(sql.update_course_repository, {
+  //         course_path: courseLiveDir,
+  //         course_repository: courseOriginDir,
+  //       });
+  //     });
+
+  //     describe('the locals object', function () {
+  //       it('should be cleared', function () {
+  //         for (const prop in locals) {
+  //           delete locals[prop];
+  //         }
+  //       });
+  //     });
+
+  //     describe('verify edits', function () {
+  //       testEditData.forEach((element) => {
+  //         testEdit(element);
+  //       });
   //     });
   //   });
-
-  //   describe('the locals object', function () {
-  //     it('should be cleared', function () {
-  //       for (const prop in locals) {
-  //         delete locals[prop];
-  //       }
-  //     });
-  //   });
-
-  //   describe('verify edits', function () {
-  //     testEditData.forEach((element) => {
-  //       testEdit(element);
-  //     });
-  //   });
-  // });
 
   describe('Copy from another course', function () {
     beforeAll(createCourseFiles);
@@ -435,43 +431,38 @@ function testEdit(params) {
       });
     }
     it('should have a CSRF token', () => {
-      // if (params.button) {
-      //   console.log(params.button);
-      //   let elemList = locals.$(params.button);
-      //   // console.log(locals.$.html());
-      //   // console.log(elemList);
-      //   assert.lengthOf(elemList, 1);
-      //   // console.log(elemList[0].attribs);
-      //   // console.log(elemList[0].attribs['data-bs-content']);
-      //   // console.log(elemList[0].attribs['data-bs-target']);
+      if (params.button) {
+        let elemList = locals.$(params.button);
+        assert.lengthOf(elemList, 1);
 
-      //   if (elemList[0].attribs['data-bs-content']) {
-      //     const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
-      //     elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-      //   } else if (elemList[0].attribs['data-bs-target']) {
-      //     elemList = locals.$(elemList[0].attribs['data-bs-target']);
-      //   } else {
-      //     throw new Error("Button doesn't have a target or content.");
-      //   }
+        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
 
-      //   assert.lengthOf(elemList, 1);
-      //   console.log(elemList[0]);
-      //   assert.nestedProperty(elemList[0], 'attribs.value');
-      //   locals.__csrf_token = elemList[0].attribs.value;
-      //   assert.isString(locals.__csrf_token);
-      // } else {
-      const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-      // }
+        assert.lengthOf(elemList, 1);
+        assert.nestedProperty(elemList[0], 'attribs.value');
+        locals.__csrf_token = elemList[0].attribs.value;
+        assert.isString(locals.__csrf_token);
+      } else {
+        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elemList, 1);
+        assert.nestedProperty(elemList[0], 'attribs.value');
+        locals.__csrf_token = elemList[0].attribs.value;
+        assert.isString(locals.__csrf_token);
+      }
     });
   });
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const res = await fetch(params.url || locals.url, {
+      let url;
+      if (!params.action) {
+        const elemList = locals.$(params.formSelector);
+        assert.lengthOf(elemList, 1);
+        url = `${siteUrl}${elemList[0].attribs['action']}`;
+      } else {
+        url = params.url || locals.url;
+      }
+      const res = await fetch(url, {
         method: 'POST',
         body: new URLSearchParams({
           __action: params.action,

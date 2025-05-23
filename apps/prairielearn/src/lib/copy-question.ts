@@ -27,7 +27,7 @@ export async function setQuestionCopyTargets(res: Response) {
     user_id: res.locals.user.user_id,
     is_administrator: res.locals.is_administrator,
   });
-  console.log('editable courses', editableCourses);
+
   res.locals.question_copy_targets = editableCourses
     .filter(
       (course) =>
