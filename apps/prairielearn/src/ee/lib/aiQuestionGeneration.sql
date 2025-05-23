@@ -63,4 +63,6 @@ VALUES
     to_jsonb($errors::text[]),
     $completion,
     $job_sequence_id
-  );
+  )
+RETURNING
+  id;

@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
@@ -11,8 +11,8 @@ import { PostgresSessionStore } from './session-store.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 describe('PostgresSessionStore', () => {
-  before(helperDb.before);
-  after(helperDb.after);
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
 
   it('creates, updates, and destroys a session', async () => {
     await helperDb.runInTransactionAndRollback(async () => {
