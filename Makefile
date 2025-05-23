@@ -49,7 +49,7 @@ start-s3rver:
 
 test: test-js test-python
 test-js: start-support
-	@yarn turbo run --log-order=stream test
+	@yarn turbo run test
 test-js-dist: start-support
 	@yarn turbo run test:dist
 test-python:

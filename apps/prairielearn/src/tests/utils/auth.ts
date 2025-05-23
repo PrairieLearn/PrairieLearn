@@ -23,7 +23,6 @@ export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise
     config.authUid = user.uid;
     config.authUin = user.uin;
     config.authEmail = user.email ?? null;
-    console.trace('withUser', user.name, user.uid, user.uin, user.email);
 
     return await fn();
   } finally {
@@ -31,7 +30,6 @@ export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise
     config.authUid = originalUid;
     config.authUin = originalUin;
     config.authEmail = originalEmail;
-    console.trace('restored original user', originalName, originalUid, originalUin, originalEmail);
   }
 }
 
