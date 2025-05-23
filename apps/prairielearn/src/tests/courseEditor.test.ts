@@ -298,7 +298,7 @@ const testEditData = [
   },
 ];
 
-const transferEditData = [
+const publicCopyTestData = [
   {
     url: `${baseUrl}/public/course/2/question/4/preview`,
     formSelector: 'form[name="copy-question-form"]',
@@ -366,15 +366,8 @@ describe('test course editor', { timeout: 20_000 }, function () {
 
     beforeAll(createSharedCourse);
 
-    // beforeAll(async function () {
-    //   let result = await sqldb.queryAsync('select * from pl_courses;', {});
-    //   console.log(result.rows);
-    //   result = await sqldb.queryAsync('select * from questions;', {});
-    //   console.log(result.rows);
-    // });
-
     describe('verify edits', async function () {
-      transferEditData.forEach((element) => {
+      publicCopyTestData.forEach((element) => {
         testEdit(element);
       });
     });
@@ -453,7 +446,7 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      let url;
+      let url: string;
       if (!params.action) {
         const elemList = locals.$(params.formSelector);
         assert.lengthOf(elemList, 1);
