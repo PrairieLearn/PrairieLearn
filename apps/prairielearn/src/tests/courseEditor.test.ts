@@ -300,11 +300,11 @@ const testEditData = [
 
 const publicCopyTestData = [
   {
-    url: `${baseUrl}/public/course/2/question/4/preview`,
+    url: `${baseUrl}/public/course/2/question/2/preview`,
     formSelector: 'form[name="copy-question-form"]',
     data: {
       course_id: 2,
-      question_id: 4,
+      question_id: 2,
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -541,27 +541,16 @@ async function createCourseFiles() {
 
 async function createSharedCourse() {
   const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
-  const DRAFT_QUESTION_QID = '__drafts__/draft_1';
-
   const sharingCourseData = syncUtil.getCourseData();
   sharingCourseData.course.name = 'SHARING 101';
-  const privateQuestion = sharingCourseData.questions.private;
   sharingCourseData.questions = {
-    private: privateQuestion,
     [PUBLICLY_SHARED_QUESTION_QID]: {
       uuid: '11111111-1111-1111-1111-111111111111',
       type: 'v3',
       title: 'Shared publicly',
       topic: 'TOPIC HERE',
     },
-    [DRAFT_QUESTION_QID]: {
-      uuid: '22222222-2222-2222-2222-222222222222',
-      type: 'v3',
-      title: 'Draft question',
-      topic: 'TOPIC HERE',
-    },
   };
-
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
       questions: [
