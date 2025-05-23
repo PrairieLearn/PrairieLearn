@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -221,13 +220,9 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
 
     describe('the database', function () {
       it('should contain HW1', async () => {
-        const { id: course_instance_id } = await selectCourseInstanceByShortName({
-          course_id: '1',
-          short_name: 'Sp15',
-        });
         const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
           tid: 'hw1-automaticTestSuite',
-          course_instance_id,
         });
         locals.assessment_id = assessmentId;
       });

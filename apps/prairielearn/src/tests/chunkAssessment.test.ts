@@ -4,7 +4,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as chunks from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -27,13 +26,9 @@ describe('Generate chunks and use them for a student homework', { timeout: 60_00
     config.chunksConsumerDirectory = tempChunksDir.path;
 
     await helperServer.before()();
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'hw1-automaticTestSuite',
-      course_instance_id,
     });
     context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

@@ -5,9 +5,7 @@ import { queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { config } from '../../lib/config.js';
-import { type Assessment, type CourseInstance, UserSchema } from '../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { UserSchema } from '../../lib/db-types.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';
@@ -15,14 +13,8 @@ import { withUser } from '../utils/auth.js';
 const SITE_URL = `http://localhost:${config.serverPort}`;
 const INSTITUTION_ADMIN_COURSES = `${SITE_URL}/pl/institution/1/admin/courses`;
 const COURSE_URL = `${SITE_URL}/pl/course/1/course_admin/instances`;
-
-function getCourseInstanceUrl(courseInstance: CourseInstance) {
-  return `${SITE_URL}/pl/course_instance/${courseInstance.id}/instructor/course_admin/instances`;
-}
-
-function getAssessmentInstancesUrl(courseInstance: CourseInstance, assessment: Assessment) {
-  return `${SITE_URL}/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/instances`;
-}
+const COURSE_INSTANCE_URL = `${SITE_URL}/pl/course_instance/1/instructor/instance_admin/assessments`;
+const ASSESSMENT_INSTANCES_URL = `${SITE_URL}/pl/course_instance/1/instructor/assessment/1/instances`;
 
 interface AuthUser {
   name: string;
@@ -70,16 +62,9 @@ describe('institution administrators', () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  let courseInstance: CourseInstance;
-  let assessment: Assessment;
   beforeAll(async () => {
     await insertUser(ADMIN_USER);
     await insertUser(INSTITUTION_ADMIN_USER);
-    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
-    assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: 'hw1-automaticTestSuite',
-    });
   });
 
   test.sequential('global admin can access institution admin courses', async () => {
@@ -93,8 +78,7 @@ describe('institution administrators', () => {
   });
 
   test.sequential('global admin can access course instance', async () => {
-    const url = getCourseInstanceUrl(courseInstance);
-    const res = await withUser(ADMIN_USER, () => fetch(url));
+    const res = await withUser(ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
     assert.equal(res.status, 200);
   });
 
@@ -112,16 +96,14 @@ describe('institution administrators', () => {
   });
 
   test.sequential('institution admin (no permissions) cannot access course instance', async () => {
-    const url = getCourseInstanceUrl(courseInstance);
-    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
     assert.equal(res.status, 403);
   });
 
   test.sequential(
     'institution admin (no permissions) can access assessment instances',
     async () => {
-      const url = getAssessmentInstancesUrl(courseInstance, assessment);
-      const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+      const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(ASSESSMENT_INSTANCES_URL));
       assert.equal(res.status, 403);
     },
   );
@@ -147,14 +129,12 @@ describe('institution administrators', () => {
   });
 
   test.sequential('institution admin can access course instance', async () => {
-    const url = getCourseInstanceUrl(courseInstance);
-    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(COURSE_INSTANCE_URL));
     assert.equal(res.status, 200);
   });
 
   test.sequential('institution admin can access assessment instances', async () => {
-    const url = getAssessmentInstancesUrl(courseInstance, assessment);
-    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(url));
+    const res = await withUser(INSTITUTION_ADMIN_USER, () => fetch(ASSESSMENT_INSTANCES_URL));
     assert.equal(res.status, 200);
   });
 });

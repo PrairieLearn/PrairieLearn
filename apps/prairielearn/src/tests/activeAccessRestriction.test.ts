@@ -38,19 +38,15 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const { id: course_instance_id } = await selectCourseInstanceByShortName({
-        course_id: '1',
-        short_name: 'Sp15',
-      });
       const { id: examId } = await selectAssessmentByTid({
+        course_instance_id: '1',
         tid: 'exam11-activeAccessRestriction',
-        course_instance_id,
       });
       const { id: hwId } = await selectAssessmentByTid({
+        course_instance_id: '1',
         tid: 'hw8-activeAccessRestriction',
-        course_instance_id,
       });
-      context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/${course_instance_id}`;
+      context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
       context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
       context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
       context.examId = examId;

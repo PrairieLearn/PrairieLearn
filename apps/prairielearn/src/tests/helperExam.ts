@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -70,13 +69,9 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-3. the database', function () {
     it('should contain E1', async function () {
-      const { id: course_instance_id } = await selectCourseInstanceByShortName({
-        course_id: '1',
-        short_name: 'Sp15',
-      });
       const { id: assessmentId } = await selectAssessmentByTid({
+        course_instance_id: '1',
         tid: 'exam1-automaticTestSuite',
-        course_instance_id,
       });
       locals.assessment_id = assessmentId;
     });

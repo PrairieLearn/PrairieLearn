@@ -3,7 +3,6 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -16,13 +15,9 @@ describe('Exam assessment with real-time grading disabled', { timeout: 60_000 },
 
   beforeAll(async function () {
     await helperServer.before()();
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'exam8-disableRealTimeGrading',
-      course_instance_id,
     });
     context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -133,13 +132,9 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('5. database', function () {
     it('should contain E1', async () => {
-      const { id: course_instance_id } = await selectCourseInstanceByShortName({
-        course_id: '1',
-        short_name: 'Sp15',
-      });
       const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
         tid: 'exam1-automaticTestSuite',
-        course_instance_id,
       });
       assessment_id = assessment.id;
     });

@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -104,13 +103,9 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
 
     describe('startExam-3. the database', function () {
       it('should contain E5', async () => {
-        const { id: course_instance_id } = await selectCourseInstanceByShortName({
-          course_id: '1',
-          short_name: 'Sp15',
-        });
         const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
           tid: 'exam5-perZoneGrading',
-          course_instance_id,
         });
         locals.assessment_id = assessmentId;
       });

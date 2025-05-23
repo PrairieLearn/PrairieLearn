@@ -4,7 +4,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -28,13 +27,9 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   beforeAll(async function () {
     await helperServer.before()();
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'exam8-disableRealTimeGrading',
-      course_instance_id,
     });
     context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

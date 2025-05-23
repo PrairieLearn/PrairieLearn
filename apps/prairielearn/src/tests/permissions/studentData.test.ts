@@ -4,7 +4,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -26,19 +25,15 @@ describe('student data access', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    const { id: course_instance_id } = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     let result = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'hw1-automaticTestSuite',
-      course_instance_id,
     });
     context.homeworkAssessmentId = result.id;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;
     result = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'exam1-automaticTestSuite',
-      course_instance_id,
     });
     context.examAssessmentId = result.id;
     context.examAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examAssessmentId}/`;

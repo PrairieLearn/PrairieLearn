@@ -1,9 +1,7 @@
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
-import type { CourseInstance } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -13,22 +11,15 @@ describe('Exam assessment response to `requireHonorCode`', function () {
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
-  let courseInstance: CourseInstance;
 
-  beforeAll(async () => {
-    await helperServer.before()();
-    courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
-  });
+  beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
   it('visits the landing page of default assessment', async () => {
     const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'exam1-automaticTestSuite',
-      course_instance_id: courseInstance.id,
     });
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
@@ -43,8 +34,8 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
   it('visits landing page of assessment with disabled honor code', async () => {
     const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
       tid: 'exam13-disableHonorCode',
-      course_instance_id: courseInstance.id,
     });
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
