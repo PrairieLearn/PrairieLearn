@@ -31,11 +31,7 @@ SELECT
   -- is designed to reduce the impact of the order of the instance questions on
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
-  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order,
-  'None' AS ai_grading_status,
-  NULL AS last_human_grader,
-  NULL AS rubric_difference,
-  NULL AS point_difference
+  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

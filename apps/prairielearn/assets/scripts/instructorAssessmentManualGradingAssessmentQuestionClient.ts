@@ -6,10 +6,11 @@ import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
-  InstanceQuestionRow,
+  InstanceQuestionRowWithAIGradingStats,
   InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
+type InstanceQuestionRow = InstanceQuestionRowWithAIGradingStats;
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 
 declare global {

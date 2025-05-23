@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
+import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
-  RubricItemSchema,
   type User,
 } from '../../../lib/db-types.js';
 
@@ -16,12 +16,10 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
-  ai_grading_status: z.enum(['None', 'Graded', 'Outdated', 'Latest']),
-  last_human_grader: z.string().nullable(), // null if not graded by human
-  rubric_difference: RubricItemSchema.extend({ false_positive: z.boolean() }).array().nullable(),
-  point_difference: z.number().nullable(),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+
+export type InstanceQuestionRowWithAIGradingStats = WithAIGradingStats<InstanceQuestionRow>;
 
 export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;

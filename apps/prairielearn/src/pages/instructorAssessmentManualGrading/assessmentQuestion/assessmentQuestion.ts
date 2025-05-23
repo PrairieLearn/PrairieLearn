@@ -55,8 +55,12 @@ router.get(
       InstanceQuestionRowSchema,
     );
 
-    await fillInstanceQuestionColumns(instance_questions, res.locals.assessment_question);
-    res.send({ instance_questions });
+    res.send({
+      instance_questions: await fillInstanceQuestionColumns(
+        instance_questions,
+        res.locals.assessment_question,
+      ),
+    });
   }),
 );
 
