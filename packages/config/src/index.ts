@@ -112,7 +112,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     _.mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
   }
 
-  async reset() {
+  reset() {
     this.resolvedConfig = this.schema.parse({});
   }
 
