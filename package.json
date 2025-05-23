@@ -2,7 +2,7 @@
   "name": "prairielearn",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/prairielearn",
     "packages/*"
   ],
   "packageManager": "yarn@4.8.1",
