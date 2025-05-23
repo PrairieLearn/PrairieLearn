@@ -94,9 +94,16 @@ jobs:
         # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
         #
         # We put the Postgres data on a tmpfs volume, which should be much faster.
-        run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+        run: |
+          docker run --tty --detach \
+          --volume /var/run/docker.sock:/var/run/docker.sock \
+          --volume /tmp/prairielearn:/jobs \
+          --tmpfs=/var/postgres \
+          --env HOST_JOBS_DIR=/tmp/prairielearn \
+          --name=test_container \
+          prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-js"
+        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-js"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
