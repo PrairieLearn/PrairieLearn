@@ -17,7 +17,6 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 
-import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
@@ -49,6 +48,7 @@ import {
   type RenderResultData,
   type TestResultData,
 } from './types.js';
+import { isEnterprise } from '../lib/license.js';
 
 const debug = debugfn('prairielearn:freeform');
 
@@ -1370,18 +1370,23 @@ async function renderPanel(
         data,
         context,
       );
-      return { courseIssues, html, renderedElementNames };
+
+      // If we're rendering for AI grading, transform the resulting HTML to strip
+      // out any data that isn't relevant during AI grading.
+      const resultHtml = await run(async () => {
+        if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
+          const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-util.js');
+          return await stripHtmlForAiGrading(html);
+        }
+        return html;
+      });
+
+      return { courseIssues, html: resultHtml, renderedElementNames };
     },
   );
 
   return {
     ...cachedData,
-    // We need to transform the resulting HTML to strip out any data that
-    // isn't relevant during AI grading.
-    html:
-      locals.questionRenderContext === 'ai_grading'
-        ? await stripHtmlForAiGrading(cachedData.html)
-        : cachedData.html,
     cacheHit,
   };
 }
