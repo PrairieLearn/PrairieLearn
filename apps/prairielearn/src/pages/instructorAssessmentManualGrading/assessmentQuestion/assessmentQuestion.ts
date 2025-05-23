@@ -1,9 +1,8 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { aiGradeTest } from '../../../ee/lib/ai-grading/ai-grading-test.js';
 import { aiGrade } from '../../../ee/lib/ai-grading.js';
@@ -29,13 +28,13 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingMode = await queryRow(
-      sql.check_ai_grading_mode,
-      { assessment_question_id: res.locals.assessment_question.id },
-      z.boolean(),
-    );
     res.send(
-      AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled, aiGradingMode }),
+      AssessmentQuestion({
+        resLocals: res.locals,
+        courseStaff,
+        aiGradingEnabled,
+        aiGradingMode: res.locals.assessment_question.ai_grading_mode,
+      }),
     );
   }),
 );

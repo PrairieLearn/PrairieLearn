@@ -59,7 +59,7 @@ onDocumentReady(() => {
 
   window.rubricItemsList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
-    const rubricItems = data.flatMap((row) => (row.rubric_difference ? row.rubric_difference : []));
+    const rubricItems = data.flatMap((row) => row.rubric_difference ?? []);
     rubricItems.sort((a, b) => a.number - b.number);
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
   };
@@ -139,8 +139,9 @@ onDocumentReady(() => {
         render: aiGradingEnabled,
         html: html`<button
           class="btn btn-secondary ${aiGradingMode ? 'active' : ''}"
+          name="toggleAiGradingMode"
           type="button"
-          title="Start/stop AI grading mode"
+          title="${aiGradingMode ? 'Disable' : 'Enable'} AI grading mode"
         >
           <i class="fa fa-eye" aria-hidden="true"></i> AI grading mode
         </button>`.toString(),
@@ -414,15 +415,18 @@ onDocumentReady(() => {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
-            if (a_diff === b_diff) {
-              // Same difference: compare number of disagreeing rubrics
-              return (
-                ((a['rubric_difference'] ? a['rubric_difference'].length : 0) -
-                  (b['rubric_difference'] ? b['rubric_difference'].length : 0)) *
-                order
-              );
+            // Actually sorting based on accuracy
+            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
+            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            if (
+              a_rubric_diff !== null &&
+              b_rubric_diff !== null &&
+              a_rubric_diff !== b_rubric_diff
+            ) {
+              // Prioritize number of disagreeing items
+              return (a_rubric_diff - b_rubric_diff) * order;
             } else {
-              // Normal comparison using point difference
+              // Otherwise sort by point difference
               return (a_diff - b_diff) * order;
             }
           } else if (a_diff !== null) {
