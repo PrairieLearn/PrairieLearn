@@ -146,8 +146,13 @@ jobs:
           synchronous_commit = off
           wal_level = minimal
           EOF
+          cat /etc/postgresql/16/main/postgresql.conf || true
 
           sudo systemctl restart postgresql.service
+
+          sleep 5
+
+          sudo cat /var/log/postgresql/postgresql-16-main.log || true
 
       - name: Install OS packages
         run: |
