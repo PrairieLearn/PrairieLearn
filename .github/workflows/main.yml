@@ -140,9 +140,6 @@ jobs:
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
           sudo systemctl restart postgresql.service
 
-      - name: Test Zygote startup time
-        run: time python3 apps/prairielearn/python/zygote.py
-
       - name: Install OS packages
         run: |
           sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive redis
@@ -170,6 +167,8 @@ jobs:
         env:
           UV_SYSTEM_PYTHON: 1
         run: uv pip install -r images/plbase/python-requirements.txt
+      - name: Test Zygote startup time
+        run: time python3 apps/prairielearn/python/zygote.py
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
