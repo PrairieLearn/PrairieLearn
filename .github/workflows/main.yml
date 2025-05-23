@@ -125,16 +125,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # We can't use `services` since we need to use the host network for max performance.
-      - name: Set up Postgres
+      - name: Install pgvector
+        run: sudo apt install postgresql-16-pgvector
+
+      # The two `sed` commands are here to handle the fact that the default
+      # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
+      # as the authentication mechanisms. However, our config defaults to not
+      # having any password at all, and we don't have an easy way to specify
+      # config overrides, which means we can't just create a new user with a
+      # password and have our code use that instead.
+      - name: Start Postgres
         run: |
-          docker run --detach --name pg \
-          --network host \
-          -e POSTGRES_HOST_AUTH_METHOD=trust \
-          -e POSTGRES_INITDB_ARGS="--no-sync -c fsync=off -c synchronous_commit=off -c full_page_writes=off" \
-          --tmpfs /var/lib/postgresql/data \
-          -p 5432:5432 \
-          pgvector/pgvector:pg16
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo systemctl restart postgresql.service
 
       - name: Install OS packages
         run: |
