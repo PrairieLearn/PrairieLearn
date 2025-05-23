@@ -1,14 +1,7 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [
-    {
-      name: 'whats-choking',
-      transform(code, id) {
-        if (code.includes('with')) {
-          console.log('is this it?', { id });
-        }
-      },
-    },
-  ],
+  test: {
+    exclude: [...configDefaults.exclude, 'apps/grader-host/**', 'apps/workspace-host/**'],
+  },
 });
