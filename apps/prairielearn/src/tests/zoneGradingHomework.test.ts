@@ -266,11 +266,9 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
           await helperServer.after();
         });
         it('should start up', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
           await helperServer.before()();
         });
       });

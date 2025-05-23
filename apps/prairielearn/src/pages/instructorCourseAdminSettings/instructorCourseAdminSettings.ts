@@ -11,6 +11,7 @@ import { flash } from '@prairielearn/flash';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
@@ -37,9 +38,24 @@ router.get(
       ).toString();
     }
 
+    const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
+      course_id: res.locals.course.id,
+      institution_id: res.locals.institution.id,
+    });
+
+    const aiQuestionGenerationCourseToggleEnabled = await features.enabled(
+      'ai-question-generation-course-toggle',
+      {
+        course_id: res.locals.course.id,
+        institution_id: res.locals.institution.id,
+      },
+    );
+
     res.send(
       InstructorCourseAdminSettings({
         resLocals: res.locals,
+        aiQuestionGenerationEnabled,
+        aiQuestionGenerationCourseToggleEnabled,
         coursePathExists,
         courseInfoExists,
         availableTimezones,
@@ -72,6 +88,19 @@ router.post(
           course_id: res.locals.course.id,
           show_getting_started,
         });
+      }
+
+      const context = {
+        course_id: res.locals.course.id,
+        institution_id: res.locals.institution.id,
+      };
+
+      if (await features.enabled('ai-question-generation-course-toggle', context)) {
+        if (req.body.ai_question_generation) {
+          await features.enable('ai-question-generation', context);
+        } else {
+          await features.disable('ai-question-generation', context);
+        }
       }
 
       const paths = getPaths(undefined, res.locals);
