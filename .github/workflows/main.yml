@@ -144,7 +144,6 @@ jobs:
           fsync = off
           full_page_writes = off
           synchronous_commit = off
-          wal_level = minimal
           EOF
           cat /etc/postgresql/16/main/postgresql.conf || true
 
