@@ -122,21 +122,19 @@ jobs:
 
   test-prairielearn-local:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_HOST_AUTH_METHOD: trust
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --tmpfs=/var/lib/postgresql/data
-        ports:
-          - 5432:5432
     steps:
       - uses: actions/checkout@v4
+
+      # We can't use `services` since we need to use the host network for max performance.
+      - name: Set up Postgres
+        run: |
+          docker run --detach --name pg \
+          --network host \
+          -e POSTGRES_HOST_AUTH_METHOD=trust \
+          --tmpfs /var/lib/postgresql/data \
+          -c fsync=off -c synchronous_commit=off -c full_page_writes=off \
+          -p 5432:5432
+          pgvector/pgvector:pg16
 
       - name: Install OS packages
         run: |
