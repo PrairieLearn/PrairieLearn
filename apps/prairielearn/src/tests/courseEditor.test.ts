@@ -27,7 +27,6 @@ const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseDir = courseLiveDir;
-// const sharingCourseDir = path.join(baseDir, 'sharingCourse');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
