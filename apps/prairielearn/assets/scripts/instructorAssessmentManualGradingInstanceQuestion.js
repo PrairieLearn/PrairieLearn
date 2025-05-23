@@ -32,6 +32,8 @@ $(() => {
       })
       .modal('show');
   }
+
+  const importRubricButton = document.querySelector('#import-rubric-button');
 });
 
 function resetInstructorGradingPanel() {

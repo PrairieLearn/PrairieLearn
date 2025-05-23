@@ -1,17 +1,22 @@
 import { filesize } from 'filesize';
 
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../../../lib/config.js';
 import { type RubricData } from '../../../lib/manualGrading.js';
 
 function ImportRubricSettingsPopover() {
   return html`
-    <div id="import-rubric-settings-popover">
+    <form
+      id="import-rubric-settings-popover-form"
+      class="needs-validation"
+      name="rubric-upload-form"
+      enctype="multipart/form-data"
+      novalidate
+    >
       <div class="mb-3">
         <label class="form-label" for="rubric-settings-file-input">Choose file</label>
         <input
-          id="rubric-file-input"
           type="file"
           name="file"
           class="form-control"
@@ -29,7 +34,7 @@ function ImportRubricSettingsPopover() {
           </div>
         </div>
       </div>
-    </div>
+    </form>
   `
 }
 
@@ -265,6 +270,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   type="button" 
                   class="btn btn-sm btn-primary"
                   data-bs-title="Import rubric settings"
+                  data-bs-toggle="popover"
+                  data-bs-placement="auto"
+                  data-bs-html="true"
+                  data-bs-container="body"
+                  data-bs-content="${escapeHtml(ImportRubricSettingsPopover())}"
                 >
                   <i class="fas fa-upload"></i>
                   Import rubric
@@ -333,7 +343,6 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           </div>
         </form>
       </div>
-      ${ImportRubricSettingsPopover()}
     </div>
   `;
 }
