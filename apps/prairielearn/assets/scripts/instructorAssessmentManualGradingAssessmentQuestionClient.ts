@@ -144,7 +144,7 @@ onDocumentReady(() => {
           type="button"
           title="${aiGradingMode ? 'Disable' : 'Enable'} AI grading mode"
         >
-          <i class="fa fa-eye" aria-hidden="true"></i> AI grading mode
+          <i class="bi bi-stars" aria-hidden="true"></i> AI grading mode
         </button>`.toString(),
         event: () => {
           $('#ai-grading-mode').trigger('submit');
