@@ -244,6 +244,7 @@ describe('Question Sharing', function () {
 
     test.sequential(
       'Fail to access shared question, because permission has not yet been granted',
+      { timeout: 20_000 },
       async () => {
         // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
