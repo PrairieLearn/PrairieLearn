@@ -1,6 +1,5 @@
 {
   "name": "prairielearn",
-  "type": "module",
   "private": true,
   "workspaces": [
     "apps/*",
