@@ -81,6 +81,47 @@ export async function stripHtmlForAiGrading(html: string) {
 }
 
 /**
+ * Selects the latest human and AI grading jobs for a given list of instance questions
+ * Returns a mapping of instance question ids to grading jobs
+ */
+async function selectGradingJobsOfInstanceQuestions(
+  instance_questions: InstanceQuestionRow[],
+): Promise<Record<string, GradingJobInfo[]>> {
+  const instance_question_ids = instance_questions.map((iq) => iq.id);
+  const submission_instance_question_ids = await queryRows(
+    sql.select_latest_submission_ids,
+    { instance_question_ids },
+    z.object({ submission_id: IdSchema, instance_question_id: IdSchema }),
+  );
+
+  const submission_ids = submission_instance_question_ids.map((item) => item.submission_id);
+  const submission_grading_jobs = await queryRows(
+    sql.select_ai_and_human_grading_jobs_batch,
+    { submission_ids },
+    GradingJobInfoSchema.extend({ submission_id: IdSchema }),
+  );
+
+  const submissionToGradingJobMapping: Record<string, GradingJobInfo[]> =
+    submission_grading_jobs.reduce(
+      (acc, item) => {
+        if (!acc[item.submission_id]) acc[item.submission_id] = [];
+        acc[item.submission_id].push(item);
+        return acc;
+      },
+      {} as Record<string, GradingJobInfo[]>,
+    );
+
+  const mapping: Record<string, GradingJobInfo[]> = submission_instance_question_ids.reduce(
+    (acc, item) => {
+      acc[item.instance_question_id] = submissionToGradingJobMapping[item.submission_id] || [];
+      return acc;
+    },
+    {} as Record<string, GradingJobInfo[]>,
+  );
+  return mapping;
+}
+
+/**
  * Fills in missing columns for manual grading assessment question page.
  * This includes organizing information about past graders
  * and calculating point and/or rubric difference between human and AI.
@@ -95,12 +136,10 @@ export async function fillInstanceQuestionColumns(
     DateFromISOString,
   );
 
+  const gradingJobMapping = await selectGradingJobsOfInstanceQuestions(instance_questions);
   for (const instance_question of instance_questions) {
-    const grading_jobs = await queryRows(
-      sql.select_ai_and_human_grading_jobs,
-      { instance_question_id: instance_question.id },
-      GradingJobInfoSchema,
-    );
+    const grading_jobs = gradingJobMapping[instance_question.id];
+
     let manualGradingJob: GradingJobInfo | null = null;
     let aiGradingJob: GradingJobInfo | null = null;
 
