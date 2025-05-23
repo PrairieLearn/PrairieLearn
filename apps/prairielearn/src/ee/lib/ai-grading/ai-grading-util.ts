@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
 import { z } from 'zod';
@@ -25,12 +26,11 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
+import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
-import * as cheerio from 'cheerio';
-import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';

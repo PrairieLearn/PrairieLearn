@@ -26,6 +26,7 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
@@ -48,7 +49,6 @@ import {
   type RenderResultData,
   type TestResultData,
 } from './types.js';
-import { isEnterprise } from '../lib/license.js';
 
 const debug = debugfn('prairielearn:freeform');
 
