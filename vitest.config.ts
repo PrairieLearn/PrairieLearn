@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
-defineConfig({
+export default defineConfig({
   plugins: [
     {
       name: 'whats-choking',
