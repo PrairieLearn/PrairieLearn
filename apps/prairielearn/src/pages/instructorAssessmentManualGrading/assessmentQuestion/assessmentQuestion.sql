@@ -75,11 +75,3 @@ SET
   ai_grading_mode = NOT ai_grading_mode
 WHERE
   id = $assessment_question_id;
-
--- BLOCK check_ai_grading_mode
-SELECT
-  ai_grading_mode
-FROM
-  assessment_questions
-WHERE
-  id = $assessment_question_id;
