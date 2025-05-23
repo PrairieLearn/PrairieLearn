@@ -27,151 +27,150 @@ const RubricDataSchema = RubricSchema.extend({
 type RubricData = z.infer<typeof RubricDataSchema>;
 
 onDocumentReady(() => {
-    const importRubricButton = document.querySelector<HTMLButtonElement>('#import-rubric-button');
     const exportRubricButton = document.querySelector<HTMLButtonElement>('#export-rubric-button');
     const rubricSettingsForm = document.querySelector<HTMLFormElement>('#rubric-settings-form');
 
-    if (!importRubricButton || !exportRubricButton || !rubricSettingsForm) {
+    if (!exportRubricButton || !rubricSettingsForm) {
         return;
     }
 
-    function addRubricItemRows(
-        {data}: {data: RubricData}
-    ) {
-        const modal = document.querySelector<HTMLDivElement>('#rubric-settings-form');
-        if (!modal) {
-            return;
-        }
+    // function addRubricItemRows(
+    //     {data}: {data: RubricData}
+    // ) {
+    //     const modal = document.querySelector<HTMLDivElement>('#rubric-settings-form');
+    //     if (!modal) {
+    //         return;
+    //     }
 
-        const table = modal.querySelector<HTMLTableElement>('.js-rubric-items-table');
-        if (!table) {
-            return;
-        }
-        const rubricItems = data.rubric_items;
-        if (!rubricItems) {
-            return;
-        }
+    //     const table = modal.querySelector<HTMLTableElement>('.js-rubric-items-table');
+    //     if (!table) {
+    //         return;
+    //     }
+    //     const rubricItems = data.rubric_items;
+    //     if (!rubricItems) {
+    //         return;
+    //     }
 
-        console.log()
+    //     console.log()
 
-        for (const rubricItem of rubricItems) {
-            const next_id = Number(table.dataset.nextNewId ?? 0) + 1;
+    //     for (const rubricItem of rubricItems) {
+    //         const next_id = Number(table.dataset.nextNewId ?? 0) + 1;
 
-            // Create a new row based on the template element in the modal
-            const templateRow = modal.querySelector<HTMLTemplateElement>('.js-new-row-rubric-item');
-            const row = templateRow?.content.firstElementChild?.cloneNode(true);
+    //         // Create a new row based on the template element in the modal
+    //         const templateRow = modal.querySelector<HTMLTemplateElement>('.js-new-row-rubric-item');
+    //         const row = templateRow?.content.firstElementChild?.cloneNode(true);
 
-            if (!row || !(row instanceof HTMLTableRowElement)) return;
+    //         if (!row || !(row instanceof HTMLTableRowElement)) return;
 
-            table?.querySelector<HTMLElement>('tbody')?.appendChild(row);
+    //         table?.querySelector<HTMLElement>('tbody')?.appendChild(row);
 
-            const rubricItemRowOrder = row.querySelector<HTMLInputElement>('.js-rubric-item-row-order');
-            if (rubricItemRowOrder) {
-                rubricItemRowOrder.name = `rubric_item[new${next_id}][order]`;
-                rubricItemRowOrder.value = `${rubricItem.order}`;
-            }
-            const rubricItemPoints = row.querySelector<HTMLInputElement>('.js-rubric-item-points');
-            if (rubricItemPoints) {
-                rubricItemPoints.name = `rubric_item[new${next_id}][points]`;
-                rubricItemPoints.value = `${rubricItem.points}`;
-            }
-            const rubricItemDescription = row.querySelector<HTMLInputElement>('.js-rubric-item-description');
-            if (rubricItemDescription) {
-                rubricItemDescription.name = `rubric_item[new${next_id}][description]`;
-                rubricItemDescription.value = rubricItem.description;
-            }
-            const rubricItemExplanation = row.querySelector<HTMLInputElement>('.js-rubric-item-explanation');
-            if (rubricItemExplanation) {
-                rubricItemExplanation.dataset.inputName = `rubric_item[new${next_id}][explanation]`;
-                rubricItemExplanation.dataset.currentValue = rubricItem.explanation ?? '';
-                rubricItemExplanation.appendChild(
-                    document.createTextNode(rubricItem.explanation ?? '')
-                );
-            }
-            const rubricItemGraderNote = row.querySelector<HTMLInputElement>('.js-rubric-item-grader-note');
-            if (rubricItemGraderNote) {
-                rubricItemGraderNote.dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
-                rubricItemGraderNote.dataset.currentValue = rubricItem.grader_note ?? '';
-                rubricItemGraderNote.appendChild(
-                    document.createTextNode(rubricItem.grader_note ?? '')
-                );
-            }
-        }
+    //         const rubricItemRowOrder = row.querySelector<HTMLInputElement>('.js-rubric-item-row-order');
+    //         if (rubricItemRowOrder) {
+    //             rubricItemRowOrder.name = `rubric_item[new${next_id}][order]`;
+    //             rubricItemRowOrder.value = `${rubricItem.order}`;
+    //         }
+    //         const rubricItemPoints = row.querySelector<HTMLInputElement>('.js-rubric-item-points');
+    //         if (rubricItemPoints) {
+    //             rubricItemPoints.name = `rubric_item[new${next_id}][points]`;
+    //             rubricItemPoints.value = `${rubricItem.points}`;
+    //         }
+    //         const rubricItemDescription = row.querySelector<HTMLInputElement>('.js-rubric-item-description');
+    //         if (rubricItemDescription) {
+    //             rubricItemDescription.name = `rubric_item[new${next_id}][description]`;
+    //             rubricItemDescription.value = rubricItem.description;
+    //         }
+    //         const rubricItemExplanation = row.querySelector<HTMLInputElement>('.js-rubric-item-explanation');
+    //         if (rubricItemExplanation) {
+    //             rubricItemExplanation.dataset.inputName = `rubric_item[new${next_id}][explanation]`;
+    //             rubricItemExplanation.dataset.currentValue = rubricItem.explanation ?? '';
+    //             rubricItemExplanation.appendChild(
+    //                 document.createTextNode(rubricItem.explanation ?? '')
+    //             );
+    //         }
+    //         const rubricItemGraderNote = row.querySelector<HTMLInputElement>('.js-rubric-item-grader-note');
+    //         if (rubricItemGraderNote) {
+    //             rubricItemGraderNote.dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
+    //             rubricItemGraderNote.dataset.currentValue = rubricItem.grader_note ?? '';
+    //             rubricItemGraderNote.appendChild(
+    //                 document.createTextNode(rubricItem.grader_note ?? '')
+    //             );
+    //         }
+    //     }
 
-        console.log('Rubric items', rubricItems);
-    }
+    //     console.log('Rubric items', rubricItems);
+    // }
 
-    importRubricButton.addEventListener('inserted.bs.popover', () => {
-        const importRubricSettingsPopoverForm = document.querySelector<HTMLFormElement>('#import-rubric-settings-popover-form');
+    // importRubricButton.addEventListener('inserted.bs.popover', () => {
+    //     const importRubricSettingsPopoverForm = document.querySelector<HTMLFormElement>('#import-rubric-settings-popover-form');
 
-        if (!importRubricSettingsPopoverForm) {
-            return;
-        }
+    //     if (!importRubricSettingsPopoverForm) {
+    //         return;
+    //     }
 
-        importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
-            event.preventDefault();
+    //     importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+    //         event.preventDefault();
 
-            const data = event.target as HTMLFormElement;
-            const formData = new FormData(data);
+    //         const data = event.target as HTMLFormElement;
+    //         const formData = new FormData(data);
 
-            const fileData = formData.get('file') as File;
+    //         const fileData = formData.get('file') as File;
 
-            // Read the file content
-            const reader = new FileReader();
-            reader.readAsText(fileData);
+    //         // Read the file content
+    //         const reader = new FileReader();
+    //         reader.readAsText(fileData);
 
-            reader.onload = () => {
-                const fileContent = reader.result;
-                if (typeof fileContent !== 'string') {
-                    alert('Error reading file content.');
-                    return;
-                }
+    //         reader.onload = () => {
+    //             const fileContent = reader.result;
+    //             if (typeof fileContent !== 'string') {
+    //                 alert('Error reading file content.');
+    //                 return;
+    //             }
 
-                // Remove the existing table rows
-                const table = rubricSettingsForm.querySelector<HTMLTableElement>('.table-responsive');
-                const tableRows = table?.querySelectorAll<HTMLTableRowElement>('tbody tr:not(.js-no-rubric-item-note)');
+    //             // Remove the existing table rows
+    //             const table = rubricSettingsForm.querySelector<HTMLTableElement>('.table-responsive');
+    //             const tableRows = table?.querySelectorAll<HTMLTableRowElement>('tbody tr:not(.js-no-rubric-item-note)');
 
 
-                try {
-                    const parsedData = RubricDataSchema.parse(JSON.parse(fileContent));
+    //             try {
+    //                 const parsedData = RubricDataSchema.parse(JSON.parse(fileContent));
 
-                    if (tableRows) {
-                        tableRows.forEach((row) => {
-                            row.remove();
-                        })
-                    }
+    //                 if (tableRows) {
+    //                     tableRows.forEach((row) => {
+    //                         row.remove();
+    //                     })
+    //                 }
 
-                    addRubricItemRows({
-                        data: RubricDataSchema.parse(parsedData),
-                    })
+    //                 addRubricItemRows({
+    //                     data: RubricDataSchema.parse(parsedData),
+    //                 })
 
-                    // for (const [key, value] of Object.entries(parsedData)) {
-                    //     const inputElement = rubricSettingsForm.querySelector<HTMLInputElement>(`[name="${key}"]`);
-                    //     if (!inputElement) {
-                    //         console.warn(`No input element found for key: ${key}`);
-                    //         continue;
-                    //     }
-                    //     if (inputElement.type === 'checkbox') {
-                    //         inputElement.checked = value === 'true';
-                    //     }
+    //                 // for (const [key, value] of Object.entries(parsedData)) {
+    //                 //     const inputElement = rubricSettingsForm.querySelector<HTMLInputElement>(`[name="${key}"]`);
+    //                 //     if (!inputElement) {
+    //                 //         console.warn(`No input element found for key: ${key}`);
+    //                 //         continue;
+    //                 //     }
+    //                 //     if (inputElement.type === 'checkbox') {
+    //                 //         inputElement.checked = value === 'true';
+    //                 //     }
 
-                    //     if (inputElement.type === 'radio') {
-                    //         inputElement.checked = inputElement.value === value;
-                    //     }
+    //                 //     if (inputElement.type === 'radio') {
+    //                 //         inputElement.checked = inputElement.value === value;
+    //                 //     }
 
-                    //     inputElement.value = value as string;
-                    // }
-                } catch (error) {
-                    alert('Error parsing JSON file: ' + error);
-                }
-            };
-        });
+    //                 //     inputElement.value = value as string;
+    //                 // }
+    //             } catch (error) {
+    //                 alert('Error parsing JSON file: ' + error);
+    //             }
+    //         };
+    //     });
 
-        importRubricButton.addEventListener('hidden.bs.popover', () => {   
-            console.log('Popover hidden');
-            importRubricSettingsPopoverForm?.reset();
-        }, {once: true});
-    })
+    //     importRubricButton.addEventListener('hidden.bs.popover', () => {   
+    //         console.log('Popover hidden');
+    //         importRubricSettingsPopoverForm?.reset();
+    //     }, {once: true});
+    // })
 
     // uploadRubricFileButton.addEventListener('click', () => {
     //     // Retrieve the file from the input element
