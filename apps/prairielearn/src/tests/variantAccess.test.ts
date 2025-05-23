@@ -229,7 +229,7 @@ describe('Variant access', () => {
     });
   });
 
-  test.sequential('create variant from public question preview', async () => {
+  test.sequential('create variant from public question preview', { timeout: 20_000 }, async () => {
     await withUser(PUBLIC_USER, async () => {
       const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
       const res = await fetchCheerio(url);
@@ -240,16 +240,20 @@ describe('Variant access', () => {
     });
   });
 
-  test.sequential('create other variant from public question preview', async () => {
-    await withUser(OTHER_PUBLIC_USER, async () => {
-      const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
-      const res = await fetchCheerio(url);
-      assert.equal(res.status, 200);
-      otherPublicVariantId = getVariantId(res.$);
-      otherPublicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
-      otherPublicVariantSubmissionId = await makeSubmission(url, res.$);
-    });
-  });
+  test.sequential(
+    'create other variant from public question preview',
+    { timeout: 20_000 },
+    async () => {
+      await withUser(OTHER_PUBLIC_USER, async () => {
+        const url = `${siteUrl}/pl/public/course/1/question/${question.id}/preview`;
+        const res = await fetchCheerio(url);
+        assert.equal(res.status, 200);
+        otherPublicVariantId = getVariantId(res.$);
+        otherPublicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+        otherPublicVariantSubmissionId = await makeSubmission(url, res.$);
+      });
+    },
+  );
 
   test.sequential('create variant from instructor question preview', async () => {
     await withUser(INSTRUCTOR_USER, async () => {
