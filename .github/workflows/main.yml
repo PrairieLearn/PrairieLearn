@@ -168,7 +168,7 @@ jobs:
           UV_SYSTEM_PYTHON: 1
         run: uv pip install -r images/plbase/python-requirements.txt
       - name: Test Zygote startup time
-        run: time python3 apps/prairielearn/python/zygote.py
+        run: time python3 apps/prairielearn/python/zygote_benchmark.py
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4

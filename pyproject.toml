@@ -105,6 +105,7 @@ convention = "google"
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
+"zygote_benchmark.py" = ["E402", "F401"]
 "apps/prairielearn/elements/**/*.py" = [
   # Ignore uppercase function parameters (e.g. G for a graph)
   "N803",
@@ -138,6 +139,7 @@ convention = "google"
 # Directories we don't want strict annotation linting or docstring linting on
 # For example, code with no public API, elements with known issues, or course content.
 "apps/prairielearn/python/zygote.py" = ["D100", "D101", "D103", "DOC201"]
+"apps/prairielearn/python/zygote_benchmark.py" = ["D100", "D101", "D103", "DOC201"]
 "apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
 "docs/**/*.py" = ["D100", "DOC201"]
 "apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
