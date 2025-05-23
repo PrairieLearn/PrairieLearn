@@ -697,7 +697,6 @@ function QuestionPanel({
             ${showCopyQuestionButton
               ? html`
                   <button
-                    id="copyQuestionButton"
                     class="btn btn-sm btn-outline-light"
                     type="button"
                     aria-label="Copy question"

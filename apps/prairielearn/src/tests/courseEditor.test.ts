@@ -321,34 +321,34 @@ const transferEditData = [
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
-  //   describe('not the example course', function () {
-  //     beforeAll(createCourseFiles);
-  //     afterAll(deleteCourseFiles);
+  describe('not the example course', function () {
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
 
-  //     beforeAll(helperServer.before(courseDir));
-  //     afterAll(helperServer.after);
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-  //     beforeAll(async () => {
-  //       await sqldb.queryAsync(sql.update_course_repository, {
-  //         course_path: courseLiveDir,
-  //         course_repository: courseOriginDir,
-  //       });
-  //     });
+    beforeAll(async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
 
-  //     describe('the locals object', function () {
-  //       it('should be cleared', function () {
-  //         for (const prop in locals) {
-  //           delete locals[prop];
-  //         }
-  //       });
-  //     });
+    describe('the locals object', function () {
+      it('should be cleared', function () {
+        for (const prop in locals) {
+          delete locals[prop];
+        }
+      });
+    });
 
-  //     describe('verify edits', function () {
-  //       testEditData.forEach((element) => {
-  //         testEdit(element);
-  //       });
-  //     });
-  //   });
+    describe('verify edits', function () {
+      testEditData.forEach((element) => {
+        testEdit(element);
+      });
+    });
+  });
 
   describe('Copy from another course', function () {
     beforeAll(createCourseFiles);
@@ -437,7 +437,6 @@ function testEdit(params) {
 
         const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
         elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -582,19 +581,12 @@ async function createSharedCourse() {
   ];
   sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
   sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].shareSourcePublicly = true;
+
+  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
-  // await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseDir);
-  // const sharingCourseResults = await syncUtil.syncCourseData(sharingCourseDir);
-  const sharingCourseResults = await syncUtil.writeAndSyncCourseData(sharingCourseData);
-  console.log(sharingCourseResults.courseDir);
-  // const consumingCourse = await selectCourseById(sharingCourseResults.syncResults.courseId);
-  // consumingCourseInstanceId = await sqldb.queryRow(
-  //   sql.select_course_instance,
-  //   { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: consumingCourse.id },
-  //   IdSchema,
-  // );
+  await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
 
 async function deleteCourseFiles() {
