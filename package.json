@@ -23,6 +23,7 @@
     "start": "yarn workspace @prairielearn/prairielearn start",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
     "test": "vitest run --coverage",
+    "test:dist": "vitest run --coverage --mode dist",
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
