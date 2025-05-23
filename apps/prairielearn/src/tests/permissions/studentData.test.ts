@@ -25,17 +25,17 @@ describe('student data access', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    let result = await selectAssessmentByTid({
+    const { id: homeworkAssessmentId } = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'hw1-automaticTestSuite',
     });
-    context.homeworkAssessmentId = result.id;
+    context.homeworkAssessmentId = homeworkAssessmentId;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;
-    result = await selectAssessmentByTid({
+    const { id: examAssessmentId } = await selectAssessmentByTid({
       course_instance_id: '1',
       tid: 'exam1-automaticTestSuite',
     });
-    context.examAssessmentId = result.id;
+    context.examAssessmentId = examAssessmentId;
     context.examAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examAssessmentId}/`;
   });
 
