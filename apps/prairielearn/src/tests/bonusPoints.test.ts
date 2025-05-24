@@ -4,6 +4,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -18,8 +19,11 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
-    context.assessmentId = results.rows[0].id;
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw7-bonusPoints',
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 

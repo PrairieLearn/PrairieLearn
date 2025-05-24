@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -173,8 +174,11 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
 
     describe('the database', function () {
       it('should contain HW4', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_hw4, []);
-        locals.assessment_id = result.rows[0].id;
+        const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: 'hw4-perzonegrading',
+        });
+        locals.assessment_id = assessmentId;
       });
     });
 
