@@ -2,11 +2,31 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 // Handle when the user expands or collapses the side nav
 onDocumentReady(async () => {
+  // Visible on wider viewports (768px and up)
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
-  const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
-  const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
 
-  if (!sideNavTogglerButton || !appContainerDiv || !sideNavTogglerIcon) return;
+  // Visible on narrower viewports (less than 768px)
+  const sideNavMobileButton = document.querySelector<HTMLButtonElement>('#side-nav-mobile-toggler');
+
+  const sideNavTogglerIcon = document.querySelector<HTMLElement>('#side-nav-toggler-icon');
+
+  const appContainerDiv = document.querySelector<HTMLDivElement>('#app-container');
+  const appSideNavDiv = document.querySelector<HTMLDivElement>('.app-side-nav');
+
+  const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
+  const courseNavDiv = document.querySelector<HTMLDivElement>('#course-nav');
+
+  if (
+    !sideNavTogglerButton ||
+    !sideNavMobileButton ||
+    !sideNavTogglerIcon ||
+    !appContainerDiv ||
+    !appSideNavDiv ||
+    !courseNavToggler ||
+    !courseNavDiv
+  ) {
+    return;
+  }
 
   sideNavTogglerButton.addEventListener('click', async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('collapsed');
@@ -64,5 +84,70 @@ onDocumentReady(async () => {
         side_nav_expanded: !sideNavExpanded,
       }),
     });
+  });
+
+  sideNavMobileButton.addEventListener('click', async () => {
+    // Animate the side nav
+    appContainerDiv.classList.add('animate');
+    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
+
+    if (sideNavExpanded) {
+      // Collapse the side nav
+      appContainerDiv.classList.add('mobile-collapsed');
+
+      // Update the side nav mobile toggler button tooltip and icon
+      sideNavMobileButton.setAttribute('data-bs-title', 'Expand side nav');
+      sideNavMobileButton.setAttribute('aria-label', 'Expand side nav');
+    } else {
+      // Expand the side nav
+      appContainerDiv.classList.remove('mobile-collapsed');
+
+      // Update the side nav mobile toggler button tooltip and icon
+      sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
+      sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
+    }
+    appSideNavDiv.addEventListener(
+      'transitionend',
+      () => {
+        // Remove the animation class after the transition ends
+        appContainerDiv.classList.remove('animate');
+      },
+      { once: true },
+    );
+
+    const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
+    if (courseNavExpanded) {
+      // Collapse the course nav when the side nav is expanded
+      courseNavDiv.classList.add('mobile-collapsed');
+    }
+  });
+
+  courseNavToggler.addEventListener('click', async () => {
+    const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
+
+    // Animate the course nav
+    appContainerDiv.classList.add('animate');
+    if (courseNavExpanded) {
+      // Collapse the course nav
+      courseNavDiv.classList.add('mobile-collapsed');
+    } else {
+      // Expand the course nav
+      courseNavDiv.classList.remove('mobile-collapsed');
+    }
+
+    courseNavDiv.addEventListener(
+      'transitionend',
+      () => {
+        // Remove the animation class after the transition ends
+        appContainerDiv.classList.remove('animate');
+      },
+      { once: true },
+    );
+
+    const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
+    if (sideNavExpanded) {
+      // Collapse the side nav when the course nav is expanded
+      appContainerDiv.classList.add('mobile-collapsed');
+    }
   });
 });
