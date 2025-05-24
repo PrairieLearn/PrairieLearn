@@ -21,7 +21,6 @@ apps/prairielearn/public/build/
 apps/prairielearn/public/localscripts/calculationQuestion/backbone.js
 apps/prairielearn/public/localscripts/calculationQuestion/jquery-ui.js
 apps/prairielearn/public/localscripts/calculationQuestion/jquery.js
-apps/prairielearn/public/localscripts/calculationQuestion/jquery.jsPlumb.js
 apps/prairielearn/public/localscripts/calculationQuestion/math.js
 apps/prairielearn/public/localscripts/calculationQuestion/mersenne.js
 apps/prairielearn/public/localscripts/calculationQuestion/numeric-1.2.6.min.js

@@ -381,6 +381,11 @@ async function createCourseFiles() {
   await deleteCourseFiles();
   // Ensure that the default branch is master, regardless of how git
   // is configured on the host machine.
+  const { stdout } = await execa('pwd', {
+    cwd: '.',
+    env: process.env,
+  });
+  console.log({ stdout });
   await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
     cwd: '.',
     env: process.env,
