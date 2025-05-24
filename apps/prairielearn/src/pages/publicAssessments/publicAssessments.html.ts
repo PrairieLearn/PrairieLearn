@@ -2,18 +2,90 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import type { CopyTarget } from '../../lib/copy-content.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
+
+function CopyCourseInstanceModal({
+  courseInstance,
+  courseInstanceCopyTargets,
+}: {
+  courseInstance: CourseInstance;
+  courseInstanceCopyTargets: CopyTarget[] | null;
+}) {
+  if (courseInstanceCopyTargets == null) return '';
+  return Modal({
+    id: 'copyCourseInstanceModal',
+    title: 'Copy course instance',
+    formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
+    formClass: 'js-copy-question-form',
+    form: courseInstanceCopyTargets?.length > 0,
+    body:
+      courseInstanceCopyTargets.length === 0
+        ? html`
+            <p>
+              You can't copy this course instance because you don't have editor permissions in any
+              courses.
+              <a href="/pl/request_course">Request a course</a> if you don't have one already.
+              Otherwise, contact the owner of the course you expected to have access to.
+            </p>
+          `
+        : html`
+            <p>
+              This course instance can be copied to course for which you have editor permissions.
+              Select one of your courses to copy this course instance to.
+            </p>
+            <select class="custom-select" name="to_course_id" required>
+              ${courseInstanceCopyTargets.map(
+                (course, index) => html`
+                  <option
+                    value="${course.id}"
+                    data-csrf-token="${course.__csrf_token}"
+                    data-copy-url="${course.copy_url}"
+                    ${index === 0 ? 'selected' : ''}
+                  >
+                    ${course.short_name}
+                  </option>
+                `,
+              )}
+            </select>
+          `,
+    footer: html`
+      <input
+        type="hidden"
+        name="__csrf_token"
+        value="${courseInstanceCopyTargets[0]?.__csrf_token ?? ''}"
+      />
+      <input type="hidden" name="course_instance_id" value="${courseInstance.id}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      ${courseInstanceCopyTargets?.length > 0
+        ? html`
+            <button
+              type="submit"
+              name="__action"
+              value="copy_course_instance"
+              class="btn btn-primary"
+            >
+              Copy course instance
+            </button>
+          `
+        : ''}
+    `,
+  });
+}
 
 export function PublicAssessments({
   resLocals,
   rows,
   courseInstance,
+  courseInstanceCopyTargets,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   courseInstance: CourseInstance;
+  courseInstanceCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({
     resLocals,
@@ -29,6 +101,20 @@ export function PublicAssessments({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
+          <div class="ms-auto d-flex flex-row gap-1">
+            <div class="btn-group">
+              <button
+                class="btn btn-sm btn-outline-light"
+                type="button"
+                aria-label="Copy course instance"
+                data-bs-toggle="modal"
+                data-bs-target="#copyCourseInstanceModal"
+              >
+                <i class="fa fa-fw fa-clone"></i>
+                <span class="d-none d-sm-inline">Copy course instance</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="table-responsive">
@@ -75,6 +161,7 @@ export function PublicAssessments({
           </table>
         </div>
       </div>
+      ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets })}
     `,
   });
 }
