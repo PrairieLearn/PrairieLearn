@@ -104,7 +104,7 @@ export function AssessmentQuestion({
       </a>
       ${aiGradingEnabled
         ? html`
-            <form method="POST" id="ai-grading-mode">
+            <form method="POST" id="toggle-ai-grading-mode">
               <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>

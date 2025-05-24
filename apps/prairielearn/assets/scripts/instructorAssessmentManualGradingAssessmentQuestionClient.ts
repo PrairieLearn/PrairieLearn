@@ -147,7 +147,7 @@ onDocumentReady(() => {
           <i class="bi bi-stars" aria-hidden="true"></i> AI grading mode
         </button>`.toString(),
         event: () => {
-          $('#ai-grading-mode').trigger('submit');
+          $('#toggle-ai-grading-mode').trigger('submit');
         },
       },
     },
