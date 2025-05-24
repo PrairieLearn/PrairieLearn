@@ -30,6 +30,7 @@ export default (function (err, req, res, _next) {
     // trying to log the actual error.
     stack: formatErrorStackSafe(err),
     data: jsonStringifySafe(err.data),
+    url: req.url,
     referrer,
     response_id: res.locals.response_id,
   });
