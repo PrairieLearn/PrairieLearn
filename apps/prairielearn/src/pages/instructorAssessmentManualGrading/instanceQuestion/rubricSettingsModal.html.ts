@@ -44,6 +44,7 @@ function ImportRubricSettingsPopover() {
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
+
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
@@ -67,6 +68,22 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           />
           <input type="hidden" name="assessment_tid" value="${resLocals.assessment.tid}" />
           <input type="hidden" name="question_qid" value="${resLocals.question.qid}" />
+
+          <input
+            type="hidden"
+            name="max_points"
+            value="${resLocals.assessment_question.max_points}"
+          />
+          <input
+            type="hidden"
+            name="max_auto_points"
+            value="${resLocals.assessment_question.max_auto_points}"
+          />
+          <input
+            type="hidden"
+            name="max_manual_points"
+            value="${resLocals.assessment_question.max_manual_points}"
+          />
 
           <div class="modal-content">
             <div class="modal-header bg-info">
@@ -200,6 +217,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       class="form-control js-rubric-item-limits"
                       name="min_points"
                       type="number"
+                      step="any"
                       required
                       value="${rubric_data?.min_points ?? 0}"
                     />
@@ -221,6 +239,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       class="form-control js-rubric-item-limits"
                       name="max_extra_points"
                       type="number"
+                      step="any"
                       required
                       value="${rubric_data?.max_extra_points ?? 0}"
                     />
@@ -389,7 +408,7 @@ function RubricItemRow({
         <input
           type="number"
           class="form-control js-rubric-item-points"
-          style="width: 4rem"
+          style="width: 6rem"
           step="any"
           required
           name="${namePrefix}[points]"

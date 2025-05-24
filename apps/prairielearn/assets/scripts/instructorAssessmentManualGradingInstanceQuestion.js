@@ -55,11 +55,6 @@ function resetRubricImportFormListeners() {
         const formData = new FormData(event.target);
         const fileData = formData.get('file');
 
-        if (fileData.size > 1e7) {
-          alert('File size exceeds 10MB limit.');
-          return;
-        }
-
         // Read the file content
         const reader = new FileReader();
         reader.readAsText(fileData);
@@ -99,19 +94,39 @@ function resetRubricImportFormListeners() {
             return;
           }
 
-          const rubricItems = parsedData.rubric_items;
-          if (!rubricItems) {
-            return;
+          // Determine the scale factor
+          const rubricSettingsData = new FormData(rubricSettingsForm);
+          const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
+
+          console.log('rubricSettings', rubricSettings, parsedData);
+          let scaleFactor = 1;
+          if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
+            // Scale factor is based on max_points
+            const maxPoints = parseInt(rubricSettings.max_points);
+            console.log('Max points', maxPoints, 'Parsed data max points', parsedData.max_points);
+
+            // TODO: Doesn't the nullish check also imply maxPoints > 0?
+            if (maxPoints && maxPoints > 0 && parsedData.max_points) {
+              scaleFactor = maxPoints / parsedData.max_points;
+            }
+          } else {
+            // Scale factor is based on max_manual_points
+            const maxManualPoints = parseInt(rubricSettings.max_manual_points);
+            if (maxManualPoints && maxManualPoints > 0 && parsedData.max_manual_points) {
+              scaleFactor = maxManualPoints / parsedData.max_manual_points;
+            }
           }
+          console.log('scaleFactor', scaleFactor);
 
           const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
           if (maxExtraPointsField) {
-            maxExtraPointsField.value = parsedData.max_extra_points;
+            maxExtraPointsField.value =
+              Math.round(parsedData.max_extra_points * scaleFactor * 100) / 100;
           }
 
           const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
           if (minPointsField) {
-            minPointsField.value = parsedData.min_points;
+            minPointsField.value = Math.round(parsedData.min_points * scaleFactor * 100) / 100;
           }
 
           const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
@@ -123,16 +138,31 @@ function resetRubricImportFormListeners() {
             });
           }
 
+          // If the rubric uses positive grading, then the starting points are 0
+          const positiveGrading = parsedData.starting_points === 0;
+
           const startingPointsOptions = rubricSettingsForm.querySelectorAll(
             'input[name="starting_points"]',
           );
           if (startingPointsOptions) {
             startingPointsOptions.forEach((option) => {
-              option.checked = option.value === parsedData.starting_points.toString();
+              // The positive grading option, which starts at 0 points, is checked
+              // if the rubric uses positive grading
+              option.checked = option.value === '0' && positiveGrading;
             });
           }
 
-          for (const rubricItem of rubricItems) {
+          const rubricItems = parsedData.rubric_items;
+          if (!rubricItems || !Array.isArray(rubricItems)) {
+            alert('Invalid rubric data format. Expected rubric_items to be an array.');
+            return;
+          }
+
+          for (let rubricItem of rubricItems) {
+            rubricItem = {
+              ...rubricItem,
+              points: Math.round((rubricItem.points ?? 0) * scaleFactor * 100) / 100,
+            };
             addRubricItemRow(rubricItem);
           }
 
@@ -146,7 +176,7 @@ function resetRubricImportFormListeners() {
       importRubricButton.addEventListener(
         'hidden.bs.popover',
         () => {
-          importRubricSettingsPopoverForm.reset();
+          document.querySelector('#import-rubric-settings-popover-form')?.reset();
         },
         { once: true },
       );
@@ -166,13 +196,19 @@ function resetRubricExportFormListeners() {
     const rubricSettingsData = new FormData(rubricSettingsForm);
     const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
 
-    const exportFileName = `${rubricSettings.course_short_name.replaceAll(' ', '')}__${rubricSettings.course_instance_short_name.replaceAll(' ', '')}__${rubricSettings.assessment_tid.replaceAll(' ', '')}__${rubricSettings.question_qid.replaceAll(' ', '')}__rubric_settings.json`;
+    const sanitizeForFilename = (str) => str.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const exportFileName = `${sanitizeForFilename(rubricSettings.course_short_name)}__${sanitizeForFilename(rubricSettings.course_instance_short_name)}__${sanitizeForFilename(rubricSettings.assessment_tid)}__${sanitizeForFilename(rubricSettings.question_qid)}__rubric_settings.json`;
 
     const rubricData = {
       max_extra_points: parseInt(rubricSettings['max_extra_points']),
       min_points: parseInt(rubricSettings['min_points']),
       replace_auto_points: rubricSettings['replace_auto_points'] === 'true',
       starting_points: parseInt(rubricSettings['starting_points']),
+
+      max_points: parseInt(rubricSettings['max_points']),
+      max_manual_points: parseInt(rubricSettings['max_manual_points']),
+      max_auto_points: parseInt(rubricSettings['max_auto_points']),
+
       rubric_items: [],
     };
 
@@ -787,7 +823,7 @@ function addRubricItemRow(rubricItem = null) {
         const label = document.createElement('label');
         label.setAttribute('for', `rubric-item-explanation-button-${next_id}`);
         label.setAttribute('style', 'white-space: pre-wrap;');
-        label.innerHTML = `${rubricItem.explanation}`;
+        label.textContent = rubricItem.explanation;
 
         rubricItemExplanation.parentElement.insertBefore(label, rubricItemExplanation);
 
@@ -805,7 +841,7 @@ function addRubricItemRow(rubricItem = null) {
         const label = document.createElement('label');
         label.setAttribute('for', `rubric-item-grader-note-button-${next_id}`);
         label.setAttribute('style', 'white-space: pre-wrap;');
-        label.innerHTML = `${rubricItem.grader_note}`;
+        label.textContent = rubricItem.grader_note;
 
         rubricItemGraderNote.parentElement.insertBefore(label, rubricItemGraderNote);
 
