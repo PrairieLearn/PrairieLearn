@@ -221,8 +221,6 @@ router.post(
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
 
-    console.log('body', body);
-
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {

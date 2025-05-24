@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "lib": ["ES2021", "DOM"],
     "noEmit": true,
     "rootDir": "../../",
     "outDir": "../../public/build/scripts",

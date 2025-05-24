@@ -55,12 +55,17 @@ function resetRubricImportFormListeners() {
         const formData = new FormData(event.target);
         const fileData = formData.get('file');
 
+        if (fileData.size > 1e7) {
+          alert('File size exceeds 10MB limit.');
+          return;
+        }
+
         // Read the file content
         const reader = new FileReader();
         reader.readAsText(fileData);
 
         reader.onerror = () => {
-          alert('Error reading file.');
+          alert('Error reading file content.');
           return;
         };
 
@@ -80,26 +85,23 @@ function resetRubricImportFormListeners() {
           const table = rubricSettingsForm.querySelector('.table-responsive');
           const tableRows = table?.querySelectorAll('tbody tr:not(.js-no-rubric-item-note)');
 
-          try {
-            if (tableRows) {
-              tableRows.forEach((row) => {
-                row.remove();
-              });
-            }
-          } catch {
-            alert('Error removing existing table rows.');
-            return;
+          if (tableRows) {
+            tableRows.forEach((row) => {
+              row.remove();
+            });
           }
 
-          const parsedData = JSON.parse(fileContent);
+          let parsedData;
+          try {
+            parsedData = JSON.parse(fileContent);
+          } catch {
+            alert('Error parsing JSON file, please check the file format.');
+            return;
+          }
 
           const rubricItems = parsedData.rubric_items;
           if (!rubricItems) {
             return;
-          }
-
-          for (const rubricItem of rubricItems) {
-            addRubricItemRow(rubricItem);
           }
 
           const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
@@ -128,6 +130,10 @@ function resetRubricImportFormListeners() {
             startingPointsOptions.forEach((option) => {
               option.checked = option.value === parsedData.starting_points.toString();
             });
+          }
+
+          for (const rubricItem of rubricItems) {
+            addRubricItemRow(rubricItem);
           }
 
           updateSettingsPointValues();
@@ -176,14 +182,13 @@ function resetRubricExportFormListeners() {
     // we don't want to double-handle, so we always receive an object and
     // convert it to an array if necessary
     // (https://github.com/ljharb/qs#parsing-arrays).
-    // The order of the items in arrays is never important, so using Object.values is fine.
 
     const rubricSettingsParsed = qs.parse(qs.stringify(rubricSettings), { parseArrays: false });
 
     if (rubricSettingsParsed.rubric_item) {
       const rubricItems = rubricSettingsParsed.rubric_item;
-
-      for (const [key, value] of Object.entries(rubricItems)) {
+      for (const key of Object.keys(rubricItems)) {
+        const value = rubricItems[key];
         rubricData.rubric_items.push({
           always_show_to_students: value.always_show_to_students === 'true',
           description: value.description,
@@ -203,7 +208,6 @@ function resetRubricExportFormListeners() {
           points: parseInt(value.points),
         });
       }
-
       rubricData.rubric_items = rubricData.rubric_items.sort((a, b) => a.order - b.order);
     }
 
@@ -649,7 +653,7 @@ function computePointsFromRubric(sourceInput = null) {
   updatePointsView(sourceInput);
 }
 
-function enableRubricItemLongTextFieldForElement(container) {
+function enableRubricItemLongTextFieldContainer(container) {
   const label = container.querySelector('label'); // May be null
   const button = container.querySelector('button');
   if (!container || !button) return;
@@ -670,7 +674,7 @@ function enableRubricItemLongTextFieldForElement(container) {
 function enableRubricItemLongTextField(event) {
   if (!(event.currentTarget instanceof HTMLElement)) return;
   const container = event.currentTarget.closest('td');
-  enableRubricItemLongTextFieldForElement(container);
+  enableRubricItemLongTextFieldContainer(container);
 }
 
 function updateRubricItemOrderField() {
@@ -736,7 +740,6 @@ function rowDragOver(event) {
 }
 
 function addRubricItemRow(rubricItem = null) {
-  console.log('rubricItem', rubricItem);
   const modal = document.querySelector('#rubric-settings-form');
   if (!modal) return;
   const table = modal.querySelector('.js-rubric-items-table');
@@ -788,7 +791,7 @@ function addRubricItemRow(rubricItem = null) {
 
         rubricItemExplanation.parentElement.insertBefore(label, rubricItemExplanation);
 
-        enableRubricItemLongTextFieldForElement(rubricItemExplanation.parentElement);
+        enableRubricItemLongTextFieldContainer(rubricItemExplanation.parentElement);
       }
     }
   }
@@ -806,7 +809,7 @@ function addRubricItemRow(rubricItem = null) {
 
         rubricItemGraderNote.parentElement.insertBefore(label, rubricItemGraderNote);
 
-        enableRubricItemLongTextFieldForElement(rubricItemGraderNote.parentElement);
+        enableRubricItemLongTextFieldContainer(rubricItemGraderNote.parentElement);
       }
     }
   }
