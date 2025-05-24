@@ -63,7 +63,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  test.sequential('student creates and submits to first variant', { timeout: 20_000 }, async () => {
+  test.sequential('student creates and submits to first variant', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);

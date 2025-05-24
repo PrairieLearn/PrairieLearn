@@ -99,7 +99,7 @@ describe('Creating a question', () => {
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  test.sequential('create a new template question', { timeout: 20_000 }, async () => {
+  test.sequential('create a new template question', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
