@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { formatHtmlWithPrettier } from './prettier.js';
+import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 
 /**
  * Processes rendered question HTML to make it suitable for AI grading.
