@@ -1,4 +1,5 @@
 import ClipboardJS from 'clipboard';
+import qs from 'qs';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -32,99 +33,194 @@ $(() => {
       })
       .modal('show');
   }
+});
 
+function resetRubricImportFormListeners() {
   const importRubricButton = document.querySelector('#import-rubric-button');
   const rubricSettingsForm = document.querySelector('#rubric-settings-form');
 
   if (importRubricButton) {
     importRubricButton.addEventListener('inserted.bs.popover', () => {
-        const importRubricSettingsPopoverForm = document.querySelector('#import-rubric-settings-popover-form');
+      const importRubricSettingsPopoverForm = document.querySelector(
+        '#import-rubric-settings-popover-form',
+      );
 
-        if (!importRubricSettingsPopoverForm) {
+      if (!importRubricSettingsPopoverForm) {
+        return;
+      }
+
+      importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const fileData = formData.get('file');
+
+        // Read the file content
+        const reader = new FileReader();
+        reader.readAsText(fileData);
+
+        reader.onerror = () => {
+          alert('Error reading file.');
+          return;
+        };
+
+        reader.onload = () => {
+          const fileContent = reader.result;
+
+          if (typeof fileContent !== 'string') {
+            alert('Error reading file content.');
             return;
-        }
+          }
 
-        importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
-            event.preventDefault();
+          if (fileContent.trim() === '') {
+            return;
+          }
 
-            const formData = new FormData(event.target);
-            const fileData = formData.get('file');
-            
-            // Read the file content
-            const reader = new FileReader();
-            reader.readAsText(fileData);
+          // Remove the existing table rows
+          const table = rubricSettingsForm.querySelector('.table-responsive');
+          const tableRows = table?.querySelectorAll('tbody tr:not(.js-no-rubric-item-note)');
 
-            reader.onload = () => {
-              const fileContent = reader.result;
-              if (typeof fileContent !== 'string') {
-                  alert('Error reading file content.');
-                  return;
-              }
-
-              // Remove the existing table rows
-              const table = rubricSettingsForm.querySelector('.table-responsive');
-              const tableRows = table?.querySelectorAll('tbody tr:not(.js-no-rubric-item-note)');
-
-              try {
-                if (tableRows) {
-                    tableRows.forEach((row) => {
-                        row.remove();
-                    })
-                }
-              } catch {
-                alert('Error removing existing table rows.');
-                return;
-              }
-
-              const parsedData = JSON.parse(fileContent);
-
-              const rubricItems = parsedData.rubric_items;
-              if (!rubricItems) {
-                  return;
-              }
-
-              for (const rubricItem of rubricItems) {
-                addRubricItemRow(rubricItem);
-              }
-
-              const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
-              if (maxExtraPointsField) {
-                maxExtraPointsField.value = parsedData.max_extra_points;
-              }
-
-              const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
-              if (minPointsField) {
-                minPointsField.value = parsedData.min_points;
-              }
-
-              const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
-                'input[name="replace_auto_points"]'
-              );
-              if (replaceAutoPointsOptions) {
-                replaceAutoPointsOptions.forEach((option) => {
-                  option.checked = option.value === parsedData.replace_auto_points.toString();
-                });
-              }
-
-              const startingPointsOptions = rubricSettingsForm.querySelectorAll(
-                'input[name="starting_points"]'
-              );
-              if (startingPointsOptions) {
-                startingPointsOptions.forEach((option) => {
-                  option.checked = option.value === parsedData.starting_points.toString();
-                });
-              }
-
-              updateSettingsPointValues();
+          try {
+            if (tableRows) {
+              tableRows.forEach((row) => {
+                row.remove();
+              });
             }
-        });
+          } catch {
+            alert('Error removing existing table rows.');
+            return;
+          }
 
-        importRubricButton.addEventListener('hidden.bs.popover', () => {
-            importRubricSettingsPopoverForm.reset();
-        }, { once: true });
+          const parsedData = JSON.parse(fileContent);
+
+          const rubricItems = parsedData.rubric_items;
+          if (!rubricItems) {
+            return;
+          }
+
+          for (const rubricItem of rubricItems) {
+            addRubricItemRow(rubricItem);
+          }
+
+          const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
+          if (maxExtraPointsField) {
+            maxExtraPointsField.value = parsedData.max_extra_points;
+          }
+
+          const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
+          if (minPointsField) {
+            minPointsField.value = parsedData.min_points;
+          }
+
+          const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
+            'input[name="replace_auto_points"]',
+          );
+          if (replaceAutoPointsOptions) {
+            replaceAutoPointsOptions.forEach((option) => {
+              option.checked = option.value === parsedData.replace_auto_points.toString();
+            });
+          }
+
+          const startingPointsOptions = rubricSettingsForm.querySelectorAll(
+            'input[name="starting_points"]',
+          );
+          if (startingPointsOptions) {
+            startingPointsOptions.forEach((option) => {
+              option.checked = option.value === parsedData.starting_points.toString();
+            });
+          }
+
+          updateSettingsPointValues();
+
+          // Close the popover
+          window.bootstrap.Popover.getInstance(importRubricButton).hide();
+        };
+      });
+
+      importRubricButton.addEventListener(
+        'hidden.bs.popover',
+        () => {
+          importRubricSettingsPopoverForm.reset();
+        },
+        { once: true },
+      );
     });
   }
-});
+}
+
+function resetRubricExportFormListeners() {
+  const exportRubricButton = document.querySelector('#export-rubric-button');
+  const rubricSettingsForm = document.querySelector('#rubric-settings-form');
+
+  if (!exportRubricButton || !rubricSettingsForm) {
+    return;
+  }
+
+  exportRubricButton.addEventListener('click', () => {
+    const rubricSettingsData = new FormData(rubricSettingsForm);
+    const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
+
+    const exportFileName = `${rubricSettings.course_short_name.replaceAll(' ', '')}__${rubricSettings.course_instance_short_name.replaceAll(' ', '')}__${rubricSettings.assessment_tid.replaceAll(' ', '')}__${rubricSettings.question_qid.replaceAll(' ', '')}__rubric_settings.json`;
+
+    const rubricData = {
+      max_extra_points: parseInt(rubricSettings['max_extra_points']),
+      min_points: parseInt(rubricSettings['min_points']),
+      replace_auto_points: rubricSettings['replace_auto_points'] === 'true',
+      starting_points: parseInt(rubricSettings['starting_points']),
+      rubric_items: [],
+    };
+
+    // Parse using qs, which allows deep objects to be created based on parameter names
+    // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+    // Array parsing is disabled, as it has special cases for 22+ items that
+    // we don't want to double-handle, so we always receive an object and
+    // convert it to an array if necessary
+    // (https://github.com/ljharb/qs#parsing-arrays).
+    // The order of the items in arrays is never important, so using Object.values is fine.
+
+    const rubricSettingsParsed = qs.parse(qs.stringify(rubricSettings), { parseArrays: false });
+
+    if (rubricSettingsParsed.rubric_item) {
+      const rubricItems = rubricSettingsParsed.rubric_item;
+
+      for (const [key, value] of Object.entries(rubricItems)) {
+        rubricData.rubric_items.push({
+          always_show_to_students: value.always_show_to_students === 'true',
+          description: value.description,
+          explanation:
+            value.explanation ??
+            document
+              .querySelector(`[data-input-name="rubric_item[${key}][explanation]"]`)
+              ?.getAttribute('data-current-value') ??
+            '',
+          grader_note:
+            value.grader_note ??
+            document
+              .querySelector(`[data-input-name="rubric_item[${key}][grader_note]"]`)
+              ?.getAttribute('data-current-value') ??
+            '',
+          order: parseInt(value.order),
+          points: parseInt(value.points),
+        });
+      }
+
+      rubricData.rubric_items = rubricData.rubric_items.sort((a, b) => a.order - b.order);
+    }
+
+    // Export the rubric settings as a JSON file
+    const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+
+    a.download = exportFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
 
 function resetInstructorGradingPanel() {
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
@@ -240,9 +336,11 @@ function resetInstructorGradingPanel() {
     }),
   );
 
-  document
-    .querySelectorAll('.js-add-rubric-item-button')
-    .forEach((button) => button.addEventListener('click', addRubricItemRow));
+  document.querySelectorAll('.js-add-rubric-item-button').forEach((button) =>
+    button.addEventListener('click', () => {
+      addRubricItemRow();
+    }),
+  );
 
   document.querySelectorAll('.js-replace-auto-points-input').forEach((input) => {
     input.addEventListener('change', updateSettingsPointValues);
@@ -260,6 +358,9 @@ function resetInstructorGradingPanel() {
       submitSettings.bind(form)(e, 'false');
     }),
   );
+
+  resetRubricImportFormListeners();
+  resetRubricExportFormListeners();
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
@@ -548,9 +649,7 @@ function computePointsFromRubric(sourceInput = null) {
   updatePointsView(sourceInput);
 }
 
-function enableRubricItemLongTextField(event) {
-  if (!(event.currentTarget instanceof HTMLElement)) return;
-  const container = event.currentTarget.closest('td');
+function enableRubricItemLongTextFieldForElement(container) {
   const label = container.querySelector('label'); // May be null
   const button = container.querySelector('button');
   if (!container || !button) return;
@@ -566,6 +665,12 @@ function enableRubricItemLongTextField(event) {
   input.focus();
   input.addEventListener('input', () => adjustHeightFromContent(input));
   adjustHeightFromContent(input);
+}
+
+function enableRubricItemLongTextField(event) {
+  if (!(event.currentTarget instanceof HTMLElement)) return;
+  const container = event.currentTarget.closest('td');
+  enableRubricItemLongTextFieldForElement(container);
 }
 
 function updateRubricItemOrderField() {
@@ -630,9 +735,7 @@ function rowDragOver(event) {
   updateRubricItemOrderField();
 }
 
-function addRubricItemRow(
-  rubricItem = null
-) {
+function addRubricItemRow(rubricItem = null) {
   console.log('rubricItem', rubricItem);
   const modal = document.querySelector('#rubric-settings-form');
   if (!modal) return;
@@ -671,7 +774,7 @@ function addRubricItemRow(
       rubricItemDescription.value = `${rubricItem.description}`;
     }
   }
-  
+
   const rubricItemExplanation = row.querySelector('.js-rubric-item-explanation');
   if (rubricItemExplanation) {
     rubricItemExplanation.dataset.inputName = `rubric_item[new${next_id}][explanation]`;
@@ -683,10 +786,9 @@ function addRubricItemRow(
         label.setAttribute('style', 'white-space: pre-wrap;');
         label.innerHTML = `${rubricItem.explanation}`;
 
-        rubricItemExplanation.parentElement.insertBefore(
-          label,
-          rubricItemExplanation,
-        );
+        rubricItemExplanation.parentElement.insertBefore(label, rubricItemExplanation);
+
+        enableRubricItemLongTextFieldForElement(rubricItemExplanation.parentElement);
       }
     }
   }
@@ -702,21 +804,18 @@ function addRubricItemRow(
         label.setAttribute('style', 'white-space: pre-wrap;');
         label.innerHTML = `${rubricItem.grader_note}`;
 
-        rubricItemGraderNote.parentElement.insertBefore(
-          label,
-          rubricItemGraderNote,
-        );
+        rubricItemGraderNote.parentElement.insertBefore(label, rubricItemGraderNote);
+
+        enableRubricItemLongTextFieldForElement(rubricItemGraderNote.parentElement);
       }
     }
   }
-  row
-    .querySelectorAll('.js-rubric-item-always-show')
-    .forEach((input) => {
-      input.name = `rubric_item[new${next_id}][always_show_to_students]`
-      if (rubricItem) {
-        input.checked = rubricItem.always_show_to_students.toString() === input.value;
-      }
-    });
+  row.querySelectorAll('.js-rubric-item-always-show').forEach((input) => {
+    input.name = `rubric_item[new${next_id}][always_show_to_students]`;
+    if (rubricItem) {
+      input.checked = rubricItem.always_show_to_students.toString() === input.value;
+    }
+  });
 
   row.querySelector('.js-rubric-item-points')?.focus();
 

@@ -29,13 +29,17 @@ function ImportRubricSettingsPopover() {
         </small>
         <div class="mb-3">
           <div class="text-right">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-            <button id="upload-rubric-file-button" type="submit" class="btn btn-primary">Upload file</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">
+              Cancel
+            </button>
+            <button id="upload-rubric-file-button" type="submit" class="btn btn-primary">
+              Upload file
+            </button>
           </div>
         </div>
       </div>
     </form>
-  `
+  `;
 }
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
@@ -56,11 +60,13 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="use_rubric" value="true" />
 
           <input type="hidden" name="course_short_name" value="${resLocals.course.short_name}" />
-          <input type="hidden" name="course_instance_short_name" value="${resLocals.course_instance.short_name}" />
+          <input
+            type="hidden"
+            name="course_instance_short_name"
+            value="${resLocals.course_instance.short_name}"
+          />
           <input type="hidden" name="assessment_tid" value="${resLocals.assessment.tid}" />
           <input type="hidden" name="question_qid" value="${resLocals.question.qid}" />
-          
-          <input type="hidden" name="use_rubric" value="true" />
 
           <div class="modal-content">
             <div class="modal-header bg-info">
@@ -265,9 +271,9 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
-                <button 
-                  id="import-rubric-button" 
-                  type="button" 
+                <button
+                  id="import-rubric-button"
+                  type="button"
                   class="btn btn-sm btn-primary"
                   data-bs-title="Import rubric settings"
                   data-bs-toggle="popover"
@@ -279,12 +285,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   <i class="fas fa-upload"></i>
                   Import rubric
                 </button>
-                <button 
-                  id="export-rubric-button" 
-                  type="button" 
-                  class="btn btn-sm btn-primary"
-                  
-                >
+                <button id="export-rubric-button" type="button" class="btn btn-sm btn-primary">
                   <i class="fas fa-download"></i>
                   Export rubric
                 </button>
