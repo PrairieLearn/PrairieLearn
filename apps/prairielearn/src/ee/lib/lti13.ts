@@ -564,12 +564,21 @@ export async function linkAssessment(
   });
 }
 
-/* Throttling notes
-// https://canvas.instructure.com/doc/api/file.throttling.html
-// 403 Forbidden (Rate Limit Exceeded)
-// X-Request-Cost
-// X-Rate-Limit-Remaining
-*/
+function findValueByKey(obj: unknown, targetKey: string) {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  if (Object.hasOwn(obj, targetKey)) {
+    return obj[targetKey];
+  }
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      const result = findValueByKey(obj[key], targetKey);
+      if (result !== undefined) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
 
 /**
  * Make HTTP fetch requests with retries
@@ -595,29 +604,43 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    switch (response.status) {
-      // 422 Unprocessable Entity, User not found in course or is not a student
-      case 422:
-        return response;
-    }
-
     if (!response.ok) {
-      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
+      const resObject = (await response.json()) ?? {};
+      /*
+      Canvas error example with nested objects and message property.
+      {
+        errors: {
+          type: 'unprocessable_entity',
+          message: 'This course has concluded. AGS requests will no longer be accepted for this course.'
+        }
+      }
+      */
+      const msg = findValueByKey(resObject, 'message');
+
+      throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${msg}`, {
+        status: response.status,
         data: {
-          status: response.status,
           statusText: response.statusText,
-          body: await response.text(),
+          body: resObject,
         },
       });
     }
     return response;
   } catch (err) {
-    fetchRetryOpts.retryLeft -= 1;
-    if (fetchRetryOpts.retryLeft === 0) {
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    if (err.status === 403) {
+      // Retry logic
+      fetchRetryOpts.retryLeft -= 1;
+      if (fetchRetryOpts.retryLeft === 0) {
+        throw err;
+      }
+      await sleep(fetchRetryOpts.sleepMs);
+      return await fetchRetry(input, opts, fetchRetryOpts);
+    } else {
+      // Error immediately
       throw err;
     }
-    await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
   }
 }
 
@@ -882,24 +905,22 @@ export async function updateLti13Scores(
         },
       };
 
-      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-type': 'application/vnd.ims.lis.v1.score+json',
-        },
-        body: JSON.stringify(score),
-      });
+      try {
+        const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-type': 'application/vnd.ims.lis.v1.score+json',
+          },
+          body: JSON.stringify(score),
+        });
 
-      if (res.ok) {
-        counts.success++;
-      } else {
+        if (res.ok) {
+          counts.success++;
+        }
+      } catch (error) {
         counts.error++;
-        const results = await res.json();
-
-        // Default to showing the whole error
-        job.warn(`\t${res.statusText}`);
-        job.warn(`\t${JSON.stringify(results)}`);
+        job.warn(`\t${error.message}`);
       }
     }
   }
