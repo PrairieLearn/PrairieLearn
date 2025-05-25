@@ -85,11 +85,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
             value="${resLocals.assessment_question.max_manual_points}"
           />
 
-          <input
-            type="hidden"
-            name="file_upload_max_bytes"
-            value="${config.fileUploadMaxBytes}"
-          />
+          <input type="hidden" name="file_upload_max_bytes" value="${config.fileUploadMaxBytes}" />
 
           <div class="modal-content">
             <div class="modal-header bg-info">

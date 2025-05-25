@@ -38,7 +38,9 @@ $(() => {
 function resetRubricImportFormListeners() {
   const importRubricButton = document.querySelector('#import-rubric-button');
   const rubricSettingsForm = document.querySelector('#rubric-settings-form');
-  const fileUploadMaxBytesField = rubricSettingsForm.querySelector('input[name="file_upload_max_bytes"]');
+  const fileUploadMaxBytesField = rubricSettingsForm.querySelector(
+    'input[name="file_upload_max_bytes"]',
+  );
 
   if (importRubricButton) {
     importRubricButton.addEventListener('inserted.bs.popover', () => {
@@ -131,8 +133,7 @@ function resetRubricImportFormListeners() {
 
           const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
           if (maxExtraPointsField) {
-            maxExtraPointsField.value =
-              roundPoints(parsedData.max_extra_points * scaleFactor);
+            maxExtraPointsField.value = roundPoints(parsedData.max_extra_points * scaleFactor);
           }
 
           const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
@@ -584,6 +585,13 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   alert.setAttribute('role', 'alert');
   alert.innerText = msg;
   const closeBtn = document.createElement('button');
+
+  // Prevent default form-submit behavior
+  closeBtn.setAttribute('type', 'button');
+
+  // Make sure Bootstrap sees the close button as an alert-dismiss:
+  closeBtn.setAttribute('data-bs-dismiss', 'alert');
+
   closeBtn.classList.add('btn-close');
   closeBtn.dataset.bsDismiss = 'alert';
   closeBtn.setAttribute('aria-label', 'Close');
