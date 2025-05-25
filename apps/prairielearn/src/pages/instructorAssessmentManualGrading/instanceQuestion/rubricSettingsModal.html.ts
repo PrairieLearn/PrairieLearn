@@ -420,7 +420,7 @@ function RubricItemRow({
         <input
           type="number"
           class="form-control js-rubric-item-points"
-          style="width: 6rem"
+          style="width: 5rem"
           step="any"
           required
           name="${namePrefix}[points]"
