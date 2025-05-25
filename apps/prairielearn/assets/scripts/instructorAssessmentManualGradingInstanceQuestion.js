@@ -38,6 +38,7 @@ $(() => {
 function resetRubricImportFormListeners() {
   const importRubricButton = document.querySelector('#import-rubric-button');
   const rubricSettingsForm = document.querySelector('#rubric-settings-form');
+  const fileUploadMaxBytesField = rubricSettingsForm.querySelector('input[name="file_upload_max_bytes"]');
 
   if (importRubricButton) {
     importRubricButton.addEventListener('inserted.bs.popover', () => {
@@ -54,6 +55,16 @@ function resetRubricImportFormListeners() {
 
         const formData = new FormData(event.target);
         const fileData = formData.get('file');
+
+        if (fileUploadMaxBytesField) {
+          const fileUploadMaxBytes = parseInt(fileUploadMaxBytesField.value);
+          if (fileData && fileData.size > fileUploadMaxBytes) {
+            alert(
+              `File size exceeds the maximum limit of ${fileUploadMaxBytes} bytes. Please choose a smaller file.`,
+            );
+            return;
+          }
+        }
 
         // Read the file content
         const reader = new FileReader();
@@ -102,7 +113,7 @@ function resetRubricImportFormListeners() {
           let scaleFactor = 1;
           if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
             // Scale factor is based on max_points
-            const maxPoints = parseInt(rubricSettings.max_points);
+            const maxPoints = parseFloat(rubricSettings.max_points);
             console.log('Max points', maxPoints, 'Parsed data max points', parsedData.max_points);
 
             // TODO: Doesn't the nullish check also imply maxPoints > 0?
@@ -111,7 +122,7 @@ function resetRubricImportFormListeners() {
             }
           } else {
             // Scale factor is based on max_manual_points
-            const maxManualPoints = parseInt(rubricSettings.max_manual_points);
+            const maxManualPoints = parseFloat(rubricSettings.max_manual_points);
             if (maxManualPoints && maxManualPoints > 0 && parsedData.max_manual_points) {
               scaleFactor = maxManualPoints / parsedData.max_manual_points;
             }
@@ -121,12 +132,12 @@ function resetRubricImportFormListeners() {
           const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
           if (maxExtraPointsField) {
             maxExtraPointsField.value =
-              Math.round(parsedData.max_extra_points * scaleFactor * 100) / 100;
+              roundPoints(parsedData.max_extra_points * scaleFactor);
           }
 
           const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
           if (minPointsField) {
-            minPointsField.value = Math.round(parsedData.min_points * scaleFactor * 100) / 100;
+            minPointsField.value = roundPoints(parsedData.min_points * scaleFactor);
           }
 
           const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
@@ -161,7 +172,7 @@ function resetRubricImportFormListeners() {
           for (let rubricItem of rubricItems) {
             rubricItem = {
               ...rubricItem,
-              points: Math.round((rubricItem.points ?? 0) * scaleFactor * 100) / 100,
+              points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
             };
             addRubricItemRow(rubricItem);
           }
@@ -200,14 +211,14 @@ function resetRubricExportFormListeners() {
     const exportFileName = `${sanitizeForFilename(rubricSettings.course_short_name)}__${sanitizeForFilename(rubricSettings.course_instance_short_name)}__${sanitizeForFilename(rubricSettings.assessment_tid)}__${sanitizeForFilename(rubricSettings.question_qid)}__rubric_settings.json`;
 
     const rubricData = {
-      max_extra_points: parseInt(rubricSettings['max_extra_points']),
-      min_points: parseInt(rubricSettings['min_points']),
+      max_extra_points: parseFloat(rubricSettings['max_extra_points']),
+      min_points: parseFloat(rubricSettings['min_points']),
       replace_auto_points: rubricSettings['replace_auto_points'] === 'true',
-      starting_points: parseInt(rubricSettings['starting_points']),
+      starting_points: parseFloat(rubricSettings['starting_points']),
 
-      max_points: parseInt(rubricSettings['max_points']),
-      max_manual_points: parseInt(rubricSettings['max_manual_points']),
-      max_auto_points: parseInt(rubricSettings['max_auto_points']),
+      max_points: parseFloat(rubricSettings['max_points']),
+      max_manual_points: parseFloat(rubricSettings['max_manual_points']),
+      max_auto_points: parseFloat(rubricSettings['max_auto_points']),
 
       rubric_items: [],
     };
@@ -241,7 +252,7 @@ function resetRubricExportFormListeners() {
               ?.getAttribute('data-current-value') ??
             '',
           order: parseInt(value.order),
-          points: parseInt(value.points),
+          points: parseFloat(value.points),
         });
       }
       rubricData.rubric_items = rubricData.rubric_items.sort((a, b) => a.order - b.order);
