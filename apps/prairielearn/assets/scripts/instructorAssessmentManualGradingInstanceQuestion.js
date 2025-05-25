@@ -38,9 +38,6 @@ $(() => {
 function resetRubricImportFormListeners() {
   const importRubricButton = document.querySelector('#import-rubric-button');
   const rubricSettingsForm = document.querySelector('#rubric-settings-form');
-  const fileUploadMaxBytesField = rubricSettingsForm.querySelector(
-    'input[name="file_upload_max_bytes"]',
-  );
 
   if (importRubricButton) {
     importRubricButton.addEventListener('inserted.bs.popover', () => {
@@ -58,6 +55,10 @@ function resetRubricImportFormListeners() {
         const formData = new FormData(event.target);
         const fileData = formData.get('file');
 
+        const fileUploadMaxBytesField = rubricSettingsForm.querySelector(
+          'input[name="file_upload_max_bytes"]',
+        );
+
         if (fileUploadMaxBytesField) {
           const fileUploadMaxBytes = parseInt(fileUploadMaxBytesField.value);
           if (fileData && fileData.size > fileUploadMaxBytes) {
@@ -68,7 +69,7 @@ function resetRubricImportFormListeners() {
           }
         }
 
-        // Read the file content
+        // Read the rubric JSON file content
         const reader = new FileReader();
         reader.readAsText(fileData);
 
@@ -89,7 +90,7 @@ function resetRubricImportFormListeners() {
             return;
           }
 
-          // Remove the existing table rows
+          // Clear the existing rubric items in the table
           const table = rubricSettingsForm.querySelector('.table-responsive');
           const tableRows = table?.querySelectorAll('tbody tr:not(.js-no-rubric-item-note)');
 
@@ -107,29 +108,31 @@ function resetRubricImportFormListeners() {
             return;
           }
 
-          // Determine the scale factor
           const rubricSettingsData = new FormData(rubricSettingsForm);
           const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
 
-          console.log('rubricSettings', rubricSettings, parsedData);
+          // This factor scales the imported rubric point values to ensure that they
+          // are correctly aligned with the point values of the recipient question.
           let scaleFactor = 1;
-          if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
-            // Scale factor is based on max_points
-            const maxPoints = parseFloat(rubricSettings.max_points);
-            console.log('Max points', maxPoints, 'Parsed data max points', parsedData.max_points);
 
-            // TODO: Doesn't the nullish check also imply maxPoints > 0?
-            if (maxPoints && maxPoints > 0 && parsedData.max_points) {
+          if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
+            // If the rubric does not use auto points, or if it replaces auto points,
+            // then the scale factor is based on max_points (the total points of the rubric)
+            const maxPoints = parseFloat(rubricSettings.max_points) ?? 0;
+
+            if (maxPoints > 0 && parsedData.max_points) {
               scaleFactor = maxPoints / parsedData.max_points;
             }
           } else {
-            // Scale factor is based on max_manual_points
-            const maxManualPoints = parseFloat(rubricSettings.max_manual_points);
-            if (maxManualPoints && maxManualPoints > 0 && parsedData.max_manual_points) {
+            // If the rubric uses auto points and does not replace them, it
+            // applies only to the manual points of the assessment question.
+            // Therefore, we base the scale factor on max_manual_points.
+            const maxManualPoints = parseFloat(rubricSettings.max_manual_points) ?? 0;
+
+            if (maxManualPoints > 0 && parsedData.max_manual_points) {
               scaleFactor = maxManualPoints / parsedData.max_manual_points;
             }
           }
-          console.log('scaleFactor', scaleFactor);
 
           const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
           if (maxExtraPointsField) {
@@ -150,7 +153,7 @@ function resetRubricImportFormListeners() {
             });
           }
 
-          // If the rubric uses positive grading, then the starting points are 0
+          // If starting_points = 0, then the imported rubric uses positive grading.
           const positiveGrading = parsedData.starting_points === 0;
 
           const startingPointsOptions = rubricSettingsForm.querySelectorAll(
@@ -158,8 +161,8 @@ function resetRubricImportFormListeners() {
           );
           if (startingPointsOptions) {
             startingPointsOptions.forEach((option) => {
-              // The positive grading option, which starts at 0 points, is checked
-              // if the rubric uses positive grading
+              // The option with value 0 corresponds to positive grading. It is checked
+              // when the imported rubric uses positive grading.
               option.checked = option.value === '0' && positiveGrading;
             });
           }
@@ -208,8 +211,19 @@ function resetRubricExportFormListeners() {
     const rubricSettingsData = new FormData(rubricSettingsForm);
     const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
 
-    const sanitizeForFilename = (str) => str.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const exportFileName = `${sanitizeForFilename(rubricSettings.course_short_name)}__${sanitizeForFilename(rubricSettings.course_instance_short_name)}__${sanitizeForFilename(rubricSettings.assessment_tid)}__${sanitizeForFilename(rubricSettings.question_qid)}__rubric_settings.json`;
+    const exportFileName =
+      `${rubricSettings.course_short_name}__${rubricSettings.course_instance_short_name}__${rubricSettings.assessment_tid}__${rubricSettings.question_qid}__rubric_settings.json`.replace(
+        /[^a-zA-Z0-9_-]/g,
+        '_',
+      );
+
+    // Parse using qs, which allows deep objects to be created based on parameter names
+    // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
+    // Array parsing is disabled, as it has special cases for 22+ items that
+    // we don't want to double-handle, so we always receive an object and
+    // convert it to an array if necessary
+    // (https://github.com/ljharb/qs#parsing-arrays).
+    const rubricSettingsParsed = qs.parse(qs.stringify(rubricSettings), { parseArrays: false });
 
     const rubricData = {
       max_extra_points: parseFloat(rubricSettings['max_extra_points']),
@@ -224,15 +238,6 @@ function resetRubricExportFormListeners() {
       rubric_items: [],
     };
 
-    // Parse using qs, which allows deep objects to be created based on parameter names
-    // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
-    // Array parsing is disabled, as it has special cases for 22+ items that
-    // we don't want to double-handle, so we always receive an object and
-    // convert it to an array if necessary
-    // (https://github.com/ljharb/qs#parsing-arrays).
-
-    const rubricSettingsParsed = qs.parse(qs.stringify(rubricSettings), { parseArrays: false });
-
     if (rubricSettingsParsed.rubric_item) {
       const rubricItems = rubricSettingsParsed.rubric_item;
       for (const key of Object.keys(rubricItems)) {
@@ -241,16 +246,16 @@ function resetRubricExportFormListeners() {
           always_show_to_students: value.always_show_to_students === 'true',
           description: value.description,
           explanation:
-            value.explanation ??
+            value.explanation ?? // Available if the long text field is enabled
             document
               .querySelector(`[data-input-name="rubric_item[${key}][explanation]"]`)
-              ?.getAttribute('data-current-value') ??
+              ?.getAttribute('data-current-value') ?? // Available if the long text field is closed
             '',
           grader_note:
-            value.grader_note ??
+            value.grader_note ?? // Available if the long text field is enabled
             document
               .querySelector(`[data-input-name="rubric_item[${key}][grader_note]"]`)
-              ?.getAttribute('data-current-value') ??
+              ?.getAttribute('data-current-value') ?? // Available if the long text field is closed
             '',
           order: parseInt(value.order),
           points: parseFloat(value.points),
@@ -586,10 +591,10 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   alert.innerText = msg;
   const closeBtn = document.createElement('button');
 
-  // Prevent default form-submit behavior
+  // Prevent default form submit behavior, so the modal remains open after the alert is dismissed.
   closeBtn.setAttribute('type', 'button');
 
-  // Make sure Bootstrap sees the close button as an alert-dismiss:
+  // Make sure Bootstrap sees the close button as an alert dismiss button.
   closeBtn.setAttribute('data-bs-dismiss', 'alert');
 
   closeBtn.classList.add('btn-close');
@@ -608,7 +613,7 @@ function resetRubricItemRowsListeners() {
     .forEach((row) => row.addEventListener('dragstart', rowDragStart));
   document
     .querySelectorAll('.js-rubric-item-long-text-field')
-    .forEach((button) => button.addEventListener('click', enableRubricItemLongTextField));
+    .forEach((button) => button.addEventListener('click', enableRubricItemLongTextFieldOnClick));
   document
     .querySelectorAll('.js-rubric-item-move-down-button')
     .forEach((button) => button.addEventListener('click', moveRowDown));
@@ -708,7 +713,7 @@ function computePointsFromRubric(sourceInput = null) {
   updatePointsView(sourceInput);
 }
 
-function enableRubricItemLongTextFieldContainer(container) {
+function enableRubricItemLongTextField(container) {
   const label = container.querySelector('label'); // May be null
   const button = container.querySelector('button');
   if (!container || !button) return;
@@ -726,10 +731,10 @@ function enableRubricItemLongTextFieldContainer(container) {
   adjustHeightFromContent(input);
 }
 
-function enableRubricItemLongTextField(event) {
+function enableRubricItemLongTextFieldOnClick(event) {
   if (!(event.currentTarget instanceof HTMLElement)) return;
   const container = event.currentTarget.closest('td');
-  enableRubricItemLongTextFieldContainer(container);
+  enableRubricItemLongTextField(container);
 }
 
 function updateRubricItemOrderField() {
@@ -846,7 +851,8 @@ function addRubricItemRow(rubricItem = null) {
 
         rubricItemExplanation.parentElement.insertBefore(label, rubricItemExplanation);
 
-        enableRubricItemLongTextFieldContainer(rubricItemExplanation.parentElement);
+        // Enabled so that the updated field can be saved
+        enableRubricItemLongTextField(rubricItemExplanation.parentElement);
       }
     }
   }
@@ -864,7 +870,8 @@ function addRubricItemRow(rubricItem = null) {
 
         rubricItemGraderNote.parentElement.insertBefore(label, rubricItemGraderNote);
 
-        enableRubricItemLongTextFieldContainer(rubricItemGraderNote.parentElement);
+        // Enabled so that the updated field can be saved
+        enableRubricItemLongTextField(rubricItemGraderNote.parentElement);
       }
     }
   }
