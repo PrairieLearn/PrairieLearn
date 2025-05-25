@@ -296,6 +296,10 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
+                <button id="export-rubric-button" type="button" class="btn btn-sm btn-primary">
+                  <i class="fas fa-download"></i>
+                  Export rubric
+                </button>
                 <button
                   id="import-rubric-button"
                   type="button"
@@ -310,9 +314,14 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   <i class="fas fa-upload"></i>
                   Import rubric
                 </button>
-                <button id="export-rubric-button" type="button" class="btn btn-sm btn-primary">
-                  <i class="fas fa-download"></i>
-                  Export rubric
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+                >
+                  <i class="fas fa-circle-info"></i>
                 </button>
                 <template class="js-new-row-rubric-item">
                   ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
