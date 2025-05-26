@@ -1396,6 +1396,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/external_image_capture',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+  );
+  
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',

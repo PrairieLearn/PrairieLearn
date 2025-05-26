@@ -1,7 +1,0 @@
-{
-    "controller": "pl-external-input-capture.py",
-    "dependencies": {
-        "elementScripts": ["pl-external-input-capture.js"],
-        "elementStyles": ["pl-external-input-capture.css"]  
-    }
-}

@@ -1,0 +1,7 @@
+{
+    "controller": "pl-external-image-capture.py",
+    "dependencies": {
+        "elementScripts": ["pl-external-image-capture.js"],
+        "elementStyles": ["pl-external-image-capture.css"]  
+    }
+}
