@@ -1,0 +1,18 @@
+{
+    "uuid": "aeaa8e3e-d574-4c2c-bad5-a4ec703db7c6",
+    "type": "Homework",
+    "title": "External camera input test",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [],
+    "zones": [
+      {
+        "questions": [
+          {
+            "id": "demo/externalImageCapture",
+            "points": 1, "maxPoints": 2
+          }
+        ]
+      }
+    ]
+}
