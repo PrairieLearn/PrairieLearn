@@ -252,7 +252,6 @@ export function SubmissionPanel({
         </div>
 
         ${SubmissionInfoModal({
-          urlPrefix,
           submission,
           question,
           course_instance_id,
@@ -394,17 +393,23 @@ function SubmissionStatusBadge({
 }
 
 function SubmissionInfoModal({
-  urlPrefix,
   submission,
   question,
   course_instance_id,
 }: {
-  urlPrefix: string;
   submission: SubmissionForRender;
   question: Question;
   course_instance_id?: string | null;
 }) {
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
+  const gradingJobUrl =
+    course_instance_id == null
+      ? `${config.urlPrefix}/course/${question.course_id}/instructor/grading_job/${
+          submission.grading_job?.id
+        }`
+      : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
+          submission.grading_job?.id
+        }`;
   return Modal({
     id: `submissionInfoModal-${submission.id}`,
     title: 'Submission info',
@@ -479,22 +484,9 @@ function SubmissionInfoModal({
                     class="bg-danger m-0"
                   ></span>
                 </div>
-                ${course_instance_id != null
-                  ? html`
-                      <a
-                        class="btn btn-primary mt-2"
-                        href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission
-                          .grading_job?.id}"
-                        >View grading job ${submission.grading_job?.id}</a
-                      >
-                    `
-                  : html`
-                      <a
-                        class="btn btn-primary mt-2"
-                        href="${urlPrefix}/grading_job/${submission.grading_job?.id}"
-                        >View grading job ${submission.grading_job?.id}</a
-                      >
-                    `}
+                <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
+                  View grading job ${submission.grading_job?.id}
+                </a>
               `
             : ''}
         `,
