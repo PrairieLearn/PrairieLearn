@@ -1398,7 +1398,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/external_image_capture',
+    '/pl/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
   

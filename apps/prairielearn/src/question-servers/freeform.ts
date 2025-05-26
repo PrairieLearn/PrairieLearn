@@ -1304,6 +1304,8 @@ async function renderPanel(
     ? locals.questionUrl + `submission/${submission?.id}/file`
     : null;
 
+  const variantId = variant.id; // TODO: Only give access if this is for external image capture
+
   const options = {
     ...(variant.options ?? {}),
     client_files_question_url: locals.clientFilesQuestionUrl,
@@ -1318,6 +1320,8 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+    variant_id: variantId,
+    serverCanonicalHost: config.serverCanonicalHost ?? '',
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),

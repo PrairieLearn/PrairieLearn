@@ -1,25 +1,34 @@
-window.PLExternalImageCapture = function (
-    courseInstanceId,
-    instanceQuestionId,
-    elementId
-) {
-    // const externalImageCapture = null;
-    const scanSubmissionButton = document.querySelector('#scan-submission-button');
-    if (!scanSubmissionButton) {
-        return;
+/* global QRCode */
+
+(() => {
+    class PLExternalImageCapture {
+        constructor(
+            qr_code_url
+        ) {
+            console.log('qr_code_url', qr_code_url);
+            this.qr_code_url = qr_code_url;
+
+            const scanSubmissionButton = document.querySelector('#scan-submission-button');
+            if (!scanSubmissionButton) {
+                return;
+            }
+
+            scanSubmissionButton.addEventListener('inserted.bs.popover', () => {
+                this.generateQrCode();
+            })
+        }
+
+        generateQrCode() {
+            const qrCodeSvg = new QRCode({ content: this.qr_code_url, container: 'svg-viewbox' }).svg();
+
+            const qrCode = document.querySelector('#qr-code');
+            if (qrCode) {
+                qrCode.innerHTML = qrCodeSvg;
+            } else {
+                console.error('QR code element not found');
+            }
+        }
     }
 
-    const path = `/pl/course_instance/${courseInstanceId}/instance_question/${instanceQuestionId}/external_image_capture/element/${elementId}`;
-    console.log('External image capture path:', path);
-
-    scanSubmissionButton.addEventListener('click', async () => {
-        fetch(
-            path, { method: 'GET'}
-        ).then((result) => {
-            if (!result.ok) {
-                throw new Error(`Failed to fetch external image capture: ${result.status}`);
-            }
-            console.log('Result', result);
-        })
-    });
-}
+    window.PLExternalImageCapture = PLExternalImageCapture;
+})();

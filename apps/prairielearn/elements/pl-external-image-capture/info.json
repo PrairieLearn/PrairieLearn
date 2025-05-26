@@ -1,6 +1,7 @@
 {
     "controller": "pl-external-image-capture.py",
     "dependencies": {
+        "nodeModulesScripts": ["qrcode-svg/dist/qrcode.min.js"],
         "elementScripts": ["pl-external-image-capture.js"],
         "elementStyles": ["pl-external-image-capture.css"]  
     }
