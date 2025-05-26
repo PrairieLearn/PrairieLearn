@@ -159,8 +159,7 @@ export function InstructorGradingJob({
                         </td>
                         <td>
                           Contains the raw output from stdout/stderr for your job. Lines beginning
-                          with
-                          <code>container &gt;</code> are from your container; the rest are
+                          with <code>container&gt;</code> are from your container; the rest are
                           diagnostic logs from PrairieLearn.
                         </td>
                       </tr>
