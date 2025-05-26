@@ -404,9 +404,7 @@ function SubmissionInfoModal({
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
   const gradingJobUrl =
     course_instance_id == null
-      ? `${config.urlPrefix}/course/${question.course_id}/instructor/grading_job/${
-          submission.grading_job?.id
-        }`
+      ? `${config.urlPrefix}/course/${question.course_id}/grading_job/${submission.grading_job?.id}`
       : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
           submission.grading_job?.id
         }`;
