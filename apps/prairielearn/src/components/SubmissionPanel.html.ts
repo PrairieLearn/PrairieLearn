@@ -251,12 +251,7 @@ export function SubmissionPanel({
           </div>
         </div>
 
-        ${SubmissionInfoModal({
-          urlPrefix,
-          submission,
-          question,
-          course_instance_id,
-        })}
+        ${SubmissionInfoModal({ urlPrefix, submission, course_instance_id })}
       </div>
     </div>
   `;
@@ -396,12 +391,10 @@ function SubmissionStatusBadge({
 function SubmissionInfoModal({
   urlPrefix,
   submission,
-  question,
   course_instance_id,
 }: {
   urlPrefix: string;
   submission: SubmissionForRender;
-  question: Question;
   course_instance_id?: string | null;
 }) {
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
@@ -426,7 +419,7 @@ function SubmissionInfoModal({
                 </tr>
               `
             : ''}
-          ${gradingJobStats && question.grading_method === 'External'
+          ${gradingJobStats?.grading_method === 'External'
             ? html`
                 <tr>
                   <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
@@ -457,7 +450,7 @@ function SubmissionInfoModal({
         </tbody>
       </table>
       ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
-      ${gradingJobStats && question.grading_method === 'External'
+      ${gradingJobStats?.grading_method === 'External'
         ? html`
             <div class="d-flex mt-2 mb-2">
               <span
@@ -567,6 +560,7 @@ function buildGradingJobStats(job: GradingJob | null) {
 
   return {
     ...stats,
+    grading_method: job.grading_method,
     phases: durations.map(
       // Round down to avoid width being greater than 100% with floating point errors
       (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,
