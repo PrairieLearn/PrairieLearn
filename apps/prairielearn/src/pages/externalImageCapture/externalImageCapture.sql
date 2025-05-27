@@ -4,14 +4,14 @@ INSERT INTO
       user_id,
       created_at,
       variant_id,
-      element_id,
+      answer_name,
       file_id
   )
 VALUES (
   $user_id,
   NOW(),
   $variant_id,
-  $element_id,
+  $answer_name,
   $file_id
 ) 
 ON CONFLICT ON CONSTRAINT external_image_capture_variant_element_uuid_unique
@@ -24,7 +24,7 @@ FROM
   external_image_capture AS eic
 WHERE
   eic.variant_id = $variant_id
-  AND eic.element_id = $element_id
+  AND eic.answer_name = $answer_name
   AND eic.deleted_at IS NULL;
 
 -- BLOCK select_variant_by_id

@@ -214,7 +214,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.post(
-    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/element/:element_uuid',
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/answer_name/:answer_name',
     upload.single('file'),
   );
 
@@ -270,7 +270,7 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/element/:element_uuid',
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/answer_name/:answer_name',
     upload.single('file'),
   );
 

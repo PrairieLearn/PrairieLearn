@@ -489,7 +489,7 @@ export const ExternalImageCaptureSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
   id: IdSchema,
   variant_id: IdSchema,
-  element_id: z.string(),
+  answer_name: z.string(),
   file_id: IdSchema
 })
 

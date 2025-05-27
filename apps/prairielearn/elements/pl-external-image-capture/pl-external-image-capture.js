@@ -18,7 +18,14 @@
 
             this.loadSubmission();
 
-        }
+            const reloadButton = document.querySelector('#reload-submission-button');
+
+            if (reloadButton) {
+                reloadButton.addEventListener('click', () => {
+                    this.loadSubmission();
+                });
+            }            
+        } 
 
         generateQrCode() {
             const qrCodeSvg = new QRCode({ content: this.qr_code_url, container: 'svg-viewbox' }).svg();
@@ -32,23 +39,68 @@
         }
 
         async loadSubmission() {
+
+            const uploadedImageContainer = document.querySelector('#uploaded-image-container');
+
+            if (!uploadedImageContainer) {
+                console.error('Uploaded image container not found');
+                return;
+            }
+            
+            const reloadButton = document.querySelector('#reload-submission-button');
+            reloadButton.setAttribute('disabled', 'disabled');
+            
+            uploadedImageContainer.innerHTML = `
+                <div
+                    id="image-placeholder"
+                    class="bg-body-secondary d-flex justify-content-center align-items-center rounded border"
+                    style="width: 300px; height: 200px;"
+                >
+                    <div class="spinning-wheel spinner-border">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+
             const submittedImageResponse = await fetch(
                 `${this.qr_code_url}/submitted_image`,
             )
             
             if (!submittedImageResponse.ok) {
+                reloadButton.removeAttribute('disabled');
                 if (submittedImageResponse.status === 404) {
-                    // The user has not submitted an image yet.
+                    const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
+                    imagePlaceholderDiv.innerHTML = `
+                        <span class="text-muted small">No image submitted yet.</span>
+                    `
                     return;
                 }
                 throw new Error('Failed to load submitted image');
             }
-            const blob = await submittedImageResponse.blob();
-            const previewImage = document.querySelector('#preview-image');
+            
+            const { data, type } = await submittedImageResponse.json();            
 
+            uploadedImageContainer.innerHTML = `
+                <img
+                    id="preview-image"
+                    class="img-fluid rounded border border-secondary mb-1 d-none"
+                    style="max-height: 300px;"
+                />
+            `;
+
+            const previewImage = uploadedImageContainer.querySelector('#preview-image');
+            
             previewImage.classList.remove('d-none');
+            // previewImage.src = URL.createObjectURL(blob);   
 
-            previewImage.src = URL.createObjectURL(blob);   
+            const b64_data = `data:${type};base64,${data}`;
+
+            previewImage.src = `data:${type};base64,${data}`;
+
+            const hiddenSubmissionInput = document.querySelector('#hidden-submission-input');
+            hiddenSubmissionInput.value = b64_data;
+
+            reloadButton.removeAttribute('disabled');
         }
     }
 

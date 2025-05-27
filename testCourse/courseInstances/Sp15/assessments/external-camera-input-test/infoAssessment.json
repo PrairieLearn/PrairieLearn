@@ -10,7 +10,7 @@
         "questions": [
           {
             "id": "demo/externalImageCapture",
-            "points": 1, "maxPoints": 2
+            "manualPoints": 2, "maxManualPoints": 2
           }
         ]
       }

@@ -18,7 +18,7 @@ const router = express.Router({
 });
 
 router.get(
-    '/element/:element_uuid',
+    '/answer_name/:answer_name',
     asyncHandler(async (req, res) => {
         res.send(ExternalImageCapture({
             resLocals: res.locals,
@@ -27,10 +27,10 @@ router.get(
 )
 
 router.get(
-    '/element/:element_id/submitted_image',
+    '/answer_name/:answer_name/submitted_image',
     asyncHandler(async (req, res) => {
         const variantId = req.params.variant_id;
-        const element_id = req.params.element_id;
+        const answer_name = req.params.answer_name;
 
         // Validate that the user has access to the variant
         const variant = await selectAndAuthzVariant({
@@ -57,21 +57,28 @@ router.get(
             sql.select_external_image_capture_by_variant_and_element,
             {
                 variant_id: parseInt(variant.id),
-                element_id,
+                answer_name,
             },
             ExternalImageCaptureSchema
         );
 
-        console.log('externalImageCapture', externalImageCapture, variant.id, element_id);
+        console.log('externalImageCapture', externalImageCapture, variant.id, answer_name);
 
         if (externalImageCapture) {
             const { contents, file } = await getFile(
                 externalImageCapture.file_id
             );
-            res.setHeader('Content-Type', file.type || 'application/octet-stream');
-            res.setHeader('Content-Length', contents.length);
             
-            res.send(contents);
+            // res.setHeader('Content-Type', file.type || 'application/octet-stream');
+            // res.setHeader('Content-Length', contents.length);
+            
+            // res.send(contents);
+            const base64_contents = contents.toString('base64');
+            res.json({
+                filename: file.display_filename,
+                type: file.type,
+                data: base64_contents
+            });
         } else {
             res.status(404).send();
         }
@@ -79,20 +86,20 @@ router.get(
 )
 
 router.post(
-    '/element/:element_id',
+    '/answer_name/:answer_name',
     asyncHandler(async (req, res) => {
         // Validate that the user has access to the variant
         const variantId = req.params.variant_id;
-        const element_id = req.params.element_id;
+        const answer_name = req.params.answer_name;
         const userId = res.locals.authn_user.user_id;
 
         // TODO: Use the correct no access pages, or make some new ones
 
         console.log('Variant ID', variantId);
-        console.log('Element UUID', element_id);
+        console.log('answer_name', answer_name);
         console.log('User ID', userId);
 
-        if (!variantId || !element_id || !userId) {
+        if (!variantId || !answer_name || !userId) {
             res.status(400).send('Missing required parameters');
             return;
         }
@@ -141,7 +148,9 @@ router.post(
             type: 'image/png',
             assessment_id: variant.assessment_id ?? null,
             assessment_instance_id: variant.assessment_instance_id ?? null,
-            instance_question_id: variant.instance_question_id ?? null,
+            // assessment_instance_id: null,
+            // instance_question_id: variant.instance_question_id ?? null,
+            instance_question_id: null,
             user_id: userId,
             authn_user_id: res.locals.authn_user.authn_user_id,
         });
@@ -152,7 +161,7 @@ router.post(
             {
                 user_id: res.locals.authn_user.user_id,
                 variant_id: variantId,
-                element_id,
+                answer_name,
                 file_id,
             }
         );

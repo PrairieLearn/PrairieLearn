@@ -6,20 +6,13 @@ $(function() {
 });
 </script>
 
-<div id="external-image-capture-{{element_id}}">
+<div id="external-image-capture-{{name}}">
   <input
+    id="hidden-submission-input"
     type="hidden"
-    name="submission_field"
-    value="{{submission_field}}"
+    name="{{name}}"
+    data-skip-unload-check="true"
   />
-  <p class="small text-muted">Current submission</p>
-  <br/>
-  <img
-    id="preview-image"
-    class="img-fluid rounded border border-secondary mb-1 d-none"
-    style="max-height: 300px;"
-  />
-  <br/>
   <button 
     id="scan-submission-button"
     type="button" 
@@ -47,4 +40,22 @@ $(function() {
   <p class="text-muted small mt-1">
     You’ll use a mobile device to submit work.
   </p>
+  
+  <div id="uploaded-image-container">
+    <div
+      id="image-placeholder"
+      class="bg-body-secondary d-flex justify-content-center align-items-center rounded border"
+      style="width: 300px; height: 200px;"
+    >
+      <div class="spinning-wheel spinner-border">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+  
+  <button id="reload-submission-button" class="btn btn-primary mt-2" disabled>
+    <i class="bi bi-arrow-clockwise me-1"></i>
+    Reload
+  </button>
+
 </div>

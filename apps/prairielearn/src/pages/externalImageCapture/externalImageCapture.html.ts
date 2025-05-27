@@ -54,7 +54,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
 
                 <button 
                     type="submit"
-                    class="btn btn-primary mt-3"
+                    class="btn btn-primary my-3"
                     id="submit-button"
                     disabled
                 >
