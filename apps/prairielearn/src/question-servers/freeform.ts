@@ -1304,7 +1304,7 @@ async function renderPanel(
     ? locals.questionUrl + `submission/${submission?.id}/file`
     : null;
 
-  const variantId = variant.id; // TODO: Only give access if this is for external image capture
+  console.log('instance question', locals.instance_question);
 
   const options = {
     ...(variant.options ?? {}),
@@ -1320,7 +1320,13 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
-    variant_id: variantId,
+
+    variant_id: variant.id, // TODO: Is it fine to expose all these IDs?
+    course_id: course.id,
+    question_id: locals.question.id,
+    course_instance_id: locals.course_instance?.id,
+    instance_question_id: locals.instance_question?.id,
+    
     serverCanonicalHost: config.serverCanonicalHost ?? '',
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,

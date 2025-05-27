@@ -6,12 +6,20 @@ $(function() {
 });
 </script>
 
-<div id="external-image-capture-{{uuid}}">
+<div id="external-image-capture-{{element_id}}">
   <input
     type="hidden"
     name="submission_field"
     value="{{submission_field}}"
   />
+  <p class="small text-muted">Current submission</p>
+  <br/>
+  <img
+    id="preview-image"
+    class="img-fluid rounded border border-secondary mb-1 d-none"
+    style="max-height: 300px;"
+  />
+  <br/>
   <button 
     id="scan-submission-button"
     type="button" 
@@ -39,12 +47,4 @@ $(function() {
   <p class="text-muted small mt-1">
     You’ll use a mobile device to submit work.
   </p>
-
-    <div class="card mb-4">
-        <div class="flex-grow=1 p-3">
-            <i class="file-status-icon far fa-circle" aria-hidden="true"></i>
-            <span class="ms-1">Submission</span>
-            <p class="text-muted small mb-0">not uploaded</p>
-        </div>
-    </div>
 </div>

@@ -200,9 +200,10 @@ export async function initExpress(): Promise<Express> {
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
-    upload.single('file'),
+    upload.single('file'), 
   );
   app.post('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', upload.single('file'));
+
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
     upload.single('file'),
@@ -211,6 +212,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
     upload.single('file'),
   );
+
+  app.post(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/element/:element_uuid',
+    upload.single('file'),
+  );
+
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -260,6 +267,10 @@ export async function initExpress(): Promise<Express> {
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture/element/:element_uuid',
     upload.single('file'),
   );
 
@@ -1397,10 +1408,19 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
 
+
+
+
+
   app.use(
-    '/pl/variants/:variant_id(\\d+)/external_image_capture',
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
+  
+
+
+
+
   
   if (config.devMode) {
     app.use(
@@ -1505,6 +1525,12 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
+
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+  );
+  
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,

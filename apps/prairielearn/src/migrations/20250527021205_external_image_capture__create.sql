@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS external_image_capture (
+  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMPTZ DEFAULT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
+  element_id TEXT NOT NULL,
+  file_id BIGINT REFERENCES files ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT external_image_capture_variant_element_uuid_unique
+    UNIQUE (variant_id, element_id)
+);
