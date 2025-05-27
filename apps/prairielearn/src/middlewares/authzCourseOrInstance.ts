@@ -130,7 +130,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     'question-sharing',
     res.locals,
   );
-  res.locals.lti_enabled = config.hasLti && (await features.enabledFromLocals('lti', res.locals));
 
   // Check if it is necessary to request a user data override - if not, return
   const overrides: Override[] = [];

@@ -4,7 +4,7 @@ Learning Management System (LMS) integration is supported via LTI 1.3. Reach out
 
 Learning Tools Interoperability (LTI) provides app integration between Learning Management Systems (LMSes) like Canvas, Moodle, etc. and PrairieLearn. It includes single sign on from the LMS with additional features like course context information and roles. Version 1.3 enhances LTI to include an API for asynchronous two-way updates for assessments, scores, and rosters.
 
-LTI 1.3 is configured on an institution level by establishing a trust relationship between the LMS and PrairieLearn. LMS admins can decide where to apply that integration (per course, per account, per institution).
+LTI 1.3 is configured on an institution level by establishing a trust relationship between the LMS and PrairieLearn. LMS admins can decide where to apply that integration (per course, per account, per institution). Instructors will have to reach out to their LMS admins to setup PrairieLearn integration.
 
 ## Information LMS administrators will provide
 
