@@ -23,11 +23,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "name": answer_name,
-        "variant_id": data["options"].get("variant_id", ""),
         "course_id": data["options"].get("course_id", ""),
         "course_instance_id": data["options"].get("course_instance_id", ""),
-        "instance_question_id": data["options"].get("instance_question_id", ""),
         "question_id": data["options"].get("question_id", ""),
+        "instance_question_id": data["options"].get("instance_question_id", ""),
+        "variant_id": data["options"].get("variant_id", ""),
         "uuid": pl.get_uuid(),
     }
 

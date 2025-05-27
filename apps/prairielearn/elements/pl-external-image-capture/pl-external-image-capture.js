@@ -1,11 +1,23 @@
-/* global QRCode */
+/* global QRCode, io */
 
 (() => {
     class PLExternalImageCapture {
         constructor(
-            qr_code_url
+            qr_code_url,
+            course_id,
+            course_instance_id,
+            question_id,
+            instance_question_id,
+            variant_id,
+            answer_name
         ) {
             this.qr_code_url = qr_code_url;
+            this.course_id = course_id;
+            this.course_instance_id = course_instance_id;
+            this.question_id = question_id;
+            this.instance_question_id = instance_question_id;
+            this.variant_id = variant_id;
+            this.answer_name = answer_name;
 
             const scanSubmissionButton = document.querySelector('#scan-submission-button');
             if (!scanSubmissionButton) {
@@ -36,6 +48,25 @@
             } else {
                 console.error('QR code element not found');
             }
+        }
+
+        listenForSubmission() {
+            const socket = io('/submission', {
+                course_id: this.course_id,
+                course_instance_id: this.course_instance_id,
+                question_id: this.question_id,
+                instance_question_id: this.instance_question_id,
+                variant_id: this.variant_id,
+                answer_name: this.answer_name
+            });
+
+            socket.on('init', (msg, callback) => {
+
+            })
+
+            socket.on('change:submission', () => {
+                this.loadSubmission();
+            })            
         }
 
         async loadSubmission() {

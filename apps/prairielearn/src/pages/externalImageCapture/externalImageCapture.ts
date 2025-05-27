@@ -7,6 +7,7 @@ import { queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { ExternalImageCaptureSchema, VariantSchema } from '../../lib/db-types.js';
 import { getFile, uploadFile } from '../../lib/file-store.js';
+import * as socketServer from '../../lib/socket-server.js';
 import { selectAndAuthzVariant, selectUserOwnsVariant } from '../../models/variant.js';
 
 import { ExternalImageCapture, ExternalImageCaptureSuccess } from './externalImageCapture.html.js';
@@ -165,6 +166,21 @@ router.post(
                 file_id,
             }
         );
+
+        // Emit a socket event to notify the client that the image has been captured
+
+
+
+        const socket = socketServer.io.of('/submission', {
+            course_id: res.locals.course.id,
+            course_instance_id: res.locals.course_instance?.id ?? '',
+            question_id: res.locals.question.id,
+            instance_question_id: res.locals.instance_question?.id ?? '',
+            variant_id: variantId,
+            answer_name
+        });
+
+        socket.emit('change:submission');
 
         res.send(ExternalImageCaptureSuccess({
             resLocals: res.locals,
