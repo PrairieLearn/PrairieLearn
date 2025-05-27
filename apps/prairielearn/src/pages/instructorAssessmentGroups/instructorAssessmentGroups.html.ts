@@ -460,7 +460,16 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     body: html`
       <div class="mb-3">
         <label class="form-label" for="formName">Group Name</label>
-        <input type="text" class="form-control" id="formName" name="group_name" />
+        <input
+          type="text"
+          class="form-control"
+          id="formName"
+          name="group_name"
+          aria-describedby="addGroupNameHelp"
+        />
+        <small id="addGroupNameHelp" class="form-text text-muted">
+          Keep blank to use a default name.
+        </small>
       </div>
       <div class="mb-3">
         <label class="form-label" for="addGroupUids">UIDs</label>
