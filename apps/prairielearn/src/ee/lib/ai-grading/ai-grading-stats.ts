@@ -33,33 +33,6 @@ export interface AIGradingStats {
 export type WithAIGradingStats<T> = T & AIGradingStats;
 
 /**
- * Selects the latest human and AI grading jobs for a given list of instance questions
- * Returns a mapping of instance question ids to grading jobs
- */
-async function selectGradingJobsOfInstanceQuestions(
-  instance_questions: { id: string }[],
-): Promise<Record<string, GradingJobInfo[]>> {
-  const instance_question_ids = instance_questions.map((iq) => iq.id);
-
-  const grading_jobs = await queryRows(
-    sql.select_ai_and_human_grading_jobs_batch,
-    { instance_question_ids },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
-  );
-
-  const mapping: Record<string, GradingJobInfo[]> = grading_jobs.reduce(
-    (acc, item) => {
-      if (!acc[item.instance_question_id]) acc[item.instance_question_id] = [];
-      acc[item.instance_question_id].push(item);
-      return acc;
-    },
-    {} as Record<string, GradingJobInfo[]>,
-  );
-
-  return mapping;
-}
-
-/**
  * Fills in missing columns for manual grading assessment question page.
  * This includes organizing information about past graders
  * and calculating point and/or rubric difference between human and AI.
@@ -74,7 +47,38 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     DateFromISOString,
   );
 
-  const gradingJobMapping = await selectGradingJobsOfInstanceQuestions(instance_questions);
+  const instance_question_ids = instance_questions.map((iq) => iq.id);
+  const grading_jobs = await queryRows(
+    sql.select_ai_and_human_grading_jobs_batch,
+    { instance_question_ids },
+    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+  );
+  const gradingJobMapping = grading_jobs.reduce(
+    (acc, item) => {
+      if (!acc[item.instance_question_id]) acc[item.instance_question_id] = [];
+      acc[item.instance_question_id].push(item);
+      return acc;
+    },
+    {} as Record<string, GradingJobInfo[]>,
+  );
+
+  const manual_rubric_grading_ids = Object.values(gradingJobMapping)
+    .flatMap((grading_jobs) => grading_jobs.map((item) => item.manual_rubric_grading_id))
+    .filter((item) => item !== null);
+  const rubric_items = await queryRows(
+    sql.select_rubric_grading_items_batch,
+    { manual_rubric_grading_ids },
+    RubricItemSchema.extend({ rubric_grading_id: IdSchema }),
+  );
+  const rubricItemMapping = manual_rubric_grading_ids.reduce(
+    (acc, manual_rubric_grading_id) => {
+      acc[manual_rubric_grading_id] = rubric_items.filter(
+        (rubric_item) => rubric_item.rubric_grading_id === manual_rubric_grading_id,
+      );
+      return acc;
+    },
+    {} as Record<string, RubricItem[]>,
+  );
 
   const results: WithAIGradingStats<T>[] = [];
 
@@ -122,16 +126,8 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     if (!manualGradingJob.manual_rubric_grading_id || !aiGradingJob.manual_rubric_grading_id) {
       continue;
     }
-    const manualItems = await queryRows(
-      sql.select_rubric_grading_items,
-      { manual_rubric_grading_id: manualGradingJob.manual_rubric_grading_id },
-      RubricItemSchema,
-    );
-    const aiItems = await queryRows(
-      sql.select_rubric_grading_items,
-      { manual_rubric_grading_id: aiGradingJob.manual_rubric_grading_id },
-      RubricItemSchema,
-    );
+    const manualItems = rubricItemMapping[manualGradingJob.manual_rubric_grading_id];
+    const aiItems = rubricItemMapping[aiGradingJob.manual_rubric_grading_id];
     const fpItems = aiItems
       .filter((item) => !rubricListIncludes(manualItems, item))
       .map((item) => ({ ...item, false_positive: true }));
