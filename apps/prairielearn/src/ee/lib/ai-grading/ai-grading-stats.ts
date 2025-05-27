@@ -40,36 +40,22 @@ async function selectGradingJobsOfInstanceQuestions(
   instance_questions: { id: string }[],
 ): Promise<Record<string, GradingJobInfo[]>> {
   const instance_question_ids = instance_questions.map((iq) => iq.id);
-  const submission_instance_question_ids = await queryRows(
-    sql.select_latest_submission_ids,
-    { instance_question_ids },
-    z.object({ submission_id: IdSchema, instance_question_id: IdSchema }),
-  );
 
-  const submission_ids = submission_instance_question_ids.map((item) => item.submission_id);
-  const submission_grading_jobs = await queryRows(
+  const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_batch,
-    { submission_ids },
-    GradingJobInfoSchema.extend({ submission_id: IdSchema }),
+    { instance_question_ids },
+    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
 
-  const submissionToGradingJobMapping: Record<string, GradingJobInfo[]> =
-    submission_grading_jobs.reduce(
-      (acc, item) => {
-        if (!acc[item.submission_id]) acc[item.submission_id] = [];
-        acc[item.submission_id].push(item);
-        return acc;
-      },
-      {} as Record<string, GradingJobInfo[]>,
-    );
-
-  const mapping: Record<string, GradingJobInfo[]> = submission_instance_question_ids.reduce(
+  const mapping: Record<string, GradingJobInfo[]> = grading_jobs.reduce(
     (acc, item) => {
-      acc[item.instance_question_id] = submissionToGradingJobMapping[item.submission_id] || [];
+      if (!acc[item.instance_question_id]) acc[item.instance_question_id] = [];
+      acc[item.instance_question_id].push(item);
       return acc;
     },
     {} as Record<string, GradingJobInfo[]>,
   );
+
   return mapping;
 }
 
@@ -102,7 +88,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     };
     results.push(instance_question);
 
-    const grading_jobs = gradingJobMapping[instance_question.id];
+    const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
     let manualGradingJob: GradingJobInfo | null = null;
     let aiGradingJob: GradingJobInfo | null = null;
