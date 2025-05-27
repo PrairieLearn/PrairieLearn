@@ -1,11 +1,11 @@
 import path from 'path';
 
-import { assert } from 'chai';
 import express from 'express';
 import fs from 'fs-extra';
 import getPort from 'get-port';
 import fetch from 'node-fetch';
 import tmp from 'tmp-promise';
+import { afterEach, assert, describe, it } from 'vitest';
 
 import {
   type CompiledAssetsOptions,

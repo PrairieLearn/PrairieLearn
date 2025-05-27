@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import type { Assessment, CourseInstance } from '../lib/db-types.js';
@@ -20,12 +20,12 @@ async function testFile(urlPath: string, expectedContents: string) {
 }
 
 describe('Client files endpoints', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   let courseInstance: CourseInstance;
   let assessment: Assessment;
-  before(async () => {
+  beforeAll(async () => {
     courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
     assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,

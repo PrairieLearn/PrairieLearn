@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -10,16 +10,14 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
-  this.timeout(60000);
-
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', helperServer.before());
+  beforeAll(helperServer.before());
 
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   it('visits the landing page of default assessment', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam, {
