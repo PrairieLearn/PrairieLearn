@@ -805,7 +805,6 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
     title: 'Copy question',
     formAction: question_copy_targets[0]?.copy_url ?? '',
     formClass: 'js-copy-question-form',
-    formName: 'copy-question-form',
     body:
       question_copy_targets.length === 0
         ? html`

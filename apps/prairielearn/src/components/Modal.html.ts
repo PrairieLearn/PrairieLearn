@@ -12,7 +12,6 @@ interface ModalProps {
   formMethod?: string;
   formAction?: string;
   formClass?: string;
-  formName?: string;
 }
 
 export function Modal({
@@ -27,7 +26,6 @@ export function Modal({
   formMethod = 'POST',
   formAction,
   formClass,
-  formName,
 }: ModalProps): HtmlSafeString {
   const titleId = `${id}-title`;
   const modal = html`
@@ -50,7 +48,6 @@ export function Modal({
     <form
       method="${formMethod}"
       autocomplete="off"
-      ${formName ? html`name="${formName}"` : ''}
       ${formEncType ? html`enctype="${formEncType}"` : ''}
       ${formAction ? html`action="${formAction}"` : ''}
       ${formClass ? html`class="${formClass}"` : ''}

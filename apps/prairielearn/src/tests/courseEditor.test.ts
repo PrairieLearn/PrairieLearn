@@ -9,6 +9,7 @@ import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
@@ -47,7 +48,17 @@ const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/set
 const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
 const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
-const testEditData = [
+interface EditData {
+  url?: string;
+  formSelector: string;
+  button?: string;
+  action?: string;
+  files: Set<string>;
+  info?: string;
+  data?: Record<string, string | number>;
+}
+
+const testEditData: EditData[] = [
   {
     url: questionsUrl,
     formSelector: '#createQuestionModal',
@@ -297,10 +308,10 @@ const testEditData = [
   },
 ];
 
-const publicCopyTestData = [
+const publicCopyTestData: EditData[] = [
   {
     url: `${baseUrl}/public/course/2/question/2/preview`,
-    formSelector: 'form[name="copy-question-form"]',
+    formSelector: 'form.js-copy-question-form',
     data: {
       course_id: 2,
       question_id: 2,
@@ -445,14 +456,17 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      let url: string;
-      if (!params.action) {
-        const elemList = locals.$(params.formSelector);
-        assert.lengthOf(elemList, 1);
-        url = `${siteUrl}${elemList[0].attribs['action']}`;
-      } else {
-        url = params.url || locals.url;
-      }
+      const url = run(() => {
+        // to handle the difference between POSTing to the same URL as the page you are
+        // on vs. POSTing to a different URL
+        if (!params.action) {
+          const elemList = locals.$(params.formSelector);
+          assert.lengthOf(elemList, 1);
+          return `${siteUrl}${elemList[0].attribs['action']}`;
+        } else {
+          return params.url || locals.url;
+        }
+      });
       const res = await fetch(url, {
         method: 'POST',
         body: new URLSearchParams({
@@ -548,20 +562,20 @@ async function createSharedCourse() {
       type: 'v3',
       title: 'Shared publicly',
       topic: 'TOPIC HERE',
+      sharePublicly: true,
+      shareSourcePublicly: true,
     },
   };
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
       questions: [
         {
-          id: `${PUBLICLY_SHARED_QUESTION_QID}`,
+          id: PUBLICLY_SHARED_QUESTION_QID,
           points: 1,
         },
       ],
     },
   ];
-  sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
-  sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].shareSourcePublicly = true;
 
   // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
