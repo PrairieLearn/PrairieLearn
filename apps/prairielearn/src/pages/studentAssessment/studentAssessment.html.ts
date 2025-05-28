@@ -212,21 +212,26 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <label for="groupNameInput">Group name</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="groupNameInput"
-                    name="groupName"
-                    maxlength="30"
-                    placeholder="e.g. teamOne"
-                    aria-label="Group name"
-                    aria-describedby="groupNameHelp"
-                  />
-                  <small id="groupNameHelp" class="form-text text-muted">
-                    Group names can only contain letters and numbers, with maximum length of 30
-                    characters. If you leave this blank, a group name will be generated for you.
-                  </small>
+                  ${groupConfig.student_authz_group_name
+                    ? html`
+                        <label for="groupNameInput">Group name</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="groupNameInput"
+                          name="groupName"
+                          maxlength="30"
+                          placeholder="e.g. teamOne"
+                          aria-label="Group name"
+                          aria-describedby="groupNameHelp"
+                        />
+                        <small id="groupNameHelp" class="form-text text-muted">
+                          Group names can only contain letters and numbers, with maximum length of
+                          30 characters. If you leave this blank, a group name will be generated for
+                          you.
+                        </small>
+                      `
+                    : ''}
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />

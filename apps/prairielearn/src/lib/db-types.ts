@@ -548,6 +548,7 @@ export const GroupConfigSchema = z.object({
   minimum: z.number().nullable(),
   name: z.string().nullable(),
   student_authz_create: z.boolean().nullable(),
+  student_authz_group_name: z.boolean(),
   student_authz_leave: z.boolean().nullable(),
   student_authz_join: z.boolean().nullable(),
 });

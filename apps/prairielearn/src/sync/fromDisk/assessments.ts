@@ -287,6 +287,7 @@ function getParamsForAssessment(
     group_max_size: assessment.groupMaxSize || null,
     group_min_size: assessment.groupMinSize || null,
     student_group_create: !!assessment.studentGroupCreate,
+    student_group_name: assessment.studentGroupName ?? true,
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
