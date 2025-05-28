@@ -10,16 +10,6 @@ WHERE
   AND lci.id = $unsafe_lti13_course_instance_id
   AND li.deleted_at IS NULL;
 
--- BLOCK select_assessment_in_course_instance
-SELECT
-  *
-FROM
-  assessments
-WHERE
-  id = $unsafe_assessment_id
-  AND course_instance_id = $course_instance_id
-  AND deleted_at IS NULL;
-
 -- BLOCK select_lti13_assessments
 SELECT
   la.*

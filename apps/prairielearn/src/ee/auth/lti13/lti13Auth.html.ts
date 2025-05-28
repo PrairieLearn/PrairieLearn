@@ -57,9 +57,7 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
       </head>
       <body>
         <main id="content" class="m-3">
-          <!-- We have to use a named target here for window.opener to work.
-               Randomize it or load to same window each time?
-          -->
+          <!-- We have to use a named target here for window.opener to work. -->
           <form id="interceptForm" method="POST" action="" target="PrairieLearnFromIframe">
             ${Object.entries(parameters).map(
               ([key, value]) =>
