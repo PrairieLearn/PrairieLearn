@@ -116,7 +116,10 @@
       if (!enabled) return;
       const range = quill.getSelection(true) || { index: 0, length: 0 };
       const selectedText = quill.getText(range.index, range.length);
-      const form = `
+
+      const formulaButton = quill.getModule('toolbar').container.querySelector('.ql-formula');
+      const popoverContent = document.createElement('div');
+      popoverContent.innerHTML = `
             <form>
               <div class="mb-3">
                 <label for="rte-formula-input-${uuid}">Formula:</label>
@@ -128,26 +131,25 @@
               <button type="submit" class="btn btn-primary">Confirm</button>
             </form>
             `;
-      const content = document.createElement('div');
-      content.innerHTML = form;
-      const popover = new bootstrap.Popover(baseElement, {
-        content,
+      const popover = new bootstrap.Popover(formulaButton, {
+        content: popoverContent,
         html: true,
-        placement: 'bottom',
         container: '.question-container',
         trigger: 'manual',
+        placement: 'bottom',
       });
-      const input = content.querySelector('input');
+      const input = popoverContent.querySelector('input');
       input.value = selectedText;
       input.addEventListener('input', async () => {
         const value = input.value.trim();
         const html = value
           ? (await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value)).outerHTML
           : '<div class="text-muted">Type a formula to preview</div>';
-        content.querySelector(`#rte-formula-input-preview-${uuid}`).innerHTML = html;
+        popoverContent.querySelector(`#rte-formula-input-preview-${uuid}`).innerHTML = html;
       });
       input.dispatchEvent(new InputEvent('input')); // Trigger input event to show initial preview
-      content.querySelector('form').addEventListener('submit', (e) => {
+
+      popoverContent.querySelector('form').addEventListener('submit', (e) => {
         e.preventDefault();
         popover.hide();
         const value = input.value.trim();
