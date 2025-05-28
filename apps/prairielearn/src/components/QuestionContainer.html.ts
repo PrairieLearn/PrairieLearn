@@ -54,6 +54,7 @@ export function QuestionContainer({
     submissions,
     submissionHtmls,
     answerHtml,
+    __csrf_token
   } = resLocals;
 
   return html`
@@ -62,6 +63,7 @@ export function QuestionContainer({
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
+      data-csrf-token="${__csrf_token}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`

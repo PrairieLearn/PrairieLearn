@@ -28,6 +28,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "question_id": data["options"].get("question_id", ""),
         "instance_question_id": data["options"].get("instance_question_id", ""),
         "variant_id": data["options"].get("variant_id", ""),
+        "csrf_token": data["options"].get("csrf_token", ""),
         "uuid": pl.get_uuid(),
     }
 

@@ -96,10 +96,6 @@ router.post(
 
         // TODO: Use the correct no access pages, or make some new ones
 
-        console.log('Variant ID', variantId);
-        console.log('answer_name', answer_name);
-        console.log('User ID', userId);
-
         if (!variantId || !answer_name || !userId) {
             res.status(400).send('Missing required parameters');
             return;
@@ -119,7 +115,6 @@ router.post(
         }
 
         // Create a FileUpload object and ExternalImageCapture object
-
         const variant = await queryRow(
             sql.select_variant_by_id,
             { variant_id: variantId },

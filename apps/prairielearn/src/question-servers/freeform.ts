@@ -1314,12 +1314,14 @@ async function renderPanel(
     course_element_files_url: assets.courseElementAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
-    ),
+    ), 
     course_element_extension_files_url: assets.courseElementExtensionAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+
+    csrf_token: locals.__csrf_token,
 
     variant_id: variant.id, // TODO: Is it fine to expose all these IDs?
     course_id: course.id,
