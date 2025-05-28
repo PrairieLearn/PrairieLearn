@@ -36,6 +36,8 @@ result <- tryCatch({
 
     debug <- FALSE
 
+    options(width=100)
+
     cat("[pltest] Using plr (", format(packageVersion("plr")), "), ",
         "ttdo (", format(packageVersion("ttdo")), "), ",
         "tinysnapshot (", format(packageVersion("tinysnapshot")), ")\n", sep="")
@@ -54,7 +56,8 @@ result <- tryCatch({
         cat("[pltest] done question_details\n\n")
     }
 
-    print(list.files("bin/"))
+    print("test")
+    print(list.files("../student/"))
 
     # List all files in the 'bin/' directory
     ipynb_files <- list.files("bin", pattern = "\\.ipynb$", full.names = TRUE)
@@ -124,7 +127,8 @@ result <- tryCatch({
     }
     
     ## Aggregate test results and process NAs as some question may have exited
-    res <- merge(test_results, question_details, by = "file", all = TRUE)
+    #res <- merge(test_results, question_details, by = "file", all = TRUE)
+    res <- cbind(test_results, question_details)
     ## Correct answers get full points, other get nothing
     res$points <- ifelse( !is.na(res$result) & res$result==TRUE,  res$max_points, 0)
     ## For false answer with ttdo support we collate call and diff output (from diffobj::diffPrint)
