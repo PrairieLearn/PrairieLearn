@@ -141,8 +141,10 @@
       input.value = selectedText;
       input.addEventListener('input', async () => {
         const value = input.value.trim();
-        const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
-        document.getElementById(`rte-formula-input-preview-${uuid}`).innerHTML = html.innerHTML;
+        const html = value
+          ? (await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value)).outerHTML
+          : '<div class="text-muted">Type a formula to preview</div>';
+        content.querySelector(`#rte-formula-input-preview-${uuid}`).innerHTML = html;
       });
       input.dispatchEvent(new InputEvent('input')); // Trigger input event to show initial preview
       content.querySelector('form').addEventListener('submit', (e) => {
