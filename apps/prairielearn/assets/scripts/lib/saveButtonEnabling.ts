@@ -32,7 +32,7 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
     if (
       (e.target instanceof HTMLInputElement &&
         ((e.target.type === 'checkbox' && e.target.checked === e.target.defaultChecked) ||
-          (e.target.type !== 'checkbox' && e.target.value === e.target.defaultValue))) ||
+        (e.target.type !== 'checkbox' && e.target.value === e.target.defaultValue))) ||
       (e.target instanceof HTMLTextAreaElement && e.target.value === e.target.defaultValue)
     ) {
       valueHasChanged[(e.target as HTMLElement).id] = false;
