@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { getCanonicalHost } from '../../../lib/url.js';
-import { selectAssessmentInCourseInstance } from '../../../models/assessment.js';
+import { selectAssessments } from '../../../models/assessment.js';
 import {
   Lti13Claim,
   validateLti13CourseInstance,
@@ -15,12 +15,11 @@ import {
 } from '../../lib/lti13.js';
 
 import {
-  AssessmentRowSchema,
   InstructorInstanceAdminLti13AssignmentSelection,
   InstructorInstanceAdminLti13AssignmentConfirmation,
   InstructorInstanceAdminLti13AssignmentDetails,
 } from './instructorInstanceAdminLti13AssignmentSelection.html.js';
-import { AssessmentSchema } from '../../../lib/db-types.js';
+import { AssessmentSchema, Lti13AssessmentsSchema } from '../../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -41,21 +40,32 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const assessments = await queryRows(
-      sql.select_assessments,
+    const assessments = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
+
+    const lti13_assessments = await queryRows(
+      sql.select_lti13_assessments,
       {
+        unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
-      AssessmentRowSchema,
+      Lti13AssessmentsSchema,
     );
+    console.log(assessments);
+
+    const lti13AssessmentsByAssessmentId = {};
+
+    for (const a of lti13_assessments) {
+      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
+    }
 
     res.send(
       InstructorInstanceAdminLti13AssignmentSelection({
         resLocals: res.locals,
         assessments,
+        assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        lti13AssessmentsByAssessmentId,
       }),
     );
   }),
@@ -74,10 +84,11 @@ router.post(
     );
 
     if (req.body.__action === 'details') {
-      const assessment = await selectAssessmentInCourseInstance({
-        unsafe_assessment_id: req.body.unsafe_assessment_id,
+      const assessments = await selectAssessments({
         course_instance_id: res.locals.course_instance.id,
       });
+
+      const assessment = assessments.find((a) => a.id === req.body.unsafe_assessment_id);
 
       console.log(assessment);
 
@@ -85,10 +96,15 @@ router.post(
         InstructorInstanceAdminLti13AssignmentDetails({ resLocals: res.locals, assessment }),
       );
     } else if (req.body.__action === 'confirm') {
-      const assessment = await selectAssessmentInCourseInstance({
-        unsafe_assessment_id: req.body.unsafe_assessment_id,
+      const assessments = await selectAssessments({
         course_instance_id: res.locals.course_instance.id,
       });
+
+      const assessment = assessments.find((a) => a.id === req.body.unsafe_assessment_id);
+
+      if (!assessment) {
+        throw new error.HttpStatusError(400, `Missing assessment`);
+      }
 
       console.log(assessment);
 
@@ -104,7 +120,6 @@ router.post(
       );
 
       const ltiClaim = new Lti13Claim(req);
-      ltiClaim.dump();
 
       /* https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
        * and
@@ -124,8 +139,8 @@ router.post(
         'https://purl.imsglobal.org/spec/lti-dl/claim/content_items': [
           {
             type: 'ltiResourceLink',
-            url: `${host}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
-            title: assessment.title,
+            url: `${host}/pl/course_instance/${res.locals.course_instance_id}/assessment/${assessment.id}`,
+            title: `${assessment.label}: ${assessment.title}`,
             window: {
               targetName: '_blank',
             },

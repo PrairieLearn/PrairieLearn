@@ -1,23 +1,21 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
-import { LineitemSchema } from '../../lib/lti13.js';
+import { type Lti13Assessments } from '../../../lib/db-types.js';
+import type { AssessmentRow } from '../../../models/assessment.js';
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
-  lineitem: LineitemSchema.nullish(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
-
-export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, assessments }) {
+export function InstructorInstanceAdminLti13AssignmentSelection({
+  resLocals,
+  assessments,
+  assessmentsGroupBy,
+  lti13AssessmentsByAssessmentId,
+}: {
+  resLocals: Record<string, any>;
+  assessments: AssessmentRow[];
+  assessmentsGroupBy: 'Set' | 'Module';
+  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -37,20 +35,22 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
           <form method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="__action" value="confirm" />
-            <table>
+            <table class="table table-sm">
               <tr>
                 <th colspan="2">Assessment by group</th>
                 <th>Linked in LMS</th>
               </tr>
               ${assessments.map((row) => {
-                const start_new_assessment_group = row.start_new_assessment_group
-                  ? html`<tr>
-                      <th colspan="3">${row.assessment_group_heading}</th>
-                    </tr>`
-                  : '';
-
                 return html`
-                  ${start_new_assessment_group}
+                  ${row.start_new_assessment_group
+                    ? html`<tr>
+                        <th colspan="3">
+                          ${assessmentsGroupBy === 'Set'
+                            ? row.assessment_set.heading
+                            : row.assessment_module.heading}
+                        </th>
+                      </tr>`
+                    : ''}
                   <tr>
                     <td>
                       <label for="option-${row.id}">
@@ -61,7 +61,7 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
                           value="${row.id}"
                           required
                         />
-                        <span class="badge color-${row.color}">${row.label}</span>
+                        <span class="badge color-${row.assessment_set.color}">${row.label}</span>
                       </label>
                     </td>
                     <td>
@@ -74,8 +74,7 @@ export function InstructorInstanceAdminLti13AssignmentSelection({ resLocals, ass
                     </td>
                     <td>
                       <label for="option-${row.id}">
-                        <!-- ${row.tid} -->
-                        ${row.lineitem?.label ?? ''}
+                        ${lti13AssessmentsByAssessmentId[row.id]?.lineitem?.label ?? ''}
                       </label>
                     </td>
                   </tr>
@@ -111,7 +110,8 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
         ${Navbar({ resLocals })}
         <main id="content" class="m-3">
           <p>
-            Confirmation: You selected PrairieLearn assessment <strong>${assessment.title}</strong>
+            Confirmation: You selected PrairieLearn assessment
+            <strong>${assessment.label}: ${assessment.title}</strong>
           </p>
 
           <p>Extra settings: Rename, set points, open in new window, ....?</p>
