@@ -73,7 +73,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals,
+        locals: res.locals as any,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,

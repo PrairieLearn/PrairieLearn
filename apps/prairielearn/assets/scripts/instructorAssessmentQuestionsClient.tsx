@@ -1,19 +1,18 @@
+import { signal } from '@preact/signals';
 import { Dropdown, Modal } from 'bootstrap';
 import { Fragment, h, render } from 'preact';
 import React, { useEffect, useState } from 'preact/hooks';
-import { signal } from '@preact/signals';
+
+import { decodeData, onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
 import { SyncProblemButton } from '../../src/components/SyncProblemButton.html.js';
-
-import { onDocumentReady, templateFromAttributes, decodeData } from '@prairielearn/browser-utils';
+import {
+  type AssessmentAlternativeQuestion,
+  type AssessmentQuestionRow,
+  type Zone,
+} from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 import { histmini } from './lib/histmini.js';
-
-import {
-  AssessmentAlternativeQuestion,
-  AssessmentQuestionRow,
-  Zone,
-} from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 onDocumentReady(() => {
   const assessmentQuestionsTable = document.querySelector(
@@ -26,13 +25,13 @@ onDocumentReady(() => {
     assessmentQuestionsTable.dataset.hasCoursePermissionPreview === 'true';
   const hasCourseInstancePermissionEdit =
     assessmentQuestionsTable.dataset.hasCourseInstancePermissionEdit === 'true';
-  let questionsData = decodeData('assessment-questions-data');
-  let editMode = signal(false);
-  let editedQuestion = signal<AssessmentQuestionRow | null>(null);
-  let editedZone = signal<Zone | null>(null);
+  const questionsData = decodeData('assessment-questions-data');
+  const editMode = signal(false);
+  const editedQuestion = signal<AssessmentQuestionRow | null>(null);
+  const editedZone = signal<Zone | null>(null);
   const editModal = document.querySelector('.js-edit-modal') as HTMLElement;
 
-  let zones: Zone[] = [];
+  const zones: Zone[] = [];
   let currentZone: Zone = {
     title: null,
     maxPoints: null,
@@ -71,21 +70,29 @@ onDocumentReady(() => {
     }
   });
   zones.push(currentZone);
-  let resolvedZones = signal(zones);
+  const resolvedZones = signal(zones);
 
   function EditModeButtons() {
     return (
       <div class="ml-auto">
         {!editMode.value ? (
-          <button class="btn btn-sm btn-light" onClick={() => (editMode.value = true)}>
+          <button
+            class="btn btn-sm btn-light"
+            type="button"
+            onClick={() => (editMode.value = true)}
+          >
             <i class="fa fa-edit" aria-hidden="true"></i> Edit assessment questions
           </button>
         ) : (
           <span class="js-edit-mode-buttons">
-            <button class="btn btn-sm btn-light mx-1" onClick={() => handleSave()}>
+            <button class="btn btn-sm btn-light mx-1" type="button" onClick={() => handleSave()}>
               <i class="fa fa-save" aria-hidden="true"></i> Save and sync
             </button>
-            <button class="btn btn-sm btn-light" onClick={() => window.location.reload()}>
+            <button
+              class="btn btn-sm btn-light"
+              type="button"
+              onClick={() => window.location.reload()}
+            >
               Cancel
             </button>
           </span>
@@ -420,6 +427,7 @@ onDocumentReady(() => {
               <td class="align-content-center">
                 <button
                   class="btn btn-sm btn-secondary"
+                  type="button"
                   onClick={() =>
                     handleEditQuestion({
                       question,
@@ -435,6 +443,7 @@ onDocumentReady(() => {
               <td class="align-content-center">
                 <button
                   class="btn btn-sm btn-danger"
+                  type="button"
                   onClick={() =>
                     handleDeleteQuestion({
                       zoneIndex,
@@ -503,7 +512,11 @@ onDocumentReady(() => {
           </td>
           <td>
             {question.tags?.map((tag) => {
-              return <span class={`badge color-${tag.color}`}>{tag.name}</span>;
+              return (
+                <span class={`badge color-${tag.color}`} key={tag.id}>
+                  {tag.name}
+                </span>
+              );
             })}
           </td>
           <td>
@@ -517,9 +530,7 @@ onDocumentReady(() => {
           <td>{question.max_manual_points || '—'}</td>
           {showAdvanceScorePercCol ? (
             <td
-              class="${question.assessment_question_advance_score_perc === 0
-                                 ? 'text-muted'
-                                 : ''}"
+              class={question.assessment_question_advance_score_perc === 0 ? 'text-muted' : ''}
               data-testid="advance-score-perc"
             >
               {question.assessment_question_advance_score_perc}%
@@ -547,6 +558,7 @@ onDocumentReady(() => {
                 <a
                   href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
                   class={`btn btn-badge color-${assessment.color}`}
+                  key={assessment.assessment_id}
                 >
                   {assessment.label}
                 </a>
@@ -591,8 +603,9 @@ onDocumentReady(() => {
 
     const zoneRowMap = resolvedZones.value.map((zone, zoneIndex) => {
       return (
-        <>
-          <tr key={`zone-${zoneIndex}`}>
+        // We must use explicit <Fragement> syntax to include keys.
+        <Fragment key={`zone-${zoneIndex}`}>
+          <tr>
             {editMode.value ? (
               <>
                 <td class="align-content-center">
@@ -620,6 +633,7 @@ onDocumentReady(() => {
                 <td class="align-content-center">
                   <button
                     class="btn btn-sm btn-secondary"
+                    type="button"
                     onClick={() => handleEditZone({ zone, zoneIndex })}
                   >
                     <i class="fa fa-edit" aria-hidden="true"></i>
@@ -646,7 +660,7 @@ onDocumentReady(() => {
               ? question.alternatives.length
               : 1;
             return (
-              <>
+              <Fragment key={`question-${zoneIndex}-${questionIndex}`}>
                 {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
                   <tr>
                     {editMode ? <td></td> : ''}
@@ -679,14 +693,18 @@ onDocumentReady(() => {
                       },
                     )
                   : questionRow({ question, zoneIndex, questionIndex })}
-              </>
+              </Fragment>
             );
           })}
           {editMode.value ? (
             <tr>
               <td></td>
               <td colspan={nTableCols - 1}>
-                <button class="btn btn-sm" onClick={() => handleAddQuestion(zoneIndex)}>
+                <button
+                  class="btn btn-sm"
+                  type="button"
+                  onClick={() => handleAddQuestion(zoneIndex)}
+                >
                   <i class="fa fa-add" aria-hidden="true"></i> Add Question to Zone
                 </button>
               </td>
@@ -694,7 +712,7 @@ onDocumentReady(() => {
           ) : (
             ''
           )}
-        </>
+        </Fragment>
       );
     });
 
@@ -1162,7 +1180,7 @@ onDocumentReady(() => {
       advanceScorePerc?: number;
       gradeRateMinutes?: number;
     }
-    const zones = resolvedZones.value.map((zone, i) => {
+    const zones = resolvedZones.value.map((zone) => {
       const resolvedZone: Zone = Object.fromEntries(
         Object.entries(zone).filter(([_, value]) => value && value !== 0),
       );
@@ -1231,6 +1249,8 @@ const newQuestion: AssessmentQuestionRow = {
   incremental_submission_score_array_averages: null,
   incremental_submission_score_array_variances: null,
   init_points: null,
+  json_comment: null,
+  json_grade_rate_minutes: null,
   last_submission_score_hist: null,
   last_submission_score_variance: null,
   manual_rubric_id: null,
