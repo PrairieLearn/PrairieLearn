@@ -112,6 +112,51 @@
 
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
+    quill.getModule('toolbar').addHandler('formula', (enabled) => {
+      if (!enabled) return;
+      const range = quill.getSelection(true) || { index: 0, length: 0 };
+      const selectedText = quill.getText(range.index, range.length);
+      const form = `
+            <form>
+              <div class="mb-3">
+                <label for="rte-formula-input-${uuid}">Formula:</label>
+                <input type="text" class="form-control" id="rte-formula-input-${uuid}" placeholder="Enter Formula" />
+              </div>
+              <div class="mb-3" id="rte-formula-input-preview-${uuid}">
+              </div>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+              <button type="submit" class="btn btn-primary">Confirm</button>
+            </form>
+            `;
+      const content = document.createElement('div');
+      content.innerHTML = form;
+      const popover = new bootstrap.Popover(baseElement, {
+        content,
+        html: true,
+        placement: 'bottom',
+        container: '.question-container',
+        trigger: 'manual',
+      });
+      const input = content.querySelector('input');
+      input.value = selectedText;
+      input.addEventListener('input', async () => {
+        const value = input.value.trim();
+        const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
+        document.getElementById(`rte-formula-input-preview-${uuid}`).innerHTML = html.innerHTML;
+      });
+      input.dispatchEvent(new InputEvent('input')); // Trigger input event to show initial preview
+      content.querySelector('form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        popover.hide();
+        const value = input.value.trim();
+        if (!value) return;
+        if (range.length > 0) quill.deleteText(range.index, range.length, 'user');
+        quill.insertEmbed(range.index, 'formula', value, 'user');
+        quill.setSelection(range.index + 1, 'user');
+        quill.focus();
+      });
+      popover.show();
+    });
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
