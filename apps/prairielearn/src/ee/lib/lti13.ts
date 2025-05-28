@@ -329,11 +329,6 @@ export class Lti13Claim {
     delete this.req.session['lti13_claims'];
     delete this.req.session['authn_lti13_instance_id'];
   }
-
-  dump() {
-    this.assertValid();
-    console.log(JSON.stringify(this.claims, null, 2));
-  }
 }
 
 export async function validateLti13CourseInstance(
@@ -416,19 +411,12 @@ export async function getAccessToken(lti13_instance_id: string) {
   return tokenSet.access_token;
 }
 
-export async function getLineitems(instance: Lti13CombinedInstance, filter = '') {
+export async function getLineitems(instance: Lti13CombinedInstance) {
   if (instance.lti13_course_instance.lineitems_url == null) {
     throw new HttpStatusError(400, 'Lineitems not defined');
   }
-  let fetchUrl = instance.lti13_course_instance.lineitems_url;
-
-  // https://www.imsglobal.org/spec/lti-ags/v2p0#container-request-filters
-  if (filter) {
-    fetchUrl = `${fetchUrl}?${filter}`;
-  }
-
   const token = await getAccessToken(instance.lti13_instance.id);
-  const fetchArray = await fetchRetryPaginated(fetchUrl, {
+  const fetchArray = await fetchRetryPaginated(instance.lti13_course_instance.lineitems_url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -574,43 +562,6 @@ export async function linkAssessment(
     lineitem: JSON.stringify(lineitem),
     assessment_id: assessment.id,
   });
-}
-
-// We need a function that gets lineitems (filtered?) and stores them
-// associated with the assessment. This is different than knowing a
-// specific lineitem URL or creating one.
-// This logic assumes the lineitem.resourceId is the assessment.uuid
-export async function updateLineItemsByAssessment(
-  instance: Lti13CombinedInstance,
-  //job: ServerJob, // Do we need this?
-  unsafe_assessment_id: string | number,
-) {
-  const assessment = await queryRow(
-    sql.select_assessment_in_lti13_course_instance,
-    {
-      unsafe_assessment_id,
-      lti13_course_instance_id: instance.lti13_course_instance.id,
-    },
-    AssessmentSchema,
-  );
-
-  for (let i = 0; i < 5; i++) {
-    const all_lineitems = await getLineitems(instance);
-    console.log(JSON.stringify(all_lineitems, null, 2));
-
-    const lineitems = await getLineitems(instance, `resource_id=${assessment.uuid}`);
-    console.log(lineitems);
-    console.log(`Found ${lineitems.length} assignments for ${assessment.uuid}.`);
-
-    if (lineitems.length === 0) {
-      await sleep(2000); // milliseconds
-    }
-
-    if (lineitems.length === 1) {
-      await linkAssessment(instance.lti13_course_instance.id, assessment.id, lineitems[0]);
-      break;
-    }
-  }
 }
 
 /* Throttling notes
