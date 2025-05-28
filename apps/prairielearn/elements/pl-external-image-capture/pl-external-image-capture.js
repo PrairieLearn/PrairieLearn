@@ -36,7 +36,9 @@
                 reloadButton.addEventListener('click', () => {
                     this.loadSubmission();
                 });
-            }            
+            }      
+            
+            this.listenForSubmission();
         } 
 
         generateQrCode() {
@@ -51,22 +53,26 @@
         }
 
         listenForSubmission() {
-            const socket = io('/submission', {
-                course_id: this.course_id,
-                course_instance_id: this.course_instance_id,
-                question_id: this.question_id,
-                instance_question_id: this.instance_question_id,
+            const socket = io('/external-image-capture');
+            socket.emit('joinExternalImageCapture', {
                 variant_id: this.variant_id,
-                answer_name: this.answer_name
+                answer_name: this.answer_name,
+            }, ((msg) => {
+                if (!msg) {
+                    console.error('Failed to join external image capture socket');
+                    return;
+                }
+                if (msg.image_uploaded) {
+                    this.loadSubmission();
+                }
+            }));
+
+            socket.on('imageUploaded', (msg) => {
+                console.log('Submission changed, reloading...');
+                if (msg.image_uploaded) {
+                    this.loadSubmission();
+                }
             });
-
-            socket.on('init', (msg, callback) => {
-
-            })
-
-            socket.on('change:submission', () => {
-                this.loadSubmission();
-            })            
         }
 
         async loadSubmission() {

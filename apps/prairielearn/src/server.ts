@@ -58,6 +58,7 @@ import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
+import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
@@ -2422,9 +2423,12 @@ if (esMain(import.meta) && config.startServer) {
 
     externalGradingSocket.init();
     externalGrader.init();
+    externalImageCaptureSocket.init();
 
     await workspace.init();
     serverJobs.init();
+
+    
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
       nodeMetrics.start({
