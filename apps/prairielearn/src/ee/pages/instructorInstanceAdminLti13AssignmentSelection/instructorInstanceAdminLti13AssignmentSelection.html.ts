@@ -89,13 +89,10 @@ export function InstructorInstanceAdminLti13AssignmentSelection({
   `.toString();
 }
 
-export function InstructorInstanceAdminLti13AssignmentDetails({ resLocals, assessment }) {
-  return html`OK`.toString();
-}
-
 export function InstructorInstanceAdminLti13AssignmentConfirmation({
   resLocals,
   deep_link_return_url,
+  deepLinkingResponse,
   signed_jwt,
   platform_name,
   assessment,
@@ -111,7 +108,8 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
         <main id="content" class="m-3">
           <p>
             Confirmation: You selected PrairieLearn assessment
-            <strong>${assessment.label}: ${assessment.title}</strong>
+            <strong>${assessment.label}: ${assessment.title}}</strong>
+            <strong>${deepLinkingResponse.title}</strong>
           </p>
 
           <p>Extra settings: Rename, set points, open in new window, ....?</p>
@@ -130,19 +128,6 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
           <button class="btn btn-primary" onClick="sendIt();window.close();">
             Send this information to ${platform_name}
           </button>
-
-          <div id="response"></div>
-
-          <form id="linkForm" method="POST" hx-post="" hx-target="#response" hx-swap="innerHTML">
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <input type="hidden" name="__action" value="link" />
-            <input type="hidden" name="unsafe_assessment_id" value="${assessment.id}" />
-            <input type="hidden" name="unsafe_resourceId" value="${assessment.uuid}" />
-
-            <button type="submit" class="btn btn-primary" onClick="sendIt();window.close();">
-              Confirm
-            </button>
-          </form>
         </main>
       </body>
     </html>

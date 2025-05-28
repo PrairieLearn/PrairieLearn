@@ -5,21 +5,19 @@ import { Issuer } from 'openid-client';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { Lti13AssessmentsSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectAssessments } from '../../../models/assessment.js';
 import {
   Lti13Claim,
-  validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
-  updateLineItemsByAssessment,
+  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {
-  InstructorInstanceAdminLti13AssignmentSelection,
   InstructorInstanceAdminLti13AssignmentConfirmation,
-  InstructorInstanceAdminLti13AssignmentDetails,
+  InstructorInstanceAdminLti13AssignmentSelection,
 } from './instructorInstanceAdminLti13AssignmentSelection.html.js';
-import { AssessmentSchema, Lti13AssessmentsSchema } from '../../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -83,19 +81,7 @@ router.post(
       Lti13CombinedInstanceSchema,
     );
 
-    if (req.body.__action === 'details') {
-      const assessments = await selectAssessments({
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      const assessment = assessments.find((a) => a.id === req.body.unsafe_assessment_id);
-
-      console.log(assessment);
-
-      res.send(
-        InstructorInstanceAdminLti13AssignmentDetails({ resLocals: res.locals, assessment }),
-      );
-    } else if (req.body.__action === 'confirm') {
+    if (req.body.__action === 'confirm') {
       const assessments = await selectAssessments({
         course_instance_id: res.locals.course_instance.id,
       });
@@ -103,7 +89,7 @@ router.post(
       const assessment = assessments.find((a) => a.id === req.body.unsafe_assessment_id);
 
       if (!assessment) {
-        throw new error.HttpStatusError(400, `Missing assessment`);
+        throw new error.HttpStatusError(400, 'Missing assessment');
       }
 
       console.log(assessment);
@@ -127,7 +113,7 @@ router.post(
        * and
        * https://canvas.instructure.com/doc/api/file.content_item.html
        */
-      const unsigned_jwt = {
+      const deepLinkingResponse = {
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
         'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
         'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
@@ -154,7 +140,7 @@ router.post(
         //'https://purl.imsglobal.org/spec/lti-dl/claim/msg': 'All done!',
       };
 
-      console.log(JSON.stringify(unsigned_jwt, null, 2));
+      console.log(JSON.stringify(deepLinkingResponse, null, 2));
 
       const deep_link_return_url = ltiClaim.get([
         'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
@@ -165,38 +151,12 @@ router.post(
         InstructorInstanceAdminLti13AssignmentConfirmation({
           resLocals: res.locals,
           deep_link_return_url,
-          signed_jwt: await client.requestObject(unsigned_jwt),
+          signed_jwt: await client.requestObject(deepLinkingResponse),
+          deepLinkingResponse,
           platform_name: instance.lti13_instance.tool_platform_name,
           assessment,
         }),
       );
-    } else if (req.body.__action === 'link') {
-      // Use the information we know about the link we just made
-      // Search for it in the lineitems API (resourceId = uuid)
-      // Link it automatically
-
-      // Sleep or loop here while the LTI call finishes
-
-      // Canvas doesn't create the line item until the assignment page is saved
-      // (user manual not when it returns from the call), so sleep polling is not
-      // going to be a good experience here.
-
-      // Tag the lineitem somehow associated with the assessment that we need to refresh?
-
-      console.log('GOT HERE');
-      console.log(req.body);
-
-      const assessment = await queryRow(
-        sql.select_assessment_in_course_instance,
-        {
-          unsafe_assessment_id: req.body.unsafe_assessment_id,
-          course_instance_id: res.locals.course_instance.id,
-        },
-        AssessmentSchema,
-      );
-      await updateLineItemsByAssessment(instance, assessment.id);
-
-      res.end('OK');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
