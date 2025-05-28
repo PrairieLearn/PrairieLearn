@@ -413,12 +413,14 @@ async function getFiles(options): Promise<Set<string>> {
   });
 }
 
-let currentPage$: cheerio.CheerioAPI;
+// Some tests follow a redirect, and so we have a couple of globals to keep
+// information about the current page
 let currentUrl: string;
+let currentPage$: cheerio.CheerioAPI;
 function testEdit(params) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
-    if (params.url) {
+    if (params.url || currentUrl) {
       it('should load successfully', async () => {
         const res = await fetch(params.url);
 
