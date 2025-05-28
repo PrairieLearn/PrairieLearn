@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
-FROM prairielearn/plbase:latest
+# FROM prairielearn/plbase:latest
+FROM prairielearn:wilfredo-base
 
 WORKDIR /PrairieLearn
 
@@ -38,7 +39,8 @@ COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
 # hadolint ignore=SC3009
-RUN chmod +x /PrairieLearn/scripts/init.sh \
+RUN mkdir -p /etc/pki/tls/private /etc/pki/tls/certs \
+    && chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
     && mkdir -p /jobs \
