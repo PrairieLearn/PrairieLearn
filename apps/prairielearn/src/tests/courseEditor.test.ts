@@ -464,7 +464,7 @@ function testEdit(params) {
         method: 'POST',
         body: new URLSearchParams({
           __action: params.action,
-          __csrf_token: __csrf_token,
+          __csrf_token,
           ...(params?.data ?? {}),
         }),
       });
