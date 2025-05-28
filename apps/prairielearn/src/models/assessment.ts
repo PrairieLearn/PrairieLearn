@@ -97,20 +97,3 @@ export function selectAssessmentsCursor({
     AssessmentRowSchema,
   );
 }
-
-export async function selectAssessmentInCourseInstance({
-  unsafe_assessment_id,
-  course_instance_id,
-}: {
-  unsafe_assessment_id: string;
-  course_instance_id: string;
-}): Promise<Assessment> {
-  return queryRow(
-    sql.select_assessment_in_course_instance,
-    {
-      unsafe_assessment_id,
-      course_instance_id,
-    },
-    AssessmentSchema,
-  );
-}

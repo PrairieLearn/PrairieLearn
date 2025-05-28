@@ -127,6 +127,10 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             }
           </script>
 
+          <button class="btn btn-primary" onClick="sendIt();window.close();">
+            Send this information to ${platform_name}
+          </button>
+
           <div id="response"></div>
 
           <form id="linkForm" method="POST" hx-post="" hx-target="#response" hx-swap="innerHTML">
