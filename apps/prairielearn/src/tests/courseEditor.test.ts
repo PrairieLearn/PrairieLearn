@@ -414,7 +414,7 @@ async function getFiles(options): Promise<Set<string>> {
 }
 
 // Some tests follow a redirect, and so we have a couple of globals to keep
-// information about the current page
+// information about the current page to persist to the next test
 let currentUrl: string;
 let currentPage$: cheerio.CheerioAPI;
 function testEdit(params) {
