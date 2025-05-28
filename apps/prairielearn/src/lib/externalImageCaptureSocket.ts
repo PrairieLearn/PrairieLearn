@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken } from '@prairielearn/signed-token';
 
+import { config } from './config.js';
 import * as socketServer from './socket-server.js';
 
 let namespace: Namespace;
@@ -22,9 +24,14 @@ export function connection(socket: Socket) {
         console.log('Callback', callback);
 
         // TODO: Implement token authentication
-        if (!ensureProps(msg, ['variant_id', 'answer_name'])) {
+        if (!ensureProps(msg, ['variant_id', 'variant_token', 'answer_name'])) {
             return callback(null);
         }
+
+        if (!checkToken(msg.variant_token, msg.variant_id)) {
+            return callback(null);
+        }
+
         socket.join(`variant-${msg.variant_id}-answer-${msg.answer_name}`);
 
         const existsImageCapture = await sqldb.queryOptionalRow(
@@ -73,3 +80,14 @@ export async function imageUploaded(
     }
 
 };
+
+// TODO: Create a separate function for this -- this is shared
+function checkToken(token: string, variantId: string): boolean {
+  const data = { variantId };
+  const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
+  if (!valid) {
+    logger.error(`Token for variant ${variantId} failed validation.`);
+    Sentry.captureException(new Error(`Token for variant ${variantId} failed validation.`));
+  }
+  return valid;
+}

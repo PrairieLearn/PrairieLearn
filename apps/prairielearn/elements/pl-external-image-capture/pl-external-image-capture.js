@@ -53,9 +53,17 @@
         }
 
         listenForSubmission() {
+            const questionContainer = document.querySelector('.question-container');
+
+            if (!questionContainer) return;
+
             const socket = io('/external-image-capture');
+
+            console.log('Question container variant token', questionContainer.dataset.variantToken);
+
             socket.emit('joinExternalImageCapture', {
                 variant_id: this.variant_id,
+                variant_token: questionContainer.dataset.variantToken,
                 answer_name: this.answer_name,
             }, ((msg) => {
                 if (!msg) {
