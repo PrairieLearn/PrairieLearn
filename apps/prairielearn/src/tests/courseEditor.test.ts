@@ -420,7 +420,7 @@ let currentPage$: cheerio.CheerioAPI;
 function testEdit(params) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
-    if (params.url || currentUrl) {
+    if (params.url) {
       it('should load successfully', async () => {
         const res = await fetch(params.url);
 
