@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 3.1.0
+
+### Minor Changes
+
+- d3fb328: Add `reset()` method to `ConfigLoader`
+
 ## 3.0.14
 
 ### Patch Changes

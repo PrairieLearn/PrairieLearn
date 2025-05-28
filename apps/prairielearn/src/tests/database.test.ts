@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import _ from 'lodash';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
@@ -16,14 +17,12 @@ class DatabaseError extends Error {
   }
 }
 
-describe('database', function () {
-  this.timeout(20000);
+describe('database', { timeout: 20_000 }, function () {
+  beforeAll(helperDb.beforeOnlyCreate);
 
-  before('set up testing database', helperDb.beforeOnlyCreate);
-  after('tear down testing database', helperDb.after);
+  afterAll(helperDb.after);
 
-  it('should match the database described in /database', async function () {
-    this.timeout(20000);
+  it('should match the database described in /database', { timeout: 20_000 }, async function () {
     const options = {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
