@@ -105,7 +105,6 @@
             }));
 
             socket.on('imageUploaded', (msg) => {
-                console.log('Submission changed, reloading...');
                 if (msg.image_uploaded) {
                     this.loadSubmission(true);
                 }
@@ -164,7 +163,6 @@
 
             if (!forMobile && this.submitted_file_name) {
                 const externalImageCaptureContainer = document.querySelector('#external-image-capture-container');
-                console.log('Dataset', externalImageCaptureContainer.dataset);
 
                 const submissionFilesUrl = externalImageCaptureContainer.dataset.submissionFilesUrl;
                 if (!submissionFilesUrl) {

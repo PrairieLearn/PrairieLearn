@@ -25,8 +25,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_file_names = list({x.get("name") for x in submitted_files})
 
-    print("Submitted files: ", data["submitted_answers"].keys())
-
     submitted_file_name = None
     if len(submitted_file_names) > 0:
         submitted_file_name = submitted_file_names[0]
@@ -44,9 +42,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_files_url": data["options"].get("submission_files_url", None),
         "uuid": pl.get_uuid(),
     }
-
-    print(submitted_files)
-    print("Submission file URL: ", html_params["submission_files_url"])
 
     if "instance_question_id" in data["options"]:
         qr_code_url = f"{data['options'].get('serverCanonicalHost')}/pl/course_instance/{html_params['course_instance_id']}/instance_question/{html_params['instance_question_id']}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['name']}"
@@ -80,9 +75,4 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # malformed data URI
         return
 
-    #     print("b64_payload", b64_payload)
-
     pl.add_submitted_file(data, "preview-image.png", b64_payload)
-
-
-#     # Validate that the file was present.
