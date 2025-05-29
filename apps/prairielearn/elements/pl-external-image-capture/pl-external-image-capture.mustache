@@ -100,27 +100,26 @@ $(function() {
     </div>
   </div>
   <div id="webcam-confirmation-container" class="d-none d-flex flex-column">
-    <input
-      type="hidden"
-      name="__csrf_token"
-      value="{{csrf_token}}"
-      data-skip-unload-check="true"
-    />
-    <canvas
-      id="webcam-image-preview"
-      class="w-100 bg-body-secondary rounded border mb-1"
-      autoplay
-      playsinline
-    ></canvas>
-    <div class="d-flex gap-2 mt-1">
-      <button id="confirm-image-button" class="btn btn-primary">
-        <i class="bi bi-check2 me-1"></i>
-        Use image
-      </button>
-      <button id="retake-image-button" class="btn btn-secondary">
-        <i class="bi bi-arrow-counterclockwise me-1"></i>
-        Retake
-      </button>
-    </div>
+    <form method="POST">
+      <input type="hidden" name="__action" value="upload_external_image_capture" />
+      <input type="hidden" name="__csrf_token" value="{{csrf_token}}" />
+      <input type="hidden" name="answer_name" value="{{name}}" />
+      <canvas
+        id="webcam-image-preview"
+        class="w-100 bg-body-secondary rounded border mb-1"
+        autoplay
+        playsinline
+      ></canvas>
+      <div class="d-flex gap-2 mt-1">
+        <button id="confirm-image-button" class="btn btn-primary" type="submit">
+          <i class="bi bi-check2 me-1"></i>
+          Use image
+        </button>
+        <button id="retake-image-button" class="btn btn-secondary">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>
+          Retake
+        </button>
+      </div>
+    </form>
   </div>
 </div>

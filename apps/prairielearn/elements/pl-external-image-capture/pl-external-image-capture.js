@@ -25,9 +25,9 @@
             const captureImageButton = document.querySelector('#capture-image-button');
             const cancelWebcamButton = document.querySelector('#cancel-webcam-button');
             const retakeImageButton = document.querySelector('#retake-image-button');
-            const confirmImageButton = document.querySelector('#confirm-image-button');
+            // const confirmImageButton = document.querySelector('#confirm-image-button');
 
-            if (!scanSubmissionButton || !reloadButton || !captureWithWebcamButton || !captureImageButton || !cancelWebcamButton || !retakeImageButton || !confirmImageButton) {
+            if (!scanSubmissionButton || !reloadButton || !captureWithWebcamButton || !captureImageButton || !cancelWebcamButton || !retakeImageButton) {
                 return;
             }
 
@@ -59,10 +59,10 @@
                 this.startWebcamCapture();
             });
 
-            confirmImageButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                this.confirmWebcamCapture();
-            })
+            // confirmImageButton.addEventListener('click', (event) => {
+            //     event.preventDefault();
+            //     this.confirmWebcamCapture();
+            // })
 
             this.loadSubmission();
             this.listenForSubmission();
@@ -266,23 +266,24 @@
                 return;
             }
 
-            const file = new File([blob], 'external-image-capture.png', { type: 'image/png' });
+            
 
+            // const file = new File([blob], 'external-image-capture.png', { type: 'image/png' });
 
             // Obtain a CSRF token
-            let csrfToken;
-            try {
-                const res = await fetch(`${this.qr_code_url}`, {
-                    method: 'GET',
-                });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                // Extract CSRF token from the response
-                console.log('Response headers:', res.headers);
+            // let csrfToken;
+            // try {
+            //     const res = await fetch(`${this.qr_code_url}/csrf-token`, {
+            //         method: 'GET',
+            //     });
+            //     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            //     // Extract CSRF token from the response
+            //     console.log('Response headers:', res.headers);
 
-            } catch (err) {
-                console.error('Failed to obtain CSRF token:', err);
-                return;
-            }
+            // } catch (err) {
+            //     console.error('Failed to obtain CSRF token:', err);
+            //     return;
+            // }
 
 
             // const formData = new FormData();

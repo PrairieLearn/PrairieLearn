@@ -244,6 +244,10 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
+    } else if (req.body.__action === 'upload_external_image_capture') {
+      // This action is handled in the externalImageCapture middleware, so it
+      // doesn't need to be handled here.
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     } else {
       // The 'regenerate_instance' action is handled in the
       // studentAssessmentAccess middleware, so it doesn't need to be handled
