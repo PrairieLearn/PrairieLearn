@@ -1,0 +1,13 @@
+<pl-question-panel>
+  <p>Which of the following cities are in {{params.country}}?</p>
+</pl-question-panel>
+
+<pl-checkbox
+  answers-name="cities"
+  number-answers="8"
+  partial-credit="true"
+>
+  {{#params.options}}
+    <pl-answer correct="{{correct}}" feedback="{{feedback}}">{{city}}</pl-answer>
+  {{/params.options}}
+</pl-checkbox>
