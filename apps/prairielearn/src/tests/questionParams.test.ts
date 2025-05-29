@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { assert, describe } from 'vitest';
+import { afterAll, beforeAll, assert, describe } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -52,11 +52,9 @@ locals.isStudentPage = true;
 
 const questionsArray: Question[] = [{ qid: 'addNumbersParameterized', type: 'Freeform' }];
 
-describe('Parameterized questions', function () {
-  this.timeout(40000);
-
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+describe('Parameterized questions', { timeout: 40_000 }, function () {
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   it('should verify database contains expected questions', async function () {
     const result = await sqldb.queryAsync(sql.select_questions, []);
@@ -75,7 +73,7 @@ describe('Parameterized questions', function () {
   });
 
   describe('Assessment inheritance tests', function () {
-    before('initialize assessment', async function () {
+    beforeAll(async function () {
       // Get assessment data from database.
       const hwResult = await sqldb.queryOneRowAsync(sql.select_hw, []);
       locals.assessment_id = hwResult.rows[0].id;
@@ -92,7 +90,7 @@ describe('Parameterized questions', function () {
 
     describe('GET to assessment_instance URL', function () {
       let page = '';
-      before(async function () {
+      beforeAll(async function () {
         if (!locals.assessmentInstanceUrl) {
           throw new Error('assessmentInstanceUrl is undefined');
         }
