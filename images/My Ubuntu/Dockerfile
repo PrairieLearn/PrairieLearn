@@ -60,7 +60,7 @@ RUN curl -fsSL https://d2lang.com/install.sh | sh -s --
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add uv to PATH
-ENV PATH="/root/.cargo/bin:$PATH"
+ENV PATH="/root/.venv/bin:$PATH"
 
 # Copy Python requirements file
 COPY python-requirements.txt .

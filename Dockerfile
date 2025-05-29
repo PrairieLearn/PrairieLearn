@@ -54,5 +54,7 @@ RUN mkdir -p /etc/pki/tls/private /etc/pki/tls/certs \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
 
+ENV PATH="/root/.local/bin:$PATH"
+
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD [ "/PrairieLearn/scripts/init.sh" ]
