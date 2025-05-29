@@ -14,7 +14,6 @@ router.all(
   '/',
   asyncHandler(async (req, res) => {
     const ltiClaim = new Lti13Claim(req);
-    ltiClaim.dump();
 
     // Get lti13_course_instance info, if present
     const lti13_course_instance = await queryOptionalRow(

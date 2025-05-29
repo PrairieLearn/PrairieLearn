@@ -1,18 +1,16 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer } from 'openid-client';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
+import { renderText } from '../../../lib/assessment.js';
 import { Lti13AssessmentsSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectAssessments } from '../../../models/assessment.js';
-import {
-  Lti13Claim,
-  Lti13CombinedInstanceSchema,
-  validateLti13CourseInstance,
-} from '../../lib/lti13.js';
+import { Lti13Claim, Lti13CombinedInstanceSchema } from '../../lib/lti13.js';
 
 import {
   InstructorInstanceAdminLti13AssignmentConfirmation,
@@ -22,10 +20,40 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
+// https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
+// Incomplete schema but covers our usage
+const ContentItemLtiResourceLinkSchema = z.object({
+  type: z.literal('ltiResourceLink'),
+  url: z.string().optional(),
+  title: z.string().optional(),
+  text: z.string().optional(),
+  window: z
+    .object({
+      targetName: z.string().optional(),
+      width: z.number().int().optional(),
+      height: z.number().int().optional(),
+      windowfeatures: z.string().optional(),
+    })
+    .optional(),
+  lineItem: z
+    .object({
+      label: z.string().optional(),
+      scoreMaximum: z.number(),
+      resourceId: z.string().optional(),
+      tag: z.string().optional(),
+      gradesReleased: z.boolean().optional(),
+    })
+    .optional(),
+});
+type ContentItemLtiResourceLink = z.infer<typeof ContentItemLtiResourceLinkSchema>;
+
 router.use(
   asyncHandler(async (req, res, next) => {
-    if (!(await validateLti13CourseInstance(res.locals))) {
+    if (!res.locals.lti13_enabled) {
       throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
+    }
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     next();
   }),
@@ -34,9 +62,17 @@ router.use(
 router.get(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
-    }
+    const instance = await queryRow(
+      sql.select_lti13_instance,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+      },
+      Lti13CombinedInstanceSchema,
+    );
+
+    const courseName = instance.lti13_course_instance.context_label ?? 'LMS';
+    const lmsName = instance.lti13_instance.name ?? 'LMS';
 
     const assessments = await selectAssessments({
       course_instance_id: res.locals.course_instance.id,
@@ -50,10 +86,8 @@ router.get(
       },
       Lti13AssessmentsSchema,
     );
-    console.log(assessments);
 
     const lti13AssessmentsByAssessmentId = {};
-
     for (const a of lti13_assessments) {
       lti13AssessmentsByAssessmentId[a.assessment_id] = a;
     }
@@ -64,6 +98,8 @@ router.get(
         assessments,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         lti13AssessmentsByAssessmentId,
+        courseName,
+        lmsName,
       }),
     );
   }),
@@ -81,6 +117,8 @@ router.post(
       Lti13CombinedInstanceSchema,
     );
 
+    console.log(req.body);
+
     if (req.body.__action === 'confirm') {
       const assessments = await selectAssessments({
         course_instance_id: res.locals.course_instance.id,
@@ -95,16 +133,11 @@ router.post(
       console.log(assessment);
 
       const host = getCanonicalHost(req);
-
-      //console.log(lti13_instance, lti13_course_instance);
-      //console.log(req.session.lti13_claims);
-
       const issuer = new Issuer(instance.lti13_instance.issuer_params);
       const client = new issuer.Client(
         instance.lti13_instance.client_params,
         instance.lti13_instance.keystore,
       );
-
       const ltiClaim = new Lti13Claim(req);
 
       /* https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
@@ -113,29 +146,38 @@ router.post(
        * and
        * https://canvas.instructure.com/doc/api/file.content_item.html
        */
+      const contentItem: ContentItemLtiResourceLink = {
+        type: 'ltiResourceLink',
+        url: `${host}/pl/course_instance/${res.locals.course_instance.id}/assessment/${assessment.id}`,
+        window: {
+          targetName: '_blank',
+        },
+      };
+
+      if ('setName' in req.body) {
+        contentItem.title = `${assessment.label}: ${assessment.title}`;
+      }
+      if ('setText' in req.body) {
+        contentItem.text = renderText(assessment, res.locals.urlPrefix) ?? undefined;
+      }
+      if ('setPoints' in req.body) {
+        contentItem.lineItem = {
+          scoreMaximum: 100,
+          resourceId: assessment.id,
+        };
+      }
       const deepLinkingResponse = {
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
         'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
         'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
           instance.lti13_course_instance.deployment_id,
-        'https://purl.imsglobal.org/spec/lti-dl/claim/data': ltiClaim.get([
-          'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
-          'data',
-        ]),
+        'https://purl.imsglobal.org/spec/lti-dl/claim/data':
+          ltiClaim.get([
+            'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
+            'data',
+          ]) ?? undefined,
         'https://purl.imsglobal.org/spec/lti-dl/claim/content_items': [
-          {
-            type: 'ltiResourceLink',
-            url: `${host}/pl/course_instance/${res.locals.course_instance_id}/assessment/${assessment.id}`,
-            title: `${assessment.label}: ${assessment.title}`,
-            window: {
-              targetName: '_blank',
-            },
-            lineItem: {
-              // assessment.max_points is NULL if no one has submitted
-              scoreMaximum: 100,
-              resourceId: assessment.uuid,
-            },
-          },
+          ContentItemLtiResourceLinkSchema.parse(contentItem),
         ],
         //'https://purl.imsglobal.org/spec/lti-dl/claim/msg': 'All done!',
       };
@@ -152,8 +194,8 @@ router.post(
           resLocals: res.locals,
           deep_link_return_url,
           signed_jwt: await client.requestObject(deepLinkingResponse),
-          deepLinkingResponse,
-          platform_name: instance.lti13_instance.tool_platform_name,
+          contentItem,
+          lmsName: instance.lti13_instance.name,
           assessment,
         }),
       );
