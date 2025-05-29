@@ -1010,6 +1010,14 @@ class DoubleHeadedVector(BaseElement):
             "optional-grading",
         ]
 
+    @staticmethod
+    def is_gradable() -> bool:
+        return True
+
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
+        return Vector.grade(ref, st, tol, angtol)
+
 
 class ArcVector(BaseElement):
     @staticmethod
@@ -2510,6 +2518,8 @@ class DrawingElement(UnplaceableBaseElement):
         return [
             "gradable",
             "answers-name",
+            "aria-label",
+            "aria-description",
             "width",
             "height",
             "grid-size",

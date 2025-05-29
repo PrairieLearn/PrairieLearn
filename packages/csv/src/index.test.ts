@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { stringifyStream } from './index.js';
 

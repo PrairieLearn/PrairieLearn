@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -11,10 +11,11 @@ const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';
 
 describe('Course syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('syncs for known features as object', async () => {
     const courseData = util.getCourseData();
@@ -106,5 +107,38 @@ describe('Course syncing', () => {
     } finally {
       config.devMode = originalDevMode;
     }
+  });
+
+  it('syncs string comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = 'Course comment';
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.equal(syncedCourses[0].json_comment, 'Course comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = ['Course comment 1', 'Course comment 2'];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, ['Course comment 1', 'Course comment 2']);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.comment = { comment: 'Course comment', comment2: 'Course comment 2' };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.deepEqual(syncedCourses[0].json_comment, {
+      comment: 'Course comment',
+      comment2: 'Course comment 2',
+    });
   });
 });

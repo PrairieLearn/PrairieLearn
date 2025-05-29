@@ -1,10 +1,9 @@
-import { assert } from 'chai';
 import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import * as jose from 'jose';
-import { step } from 'mocha-steps';
 import nodeJose from 'node-jose';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
@@ -261,7 +260,7 @@ describe('LTI 1.3', () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
-  before(async () => {
+  beforeAll(async () => {
     config.isEnterprise = true;
     config.features.lti13 = true;
     await helperServer.before()();
@@ -280,13 +279,13 @@ describe('LTI 1.3', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     helperServer.after();
     config.isEnterprise = false;
     config.features = {};
   });
 
-  step('create and configure an LTI instance', async () => {
+  test.sequential('create and configure an LTI instance', async () => {
     await createLti13Instance({
       issuer_params: {
         issuer: `http://localhost:${oidcProviderPort}`,
@@ -297,7 +296,7 @@ describe('LTI 1.3', () => {
     });
   });
 
-  step('enable LTI 1.3 as an authentication provider', async () => {
+  test.sequential('enable LTI 1.3 as an authentication provider', async () => {
     const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
     assert.equal(ssoResponse.status, 200);
 
@@ -317,7 +316,7 @@ describe('LTI 1.3', () => {
     assert.equal(enableLtiResponse.status, 200);
   });
 
-  step('validate metadata', async () => {
+  test.sequential('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
     const data = await fetch(url).then((res) => res.json() as any);
 
@@ -329,7 +328,7 @@ describe('LTI 1.3', () => {
     assert.equal(data.custom_fields.uin, '$Canvas.user.sisIntegrationId');
   });
 
-  step('perform login', async () => {
+  test.sequential('perform login', async () => {
     // `openid-client` relies on the session to store state, so we need to use
     // a cookie-aware version of fetch.
     const fetchWithCookies = fetchCookie(fetch);
@@ -361,7 +360,7 @@ describe('LTI 1.3', () => {
     assert.equal(repeatLoginRes.status, 500);
   });
 
-  step('validate login', async () => {
+  test.sequential('validate login', async () => {
     // There should be a new user.
     const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
@@ -381,7 +380,7 @@ describe('LTI 1.3', () => {
     assert.equal(ltiUser?.lti13_instance_id, '1');
   });
 
-  step('malformed requests fail', async () => {
+  test.sequential('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
     // Malformed login
@@ -435,7 +434,7 @@ describe('LTI 1.3', () => {
     assert.equal(finishBadLoginResponse.status, 500);
   });
 
-  step('request access token', async () => {
+  test.sequential('request access token', async () => {
     const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
 
     // Run a server to respond to token requests.
@@ -477,7 +476,7 @@ describe('LTI 1.3', () => {
     // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
 
-    step('create second LTI 1.3 instance', async () => {
+    test.sequential('create second LTI 1.3 instance', async () => {
       await createLti13Instance({
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
@@ -495,7 +494,7 @@ describe('LTI 1.3', () => {
       });
     });
 
-    step('perform LTI 1.3 login without prior auth', async () => {
+    test.sequential('perform LTI 1.3 login without prior auth', async () => {
       const callbackUrl = `${siteUrl}/pl/lti13_instance/2/auth/callback`;
       const executor = await makeLoginExecutor({
         user: {
@@ -523,7 +522,7 @@ describe('LTI 1.3', () => {
       assert.isNull(user);
     });
 
-    step('authenticate with dev mode login', async () => {
+    test.sequential('authenticate with dev mode login', async () => {
       const res = await fetchCheerio(`${siteUrl}/pl/login`);
       assert.equal(res.status, 200);
 
@@ -564,7 +563,7 @@ describe('LTI 1.3', () => {
       assert.equal(ltiUser.lti13_instance_id, '2');
     });
 
-    step('perform LTI 1.3 login after prior auth', async () => {
+    test.sequential('perform LTI 1.3 login after prior auth', async () => {
       // We use a new set of cookies to simulate a new session.
       const fetchWithCookies = fetchCookie(fetch);
 

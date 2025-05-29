@@ -27,6 +27,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
+import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -71,16 +72,11 @@ export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ClaimSchema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+export const Lti13ClaimBaseSchema = z.object({
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-    id: z.string(),
-    description: z.string().nullish(),
-    title: z.string().nullish(),
-  }),
+
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
   iss: z.string(),
@@ -138,7 +134,60 @@ export const Lti13ClaimSchema = z.object({
   // https://www.imsglobal.org/spec/lti/v1p3#vendor-specific-extension-claims
   // My development Canvas sends their own named extension as a top level property
   // "https://www.instructure.com/placement": "course_navigation"
+
+  // https://www.imsglobal.org/spec/lti-ags/v2p0#assignment-and-grade-service-claim
+  'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': z
+    .object({
+      lineitems: z.string().optional(),
+      lineitem: z.string().optional(),
+      scope: z.string().array(),
+    })
+    .optional(),
+
+  // https://www.imsglobal.org/spec/lti-nrps/v2p0/#resource-link-membership-service
+  'https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice': z
+    .object({
+      context_memberships_url: z.string(),
+      service_versions: z.literal('2.0').array(),
+    })
+    .optional(),
 });
+
+// https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
+export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+    'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
+      id: z.string(),
+      description: z.string().nullish(),
+      title: z.string().nullish(),
+    }),
+  }),
+);
+
+// https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
+export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
+  z.object({
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
+    'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({
+      deep_link_return_url: z.string(),
+      accept_types: z.string().array(),
+      accept_presentation_document_targets: z.enum(['embed', 'iframe', 'window']).array(),
+      accept_media_types: z.string().optional(),
+      accept_multiple: z.boolean().optional(),
+      accept_lineitem: z.boolean().optional(),
+      auto_create: z.boolean().optional(),
+      title: z.string().optional(),
+      text: z.string().optional(),
+      data: z.any().optional(),
+    }),
+  }),
+);
+
+export const Lti13ClaimSchema = z.discriminatedUnion(
+  'https://purl.imsglobal.org/spec/lti/claim/message_type',
+  [Lti13ResourceLinkRequestSchema, Lti13DeepLinkingRequestSchema],
+);
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
@@ -150,7 +199,7 @@ export class Lti13Claim {
 
   constructor(req: Request) {
     try {
-      this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
+      this.claims = Lti13ClaimSchema.parse(req.session.lti13_claims);
     } catch (err) {
       throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
         cause: err,
@@ -593,7 +642,6 @@ export async function fetchRetryPaginated(
 ): Promise<unknown[]> {
   const output: unknown[] = [];
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
     output.push(await res.json());
@@ -626,10 +674,10 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-const UsersWithLti13SubSchema = UserSchema.extend({
+const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
 });
-type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
+type UserWithLti13Sub = z.infer<typeof UserWithLti13SubSchema>;
 
 // https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
 const ContextMembershipSchema = z.object({
@@ -649,17 +697,20 @@ const ContextMembershipContainerSchema = z.object({
 });
 
 class Lti13ContextMembership {
-  #memberships: Record<string, ContextMembership[]> = {};
+  #membershipsByEmail: Record<string, ContextMembership[]> = {};
+  #membershipsBySub: Record<string, ContextMembership> = {};
 
   private constructor(memberships: ContextMembership[]) {
     // Turn array into an object for efficient lookups. We need to retain duplicates
     // so that we can detect and handle the case where two users have the same email.
     for (const member of memberships) {
+      this.#membershipsBySub[member.user_id] = member;
+
       if (member.email === undefined) {
         continue;
       }
-      this.#memberships[member.email] ??= [];
-      this.#memberships[member.email].push(member);
+      this.#membershipsByEmail[member.email] ??= [];
+      this.#membershipsByEmail[member.email].push(member);
     }
   }
 
@@ -704,27 +755,25 @@ class Lti13ContextMembership {
   }
 
   /**
-   * @param user The user to look up.
-   * @returns The LTI 1.3 sub (user_id) for the user, or null if not found.
+   * @param user The user to look up with optional lti13_sub
+   * @returns The LTI 1.3 record for the user, or null if not found.
    */
-  async lookup(user: UsersWithLti13Sub): Promise<string | null> {
+  lookup(user: UserWithLti13Sub): ContextMembership | null {
     if (user.lti13_sub !== null) {
-      return user.lti13_sub;
+      return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
-
     for (const match of ['uid', 'email']) {
-      const memberResults = this.#memberships[user[match]];
+      const memberResults = this.#membershipsByEmail[user[match]];
 
       if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
       if (memberResults.length > 1) return null;
 
-      // The `user_id` that we get from the membership API is what we call `lti13_sub`.
-      return memberResults[0].user_id;
+      return memberResults[0];
     }
 
-    // The user wan't found.
+    // The user wasn't found.
     return null;
   }
 }
@@ -752,9 +801,7 @@ export async function updateLti13Scores(
     throw new HttpStatusError(403, 'Invalid assessment.id');
   }
 
-  job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
-
-  const token = await getAccessToken(instance.lti13_instance.id);
+  job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
@@ -764,22 +811,56 @@ export async function updateLti13Scores(
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query
-      users: UsersWithLti13SubSchema.array(),
+      users: UserWithLti13SubSchema.array(),
     }),
   );
 
+  const courseStaff = await selectUsersWithCourseInstanceAccess({
+    course_instance_id: assessment.course_instance_id,
+    minimal_role: 'Student Data Viewer',
+  });
+  const courseStaffUids = new Set(courseStaff.map((staff) => staff.uid));
+
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
+
   const timestamp = new Date();
+  const counts = {
+    success: 0,
+    error: 0,
+    not_sent: 0,
+  };
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
-      job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
+      // Get/Refresh the token in the main loop in case it expires during the run.
+      const token = await getAccessToken(instance.lti13_instance.id);
 
-      const userId = await memberships.lookup(user);
-      if (userId === null) {
-        job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
+      const ltiUser = memberships.lookup(user);
+      const isCourseStaff = courseStaffUids.has(user.uid);
+
+      // User not found in LTI, reporting only
+      if (ltiUser === null) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+        );
+        counts.not_sent++;
         continue;
       }
+
+      // User is not a student in LTI, reporting only
+      if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+        job.info(
+          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+            ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+        );
+        counts.not_sent++;
+        continue;
+      }
+
+      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
 
       const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
 
@@ -794,7 +875,7 @@ export async function updateLti13Scores(
         scoreMaximum: 100,
         activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
         gradingProgress: 'FullyGraded',
-        userId,
+        userId: ltiUser.user_id,
         submission: {
           startedAt: assessment_instance.date,
           submittedAt: submittedAt ?? undefined,
@@ -810,10 +891,26 @@ export async function updateLti13Scores(
         body: JSON.stringify(score),
       });
 
-      job.info(`\t${res.statusText}`);
-      if (!res.ok) {
-        job.warn(`\t${await res.text()}`);
+      if (res.ok) {
+        counts.success++;
+      } else {
+        counts.error++;
+        const results = await res.json();
+
+        // Default to showing the whole error
+        job.warn(`\t${res.statusText}`);
+        job.warn(`\t${JSON.stringify(results)}`);
       }
     }
   }
+  job.info('Done.\n\nSummary:');
+  job.info(`${counts.success} score${counts.success === 1 ? '' : 's'} successfully sent.`);
+  job.info(`${counts.error} score${counts.error === 1 ? '' : 's'} not sent due to errors.`);
+  if (counts.error > 0 && counts.success === 0) {
+    job.warn('\tNo scores successfully sent and errors are present.');
+    job.warn(
+      `\tIs the ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label} course published?`,
+    );
+  }
+  job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
 }

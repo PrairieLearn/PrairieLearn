@@ -492,6 +492,13 @@ export async function initExpress(): Promise<Express> {
         .default,
     ],
   );
+  app.use(
+    '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
+    ],
+  );
 
   // Handles updates to the side nav expanded state.
   app.use(
@@ -752,6 +759,15 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
 
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor',
+    asyncHandler(async (req, res, next) => {
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      next();
+    }),
+  );
+
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
@@ -910,10 +926,6 @@ export async function initExpress(): Promise<Express> {
         )
       ).default,
     ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)/ai_grading_runs',
-    (await import('./ee/pages/instructorAiGradingRuns/instructorAiGradingRuns.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
@@ -1176,9 +1188,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1729,6 +1738,10 @@ export async function initExpress(): Promise<Express> {
       publicQuestionEndpoint: true,
       coreElements: false,
     }),
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   );
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);

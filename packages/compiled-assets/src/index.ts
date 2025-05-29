@@ -1,8 +1,7 @@
-import http from 'node:http';
+import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import path from 'path';
 
 import esbuild, { type Metafile } from 'esbuild';
-import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
@@ -93,7 +92,7 @@ export function assertConfigured(): void {
   }
 }
 
-export function handler(): RequestHandler {
+export function handler() {
   assertConfigured();
 
   if (!options?.dev) {
@@ -119,7 +118,7 @@ export function handler(): RequestHandler {
 
   // We're running in dev mode, so we need to boot up esbuild to start building
   // and watching our assets.
-  return function (req, res) {
+  return function (req: IncomingMessage, res: ServerResponse) {
     // esbuild will reject requests that come from hosts other than the host on
     // which the esbuild dev server is listening:
     // https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d
