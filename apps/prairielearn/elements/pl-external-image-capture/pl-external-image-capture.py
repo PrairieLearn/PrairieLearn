@@ -23,11 +23,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_files = data["submitted_answers"].get("_files", [])
 
-    submitted_file_names = list({x.get("name") for x in submitted_files})
-
     submitted_file_name = None
-    if len(submitted_file_names) > 0:
-        submitted_file_name = submitted_file_names[0]
+    if len(submitted_files) > 0:
+        submitted_file_name = submitted_files[0].get("name")
 
     html_params = {
         "name": answer_name,
