@@ -63,7 +63,7 @@ router.get(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
     const instance = await queryRow(
-      sql.select_lti13_instance,
+      sql.select_lti13_combined_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
@@ -109,7 +109,7 @@ router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
     const instance = await queryRow(
-      sql.select_lti13_instance,
+      sql.select_lti13_combined_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         unsafe_lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
