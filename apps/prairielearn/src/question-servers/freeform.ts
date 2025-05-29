@@ -1320,6 +1320,7 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+    submission_date: submission?.date ?? null,
 
     csrf_token: locals.__csrf_token,
 

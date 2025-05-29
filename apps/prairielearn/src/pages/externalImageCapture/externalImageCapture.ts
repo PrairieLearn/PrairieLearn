@@ -69,7 +69,8 @@ router.get(
             res.json({
                 filename: file.display_filename,
                 type: file.type,
-                data: base64_contents
+                data: base64_contents,
+                uploadDate: externalImageCapture.created_at,
             });
         } else {
             res.status(404).send();

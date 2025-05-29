@@ -25,6 +25,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_file_names = list({x.get("name") for x in submitted_files})
 
+    print("Submitted files: ", data["submitted_answers"].keys())
+
     submitted_file_name = None
     if len(submitted_file_names) > 0:
         submitted_file_name = submitted_file_names[0]
@@ -38,6 +40,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "variant_id": data["options"].get("variant_id", ""),
         "csrf_token": data["options"].get("csrf_token", ""),
         "submitted_file_name": submitted_file_name,
+        "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url", None),
         "uuid": pl.get_uuid(),
     }

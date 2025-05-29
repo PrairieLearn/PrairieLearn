@@ -10,7 +10,8 @@
             instance_question_id,
             variant_id,
             answer_name,
-            submitted_file_name
+            submitted_file_name,
+            submission_date
         ) {
             this.qr_code_url = qr_code_url;
             this.course_id = course_id;
@@ -20,6 +21,7 @@
             this.variant_id = variant_id;
             this.answer_name = answer_name;
             this.submitted_file_name = submitted_file_name;
+            this.submission_date = submission_date;
             const scanSubmissionButton = document.querySelector('#scan-submission-button');
             const reloadButton = document.querySelector('#reload-submission-button');
             const captureWithWebcamButton = document.querySelector('#capture-with-webcam-button');
@@ -36,8 +38,9 @@
                 this.generateQrCode();
             })
 
-            reloadButton.addEventListener('click', () => {
-                this.loadMobileSubmission();
+            reloadButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.reload();
             });
 
             captureWithWebcamButton.addEventListener('click', () => {
@@ -107,6 +110,29 @@
                     this.loadSubmission(true);
                 }
             });
+        }
+        async reload() {
+            // Copmpare the submission dates
+
+            const submittedImageResponse = await fetch(
+                `${this.qr_code_url}/submitted_image`,
+            )
+            if (submittedImageResponse.ok) {
+                // TODO: This makes two requests, when we could make just one. Improve that.
+                const { uploadDate: mobileUploadDate } = await submittedImageResponse.json();     
+                if (mobileUploadDate && this.submission_date) {
+                    if (new Date(mobileUploadDate) > new Date(this.submission_date)) {
+                        // Use the mobile submission
+                        this.loadSubmission(true);
+                    } else {
+                        // Use the existing submission
+                        this.loadSubmission(false);
+                        return;
+                    }
+                }
+            } else if (this.submission_date) {
+                this.loadSubmission(false);
+            } 
         }
 
         async loadSubmission(
@@ -181,6 +207,8 @@
                     data, type
                 });
             } 
+
+            reloadButton.removeAttribute('disabled');
         }
 
         loadPreviewImageFromBlob(blob) {
