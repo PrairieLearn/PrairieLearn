@@ -37,6 +37,7 @@ export function InstructorAssessmentQuestions({
         urlPrefix: resLocals.urlPrefix,
       })}
       ${EncodedData(questions, 'assessment-questions-data')}
+      <div class="js-edit-modal modal fade"></div>
       <form method="POST" id="zonesForm">
         <input type="hidden" name="__action" value="edit_assessment_questions" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

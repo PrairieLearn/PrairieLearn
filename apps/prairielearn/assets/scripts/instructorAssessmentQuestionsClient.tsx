@@ -767,7 +767,7 @@ onDocumentReady(() => {
           </div>
           <div class="modal-body">
             <form id="edit-zone-form">
-              <div class="form-group">
+              <div class="mb-3">
                 <label for="zoneTitleInput">Title</label>
                 <div class="input-group">
                   <input
@@ -789,7 +789,7 @@ onDocumentReady(() => {
                   The name of the zone.{' '}
                 </small>
               </div>
-              <div class="form-group">
+              <div class="mb-3">
                 <label for="bestQuestionsInput">Best Questions</label>
                 <div class="input-group">
                   <input
@@ -817,7 +817,7 @@ onDocumentReady(() => {
                   the total. Leave blank to allow points from all questions.
                 </small>
               </div>
-              <div class="form-group">
+              <div class="mb-3">
                 <label for="numberChooseInput">Number Choose</label>
                 <div class="input-group">
                   <input
@@ -844,7 +844,7 @@ onDocumentReady(() => {
                   Number of questions the student can choose from. Leave blank for all questions.
                 </small>
               </div>
-              <div class="form-group">
+              <div class="mb-3">
                 <label for="maxPointsInput">Max Points</label>
                 <div class="input-group">
                   <input
@@ -928,7 +928,7 @@ onDocumentReady(() => {
           </div>
           <div class="modal-body">
             <form id="edit-question-form">
-              <div class="form-group">
+              <div class="mb-3">
                 <label for="qidInput">QID</label>
                 <div class="input-group">
                   <input
@@ -953,7 +953,7 @@ onDocumentReady(() => {
               </div>
               {assessmentType === 'Homework' ? (
                 <>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="gradingMethod" class="form-label">
                       Grading Method
                     </label>
@@ -978,7 +978,7 @@ onDocumentReady(() => {
                   </div>
                   {autoGraded ? (
                     <>
-                      <div class="form-group">
+                      <div class="mb-3">
                         <label for="autoPointsInput">Auto Points</label>
                         <input
                           type="number"
@@ -998,7 +998,7 @@ onDocumentReady(() => {
                           The amount of points each attempt at the question is worth.
                         </small>
                       </div>
-                      <div class="form-group">
+                      <div class="mb-3">
                         <label for="maxAutoPointsInput">Max Points</label>
                         <input
                           type="number"
@@ -1018,7 +1018,7 @@ onDocumentReady(() => {
                           The maximum number of points that can be awarded for the question.
                         </small>
                       </div>
-                      <div class="form-group">
+                      <div class="mb-3">
                         <label for="triesPerVariantInput">Tries Per Variant</label>
                         <input
                           type="number"
@@ -1041,7 +1041,7 @@ onDocumentReady(() => {
                       </div>
                     </>
                   ) : (
-                    <div class="form-group">
+                    <div class="mb-3">
                       <label for="manualPointsInput">Manual Points</label>
                       <input
                         type="number"
@@ -1066,7 +1066,7 @@ onDocumentReady(() => {
                 </>
               ) : (
                 <>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="autoPoints">Auto Points</label>
                     <input
                       type="text"
@@ -1089,7 +1089,7 @@ onDocumentReady(() => {
                       values separated by commas.
                     </small>
                   </div>
-                  <div class="form-group">
+                  <div class="mb-3">
                     <label for="manualPoints">Manual Points</label>
                     <input
                       type="number"
