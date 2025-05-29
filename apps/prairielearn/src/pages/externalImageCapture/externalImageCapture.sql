@@ -19,7 +19,7 @@ ON CONFLICT ON CONSTRAINT external_image_capture_variant_element_uuid_unique DO 
 SET
   file_id = EXCLUDED.file_id;
 
--- BLOCK select_external_image_capture_by_variant_and_element
+-- BLOCK select_external_image_capture_by_variant_id_and_answer_name
 SELECT
   eic.*
 FROM

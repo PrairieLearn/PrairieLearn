@@ -41,7 +41,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
             />
           </div>
 
-          <i class="bi bi-camera text-primary" style="font-size: 2rem;"></i>
+          <i class="bi bi-camera text-primary fs-1"></i>
           <span class="text-primary">Take photo</span>
         </label>
 

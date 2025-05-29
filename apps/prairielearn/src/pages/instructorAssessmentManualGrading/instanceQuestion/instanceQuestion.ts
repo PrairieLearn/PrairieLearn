@@ -202,13 +202,7 @@ const PostBodySchema = z.union([
     __action: z.literal('report_issue'),
     __variant_id: IdSchema,
     description: z.string(),
-  }),
-  z.object({
-    __action: z.literal('upload_external_image_capture'),
-    __variant_id: IdSchema,
-    answer_name: z.string(),
-    file: z.instanceof(File).optional(), // This is not used in this context, but kept for consistency
-  }),
+  })
 ]);
 
 router.post(
@@ -323,15 +317,6 @@ router.post(
       );
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);
-      res.redirect(req.originalUrl);
-    } else if (body.__action === 'upload_external_image_capture') {
-      await createExternalImageCapture({
-        variantId: body.__variant_id,
-        answerName: body.answer_name,
-        userId: res.locals.authn_user.user_id,
-        fileBuffer: req.file?.buffer ?? Buffer.from(''),
-        resLocals: res.locals,
-      });
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

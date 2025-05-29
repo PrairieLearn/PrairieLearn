@@ -53,7 +53,7 @@ router.get(
     }
 
     const externalImageCapture = await queryOptionalRow(
-      sql.select_external_image_capture_by_variant_and_element,
+      sql.select_external_image_capture_by_variant_id_and_answer_name,
       {
         variant_id: parseInt(variant.id),
         answer_name,
@@ -82,13 +82,6 @@ router.post(
     // Validate that the user has access to the variant
     const variantId = req.params.variant_id;
     const answer_name = req.params.answer_name;
-    const userId = res.locals.authn_user.user_id;
-
-    if (!variantId || !answer_name || !userId) {
-      res.status(400).send('Missing required parameters');
-      return;
-    }
-
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: variantId,
       variant_course: res.locals.course,
@@ -120,7 +113,7 @@ router.post(
     createExternalImageCapture({
       variantId,
       answerName: answer_name,
-      userId,
+      userId: res.locals.authn_user.user_id,
       fileBuffer: req.file.buffer,
       resLocals: res.locals,
     });
