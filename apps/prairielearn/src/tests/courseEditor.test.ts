@@ -328,7 +328,7 @@ const publicCopyTestData: EditData[] = [
   },
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
-    formSelector: 'form.js-copy-question-form',
+    formSelector: 'form.js-copy-course-instance-form',
     data: {
       course_instance_id: 2,
     },

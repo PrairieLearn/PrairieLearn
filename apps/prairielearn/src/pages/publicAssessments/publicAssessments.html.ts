@@ -1,3 +1,4 @@
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
@@ -20,7 +21,7 @@ function CopyCourseInstanceModal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
     formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
-    formClass: 'js-copy-question-form',
+    formClass: 'js-copy-course-instance-form',
     form: courseInstanceCopyTargets?.length > 0,
     body:
       courseInstanceCopyTargets.length === 0
@@ -97,6 +98,7 @@ export function PublicAssessments({
     options: {
       fullWidth: false,
     },
+    headContent: html`${compiledScriptTag('publicAssessmentsClient.ts')}`,
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
