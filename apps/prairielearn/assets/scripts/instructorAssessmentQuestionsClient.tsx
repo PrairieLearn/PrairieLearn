@@ -74,7 +74,7 @@ onDocumentReady(() => {
 
   function EditModeButtons() {
     return (
-      <div class="ml-auto">
+      <div class="ms-auto">
         {!editMode.value ? (
           <button
             class="btn btn-sm btn-light"
@@ -105,7 +105,11 @@ onDocumentReady(() => {
 
   function AssessmentQuestionsTable() {
     // If at least one question has a nonzero unlock score, display the Advance Score column
-    const showAdvanceScorePercCol = true;
+    const showAdvanceScorePercCol =
+      questionsData.filter(
+        (q: AssessmentQuestionRow) => q.assessment_question_advance_score_perc !== 0,
+      ).length >= 1;
+
     const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
     function maxPoints({
@@ -722,7 +726,7 @@ onDocumentReady(() => {
           <tr>
             {editMode.value ? <th colSpan={4}></th> : ''}
             <th>
-              <span class="sr-only">Name</span>
+              <span class="visually-hidden">Name</span>
             </th>
             <th>QID</th>
             <th>Topic</th>
