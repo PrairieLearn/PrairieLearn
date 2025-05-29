@@ -201,7 +201,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
-    upload.single('file'), 
+    upload.single('file'),
   );
   app.post('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', upload.single('file'));
 
@@ -282,7 +282,7 @@ export async function initExpress(): Promise<Express> {
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     upload.single('file'),
-  )
+  );
 
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
@@ -1418,20 +1418,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
 
-
-
-
-
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
-  
 
-
-
-
-  
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
@@ -1540,7 +1531,7 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
-  
+
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
@@ -2436,8 +2427,6 @@ if (esMain(import.meta) && config.startServer) {
 
     await workspace.init();
     serverJobs.init();
-
-    
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
       nodeMetrics.start({

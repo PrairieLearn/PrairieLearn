@@ -54,7 +54,7 @@ export function QuestionContainer({
     submissions,
     submissionHtmls,
     answerHtml,
-    __csrf_token
+    __csrf_token,
   } = resLocals;
 
   return html`

@@ -1314,7 +1314,7 @@ async function renderPanel(
     course_element_files_url: assets.courseElementAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
-    ), 
+    ),
     course_element_extension_files_url: assets.courseElementExtensionAssetBasePath(
       course.commit_hash,
       locals.urlPrefix,
@@ -1329,7 +1329,7 @@ async function renderPanel(
     question_id: locals.question.id,
     course_instance_id: locals.course_instance?.id,
     instance_question_id: locals.instance_question?.id,
-    
+
     serverCanonicalHost: config.serverCanonicalHost ?? '',
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
