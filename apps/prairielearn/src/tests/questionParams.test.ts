@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, assert, describe } from 'vitest';
+import { afterAll, assert, beforeAll, describe } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
