@@ -206,7 +206,9 @@
 })();
 
 function initializeFormulaPopover(quill, uuid) {
-  const formulaButton = quill.getModule('toolbar').container.querySelector('.ql-formula');
+  const formulaButton = quill.getModule('toolbar')?.container?.querySelector('.ql-formula');
+  // If the formula button is not present (e.g., the editor is read-only), do not initialize the popover
+  if (!formulaButton) return;
   const popoverContent = document.createElement('div');
   popoverContent.innerHTML = `
     <form>
