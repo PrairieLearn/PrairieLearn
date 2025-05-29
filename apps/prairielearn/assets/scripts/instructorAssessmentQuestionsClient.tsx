@@ -517,7 +517,7 @@ onDocumentReady(() => {
           <td>
             {question.tags?.map((tag) => {
               return (
-                <span class={`badge color-${tag.color}`} key={tag.id}>
+                <span class={`badge color-${tag.color} me-1`} key={tag.id}>
                   {tag.name}
                 </span>
               );
@@ -561,7 +561,7 @@ onDocumentReady(() => {
               return (
                 <a
                   href={`${urlPrefix}/assessment/${assessment.assessment_id}`}
-                  class={`btn btn-badge color-${assessment.color}`}
+                  class={`btn btn-badge color-${assessment.color} me-1`}
                   key={assessment.assessment_id}
                 >
                   {assessment.label}
