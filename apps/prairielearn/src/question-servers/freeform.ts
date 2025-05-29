@@ -1304,8 +1304,6 @@ async function renderPanel(
     ? locals.questionUrl + `submission/${submission?.id}/file`
     : null;
 
-  console.log('instance question', locals.instance_question);
-
   const options = {
     ...(variant.options ?? {}),
     client_files_question_url: locals.clientFilesQuestionUrl,
