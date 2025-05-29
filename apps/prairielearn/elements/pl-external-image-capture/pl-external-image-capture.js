@@ -9,7 +9,8 @@
             question_id,
             instance_question_id,
             variant_id,
-            answer_name
+            answer_name,
+            submitted_file_name
         ) {
             this.qr_code_url = qr_code_url;
             this.course_id = course_id;
@@ -18,16 +19,16 @@
             this.instance_question_id = instance_question_id;
             this.variant_id = variant_id;
             this.answer_name = answer_name;
-
+            this.submitted_file_name = submitted_file_name;
             const scanSubmissionButton = document.querySelector('#scan-submission-button');
             const reloadButton = document.querySelector('#reload-submission-button');
             const captureWithWebcamButton = document.querySelector('#capture-with-webcam-button');
             const captureImageButton = document.querySelector('#capture-image-button');
             const cancelWebcamButton = document.querySelector('#cancel-webcam-button');
             const retakeImageButton = document.querySelector('#retake-image-button');
-            // const confirmImageButton = document.querySelector('#confirm-image-button');
+            const confirmImageButton = document.querySelector('#confirm-image-button');
 
-            if (!scanSubmissionButton || !reloadButton || !captureWithWebcamButton || !captureImageButton || !cancelWebcamButton || !retakeImageButton) {
+            if (!scanSubmissionButton || !reloadButton || !captureWithWebcamButton || !captureImageButton || !cancelWebcamButton || !retakeImageButton || !confirmImageButton) {
                 return;
             }
 
@@ -36,7 +37,7 @@
             })
 
             reloadButton.addEventListener('click', () => {
-                this.loadSubmission();
+                this.loadMobileSubmission();
             });
 
             captureWithWebcamButton.addEventListener('click', () => {
@@ -59,12 +60,12 @@
                 this.startWebcamCapture();
             });
 
-            // confirmImageButton.addEventListener('click', (event) => {
-            //     event.preventDefault();
-            //     this.confirmWebcamCapture();
-            // })
-
-            this.loadSubmission();
+            confirmImageButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.confirmWebcamCapture();
+            })
+            
+            this.loadSubmission(false);
             this.listenForSubmission();
         } 
 
@@ -90,26 +91,29 @@
                 variant_id: this.variant_id,
                 variant_token: questionContainer.dataset.variantToken,
                 answer_name: this.answer_name,
-            }, ((msg) => {
-                if (!msg) {
-                    console.error('Failed to join external image capture socket');
-                    return;
-                }
-                if (msg.image_uploaded) {
-                    this.loadSubmission();
-                }
+            }, (() => {
+                // if (!msg) {
+                //     console.error('Failed to join external image capture socket');
+                //     return;
+                // }
+                // if (msg.image_uploaded) {
+                //     this.loadMobileSubmission();
+                // }
             }));
 
             socket.on('imageUploaded', (msg) => {
                 console.log('Submission changed, reloading...');
                 if (msg.image_uploaded) {
-                    this.loadSubmission();
+                    this.loadSubmission(true);
                 }
             });
         }
 
-        async loadSubmission() {
-
+        async loadSubmission(
+            // If false, load the image from the most recent submission, if available
+            // If true, load the image from the most recent submission that was made with the mobile app
+            forMobile = true 
+        ) {
             const uploadedImageContainer = document.querySelector('#uploaded-image-container');
 
             if (!uploadedImageContainer) {
@@ -132,45 +136,87 @@
                 </div>
             `;
 
-            const submittedImageResponse = await fetch(
-                `${this.qr_code_url}/submitted_image`,
-            )
-            
-            if (!submittedImageResponse.ok) {
-                reloadButton.removeAttribute('disabled');
-                if (submittedImageResponse.status === 404) {
-                    const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
-                    imagePlaceholderDiv.innerHTML = `
-                        <span class="text-muted small">No image submitted yet.</span>
-                    `
+            if (!forMobile && this.submitted_file_name) {
+                const externalImageCaptureContainer = document.querySelector('#external-image-capture-container');
+                console.log('Dataset', externalImageCaptureContainer.dataset);
+
+                const submissionFilesUrl = externalImageCaptureContainer.dataset.submissionFilesUrl;
+                if (!submissionFilesUrl) {
+                    console.error('Submission files URL not found');
                     return;
                 }
-                throw new Error('Failed to load submitted image');
+                const response = await fetch(
+                    `${submissionFilesUrl}/${this.submitted_file_name}`,
+                )
+
+                if (!response.ok) {
+                    throw new Error(`Failed to download file: ${response.status}`);
+                }
+                
+                if (!response) {
+                    return; // No submitted image available, yet
+                }
+
+                this.loadPreviewImageFromBlob(await response.blob());
+            } else {
+                const submittedImageResponse = await fetch(
+                    `${this.qr_code_url}/submitted_image`,
+                )
+                
+                if (!submittedImageResponse.ok) {
+                    reloadButton.removeAttribute('disabled');
+                    if (submittedImageResponse.status === 404) {
+                        const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
+                        imagePlaceholderDiv.innerHTML = `
+                            <span class="text-muted small">No image submitted yet.</span>
+                        `
+                        return;
+                    }
+                    throw new Error('Failed to load submitted image');
+                }
+                
+                const { data, type } = await submittedImageResponse.json();       
+
+                this.loadPreviewImage({
+                    data, type
+                });
+            } 
+        }
+
+        loadPreviewImageFromBlob(blob) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const dataUrl = event.target.result;
+                const data = dataUrl.split(',')[1];
+                const type = dataUrl.split(';')[0].split(':')[1];
+                this.loadPreviewImage({ data, type });
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        loadPreviewImage({
+            data, type
+        }) {
+            const uploadedImageContainer = document.querySelector('#uploaded-image-container');
+
+            if (!uploadedImageContainer) {
+                console.error('Uploaded image container not found');
+                return;
             }
-            
-            const { data, type } = await submittedImageResponse.json();            
 
             uploadedImageContainer.innerHTML = `
                 <img
                     id="preview-image"
-                    class="img-fluid rounded border border-secondary mb-1 d-none"
+                    class="img-fluid rounded border border-secondary mb-1"
                     style="width: 50%;"
                 />
             `;
 
             const previewImage = uploadedImageContainer.querySelector('#preview-image');
-            
-            previewImage.classList.remove('d-none');
-            // previewImage.src = URL.createObjectURL(blob);   
-
-            const b64_data = `data:${type};base64,${data}`;
-
             previewImage.src = `data:${type};base64,${data}`;
 
             const hiddenSubmissionInput = document.querySelector('#hidden-submission-input');
-            hiddenSubmissionInput.value = b64_data;
-
-            reloadButton.removeAttribute('disabled');
+            hiddenSubmissionInput.value = `data:${type};base64,${data}`;
         }
 
         async startWebcamCapture() {
@@ -258,51 +304,14 @@
 
             if (!questionContainer) return;
 
-            const blob = await new Promise(resolve =>
-                canvas.toBlob(resolve, 'image/png')
-            );
-            if (!blob) {
-                console.error('Failed to convert canvas to blob');
-                return;
-            }
+            const dataUrl = canvas.toDataURL('image/png');
+            const data = dataUrl.split(',')[1];
+            const type = dataUrl.split(';')[0].split(':')[1];   
+            this.loadPreviewImage({
+                data, type
+            });
 
-            
-
-            // const file = new File([blob], 'external-image-capture.png', { type: 'image/png' });
-
-            // Obtain a CSRF token
-            // let csrfToken;
-            // try {
-            //     const res = await fetch(`${this.qr_code_url}/csrf-token`, {
-            //         method: 'GET',
-            //     });
-            //     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            //     // Extract CSRF token from the response
-            //     console.log('Response headers:', res.headers);
-
-            // } catch (err) {
-            //     console.error('Failed to obtain CSRF token:', err);
-            //     return;
-            // }
-
-
-            // const formData = new FormData();
-            // formData.append('__csrf_token', questionContainer.dataset.csrfToken);
-            // formData.append('file', file);    
-
-            // try {
-            //     const res = await fetch(`${this.qr_code_url}`, {
-            //         method: 'POST',
-            //         headers: {
-            //             'x-csrf-token': questionContainer.dataset.csrfToken
-            //         },
-            //         body: formData
-            //     });
-            //     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            //     this.closeConfirmationContainer();
-            // } catch (err) {
-            //     console.error('Failed to submit image:', err);
-            // }
+            this.closeConfirmationContainer();
         }
 
         closeConfirmationContainer() {
@@ -314,7 +323,7 @@
             }
 
             externalImageCaptureContainer.classList.remove('d-none');
-            externalImageCaptureContainer.classList.add('d-flex');
+            externalImageCaptureContainer.classList.add('d-block');
             webcamConfirmationContainer.classList.add('d-none');
             webcamConfirmationContainer.classList.remove('d-flex');
         }

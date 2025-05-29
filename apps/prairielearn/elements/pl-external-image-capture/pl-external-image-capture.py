@@ -21,6 +21,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
+    submitted_files = data["submitted_answers"].get("_files", [])
+
+    submitted_file_names = list({x.get("name") for x in submitted_files})
+
+    submitted_file_name = None
+    if len(submitted_file_names) > 0:
+        submitted_file_name = submitted_file_names[0]
+
     html_params = {
         "name": answer_name,
         "course_id": data["options"].get("course_id", ""),
@@ -29,8 +37,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "instance_question_id": data["options"].get("instance_question_id", ""),
         "variant_id": data["options"].get("variant_id", ""),
         "csrf_token": data["options"].get("csrf_token", ""),
+        "submitted_file_name": submitted_file_name,
+        "submission_files_url": data["options"].get("submission_files_url", None),
         "uuid": pl.get_uuid(),
     }
+
+    print(submitted_files)
+    print("Submission file URL: ", html_params["submission_files_url"])
 
     if "instance_question_id" in data["options"]:
         qr_code_url = f"{data['options'].get('serverCanonicalHost')}/pl/course_instance/{html_params['course_instance_id']}/instance_question/{html_params['instance_question_id']}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['name']}"
