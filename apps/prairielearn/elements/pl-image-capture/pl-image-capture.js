@@ -1,7 +1,7 @@
 /* global QRCode, io */
 
 (() => {
-  class PLExternalImageCapture {
+  class PLImageCapture {
     constructor(
       qr_code_url,
       course_id,
@@ -77,7 +77,7 @@
       });
 
       this.loadSubmission(false);
-      this.listenForSubmission();
+      this.listenForExternalImageCapture();
     }
 
     generateQrCode() {
@@ -91,7 +91,8 @@
       }
     }
 
-    listenForSubmission() {
+    // Listen for image captures from the user's other device, most likely their mobile phone.
+    listenForExternalImageCapture() {
       const questionContainer = document.querySelector('.question-container');
 
       if (!questionContainer) return;
@@ -105,21 +106,15 @@
           variant_token: questionContainer.dataset.variantToken,
           answer_name: this.answer_name,
         },
-        () => {
-          // if (!msg) {
-          //     console.error('Failed to join external image capture socket');
-          //     return;
-          // }
-          // if (msg.image_uploaded) {
-          //     this.loadMobileSubmission();
-          // }
+        (msg) => {
+          if (!msg) {
+            throw new Error('Failed to join external image capture room');
+          }
         },
       );
 
-      socket.on('imageUploaded', (msg) => {
-        if (msg.image_uploaded) {
-          this.loadSubmission(true);
-        }
+      socket.on('externalImageCapture', () => {
+        this.loadSubmission(true);
       });
     }
     async reload() {
@@ -172,11 +167,11 @@
             `;
 
       if (!forMobile && this.submitted_file_name) {
-        const externalImageCaptureContainer = document.querySelector(
-          '#external-image-capture-container',
+        const imageCaptureContainer = document.querySelector(
+          '#image-capture-container',
         );
 
-        const submissionFilesUrl = externalImageCaptureContainer.dataset.submissionFilesUrl;
+        const submissionFilesUrl = imageCaptureContainer.dataset.submissionFilesUrl;
         if (!submissionFilesUrl) {
           console.error('Submission files URL not found');
           return;
@@ -253,8 +248,8 @@
     }
 
     async startWebcamCapture() {
-      const externalImageCaptureContainer = document.querySelector(
-        '#external-image-capture-container',
+      const imageCaptureContainer = document.querySelector(
+        '#image-capture-container',
       );
       const webcamCaptureContainer = document.querySelector('#webcam-capture-container');
       const permissionMessage = document.querySelector('#webcam-permission-message');
@@ -262,15 +257,15 @@
       const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
 
       if (
-        !externalImageCaptureContainer ||
+        !imageCaptureContainer ||
         !webcamCaptureContainer ||
         !webcamConfirmationContainer
       ) {
-        console.error('External image capture or webcam capture container not found');
+        console.error('Image capture or webcam capture container not found');
         return;
       }
 
-      externalImageCaptureContainer.classList.add('d-none');
+      imageCaptureContainer.classList.add('d-none');
 
       webcamCaptureContainer.classList.remove('d-none');
       webcamCaptureContainer.classList.add('d-flex');
@@ -361,34 +356,34 @@
     }
 
     closeConfirmationContainer() {
-      const externalImageCaptureContainer = document.querySelector(
-        '#external-image-capture-container',
+      const imageCaptureContainer = document.querySelector(
+        '#image-capture-container',
       );
       const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
-      if (!externalImageCaptureContainer || !webcamConfirmationContainer) {
+      if (!imageCaptureContainer || !webcamConfirmationContainer) {
         console.error('Webcam capture or confirmation container not found');
         return;
       }
 
-      externalImageCaptureContainer.classList.remove('d-none');
-      externalImageCaptureContainer.classList.add('d-block');
+      imageCaptureContainer.classList.remove('d-none');
+      imageCaptureContainer.classList.add('d-block');
       webcamConfirmationContainer.classList.add('d-none');
       webcamConfirmationContainer.classList.remove('d-flex');
     }
 
     cancelWebcamCapture() {
-      const externalImageCaptureContainer = document.querySelector(
-        '#external-image-capture-container',
+      const imageCaptureContainer = document.querySelector(
+        '#image-capture-container',
       );
       const webcamCaptureContainer = document.querySelector('#webcam-capture-container');
       const permissionMessage = document.querySelector('#webcam-permission-message');
 
-      if (!externalImageCaptureContainer || !webcamCaptureContainer) {
-        console.error('External image capture or webcam capture container not found');
+      if (!imageCaptureContainer || !webcamCaptureContainer) {
+        console.error('Image capture or webcam capture container not found');
         return;
       }
 
-      externalImageCaptureContainer.classList.remove('d-none');
+      imageCaptureContainer.classList.remove('d-none');
 
       webcamCaptureContainer.classList.add('d-none');
       webcamCaptureContainer.classList.remove('d-flex');
@@ -399,5 +394,5 @@
     }
   }
 
-  window.PLExternalImageCapture = PLExternalImageCapture;
+  window.PLImageCapture = PLImageCapture;
 })();

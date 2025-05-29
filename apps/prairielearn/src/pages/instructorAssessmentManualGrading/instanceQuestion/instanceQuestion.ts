@@ -7,7 +7,6 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../../../lib/db-types.js';
-import { createExternalImageCapture } from '../../../lib/externalImageCapture.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';

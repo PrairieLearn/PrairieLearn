@@ -48,7 +48,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params["qr_code_url"] = qr_code_url
 
-    with open("pl-external-image-capture.mustache", encoding="utf-8") as f:
+    with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 

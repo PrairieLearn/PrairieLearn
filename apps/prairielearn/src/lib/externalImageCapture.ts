@@ -1,6 +1,6 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import { imageUploaded } from './externalImageCaptureSocket.js';
+import { emitExternalImageCapture } from './externalImageCaptureSocket.js';
 import { uploadFile } from './file-store.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -38,5 +38,5 @@ export const createExternalImageCapture = async ({
   });
 
   // Emit a socket event to notify the client that the image has been capture
-  await imageUploaded(variantId, answerName);
+  await emitExternalImageCapture(variantId, answerName);
 };
