@@ -143,6 +143,8 @@ export function PageLayout({
                   courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,
                   assessment: resLocals.assessment,
+                  assessmentSet: resLocals.assessment_set,
+                  assessmentLabel: resLocals.assessment_label,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({
