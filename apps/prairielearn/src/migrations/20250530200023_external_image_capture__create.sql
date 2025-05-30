@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS external_image_capture (
   variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
   answer_name TEXT NOT NULL,
   file_id BIGINT REFERENCES files ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT external_image_capture_variant_element_uuid_unique UNIQUE (variant_id, answer_name)
+  CONSTRAINT external_image_capture_variant_id_and_answer_name_unique UNIQUE (variant_id, answer_name)
 );

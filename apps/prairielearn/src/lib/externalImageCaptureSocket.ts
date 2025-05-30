@@ -5,32 +5,35 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { config } from './config.js';
+import type { StatusMessage } from './externalImageCaptureSocket.types.js';
 import * as socketServer from './socket-server.js';
 
 let namespace: Namespace;
 
 export function init() {
-    namespace = socketServer.io.of('/external-image-capture');
-    namespace.on('connection', connection); 
+  namespace = socketServer.io.of('/external-image-capture');
+  namespace.on('connection', connection);
 }
 
 export function connection(socket: Socket) {
-    socket.on('joinExternalImageCapture', async (msg, callback) => {
-        if (!ensureProps(msg, ['variant_id', 'variant_token', 'answer_name'])) {
-            return callback(null);
-        }
+  socket.on('joinExternalImageCapture', async (msg, callback) => {
+    if (!ensureProps(msg, ['variant_id', 'variant_token', 'answer_name'])) {
+      return callback(null);
+    }
 
-        if (!checkToken(msg.variant_token, msg.variant_id)) {
-            return callback(null);
-        }
+    if (!checkToken(msg.variant_token, msg.variant_id)) {
+      return callback(null);
+    }
 
-        socket.join(`variant-${msg.variant_id}-answer-${msg.answer_name}`);
+    socket.join(`variant-${msg.variant_id}-answer-${msg.answer_name}`);
 
-        callback({
-            variant_id: msg.variant_id,
-            answer_name: msg.answer_name
-        });
-    })
+    const externalImageCaptureData: StatusMessage = {
+      variant_id: msg.variant_id,
+      answer_name: msg.answer_name,
+    };
+
+    callback(externalImageCaptureData);
+  });
 }
 
 function ensureProps(data: Record<string, any>, props: string[]): boolean {
@@ -46,23 +49,22 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
   return true;
 }
 
-export async function emitExternalImageCapture(
-    variant_id: string,
-    answer_name: string
-) {
-    try {
-        namespace.to(`variant-${variant_id}-answer-${answer_name}`).emit('externalImageCapture', {
-            variant_id,
-            answer_name,
-        });
-    } catch (err) {
-        logger.error('Error in emitExternalImageCapture', err);
-        Sentry.captureException(err);
-    }
+export async function emitExternalImageCapture(variant_id: string, answer_name: string) {
+  try {
+    const eventData: StatusMessage = {
+      variant_id,
+      answer_name,
+    };
 
-};
+    namespace
+      .to(`variant-${variant_id}-answer-${answer_name}`)
+      .emit('externalImageCapture', eventData);
+  } catch (err) {
+    logger.error('Error in emitExternalImageCapture', err);
+    Sentry.captureException(err);
+  }
+}
 
-// TODO: Create a separate function for this -- this is shared
 function checkToken(token: string, variantId: string): boolean {
   const data = { variantId };
   const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });

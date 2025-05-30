@@ -201,7 +201,7 @@ const PostBodySchema = z.union([
     __action: z.literal('report_issue'),
     __variant_id: IdSchema,
     description: z.string(),
-  })
+  }),
 ]);
 
 router.post(

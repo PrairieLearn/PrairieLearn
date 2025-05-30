@@ -1,6 +1,7 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { queryOptionalRow } from '@prairielearn/postgres';
 
@@ -28,58 +29,9 @@ router.get(
   }),
 );
 
-router.get(
-  '/answer_name/:answer_name/submitted_image',
-  asyncHandler(async (req, res) => {
-    const variantId = req.params.variant_id;
-    const answer_name = req.params.answer_name;
-
-    const variant = await selectAndAuthzVariant({
-      unsafe_variant_id: variantId,
-      variant_course: res.locals.course,
-      question_id: res.locals.question.id,
-      course_instance_id: res.locals?.course_instance?.id,
-      instance_question_id: res.locals.instance_question?.id,
-      authz_data: res.locals.authz_data,
-      authn_user: res.locals.authn_user,
-      user: res.locals.user,
-      is_administrator: res.locals.is_administrator,
-      publicQuestionPreview: res.locals.public_question_preview,
-    });
-
-    if (!variant) {
-      res.status(404).send('Variant not found');
-      return;
-    }
-
-    const externalImageCapture = await queryOptionalRow(
-      sql.select_external_image_capture_by_variant_id_and_answer_name,
-      {
-        variant_id: parseInt(variant.id),
-        answer_name,
-      },
-      ExternalImageCaptureSchema,
-    );
-
-    if (externalImageCapture) {
-      const { contents, file } = await getFile(externalImageCapture.file_id);
-      const base64_contents = contents.toString('base64');
-      res.json({
-        filename: file.display_filename,
-        type: file.type,
-        data: base64_contents,
-        uploadDate: externalImageCapture.created_at,
-      });
-    } else {
-      res.status(404).send();
-    }
-  }),
-);
-
 router.post(
   '/answer_name/:answer_name',
   asyncHandler(async (req, res) => {
-    // Validate that the user has access to the variant
     const variantId = req.params.variant_id;
     const answer_name = req.params.answer_name;
     const variant = await selectAndAuthzVariant({
@@ -96,18 +48,15 @@ router.post(
     });
 
     if (!variant) {
-      res.status(404).send('Variant not found');
-      return;
+      throw new HttpStatusError(404, 'Variant not found');
     }
 
     if (!variant.open) {
-      res.status(403).send('Forbidden: This variant is not open');
-      return;
+      throw new HttpStatusError(403, 'This variant is not open');
     }
 
     if (!req.file?.buffer) {
-      res.status(400).send('No file uploaded');
-      return;
+      throw new HttpStatusError(400, 'No file uploaded');
     }
 
     createExternalImageCapture({
@@ -123,6 +72,50 @@ router.post(
         resLocals: res.locals,
       }),
     );
+  }),
+);
+
+router.get(
+  '/answer_name/:answer_name/submitted_image',
+  asyncHandler(async (req, res) => {
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      course_instance_id: res.locals?.course_instance?.id,
+      instance_question_id: res.locals.instance_question?.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+      publicQuestionPreview: res.locals.public_question_preview,
+    });
+
+    if (!variant) {
+      throw new HttpStatusError(404, 'Variant not found');
+    }
+
+    const externalImageCapture = await queryOptionalRow(
+      sql.select_external_image_capture_by_variant_id_and_answer_name,
+      {
+        variant_id: parseInt(variant.id),
+        answer_name: req.params.answer_name,
+      },
+      ExternalImageCaptureSchema,
+    );
+
+    if (externalImageCapture) {
+      const { contents, file } = await getFile(externalImageCapture.file_id);
+      const base64_contents = contents.toString('base64');
+      res.json({
+        filename: file.display_filename,
+        type: file.type,
+        data: base64_contents,
+        uploadDate: externalImageCapture.created_at,
+      });
+    } else {
+      throw new HttpStatusError(404, 'No image submitted for this answer');
+    }
   }),
 );
 

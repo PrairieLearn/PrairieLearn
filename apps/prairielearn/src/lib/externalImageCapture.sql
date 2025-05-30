@@ -15,6 +15,6 @@ VALUES
     $answer_name,
     $file_id
   )
-ON CONFLICT ON CONSTRAINT external_image_capture_variant_element_uuid_unique DO UPDATE
+ON CONFLICT ON CONSTRAINT external_image_capture_variant_id_and_answer_name_unique DO UPDATE
 SET
   file_id = EXCLUDED.file_id;

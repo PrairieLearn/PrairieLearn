@@ -37,6 +37,6 @@ export const createExternalImageCapture = async ({
     file_id,
   });
 
-  // Emit a socket event to notify the client that the image has been capture
+  // Emit a socket event to notify the client that the image has been captured.
   await emitExternalImageCapture(variantId, answerName);
 };
