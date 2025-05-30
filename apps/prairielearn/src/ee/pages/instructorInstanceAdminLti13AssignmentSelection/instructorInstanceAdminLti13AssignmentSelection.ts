@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { renderText } from '../../../lib/assessment.js';
-import { Lti13AssessmentsSchema, type Lti13Assessments } from '../../../lib/db-types.js';
+import { type Lti13Assessments, Lti13AssessmentsSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectAssessments } from '../../../models/assessment.js';
 import { Lti13Claim, Lti13CombinedInstanceSchema } from '../../lib/lti13.js';
