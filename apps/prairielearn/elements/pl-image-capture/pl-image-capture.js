@@ -315,6 +315,9 @@
         // Stream the webcam video to the video element
         this.webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
         const video = this.imageCaptureDiv.querySelector('.webcam-video');
+        if (!video) {
+          throw new Error('Webcam video element not found');
+        }
         video.srcObject = this.webcamStream;
         await video.play();
         permissionMessage.classList.add('d-none');

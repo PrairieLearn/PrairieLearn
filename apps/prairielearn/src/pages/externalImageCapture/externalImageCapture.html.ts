@@ -26,13 +26,15 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
         />
         <div class="position-relative">
           <video
-            class="webcam-video w-100 bg-body-secondary rounded border"
+            id="webcam-video"
+            class="w-100 bg-body-secondary rounded border"
             autoplay
             playsinline
           ></video>
 
           <div
-            class="webcam-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+            id="webcam-permission-message"
+            class="position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
             style="pointer-events: none;"
           >
             Give permission to access your camera to capture an image.
@@ -42,7 +44,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
         Ensure that your entire solution is visible, legible, and well-lit in the image.
         </p>
         <div class="d-flex gap-1 mt-1">
-          <button class="capture-image-button btn btn-info" disabled>
+          <button id="capture-image-button" class="btn btn-info" disabled>
             <i class="bi bi-camera-fill me-1"></i>
             Capture image
           </button>

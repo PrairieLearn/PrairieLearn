@@ -1,28 +1,36 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-onDocumentReady(() => {
-  const cameraInput = document.getElementById('camera-input') as HTMLInputElement;
-  const camerInputLabelSpan = document
-    .querySelector('label[for="camera-input"]')
-    ?.querySelector('span') as HTMLLabelElement;
-  const submitButton = document.getElementById('submit-button') as HTMLButtonElement;
-  const imagePreview = document.getElementById('image-preview') as HTMLImageElement;
+onDocumentReady(async () => {
+  const permissionMessage = document.querySelector('#webcam-permission-message');
+  if (!permissionMessage) {
+    throw new Error('Webcam image preview canvas or permission message element not found');
+  }
 
-  cameraInput.addEventListener('change', () => {
-    if (cameraInput.files && cameraInput.files.length > 0) {
-      // Select the image the user uploaded.
-      const file = cameraInput.files[0];
+  try {
+    // Stream the webcam video to the video element
+    const webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-      // Display it in the image preview element.
-      imagePreview.src = URL.createObjectURL(file);
-      imagePreview.style.display = 'block';
-      imagePreview.onload = () => URL.revokeObjectURL(imagePreview.src);
-
-      submitButton.disabled = false;
-      camerInputLabelSpan.textContent = 'Retake photo';
-    } else {
-      // The user cannot submit if no file was uploaded.
-      submitButton.disabled = true;
+    const webcamVideo = document.querySelector<HTMLVideoElement>('#webcam-video');
+    if (!webcamVideo) {
+      throw new Error('Webcam video element not found');
     }
-  });
+    webcamVideo.srcObject = webcamStream;
+
+    webcamVideo.setAttribute('autoplay', '');
+    webcamVideo.setAttribute('muted', '');
+    webcamVideo.setAttribute('playsinline', '')
+
+    await webcamVideo.play();
+    
+    permissionMessage.classList.add('d-none');
+    const captureImageButton = document.querySelector('.capture-image-button');
+    if (!captureImageButton) {
+      throw new Error('Capture image button not found');
+    }
+
+    // Allow the user to capture an image
+    captureImageButton.removeAttribute('disabled');
+  } catch {
+    throw new Error('Could not start webcam.');
+  }
 });
