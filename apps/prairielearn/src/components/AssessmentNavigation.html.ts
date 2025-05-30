@@ -24,7 +24,7 @@ export function AssessmentNavigation({
     <div class="dropdown bg-light pt-2 px-3">
       <button
         type="button"
-        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center gap-1"
+        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
         style="max-width: 100%;"
         aria-label="Change assessment"
         aria-haspopup="true"
@@ -37,7 +37,7 @@ export function AssessmentNavigation({
         data-bs-target="#assessmentNavigationModal"
         hx-target="#assessmentNavigationModalContent"
       >
-        <span class="badge top-0 color-${assessmentSet.color}">
+        <span class="badge top-0 me-1 color-${assessmentSet.color}">
           ${assessmentSet.abbreviation}${assessment.number}
         </span>
         <span class="h6 mb-0 me-1 overflow-hidden text-truncate">
