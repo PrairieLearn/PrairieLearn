@@ -2,26 +2,26 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
   const cameraInput = document.getElementById('camera-input') as HTMLInputElement;
-  const takePhotoSpan = document
+  const camerInputLabelSpan = document
     .querySelector('label[for="camera-input"]')
     ?.querySelector('span') as HTMLLabelElement;
   const submitButton = document.getElementById('submit-button') as HTMLButtonElement;
-  const previewImage = document.getElementById('preview-image') as HTMLImageElement;
+  const imagePreview = document.getElementById('image-preview') as HTMLImageElement;
 
   cameraInput.addEventListener('change', () => {
     if (cameraInput.files && cameraInput.files.length > 0) {
+      // Select the image the user uploaded.
       const file = cameraInput.files[0];
 
-      // Create a blob URL for quick preview
-      previewImage.src = URL.createObjectURL(file);
-      previewImage.style.display = 'block';
-
-      // Revoke the blob URL after image loads to free memory
-      previewImage.onload = () => URL.revokeObjectURL(previewImage.src);
+      // Display it in the image preview element.
+      imagePreview.src = URL.createObjectURL(file);
+      imagePreview.style.display = 'block';
+      imagePreview.onload = () => URL.revokeObjectURL(imagePreview.src);
 
       submitButton.disabled = false;
-      takePhotoSpan.textContent = 'Retake photo';
+      camerInputLabelSpan.textContent = 'Retake photo';
     } else {
+      // The user cannot submit if no file was uploaded.
       submitButton.disabled = true;
     }
   });

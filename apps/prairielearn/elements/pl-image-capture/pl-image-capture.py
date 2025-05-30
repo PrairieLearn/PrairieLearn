@@ -28,25 +28,27 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         submitted_file_name = submitted_files[0].get("name")
 
     html_params = {
-        "name": answer_name,
-        "course_id": data["options"].get("course_id", ""),
-        "course_instance_id": data["options"].get("course_instance_id", ""),
-        "question_id": data["options"].get("question_id", ""),
-        "instance_question_id": data["options"].get("instance_question_id", ""),
+        "answer_name": answer_name,
         "variant_id": data["options"].get("variant_id", ""),
-        "csrf_token": data["options"].get("csrf_token", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url", None),
         "uuid": pl.get_uuid(),
     }
 
-    if "instance_question_id" in data["options"]:
-        qr_code_url = f"{data['options'].get('serverCanonicalHost')}/pl/course_instance/{html_params['course_instance_id']}/instance_question/{html_params['instance_question_id']}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['name']}"
-    else:
-        qr_code_url = f"{data['options'].get('serverCanonicalHost')}/pl/course/{html_params['course_id']}/question/{html_params['question_id']}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['name']}"
+    course_id = data["options"].get("course_id", None)
+    course_instance_id = data["options"].get("course_instance_id", None)
+    question_id = data["options"].get("question_id", None)
+    instance_question_id = data["options"].get("instance_question_id", None)
 
-    html_params["qr_code_url"] = qr_code_url
+    if course_instance_id is not None and instance_question_id is not None:
+        external_image_capture_url = f"{data['options'].get('serverCanonicalHost')}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['answer_name']}"
+    elif course_id is not None and question_id is not None:
+        external_image_capture_url = f"{data['options'].get('serverCanonicalHost')}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['answer_name']}"
+    else:
+        external_image_capture_url = None
+
+    html_params["external_image_capture_url"] = external_image_capture_url
 
     with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

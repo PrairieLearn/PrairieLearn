@@ -3,25 +3,18 @@
 (() => {
   class PLImageCapture {
     constructor(
-      qr_code_url,
-      course_id,
-      course_instance_id,
-      question_id,
-      instance_question_id,
-      variant_id,
       answer_name,
+      external_image_capture_url,
+      variant_id,
       submitted_file_name,
       submission_date,
     ) {
-      this.qr_code_url = qr_code_url;
-      this.course_id = course_id;
-      this.course_instance_id = course_instance_id;
-      this.question_id = question_id;
-      this.instance_question_id = instance_question_id;
-      this.variant_id = variant_id;
       this.answer_name = answer_name;
+      this.external_image_capture_url = external_image_capture_url;
+      this.variant_id = variant_id;
       this.submitted_file_name = submitted_file_name;
       this.submission_date = submission_date;
+      
       const scanSubmissionButton = document.querySelector('#scan-submission-button');
       const reloadButton = document.querySelector('#reload-submission-button');
       const captureWithWebcamButton = document.querySelector('#capture-with-webcam-button');
@@ -81,13 +74,13 @@
     }
 
     generateQrCode() {
-      const qrCodeSvg = new QRCode({ content: this.qr_code_url, container: 'svg-viewbox' }).svg();
+      const qrCodeSvg = new QRCode({ content: this.external_image_capture_url, container: 'svg-viewbox' }).svg();
 
       const qrCode = document.querySelector('#qr-code');
       if (qrCode) {
         qrCode.innerHTML = qrCodeSvg;
       } else {
-        console.error('QR code element not found');
+        throw new Error('QR code element not found.');
       }
     }
 
@@ -118,16 +111,22 @@
       });
     }
     async reload() {
-      // Copmpare the submission dates
+      const uploadedImageContainer = document.querySelector('#uploaded-image-container');
+      const reloadButton = document.querySelector('#reload-submission-button');
 
-      const submittedImageResponse = await fetch(`${this.qr_code_url}/submitted_image`);
+      this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
+
+      const submittedImageResponse = await fetch(`${this.external_image_capture_url}/submitted_image`);
       if (submittedImageResponse.ok) {
-        // TODO: This makes two requests, when we could make just one. Improve that.
-        const { uploadDate: mobileUploadDate } = await submittedImageResponse.json();
-        if (mobileUploadDate && this.submission_date) {
-          if (new Date(mobileUploadDate) > new Date(this.submission_date)) {
-            // Use the mobile submission
-            this.loadSubmission(true);
+        const { uploadDate: externalImageUploadDate, data: externalImageData, type: externalImageType } = await submittedImageResponse.json();
+        if (externalImageUploadDate && this.submission_date) {
+          // External image capture and last submission images are available
+          if (new Date(externalImageUploadDate) > new Date(this.submission_date)) {
+            // Use the external image capture submission
+            this.loadPreviewImage({
+              data: externalImageData,
+              type: externalImageType,
+            });
           } else {
             // Use the existing submission
             this.loadSubmission(false);
@@ -135,8 +134,46 @@
           }
         }
       } else if (this.submission_date) {
+        // Last submission is available, but no external image capture
         this.loadSubmission(false);
+      } else {
+        // No submission is available yet.
+        this.setNoSubmissionAvailableYetState(uploadedImageContainer, reloadButton);
       }
+    }
+
+    setLoadingSubmissionState(uploadedImageContainer, reloadButton) {
+      if (!uploadedImageContainer) {
+        throw new Error('Uploaded image container not found');
+      }
+
+      if (!reloadButton) {
+        throw new Error('Reload button not found');
+      }
+
+      reloadButton.setAttribute('disabled', 'disabled');
+
+      uploadedImageContainer.innerHTML = `
+        <div
+            id="image-placeholder"
+            class="bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+            style="height: 200px;"
+        >
+            <div class="spinning-wheel spinner-border">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+      `;  
+    }
+
+    setNoSubmissionAvailableYetState(uploadedImageContainer) {
+      if (!uploadedImageContainer) {
+        throw new Error('Uploaded image container not found');
+      }
+      const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
+      imagePlaceholderDiv.innerHTML = `
+        <span class="text-muted small">No image submitted yet.</span>
+      `;
     }
 
     async loadSubmission(
@@ -147,24 +184,12 @@
       const uploadedImageContainer = document.querySelector('#uploaded-image-container');
 
       if (!uploadedImageContainer) {
-        console.error('Uploaded image container not found');
-        return;
+        throw new Error('Uploaded image container not found');
       }
 
       const reloadButton = document.querySelector('#reload-submission-button');
-      reloadButton.setAttribute('disabled', 'disabled');
 
-      uploadedImageContainer.innerHTML = `
-                <div
-                    id="image-placeholder"
-                    class="bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
-                    style="height: 200px;"
-                >
-                    <div class="spinning-wheel spinner-border">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
+      this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
 
       if (!forMobile && this.submitted_file_name) {
         const imageCaptureContainer = document.querySelector(
@@ -173,8 +198,7 @@
 
         const submissionFilesUrl = imageCaptureContainer.dataset.submissionFilesUrl;
         if (!submissionFilesUrl) {
-          console.error('Submission files URL not found');
-          return;
+          throw new Error('Submission files URL not found');
         }
         const response = await fetch(`${submissionFilesUrl}/${this.submitted_file_name}`);
 
@@ -188,15 +212,15 @@
 
         this.loadPreviewImageFromBlob(await response.blob());
       } else {
-        const submittedImageResponse = await fetch(`${this.qr_code_url}/submitted_image`);
+        const submittedImageResponse = await fetch(`${this.external_image_capture_url}/submitted_image`);
 
         if (!submittedImageResponse.ok) {
           reloadButton.removeAttribute('disabled');
           if (submittedImageResponse.status === 404) {
-            const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
-            imagePlaceholderDiv.innerHTML = `
-                            <span class="text-muted small">No image submitted yet.</span>
-                        `;
+            this.setNoSubmissionAvailableYetState(
+              uploadedImageContainer,
+              reloadButton,
+            );
             return;
           }
           throw new Error('Failed to load submitted image');
@@ -228,8 +252,7 @@
       const uploadedImageContainer = document.querySelector('#uploaded-image-container');
 
       if (!uploadedImageContainer) {
-        console.error('Uploaded image container not found');
-        return;
+        throw new Error('Uploaded image container not found');
       }
 
       uploadedImageContainer.innerHTML = `
@@ -261,8 +284,7 @@
         !webcamCaptureContainer ||
         !webcamConfirmationContainer
       ) {
-        console.error('Image capture or webcam capture container not found');
-        return;
+        throw new Error('Image capture or webcam capture container not found');
       }
 
       imageCaptureContainer.classList.add('d-none');
@@ -284,7 +306,7 @@
           captureImageButton.removeAttribute('disabled');
         }
       } catch (err) {
-        console.error('Could not start webcam:', err);
+        throw new Error('Could not start webcam: ' + err.message);
       }
     }
 
@@ -315,8 +337,7 @@
         !webcamImagePreviewCanvas ||
         !webcamVideo
       ) {
-        console.error('Webcam capture or confirmation container not found');
-        return;
+        throw new Error('Webcam capture, image preview, video, or confirmation container not found');
       }
 
       webcamImagePreviewCanvas.width = webcamVideo.videoWidth;
@@ -336,8 +357,7 @@
     async confirmWebcamCapture() {
       const canvas = document.querySelector('#webcam-image-preview');
       if (!canvas) {
-        console.error('Webcam image preview canvas not found');
-        return;
+        throw new Error('Webcam image preview canvas not found');
       }
 
       const questionContainer = document.querySelector('.question-container');
@@ -361,8 +381,7 @@
       );
       const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
       if (!imageCaptureContainer || !webcamConfirmationContainer) {
-        console.error('Webcam capture or confirmation container not found');
-        return;
+        throw new Error('Webcam capture or confirmation container not found');
       }
 
       imageCaptureContainer.classList.remove('d-none');
@@ -379,8 +398,7 @@
       const permissionMessage = document.querySelector('#webcam-permission-message');
 
       if (!imageCaptureContainer || !webcamCaptureContainer) {
-        console.error('Image capture or webcam capture container not found');
-        return;
+        throw new Error('Image capture or webcam capture container not found');
       }
 
       imageCaptureContainer.classList.remove('d-none');

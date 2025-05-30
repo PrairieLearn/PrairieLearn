@@ -25,7 +25,6 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
           required
           class="visually-hidden"
         />
-
         <label
           for="camera-input"
           class="d-flex flex-column align-items-center justify-content-center
@@ -34,7 +33,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
         >
           <div id="preview-container" class="mt-4 text-center">
             <img
-              id="preview-image"
+              id="image-preview"
               class="img-fluid rounded border border-secondary mb-3"
               style="max-height: 300px; display: none;"
               alt="Photo preview"
