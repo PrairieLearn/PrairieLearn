@@ -10,7 +10,7 @@ import { Lti13Claim } from '../../lib/lti13.js';
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-router.all(
+router.get(
   '/',
   asyncHandler(async (req, res) => {
     const ltiClaim = new Lti13Claim(req);

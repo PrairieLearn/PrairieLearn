@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { renderText } from '../../../lib/assessment.js';
-import { Lti13AssessmentsSchema } from '../../../lib/db-types.js';
+import { Lti13AssessmentsSchema, type Lti13Assessments } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectAssessments } from '../../../models/assessment.js';
 import { Lti13Claim, Lti13CombinedInstanceSchema } from '../../lib/lti13.js';
@@ -58,7 +58,7 @@ router.get(
       Lti13AssessmentsSchema,
     );
 
-    const lti13AssessmentsByAssessmentId = {};
+    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
     for (const a of lti13_assessments) {
       lti13AssessmentsByAssessmentId[a.assessment_id] = a;
     }
