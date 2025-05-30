@@ -1,27 +1,34 @@
-/* global QRCode, io */
+/* global QRCode, io, bootstrap */
 
 (() => {
   class PLImageCapture {
     constructor(
+      uuid,
       answer_name,
       external_image_capture_url,
       variant_id,
       submitted_file_name,
       submission_date,
     ) {
+      this.uuid = uuid;
       this.answer_name = answer_name;
       this.external_image_capture_url = external_image_capture_url;
       this.variant_id = variant_id;
       this.submitted_file_name = submitted_file_name;
       this.submission_date = submission_date;
 
-      const scanSubmissionButton = document.querySelector('#scan-submission-button');
-      const reloadButton = document.querySelector('#reload-submission-button');
-      const captureWithWebcamButton = document.querySelector('#capture-with-webcam-button');
-      const captureImageButton = document.querySelector('#capture-image-button');
-      const cancelWebcamButton = document.querySelector('#cancel-webcam-button');
-      const retakeImageButton = document.querySelector('#retake-image-button');
-      const confirmImageButton = document.querySelector('#confirm-image-button');
+      this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
+      if (!this.imageCaptureDiv) {
+        throw new Error(`Image capture element with UUID ${uuid} not found.`);
+      }
+
+      const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
+      const captureWithWebcamButton = this.imageCaptureDiv.querySelector('.capture-with-webcam-button');
+      const captureImageButton = this.imageCaptureDiv.querySelector('.capture-image-button');
+      const cancelWebcamButton = this.imageCaptureDiv.querySelector('.cancel-webcam-button');
+      const retakeImageButton = this.imageCaptureDiv.querySelector('.retake-image-button');
+      const confirmImageButton = this.imageCaptureDiv.querySelector('.confirm-image-button');
 
       if (
         !scanSubmissionButton ||
@@ -79,7 +86,7 @@
         container: 'svg-viewbox',
       }).svg();
 
-      const qrCode = document.querySelector('#qr-code');
+      const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
       if (qrCode) {
         qrCode.innerHTML = qrCodeSvg;
       } else {
@@ -90,7 +97,6 @@
     // Listen for image captures from the user's other device, most likely their mobile phone.
     listenForExternalImageCapture() {
       const questionContainer = document.querySelector('.question-container');
-
       if (!questionContainer) return;
 
       const socket = io('/external-image-capture');
@@ -114,8 +120,8 @@
       });
     }
     async reload() {
-      const uploadedImageContainer = document.querySelector('#uploaded-image-container');
-      const reloadButton = document.querySelector('#reload-submission-button');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
 
       this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
 
@@ -139,7 +145,6 @@
           } else {
             // Use the existing submission
             this.loadSubmission(false);
-            return;
           }
         }
       } else if (this.submission_date) {
@@ -149,6 +154,7 @@
         // No submission is available yet.
         this.setNoSubmissionAvailableYetState(uploadedImageContainer, reloadButton);
       }
+      reloadButton.removeAttribute('disabled');
     }
 
     setLoadingSubmissionState(uploadedImageContainer, reloadButton) {
@@ -164,8 +170,7 @@
 
       uploadedImageContainer.innerHTML = `
         <div
-            id="image-placeholder"
-            class="bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+            class="image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
             style="height: 200px;"
         >
             <div class="spinning-wheel spinner-border">
@@ -174,14 +179,14 @@
         </div>
       `;
     }
-
+ƒ
     setNoSubmissionAvailableYetState(uploadedImageContainer) {
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
       }
-      const imagePlaceholderDiv = uploadedImageContainer.querySelector('#image-placeholder');
+      const imagePlaceholderDiv = uploadedImageContainer.querySelector('.image-placeholder');
       imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted small">No image submitted yet.</span>
+        <span class="text-muted">No image submitted yet.</span>
       `;
     }
 
@@ -190,18 +195,18 @@
       // If true, load the image from the most recent submission that was made with the mobile app
       forMobile = true,
     ) {
-      const uploadedImageContainer = document.querySelector('#uploaded-image-container');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
 
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
       }
 
-      const reloadButton = document.querySelector('#reload-submission-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
 
       this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
 
       if (!forMobile && this.submitted_file_name) {
-        const imageCaptureContainer = document.querySelector('#image-capture-container');
+        const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
 
         const submissionFilesUrl = imageCaptureContainer.dataset.submissionFilesUrl;
         if (!submissionFilesUrl) {
@@ -238,13 +243,23 @@
           data,
           type,
         });
+
+        // Dismiss the QR code popover if it is open. 
+        const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
+
+        if (scanSubmissionButton) {
+          const popover = bootstrap.Popover.getInstance(scanSubmissionButton);
+          if (popover) {
+            popover.hide();
+          }
+        }
       }
 
       reloadButton.removeAttribute('disabled');
     }
 
     loadSubmissionPreviewFromDataUrl(dataUrl) {
-      const uploadedImageContainer = document.querySelector('#uploaded-image-container');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
 
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
@@ -252,15 +267,14 @@
 
       const submissionPreview = document.createElement('img');
       submissionPreview.id = 'submission-preview';
-      submissionPreview.className = 'img-fluid rounded border border-secondary mb-1';
-      submissionPreview.style.width = '50%';
+      submissionPreview.className = 'img-fluid rounded border border-secondary w-100';
       submissionPreview.src = dataUrl;
       submissionPreview.alt = 'Submitted image preview';
 
       uploadedImageContainer.innerHTML = ''; // Clear previous content
       uploadedImageContainer.appendChild(submissionPreview);
 
-      const hiddenSubmissionInput = document.querySelector('#hidden-submission-input');
+      const hiddenSubmissionInput = this.imageCaptureDiv.querySelector('.hidden-submission-input');
       hiddenSubmissionInput.value = dataUrl;
     }
 
@@ -277,11 +291,11 @@
     }
 
     async startWebcamCapture() {
-      const imageCaptureContainer = document.querySelector('#image-capture-container');
-      const webcamCaptureContainer = document.querySelector('#webcam-capture-container');
-      const permissionMessage = document.querySelector('#webcam-permission-message');
+      const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
+      const permissionMessage = webcamCaptureContainer.querySelector('.webcam-permission-message');
 
-      const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
 
       if (!imageCaptureContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
         throw new Error('Image capture or webcam capture container not found');
@@ -300,11 +314,11 @@
       try {
         // Stream the webcam video to the video element
         this.webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById('webcam-video');
+        const video = this.imageCaptureDiv.querySelector('.webcam-video');
         video.srcObject = this.webcamStream;
         await video.play();
         permissionMessage.classList.add('d-none');
-        const captureImageButton = document.querySelector('#capture-image-button');
+        const captureImageButton = this.imageCaptureDiv.querySelector('.capture-image-button');
 
         if (captureImageButton) {
           // Allow the user to capture an image
@@ -318,7 +332,7 @@
     }
 
     deactivateVideoStream() {
-      const video = document.getElementById('webcam-video');
+      const video = this.imageCaptureDiv.querySelector('.webcam-video');
       if (this.webcamStream) {
         this.webcamStream.getTracks().forEach((track) => track.stop());
         this.webcamStream = null;
@@ -326,17 +340,17 @@
       video.srcObject = null;
       video.pause();
 
-      const captureImageButton = document.querySelector('#capture-image-button');
+      const captureImageButton = this.imageCaptureDiv.querySelector('.capture-image-button');
       if (captureImageButton) {
         captureImageButton.setAttribute('disabled', 'disabled');
       }
     }
 
     async handleCaptureImage() {
-      const webcamCaptureContainer = document.querySelector('#webcam-capture-container');
-      const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
-      const webcamImagePreviewCanvas = document.querySelector('#webcam-image-preview');
-      const webcamVideo = webcamCaptureContainer.querySelector('#webcam-video');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const webcamImagePreviewCanvas = this.imageCaptureDiv.querySelector('.webcam-image-preview');
+      const webcamVideo = webcamCaptureContainer.querySelector('.webcam-video');
 
       if (
         !webcamCaptureContainer ||
@@ -364,24 +378,19 @@
     }
 
     async confirmWebcamCapture() {
-      const canvas = document.querySelector('#webcam-image-preview');
+      const canvas = this.imageCaptureDiv.querySelector('.webcam-image-preview');
       if (!canvas) {
         throw new Error('Webcam image preview canvas not found');
       }
 
-      const questionContainer = document.querySelector('.question-container');
-
-      if (!questionContainer) return;
-
       const dataUrl = canvas.toDataURL('image/png');
       this.loadSubmissionPreviewFromDataUrl(dataUrl);
-
       this.closeConfirmationContainer();
     }
 
     closeConfirmationContainer() {
-      const imageCaptureContainer = document.querySelector('#image-capture-container');
-      const webcamConfirmationContainer = document.querySelector('#webcam-confirmation-container');
+      const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
       if (!imageCaptureContainer || !webcamConfirmationContainer) {
         throw new Error('Webcam capture or confirmation container not found');
       }
@@ -393,9 +402,9 @@
     }
 
     cancelWebcamCapture() {
-      const imageCaptureContainer = document.querySelector('#image-capture-container');
-      const webcamCaptureContainer = document.querySelector('#webcam-capture-container');
-      const permissionMessage = document.querySelector('#webcam-permission-message');
+      const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
+      const permissionMessage = this.imageCaptureDiv.querySelector('.webcam-permission-message');
 
       if (!imageCaptureContainer || !webcamCaptureContainer) {
         throw new Error('Image capture or webcam capture container not found');

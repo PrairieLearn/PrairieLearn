@@ -1,6 +1,7 @@
 <script>
 $(function() {
     new window.PLImageCapture(
+      "{{uuid}}",
       "{{answer_name}}",
       "{{external_image_capture_url}}",
       "{{variant_id}}",
@@ -10,106 +11,107 @@ $(function() {
 });
 </script>
 
-<div id="image-capture-{{answer_name}}">
-  <div id="image-capture-container" style="width: fit-content;" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
+<div id="image-capture-{{uuid}}" class="card w-75">
+  <div class="card-header">
+    Image capture
+  </div>
+  <div class="image-capture-container p-3" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
     <input
-      id="hidden-submission-input"
+      class="hidden-submission-input"
       type="hidden"
       name="{{answer_name}}"
       data-skip-unload-check="true"
     />
-
-    <button
-      id="capture-with-webcam-button"
-      type="button"
-      class="btn btn-primary"
-    >
-      <i class="bi bi-camera-fill me-1"></i>
-      Capture with webcam
-    </button>
-
-    <button 
-      id="scan-submission-button"
-      type="button" 
-      class="btn btn-primary ms-1"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-placement="auto"
-      data-bs-title="Capture with mobile device"
-      data-bs-content='
-      <div class="w-100 d-flex flex-column align-items-center">
-        <div id="qr-code" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center rounded border" style="width:200px;height:200px">
-          <div class="spinning-wheel spinner-border">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-        <p class="text-muted small mb-0">
-          Scan the QR code with your mobile device to capture an image of your solution. 
-        </p>
-      </div>'
-    >
-      <i class="bi bi-qr-code-scan me-1"></i>
-      Capture with mobile device
-    </button>
     
-    <div id="uploaded-image-container" class="mt-2 w-100">
+    <div class="mb-2 uploaded-image-container">
       <div
-        id="image-placeholder"
-        class="bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+        class="image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border"
       >
         <div class="spinning-wheel spinner-border">
           <span class="visually-hidden">Loading...</span>
         </div>
       </div>
     </div>
-    
-    <button id="reload-submission-button" class="btn btn-primary mt-2" disabled>
-      <i class="bi bi-arrow-clockwise me-1"></i>
-      Reload
-    </button>
+
+    <div class="d-flex gap-1 flex-wrap">
+      <button
+        type="button"
+        class="capture-with-webcam-button btn btn-info"
+      >
+        <i class="bi bi-camera-fill me-1"></i>
+        Capture with webcam
+      </button>
+      <button 
+        type="button" 
+        class="scan-submission-button btn btn-info"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-title="Capture with mobile device"
+        data-bs-content='
+        <div class="w-100 d-flex flex-column align-items-center">
+          <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center rounded border" style="width:200px;height:200px">
+            <div class="spinning-wheel spinner-border">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <p class="text-muted mb-0">
+            Scan the QR code with your mobile device to capture an image of your solution. 
+          </p>
+        </div>'
+      >
+        <i class="bi bi-qr-code-scan me-1"></i>
+        Capture with mobile device
+      </button>
+      <button class="btn btn-primary reload-submission-button" disabled>
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Reload
+      </button>
+    </div>
   </div>
-  <div id="webcam-capture-container" class="d-none flex-column">
+  <div class="webcam-capture-container d-none flex-column p-3">
     <div class="position-relative">
       <video
-        id="webcam-video"
-        class="w-100 bg-body-secondary rounded border"
+        class="webcam-video w-100 bg-body-secondary rounded border"
         autoplay
         playsinline
       ></video>
 
       <div
-        id="webcam-permission-message"
-        class="position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+        class="webcam-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
         style="pointer-events: none;"
       >
         Give permission to access your camera to capture an image.
       </div>
     </div>
 
-    <div class="d-flex gap-2 mt-1">
-      <button id="capture-image-button" class="btn btn-primary" disabled>
+    <p class="text-muted mt-0">
+      Ensure that your entire solution is visible, legible, and well-lit.
+    </p>
+
+    <div class="d-flex gap-1 mt-1">
+      <button class="capture-image-button btn btn-info" disabled>
         <i class="bi bi-camera-fill me-1"></i>
         Capture image
       </button>
-      <button id="cancel-webcam-button" class="btn btn-secondary">
+      <button class="cancel-webcam-button btn btn-secondary">
         Cancel
       </button>
     </div>
   </div>
-  <div id="webcam-confirmation-container" class="d-none d-flex flex-column">
+  <div class="webcam-confirmation-container d-none d-flex flex-column p-3">
     <canvas
-      id="webcam-image-preview"
-      class="w-100 bg-body-secondary rounded border mb-1"
+      class="webcam-image-preview w-100 bg-body-secondary rounded border mb-1"
       autoplay
       playsinline
     ></canvas>
-    <div class="d-flex gap-2 mt-1">
-      <button id="confirm-image-button" class="btn btn-primary" type="submit">
+    <div class="d-flex gap-1 mt-1">
+      <button class="confirm-image-button btn btn-info" type="submit">
         <i class="bi bi-check2 me-1"></i>
         Use image
       </button>
-      <button id="retake-image-button" class="btn btn-secondary">
+      <button class="retake-image-button btn btn-secondary">
         <i class="bi bi-arrow-counterclockwise me-1"></i>
         Retake
       </button>

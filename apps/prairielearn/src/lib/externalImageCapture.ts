@@ -19,7 +19,7 @@ export const createExternalImageCapture = async ({
   resLocals: Record<string, any>;
 }) => {
   const file_id = await uploadFile({
-    display_filename: 'external-image-capture.png',
+    display_filename: `${answerName}.png`,
     contents: fileBuffer,
     type: 'image/png',
     assessment_id: resLocals.assessment?.id ?? null,

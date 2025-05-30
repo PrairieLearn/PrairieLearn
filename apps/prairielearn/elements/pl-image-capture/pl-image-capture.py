@@ -12,20 +12,27 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         optional_attribs=[],
     )
 
+    answer_name = pl.get_string_attrib(element, "answer-name")
+
+    pl.check_answers_names(data, answer_name)
+
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
-    answer_name = pl.get_string_attrib(element, "answer-name", "1")
+    answer_name = pl.get_string_attrib(element, "answer-name")
 
     if data["panel"] != "question":
         return ""
 
     submitted_files = data["submitted_answers"].get("_files", [])
-
     submitted_file_name = None
+
     if len(submitted_files) > 0:
-        submitted_file_name = submitted_files[0].get("name")
+        for file in submitted_files:
+            if file["name"] == f"{answer_name}.png":
+                submitted_file_name = file["name"]
+                break
 
     html_params = {
         "answer_name": answer_name,
@@ -61,20 +68,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = pl.get_string_attrib(element, "answer-name", "1")
     file_content = data["submitted_answers"].get(answer_name, None)
 
-    if file_content is None:
-        pl.add_files_format_error(data, "Missing image submission.")
+    if file_content is None or file_content == "":
+        pl.add_files_format_error(data, f"No image was submitted for {answer_name}.")
         return
 
     if not file_content.startswith("data:"):
         # not a data-URI, you could choose to fetch the URL or skip
-        pl.add_files_format_error(data, "Image submission is not a data URI.")
+        pl.add_files_format_error(
+            data, f"Image submission for {answer_name} is not a data URI."
+        )
         return
 
-    #     # the part after the comma is pure Base-64
+    # The part after the comma is pure Base-64
     try:
         _, b64_payload = file_content.split(",", 1)
     except ValueError:
         # malformed data URI
         return
 
-    pl.add_submitted_file(data, "preview-image.png", b64_payload)
+    pl.add_submitted_file(data, f"{answer_name}.png", b64_payload)

@@ -17,45 +17,42 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
       <form method="POST" enctype="multipart/form-data">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input
-          type="file"
+          type="hidden"
           id="camera-input"
           name="file"
           accept="image/png"
           capture="environment"
           required
-          class="visually-hidden"
         />
-        <label
-          for="camera-input"
-          class="d-flex flex-column align-items-center justify-content-center
-                        border border-primary rounded p-4 text-center"
-          style="cursor: pointer; border-style: dashed !important;"
-        >
-          <div id="preview-container" class="mt-4 text-center">
-            <img
-              id="image-preview"
-              class="img-fluid rounded border border-secondary mb-3"
-              style="max-height: 300px; display: none;"
-              alt="Photo preview"
-            />
+        <div class="position-relative">
+          <video
+            class="webcam-video w-100 bg-body-secondary rounded border"
+            autoplay
+            playsinline
+          ></video>
+
+          <div
+            class="webcam-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+            style="pointer-events: none;"
+          >
+            Give permission to access your camera to capture an image.
           </div>
-
-          <i class="bi bi-camera text-primary fs-1"></i>
-          <span class="text-primary">Take photo</span>
-        </label>
-
-        <p class="text-muted mt-3">
-          Before uploading, ensure that your entire solution is visible, legible, and well-lit in
-          the image.
+        </div>
+        <p class="text-muted mt-0"> 
+        Ensure that your entire solution is visible, legible, and well-lit in the image.
         </p>
-
-        <button type="submit" class="btn btn-primary my-3" id="submit-button" disabled>
-          Upload
-        </button>
+        <div class="d-flex gap-1 mt-1">
+          <button class="capture-image-button btn btn-info" disabled>
+            <i class="bi bi-camera-fill me-1"></i>
+            Capture image
+          </button>
+        </div>
       </form>
     `,
   });
 }
+
+
 
 export function ExternalImageCaptureSuccess({ resLocals }: { resLocals: Record<string, any> }) {
   return PageLayout({
