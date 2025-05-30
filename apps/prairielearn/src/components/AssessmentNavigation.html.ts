@@ -14,13 +14,11 @@ export function AssessmentNavigation({
   subPage,
   assessment,
   assessmentSet,
-  assessmentLabel,
 }: {
   courseInstanceId: string;
   subPage: NavSubPage;
   assessment: Assessment;
   assessmentSet: AssessmentSet;
-  assessmentLabel: string;
 }) {
   return html`
     <div class="dropdown bg-light pt-2 px-3">
@@ -39,7 +37,9 @@ export function AssessmentNavigation({
         data-bs-target="#assessmentNavigationModal"
         hx-target="#assessmentNavigationModalContent"
       >
-        <span class="badge top-0 color-${assessmentSet.color}"> ${assessmentLabel} </span>
+        <span class="badge top-0 color-${assessmentSet.color}"
+          >${assessmentSet.abbreviation}${assessment.number}</span
+        >
         <span class="h6 mb-0 me-1 overflow-hidden text-truncate"
           >${assessment.title} (${assessment.tid})</span
         >

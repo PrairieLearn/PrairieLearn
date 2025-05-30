@@ -144,7 +144,6 @@ export function PageLayout({
                   subPage: navContext.subPage,
                   assessment: resLocals.assessment,
                   assessmentSet: resLocals.assessment_set,
-                  assessmentLabel: resLocals.assessment_label,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({
