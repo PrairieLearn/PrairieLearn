@@ -159,7 +159,6 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
   lmsName: string;
   assessment: AssessmentRow;
 }) {
-  console.log(contentItem);
   return html`
     <!doctype html>
     <html lang="en">
@@ -212,12 +211,25 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
           <script>
             function sendIt() {
               if (window.opener) {
-                window.opener.postMessage({
-                  JWT: '${signed_jwt}',
-                  return_url: '${deep_link_return_url}',
-                });
+                try {
+                  window.opener.postMessage(
+                    {
+                      JWT: '${signed_jwt}',
+                      return_url: '${deep_link_return_url}',
+                    },
+                    window.location.origin,
+                  );
+                } catch (error) {
+                  console.error('Failed to send message to opener: ', error);
+                  alert('Failed to communicate with the LMS. Please try again.');
+                  return;
+                }
               } else {
                 console.warn('No opener found to send message to');
+                alert(
+                  'Unabled to communicate with the LMS. Please ensure this window was opened from the LMS.',
+                );
+                return;
               }
             }
           </script>

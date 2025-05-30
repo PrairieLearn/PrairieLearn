@@ -79,7 +79,10 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
             const button = document.getElementById('submitButton');
             const messageDiv = document.getElementById('message');
 
+            let childRef = null;
+
             form.addEventListener('submit', function () {
+              childRef = window.open('', 'PrairieLearnFromIframe');
               button.disabled = true;
               button.textContent = 'Opened PrairieLearn in a new window';
               messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
@@ -89,6 +92,11 @@ export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any
             ? html`
                 <script>
                   window.addEventListener('message', function (event) {
+                    if (event.origin !== window.location.origin || event.source !== childRef) {
+                      console.warn('Blocked message from untrusted source: ', event.origin);
+                      return;
+                    }
+
                     const responseForm = document.createElement('form');
                     responseForm.method = 'POST';
                     responseForm.action = event.data.return_url;
