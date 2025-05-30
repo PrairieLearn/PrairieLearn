@@ -1,9 +1,39 @@
+import { z } from 'zod';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { type Lti13Assessments } from '../../../lib/db-types.js';
 import type { AssessmentRow } from '../../../models/assessment.js';
+
+// https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
+// https://canvas.instructure.com/doc/api/file.content_item.html
+// Incomplete schema but covers our usage
+export const ContentItemLtiResourceLinkSchema = z.object({
+  type: z.literal('ltiResourceLink'),
+  url: z.string().optional(),
+  title: z.string().optional(),
+  text: z.string().optional(),
+  window: z
+    .object({
+      targetName: z.string().optional(),
+      width: z.number().int().optional(),
+      height: z.number().int().optional(),
+      windowfeatures: z.string().optional(),
+    })
+    .optional(),
+  lineItem: z
+    .object({
+      label: z.string().optional(),
+      scoreMaximum: z.number(),
+      resourceId: z.string().optional(),
+      tag: z.string().optional(),
+      gradesReleased: z.boolean().optional(),
+    })
+    .optional(),
+});
+export type ContentItemLtiResourceLink = z.infer<typeof ContentItemLtiResourceLinkSchema>;
 
 export function InstructorInstanceAdminLti13AssignmentSelection({
   resLocals,
@@ -124,7 +154,7 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
 }: {
   resLocals: Record<string, any>;
   deep_link_return_url: string;
-  contentItem: Record<string, any>;
+  contentItem: ContentItemLtiResourceLink;
   signed_jwt: string;
   lmsName: string;
   assessment: AssessmentRow;
@@ -163,10 +193,10 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             ? html`
                 <p>
                   Ask ${lmsName} to add this description to the assignment: (You can update it
-                  later.
+                  later.)
                 </p>
                 <div class="card bg-light mb-2">
-                  <div class="card-body">${unsafeHtml(contentItem.text)}</div>
+                  <div class="card-body">${unsafeHtml(contentItem.text ?? '')}</div>
                 </div>
               `
             : ''}
@@ -192,10 +222,20 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             }
           </script>
 
-          <button class="btn btn-primary" onClick="sendIt();window.close();">
-            Send this information to ${lmsName}
-          </button>
-          <button class="btn btn-secondary" onClick="history.back();">Go back</button>
+          <div class="my-2">
+            <button class="btn btn-primary" onClick="sendIt();window.close();">
+              Send this information to ${lmsName}
+            </button>
+            <button class="btn btn-secondary" onClick="history.back();">Go back</button>
+          </div>
+          <p>
+            When you are returned to ${lmsName}, don't forget to finish configuration (click
+            'Select' in Canvas) and save the assignment.
+          </p>
+          <p>
+            Afterwards, visit your PrairieLearn course instance LTI 1.3 configuration page to link
+            the assignment and send grades.
+          </p>
         </main>
       </body>
     </html>

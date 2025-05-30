@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer } from 'openid-client';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
@@ -13,39 +12,14 @@ import { selectAssessments } from '../../../models/assessment.js';
 import { Lti13Claim, Lti13CombinedInstanceSchema } from '../../lib/lti13.js';
 
 import {
+  type ContentItemLtiResourceLink,
+  ContentItemLtiResourceLinkSchema,
   InstructorInstanceAdminLti13AssignmentConfirmation,
   InstructorInstanceAdminLti13AssignmentSelection,
 } from './instructorInstanceAdminLti13AssignmentSelection.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-// https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
-// Incomplete schema but covers our usage
-const ContentItemLtiResourceLinkSchema = z.object({
-  type: z.literal('ltiResourceLink'),
-  url: z.string().optional(),
-  title: z.string().optional(),
-  text: z.string().optional(),
-  window: z
-    .object({
-      targetName: z.string().optional(),
-      width: z.number().int().optional(),
-      height: z.number().int().optional(),
-      windowfeatures: z.string().optional(),
-    })
-    .optional(),
-  lineItem: z
-    .object({
-      label: z.string().optional(),
-      scoreMaximum: z.number(),
-      resourceId: z.string().optional(),
-      tag: z.string().optional(),
-      gradesReleased: z.boolean().optional(),
-    })
-    .optional(),
-});
-type ContentItemLtiResourceLink = z.infer<typeof ContentItemLtiResourceLinkSchema>;
 
 router.use(
   asyncHandler(async (req, res, next) => {
@@ -71,9 +45,6 @@ router.get(
       Lti13CombinedInstanceSchema,
     );
 
-    const courseName = instance.lti13_course_instance.context_label ?? 'LMS';
-    const lmsName = instance.lti13_instance.name ?? 'LMS';
-
     const assessments = await selectAssessments({
       course_instance_id: res.locals.course_instance.id,
     });
@@ -98,8 +69,8 @@ router.get(
         assessments,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         lti13AssessmentsByAssessmentId,
-        courseName,
-        lmsName,
+        courseName: instance.lti13_course_instance.context_label ?? 'course',
+        lmsName: instance.lti13_instance.name ?? 'LMS',
       }),
     );
   }),
@@ -117,8 +88,6 @@ router.post(
       Lti13CombinedInstanceSchema,
     );
 
-    console.log(req.body);
-
     if (req.body.__action === 'confirm') {
       const assessments = await selectAssessments({
         course_instance_id: res.locals.course_instance.id,
@@ -127,10 +96,8 @@ router.post(
       const assessment = assessments.find((a) => a.id === req.body.unsafe_assessment_id);
 
       if (!assessment) {
-        throw new error.HttpStatusError(400, 'Missing assessment');
+        throw new error.HttpStatusError(400, 'Invalid assessment');
       }
-
-      console.log(assessment);
 
       const host = getCanonicalHost(req);
       const issuer = new Issuer(instance.lti13_instance.issuer_params);
@@ -140,12 +107,6 @@ router.post(
       );
       const ltiClaim = new Lti13Claim(req);
 
-      /* https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
-       * and
-       * https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
-       * and
-       * https://canvas.instructure.com/doc/api/file.content_item.html
-       */
       const contentItem: ContentItemLtiResourceLink = {
         type: 'ltiResourceLink',
         url: `${host}/pl/course_instance/${res.locals.course_instance.id}/assessment/${assessment.id}`,
@@ -153,11 +114,10 @@ router.post(
           targetName: '_blank',
         },
       };
-
       if ('setName' in req.body) {
         contentItem.title = `${assessment.label}: ${assessment.title}`;
       }
-      if ('setText' in req.body) {
+      if ('setText' in req.body && assessment.text) {
         contentItem.text = renderText(assessment, res.locals.urlPrefix) ?? undefined;
       }
       if ('setPoints' in req.body) {
@@ -166,6 +126,9 @@ router.post(
           resourceId: assessment.id,
         };
       }
+      const contentItemParsed = ContentItemLtiResourceLinkSchema.parse(contentItem);
+
+      // https://www.imsglobal.org/spec/lti-dl/v2p0#deep-linking-response-message
       const deepLinkingResponse = {
         'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiDeepLinkingResponse',
         'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
@@ -176,25 +139,26 @@ router.post(
             'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
             'data',
           ]) ?? undefined,
-        'https://purl.imsglobal.org/spec/lti-dl/claim/content_items': [
-          ContentItemLtiResourceLinkSchema.parse(contentItem),
-        ],
-        //'https://purl.imsglobal.org/spec/lti-dl/claim/msg': 'All done!',
+        'https://purl.imsglobal.org/spec/lti-dl/claim/content_items': [contentItemParsed],
       };
-
-      console.log(JSON.stringify(deepLinkingResponse, null, 2));
 
       const deep_link_return_url = ltiClaim.get([
         'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings',
         'deep_link_return_url',
       ]);
+      if (!deep_link_return_url) {
+        throw new error.HttpStatusError(
+          400,
+          `Invalid deep_link_return_url: ${deep_link_return_url}`,
+        );
+      }
 
       res.send(
         InstructorInstanceAdminLti13AssignmentConfirmation({
           resLocals: res.locals,
           deep_link_return_url,
           signed_jwt: await client.requestObject(deepLinkingResponse),
-          contentItem,
+          contentItem: contentItemParsed,
           lmsName: instance.lti13_instance.name,
           assessment,
         }),
