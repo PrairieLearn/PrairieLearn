@@ -1408,7 +1408,8 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
-
+  // External image capture page for instance questions. Enables students to capture and submit
+  // images from an external device (e.g. a mobile phone camera).
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
