@@ -32,6 +32,8 @@ After these steps, you should be able to `import` the library as normal in your 
 
     The local installation may generate compiled files that are commonly ignored in `.gitignore`. For example, packages that use native code will typically contain `*.so` files. These files are required for the usage of the installed package, so make sure these files are committed within Git if you encounter issues. Ignored files can be viewed with `git status --ignored`.
 
+If you also need these libraries in an external grader or workspace, you will need to follow specific instructions to each autograder image. For example, for the Python autograder you may add the relevant files to the external grading options, as listed in the [Python grader documentation](../python-grader/index.md#course-specific-libraries).
+
 ## Adding libraries to PrairieLearn
 
 If a library is very large or requires specific dependencies, it may be infeasible to install it directly into your course. In that case, you can open a pull request to add it to PrairieLearn's built-in dependencies. This should be used as a last resort and is subject to maintainer approval. Note that this process will take more time, as your change will have to be reviewed, merged, and deployed. So, only use this in cases where installing directly in your course did not work.
@@ -62,6 +64,8 @@ sphinx-markdown-builder==0.6.0
 ```
 
 When you're satisfied with your edits, click the "Commit changes..." button, enter a descriptive commit message, and click "Propose changes" to create the pull request.
+
+The instructions above apply to libraries used in a question's `server.py` file. If you also need these libraries in an external graders or workspaces, you will need to update `requirements.txt` files in these specific images. Look for these files in the corresponding directory in the PL GitHub repo, inside `graders/` (for external grader images) or `workspaces/` (for workspace images), depending on the image you intend to update.
 
 ### Wait for review
 
