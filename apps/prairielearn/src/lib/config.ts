@@ -570,7 +570,7 @@ const ConfigSchema = z.object({
    * A list of Python venvs in which to search for Python executables.
    * Will be resolved relative to the repository root.
    */
-  pythonVenvSearchPaths: z.string().array().default(['.venv']),
+  pythonVenvSearchPaths: z.string().array().default(['/venv', '.venv']),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

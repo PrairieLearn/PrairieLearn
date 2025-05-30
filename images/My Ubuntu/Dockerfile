@@ -60,13 +60,13 @@ RUN curl -fsSL https://d2lang.com/install.sh | sh -s --
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add uv to PATH
-ENV PATH="/root/.venv/bin:$PATH"
+ENV PATH="/venv/bin:$PATH"
 
 # Copy Python requirements file
 COPY python-requirements.txt .
 
 # Create and seed virtual environment using uv
-RUN /root/.local/bin/uv venv --python 3.10 --seed
+RUN /root/.local/bin/uv venv --python 3.10 --seed /venv
 
 # Install requirements inside the virtual environment using uv
 RUN /root/.local/bin/uv pip install -r python-requirements.txt
