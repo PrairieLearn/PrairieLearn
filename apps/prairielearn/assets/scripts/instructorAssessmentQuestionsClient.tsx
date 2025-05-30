@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import { Dropdown, Modal } from 'bootstrap';
-import { Fragment, h, render } from 'preact';
+import { Fragment, render } from 'preact';
 import React, { useEffect, useState } from 'preact/hooks';
 
 import { decodeData, onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
@@ -587,6 +587,7 @@ onDocumentReady(() => {
                 {hasCourseInstancePermissionEdit ? (
                   <button
                     class="dropdown-item"
+                    type="button"
                     data-bs-toggle="modal"
                     data-bs-target="#resetQuestionVariantsModal"
                     data-assessment-question-id={question.id}
@@ -594,7 +595,7 @@ onDocumentReady(() => {
                     Reset question variants
                   </button>
                 ) : (
-                  <button class="dropdown-item disabled" disabled>
+                  <button class="dropdown-item disabled" type="button" disabled>
                     Must have editor permission
                   </button>
                 )}
