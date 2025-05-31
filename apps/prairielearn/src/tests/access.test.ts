@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -131,8 +132,11 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('5. database', function () {
     it('should contain E1', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_e1, []);
-      assessment_id = result.rows[0].id;
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam1-automaticTestSuite',
+      });
+      assessment_id = assessment.id;
     });
   });
 
