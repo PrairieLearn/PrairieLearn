@@ -25,7 +25,6 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -334,12 +333,6 @@ export class Lti13Claim {
 export async function validateLti13CourseInstance(
   resLocals: Record<string, any>,
 ): Promise<boolean> {
-  const feature_enabled = await features.enabledFromLocals('lti13', resLocals);
-
-  if (!feature_enabled) {
-    return false;
-  }
-
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
     {
