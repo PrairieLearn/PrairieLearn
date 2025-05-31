@@ -2,27 +2,80 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
   const cameraInput = document.getElementById('camera-input') as HTMLInputElement;
-  const camerInputLabelSpan = document
-    .querySelector('label[for="camera-input"]')
+  const rawCameraInput = document.getElementById('raw-camera-input') as HTMLInputElement;
+
+  const cameraInputLabelSpan = document
+    .querySelector('label[for="raw-camera-input"]')
     ?.querySelector('span') as HTMLLabelElement;
-  const submitButton = document.getElementById('submit-button') as HTMLButtonElement;
+  const uploadButton = document.getElementById('upload-button') as HTMLButtonElement;
   const imagePreview = document.getElementById('image-preview') as HTMLImageElement;
+  const captureSolutionForm = document.getElementById('capture-solution-form') as HTMLFormElement;
 
-  cameraInput.addEventListener('change', () => {
-    if (cameraInput.files && cameraInput.files.length > 0) {
+  rawCameraInput.addEventListener('change', () => {
+    console.log('Data uploaded.')
+    rawCameraInput.disabled = false;
+    if (rawCameraInput.files && rawCameraInput.files.length > 0) {
       // Select the image the user uploaded.
-      const file = cameraInput.files[0];
+      const file = rawCameraInput.files[0];
+      const url  = URL.createObjectURL(file);
+      const image = new Image();
 
-      // Display it in the image preview element.
-      imagePreview.src = URL.createObjectURL(file);
-      imagePreview.style.display = 'block';
-      imagePreview.onload = () => URL.revokeObjectURL(imagePreview.src);
+      image.src = url;
 
-      submitButton.disabled = false;
-      camerInputLabelSpan.textContent = 'Retake photo';
+      image.onload = () => {
+        const imageScaleFactor = Math.min(
+          1000 / Math.max(image.width, image.height), // Width and height should be at most 1000px
+          1 // Scale factor should not exceed 1 (no scaling up)
+        );
+        console.log('imageScaleFactor', imageScaleFactor);
+      
+        const targetWidth = Math.round(image.width * imageScaleFactor);
+        const targetHeight = Math.round(image.height * imageScaleFactor);
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = targetWidth;
+        canvas.height = targetHeight;  
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          console.error('Failed to get canvas context');
+          return;
+        }
+
+        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        imagePreview.src = canvas.toDataURL(file.type);
+        imagePreview.style.display = 'block';
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              URL.revokeObjectURL(url);
+              return;
+            }
+            const resizedFile = new File([blob], file.name, { type: file.type });
+            const dt = new DataTransfer();
+            dt.items.add(resizedFile);
+
+            cameraInput.files = dt.files;
+            uploadButton.disabled = false;
+            cameraInputLabelSpan.textContent = 'Retake photo';
+
+            console.log('rawCameraInput size', file.size);
+            console.log('cameraInput size', cameraInput.files[0].size);
+            URL.revokeObjectURL(url);
+            uploadButton.disabled = false;
+          },
+          file.type
+        );
+      };
     } else {
       // The user cannot submit if no file was uploaded.
-      submitButton.disabled = true;
+      uploadButton.disabled = true;
     }
   });
+  captureSolutionForm.addEventListener('submit', () => {
+     rawCameraInput.disabled = true;
+  });
+
 });

@@ -41,6 +41,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url", None),
         "uuid": pl.get_uuid(),
+        "editable": data["editable"],
     }
 
     course_id = data["options"].get("course_id", None)

@@ -9,6 +9,7 @@
       variant_id,
       submitted_file_name,
       submission_date,
+      editable
     ) {
       this.uuid = uuid;
       this.answer_name = answer_name;
@@ -20,6 +21,11 @@
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
       if (!this.imageCaptureDiv) {
         throw new Error(`Image capture element with UUID ${uuid} not found.`);
+      }
+
+      if (editable !== 'True') {
+        this.loadSubmission(false);
+        return;
       }
 
       const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
@@ -81,6 +87,8 @@
     }
 
     generateQrCode() {
+      console.log('External image capture URL:', this.external_image_capture_url);
+
       const qrCodeSvg = new QRCode({
         content: this.external_image_capture_url,
         container: 'svg-viewbox',
@@ -162,11 +170,9 @@
         throw new Error('Uploaded image container not found');
       }
 
-      if (!reloadButton) {
-        throw new Error('Reload button not found');
+      if (reloadButton) {
+        reloadButton.setAttribute('disabled', 'disabled');
       }
-
-      reloadButton.setAttribute('disabled', 'disabled');
 
       uploadedImageContainer.innerHTML = `
         <div
@@ -254,8 +260,10 @@
           }
         }
       }
-
-      reloadButton.removeAttribute('disabled');
+      
+      if (reloadButton) {
+        reloadButton.removeAttribute('disabled');
+      }
     }
 
     loadSubmissionPreviewFromDataUrl(dataUrl) {

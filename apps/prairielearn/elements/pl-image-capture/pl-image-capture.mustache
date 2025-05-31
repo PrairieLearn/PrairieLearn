@@ -6,7 +6,8 @@ $(function() {
       "{{external_image_capture_url}}",
       "{{variant_id}}",
       "{{submitted_file_name}}",
-      "{{submission_date}}"
+      "{{submission_date}}",
+      "{{editable}}"
     );
 });
 </script>
@@ -33,42 +34,44 @@ $(function() {
       </div>
     </div>
 
-    <div class="d-flex gap-1 flex-wrap">
-      <button
-        type="button"
-        class="capture-with-webcam-button btn btn-info"
-      >
-        <i class="bi bi-camera-fill me-1"></i>
-        Capture with webcam
-      </button>
-      <button 
-        type="button" 
-        class="scan-submission-button btn btn-info"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-placement="auto"
-        data-bs-title="Capture with mobile device"
-        data-bs-content='
-        <div class="w-100 d-flex flex-column align-items-center">
-          <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center rounded border" style="width:200px;height:200px">
-            <div class="spinning-wheel spinner-border">
-              <span class="visually-hidden">Loading...</span>
+    {{#editable}}
+      <div class="d-flex gap-1 flex-wrap">
+        <button
+          type="button"
+          class="capture-with-webcam-button btn btn-info"
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          Capture with webcam
+        </button>
+        <button 
+          type="button" 
+          class="scan-submission-button btn btn-info"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Capture with mobile device"
+          data-bs-content='
+          <div class="w-100 d-flex flex-column align-items-center">
+            <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center rounded border" style="width:200px;height:200px">
+              <div class="spinning-wheel spinner-border">
+                <span class="visually-hidden">Loading...</span>
+              </div>
             </div>
-          </div>
-          <p class="text-muted mb-0">
-            Scan the QR code with your mobile device to capture an image of your solution. 
-          </p>
-        </div>'
-      >
-        <i class="bi bi-qr-code-scan me-1"></i>
-        Capture with mobile device
-      </button>
-      <button class="btn btn-primary reload-submission-button" disabled>
-        <i class="bi bi-arrow-clockwise me-1"></i>
-        Reload
-      </button>
-    </div>
+            <p class="text-muted mb-0">
+              Scan the QR code with your mobile device to capture an image of your solution. 
+            </p>
+          </div>'
+        >
+          <i class="bi bi-qr-code-scan me-1"></i>
+          Capture with mobile device
+        </button>
+        <button class="btn btn-primary reload-submission-button" disabled>
+          <i class="bi bi-arrow-clockwise me-1"></i>
+          Reload
+        </button>
+      </div>
+    {{/editable}}
   </div>
   <div class="webcam-capture-container d-none flex-column p-3">
     <div class="position-relative">
