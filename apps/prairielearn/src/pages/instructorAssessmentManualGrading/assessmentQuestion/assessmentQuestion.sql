@@ -64,3 +64,10 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::BIGINT[]);
+
+-- BLOCK toggle_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;

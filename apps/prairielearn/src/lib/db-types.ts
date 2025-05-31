@@ -200,6 +200,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
