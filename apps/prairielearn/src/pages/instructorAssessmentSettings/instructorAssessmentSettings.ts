@@ -206,6 +206,11 @@ router.post(
           req.body.require_honor_code === 'on',
           true,
         );
+        assessmentInfo.honorCode = propertyValueWithDefault(
+          assessmentInfo.honorCode,
+          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          '',
+        );
       }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
