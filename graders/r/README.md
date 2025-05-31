@@ -26,6 +26,16 @@ See the Dockerfile for full details but we include:
 
 and more. We also include a few command-line applications such as `git` and `sqlite3`.
 
+## File Support
+
+This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (not test files) with the following caveats:
+
+- the student code must be written in a notebook called `student.ipynb`
+- the answer code must be in a single cell of the notebook that starts with `#R`
+- the test files use `/grade/student/student.R`
+
+We plan to support more flexible naming conventions for notebook files in the future.
+
 ## Authors
 
 Alton Barbehenn and Dirk Eddelbuettel
