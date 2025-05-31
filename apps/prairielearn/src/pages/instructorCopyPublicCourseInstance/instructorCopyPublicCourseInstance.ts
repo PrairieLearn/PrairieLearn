@@ -1,0 +1,33 @@
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+
+import * as error from '@prairielearn/error';
+
+import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
+
+const router = Router();
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const courseInstance = await selectCourseInstanceById(req.body.course_instance_id);
+    if (courseInstance === null) {
+      throw new error.HttpStatusError(404, 'Not Found');
+    }
+    const course = await selectCourseById(courseInstance.course_id);
+
+    if (!courseInstance.share_source_publicly) {
+      throw new error.HttpStatusError(400, 'Copying this course instance is not permitted');
+    }
+
+    await copyCourseInstanceBetweenCourses(res, {
+      fromCourse: course,
+      fromCourseInstance: courseInstance,
+      toCourseId: res.locals.course.id,
+    });
+  }),
+);
+
+export default router;

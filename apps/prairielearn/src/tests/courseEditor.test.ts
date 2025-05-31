@@ -326,6 +326,26 @@ const publicCopyTestData: EditData[] = [
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
     ]),
   },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19_copy1/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/test/infoAssessment.json',
+    ]),
+  },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
@@ -365,6 +385,10 @@ describe('test course editor', { timeout: 20_000 }, function () {
     });
 
     beforeAll(createSharedCourse);
+
+    beforeAll(async () => {
+      await sqldb.queryAsync(sql.set_sharing_name, { course_id: 2, sharing_name: 'test-course' });
+    });
 
     describe('verify edits', async function () {
       publicCopyTestData.forEach((element) => {
