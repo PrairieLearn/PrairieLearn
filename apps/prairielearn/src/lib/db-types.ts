@@ -483,6 +483,18 @@ export const AiQuestionGenerationPromptSchema = z.object({
 
 export type AiQuestionGenerationPrompt = z.infer<typeof AiQuestionGenerationPromptSchema>;
 
+export const ExternalImageCaptureSchema = z.object({
+  user_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  variant_id: IdSchema,
+  answer_name: z.string(),
+  file_id: IdSchema,
+});
+
+export type ExternalImageCapture = z.infer<typeof ExternalImageCaptureSchema>;
+
 export const FileTransferSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
