@@ -18,6 +18,9 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const showExternalGradingOptionsButton = document.querySelector<HTMLButtonElement>(
+    '#show-external-grading-options-button',
+  );
   const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
     '#show-workspace-options-button',
   );
@@ -35,8 +38,30 @@ onDocumentReady(() => {
   );
   const workspaceRewriteUrlCheckbox =
     document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
+  const externalGradingOptions = document.querySelector<HTMLDivElement>(
+    '#external-grading-options',
+  );
+  const externalGradingEnabledCheckbox = document.querySelector<HTMLInputElement>(
+    '#external_grading_enabled',
+  );
+  const externalGradingImageInput =
+    document.querySelector<HTMLInputElement>('#external_grading_image');
+  const externalGradingEntrypointInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_entrypoint',
+  );
+  const externalGradingFilesInput =
+    document.querySelector<HTMLInputElement>('#external_grading_files');
+  const externalGradingTimeoutInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_timeout',
+  );
+  const externalGradingEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
+    '#external_grading_enable_networking',
+  );
+  const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_environment',
+  );
 
-  function validateWorkspaceOptions() {
+  function validateQuestionOptions() {
     if (
       workspaceImageInput?.value ||
       workspacePortInput?.value ||
@@ -54,6 +79,38 @@ onDocumentReady(() => {
       workspaceImageInput?.removeAttribute('required');
       workspacePortInput?.removeAttribute('required');
       workspaceHomeInput?.removeAttribute('required');
+    }
+    if (
+      externalGradingEnabledCheckbox?.checked ||
+      externalGradingImageInput?.value ||
+      externalGradingEntrypointInput?.value ||
+      externalGradingFilesInput?.value ||
+      externalGradingTimeoutInput?.value ||
+      (externalGradingEnvironmentInput?.value !== '{}' &&
+        externalGradingEnvironmentInput?.value !== '') ||
+      externalGradingEnableNetworkingCheckbox?.checked
+    ) {
+      externalGradingImageInput?.setAttribute('required', 'true');
+    } else {
+      externalGradingImageInput?.removeAttribute('required');
+    }
+  }
+
+  function validateJsonInput(input: HTMLInputElement) {
+    if (input.value === '') {
+      input.setCustomValidity('');
+      return;
+    }
+    try {
+      const value = JSON.parse(input.value);
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        input.setCustomValidity('Invalid JSON object format');
+      } else {
+        input.setCustomValidity('');
+      }
+      return;
+    } catch {
+      input.setCustomValidity('Invalid JSON object format');
     }
   }
 
@@ -109,21 +166,11 @@ onDocumentReady(() => {
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
   workspaceEnvironmentInput?.addEventListener('input', (e) => {
-    if ((e.target as HTMLInputElement).value === '') {
-      workspaceEnvironmentInput?.setCustomValidity('');
-      return;
-    }
-    try {
-      const value = JSON.parse((e.target as HTMLInputElement).value);
-      if (typeof value !== 'object' || Array.isArray(value)) {
-        workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-      } else {
-        workspaceEnvironmentInput?.setCustomValidity('');
-      }
-      return;
-    } catch {
-      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-    }
+    validateJsonInput(e.target as HTMLInputElement);
+  });
+
+  externalGradingEnvironmentInput?.addEventListener('input', (e) => {
+    validateJsonInput(e.target as HTMLInputElement);
   });
 
   if (!questionSettingsForm || !saveButton) return;
@@ -133,9 +180,13 @@ onDocumentReady(() => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
   });
+  showExternalGradingOptionsButton?.addEventListener('click', () => {
+    externalGradingOptions?.removeAttribute('hidden');
+    showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+  });
 
   questionSettingsForm.addEventListener('submit', (e) => {
-    validateWorkspaceOptions();
+    validateQuestionOptions();
     if (!questionSettingsForm.checkValidity()) {
       e.preventDefault();
       questionSettingsForm.reportValidity();
