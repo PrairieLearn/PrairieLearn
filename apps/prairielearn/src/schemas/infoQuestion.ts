@@ -217,6 +217,10 @@ export const QuestionJsonSchema = z
       .boolean()
       .describe("Whether this questions's source code is publicly shared.")
       .optional(),
+    questionParams: z
+      .record(z.string(), z.any())
+      .describe('A set of key-value pairs for additional question parameters.')
+      .optional(),
   })
   .strict()
   .describe('Info files for questions.');

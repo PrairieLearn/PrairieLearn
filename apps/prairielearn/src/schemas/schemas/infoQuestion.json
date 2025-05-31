@@ -302,6 +302,11 @@
     "shareSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
+    },
+    "questionParams": {
+      "description": "A set of key-value pairs for additional question parameters.",
+      "type": "object",
+      "additionalProperties": {}
     }
   },
   "definitions": {
