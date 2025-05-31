@@ -340,20 +340,22 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  group_name: string,
+  group_name: string | null,
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
 ): Promise<void> {
-  if (group_name.length > 30) {
-    throw new GroupOperationError(
-      'The group name is too long. Use at most 30 alphanumerical characters.',
-    );
-  }
-  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
-    throw new GroupOperationError(
-      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
-    );
+  if (group_name) {
+    if (group_name.length > 30) {
+      throw new GroupOperationError(
+        'The group name is too long. Use at most 30 alphanumerical characters.',
+      );
+    }
+    if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+      throw new GroupOperationError(
+        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -390,7 +392,13 @@ export async function createGroup(
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      if (group_name) {
+        throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      } else {
+        throw new GroupOperationError(
+          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+        );
+      }
     }
     throw err;
   }

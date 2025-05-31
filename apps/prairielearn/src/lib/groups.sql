@@ -9,11 +9,41 @@ WHERE
 
 -- BLOCK create_group
 WITH
+  next_group_number AS (
+    SELECT
+      SUBSTRING(
+        g.name
+        FROM
+          6
+      )::INTEGER + 1 AS group_number
+    FROM
+      groups AS g
+      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+    WHERE
+      gc.assessment_id = $assessment_id
+      AND g.name ~ '^group[0-9]+$'
+      AND g.deleted_at IS NULL
+    ORDER BY
+      group_number DESC
+    LIMIT
+      1
+  ),
   create_group AS (
     INSERT INTO
       groups (name, group_config_id, course_instance_id) (
         SELECT
-          $group_name,
+          COALESCE(
+            NULLIF($group_name::TEXT, ''),
+            -- If no name is provided, use the next group number.
+            (
+              SELECT
+                'group' || group_number
+              FROM
+                next_group_number
+            ),
+            -- If no name is provided and no groups exist, use 'group1'.
+            'group1'
+          ),
           gc.id,
           gc.course_instance_id
         FROM

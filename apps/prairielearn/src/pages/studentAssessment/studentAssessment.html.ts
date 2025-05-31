@@ -225,7 +225,7 @@ function GroupCreationJoinForm({
                   />
                   <small id="groupNameHelp" class="form-text text-muted">
                     Group names can only contain letters and numbers, with maximum length of 30
-                    characters.
+                    characters. If you leave this blank, a group name will be generated for you.
                   </small>
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">

@@ -23,22 +23,3 @@ WHERE
   a.id = $assessment_id
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
   AND sig.group_id IS NULL;
-
--- BLOCK select_unused_group_name_suffix
-SELECT
-  SUBSTRING(
-    g.name
-    FROM
-      6
-  )::INTEGER + 1 AS group_number
-FROM
-  groups AS g
-  JOIN group_configs AS gc ON (gc.id = g.group_config_id)
-WHERE
-  gc.assessment_id = $assessment_id
-  AND g.name ~ '^group[0-9]+$'
-  AND g.deleted_at IS NULL
-ORDER BY
-  group_number DESC
-LIMIT
-  1;
