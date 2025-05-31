@@ -450,6 +450,14 @@ export class CodeCallerNative implements CodeCaller {
   _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
+
+    // Eagerly destroy all streams. While this typically happens automatically,
+    // we've observed situations where the streams are sometimes not closed,
+    // which can leak memory and keep the process alive longer than expected.
+    for (const stream of this.child?.stdio ?? []) {
+      stream.destroy();
+    }
+
     if (this.state === WAITING) {
       this._logError(
         'CodeCallerNative child process exited while in state = WAITING, code = ' +
