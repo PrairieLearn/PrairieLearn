@@ -120,6 +120,92 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
 
+  test-prairielearn-local:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pgvector
+        run: sudo apt-get install -y postgresql-16-pgvector
+
+      # The two `sed` commands are here to handle the fact that the default
+      # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
+      # as the authentication mechanisms. However, our config defaults to not
+      # having any password at all, and we don't have an easy way to specify
+      # config overrides, which means we can't just create a new user with a
+      # password and have our code use that instead.
+      - name: Start Postgres
+        run: |
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          cat /etc/postgresql/16/main/postgresql.conf || true
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          EOF
+          cat /etc/postgresql/16/main/postgresql.conf || true
+
+          sudo systemctl restart postgresql.service
+
+          sleep 5
+
+          sudo cat /var/log/postgresql/postgresql-16-main.log || true
+
+      - name: Install OS packages
+        run: |
+          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev texlive redis
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
+      - name: Install Node dependencies
+        run: yarn install --immutable --inline-builds
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'images/plbase/python-requirements.txt'
+      - name: Install Python dependencies
+        env:
+          UV_SYSTEM_PYTHON: 1
+          # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
+          UV_COMPILE_BYTECODE: 1
+        run: uv pip install -r images/plbase/python-requirements.txt
+      - name: Test Zygote startup time
+        run: time python3 apps/prairielearn/python/zygote_benchmark.py
+
+      - name: Set up Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+      - name: Build all code
+        run: make build
+
+      - name: Test preparation
+        run: |
+          git config --global user.email "dev@example.com"
+          git config --global user.name "Dev User"
+          git config --global safe.directory '*'
+
+      - name: Test code
+        run: |
+          make --assume-old=start-postgres test-js
+          # make --assume-old=start-postgres start-support
+          # cd apps/prairielearn && yarn vitest src/tests/activeAccessRestriction.test.ts
   native-checks-js:
     runs-on: ubuntu-latest
     steps:
