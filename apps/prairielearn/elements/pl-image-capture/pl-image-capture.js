@@ -17,6 +17,7 @@
       this.variant_id = variant_id;
       this.submitted_file_name = submitted_file_name;
       this.submission_date = submission_date;
+      this.variant_opened_date = new Date();
 
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
       if (!this.imageCaptureDiv) {
@@ -87,8 +88,6 @@
     }
 
     generateQrCode() {
-      console.log('External image capture URL:', this.external_image_capture_url);
-
       const qrCodeSvg = new QRCode({
         content: this.external_image_capture_url,
         container: 'svg-viewbox',
@@ -133,34 +132,72 @@
 
       this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
 
+      // Retrieve the last submission, external image capture, and unsubmitted webcam capture.
+      const availableSubmissions = [];
+
+      // Add the last webcam submission, if available
+      if (this.lastLocalWebcamSubmissionDate) {
+        availableSubmissions.push({
+          uploadDate: this.lastLocalWebcamSubmissionDate,
+          method: 'webcam',
+        });
+      }
+
+      // Add the last external image capture, if available
       const submittedImageResponse = await fetch(
         `${this.external_image_capture_url}/submitted_image`,
       );
+
+      let submittedImageResponseJson;
+
       if (submittedImageResponse.ok) {
-        const {
-          uploadDate: externalImageUploadDate,
-          data: externalImageData,
-          type: externalImageType,
-        } = await submittedImageResponse.json();
-        if (externalImageUploadDate && this.submission_date) {
-          // External image capture and last submission images are available
-          if (new Date(externalImageUploadDate) > new Date(this.submission_date)) {
-            // Use the external image capture submission
-            this.loadSubmissionPreview({
-              data: externalImageData,
-              type: externalImageType,
-            });
-          } else {
-            // Use the existing submission
-            this.loadSubmission(false);
-          }
+        submittedImageResponseJson = await submittedImageResponse.json();
+        if (submittedImageResponseJson.uploadDate && new Date(submittedImageResponseJson.uploadDate) >= this.variant_opened_date) {
+          availableSubmissions.push({
+            uploadDate: new Date(submittedImageResponseJson.uploadDate),
+            method: 'external',
+          });
         }
-      } else if (this.submission_date) {
-        // Last submission is available, but no external image capture
-        this.loadSubmission(false);
-      } else {
-        // No submission is available yet.
+      }
+
+      // Add the last submission, if available
+      if (this.submission_date && this.submitted_file_name) {
+        availableSubmissions.push({
+          uploadDate: new Date(this.submission_date),
+          method: 'submission',
+        });
+      }
+
+      if (availableSubmissions.length === 0) {
+        // No submissions available
         this.setNoSubmissionAvailableYetState(uploadedImageContainer, reloadButton);
+        reloadButton.removeAttribute('disabled');
+        return;
+      }
+
+      // Identify the most recent submission
+      const mostRecentSubmission = availableSubmissions.reduce((latest, current) => {
+        return new Date(current.uploadDate) > new Date(latest.uploadDate) ? current : latest;
+      });
+      
+      // Load its data
+      switch (mostRecentSubmission.method) {
+        case 'webcam':
+          this.loadSubmissionPreviewFromDataUrl(
+            this.imageCaptureDiv.querySelector('.hidden-submission-input').value,
+          );
+          break;
+        case 'external':
+          this.loadSubmissionPreview({
+            data: submittedImageResponseJson.data,
+            type: submittedImageResponseJson.type,
+          });
+          break;
+        case 'submission':
+          this.loadSubmission(false);
+          break;
+        default:
+          throw new Error('Unknown submission method');
       }
       reloadButton.removeAttribute('disabled');
     }
@@ -394,6 +431,8 @@
       const dataUrl = canvas.toDataURL('image/png');
       this.loadSubmissionPreviewFromDataUrl(dataUrl);
       this.closeConfirmationContainer();
+
+      this.lastLocalWebcamSubmissionDate = new Date();
     }
 
     closeConfirmationContainer() {

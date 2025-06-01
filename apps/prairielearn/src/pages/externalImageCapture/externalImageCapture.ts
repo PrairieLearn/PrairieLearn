@@ -111,7 +111,7 @@ router.get(
         filename: file.display_filename,
         type: file.type,
         data: base64_contents,
-        uploadDate: externalImageCapture.created_at,
+        uploadDate: externalImageCapture.updated_at,
       });
     } else {
       throw new HttpStatusError(404, 'No image submitted for this answer');
