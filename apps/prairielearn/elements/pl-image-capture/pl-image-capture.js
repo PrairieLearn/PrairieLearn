@@ -36,6 +36,7 @@
       const cancelWebcamButton = this.imageCaptureDiv.querySelector('.cancel-webcam-button');
       const retakeImageButton = this.imageCaptureDiv.querySelector('.retake-image-button');
       const confirmImageButton = this.imageCaptureDiv.querySelector('.confirm-image-button');
+      const cancelWebcamConfirmationButton = this.imageCaptureDiv.querySelector('.cancel-webcam-confirmation-button');
 
       if (
         !scanSubmissionButton ||
@@ -44,7 +45,8 @@
         !captureImageButton ||
         !cancelWebcamButton ||
         !retakeImageButton ||
-        !confirmImageButton
+        !confirmImageButton || 
+        !cancelWebcamConfirmationButton 
       ) {
         return;
       }
@@ -81,6 +83,11 @@
       confirmImageButton.addEventListener('click', (event) => {
         event.preventDefault();
         this.confirmWebcamCapture();
+      });
+
+      cancelWebcamConfirmationButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        this.cancelConfirmationWebcam();
       });
 
       this.loadSubmission(false);
@@ -465,6 +472,20 @@
       permissionMessage.classList.remove('d-none');
 
       this.deactivateVideoStream();
+    }
+
+    cancelConfirmationWebcam() {
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
+
+      if (!webcamConfirmationContainer || !imageCaptureContainer) {
+        throw new Error('Webcam confirmation or capture container not found');
+      }
+
+      webcamConfirmationContainer.classList.add('d-none');
+      webcamConfirmationContainer.classList.remove('d-flex');
+
+      imageCaptureContainer.classList.remove('d-none');
     }
   }
 
