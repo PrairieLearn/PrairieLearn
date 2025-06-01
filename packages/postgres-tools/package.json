@@ -20,7 +20,7 @@
     "@prairielearn/postgres": "workspace:^",
     "async": "^3.2.6",
     "chalk": "^5.4.1",
-    "diff": "^7.0.0",
+    "diff": "^8.0.2",
     "fs-extra": "^11.3.0",
     "lodash": "^4.17.21",
     "postgres-array": "^3.0.4",
