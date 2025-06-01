@@ -4040,7 +4040,7 @@ __metadata:
     pem: "npm:^1.14.8"
     pg: "npm:^8.15.6"
     popper.js: "npm:^1.16.1"
-    preact: "npm:^10.26.5"
+    preact: "npm:^10.26.8"
     prettier: "npm:3.5.3"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.0"
