@@ -12,12 +12,12 @@ onDocumentReady(() => {
   const captureSolutionForm = document.getElementById('capture-solution-form') as HTMLFormElement;
 
   rawCameraInput.addEventListener('change', () => {
-    console.log('Data uploaded.')
+    console.log('Data uploaded.');
     rawCameraInput.disabled = false;
     if (rawCameraInput.files && rawCameraInput.files.length > 0) {
       // Select the image the user uploaded.
       const file = rawCameraInput.files[0];
-      const url  = URL.createObjectURL(file);
+      const url = URL.createObjectURL(file);
       const image = new Image();
 
       image.src = url;
@@ -25,16 +25,16 @@ onDocumentReady(() => {
       image.onload = () => {
         const imageScaleFactor = Math.min(
           1000 / Math.max(image.width, image.height), // Width and height should be at most 1000px
-          1 // Scale factor should not exceed 1 (no scaling up)
+          1, // Scale factor should not exceed 1 (no scaling up)
         );
         console.log('imageScaleFactor', imageScaleFactor);
-      
+
         const targetWidth = Math.round(image.width * imageScaleFactor);
         const targetHeight = Math.round(image.height * imageScaleFactor);
 
         const canvas = document.createElement('canvas');
-        canvas.width  = targetWidth;
-        canvas.height = targetHeight;  
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -47,27 +47,24 @@ onDocumentReady(() => {
         imagePreview.src = canvas.toDataURL(file.type);
         imagePreview.style.display = 'block';
 
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              URL.revokeObjectURL(url);
-              return;
-            }
-            const resizedFile = new File([blob], file.name, { type: file.type });
-            const dt = new DataTransfer();
-            dt.items.add(resizedFile);
-
-            cameraInput.files = dt.files;
-            uploadButton.disabled = false;
-            cameraInputLabelSpan.textContent = 'Retake photo';
-
-            console.log('rawCameraInput size', file.size);
-            console.log('cameraInput size', cameraInput.files[0].size);
+        canvas.toBlob((blob) => {
+          if (!blob) {
             URL.revokeObjectURL(url);
-            uploadButton.disabled = false;
-          },
-          file.type
-        );
+            return;
+          }
+          const resizedFile = new File([blob], file.name, { type: file.type });
+          const dt = new DataTransfer();
+          dt.items.add(resizedFile);
+
+          cameraInput.files = dt.files;
+          uploadButton.disabled = false;
+          cameraInputLabelSpan.textContent = 'Retake photo';
+
+          console.log('rawCameraInput size', file.size);
+          console.log('cameraInput size', cameraInput.files[0].size);
+          URL.revokeObjectURL(url);
+          uploadButton.disabled = false;
+        }, file.type);
       };
     } else {
       // The user cannot submit if no file was uploaded.
@@ -75,7 +72,6 @@ onDocumentReady(() => {
     }
   });
   captureSolutionForm.addEventListener('submit', () => {
-     rawCameraInput.disabled = true;
+    rawCameraInput.disabled = true;
   });
-
 });

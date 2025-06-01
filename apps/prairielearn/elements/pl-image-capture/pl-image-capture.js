@@ -9,7 +9,7 @@
       variant_id,
       submitted_file_name,
       submission_date,
-      editable
+      editable,
     ) {
       this.uuid = uuid;
       this.answer_name = answer_name;
@@ -31,12 +31,16 @@
 
       const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
       const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
-      const captureWithWebcamButton = this.imageCaptureDiv.querySelector('.capture-with-webcam-button');
+      const captureWithWebcamButton = this.imageCaptureDiv.querySelector(
+        '.capture-with-webcam-button',
+      );
       const captureImageButton = this.imageCaptureDiv.querySelector('.capture-image-button');
       const cancelWebcamButton = this.imageCaptureDiv.querySelector('.cancel-webcam-button');
       const retakeImageButton = this.imageCaptureDiv.querySelector('.retake-image-button');
       const confirmImageButton = this.imageCaptureDiv.querySelector('.confirm-image-button');
-      const cancelWebcamConfirmationButton = this.imageCaptureDiv.querySelector('.cancel-webcam-confirmation-button');
+      const cancelWebcamConfirmationButton = this.imageCaptureDiv.querySelector(
+        '.cancel-webcam-confirmation-button',
+      );
 
       if (
         !scanSubmissionButton ||
@@ -45,8 +49,8 @@
         !captureImageButton ||
         !cancelWebcamButton ||
         !retakeImageButton ||
-        !confirmImageButton || 
-        !cancelWebcamConfirmationButton 
+        !confirmImageButton ||
+        !cancelWebcamConfirmationButton
       ) {
         return;
       }
@@ -134,7 +138,9 @@
       });
     }
     async reload() {
-      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.uploaded-image-container',
+      );
       const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
 
       this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
@@ -159,7 +165,10 @@
 
       if (submittedImageResponse.ok) {
         submittedImageResponseJson = await submittedImageResponse.json();
-        if (submittedImageResponseJson.uploadDate && new Date(submittedImageResponseJson.uploadDate) >= this.variant_opened_date) {
+        if (
+          submittedImageResponseJson.uploadDate &&
+          new Date(submittedImageResponseJson.uploadDate) >= this.variant_opened_date
+        ) {
           availableSubmissions.push({
             uploadDate: new Date(submittedImageResponseJson.uploadDate),
             method: 'external',
@@ -186,7 +195,7 @@
       const mostRecentSubmission = availableSubmissions.reduce((latest, current) => {
         return new Date(current.uploadDate) > new Date(latest.uploadDate) ? current : latest;
       });
-      
+
       // Load its data
       switch (mostRecentSubmission.method) {
         case 'webcam':
@@ -229,7 +238,7 @@
         </div>
       `;
     }
-ƒ
+    ƒ;
     setNoSubmissionAvailableYetState(uploadedImageContainer) {
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
@@ -245,7 +254,9 @@
       // If true, load the image from the most recent submission that was made with the mobile app
       forMobile = true,
     ) {
-      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.uploaded-image-container',
+      );
 
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
@@ -256,7 +267,9 @@
       this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
 
       if (!forMobile && this.submitted_file_name) {
-        const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
+        const imageCaptureContainer = this.imageCaptureDiv.querySelector(
+          '.image-capture-container',
+        );
 
         const submissionFilesUrl = imageCaptureContainer.dataset.submissionFilesUrl;
         if (!submissionFilesUrl) {
@@ -294,7 +307,7 @@
           type,
         });
 
-        // Dismiss the QR code popover if it is open. 
+        // Dismiss the QR code popover if it is open.
         const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
 
         if (scanSubmissionButton) {
@@ -304,14 +317,16 @@
           }
         }
       }
-      
+
       if (reloadButton) {
         reloadButton.removeAttribute('disabled');
       }
     }
 
     loadSubmissionPreviewFromDataUrl(dataUrl) {
-      const uploadedImageContainer = this.imageCaptureDiv.querySelector('.uploaded-image-container');
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.uploaded-image-container',
+      );
 
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
@@ -344,10 +359,14 @@
 
     async startWebcamCapture() {
       const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-capture-container',
+      );
       const permissionMessage = webcamCaptureContainer.querySelector('.webcam-permission-message');
 
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-confirmation-container',
+      );
 
       if (!imageCaptureContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
         throw new Error('Image capture or webcam capture container not found');
@@ -399,8 +418,12 @@
     }
 
     async handleCaptureImage() {
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-capture-container',
+      );
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-confirmation-container',
+      );
       const webcamImagePreviewCanvas = this.imageCaptureDiv.querySelector('.webcam-image-preview');
       const webcamVideo = webcamCaptureContainer.querySelector('.webcam-video');
 
@@ -444,7 +467,9 @@
 
     closeConfirmationContainer() {
       const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-confirmation-container',
+      );
       if (!imageCaptureContainer || !webcamConfirmationContainer) {
         throw new Error('Webcam capture or confirmation container not found');
       }
@@ -457,7 +482,9 @@
 
     cancelWebcamCapture() {
       const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector('.webcam-capture-container');
+      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-capture-container',
+      );
       const permissionMessage = this.imageCaptureDiv.querySelector('.webcam-permission-message');
 
       if (!imageCaptureContainer || !webcamCaptureContainer) {
@@ -475,7 +502,9 @@
     }
 
     cancelConfirmationWebcam() {
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector('.webcam-confirmation-container');
+      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.webcam-confirmation-container',
+      );
       const imageCaptureContainer = this.imageCaptureDiv.querySelector('.image-capture-container');
 
       if (!webcamConfirmationContainer || !imageCaptureContainer) {
