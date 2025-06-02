@@ -138,10 +138,10 @@ router.post(
             .string()
             .transform((s) => shlex.split(s || ''))
             .optional(),
-          workspace_rewrite_url: BooleanFromCheckboxSchema.optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
           // This will not correctly handle any filenames that have a comma in them.
           // Currently, we do not have any such filenames in prod so we don't think that
-          // escaping commas in indiviudal filenames is necessary.
+          // escaping commas in individual filenames is necessary.
           workspace_graded_files: z
             .string()
             .transform((s) =>
@@ -151,7 +151,7 @@ router.post(
                 .filter((s) => s !== ''),
             )
             .optional(),
-          workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
         })
         .parse(req.body);
