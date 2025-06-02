@@ -31,7 +31,6 @@ export const createExternalImageCapture = async ({
 
   // Create the ExternalImageCapture record
   await sqldb.queryAsync(sql.insert_new_external_image_capture, {
-    user_id: resLocals.authn_user.user_id,
     variant_id: variantId,
     answer_name: answerName,
     file_id,

@@ -16,7 +16,7 @@ $(function() {
   <div class="card-header">
     Image capture
   </div>
-  <div class="image-capture-container p-3" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
+  <div class="capture-preview-container p-3" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
     <input
       class="hidden-submission-input"
       type="hidden"
@@ -93,7 +93,7 @@ $(function() {
     </p>
 
     <div class="d-flex gap-1 mt-1">
-      <button class="capture-image-button btn btn-info" disabled>
+      <button class="capture-webcam-image-button btn btn-info" disabled>
         <i class="bi bi-camera-fill me-1"></i>
         Capture image
       </button>
@@ -109,11 +109,11 @@ $(function() {
       playsinline
     ></canvas>
     <div class="d-flex gap-1 mt-1">
-      <button class="confirm-image-button btn btn-info" type="submit">
+      <button class="confirm-webcam-image-button btn btn-info" type="submit">
         <i class="bi bi-check2 me-1"></i>
         Use image
       </button>
-      <button class="retake-image-button btn btn-secondary">
+      <button class="retake-webcam-image-button btn btn-secondary">
         <i class="bi bi-arrow-counterclockwise me-1"></i>
         Retake
       </button>
