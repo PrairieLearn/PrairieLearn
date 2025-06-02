@@ -4039,7 +4039,7 @@ __metadata:
     pem: "npm:^1.14.8"
     pg: "npm:^8.15.6"
     popper.js: "npm:^1.16.1"
-    preact: "npm:^10.26.5"
+    preact: "npm:^10.26.8"
     prettier: "npm:3.5.3"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.0"
@@ -4104,7 +4104,7 @@ __metadata:
   resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    original-preact: "npm:preact@^10.26.5"
+    original-preact: "npm:preact@^10.26.8"
     typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
@@ -14010,10 +14010,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"original-preact@npm:preact@^10.26.5":
-  version: 10.26.5
-  resolution: "preact@npm:10.26.5"
-  checksum: 10c0/542a924009489c21b24e9588a5580dac03239a60951d10e6ad1207db66c8e719e1d46a38af6577c8f324b238fbe2aa92e0ffc04d3a71dbe182f56426c8abe632
+"original-preact@npm:preact@^10.26.8":
+  version: 10.26.8
+  resolution: "preact@npm:10.26.8"
+  checksum: 10c0/83b6a38af15386c0d93bbaf12996d624354f9c511f79d188f0d673b8f91740849b0603c207da1f10450b07a8659333864a3735d3b5fe23a790ef6cb85d1107c8
   languageName: node
   linkType: hard
 
