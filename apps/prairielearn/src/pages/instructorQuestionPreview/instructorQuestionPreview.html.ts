@@ -14,6 +14,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  readmeHtml,
   resLocals,
 }: {
   normalPreviewUrl: string;
@@ -22,6 +23,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled: boolean;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
+  readmeHtml: string;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -82,8 +84,30 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
+
       <div class="row">
         <div class="col-lg-9 col-sm-12">
+          ${readmeHtml
+            ? html`
+                <div class="card mb-3">
+                  <div class="card-header bg-secondary text-white d-flex align-items-center">
+                    <button
+                      class="btn btn-secondary btn-xs show-hide-btn"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#readme-card-body"
+                      aria-expanded="true"
+                      aria-controls="#readme-card-body"
+                    >
+                      <i class="fa fa-angle-up fa-fw expand-icon"></i>
+                    </button>
+                    <h2>README</h2>
+                  </div>
+                  <div class="card-body collapse show" id="readme-card-body">
+                    <div class="markdown-body">${unsafeHtml(readmeHtml)}</div>
+                  </div>
+                </div>
+              `
+            : ''}
           ${QuestionContainer({
             resLocals,
             showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,

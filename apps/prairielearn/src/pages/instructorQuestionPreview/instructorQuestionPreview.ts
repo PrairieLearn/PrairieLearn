@@ -1,7 +1,9 @@
 import * as url from 'node:url';
+import * as path from 'path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -22,6 +24,7 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
+import { markdownToHtml } from '@prairielearn/markdown';
 
 const router = Router();
 
@@ -112,6 +115,15 @@ router.get(
     } else if (aiGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
+    const questionReadmePath = path.join(
+      path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'README.md'),
+    );
+    const questionReadmeExists = await fs.pathExists(questionReadmePath);
+    let readmeHtml = '';
+    if (questionReadmeExists) {
+      const readme = await fs.readFile(questionReadmePath, 'utf8');
+      readmeHtml = await markdownToHtml(readme, { allowHtml: false });
+    }
 
     setRendererHeader(res);
     res.send(
@@ -122,6 +134,7 @@ router.get(
         aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
+        readmeHtml,
         resLocals: res.locals,
       }),
     );
