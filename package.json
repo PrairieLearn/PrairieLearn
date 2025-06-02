@@ -52,7 +52,7 @@
     "prettier-plugin-pkg": "^0.19.1",
     "prettier-plugin-sh": "^0.17.4",
     "prettier-plugin-toml": "^2.0.5",
-    "pyright": "^1.1.401",
+    "pyright": "^1.1.400",
     "s3rver": "^3.7.1",
     "turbo": "^2.5.4",
     "typescript": "^5.8.3",
