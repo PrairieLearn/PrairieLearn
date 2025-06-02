@@ -417,12 +417,13 @@ async function getFiles(options): Promise<Set<string>> {
 // information about the current page to persist to the next test
 let currentUrl: string;
 let currentPage$: cheerio.CheerioAPI;
-function testEdit(params) {
+function testEdit(params: EditData) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
+      const url = params.url;
       it('should load successfully', async () => {
-        const res = await fetch(params.url);
+        const res = await fetch(url);
 
         assert.isOk(res.ok);
         currentPage$ = cheerio.load(await res.text());
@@ -433,7 +434,9 @@ function testEdit(params) {
         let elemList = currentPage$(params.button);
         assert.lengthOf(elemList, 1);
 
-        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
+        const elem: Element = elemList[0];
+        // console.log(typeof elemList[0]);
+        const $ = cheerio.load(elem.attribs['data-bs-content']);
         elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -462,13 +465,16 @@ function testEdit(params) {
           return params.url || currentUrl;
         }
       });
+      const urlParams: Record<string, string> = {
+        __csrf_token,
+        ...(params?.data ?? {}),
+      };
+      if (params.action) {
+        urlParams['__action'] = params.action;
+      }
       const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: params.action,
-          __csrf_token,
-          ...(params?.data ?? {}),
-        }),
+        body: new URLSearchParams(urlParams),
       });
       assert.isOk(res.ok);
       currentUrl = res.url;
@@ -508,8 +514,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
+      const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
