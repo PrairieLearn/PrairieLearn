@@ -10,6 +10,7 @@
       submitted_file_name,
       submission_date,
       editable,
+      mobile_capture_enabled,
     ) {
       this.variant_opened_date = new Date();
       this.uuid = uuid;
@@ -18,6 +19,7 @@
       this.submitted_file_name = submitted_file_name;
       this.submission_date = submission_date;
       this.external_image_capture_url = external_image_capture_url;
+      this.mobile_capture_enabled = mobile_capture_enabled === 'True';
 
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
 
@@ -32,12 +34,16 @@
         return;
       }
 
-      this.createCapturePreviewListeners();
-      this.createExternalCaptureListeners();
+      if (this.mobile_capture_enabled) {
+        this.createCapturePreviewListeners();
+        this.createExternalCaptureListeners();
+      }
       this.createWebcamCaptureListeners();
 
       this.loadSubmission(false);
-      this.listenForExternalImageCapture();
+      if (this.mobile_capture_enabled) {
+        this.listenForExternalImageCapture();
+      }
     }
 
     createCapturePreviewListeners() {
@@ -259,24 +265,25 @@
         });
       }
 
-      // Add the last external image capture, if available
-      const externalImageCaptureResponse = await fetch(
-        `${this.external_image_capture_url}/uploaded_image`,
-      );
-
       let externalImageCaptureJson;
+      if (this.mobile_capture_enabled) {
+        // Add the last external image capture, if available
+        const externalImageCaptureResponse = await fetch(
+          `${this.external_image_capture_url}/uploaded_image`,
+        );
 
-      if (externalImageCaptureResponse.ok) {
-        externalImageCaptureJson = await externalImageCaptureResponse.json();
-        if (
-          externalImageCaptureJson.uploadDate &&
-          // Excludes unsaved captures from previous page views of the current variant.
-          new Date(externalImageCaptureJson.uploadDate) >= this.variant_opened_date
-        ) {
-          availableCaptures.push({
-            uploadDate: new Date(externalImageCaptureJson.uploadDate),
-            method: 'external',
-          });
+        if (externalImageCaptureResponse.ok) {
+          externalImageCaptureJson = await externalImageCaptureResponse.json();
+          if (
+            externalImageCaptureJson.uploadDate &&
+            // Excludes unsaved captures from previous page views of the current variant.
+            new Date(externalImageCaptureJson.uploadDate) >= this.variant_opened_date
+          ) {
+            availableCaptures.push({
+              uploadDate: new Date(externalImageCaptureJson.uploadDate),
+              method: 'external',
+            });
+          }
         }
       }
 
@@ -308,10 +315,12 @@
           );
           break;
         case 'external':
-          this.loadCapturePreview({
-            data: externalImageCaptureJson.data,
-            type: externalImageCaptureJson.type,
-          });
+          if (externalImageCaptureJson) {
+            this.loadCapturePreview({
+              data: externalImageCaptureJson.data,
+              type: externalImageCaptureJson.type,
+            });
+          }
           break;
         case 'submission':
           this.loadSubmission(false);
@@ -398,7 +407,9 @@
         );
 
         if (!submittedImageResponse.ok) {
-          reloadButton.removeAttribute('disabled');
+          if (reloadButton) {
+            reloadButton.removeAttribute('disabled');
+          }
           if (submittedImageResponse.status === 404) {
             this.setNoCaptureAvailableYetState(uploadedImageContainer, reloadButton);
             return;

@@ -9,7 +9,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["answer-name"],
-        optional_attribs=[],
+        optional_attribs=["mobile-capture-enabled"],
     )
 
     answer_name = pl.get_string_attrib(element, "answer-name")
@@ -21,6 +21,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
     answer_name = pl.get_string_attrib(element, "answer-name")
+
+    mobile_capture_enabled = pl.get_boolean_attrib(
+        element, "mobile-capture-enabled", False
+    )
 
     if data["panel"] != "question":
         return ""
@@ -42,6 +46,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url", None),
         "editable": data["editable"],
+        "mobile_capture_enabled": mobile_capture_enabled,
     }
 
     course_id = data["options"].get("course_id", None)
