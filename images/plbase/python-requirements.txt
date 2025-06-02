@@ -39,6 +39,6 @@ sympy==1.13.3
 text-unidecode==1.3
 types-chevron==0.14.2.20250103
 types-lxml==2025.3.30
-types-Pygments==2.19.0.20250305
+types-Pygments==2.19.0.20250516
 typing-extensions==4.13.2
 tzlocal==5.3.1
