@@ -629,7 +629,7 @@ export async function fetchRetry(
   } catch (err) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
-    if (err.status === 403) {
+    if (err.status === 403 || err.name === 'FetchError' || err.code === 'ECONNRESET') {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
       if (fetchRetryOpts.retryLeft === 0) {
