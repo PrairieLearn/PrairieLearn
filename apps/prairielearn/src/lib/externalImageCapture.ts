@@ -28,7 +28,7 @@ export const createExternalImageCapture = async ({
     contents: fileBuffer,
     type: 'image/png',
     assessment_id: resLocals.assessment?.id ?? null,
-    assessment_instance_id: resLocals.assessment_instance?.id ?? null,
+    assessment_instance_id: null,
     instance_question_id: null,
     user_id: userId,
     authn_user_id: resLocals.authn_user.authn_user_id,

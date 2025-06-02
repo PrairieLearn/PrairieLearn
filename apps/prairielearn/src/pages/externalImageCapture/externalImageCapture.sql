@@ -6,9 +6,7 @@ FROM
 WHERE
   eic.variant_id = $variant_id
   AND eic.answer_name = $answer_name
-  AND eic.deleted_at IS NULL;
-
--- BLOCK select_variant_by_id
+  -- BLOCK select_variant_by_id
 SELECT
   v.*,
   ai.assessment_id AS assessment_id,
