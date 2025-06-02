@@ -219,7 +219,7 @@ router.post(
         rewriteUrl: propertyValueWithDefault(
           questionInfo.workspaceOptions?.rewriteUrl,
           body.workspace_rewrite_url,
-          false,
+          true,
         ),
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
