@@ -49,6 +49,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     question_id = data["options"].get("question_id", None)
     instance_question_id = data["options"].get("instance_question_id", None)
 
+    if data["options"]["serverCanonicalHost"] is None:
+        raise ValueError(
+            "The serverCanonicalHost option must be set to use pl-image-capture."
+        )
+
     if course_instance_id is not None and instance_question_id is not None:
         external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
     elif course_id is not None and question_id is not None:

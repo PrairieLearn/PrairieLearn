@@ -5,7 +5,6 @@ columns
     file_id: bigint
     id: bigint not null default nextval('external_image_capture_id_seq'::regclass)
     updated_at: timestamp with time zone not null default now()
-    user_id: bigint not null
     variant_id: bigint not null
 
 indexes
@@ -14,5 +13,4 @@ indexes
 
 foreign-key constraints
     external_image_capture_file_id_fkey: FOREIGN KEY (file_id) REFERENCES files(id) ON UPDATE CASCADE ON DELETE SET NULL
-    external_image_capture_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     external_image_capture_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE SET NULL
