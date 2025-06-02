@@ -254,7 +254,8 @@
         },
         "rewriteUrl": {
           "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": true
         },
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
