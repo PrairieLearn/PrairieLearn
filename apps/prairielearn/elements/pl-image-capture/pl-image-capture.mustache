@@ -12,13 +12,13 @@ $(function() {
 });
 </script>
 
-<div id="image-capture-{{uuid}}" class="card w-75">
+<div id="image-capture-{{uuid}}" class="card w-75 mb-3">
   <div class="card-header">
     Image capture
   </div>
   <div class="capture-preview-container p-3" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
     <input
-      class="hidden-submission-input"
+      class="hidden-capture-input"
       type="hidden"
       name="{{answer_name}}"
       data-skip-unload-check="true"
@@ -65,7 +65,7 @@ $(function() {
           <i class="bi bi-qr-code-scan me-1"></i>
           Capture with mobile device
         </button>
-        <button class="btn btn-primary reload-submission-button" disabled>
+        <button class="btn btn-primary reload-capture-button" disabled>
           <i class="bi bi-arrow-clockwise me-1"></i>
           Reload
         </button>

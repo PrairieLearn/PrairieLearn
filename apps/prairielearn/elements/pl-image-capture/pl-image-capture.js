@@ -20,6 +20,7 @@
       this.external_image_capture_url = external_image_capture_url;
 
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
+
       if (!this.imageCaptureDiv) {
         throw new Error(`Image capture element with UUID ${uuid} not found.`);
       }
@@ -38,7 +39,7 @@
     }
 
     createCapturePreviewListeners() {
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
 
       if (!reloadButton) {
         throw new Error('Reload button not found in image capture element');
@@ -126,7 +127,12 @@
       });
     }
 
-    // Switch to the specified container within the image capture element and hide all others.
+    /**
+     * Switch to the specified container within the image capture element and hide all others.
+     *
+     * @param {string} containerName The name of the container to open. Valid values are:
+     * 'capture-preview', 'webcam-capture', or 'webcam-confirmation'.
+     */
     openContainer(containerName) {
       // Displays the captured image.
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
@@ -151,7 +157,7 @@
         throw new Error(`Invalid container name: ${containerName}`);
       }
 
-      // element corresponds to the container element. flex indicates whether the container uses a flexbox layout.
+      // element corresponds to the container element. flex indicates if the container uses a flexbox layout when shown.
       const containers = [
         {
           name: 'capture-preview',
@@ -201,7 +207,9 @@
       }
     }
 
-    // Listen for image captures from the user's other device, most likely their mobile phone.
+    /**
+     * Listen for external image captures submitted from the user's mobile device.
+     */
     listenForExternalImageCapture() {
       const questionContainer = document.querySelector('.question-container');
       if (!questionContainer) return;
@@ -227,40 +235,44 @@
       });
     }
 
+    /**
+     * Reloads the most recent image capture. This can be from the last webcam capture,
+     * the last external image capture, or the last submission.
+     */
     async reload() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.uploaded-image-container',
       );
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
 
-      this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
+      this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
 
-      // Retrieve the last submission, external image capture, and unsubmitted webcam capture.
-      const availableSubmissions = [];
+      const availableCaptures = [];
 
-      // Add the last webcam submission, if available
-      if (this.lastLocalWebcamSubmissionDate) {
-        availableSubmissions.push({
-          uploadDate: this.lastLocalWebcamSubmissionDate,
+      // Add the last webcam capture, if available
+      if (this.lastLocalWebcamCaptureDate) {
+        availableCaptures.push({
+          uploadDate: this.lastLocalWebcamCaptureDate,
           method: 'webcam',
         });
       }
 
       // Add the last external image capture, if available
-      const submittedImageResponse = await fetch(
+      const externalImageCaptureResponse = await fetch(
         `${this.external_image_capture_url}/uploaded_image`,
       );
 
-      let submittedImageResponseJson;
+      let externalImageCaptureJson;
 
-      if (submittedImageResponse.ok) {
-        submittedImageResponseJson = await submittedImageResponse.json();
+      if (externalImageCaptureResponse.ok) {
+        externalImageCaptureJson = await externalImageCaptureResponse.json();
         if (
-          submittedImageResponseJson.uploadDate &&
-          new Date(submittedImageResponseJson.uploadDate) >= this.variant_opened_date
+          externalImageCaptureJson.uploadDate &&
+          // Excludes unsaved captures from previous page views of the current variant.
+          new Date(externalImageCaptureJson.uploadDate) >= this.variant_opened_date
         ) {
-          availableSubmissions.push({
-            uploadDate: new Date(submittedImageResponseJson.uploadDate),
+          availableCaptures.push({
+            uploadDate: new Date(externalImageCaptureJson.uploadDate),
             method: 'external',
           });
         }
@@ -268,35 +280,35 @@
 
       // Add the last submission, if available
       if (this.submission_date && this.submitted_file_name) {
-        availableSubmissions.push({
+        availableCaptures.push({
           uploadDate: new Date(this.submission_date),
           method: 'submission',
         });
       }
 
-      if (availableSubmissions.length === 0) {
-        // No submissions available
-        this.setNoSubmissionAvailableYetState(uploadedImageContainer, reloadButton);
+      if (availableCaptures.length === 0) {
+        // No captures available
+        this.setNoCaptureAvailableYetState(uploadedImageContainer, reloadButton);
         reloadButton.removeAttribute('disabled');
         return;
       }
 
-      // Identify the most recent submission
-      const mostRecentSubmission = availableSubmissions.reduce((latest, current) => {
+      // Select the most recent capture
+      const mostRecentCapture = availableCaptures.reduce((latest, current) => {
         return new Date(current.uploadDate) > new Date(latest.uploadDate) ? current : latest;
       });
 
-      // Load its data
-      switch (mostRecentSubmission.method) {
+      // Use the most recent capture to load the capture preview.
+      switch (mostRecentCapture.method) {
         case 'webcam':
-          this.loadSubmissionPreviewFromDataUrl(
-            this.imageCaptureDiv.querySelector('.hidden-submission-input').value,
+          this.loadCapturePreviewFromDataUrl(
+            this.imageCaptureDiv.querySelector('.hidden-capture-input').value,
           );
           break;
         case 'external':
-          this.loadSubmissionPreview({
-            data: submittedImageResponseJson.data,
-            type: submittedImageResponseJson.type,
+          this.loadCapturePreview({
+            data: externalImageCaptureJson.data,
+            type: externalImageCaptureJson.type,
           });
           break;
         case 'submission':
@@ -308,7 +320,17 @@
       reloadButton.removeAttribute('disabled');
     }
 
-    setLoadingSubmissionState(uploadedImageContainer, reloadButton) {
+    setNoCaptureAvailableYetState(uploadedImageContainer) {
+      if (!uploadedImageContainer) {
+        throw new Error('Uploaded image container not found');
+      }
+      const imagePlaceholderDiv = uploadedImageContainer.querySelector('.image-placeholder');
+      imagePlaceholderDiv.innerHTML = `
+        <span class="text-muted">No image captured yet.</span>
+      `;
+    }
+
+    setLoadingCaptureState(uploadedImageContainer, reloadButton) {
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
       }
@@ -329,21 +351,13 @@
       `;
     }
 
-    setNoSubmissionAvailableYetState(uploadedImageContainer) {
-      if (!uploadedImageContainer) {
-        throw new Error('Uploaded image container not found');
-      }
-      const imagePlaceholderDiv = uploadedImageContainer.querySelector('.image-placeholder');
-      imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image submitted yet.</span>
-      `;
-    }
-
-    async loadSubmission(
-      // If false, load the image from the most recent submission, if available
-      // If true, load the image from the most recent submission that was made with the mobile app
-      forMobile = true,
-    ) {
+    /**
+     * Loads the most recent submission or external image capture.
+     *
+     * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
+     * If false, load the image from the most recent submission.
+     */
+    async loadSubmission(forExternalImageCapture = true) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.uploaded-image-container',
       );
@@ -352,11 +366,11 @@
         throw new Error('Uploaded image container not found');
       }
 
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
 
-      this.setLoadingSubmissionState(uploadedImageContainer, reloadButton);
+      this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
 
-      if (!forMobile && this.submitted_file_name) {
+      if (!forExternalImageCapture && this.submitted_file_name) {
         const capturePreviewContainer = this.imageCaptureDiv.querySelector(
           '.capture-preview-container',
         );
@@ -375,7 +389,7 @@
           return; // No submitted image available, yet
         }
 
-        this.loadSubmissionPreviewFromBlob(await response.blob());
+        this.loadCapturePreviewFromBlob(await response.blob());
       } else {
         const submittedImageResponse = await fetch(
           `${this.external_image_capture_url}/uploaded_image`,
@@ -384,7 +398,7 @@
         if (!submittedImageResponse.ok) {
           reloadButton.removeAttribute('disabled');
           if (submittedImageResponse.status === 404) {
-            this.setNoSubmissionAvailableYetState(uploadedImageContainer, reloadButton);
+            this.setNoCaptureAvailableYetState(uploadedImageContainer, reloadButton);
             return;
           }
           throw new Error('Failed to load submitted image');
@@ -392,7 +406,7 @@
 
         const { data, type } = await submittedImageResponse.json();
 
-        this.loadSubmissionPreview({
+        this.loadCapturePreview({
           data,
           type,
         });
@@ -415,7 +429,7 @@
       }
     }
 
-    loadSubmissionPreviewFromDataUrl(dataUrl) {
+    loadCapturePreviewFromDataUrl(dataUrl) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.uploaded-image-container',
       );
@@ -424,29 +438,29 @@
         throw new Error('Uploaded image container not found');
       }
 
-      const submissionPreview = document.createElement('img');
-      submissionPreview.id = 'submission-preview';
-      submissionPreview.className = 'img-fluid rounded border border-secondary w-100';
-      submissionPreview.src = dataUrl;
-      submissionPreview.alt = 'Submitted image preview';
+      const capturePreview = document.createElement('img');
+      capturePreview.id = 'capture-preview';
+      capturePreview.className = 'img-fluid rounded border border-secondary w-100';
+      capturePreview.src = dataUrl;
+      capturePreview.alt = 'Captured image preview';
 
-      uploadedImageContainer.innerHTML = ''; // Clear previous content
-      uploadedImageContainer.appendChild(submissionPreview);
+      uploadedImageContainer.innerHTML = '';
+      uploadedImageContainer.appendChild(capturePreview);
 
-      const hiddenSubmissionInput = this.imageCaptureDiv.querySelector('.hidden-submission-input');
-      hiddenSubmissionInput.value = dataUrl;
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.hidden-capture-input');
+      hiddenCaptureInput.value = dataUrl;
     }
 
-    loadSubmissionPreviewFromBlob(blob) {
+    loadCapturePreviewFromBlob(blob) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        this.loadSubmissionPreviewFromDataUrl(event.target.result);
+        this.loadCapturePreviewFromDataUrl(event.target.result);
       };
       reader.readAsDataURL(blob);
     }
 
-    loadSubmissionPreview({ data, type }) {
-      this.loadSubmissionPreviewFromDataUrl(`data:${type};base64,${data}`);
+    loadCapturePreview({ data, type }) {
+      this.loadCapturePreviewFromDataUrl(`data:${type};base64,${data}`);
     }
 
     async startWebcamCapture() {
@@ -474,7 +488,10 @@
         const video = this.imageCaptureDiv.querySelector('.webcam-video');
         video.srcObject = this.webcamStream;
         await video.play();
+
+        // Hide the permission message
         permissionMessage.classList.add('d-none');
+
         const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
           '.capture-webcam-image-button',
         );
@@ -502,6 +519,8 @@
       const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
         '.capture-webcam-image-button',
       );
+
+      // Prevent the user from capturing another image until the webcam is restarted.
       if (captureWebcamImageButton) {
         captureWebcamImageButton.setAttribute('disabled', 'disabled');
       }
@@ -546,10 +565,10 @@
       }
 
       const dataUrl = canvas.toDataURL('image/png');
-      this.loadSubmissionPreviewFromDataUrl(dataUrl);
+      this.loadCapturePreviewFromDataUrl(dataUrl);
       this.closeConfirmationContainer();
 
-      this.lastLocalWebcamSubmissionDate = new Date();
+      this.lastLocalWebcamCaptureDate = new Date();
     }
 
     closeConfirmationContainer() {
@@ -563,10 +582,7 @@
         throw new Error('Webcam capture or confirmation container not found');
       }
 
-      capturePreviewContainer.classList.remove('d-none');
-      capturePreviewContainer.classList.add('d-block');
-      webcamConfirmationContainer.classList.add('d-none');
-      webcamConfirmationContainer.classList.remove('d-flex');
+      this.openContainer('capture-preview');
     }
 
     cancelWebcamCapture() {
@@ -582,10 +598,7 @@
         throw new Error('Capture preview or webcam capture container not found');
       }
 
-      capturePreviewContainer.classList.remove('d-none');
-
-      webcamCaptureContainer.classList.add('d-none');
-      webcamCaptureContainer.classList.remove('d-flex');
+      this.openContainer('capture-preview');
 
       permissionMessage.classList.remove('d-none');
 
@@ -604,10 +617,7 @@
         throw new Error('Webcam confirmation or capture container not found');
       }
 
-      webcamConfirmationContainer.classList.add('d-none');
-      webcamConfirmationContainer.classList.remove('d-flex');
-
-      capturePreviewContainer.classList.remove('d-none');
+      this.openContainer('capture-preview');
     }
   }
 

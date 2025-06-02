@@ -49,6 +49,9 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
   return true;
 }
 
+/**
+ * Emits an external image capture event for the specified variant and answer name.
+ */
 export async function emitExternalImageCapture(variant_id: string, answer_name: string) {
   try {
     const eventData: StatusMessage = {

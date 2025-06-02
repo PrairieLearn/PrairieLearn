@@ -29,6 +29,7 @@ router.get(
   }),
 );
 
+// Handles image uploading from the external image capture page.
 router.post(
   '/answer/:answer_name',
   asyncHandler(async (req, res) => {
@@ -76,6 +77,7 @@ router.post(
   }),
 );
 
+// Handles fetching the uploaded, externally-captured image for a specific answer.
 router.get(
   '/answer/:answer_name/uploaded_image',
   asyncHandler(async (req, res) => {

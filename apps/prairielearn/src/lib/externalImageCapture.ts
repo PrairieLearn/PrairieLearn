@@ -5,6 +5,11 @@ import { uploadFile } from './file-store.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Given an uploaded image buffer, uploads the image to the file store,
+ * creates a new ExternalImageCapture record in the database, and
+ * emits a socket event to notify the client that an image has been captured.
+ */
 export const createExternalImageCapture = async ({
   variantId,
   answerName,

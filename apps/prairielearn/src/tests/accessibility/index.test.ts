@@ -464,7 +464,6 @@ describe('accessibility', () => {
 
       const missingParams = getMissingRouteParams(endpoint.path, routeParams);
       if (missingParams.length > 0) {
-        console.log('Path', endpoint.path, 'is missing params:', missingParams);
         missingParamsEndpoints.push(endpoint);
         continue;
       }

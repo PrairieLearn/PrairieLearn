@@ -1408,8 +1408,8 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
-  // External image capture page for instance questions. Enables students to capture and submit
-  // images from an external device (e.g. a mobile phone camera).
+  // External image capture page for an instance question. Enables users to capture and submit
+  // images from an external device (e.g. a mobile phone).
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
@@ -1519,6 +1519,8 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
+  // External image capture page for a question variant generated on the question preview page. Enables
+  // users to capture and submit images from an external device (e.g. a mobile phone).
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/variants/:variant_id(\\d+)/external_image_capture',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,

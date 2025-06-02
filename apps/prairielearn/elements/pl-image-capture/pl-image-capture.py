@@ -35,12 +35,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 break
 
     html_params = {
+        "uuid": pl.get_uuid(),
         "answer_name": answer_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url", None),
-        "uuid": pl.get_uuid(),
         "editable": data["editable"],
     }
 
@@ -71,25 +71,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answer-name", "1")
-    file_content = data["submitted_answers"].get(answer_name, None)
+    answer_name = pl.get_string_attrib(element, "answer-name")
 
-    if file_content is None or file_content == "":
+    submitted_file_content = data["submitted_answers"].get(answer_name, None)
+
+    if submitted_file_content is None or submitted_file_content == "":
         pl.add_files_format_error(data, f"No image was submitted for {answer_name}.")
         return
 
-    if not file_content.startswith("data:"):
-        # not a data-URI, you could choose to fetch the URL or skip
+    if not submitted_file_content.startswith("data:"):
         pl.add_files_format_error(
             data, f"Image submission for {answer_name} is not a data URI."
         )
         return
 
-    # The part after the comma is pure Base-64
     try:
-        _, b64_payload = file_content.split(",", 1)
+        _, b64_payload = submitted_file_content.split(",", 1)
     except ValueError:
-        # malformed data URI
         return
 
     pl.add_submitted_file(data, f"{answer_name}.png", b64_payload)

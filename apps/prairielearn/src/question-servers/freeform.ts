@@ -1320,7 +1320,7 @@ async function renderPanel(
     submission_files_url: submission ? submissionFilesUrl : null,
     submission_date: submission?.date ?? null,
 
-    variant_id: variant?.id, // TODO: Is it fine to expose all these IDs?
+    variant_id: variant?.id,
     course_id: course?.id,
     question_id: locals.question?.id,
     course_instance_id: locals.course_instance?.id,

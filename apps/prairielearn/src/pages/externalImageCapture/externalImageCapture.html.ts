@@ -44,7 +44,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
               id="image-preview"
               class="img-fluid rounded border border-secondary mb-3"
               style="max-height: 300px; display: none;"
-              alt="Photo preview"
+              alt="Image capture preview"
             />
           </div>
 
