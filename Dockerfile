@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile-upstream:master-labs
-# FROM prairielearn/plbase:latest
-FROM prairielearn:wilfredo-base
+FROM prairielearn/plbase:latest
 
 WORKDIR /PrairieLearn
 
