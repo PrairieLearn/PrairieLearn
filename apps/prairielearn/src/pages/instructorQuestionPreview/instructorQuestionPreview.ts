@@ -7,6 +7,7 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
@@ -24,7 +25,6 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { InstructorQuestionPreview } from './instructorQuestionPreview.html.js';
-import { markdownToHtml } from '@prairielearn/markdown';
 
 const router = Router();
 
