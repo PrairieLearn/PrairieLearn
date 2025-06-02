@@ -596,8 +596,6 @@ async function createSharedCourse() {
       ],
     },
   ];
-
-  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
