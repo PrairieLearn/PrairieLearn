@@ -1,18 +1,30 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  const cameraInput = document.getElementById('camera-input') as HTMLInputElement;
-  const rawCameraInput = document.getElementById('raw-camera-input') as HTMLInputElement;
+  const cameraInput = document.querySelector<HTMLInputElement>('#camera-input');
+  const rawCameraInput = document.querySelector<HTMLInputElement>('#raw-camera-input');
 
-  const cameraInputLabelSpan = document
-    .querySelector('label[for="raw-camera-input"]')
-    ?.querySelector('span') as HTMLLabelElement;
-  const uploadButton = document.getElementById('upload-button') as HTMLButtonElement;
-  const imagePreview = document.getElementById('image-preview') as HTMLImageElement;
-  const captureSolutionForm = document.getElementById('capture-solution-form') as HTMLFormElement;
+  const rawCameraInputLabelSpan = document.querySelector<HTMLLabelElement>(
+    'label[for="raw-camera-input"] span',
+  );
+  const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
+  const imagePreview = document.querySelector<HTMLImageElement>('#image-preview');
+  const externalImageCaptureForm = document.querySelector<HTMLFormElement>(
+    '#external-image-capture-form',
+  );
+
+  if (
+    !cameraInput ||
+    !rawCameraInput ||
+    !rawCameraInputLabelSpan ||
+    !uploadButton ||
+    !imagePreview ||
+    !externalImageCaptureForm
+  ) {
+    throw new Error('Required elements not found in the document');
+  }
 
   rawCameraInput.addEventListener('change', () => {
-    console.log('Data uploaded.');
     rawCameraInput.disabled = false;
     if (rawCameraInput.files && rawCameraInput.files.length > 0) {
       // Select the image the user uploaded.
@@ -23,11 +35,10 @@ onDocumentReady(() => {
       image.src = url;
 
       image.onload = () => {
-        const imageScaleFactor = Math.min(
-          1000 / Math.max(image.width, image.height), // Width and height should be at most 1000px
-          1, // Scale factor should not exceed 1 (no scaling up)
-        );
-        console.log('imageScaleFactor', imageScaleFactor);
+        // Perform scaling to ensure that user-uploaded images are not too large.
+        // The scale factor ensures that the width and height of the image do not exceed 1000px.
+        // If the image width and height are both less than 1000px, no scaling is applied.
+        const imageScaleFactor = Math.min(1000 / Math.max(image.width, image.height), 1);
 
         const targetWidth = Math.round(image.width * imageScaleFactor);
         const targetHeight = Math.round(image.height * imageScaleFactor);
@@ -38,8 +49,7 @@ onDocumentReady(() => {
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          console.error('Failed to get canvas context');
-          return;
+          throw new Error('Failed to get canvas context');
         }
 
         ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
@@ -50,7 +60,7 @@ onDocumentReady(() => {
         canvas.toBlob((blob) => {
           if (!blob) {
             URL.revokeObjectURL(url);
-            return;
+            throw new Error('Failed to create blob from canvas');
           }
           const resizedFile = new File([blob], file.name, { type: file.type });
           const dt = new DataTransfer();
@@ -58,11 +68,10 @@ onDocumentReady(() => {
 
           cameraInput.files = dt.files;
           uploadButton.disabled = false;
-          cameraInputLabelSpan.textContent = 'Retake photo';
+          rawCameraInputLabelSpan.textContent = 'Retake photo';
 
-          console.log('rawCameraInput size', file.size);
-          console.log('cameraInput size', cameraInput.files[0].size);
           URL.revokeObjectURL(url);
+
           uploadButton.disabled = false;
         }, file.type);
       };
@@ -71,7 +80,7 @@ onDocumentReady(() => {
       uploadButton.disabled = true;
     }
   });
-  captureSolutionForm.addEventListener('submit', () => {
+  externalImageCaptureForm.addEventListener('submit', () => {
     rawCameraInput.disabled = true;
   });
 });

@@ -14,7 +14,7 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
     preContent: html` ${compiledScriptTag('externalImageCaptureClient.ts')} `,
     content: html`
       <h1>Capture solution</h1>
-      <form id="capture-solution-form" method="POST" enctype="multipart/form-data">
+      <form id="external-image-capture-form" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input
           type="file"

@@ -26,6 +26,8 @@
       }
 
       if (editable !== 'True') {
+        // If the image capture is not editable, only load the most recent submitted image
+        // without initializing the image capture functionality.
         this.loadSubmission(false);
         return;
       }
@@ -128,7 +130,7 @@
     }
 
     /**
-     * Switch to the specified container within the image capture element and hide all others.
+     * Show the specified container within the image capture element and hide all others.
      *
      * @param {string} containerName The name of the container to open. Valid values are:
      * 'capture-preview', 'webcam-capture', or 'webcam-confirmation'.
