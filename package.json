@@ -47,7 +47,7 @@
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
     "globby": "^14.1.0",
     "htmlhint": "^1.3.0",
-    "markdownlint-cli": "^0.45.0",
+    "markdownlint-cli": "^0.44.0",
     "prettier": "^3.5.3",
     "prettier-plugin-pkg": "^0.19.1",
     "prettier-plugin-sh": "^0.17.4",
