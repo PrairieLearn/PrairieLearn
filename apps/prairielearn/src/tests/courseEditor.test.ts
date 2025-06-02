@@ -432,26 +432,15 @@ function testEdit(params: EditData) {
     it('should have a CSRF token', () => {
       let maybeToken: string | undefined;
       if (params.button) {
-        let elemList = currentPage$(params.button);
-        assert.lengthOf(elemList, 1);
-
-        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
-        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        maybeToken = elemList[0].attribs.value;
-
-        // let elem = currentPage$(params.button);
-        // assert.lengthOf(elem, 1);
-
-        // const formContent = elem.attr('data-bs-content');
-        // assert.ok(formContent);
-        // console.log(formContent);
-        // const $ = cheerio.load(formContent);
-        // elem = $(`${params.formSelector} input[name="__csrf_token"]`);
-        // assert.lengthOf(elem, 1);
-        // assert.nestedProperty(elem[0], 'attribs.value');
-        // maybeToken = elem.attr('value');
+        let elem = currentPage$(params.button);
+        assert.lengthOf(elem, 1);
+        const formContent = elem.attr('data-bs-content');
+        assert.ok(formContent);
+        const $ = cheerio.load(formContent);
+        elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        assert.nestedProperty(elem[0], 'attribs.value');
+        maybeToken = elem.attr('value');
       } else {
         const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elem, 1);
@@ -472,9 +461,6 @@ function testEdit(params: EditData) {
           const elem = currentPage$(params.formSelector);
           assert.lengthOf(elem, 1);
           return `${siteUrl}${elem.attr('action')}`;
-          // const elemList = currentPage$(params.formSelector);
-          // assert.lengthOf(elemList, 1);
-          // return `${siteUrl}${elemList[0].attribs['action']}`;
         } else {
           return params.url || currentUrl;
         }
