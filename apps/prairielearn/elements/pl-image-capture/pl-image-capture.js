@@ -11,13 +11,13 @@
       submission_date,
       editable,
     ) {
+      this.variant_opened_date = new Date();
       this.uuid = uuid;
       this.answer_name = answer_name;
-      this.external_image_capture_url = external_image_capture_url;
       this.variant_id = variant_id;
       this.submitted_file_name = submitted_file_name;
       this.submission_date = submission_date;
-      this.variant_opened_date = new Date();
+      this.external_image_capture_url = external_image_capture_url;
 
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
       if (!this.imageCaptureDiv) {
@@ -29,10 +29,12 @@
         return;
       }
 
-      const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
       const reloadButton = this.imageCaptureDiv.querySelector('.reload-submission-button');
       const captureWithWebcamButton = this.imageCaptureDiv.querySelector(
         '.capture-with-webcam-button',
+      );
+      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+        '.capture-with-mobile-device-button',
       );
       const captureImageButton = this.imageCaptureDiv.querySelector('.capture-image-button');
       const cancelWebcamButton = this.imageCaptureDiv.querySelector('.cancel-webcam-button');
@@ -43,7 +45,7 @@
       );
 
       if (
-        !scanSubmissionButton ||
+        !captureWithMobileDeviceButton ||
         !reloadButton ||
         !captureWithWebcamButton ||
         !captureImageButton ||
@@ -55,7 +57,7 @@
         return;
       }
 
-      scanSubmissionButton.addEventListener('inserted.bs.popover', () => {
+      captureWithMobileDeviceButton.addEventListener('inserted.bs.popover', () => {
         this.generateQrCode();
       });
 
@@ -97,6 +99,12 @@
       this.loadSubmission(false);
       this.listenForExternalImageCapture();
     }
+
+    createCapturedImageListeners() {}
+
+    createExternalCaptureListeners() {}
+
+    createWebcamCaptureListeners() {}
 
     generateQrCode() {
       const qrCodeSvg = new QRCode({
@@ -308,10 +316,12 @@
         });
 
         // Dismiss the QR code popover if it is open.
-        const scanSubmissionButton = this.imageCaptureDiv.querySelector('.scan-submission-button');
+        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+          '.capture-with-mobile-device-button',
+        );
 
-        if (scanSubmissionButton) {
-          const popover = bootstrap.Popover.getInstance(scanSubmissionButton);
+        if (captureWithMobileDeviceButton) {
+          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
           if (popover) {
             popover.hide();
           }
