@@ -430,25 +430,36 @@ function testEdit(params: EditData) {
       });
     }
     it('should have a CSRF token', () => {
+      let maybeToken: string | undefined;
       if (params.button) {
         let elemList = currentPage$(params.button);
         assert.lengthOf(elemList, 1);
 
-        const elem: Element = elemList[0];
-        // console.log(typeof elemList[0]);
-        const $ = cheerio.load(elem.attribs['data-bs-content']);
+        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
         elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
-        __csrf_token = elemList[0].attribs.value;
-        assert.isString(__csrf_token);
+        maybeToken = elemList[0].attribs.value;
+
+        // let elem = currentPage$(params.button);
+        // assert.lengthOf(elem, 1);
+
+        // const formContent = elem.attr('data-bs-content');
+        // assert.ok(formContent);
+        // console.log(formContent);
+        // const $ = cheerio.load(formContent);
+        // elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+        // assert.lengthOf(elem, 1);
+        // assert.nestedProperty(elem[0], 'attribs.value');
+        // maybeToken = elem.attr('value');
       } else {
-        const elemList = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        __csrf_token = elemList[0].attribs.value;
-        assert.isString(__csrf_token);
+        const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       }
+      assert.isString(maybeToken);
+      assert.ok(maybeToken);
+      __csrf_token = maybeToken;
     });
   });
 
@@ -458,9 +469,12 @@ function testEdit(params: EditData) {
         // to handle the difference between POSTing to the same URL as the page you are
         // on vs. POSTing to a different URL
         if (!params.action) {
-          const elemList = currentPage$(params.formSelector);
-          assert.lengthOf(elemList, 1);
-          return `${siteUrl}${elemList[0].attribs['action']}`;
+          const elem = currentPage$(params.formSelector);
+          assert.lengthOf(elem, 1);
+          return `${siteUrl}${elem.attr('action')}`;
+          // const elemList = currentPage$(params.formSelector);
+          // assert.lengthOf(elemList, 1);
+          // return `${siteUrl}${elemList[0].attribs['action']}`;
         } else {
           return params.url || currentUrl;
         }
