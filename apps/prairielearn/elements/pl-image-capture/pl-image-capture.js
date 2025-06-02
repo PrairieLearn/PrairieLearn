@@ -158,7 +158,7 @@
 
       // Add the last external image capture, if available
       const submittedImageResponse = await fetch(
-        `${this.external_image_capture_url}/submitted_image`,
+        `${this.external_image_capture_url}/uploaded_image`,
       );
 
       let submittedImageResponseJson;
@@ -288,7 +288,7 @@
         this.loadSubmissionPreviewFromBlob(await response.blob());
       } else {
         const submittedImageResponse = await fetch(
-          `${this.external_image_capture_url}/submitted_image`,
+          `${this.external_image_capture_url}/uploaded_image`,
         );
 
         if (!submittedImageResponse.ok) {

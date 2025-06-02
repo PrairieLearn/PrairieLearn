@@ -50,9 +50,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     instance_question_id = data["options"].get("instance_question_id", None)
 
     if course_instance_id is not None and instance_question_id is not None:
-        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['answer_name']}"
+        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
     elif course_id is not None and question_id is not None:
-        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer_name/{html_params['answer_name']}"
+        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
     else:
         raise ValueError(
             "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."

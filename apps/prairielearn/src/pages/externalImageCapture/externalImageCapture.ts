@@ -19,7 +19,7 @@ const router = express.Router({
 });
 
 router.get(
-  '/answer_name/:answer_name',
+  '/answer/:answer_name',
   asyncHandler(async (req, res) => {
     res.send(
       ExternalImageCapture({
@@ -30,10 +30,11 @@ router.get(
 );
 
 router.post(
-  '/answer_name/:answer_name',
+  '/answer/:answer_name',
   asyncHandler(async (req, res) => {
-    const variantId = req.params.variant_id;
-    const answer_name = req.params.answer_name;
+    const variantId = req.params.variant_id as string;
+    const answerName = req.params.answer_name as string;
+
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: variantId,
       variant_course: res.locals.course,
@@ -61,7 +62,7 @@ router.post(
 
     createExternalImageCapture({
       variantId,
-      answerName: answer_name,
+      answerName,
       userId: res.locals.authn_user.user_id,
       fileBuffer: req.file.buffer,
       resLocals: res.locals,
@@ -76,7 +77,7 @@ router.post(
 );
 
 router.get(
-  '/answer_name/:answer_name/submitted_image',
+  '/answer/:answer_name/uploaded_image',
   asyncHandler(async (req, res) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
