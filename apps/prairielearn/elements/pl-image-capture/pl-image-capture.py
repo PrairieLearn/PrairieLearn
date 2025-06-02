@@ -54,21 +54,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     question_id = data["options"].get("question_id", None)
     instance_question_id = data["options"].get("instance_question_id", None)
 
-    if data["options"]["serverCanonicalHost"] is None:
+    if data["options"]["serverCanonicalHost"] is None and mobile_capture_enabled:
         raise ValueError(
             "The serverCanonicalHost option must be set to use pl-image-capture."
         )
 
-    if course_instance_id is not None and instance_question_id is not None:
-        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
-    elif course_id is not None and question_id is not None:
-        external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+    if mobile_capture_enabled:
+        if course_instance_id is not None and instance_question_id is not None:
+            external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+        elif course_id is not None and question_id is not None:
+            external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+        else:
+            raise ValueError(
+                "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."
+            )
+        html_params["external_image_capture_url"] = external_image_capture_url
     else:
-        raise ValueError(
-            "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."
-        )
-
-    html_params["external_image_capture_url"] = external_image_capture_url
+        html_params["external_image_capture_url"] = ""
 
     with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
