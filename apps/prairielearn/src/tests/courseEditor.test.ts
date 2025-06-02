@@ -444,9 +444,9 @@ function testEdit(params: EditData) {
       } else {
         const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elem, 1);
+        assert.nestedProperty(elem[0], 'attribs.value');
         maybeToken = elem.attr('value');
       }
-      assert.isString(maybeToken);
       assert.ok(maybeToken);
       __csrf_token = maybeToken;
     });
