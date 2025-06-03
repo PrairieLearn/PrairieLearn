@@ -251,7 +251,7 @@ export function SubmissionPanel({
           </div>
         </div>
 
-        ${SubmissionInfoModal({ urlPrefix, submission, course_instance_id })}
+        ${SubmissionInfoModal({ submission, course_id: question.course_id, course_instance_id })}
       </div>
     </div>
   `;
@@ -389,15 +389,21 @@ function SubmissionStatusBadge({
 }
 
 function SubmissionInfoModal({
-  urlPrefix,
   submission,
+  course_id,
   course_instance_id,
 }: {
-  urlPrefix: string;
   submission: SubmissionForRender;
+  course_id: string;
   course_instance_id?: string | null;
 }) {
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
+  const gradingJobUrl =
+    course_instance_id == null
+      ? `${config.urlPrefix}/course/${course_id}/grading_job/${submission.grading_job?.id}`
+      : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
+          submission.grading_job?.id
+        }`;
   return Modal({
     id: `submissionInfoModal-${submission.id}`,
     title: 'Submission info',
@@ -474,22 +480,9 @@ function SubmissionInfoModal({
                 class="bg-danger m-0"
               ></span>
             </div>
-            ${course_instance_id != null
-              ? html`
-                  <a
-                    class="btn btn-primary mt-2"
-                    href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission
-                      .grading_job?.id}"
-                    >View grading job ${submission.grading_job?.id}</a
-                  >
-                `
-              : html`
-                  <a
-                    class="btn btn-primary mt-2"
-                    href="${urlPrefix}/grading_job/${submission.grading_job?.id}"
-                    >View grading job ${submission.grading_job?.id}</a
-                  >
-                `}
+            <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
+              View grading job ${submission.grading_job?.id}
+            </a>
           `
         : ''}
     `,
