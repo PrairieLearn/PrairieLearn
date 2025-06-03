@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -383,16 +382,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    const courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
+      course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
-    manualGradingAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/instances`;
+    manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
+    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
   });
 
   beforeAll(async () => {
