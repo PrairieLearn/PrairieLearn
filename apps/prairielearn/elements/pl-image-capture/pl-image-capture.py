@@ -23,7 +23,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     answer_name = pl.get_string_attrib(element, "answer-name")
 
     mobile_capture_enabled = pl.get_boolean_attrib(
-        element, "mobile-capture-enabled", False
+        element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
     )
 
     if data["panel"] != "question":
