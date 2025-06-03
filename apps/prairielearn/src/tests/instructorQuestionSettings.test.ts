@@ -377,7 +377,7 @@ describe('Editing question settings', () => {
     assert.deepEqual(questionInfo.workspaceOptions.environment, { test: 'value' });
   });
 
-  step('verify external grading changes with minimal configuration', async () => {
+  test.sequential('verify external grading changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -410,7 +410,7 @@ describe('Editing question settings', () => {
     assert.notExists(questionInfo.externalGradingOptions.environment);
   });
 
-  step('verify external grading changes with full configuration', async () => {
+  test.sequential('verify external grading changes with full configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );

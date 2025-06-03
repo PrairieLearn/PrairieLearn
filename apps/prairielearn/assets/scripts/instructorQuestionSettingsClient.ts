@@ -76,6 +76,8 @@ onDocumentReady(() => {
   }
 
   let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
+  let externalGradingOptionsShown =
+    showExternalGradingOptionsButton?.getAttribute('hidden') === 'true';
 
   function updateWorkspaceOptionsValidation() {
     if (workspaceOptionsShown) {
@@ -86,6 +88,14 @@ onDocumentReady(() => {
       workspaceImageInput?.removeAttribute('required');
       workspacePortInput?.removeAttribute('required');
       workspaceHomeInput?.removeAttribute('required');
+    }
+  }
+
+  function updateExternalGradingOptionsValidation() {
+    if (externalGradingOptionsShown) {
+      externalGradingImageInput?.setAttribute('required', 'true');
+    } else {
+      externalGradingImageInput?.removeAttribute('required');
     }
   }
 
@@ -171,6 +181,7 @@ onDocumentReady(() => {
   }
 
   updateWorkspaceOptionsValidation();
+  updateExternalGradingOptionsValidation();
   showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
@@ -180,6 +191,8 @@ onDocumentReady(() => {
   showExternalGradingOptionsButton?.addEventListener('click', () => {
     externalGradingOptions?.removeAttribute('hidden');
     showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+    externalGradingOptionsShown = true;
+    updateExternalGradingOptionsValidation();
   });
 
   questionSettingsForm?.addEventListener('submit', (e) => {

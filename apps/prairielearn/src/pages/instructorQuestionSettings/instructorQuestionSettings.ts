@@ -312,20 +312,24 @@ router.post(
           (val) => !val || Object.keys(val).length === 0,
         ),
       };
-      const filteredExternalGradingOptions = Object.fromEntries(
-        Object.entries(
-          propertyValueWithDefault(
-            questionInfo.externalGradingOptions,
-            externalGradingOptions,
-            (val) => !val || Object.keys(val).length === 0,
-          ),
-        ).filter(([_, value]) => value !== undefined),
-      );
+      if (externalGradingOptions.image) {
+        const filteredExternalGradingOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.externalGradingOptions,
+              externalGradingOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
 
-      questionInfo.externalGradingOptions =
-        Object.keys(filteredExternalGradingOptions).length > 0
-          ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
-          : undefined;
+        questionInfo.externalGradingOptions =
+          Object.keys(filteredExternalGradingOptions).length > 0
+            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
+            : undefined;
+      } else {
+        questionInfo.externalGradingOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
