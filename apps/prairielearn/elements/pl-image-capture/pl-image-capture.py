@@ -32,13 +32,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return ""
 
     submitted_files = data["submitted_answers"].get("_files", [])
-    submitted_file_name = None
 
-    if len(submitted_files) > 0:
-        for file in submitted_files:
-            if file["name"] == f"{answer_name}.png":
-                submitted_file_name = file["name"]
-                break
+    submitted_file_name = None
+    answer_name_default = f"{answer_name}.png"
+    if any(file["name"] == answer_name_default for file in submitted_files):
+        submitted_file_name = answer_name_default
 
     html_params = {
         "uuid": pl.get_uuid(),
