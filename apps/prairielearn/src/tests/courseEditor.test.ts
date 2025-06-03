@@ -439,12 +439,10 @@ function testEdit(params: EditData) {
         const $ = cheerio.load(formContent);
         elem = $(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elem, 1);
-        assert.nestedProperty(elem[0], 'attribs.value');
         maybeToken = elem.attr('value');
       } else {
         const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
         assert.lengthOf(elem, 1);
-        assert.nestedProperty(elem[0], 'attribs.value');
         maybeToken = elem.attr('value');
       }
       assert.ok(maybeToken);
@@ -467,11 +465,9 @@ function testEdit(params: EditData) {
       });
       const urlParams: Record<string, string> = {
         __csrf_token,
+        ...(params.action ? { __action: params.action } : {}),
         ...(params?.data ?? {}),
       };
-      if (params.action) {
-        urlParams['__action'] = params.action;
-      }
       const res = await fetch(url, {
         method: 'POST',
         body: new URLSearchParams(urlParams),
