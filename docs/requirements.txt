@@ -9,7 +9,7 @@ mkdocs==1.6.1
 mkdocstrings-python==1.16.11
 mkdocstrings==0.29.1
 pymdown-extensions==10.15
+PyGithub==2.6.1
 # mkdocstrings-python will format the docstrings using ruff
 # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
 ruff==0.11.12
-PyGithub==2.6.1
