@@ -2,6 +2,8 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
+MOBILE_CAPTURE_ENABLED_DEFAULT = False
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
