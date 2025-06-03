@@ -210,15 +210,15 @@ function initializeFormulaPopover(quill, uuid) {
 
   const popoverContent = document.createElement('form');
   popoverContent.innerHTML = `
-      <div class="mb-3">
-        <label for="rte-formula-input-${uuid}">Formula:</label>
-        <input type="text" class="form-control" id="rte-formula-input-${uuid}" placeholder="Enter Formula" />
-      </div>
-      <div class="mb-3" id="rte-formula-input-preview-${uuid}">
-      </div>
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-primary">Confirm</button>
-    `;
+    <div class="mb-3">
+      <label for="rte-formula-input-${uuid}">Formula:</label>
+      <input type="text" class="form-control" id="rte-formula-input-${uuid}" placeholder="Enter Formula" />
+    </div>
+    <div class="mb-3" id="rte-formula-input-preview-${uuid}">
+    </div>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+    <button type="submit" class="btn btn-primary">Confirm</button>
+  `;
 
   const popover = new bootstrap.Popover(formulaButton, {
     content: popoverContent,
