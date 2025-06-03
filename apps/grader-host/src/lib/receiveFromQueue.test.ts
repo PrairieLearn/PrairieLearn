@@ -3,14 +3,11 @@ import {
   DeleteMessageCommand,
   ReceiveMessageCommand,
 } from '@aws-sdk/client-sqs';
-import { assert, use as chaiUse } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { assert, beforeEach, describe, expect, it } from 'vitest';
 
 import { config } from './config.js';
 import { receiveFromQueue } from './receiveFromQueue.js';
-
-chaiUse(chaiAsPromised);
 
 function randomString() {
   return Math.random().toString(36).slice(2);
@@ -106,7 +103,7 @@ describe('receiveFromQueue', () => {
       message: '{"oops, this is invalid json"',
     });
 
-    await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
+    await expect(receiveFromQueue(sqs, '', async () => {})).rejects.toThrow();
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
@@ -118,7 +115,7 @@ describe('receiveFromQueue', () => {
       },
     });
 
-    await assert.isRejected(receiveFromQueue(sqs, '', async () => {}));
+    await expect(receiveFromQueue(sqs, '', async () => {})).rejects.toThrow();
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
@@ -135,11 +132,11 @@ describe('receiveFromQueue', () => {
   it("doesn't delete messages that aren't handled successfully", async () => {
     const sqs = fakeSqs();
 
-    await assert.isRejected(
+    await expect(
       receiveFromQueue(sqs, '', async () => {
         throw new Error('RIP');
       }),
-    );
+    ).rejects.toThrow();
     assert.equal(sqs.deleteMessage.callCount, 0);
   });
 
