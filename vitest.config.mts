@@ -14,7 +14,8 @@ export default defineConfig({
     coverage: {
       all: true,
       reporter: ['html', 'text-summary', 'cobertura'],
-      include: ['apps/prairielearn/src/**'],
+      include: ['**/apps/prairielearn/src/**'],
+      exclude: ['**/apps/grader-host/**', '**/apps/workspace-host/**'],
     },
   },
 });
