@@ -118,9 +118,9 @@ def _badge_for_pr(
     except ValueError:
         raise RuntimeError(f"Invalid PR number: {text}")
 
-    meta = cache.get(pr_num)
     if not pl_repo:
         raise RuntimeError("API not found")
+    meta = cache.get(pr_num)
     if meta is None:
         meta = pl_repo.get_pull(pr_num)
         cache[pr_num] = meta
