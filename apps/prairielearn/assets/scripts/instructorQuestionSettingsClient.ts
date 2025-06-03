@@ -30,50 +30,14 @@ onDocumentReady(() => {
   const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
   const workspaceEnvironmentInput =
     document.querySelector<HTMLInputElement>('#workspace_environment');
-  const workspaceEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
-    '#workspace_enable_networking',
-  );
-  const workspaceRewriteUrlCheckbox =
-    document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
   const externalGradingOptions = document.querySelector<HTMLDivElement>(
     '#external-grading-options',
   );
-  const externalGradingEnabledCheckbox = document.querySelector<HTMLInputElement>(
-    '#external_grading_enabled',
-  );
   const externalGradingImageInput =
     document.querySelector<HTMLInputElement>('#external_grading_image');
-  const externalGradingEntrypointInput = document.querySelector<HTMLInputElement>(
-    '#external_grading_entrypoint',
-  );
-  const externalGradingFilesInput =
-    document.querySelector<HTMLInputElement>('#external_grading_files');
-  const externalGradingTimeoutInput = document.querySelector<HTMLInputElement>(
-    '#external_grading_timeout',
-  );
-  const externalGradingEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
-    '#external_grading_enable_networking',
-  );
   const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
     '#external_grading_environment',
   );
-
-  function validateQuestionOptions() {
-    if (
-      externalGradingEnabledCheckbox?.checked ||
-      externalGradingImageInput?.value ||
-      externalGradingEntrypointInput?.value ||
-      externalGradingFilesInput?.value ||
-      externalGradingTimeoutInput?.value ||
-      (externalGradingEnvironmentInput?.value !== '{}' &&
-        externalGradingEnvironmentInput?.value !== '') ||
-      externalGradingEnableNetworkingCheckbox?.checked
-    ) {
-      externalGradingImageInput?.setAttribute('required', 'true');
-    } else {
-      externalGradingImageInput?.removeAttribute('required');
-    }
-  }
 
   let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
   let externalGradingOptionsShown =
@@ -196,7 +160,6 @@ onDocumentReady(() => {
   });
 
   questionSettingsForm?.addEventListener('submit', (e) => {
-    validateQuestionOptions();
     if (!questionSettingsForm.checkValidity()) {
       e.preventDefault();
       questionSettingsForm.reportValidity();
