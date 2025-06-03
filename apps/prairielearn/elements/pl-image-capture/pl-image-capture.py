@@ -46,26 +46,27 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
-        "submission_files_url": data["options"].get("submission_files_url", None),
+        "submission_files_url": data["options"].get("submission_files_url"),
         "editable": data["editable"],
         "mobile_capture_enabled": mobile_capture_enabled,
     }
 
     course_id = data["options"].get("course_id")
-    course_instance_id = data["options"].get("course_instance_id", None)
-    question_id = data["options"].get("question_id", None)
-    instance_question_id = data["options"].get("instance_question_id", None)
+    course_instance_id = data["options"].get("course_instance_id")
+    question_id = data["options"].get("question_id")
+    instance_question_id = data["options"].get("instance_question_id")
+    server_canonical_host = data["options"].get("serverCanonicalHost")
 
-    if data["options"]["serverCanonicalHost"] is None and mobile_capture_enabled:
+    if server_canonical_host is None and mobile_capture_enabled:
         raise ValueError(
             "The serverCanonicalHost option must be set to use pl-image-capture."
         )
 
     if mobile_capture_enabled:
         if course_instance_id is not None and instance_question_id is not None:
-            external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+            external_image_capture_url = f"{server_canonical_host}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
         elif course_id is not None and question_id is not None:
-            external_image_capture_url = f"{data['options']['serverCanonicalHost']}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+            external_image_capture_url = f"{server_canonical_host}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
         else:
             raise ValueError(
                 "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."
