@@ -307,7 +307,7 @@ To address this, there are a variety of different ways. In particular, we have:
 
 ## Why do special characters like `<` and `>` break my question display?
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 

@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 2.1.13
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
 ## 2.1.12
 
 ### Patch Changes

@@ -221,6 +221,7 @@ function GroupCreationJoinForm({
                           id="groupNameInput"
                           name="groupName"
                           maxlength="30"
+                          pattern="[a-zA-Z0-9]+"
                           placeholder="e.g. teamOne"
                           aria-label="Group name"
                           aria-describedby="groupNameHelp"
@@ -254,6 +255,9 @@ function GroupCreationJoinForm({
                     id="joinCodeInput"
                     name="join_code"
                     placeholder="abcd-1234"
+                    pattern="[a-zA-Z0-9]+-[0-9]{4}"
+                    maxlength="35"
+                    required
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
