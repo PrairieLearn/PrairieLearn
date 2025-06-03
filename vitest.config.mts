@@ -2,6 +2,14 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    projects: [
+      'packages/*',
+      // We define these separately to prevent vitest from picking up the apps/README.md file
+      'apps/prairielearn',
+      // TODO: migrate to vitest
+      // 'apps/grader-host',
+      // 'apps/workspace-host',
+    ],
     include: ['apps/prairielearn/**/*.test.ts', 'packages/**/*.test.ts'],
     coverage: {
       all: true,
