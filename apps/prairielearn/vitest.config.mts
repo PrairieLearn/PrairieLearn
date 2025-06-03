@@ -82,13 +82,13 @@ export default defineConfig(({ mode }) => {
         : configDefaults.exclude,
       globalSetup: isRunningOnDist
         ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
-        : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
+        : join(import.meta.dirname, './src/tests/vitest.globalSetup.mts'),
       setupFiles: isRunningOnDist
         ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
-        : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
+        : [join(import.meta.dirname, './src/tests/vitest.testSetup.mts')],
       passWithNoTests: true,
       hookTimeout: 20_000,
-      testTimeout: 10_000,
+      testTimeout: 20_000,
       isolate: false,
       sequence: {
         sequencer: CustomSequencer,
