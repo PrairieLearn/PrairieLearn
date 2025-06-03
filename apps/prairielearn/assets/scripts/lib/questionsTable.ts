@@ -249,7 +249,7 @@ onDocumentReady(() => {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
-          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <i class="bi bi-stars" aria-hidden="true"></i>
           Generate Question with AI
         </a>
       `.toString(),
