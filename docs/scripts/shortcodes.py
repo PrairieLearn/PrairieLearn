@@ -116,7 +116,7 @@ def _badge_for_pr(
     try:
         pr_num = int(text)
     except ValueError:
-        raise RuntimeError(f"Invalid PR number: {text}")
+        raise RuntimeError(f"Invalid PR number: {text}") from None
 
     if not pl_repo:
         raise RuntimeError("API not found")
