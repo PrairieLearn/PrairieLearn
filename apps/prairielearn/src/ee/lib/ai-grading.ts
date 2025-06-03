@@ -87,6 +87,9 @@ export async function aiGrade({
         continue;
       }
       const submission_id = await selectLastSubmissionId(instance_question.id);
+
+      // TODO: Incorporate submitted images into embedding generation? CLIP?s
+
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await generateSubmissionEmbedding({
@@ -108,7 +111,6 @@ export async function aiGrade({
       }
     }
     job.info(`Found ${number_to_grade} submissions to grade!`);
-
     let error_count = 0;
 
     // Grade each instance question
@@ -123,9 +125,13 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        instance_question,
+        course_instance: { id: course_instance_id },
         questionRenderContext: 'ai_grading',
       };
+      
       // Get question html
+
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
@@ -136,6 +142,12 @@ export async function aiGrade({
         question_course,
         locals,
       );
+
+      job.info(
+        'Render question results: ' +
+          JSON.stringify(render_question_results, null, 2),
+      )
+
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
@@ -153,8 +165,11 @@ export async function aiGrade({
           openai,
         });
       }
-      const submission_text = submission_embedding.submission_text;
 
+      const submission_text = submission_embedding.submission_text;
+      job.info(`submission: ${JSON.stringify(submission, null, 2)}`);
+      job.info(`submission_text: ${submission_text}`);
+      
       const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
@@ -168,6 +183,8 @@ export async function aiGrade({
       job.info(gradedExampleInfo);
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
+
+      // TOOD: Extract the submitted images of the student.
 
       const { messages } = await generatePrompt({
         questionPrompt,

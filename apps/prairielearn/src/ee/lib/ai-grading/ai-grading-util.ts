@@ -108,7 +108,8 @@ export async function generatePrompt({
         "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
         (example_submissions.length
           ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : ''),
+          : '')
+        
     });
     messages.push({
       role: 'system',
@@ -160,6 +161,10 @@ export async function generatePrompt({
   }
 
   // Student response
+
+
+  // TODO: We need to incorporate image submissions into the prompt.
+
   messages.push({
     role: 'user',
     content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
