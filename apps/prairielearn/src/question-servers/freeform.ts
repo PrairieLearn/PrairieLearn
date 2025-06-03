@@ -17,7 +17,7 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 
-import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
+import { stripHtmlForAiGrading } from '../ee/lib/ai-grading/ai-grading-render.js';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
@@ -27,6 +27,7 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
@@ -1374,14 +1375,22 @@ async function renderPanel(
     },
   );
 
+  // If we're rendering for AI grading, transform the resulting HTML to strip
+  // out any data that isn't relevant during AI grading. This is done outside
+  // of `getCachedDataOrCompute` so that we don't need to find a way to factor
+  // the transformation into the cache key.
+  const html = await run(async () => {
+    if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
+      const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-render.js');
+      return await stripHtmlForAiGrading(html);
+    }
+
+    return html;
+  });
+
   return {
     ...cachedData,
-    // We need to transform the resulting HTML to strip out any data that
-    // isn't relevant during AI grading.
-    html:
-      locals.questionRenderContext === 'ai_grading'
-        ? await stripHtmlForAiGrading(cachedData.html)
-        : cachedData.html,
+    html,
     cacheHit,
   };
 }
