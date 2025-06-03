@@ -114,7 +114,10 @@ def _badge_for_pr(
     with_date: bool = False,
 ) -> str:
     global cache  # noqa: PLW0602
-    pr_num = int(text)
+    try:
+        pr_num = int(text)
+    except ValueError:
+        raise RuntimeError(f"Invalid PR number: {text}")
 
     meta = cache.get(pr_num)
     if not pl_repo:
