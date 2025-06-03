@@ -198,7 +198,7 @@ router.post(
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
         image: propertyValueWithDefault(
           questionInfo.workspaceOptions?.image,
-          body.workspace_image,
+          body.workspace_image?.trim(),
           '',
         ),
         port: propertyValueWithDefault(
@@ -208,7 +208,7 @@ router.post(
         ),
         home: propertyValueWithDefault(
           questionInfo.workspaceOptions?.home,
-          body.workspace_home,
+          body.workspace_home?.trim(),
           '',
         ),
         args: propertyValueWithDefault(
@@ -238,19 +238,26 @@ router.post(
         ),
       };
 
-      const filteredOptions = Object.fromEntries(
-        Object.entries(
-          propertyValueWithDefault(
-            questionInfo.workspaceOptions,
-            workspaceOptions,
-            (val) => !val || Object.keys(val).length === 0,
-          ),
-        ).filter(([_, value]) => value !== undefined),
-      );
-      questionInfo.workspaceOptions =
-        Object.keys(filteredOptions).length > 0
-          ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
-          : undefined;
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
