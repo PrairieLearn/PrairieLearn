@@ -82,7 +82,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     submitted_file_content = data["submitted_answers"].get(answer_name, None)
 
-    if submitted_file_content is None or submitted_file_content == "":
+    if not submitted_file_content:
         pl.add_files_format_error(data, f"No image was submitted for {answer_name}.")
         return
 
