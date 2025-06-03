@@ -21,7 +21,7 @@ import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
 import { updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
+import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -256,6 +256,19 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
 
   const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
 
+  // If the authentication request is coming from an iframe, intercept the parameters
+  // and offer a small form to open in a new window.
+  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
+  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
+  // offer a redirect/POST in a new window.
+  // This is a controlled exception to our security policy for LTI compatibility.
+  if (req.headers['sec-fetch-dest'] === 'iframe') {
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+    res.end(Lti13AuthIframe({ parameters }));
+    return;
+  }
+
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
   if ('test' in parameters) {
@@ -296,7 +309,7 @@ async function setupPassport(lti13_instance_id: string) {
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = Lti13ClaimSchema.passthrough().parse(tokenSet.claims());
+  const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
   const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;

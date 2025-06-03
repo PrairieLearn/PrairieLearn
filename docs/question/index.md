@@ -95,7 +95,7 @@ The `info.json` file for each question defines properties of the question. For e
 
 ### Question Sharing
 
-Any question that is marked with `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Any question that is marked with `"sharePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
+Any question that is marked with `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Any question that is marked with `"sharePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../contentSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
 
 ```json title="info.json"
 {
@@ -224,3 +224,7 @@ Elements like [`pl-multiple-choice`](../elements.md#pl-multiple-choice-element) 
 4. Write an [external grader](../externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question uses more than one method for grading, options 3 and 4 override options 1 and 2. If you grade a question using a custom grading function (option 3) or an external grader (option 4), you are still strongly encouraged to provide a possible correct answer so that students can see it in the answer panel. More details about providing feedback on student answers can be found in the `"answer"` panel section of the [question template documentation](template.md#answer-panel).
+
+## Accessibility
+
+See the [question accessibility documentation](accessibility.md) for more information about how to ensure your questions are accessible to all students, including those using screen readers or other assistive technologies.

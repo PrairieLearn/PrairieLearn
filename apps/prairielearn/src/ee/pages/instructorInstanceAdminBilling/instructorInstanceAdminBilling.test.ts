@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryAsync } from '@prairielearn/postgres';
 

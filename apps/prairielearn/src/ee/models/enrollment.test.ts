@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
@@ -17,12 +17,12 @@ import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {
@@ -122,12 +122,12 @@ describe('getEnrollmentCountsForInstitution', () => {
 
 describe('getEnrollmentCountsForCourse', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {
@@ -207,12 +207,12 @@ describe('getEnrollmentCountsForCourse', () => {
 
 describe('getEnrollmentCountsForCourseInstance', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {

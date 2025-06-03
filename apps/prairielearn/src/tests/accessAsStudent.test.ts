@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,10 +17,8 @@ const assessmentsUrl = courseInstanceUrl + '/assessments';
 
 const storedConfig: Partial<Config> = {};
 
-describe('Test student auto-enrollment', function () {
-  this.timeout(20000);
-
-  before('set authenticated user', () => {
+describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
@@ -28,9 +26,12 @@ describe('Test student auto-enrollment', function () {
     config.authName = 'Student User';
     config.authUin = '00000001';
   });
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', () => {
+
+  beforeAll(helperServer.before());
+
+  afterAll(helperServer.after);
+
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 

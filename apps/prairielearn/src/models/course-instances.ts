@@ -30,6 +30,20 @@ export async function selectCourseInstanceById(
   );
 }
 
+export async function selectCourseInstanceByShortName({
+  course_id,
+  short_name,
+}: {
+  course_id: string;
+  short_name: string;
+}): Promise<CourseInstance> {
+  return queryRow(
+    sql.select_course_instance_by_short_name,
+    { course_id, short_name },
+    CourseInstanceSchema,
+  );
+}
+
 /**
  * Returns all course instances to which the given user has staff access.
  *
@@ -107,4 +121,13 @@ export async function selectCourseHasCourseInstances({
   course_id: string;
 }): Promise<boolean> {
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
+}
+
+export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
+  const isPublic = await queryRow(
+    sql.check_course_instance_is_public,
+    { course_instance_id },
+    z.boolean(),
+  );
+  return isPublic;
 }

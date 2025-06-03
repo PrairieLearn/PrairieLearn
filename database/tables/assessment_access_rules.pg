@@ -5,6 +5,7 @@ columns
     end_date: timestamp with time zone
     exam_uuid: uuid
     id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
+    json_comment: jsonb
     mode: enum_mode
     number: integer not null
     password: text
