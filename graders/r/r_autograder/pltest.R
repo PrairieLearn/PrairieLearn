@@ -36,8 +36,6 @@ result <- tryCatch({
 
     debug <- FALSE
 
-    options(width=100)
-
     cat("[pltest] Using plr (", format(packageVersion("plr")), "), ",
         "ttdo (", format(packageVersion("ttdo")), "), ",
         "tinysnapshot (", format(packageVersion("tinysnapshot")), ")\n", sep="")
@@ -55,9 +53,6 @@ result <- tryCatch({
         print(question_details)
         cat("[pltest] done question_details\n\n")
     }
-
-    print("test")
-    print(list.files("../student/"))
 
     # List all files in the 'bin/' directory
     ipynb_files <- list.files("bin", pattern = "\\.ipynb$", full.names = TRUE)
