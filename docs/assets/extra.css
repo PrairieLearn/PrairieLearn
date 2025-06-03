@@ -155,3 +155,20 @@ code.doc-symbol-json::after {
 .md-tooltip2__inner.md-typeset > .md-content__button.md-icon {
   display: none;
 }
+
+/* Badge support, modified from https://github.com/squidfunk/mkdocs-material/blob/462c94e88f89331c0484643d33aabdeba95d7394/src/overrides/assets/stylesheets/custom/_typeset.scss */
+.md-typeset .mdx-badge {
+  font-size: 0.85em;
+}
+
+.md-typeset .mdx-badge__text {
+  box-shadow: 0 0 0 1px inset var(--md-accent-fg-color--transparent);
+  padding: 0.2rem 0.3rem;
+}
+
+.md-typeset .mdx-badge__icon {
+  border-top-left-radius: 0.1rem;
+  border-top-right-radius: 0.1rem;
+  background: var(--md-accent-fg-color--transparent);
+  padding: 0.2rem;
+}

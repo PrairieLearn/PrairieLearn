@@ -108,6 +108,8 @@ compatibility, but they should not be used in new questions.
 
 ### `pl-big-o-input` element
 
+<!-- md:pr-date 6641 -->
+
 Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
 Gives automated feedback in the case of improper asymptotic input.
 
@@ -244,6 +246,8 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 ---
 
 ### `pl-excalidraw` element
+
+<!-- md:pr-date 9900 -->
 
 Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
 
@@ -521,6 +525,8 @@ A `pl-option` must be specified with these attributes:
 ---
 
 ### `pl-matrix-component-input` element
+
+<!-- md:pr-date 1184 -->
 
 A `pl-matrix-component-input` element displays a grid of input fields with
 the same shape of the variable stored in `answers-name`

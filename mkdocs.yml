@@ -305,3 +305,4 @@ watch:
 hooks:
   - docs/scripts/d2_svg_file.py
   - docs/scripts/jsonschema_details_fix.py
+  - docs/scripts/shortcodes.py
