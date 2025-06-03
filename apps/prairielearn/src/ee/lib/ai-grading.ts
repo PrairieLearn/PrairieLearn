@@ -189,7 +189,7 @@ export async function aiGrade({
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
         });
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
@@ -254,7 +254,7 @@ export async function aiGrade({
           error_count++;
         }
       } else {
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
