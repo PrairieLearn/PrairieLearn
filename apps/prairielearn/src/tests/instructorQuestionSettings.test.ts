@@ -1,11 +1,10 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
@@ -32,7 +31,7 @@ let questionDevInfoPath = path.join(questionDevDir, 'info.json');
 const siteUrl = `http://localhost:${config.serverPort}`;
 
 describe('Editing question settings', () => {
-  before(async () => {
+  beforeAll(async () => {
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
       env: process.env,
@@ -56,14 +55,14 @@ describe('Editing question settings', () => {
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('access the test question info file', async () => {
+  test.sequential('access the test question info file', async () => {
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionInfo.title, 'Test question');
   });
 
-  step('change question info', async () => {
+  test.sequential('change question info', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -87,13 +86,13 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  step('verify question info change', async () => {
+  test.sequential('verify question info change', async () => {
     questionLiveInfoPath = path.join(questionLiveDir, 'question', 'info.json');
     const questionLiveInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionLiveInfo.title, 'New title');
   });
 
-  step('verify nesting a question id', async () => {
+  test.sequential('verify nesting a question id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -120,24 +119,24 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  step('verify changing qid did not leave any empty directories', async () => {
+  test.sequential('verify changing qid did not leave any empty directories', async () => {
     const questionDir = path.join(courseLiveDir, 'question');
     assert.notOk(await fs.pathExists(questionDir));
   });
 
-  step('pull and verify changes', async () => {
+  test.sequential('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     questionDevInfoPath = path.join(courseDevDir, 'questions', 'test', 'question1', 'info.json');
     const questionDevInfo = JSON.parse(await fs.readFile(questionDevInfoPath, 'utf8'));
     assert.equal(questionDevInfo.title, 'New title');
   });
 
-  step('verify question info change in db', async () => {
+  test.sequential('verify question info change in db', async () => {
     const question = await selectQuestionById('1');
     assert.equal(question.title, 'New title');
   });
 
-  step('should not be able to submit without being an authorized user', async () => {
+  test.sequential('should not be able to submit without being an authorized user', async () => {
     const user = await getOrCreateUser({
       uid: 'viewer@example.com',
       name: 'Viewer User',
@@ -174,7 +173,7 @@ describe('Editing question settings', () => {
     });
   });
 
-  step('should not be able to submit without question info file', async () => {
+  test.sequential('should not be able to submit without question info file', async () => {
     questionLiveInfoPath = path.join(questionLiveDir, 'test', 'question1', 'info.json');
     await fs.move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
     try {
@@ -203,38 +202,44 @@ describe('Editing question settings', () => {
     }
   });
 
-  step('should not be able to submit if repo question info file has been changed', async () => {
-    const settingsPageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-    );
-    assert.equal(settingsPageResponse.status, 200);
+  test.sequential(
+    'should not be able to submit if repo question info file has been changed',
+    async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
 
-    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-    const newQuestionInfo = { ...questionInfo, title: 'New title - changed' };
-    await fs.writeFile(questionLiveInfoPath, JSON.stringify(newQuestionInfo, null, 2));
-    await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
-    await execa('git', ['commit', '-m', 'Change question info'], {
-      cwd: courseLiveDir,
-      env: process.env,
-    });
-    await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
+      const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+      const newQuestionInfo = { ...questionInfo, title: 'New title - changed' };
+      await fs.writeFile(questionLiveInfoPath, JSON.stringify(newQuestionInfo, null, 2));
+      await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
+      await execa('git', ['commit', '-m', 'Change question info'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
 
-    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'update_question',
-        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
-        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
-        title: 'Test title - changed',
-        qid: 'test/question',
-        grading_method: 'Internal',
-      }),
-    });
-    assert.equal(response.status, 200);
-    assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
-  });
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+            title: 'Test title - changed',
+            qid: 'test/question',
+            grading_method: 'Internal',
+          }),
+        },
+      );
+      assert.equal(response.status, 200);
+      assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
+    },
+  );
 
-  step('change question id', async () => {
+  test.sequential('change question id', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -258,7 +263,7 @@ describe('Editing question settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
   });
 
-  step('verify question id changed', async () => {
+  test.sequential('verify question id changed', async () => {
     questionLiveInfoPath = path.join(
       questionLiveDir,
       'question2', // The new question id
@@ -269,7 +274,7 @@ describe('Editing question settings', () => {
     assert.ok(await fs.pathExists(questionLiveInfoPath));
   });
 
-  step(
+  test.sequential(
     'should not be able to submit if changed question id is not in the root directory',
     async () => {
       const settingsPageResponse = await fetchCheerio(
@@ -298,7 +303,7 @@ describe('Editing question settings', () => {
     },
   );
 
-  step('verify workspace settings changes with minimal configuration', async () => {
+  test.sequential('verify workspace settings changes with minimal configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -335,7 +340,7 @@ describe('Editing question settings', () => {
     assert.notExists(questionInfo.workspaceOptions.environment);
   });
 
-  step('verify workspace settings changes with full configuration', async () => {
+  test.sequential('verify workspace settings changes with full configuration', async () => {
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );

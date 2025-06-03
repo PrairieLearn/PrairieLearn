@@ -138,10 +138,10 @@ router.post(
             .string()
             .transform((s) => shlex.split(s || ''))
             .optional(),
-          workspace_rewrite_url: BooleanFromCheckboxSchema.optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
           // This will not correctly handle any filenames that have a comma in them.
           // Currently, we do not have any such filenames in prod so we don't think that
-          // escaping commas in indiviudal filenames is necessary.
+          // escaping commas in individual filenames is necessary.
           workspace_graded_files: z
             .string()
             .transform((s) =>
@@ -151,9 +151,9 @@ router.post(
                 .filter((s) => s !== ''),
             )
             .optional(),
-          workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
-          external_grading_enabled: BooleanFromCheckboxSchema.optional(),
+          external_grading_enabled: BooleanFromCheckboxSchema,
           external_grading_image: z.string().optional(),
           external_grading_files: z
             .string()
@@ -166,7 +166,7 @@ router.post(
             .optional(),
           external_grading_entrypoint: z.union([z.string(), z.array(z.string())]).optional(),
           external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
-          external_grading_enable_networking: BooleanFromCheckboxSchema.optional(),
+          external_grading_enable_networking: BooleanFromCheckboxSchema,
           external_grading_environment: z.string().optional(),
         })
         .parse(req.body);
@@ -213,7 +213,7 @@ router.post(
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
         image: propertyValueWithDefault(
           questionInfo.workspaceOptions?.image,
-          body.workspace_image,
+          body.workspace_image?.trim(),
           '',
         ),
         port: propertyValueWithDefault(
@@ -223,7 +223,7 @@ router.post(
         ),
         home: propertyValueWithDefault(
           questionInfo.workspaceOptions?.home,
-          body.workspace_home,
+          body.workspace_home?.trim(),
           '',
         ),
         args: propertyValueWithDefault(
@@ -234,7 +234,7 @@ router.post(
         rewriteUrl: propertyValueWithDefault(
           questionInfo.workspaceOptions?.rewriteUrl,
           body.workspace_rewrite_url,
-          false,
+          true,
         ),
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
@@ -253,19 +253,26 @@ router.post(
         ),
       };
 
-      const filteredWorkspaceOptions = Object.fromEntries(
-        Object.entries(
-          propertyValueWithDefault(
-            questionInfo.workspaceOptions,
-            workspaceOptions,
-            (val) => !val || Object.keys(val).length === 0,
-          ),
-        ).filter(([_, value]) => value !== undefined),
-      );
-      questionInfo.workspaceOptions =
-        Object.keys(filteredWorkspaceOptions).length > 0
-          ? applyKeyOrder(questionInfo.workspaceOptions, filteredWorkspaceOptions)
-          : undefined;
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
 
       const externalGradingOptions = {
         comment: questionInfo.externalGradingOptions?.comment ?? undefined,

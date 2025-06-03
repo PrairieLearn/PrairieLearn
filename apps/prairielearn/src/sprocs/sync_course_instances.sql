@@ -87,6 +87,19 @@ BEGIN
         SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
         FROM matched_rows
         WHERE dest_id IS NULL
+        -- This is a total hack, but the test suite hardcoded course instance ID 1
+        -- for the test course in a lot of places. To avoid having to change tons
+        -- of tests after adding a new course instance to the test course, we'll
+        -- alphabetically sort the course instances by name to ensure that `Sp15`
+        -- will have ID 1. This assumes that it is in fact that first course instance,
+        -- which is currently true.
+        --
+        -- Mainly, this ensures that the tests are deterministic. So even if we do
+        -- add a new course instance, the tests will fail if a new course instance
+        -- would be assigned ID 1.
+        --
+        -- We specifically use C collation to ensure that "Sp15" ends up before "public".
+        ORDER BY src_short_name COLLATE "C" ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller

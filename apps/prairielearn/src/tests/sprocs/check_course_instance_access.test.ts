@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -7,10 +7,10 @@ import * as helperDb from '../helperDb.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('sproc check_course_instance_access* tests', function () {
-  before('set up testing server', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
+  afterAll(helperDb.after);
 
-  before('setup sample environment', async () => {
+  beforeAll(async () => {
     await sqldb.queryAsync(sql.setup_cia_generic_tests, {});
   });
 
