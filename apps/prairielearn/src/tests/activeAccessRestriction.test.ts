@@ -5,7 +5,8 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -20,9 +21,6 @@ describe(
     const context: Record<string, any> = {};
     context.siteUrl = `http://localhost:${config.serverPort}`;
     context.baseUrl = `${context.siteUrl}/pl`;
-    context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
-    context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
-    context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers: Record<string, string> = {};
 
@@ -39,10 +37,21 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
+      const { id: examId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam11-activeAccessRestriction',
+      });
+      const { id: hwId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw8-activeAccessRestriction',
+      });
+      context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
+      context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
+      context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
+      context.examId = examId;
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
-      context.hwId = await sqldb.queryRow(sql.select_homework8, IdSchema);
+      context.hwId = hwId;
       context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
       context.hwNumber = '8';
     });
