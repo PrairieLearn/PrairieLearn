@@ -83,7 +83,6 @@ def on_page_markdown(
 
     # If no github authentication token, skip this process
     if not pl_repo:
-        print(pl_repo)
         return markdown
 
     # Find and replace all external asset URLs in current page
