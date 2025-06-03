@@ -95,8 +95,9 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             activeSubPage: 'lti13',
             urlSuffix: '/instance_admin/lti13_instance',
             iconClasses: 'fas fa-school-flag',
-            tabLabel: 'LTI 1.3',
-            renderCondition: (resLocals) => resLocals.lti13_enabled,
+            tabLabel: 'Integrations',
+            //renderCondition: (resLocals) => resLocals.lti13_enabled,
+            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
           },
           {
             activeSubPage: 'billing',

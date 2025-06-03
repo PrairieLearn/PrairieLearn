@@ -34,12 +34,14 @@ import {
 import {
   AssessmentRowSchema,
   InstructorInstanceAdminLti13,
+  InstructorInstanceAdminLti13NoInstances,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
+/*
 router.use(
   asyncHandler(async (req, res, next) => {
     if (!(await validateLti13CourseInstance(res.locals))) {
@@ -48,6 +50,7 @@ router.use(
     next();
   }),
 );
+*/
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
@@ -63,6 +66,12 @@ router.get(
       },
       Lti13CombinedInstanceSchema,
     );
+
+    console.log(instances);
+    if (instances.length === 0) {
+      res.send(InstructorInstanceAdminLti13NoInstances({ resLocals: res.locals }));
+      return;
+    }
 
     // Handle the no parameter offered case, take the first one
     if (!req.params.unsafe_lti13_course_instance_id) {

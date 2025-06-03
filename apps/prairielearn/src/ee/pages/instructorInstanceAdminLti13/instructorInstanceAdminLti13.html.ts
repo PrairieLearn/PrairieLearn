@@ -28,6 +28,37 @@ export const AssessmentRowSchema = AssessmentSchema.merge(
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
+export function InstructorInstanceAdminLti13NoInstances({
+  resLocals,
+}: {
+  resLocals: Record<string, any>;
+}): string {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'LTI 1.3',
+    navContext: {
+      type: 'instructor',
+      page: 'instance_admin',
+      subPage: 'lti13',
+    },
+    options: {
+      fullWidth: true,
+      marginBottom: true,
+    },
+    content: html`
+          <main id="content" class="container mb-4">
+            <h1>Integration is not configured</h1>
+            <p>
+              Your institution requires you to authenticate via an additional method to complete the
+              login process.
+            </p>
+          </main>
+        </body>
+      </html>
+    `,
+  });
+}
+
 export function InstructorInstanceAdminLti13({
   resLocals,
   instance,
