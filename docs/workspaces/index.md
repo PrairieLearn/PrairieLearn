@@ -241,7 +241,7 @@ If you're using your own editor, you must ensure that it frequently autosaves an
 
 ## Running locally (on Docker)
 
-In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 
