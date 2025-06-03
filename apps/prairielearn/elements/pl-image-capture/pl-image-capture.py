@@ -49,7 +49,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
     }
 
-    course_id = data["options"].get("course_id", None)
+    course_id = data["options"].get("course_id")
     course_instance_id = data["options"].get("course_instance_id", None)
     question_id = data["options"].get("question_id", None)
     instance_question_id = data["options"].get("instance_question_id", None)
