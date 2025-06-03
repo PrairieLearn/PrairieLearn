@@ -489,7 +489,7 @@ export const ExternalImageCaptureSchema = z.object({
   id: IdSchema,
   variant_id: IdSchema,
   answer_name: z.string(),
-  file_id: IdSchema,
+  file_id: IdSchema.nullable(),
 });
 
 export type ExternalImageCapture = z.infer<typeof ExternalImageCaptureSchema>;

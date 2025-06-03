@@ -95,6 +95,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     try:
         _, b64_payload = submitted_file_content.split(",", 1)
     except ValueError:
+        pl.add_files_format_error(
+            data, f"Image submission for {answer_name} has an invalid data URI format."
+        )
         return
 
     pl.add_submitted_file(data, f"{answer_name}.png", b64_payload)

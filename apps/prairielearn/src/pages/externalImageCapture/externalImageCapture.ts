@@ -61,7 +61,7 @@ router.post(
       throw new HttpStatusError(400, 'No file uploaded');
     }
 
-    createExternalImageCapture({
+    await createExternalImageCapture({
       variantId,
       answerName,
       userId: res.locals.authn_user.user_id,
@@ -107,7 +107,7 @@ router.get(
       ExternalImageCaptureSchema,
     );
 
-    if (externalImageCapture) {
+    if (externalImageCapture && externalImageCapture.file_id) {
       const { contents, file } = await getFile(externalImageCapture.file_id);
       const base64_contents = contents.toString('base64');
       res.json({
