@@ -212,22 +212,27 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <label for="groupNameInput">Group name</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="groupNameInput"
-                    name="groupName"
-                    maxlength="30"
-                    pattern="[a-zA-Z0-9]+"
-                    placeholder="e.g. teamOne"
-                    aria-label="Group name"
-                    aria-describedby="groupNameHelp"
-                  />
-                  <small id="groupNameHelp" class="form-text text-muted">
-                    Group names can only contain letters and numbers, with maximum length of 30
-                    characters. If you leave this blank, a group name will be generated for you.
-                  </small>
+                  ${groupConfig.student_authz_choose_name
+                    ? html`
+                        <label for="group-name-input">Group name</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="group-name-input"
+                          name="group_name"
+                          maxlength="30"
+                          pattern="[a-zA-Z0-9]+"
+                          placeholder="e.g. teamOne"
+                          aria-label="Group name"
+                          aria-describedby="group-name-help"
+                        />
+                        <small id="group-name-help" class="form-text text-muted">
+                          Group names can only contain letters and numbers, with maximum length of
+                          30 characters. If you leave this blank, a group name will be generated for
+                          you.
+                        </small>
+                      `
+                    : ''}
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />
@@ -243,11 +248,11 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="joingroup-form" name="joingroup-form" method="POST">
-                  <label for="joinCodeInput">Join code</label>
+                  <label for="join-code-input">Join code</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="joinCodeInput"
+                    id="join-code-input"
                     name="join_code"
                     placeholder="abcd-1234"
                     pattern="[a-zA-Z0-9]+-[0-9]{4}"
