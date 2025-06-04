@@ -35,7 +35,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_file_name = None
     answer_name_default = f"{answer_name}.png"
-    if any(file["name"] == answer_name_default for file in submitted_files):
+    submitted_file_name = answer_name_default if any(file["name"] == answer_name_default for file in submitted_files) else None
         submitted_file_name = answer_name_default
 
     html_params = {
