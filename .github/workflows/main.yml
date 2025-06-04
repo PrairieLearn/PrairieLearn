@@ -125,6 +125,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # We uninstall `man-db` to speed up the installation of other packages
+      # by avoiding building man pages for them. As this is a non-interactive
+      # environment, we will never need man pages anyways.
+      #
+      # We don't install `texlive` since it's a huge package and the test suite
+      # doesn't require it.
       - name: Install OS packages
         run: |
           sudo apt-get purge -y man-db
