@@ -165,7 +165,7 @@ router.post(
         mode: 'ungraded',
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'ai_grade_assessment_test') {
+    } else if (req.body.__action === 'ai_grade_assessment_graded') {
       const ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
       if (!ai_grading_enabled) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
