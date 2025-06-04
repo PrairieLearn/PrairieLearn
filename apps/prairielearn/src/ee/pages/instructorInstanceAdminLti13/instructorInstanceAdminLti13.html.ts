@@ -383,11 +383,11 @@ function LineItem(item: Lti13Assessments, timezone: string) {
 export function LineitemsInputs({
   lineitems,
   assessments,
-  lti13_assessments,
+  lti13AssessmentsByLineItemIdUrl,
 }: {
   lineitems: Lineitems;
   assessments: AssessmentRow[];
-  lti13_assessments: Lti13Assessments[];
+  lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments>;
 }): string {
   const disclaimer = html`
     <details>
@@ -410,6 +410,11 @@ export function LineitemsInputs({
   }
   return html`
     <table class="table w-auto">
+      <tr>
+        <th>Assignment from LMS</th>
+        <th>PL assessment</th>
+        <th>ResourceId</th>
+      </tr>
       ${lineitems.map(
         (lineitem) => html`
           <tr>
@@ -426,6 +431,11 @@ export function LineitemsInputs({
                   <span title="${lineitem.id}">${lineitem.label}</span>
                 </label>
               </div>
+            </td>
+            <td>
+              ${lineitem.id in lti13AssessmentsByLineItemIdUrl
+                ? lti13AssessmentsByLineItemIdUrl[lineitem.id].assessment_id
+                : ''}
             </td>
             <td>${lineitem.resourceId}</td>
           </tr>

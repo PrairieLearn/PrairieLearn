@@ -95,6 +95,11 @@ router.get(
       Lti13AssessmentsSchema,
     );
 
+    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
+    for (const a of lti13_assessments) {
+      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
+    }
+
     if ('lineitems' in req.query) {
       const lineitems = await getLineitems(instance);
 
@@ -107,15 +112,10 @@ router.get(
         LineitemsInputs({
           lineitems,
           assessments,
-          lti13_assessments,
+          lti13AssessmentsByLineItemIdUrl,
         }),
       );
       return;
-    }
-
-    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
-    for (const a of lti13_assessments) {
-      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
     }
 
     res.send(
