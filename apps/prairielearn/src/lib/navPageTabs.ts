@@ -94,7 +94,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               resLocals.lti_enabled && resLocals.authz_data.has_course_permission_edit,
           },
           {
-            activeSubPage: 'lti13',
+            activeSubPage: 'integrations',
             urlSuffix: '/instance_admin/lti13_instance',
             iconClasses: 'fas fa-school-flag',
             tabLabel: 'Integrations',

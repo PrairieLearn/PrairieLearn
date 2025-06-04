@@ -87,7 +87,7 @@ export function InstructorInstanceAdminLti13NoInstances({
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'lti13',
+      subPage: 'integrations',
     },
     options: {
       fullWidth: true,
@@ -114,11 +114,11 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'LTI 1.3',
+    pageTitle: 'Integrations',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
-      subPage: 'lti13',
+      subPage: 'integrations',
     },
     options: {
       fullWidth: true,
