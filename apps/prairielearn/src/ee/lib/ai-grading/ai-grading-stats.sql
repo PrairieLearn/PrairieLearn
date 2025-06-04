@@ -1,4 +1,4 @@
--- BLOCK select_ai_and_human_grading_jobs_batch
+-- BLOCK select_ai_and_human_grading_jobs
 WITH
   latest_submissions AS (
     SELECT
@@ -69,18 +69,9 @@ SELECT
 FROM
   rubrics
 WHERE
-  id = $manual_rubric_id;
+  id = $rubric_id;
 
 -- BLOCK select_rubric_grading_items
-SELECT
-  ri.*
-FROM
-  rubric_grading_items AS rgi
-  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
-WHERE
-  rgi.rubric_grading_id = $manual_rubric_grading_id;
-
--- BLOCK select_rubric_grading_items_batch
 SELECT
   rgi.rubric_grading_id,
   ri.*

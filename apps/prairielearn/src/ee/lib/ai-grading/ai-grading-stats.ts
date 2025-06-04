@@ -43,13 +43,13 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 ): Promise<WithAIGradingStats<T>[]> {
   const rubric_modify_time = await queryOptionalRow(
     sql.select_rubric_time,
-    { manual_rubric_id: assessment_question.manual_rubric_id },
+    { rubric_id: assessment_question.manual_rubric_id },
     DateFromISOString,
   );
 
   const instance_question_ids = instance_questions.map((iq) => iq.id);
   const grading_jobs = await queryRows(
-    sql.select_ai_and_human_grading_jobs_batch,
+    sql.select_ai_and_human_grading_jobs,
     { instance_question_ids },
     GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
@@ -66,7 +66,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     .flatMap((grading_jobs) => grading_jobs.map((item) => item.manual_rubric_grading_id))
     .filter((item) => item !== null);
   const rubric_items = await queryRows(
-    sql.select_rubric_grading_items_batch,
+    sql.select_rubric_grading_items,
     { manual_rubric_grading_ids },
     RubricItemSchema.extend({ rubric_grading_id: IdSchema }),
   );
@@ -141,10 +141,5 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 }
 
 function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boolean {
-  for (const item of items) {
-    if (item.id === itemToCheck.id) {
-      return true;
-    }
-  }
-  return false;
+  return items.some((item) => item.id === itemToCheck.id);
 }
