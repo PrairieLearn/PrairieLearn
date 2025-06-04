@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.3.0
+
+### Minor Changes
+
+- abd760d: Forbid calling `.optional()` on `BooleanFromCheckboxSchema`
+
 ## 1.2.1
 
 ### Patch Changes
