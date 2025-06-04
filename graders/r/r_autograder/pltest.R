@@ -16,7 +16,7 @@
 #' \dontrun{
 #' code <- extract_r_code_from_ipynb("student.ipynb")
 #' }
-extract_r_code_from_ipynb <- function(file, ipynb_key = "#R") {
+extract_r_code_from_ipynb <- function(file, ipynb_key = "#grade") {
   nb <- jsonlite::fromJSON(file, simplifyVector = FALSE)
   content <- ""
   
