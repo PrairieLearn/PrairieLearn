@@ -104,6 +104,7 @@ export const AssessmentSchema = z.object({
   duration_stat_threshold_seconds: z.number().array(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
+  honor_code: z.string().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
