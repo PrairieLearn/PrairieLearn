@@ -212,7 +212,7 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  ${groupConfig.student_authz_group_name
+                  ${groupConfig.student_authz_choose_name
                     ? html`
                         <label for="groupNameInput">Group name</label>
                         <input
