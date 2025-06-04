@@ -134,24 +134,20 @@ jobs:
       # having any password at all, and we don't have an easy way to specify
       # config overrides, which means we can't just create a new user with a
       # password and have our code use that instead.
+      #
+      # We also update the configuration to try to speed up Postgres itself.
       - name: Start Postgres
         run: |
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
 
-          cat /etc/postgresql/16/main/postgresql.conf || true
           sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
           fsync = off
           full_page_writes = off
           synchronous_commit = off
           EOF
-          cat /etc/postgresql/16/main/postgresql.conf || true
 
           sudo systemctl restart postgresql.service
-
-          sleep 5
-
-          sudo cat /var/log/postgresql/postgresql-16-main.log || true
 
       - name: Install OS packages
         run: |
@@ -166,6 +162,9 @@ jobs:
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
         run: yarn install --immutable --inline-builds
+        env:
+          # Disable hardened mode to eke out a little more speed.
+          YARN_ENABLE_HARDENED_MODE: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -182,8 +181,6 @@ jobs:
           # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
           UV_COMPILE_BYTECODE: 1
         run: uv pip install -r images/plbase/python-requirements.txt
-      - name: Test Zygote startup time
-        run: time python3 apps/prairielearn/python/zygote_benchmark.py
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -202,10 +199,8 @@ jobs:
           git config --global safe.directory '*'
 
       - name: Test code
-        run: |
-          make --assume-old=start-postgres test-js
-          # make --assume-old=start-postgres start-support
-          # cd apps/prairielearn && yarn vitest src/tests/activeAccessRestriction.test.ts
+        run: make test-js
+
   native-checks-js:
     runs-on: ubuntu-latest
     steps:
