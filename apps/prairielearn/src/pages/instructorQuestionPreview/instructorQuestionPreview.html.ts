@@ -84,7 +84,6 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
-
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           ${readmeHtml
