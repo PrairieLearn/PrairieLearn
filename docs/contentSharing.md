@@ -94,5 +94,5 @@ If every assessment in a course instance is shared, the course instance can also
 
 ### Steps to share a course instance
 
-1. Ensure that all assessments in the course instance have `"sharePubliclySource": true`.
+1. Ensure that all assessments in the course instance have `"shareSourcePublicly": true`.
 2. Add `"shareSourcePublicly": true` to the `infoCourseInstance.json` file of the course instance that you would like to be publicly shared.
