@@ -289,9 +289,9 @@ ${resLocals.assessment.honor_code}</textarea
                     >
                     <small class="form-text text-muted">
                       Custom honor code text that will be shown to students before starting the
-                      exam. While this field cannot accept HTML, you can use Markdown formatting and
-                      a user's name can be included by using Mustache templating, (i.e.
-                      <code>{{user_name}}</code>). To use the default honor code, leave this blank.
+                      exam. While this field cannot accept HTML, you can use Markdown formatting.
+                      The user's name can be included with Mustache templating:
+                      <code>{{user_name}}</code>. To use the default honor code, leave this blank.
                     </small>
                   </div>
                 `
