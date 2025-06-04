@@ -1,17 +1,14 @@
-import { z } from 'zod';
-
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import {
-  AssessmentSchema,
-  AssessmentSetSchema,
   type Lti13Assessments,
   type Lti13CourseInstance,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
+import type { AssessmentRow } from '../../../models/assessment.js';
 import { type Lineitems } from '../../lib/lti13.js';
 
 interface Lti13FullInstance {
@@ -19,27 +16,20 @@ interface Lti13FullInstance {
   lti13_instance: Lti13Instance;
 }
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
-
 export function InstructorInstanceAdminLti13({
   resLocals,
   instance,
   instances,
   assessments,
-  lti13_assessments,
+  assessmentsGroupBy,
+  lti13AssessmentsByAssessmentId,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13FullInstance;
   instances: Lti13FullInstance[];
   assessments: AssessmentRow[];
-  lti13_assessments: Lti13Assessments[];
+  assessmentsGroupBy: 'Set' | 'Module';
+  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -115,7 +105,8 @@ export function InstructorInstanceAdminLti13({
                     resLocals,
                     lms_name,
                     assessments,
-                    lti13_assessments,
+                    assessmentsGroupBy,
+                    lti13AssessmentsByAssessmentId,
                   })
                 : html`
                     <p>
@@ -152,15 +143,16 @@ function LinkedAssessments({
   resLocals,
   lms_name,
   assessments,
-  lti13_assessments,
+  assessmentsGroupBy,
+  lti13AssessmentsByAssessmentId,
 }: {
   resLocals: Record<string, any>;
   lms_name: string;
   assessments: AssessmentRow[];
-  lti13_assessments: Lti13Assessments[];
+  assessmentsGroupBy: 'Set' | 'Module';
+  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
-  const { assessments_group_by } = resLocals.course_instance;
 
   return html`
     <div class="table-responsive">
@@ -181,9 +173,6 @@ function LinkedAssessments({
         </thead>
         <tbody>
           ${assessments.map((row) => {
-            const lineitems_linked = lti13_assessments.filter((item) => {
-              return item.assessment_id === row.id;
-            });
             return html`
               ${row.start_new_assessment_group
                 ? html`
@@ -191,7 +180,12 @@ function LinkedAssessments({
                       <th colspan="5">
                         ${Modal({
                           id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
-                          title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
+                          title: `${
+                            assessmentsGroupBy === 'Set'
+                              ? row.assessment_set.heading
+                              : row.assessment_module.heading
+                          } ${assessmentsGroupBy} Bulk Actions
+                            `,
                           body: html`<p>
                               These bulk actions work collectively on every assessment in the group
                               where the action makes sense.
@@ -243,7 +237,9 @@ function LinkedAssessments({
                             Close
                           </button>`,
                         })}
-                        ${row.assessment_group_heading}
+                        ${assessmentsGroupBy === 'Set'
+                          ? row.assessment_set.heading
+                          : row.assessment_module.heading}
                         <button
                           class="btn btn-sm btn-secondary ms-2"
                           type="button"
@@ -258,7 +254,7 @@ function LinkedAssessments({
                 : ''}
               <tr id="row-${row.id}">
                 <td class="align-middle" style="width: 1%">
-                  <span class="badge color-${row.color}">${row.label}</span>
+                  <span class="badge color-${row.assessment_set.color}">${row.label}</span>
                 </td>
                 <td class="align-middle">
                   <a href="${urlPrefix}/assessment/${row.id}/"
@@ -320,18 +316,8 @@ function LinkedAssessments({
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
-                    ${lineitems_linked.length === 0
+                    ${row.id in lti13AssessmentsByAssessmentId
                       ? html`
-                          <button
-                            class="btn btn-med-light"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#assignment-${row.id}"
-                          >
-                            Link assignment
-                          </button>
-                        `
-                      : html`
                           <div class="btn-group">
                             <button class="btn btn-info" name="__action" value="send_grades">
                               Send grades
@@ -355,13 +341,26 @@ function LinkedAssessments({
                               </li>
                             </ul>
                           </div>
+                        `
+                      : html`
+                          <button
+                            class="btn btn-med-light"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#assignment-${row.id}"
+                          >
+                            Link assignment
+                          </button>
                         `}
                   </form>
                 </td>
                 <td class="align-middle">
-                  ${lineitems_linked.map((i) =>
-                    LineItem(i, resLocals.course_instance.display_timezone),
-                  )}
+                  ${row.id in lti13AssessmentsByAssessmentId
+                    ? LineItem(
+                        lti13AssessmentsByAssessmentId[row.id],
+                        resLocals.course_instance.display_timezone,
+                      )
+                    : ''}
                 </td>
               </tr>
             `;

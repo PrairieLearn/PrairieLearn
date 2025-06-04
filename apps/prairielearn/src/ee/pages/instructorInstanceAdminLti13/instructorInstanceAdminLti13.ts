@@ -16,6 +16,7 @@ import {
   AssessmentSchema,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
+  type Lti13Assessments,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -32,10 +33,10 @@ import {
 } from '../../lib/lti13.js';
 
 import {
-  AssessmentRowSchema,
   InstructorInstanceAdminLti13,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
+import { selectAssessments } from '../../../models/assessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -82,16 +83,9 @@ router.get(
       throw error.make(404, 'LTI 1.3 instance not found.');
     }
 
-    const assessments = await queryRows(
-      sql.select_assessments,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
-      },
-      AssessmentRowSchema,
-    );
+    const assessments = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     const lti13_assessments = await queryRows(
       sql.select_lti13_assessments,
@@ -104,8 +98,9 @@ router.get(
     if ('lineitems' in req.query) {
       const lineitems = await getLineitems(instance);
 
-      console.log(lineitems, lti13_assessments);
-      for (const item in lineitems) {
+      const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
+      for (const a of lti13_assessments) {
+        lti13AssessmentsByLineItemIdUrl[a.lineitem_id_url] = a;
       }
 
       res.send(
@@ -118,13 +113,19 @@ router.get(
       return;
     }
 
+    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
+    for (const a of lti13_assessments) {
+      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
+    }
+
     res.send(
       InstructorInstanceAdminLti13({
         resLocals: res.locals,
         instance,
         instances,
         assessments,
-        lti13_assessments,
+        assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        lti13AssessmentsByAssessmentId,
       }),
     );
   }),
