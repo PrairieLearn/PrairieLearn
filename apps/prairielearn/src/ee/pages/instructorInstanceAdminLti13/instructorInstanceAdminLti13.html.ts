@@ -33,13 +33,13 @@ export function InstructorInstanceAdminLti13({
   instance,
   instances,
   assessments,
-  lineitems,
+  lti13_assessments,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13FullInstance;
   instances: Lti13FullInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lti13_assessments: Lti13Assessments[];
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -115,7 +115,7 @@ export function InstructorInstanceAdminLti13({
                     resLocals,
                     lms_name,
                     assessments,
-                    lineitems,
+                    lti13_assessments,
                   })
                 : html`
                     <p>
@@ -152,12 +152,12 @@ function LinkedAssessments({
   resLocals,
   lms_name,
   assessments,
-  lineitems,
+  lti13_assessments,
 }: {
   resLocals: Record<string, any>;
   lms_name: string;
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lti13_assessments: Lti13Assessments[];
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -181,7 +181,7 @@ function LinkedAssessments({
         </thead>
         <tbody>
           ${assessments.map((row) => {
-            const lineitems_linked = lineitems.filter((item) => {
+            const lineitems_linked = lti13_assessments.filter((item) => {
               return item.assessment_id === row.id;
             });
             return html`
@@ -381,7 +381,15 @@ function LineItem(item: Lti13Assessments, timezone: string) {
   `;
 }
 
-export function LineitemsInputs(lineitems: Lineitems) {
+export function LineitemsInputs({
+  lineitems,
+  assessments,
+  lti13_assessments,
+}: {
+  lineitems: Lineitems;
+  assessments: AssessmentRow[];
+  lti13_assessments: Lti13Assessments[];
+}): string {
   const disclaimer = html`
     <details>
       <summary>Why don't I see my assignment here?</summary>
@@ -402,22 +410,29 @@ export function LineitemsInputs(lineitems: Lineitems) {
     `.toString();
   }
   return html`
-    ${lineitems.map(
-      (lineitem) => html`
-        <div class="form-check">
-          <label class="form-check-label">
-            <input
-              class="form-check-input"
-              type="radio"
-              name="lineitem_id"
-              value="${lineitem.id}"
-              required
-            />
-            <span title="${lineitem.id}">${lineitem.label}</span>
-          </label>
-        </div>
-      `,
-    )}
+    <table class="table w-auto">
+      ${lineitems.map(
+        (lineitem) => html`
+          <tr>
+            <td>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="lineitem_id"
+                    value="${lineitem.id}"
+                    required
+                  />
+                  <span title="${lineitem.id}">${lineitem.label}</span>
+                </label>
+              </div>
+            </td>
+            <td>${lineitem.resourceId}</td>
+          </tr>
+        `,
+      )}
+    </table>
     <button name="__action" value="link_assessment" class="btn btn-primary">Link assignment</button>
     ${disclaimer}
   `.toString();
