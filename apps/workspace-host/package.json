@@ -44,7 +44,7 @@
     "zod": "^3.25.45"
   },
   "devDependencies": {
-    "@types/node": "^20.17.57",
+    "@types/node": "^22.15.29",
     "@vitest/coverage-v8": "^3.2.1",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.10",
