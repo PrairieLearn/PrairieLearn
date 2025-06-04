@@ -6809,7 +6809,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/coverage-v8@npm:^3.2.1":
+"@vitest/coverage-v8@npm:^3.2.0, @vitest/coverage-v8@npm:^3.2.1":
   version: 3.2.1
   resolution: "@vitest/coverage-v8@npm:3.2.1"
   dependencies:
@@ -14429,6 +14429,7 @@ __metadata:
     "@eslint-react/eslint-plugin": "npm:^1.51.0"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@types/tar-stream": "npm:^3.1.4"
+    "@vitest/coverage-v8": "npm:^3.2.0"
     "@vitest/eslint-plugin": "npm:^1.2.1"
     dependency-cruiser: "npm:^16.10.2"
     eslint: "npm:^9.28.0"
@@ -14455,6 +14456,7 @@ __metadata:
     turbo: "npm:^2.5.4"
     typescript: "npm:^5.8.3"
     typescript-eslint: "npm:^8.33.1"
+    vitest: "npm:^3.2.1"
   languageName: unknown
   linkType: soft
 
