@@ -1,4 +1,12 @@
--- BLOCK select_ai_and_human_grading_jobs
+-- BLOCK select_rubric_time
+SELECT
+  modified_at
+FROM
+  rubrics
+WHERE
+  id = $rubric_id;
+
+-- BLOCK select_ai_and_human_grading_jobs_and_rubric
 WITH
   latest_submissions AS (
     SELECT
@@ -27,7 +35,8 @@ WITH
   ),
   grouped_grading_jobs AS (
     SELECT
-      gj.id grading_job_id,
+      ls.instance_question_id,
+      gj.id AS grading_job_id,
       gj.grading_method,
       gj.graded_at,
       gj.manual_points,
@@ -42,11 +51,18 @@ WITH
           gj.graded_at DESC
       ) AS rn
     FROM
-      submissions s
-      JOIN grading_jobs gj ON s.id = gj.submission_id
-      JOIN latest_submissions ON s.id = latest_submissions.submission_id
+      latest_submissions AS ls
+      JOIN grading_jobs AS gj ON ls.submission_id = gj.submission_id
     WHERE
       gj.grading_method IN ('Manual', 'AI')
+  ),
+  rubric_grading_to_items AS (
+    SELECT
+      rgi.rubric_grading_id,
+      ri.*
+    FROM
+      rubric_grading_items AS rgi
+      JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
   )
 SELECT
   grading_job_id,
@@ -55,28 +71,28 @@ SELECT
   manual_points,
   manual_rubric_grading_id,
   instance_question_id,
-  COALESCE(u.name, u.uid) AS grader_name
+  COALESCE(u.name, u.uid) AS grader_name,
+  COALESCE(
+    json_agg(to_jsonb(rgti)) FILTER (
+      WHERE
+        rgti.id IS NOT NULL
+    ),
+    '[]'::json
+  ) AS rubric_items
 FROM
   users AS u
   JOIN grouped_grading_jobs AS ggj ON (u.user_id = ggj.graded_by)
-  JOIN latest_submissions AS ls ON (ggj.submission_id = ls.submission_id)
+  LEFT JOIN rubric_grading_to_items AS rgti ON (
+    ggj.manual_rubric_grading_id = rgti.rubric_grading_id
+  )
 WHERE
-  rn = 1;
-
--- BLOCK select_rubric_time
-SELECT
-  modified_at
-FROM
-  rubrics
-WHERE
-  id = $rubric_id;
-
--- BLOCK select_rubric_grading_items
-SELECT
-  rgi.rubric_grading_id,
-  ri.*
-FROM
-  rubric_grading_items AS rgi
-  JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
-WHERE
-  rgi.rubric_grading_id = ANY ($manual_rubric_grading_ids::BIGINT[]);
+  rn = 1
+GROUP BY
+  grading_job_id,
+  grading_method,
+  graded_at,
+  manual_points,
+  manual_rubric_grading_id,
+  instance_question_id,
+  u.name,
+  u.uid;

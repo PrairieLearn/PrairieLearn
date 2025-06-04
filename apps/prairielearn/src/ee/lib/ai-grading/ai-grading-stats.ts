@@ -20,6 +20,7 @@ const GradingJobInfoSchema = z.object({
   manual_points: z.number().nullable(),
   manual_rubric_grading_id: IdSchema.nullable(),
   grader_name: z.string(),
+  rubric_items: z.array(RubricItemSchema),
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
@@ -49,7 +50,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 
   const instance_question_ids = instance_questions.map((iq) => iq.id);
   const grading_jobs = await queryRows(
-    sql.select_ai_and_human_grading_jobs,
+    sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids },
     GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
@@ -60,24 +61,6 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       return acc;
     },
     {} as Record<string, GradingJobInfo[]>,
-  );
-
-  const manual_rubric_grading_ids = Object.values(gradingJobMapping)
-    .flatMap((grading_jobs) => grading_jobs.map((item) => item.manual_rubric_grading_id))
-    .filter((item) => item !== null);
-  const rubric_items = await queryRows(
-    sql.select_rubric_grading_items,
-    { manual_rubric_grading_ids },
-    RubricItemSchema.extend({ rubric_grading_id: IdSchema }),
-  );
-  const rubricItemMapping = manual_rubric_grading_ids.reduce(
-    (acc, manual_rubric_grading_id) => {
-      acc[manual_rubric_grading_id] = rubric_items.filter(
-        (rubric_item) => rubric_item.rubric_grading_id === manual_rubric_grading_id,
-      );
-      return acc;
-    },
-    {} as Record<string, RubricItem[]>,
   );
 
   const results: WithAIGradingStats<T>[] = [];
@@ -126,8 +109,8 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     if (!manualGradingJob.manual_rubric_grading_id || !aiGradingJob.manual_rubric_grading_id) {
       continue;
     }
-    const manualItems = rubricItemMapping[manualGradingJob.manual_rubric_grading_id];
-    const aiItems = rubricItemMapping[aiGradingJob.manual_rubric_grading_id];
+    const manualItems = manualGradingJob.rubric_items;
+    const aiItems = aiGradingJob.rubric_items;
     const fpItems = aiItems
       .filter((item) => !rubricListIncludes(manualItems, item))
       .map((item) => ({ ...item, false_positive: true }));
