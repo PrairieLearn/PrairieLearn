@@ -14,12 +14,13 @@ import {
 
 import {
   AssessmentSchema,
+  type Lti13Assessments,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
-  type Lti13Assessments,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { type AssessmentRow, selectAssessments } from '../../../models/assessment.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   Lti13CombinedInstanceSchema,
@@ -36,7 +37,6 @@ import {
   InstructorInstanceAdminLti13,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
-import { selectAssessments, type AssessmentRow } from '../../../models/assessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
