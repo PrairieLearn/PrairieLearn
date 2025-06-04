@@ -33,7 +33,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_files = data["submitted_answers"].get("_files", [])
 
-    submitted_file_name = None
     answer_name_default = f"{answer_name}.png"
     submitted_file_name = (
         answer_name_default
