@@ -173,7 +173,7 @@ router.post(
         throw new HttpStatusError(403, 'You are not authorized to create a group.');
       }
       await createGroup(
-        groupConfig.student_authz_choose_name ? req.body.groupName : null,
+        groupConfig.student_authz_choose_name ? req.body.group_name : null,
         res.locals.assessment.id,
         [res.locals.user.uid],
         res.locals.authn_user.user_id,
