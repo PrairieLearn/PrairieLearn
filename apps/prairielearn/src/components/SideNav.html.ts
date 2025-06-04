@@ -5,6 +5,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
+import { isEnterprise } from '../lib/license.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
@@ -134,8 +135,8 @@ const sideNavPagesTabs = {
       activeSubPages: ['lti13'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
-      tabLabel: 'LTI 1.3',
-      renderCondition: (resLocals) => resLocals.lti13_enabled,
+      tabLabel: 'Integrations',
+      renderCondition: () => isEnterprise(),
     },
     {
       activePages: ['instance_admin'],

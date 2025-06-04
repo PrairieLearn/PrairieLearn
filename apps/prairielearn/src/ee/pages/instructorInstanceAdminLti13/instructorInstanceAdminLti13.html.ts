@@ -30,12 +30,60 @@ type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
+  ltiInstances,
+  institutionName,
 }: {
   resLocals: Record<string, any>;
+  ltiInstances: Lti13Instance[];
+  institutionName: string;
 }): string {
+  const content = html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h1>Integrations with other learning systems</h1>
+      </div>
+      <div class="card-body">
+        <p>
+          PrairieLearn supports integrations with learning systems to pass status and grades between
+          them. No integrations have been configured yet for this course instance, but when that
+          happens you can configure them there.
+        </p>
+
+        ${ltiInstances.length === 0
+          ? html`
+              <p>
+                No integrations are present with ${institutionName}. Reach out to your learning
+                system admins to explore how they might integrate with PrairieLearn. The
+                <a target="_blank" href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                  >administrators LTI 1.3 configuration documentation</a
+                >
+                is a good starting point for them.
+              </p>
+            `
+          : html`
+              <p>
+                The following ${institutionName} learning systems are already integrated with
+                PrairieLearn. See the
+                <a
+                  target="_blank"
+                  href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                >
+                  instructor documentation for how to start using integrations.
+                </a>
+              </p>
+              <ul>
+                ${ltiInstances.map((i) => {
+                  return html`<li>${i.name}</li>`;
+                })}
+              </ul>
+            `}
+      </div>
+    </div>
+  `;
+
   return PageLayout({
     resLocals,
-    pageTitle: 'LTI 1.3',
+    pageTitle: 'Integrations',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
@@ -45,17 +93,7 @@ export function InstructorInstanceAdminLti13NoInstances({
       fullWidth: true,
       marginBottom: true,
     },
-    content: html`
-          <main id="content" class="container mb-4">
-            <h1>Integration is not configured</h1>
-            <p>
-              Your institution requires you to authenticate via an additional method to complete the
-              login process.
-            </p>
-          </main>
-        </body>
-      </html>
-    `,
+    content,
   });
 }
 

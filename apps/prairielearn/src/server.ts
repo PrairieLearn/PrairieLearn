@@ -48,7 +48,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
-import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
@@ -762,8 +761,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       res.locals.lti_enabled =
         config.hasLti && (await features.enabledFromLocals('lti', res.locals));
       next();
