@@ -348,6 +348,9 @@ function aiGradingDropdown() {
         <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
           Grade all ungraded
         </button>
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading-graded').submit();">
+          Grade all human-graded
+        </button>
         <button
           class="dropdown-item grading-tag-button"
           type="submit"
@@ -355,9 +358,6 @@ function aiGradingDropdown() {
           value="ai_grade_assessment_selected"
         >
           Grade selected
-        </button>
-        <button class="dropdown-item" type="button" onclick="$('#ai-grading-graded').submit();">
-          Grade all human-graded
         </button>
       </div>
     </div>
