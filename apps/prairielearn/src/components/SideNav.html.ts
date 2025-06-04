@@ -2,10 +2,11 @@ import clsx from 'clsx';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
+import { isEnterprise } from '../lib/license.js';
+
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
-import { isEnterprise } from '../lib/license.js';
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */

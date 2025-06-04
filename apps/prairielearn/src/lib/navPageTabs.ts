@@ -1,6 +1,7 @@
 import { IssueBadge } from '../components/IssueBadge.html.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 import { ProgressCircle } from '../components/ProgressCircle.html.js';
+
 import { isEnterprise } from './license.js';
 
 /**
