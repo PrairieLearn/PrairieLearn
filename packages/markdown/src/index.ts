@@ -71,13 +71,17 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
-  // If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
-  // See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
   allowHtml = true,
   interpretMath = true,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
+  /**
+   * If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
+   * See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
+   * For example, if the input is `<h1>Block HTML</h1>` the entire block will be removed. If the input is `<em>Inline HTML</em>`,
+   * the `<em>` tags will be removed the output will be just the text content without any HTML tags (`Inline HTML`).
+   */
   sanitize?: boolean;
   allowHtml?: boolean;
   interpretMath?: boolean;
@@ -132,7 +136,6 @@ export async function markdownToHtml(
     interpretMath = true,
   }: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
 ) {
-  return (
-    await getProcessor({ inline, allowHtml, interpretMath }).process(original)
-  ).value.toString();
+  const processor = getProcessor({ inline, allowHtml, interpretMath });
+  return (await processor.process(original)).value.toString();
 }

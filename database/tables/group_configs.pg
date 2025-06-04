@@ -8,6 +8,7 @@ columns
     maximum: integer
     minimum: integer
     name: text
+    student_authz_choose_name: boolean not null default true
     student_authz_create: boolean default false
     student_authz_join: boolean default false
     student_authz_leave: boolean default false
