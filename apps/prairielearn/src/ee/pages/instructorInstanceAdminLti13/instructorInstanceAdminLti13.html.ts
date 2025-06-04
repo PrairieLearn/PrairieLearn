@@ -254,15 +254,11 @@ function LinkedAssessments({
                 : ''}
               <tr id="row-${row.id}">
                 <td class="align-middle" style="width: 1%">
-                  <span class="badge color-${row.assessment_set.color}">${row.label}</span>
-                </td>
-                <td class="align-middle">
-                  <a href="${urlPrefix}/assessment/${row.id}/"
-                    >${row.title}
-                    ${row.group_work
-                      ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                      : ''}</a
-                  >
+                  ${AssessmentLink({
+                    assessment: row,
+                    urlPrefix,
+                    spacerHtml: html`</td><td class="align-middle">`,
+                  })}
                 </td>
                 <td>
                   ${Modal({
@@ -292,7 +288,7 @@ function LinkedAssessments({
                         <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
                         <button
                           class="btn btn-primary"
-                          hx-get="?lineitems"
+                          hx-get="?lineitems&assessment_id=${row.id}"
                           hx-target="next .line-items-inputs"
                           onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
                         >
@@ -382,12 +378,16 @@ function LineItem(item: Lti13Assessments, timezone: string) {
 
 export function LineitemsInputs({
   lineitems,
-  assessments,
+  assessmentsById,
   lti13AssessmentsByLineItemIdUrl,
+  urlPrefix,
+  unsafeTargetAssessmentId,
 }: {
   lineitems: Lineitems;
-  assessments: AssessmentRow[];
+  assessmentsById: Record<string, AssessmentRow>;
   lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments>;
+  urlPrefix: string;
+  unsafeTargetAssessmentId: string | undefined;
 }): string {
   const disclaimer = html`
     <details>
@@ -411,9 +411,8 @@ export function LineitemsInputs({
   return html`
     <table class="table w-auto">
       <tr>
-        <th>Assignment from LMS</th>
-        <th>PL assessment</th>
-        <th>ResourceId</th>
+        <th>Assignment</th>
+        <th>Linked PrairieLearn assessment</th>
       </tr>
       ${lineitems.map(
         (lineitem) => html`
@@ -429,15 +428,25 @@ export function LineitemsInputs({
                     required
                   />
                   <span title="${lineitem.id}">${lineitem.label}</span>
+                  <!--
+                  <br /><code>${lineitem.resourceId}</code>
+                  -->
+                  ${lineitem.resourceId === unsafeTargetAssessmentId
+                    ? html`<span class="badge text-bg-info">Recommended</span>`
+                    : ''}
                 </label>
               </div>
             </td>
             <td>
               ${lineitem.id in lti13AssessmentsByLineItemIdUrl
-                ? lti13AssessmentsByLineItemIdUrl[lineitem.id].assessment_id
+                ? AssessmentLink({
+                    assessment:
+                      assessmentsById[lti13AssessmentsByLineItemIdUrl[lineitem.id].assessment_id],
+                    urlPrefix,
+                    spacerHtml: html``,
+                  })
                 : ''}
             </td>
-            <td>${lineitem.resourceId}</td>
           </tr>
         `,
       )}
@@ -445,4 +454,25 @@ export function LineitemsInputs({
     <button name="__action" value="link_assessment" class="btn btn-primary">Link assignment</button>
     ${disclaimer}
   `.toString();
+}
+
+function AssessmentLink({
+  assessment,
+  urlPrefix,
+  spacerHtml,
+}: {
+  assessment: AssessmentRow;
+  urlPrefix: string;
+  spacerHtml: HtmlSafeString | undefined;
+}) {
+  return html`
+    <a href="${urlPrefix}/assessment/${assessment.id}/"
+      ><span class="badge color-${assessment.assessment_set.color}">${assessment.label}</span></a
+    >
+    ${spacerHtml}
+    <a href="${urlPrefix}/assessment/${assessment.id}/"
+      >${assessment.title}
+      ${assessment.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}</a
+    >
+  `;
 }

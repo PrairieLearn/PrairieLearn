@@ -36,7 +36,7 @@ import {
   InstructorInstanceAdminLti13,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
-import { selectAssessments } from '../../../models/assessment.js';
+import { selectAssessments, type AssessmentRow } from '../../../models/assessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -101,6 +101,11 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
+      const assessmentsById: Record<string, AssessmentRow> = {};
+      for (const a of assessments) {
+        assessmentsById[a.id] = a;
+      }
+
       const lineitems = await getLineitems(instance);
 
       const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
@@ -108,11 +113,33 @@ router.get(
         lti13AssessmentsByLineItemIdUrl[a.lineitem_id_url] = a;
       }
 
+      lineitems.sort((a, b) => {
+        // First sort by assessment_id, puts unlinked first and ordered by ID
+        const a_assessmentId = lti13AssessmentsByLineItemIdUrl[a.id]?.assessment_id ?? '';
+        const b_assessmentId = lti13AssessmentsByLineItemIdUrl[b.id]?.assessment_id ?? '';
+
+        const byAssessmentId = a_assessmentId.localeCompare(b_assessmentId);
+        if (byAssessmentId !== 0) return byAssessmentId;
+
+        // For unlinked, if our assessment_id is the lineitem resourceId, put it first
+        if (req.query.assessment_id === a.resourceId) {
+          return -1;
+        }
+        if (req.query.assessment_id === b.resourceId) {
+          return 1;
+        }
+
+        // Finally, reverse sort by the lineitem id to get the newest first
+        return b.id.localeCompare(a.id);
+      });
+
       res.send(
         LineitemsInputs({
           lineitems,
-          assessments,
+          assessmentsById,
           lti13AssessmentsByLineItemIdUrl,
+          urlPrefix: res.locals.urlPrefix,
+          unsafeTargetAssessmentId: req.query?.assessment_id?.toString(),
         }),
       );
       return;
