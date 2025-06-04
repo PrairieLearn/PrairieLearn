@@ -57,7 +57,7 @@ Most of these prerequisites can be installed using the package manager of your O
     Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
 
     ```sh
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
     source ~/.bashrc # or your shell's equivalent
     nvm install 22
     ```
