@@ -357,7 +357,7 @@ function aiGradingDropdown() {
           Grade selected
         </button>
         <button class="dropdown-item" type="button" onclick="$('#ai-grading-graded').submit();">
-          Grade human-graded
+          Grade all human-graded
         </button>
       </div>
     </div>
