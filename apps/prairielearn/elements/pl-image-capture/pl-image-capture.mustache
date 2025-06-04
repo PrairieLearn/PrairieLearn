@@ -13,11 +13,14 @@ $(function() {
 });
 </script>
 
-<div id="image-capture-{{uuid}}" class="card w-75 mb-3">
+<div id="image-capture-{{uuid}}" class="card w-75 mb-3" {{#submitted_file_name}}data-submitted-image-name="{{submitted_file_name}}"{{/submitted_file_name}}>
   <div class="card-header">
-    {{title}}
+    <span>{{title}}</span>
   </div>
-  <div class="capture-preview-container p-3" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
+  <div 
+    class="capture-preview-container p-3" 
+    {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}
+  >
     <input
       class="hidden-capture-input"
       type="hidden"

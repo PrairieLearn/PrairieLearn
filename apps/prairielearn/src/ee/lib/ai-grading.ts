@@ -95,6 +95,7 @@ export async function aiGrade({
         await generateSubmissionEmbedding({
           course,
           question,
+          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
@@ -160,6 +161,7 @@ export async function aiGrade({
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
+          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
@@ -189,6 +191,7 @@ export async function aiGrade({
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
+        submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
       });

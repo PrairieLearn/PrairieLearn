@@ -20,6 +20,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "answer":
+        return ""
+
     element = lxml.html.fragment_fromstring(element_html)
 
     answer_name = pl.get_string_attrib(element, "answer-name")
@@ -45,7 +48,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
         "submission_files_url": data["options"].get("submission_files_url"),
-        "editable": data["editable"],
+        "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
     }
 

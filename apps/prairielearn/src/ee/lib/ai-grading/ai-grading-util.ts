@@ -1,5 +1,5 @@
 import { type OpenAI } from 'openai';
-import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
+import type { ChatCompletionContentPart, ChatCompletionMessageParam, ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
 import {
@@ -71,23 +71,19 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
 export async function generatePrompt({
   questionPrompt,
   submission_text,
+  submitted_answer,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
   submission_text: string;
+  submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
 }): Promise<{
-  messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  messages: ChatCompletionMessageParam[];
 }> {
-  const messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[] = [];
+  const messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -162,26 +158,189 @@ export async function generatePrompt({
 
   // Student response
 
+  // Parse out all divs with data-submitted-image-name
+  // These are images that were captured and submitted by the student.
 
-  // TODO: We need to incorporate image submissions into the prompt.
-
-  messages.push({
-    role: 'user',
-    content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
+  const submittedMessage = splitSubmissionTextAndImages({
+    submission_text,
+    submitted_answer,
   });
+  messages.push(submittedMessage);
+  // messages.push({
+  //   role: 'user',
+  //   content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
+  // });
 
   return { messages };
+}
+
+/**
+ * Splits a large HTML string into an array of alternating “non-<div>” and “<div>…</div>” chunks.
+ * Specifically:
+ *  - Any text before the first top-level <div> is one chunk,
+ *  - Each complete top-level <div>…</div> is its own chunk,
+ *  - Any text between two top-level <div> blocks is its own chunk,
+ *  - Any trailing text after the last <div> is its own chunk.
+ */
+function splitDivsWithSurrounding(html: string): string[] {
+  const results: string[] = [];
+  let cursor = 0;
+
+  while (true) {
+    // 1) Find the next "<div" from 'cursor'
+    const openTagStart = html.indexOf('<div', cursor);
+    if (openTagStart === -1) break;
+
+    // 2) If there’s content before this <div>, capture it as a chunk
+    if (openTagStart > cursor) {
+      results.push(html.slice(cursor, openTagStart));
+    }
+
+    // 3) Find the end of this opening tag (the ">" after "<div ...>")
+    const firstTagEnd = html.indexOf('>', openTagStart);
+    if (firstTagEnd === -1) {
+      // Malformed: no closing ">" for this <div> tag
+      // Just push the rest and bail out
+      results.push(html.slice(openTagStart));
+      return results;
+    }
+
+    // 4) Initialize nesting depth at 1 to match this opening <div>
+    let depth = 1;
+    let scanPos = firstTagEnd + 1;
+    let closeTagEnd = -1;
+
+    // 5) Scan forward until we find the matching "</div>" that brings depth back to 0
+    while (depth > 0) {
+      const nextOpen = html.indexOf('<div', scanPos);
+      const nextClose = html.indexOf('</div>', scanPos);
+
+      if (nextClose === -1) {
+        // No more closing tags → malformed. Capture the rest as one chunk and return.
+        results.push(html.slice(openTagStart));
+        return results;
+      }
+
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        // Found a nested "<div" before the next "</div>"
+        const nestedTagEnd = html.indexOf('>', nextOpen);
+        if (nestedTagEnd === -1) {
+          // Malformed nested <div> (no ">"). Capture the rest and return.
+          results.push(html.slice(openTagStart));
+          return results;
+        }
+        depth++;
+        scanPos = nestedTagEnd + 1;
+      } else {
+        // We hit a closing "</div>"
+        depth--;
+        scanPos = nextClose + '</div>'.length;
+        if (depth === 0) {
+          closeTagEnd = scanPos;
+          break;
+        }
+      }
+    }
+
+    if (closeTagEnd === -1) {
+      // Couldn't match the closing tag (malformed). Capture the rest and return.
+      results.push(html.slice(openTagStart));
+      return results;
+    }
+
+    // 6) Extract the entire "<div...> ... </div>"
+    results.push(html.slice(openTagStart, closeTagEnd));
+
+    // 7) Advance cursor to just after this closing tag
+    cursor = closeTagEnd;
+  }
+
+  // 8) Any trailing content after the last matched <div>
+  if (cursor < html.length) {
+    results.push(html.slice(cursor));
+  }
+
+  return results;
+}
+
+/** 
+ * In the submission text, split out the text and images interlaced in the text.
+*/
+function splitSubmissionTextAndImages(
+  {
+    submission_text,
+    submitted_answer,
+  }: 
+  {
+    submission_text: string,
+    submitted_answer: Record<string, any> | null
+  }
+): ChatCompletionMessageParam {
+
+  const message_content: ChatCompletionContentPart[] = [];
+
+  const splitSubmission = splitDivsWithSurrounding(submission_text);
+  for (const submissionPart of splitSubmission) {
+    let submittedImageName: string | undefined;
+
+    if (submissionPart.trim().startsWith('<div')) {
+      const endTag = submissionPart.indexOf('>');
+      const initialDiv = submissionPart.slice(0, endTag + 1);
+      const match = initialDiv.match(/data-submitted-image-name="([^"]+)"/);
+      if (match) {
+        submittedImageName = match[1].replace('.png', '');
+      }
+    }
+    
+    if (submittedImageName) {
+      if (!submitted_answer) {
+        throw new Error('Submitted answer is required to extract image URL.');
+      }
+      if (!submitted_answer[submittedImageName]) {
+        throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+      }
+
+      // Extract the image from the submitted answers
+      message_content.push({
+        type: 'image_url',
+        image_url: {
+          url: submitted_answer[submittedImageName],
+        },
+      });
+    } else {
+      // If this is not an image, just add the text content
+      message_content.push({
+        type: 'text',
+        text: submissionPart,
+      });
+    }
+  }
+
+  message_content.push({
+    type: 'text',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+  });
+
+
+  const message: ChatCompletionMessageParam = {
+    role: 'user',
+    content: message_content
+  }  
+
+  return message;
 }
 
 export async function generateSubmissionEmbedding({
   course,
   question,
+  course_instance_id,
   instance_question,
   urlPrefix,
   openai,
 }: {
   question: Question;
   course: Course;
+  course_instance_id?: string;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
@@ -190,6 +349,13 @@ export async function generateSubmissionEmbedding({
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+
+    instance_question,
+    course_instance: course_instance_id ? { id: course_instance_id } : undefined,
+    variant,
+    question,
+    course: question_course,
+
     questionRenderContext: 'ai_grading',
   };
   const questionModule = questionServers.getModule(question.type);
@@ -202,6 +368,9 @@ export async function generateSubmissionEmbedding({
     question_course,
     locals,
   );
+
+  console.log('render_submission_results', render_submission_results);
+
   const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
@@ -338,10 +507,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  prompt: ChatCompletionMessageParam[];
   completion: ParsedChatCompletion<any>;
   course_id: string;
   course_instance_id?: string;
