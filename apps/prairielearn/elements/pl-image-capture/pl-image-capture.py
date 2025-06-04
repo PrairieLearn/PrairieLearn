@@ -30,9 +30,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     title = pl.get_string_attrib(element, "title")
 
-    if data["panel"] != "question":
-        return ""
-
     submitted_files = data["submitted_answers"].get("_files", [])
 
     submitted_file_name = None
