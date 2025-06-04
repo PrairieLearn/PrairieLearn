@@ -11,10 +11,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.821.0",
-    "@aws-sdk/client-s3": "^3.821.0",
-    "@aws-sdk/credential-providers": "^3.821.0",
-    "@aws-sdk/lib-storage": "^3.821.0",
+    "@aws-sdk/client-ecr": "^3.823.0",
+    "@aws-sdk/client-s3": "^3.823.0",
+    "@aws-sdk/credential-providers": "^3.823.0",
+    "@aws-sdk/lib-storage": "^3.823.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -41,7 +41,7 @@
     "shlex": "^2.1.2",
     "uuid": "^11.1.0",
     "yargs-parser": "^21.1.1",
-    "zod": "^3.25.45"
+    "zod": "^3.25.51"
   },
   "devDependencies": {
     "@types/node": "^20.17.57",

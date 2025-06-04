@@ -11,12 +11,12 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.821.0",
-    "@aws-sdk/client-ecr": "^3.821.0",
-    "@aws-sdk/client-s3": "^3.821.0",
-    "@aws-sdk/client-sqs": "^3.821.0",
-    "@aws-sdk/credential-providers": "^3.821.0",
-    "@aws-sdk/lib-storage": "^3.821.0",
+    "@aws-sdk/client-auto-scaling": "^3.823.0",
+    "@aws-sdk/client-ecr": "^3.823.0",
+    "@aws-sdk/client-s3": "^3.823.0",
+    "@aws-sdk/client-sqs": "^3.823.0",
+    "@aws-sdk/credential-providers": "^3.823.0",
+    "@aws-sdk/lib-storage": "^3.823.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -35,7 +35,7 @@
     "tmp-promise": "^3.0.3",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
-    "zod": "^3.25.45"
+    "zod": "^3.25.51"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
