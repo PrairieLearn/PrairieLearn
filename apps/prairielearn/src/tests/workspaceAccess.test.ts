@@ -6,10 +6,9 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { ensureEnrollment } from '../models/enrollment.js';
-import { selectOptionalUserByUid } from '../models/user.js';
 
 import * as helperServer from './helperServer.js';
-import { type AuthUser, withUser } from './utils/auth.js';
+import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -44,23 +43,13 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   afterAll(helperServer.after);
 
   beforeAll(async function () {
-    await sqldb.queryAsync(sql.create_user, studentOne);
-    const userOne = await selectOptionalUserByUid(studentOne.uid);
-    assert.isNotNull(userOne);
-    if (!userOne) {
-      throw new Error('missing user one');
-    }
-    await ensureEnrollment({ user_id: userOne.user_id, course_instance_id: '1' });
+    const studentOneUser = await getOrCreateUser(studentOne);
+    await ensureEnrollment({ user_id: studentOneUser.user_id, course_instance_id: '1' });
 
-    await sqldb.queryAsync(sql.create_user, studentTwo);
-    const userTwo = await selectOptionalUserByUid(studentTwo.uid);
-    assert.isNotNull(userTwo);
-    if (!userTwo) {
-      throw new Error('missing user two');
-    }
-    await ensureEnrollment({ user_id: userTwo.user_id, course_instance_id: '1' });
+    const studentTwoUser = await getOrCreateUser(studentTwo);
+    await ensureEnrollment({ user_id: studentTwoUser.user_id, course_instance_id: '1' });
 
-    await sqldb.queryAsync(sql.create_user, studentNotEnrolled);
+    await getOrCreateUser(studentNotEnrolled);
   });
 
   describe('workspaces created by instructors in a course instance', function () {

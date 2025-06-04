@@ -8,7 +8,7 @@ import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { ensureEnrollment } from '../models/enrollment.js';
-import { selectOptionalUserByUid } from '../models/user.js';
+import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -72,11 +72,7 @@ describe(
     });
 
     test.sequential('enroll the test student user in the course', async () => {
-      const user = await selectOptionalUserByUid('student@example.com');
-      assert.isNotNull(user);
-      if (!user) {
-        throw new Error('missing test student');
-      }
+      const user = await selectUserByUid('student@example.com');
       await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
     });
 
