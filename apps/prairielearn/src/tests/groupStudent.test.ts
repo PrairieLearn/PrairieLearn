@@ -578,7 +578,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group without setting a name', async () => {
+    it('should be able to create a group', async () => {
       locals.group_name_alternative2 = 'groupBBCC';
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
