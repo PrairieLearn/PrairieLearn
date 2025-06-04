@@ -140,6 +140,11 @@
       "type": "boolean",
       "default": false
     },
+    "studentGroupChooseName": {
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
+      "type": "boolean",
+      "default": true
+    },
     "studentGroupJoin": {
       "description": "Whether students can join groups.",
       "type": "boolean",

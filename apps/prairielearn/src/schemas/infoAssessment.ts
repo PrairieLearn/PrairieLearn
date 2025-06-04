@@ -362,6 +362,13 @@ export const AssessmentJsonSchema = z
       .describe('Whether students can create groups.')
       .optional()
       .default(false),
+    studentGroupChooseName: z
+      .boolean()
+      .describe(
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.',
+      )
+      .optional()
+      .default(true),
     studentGroupJoin: z
       .boolean()
       .describe('Whether students can join groups.')

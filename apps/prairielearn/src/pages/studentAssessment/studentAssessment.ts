@@ -150,6 +150,10 @@ router.post(
       });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
     } else if (req.body.__action === 'join_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_join) {
+        throw new HttpStatusError(403, 'You are not authorized to join a group.');
+      }
       await joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
@@ -164,8 +168,12 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_create) {
+        throw new HttpStatusError(403, 'You are not authorized to create a group.');
+      }
       await createGroup(
-        req.body.groupName,
+        groupConfig.student_authz_choose_name ? req.body.group_name : null,
         res.locals.assessment.id,
         [res.locals.user.uid],
         res.locals.authn_user.user_id,
@@ -193,6 +201,10 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_leave) {
+        throw new HttpStatusError(403, 'You are not authorized to leave your group.');
+      }
       await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
