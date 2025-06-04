@@ -39,9 +39,10 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Grade or test submissions using AI.
- * Here we define "test" to be the same steps as "grade"
- * without the final step to overwrite instance question/submission score.
+ * Grade instance questions using AI.
+ * The related grading jobs and rubric gradings will be generated,
+ * but the instance question scores will only be updated
+ * for instance questions that require manual grading
  */
 export async function aiGrade({
   course,
@@ -91,7 +92,7 @@ export async function aiGrade({
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
-      job.fail('The tested question has no manual grading');
+      job.fail('The assessment question has no manual grading');
     }
     const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
@@ -120,22 +121,29 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
-    const instance_questions = all_instance_questions.filter(
-      (instance_question) =>
-        (mode === 'graded' &&
+    const instance_questions = all_instance_questions.filter((instance_question) => {
+      if (mode === 'graded') {
+        // Things that have been graded by a human
+        return (
           !instance_question.requires_manual_grading &&
           instance_question.status !== 'unanswered' &&
-          !instance_question.is_ai_graded) || // testing human-graded
-        (mode === 'ungraded' && instance_question.requires_manual_grading) || // grading all ungraded
-        mode === 'all' || // grading/testing all
-        (mode === 'selected' &&
-          instance_question_ids &&
-          instance_question_ids.includes(instance_question.id)), // grading/testing selected
-    );
+          !instance_question.is_ai_graded
+        );
+      } else if (mode === 'ungraded') {
+        // Things that require grading
+        return instance_question.requires_manual_grading;
+      } else if (mode === 'all') {
+        // Everything
+        return true;
+      } else {
+        // Things that have been selected by checkbox
+        return instance_question_ids?.includes(instance_question.id);
+      }
+    });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
     let error_count = 0;
-    // Grade/test each instance question
+    // Grade each instance question
     for (const instance_question of instance_questions) {
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
@@ -227,7 +235,7 @@ export async function aiGrade({
               rubric_items,
             });
             if (instance_question.requires_manual_grading) {
-              // Grading mode
+              // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
                 applied_rubric_items: appliedRubricItems,
@@ -258,7 +266,7 @@ export async function aiGrade({
                 });
               });
             } else {
-              // Testing mode
+              // Does not require grading: only create grading job and rubric grading
               await runInTransactionAsync(async () => {
                 assert(assessment_question.max_manual_points);
                 const manual_rubric_grading = await manualGrading.insertRubricGrading(
@@ -328,7 +336,7 @@ export async function aiGrade({
             const score = response.parsed.score;
 
             if (instance_question.requires_manual_grading) {
-              // Grading mode
+              // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
                 const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
@@ -355,7 +363,7 @@ export async function aiGrade({
                 });
               });
             } else {
-              // Testing mode
+              // Does not require grading: only create grading job and rubric grading
               await runInTransactionAsync(async () => {
                 assert(assessment_question.max_manual_points);
                 const grading_job_id = await queryRow(
