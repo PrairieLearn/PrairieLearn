@@ -54,9 +54,10 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     { instance_question_ids },
     GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
+  // Construct mapping from instance question id to grading job info
   const gradingJobMapping = grading_jobs.reduce(
     (acc, item) => {
-      if (!acc[item.instance_question_id]) acc[item.instance_question_id] = [];
+      acc[item.instance_question_id] ??= [];
       acc[item.instance_question_id].push(item);
       return acc;
     },
