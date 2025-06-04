@@ -669,10 +669,25 @@ function writeAndCommitFileInLive(fileName, fileContents) {
       await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
+      const { stdout: pwdstdout } = await execa('pwd', {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ pwdstdout });
+      const { stdout: gitstdout } = await execa('git', ['status'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ gitstdout });
       await execa('git', ['add', '-A'], {
         cwd: courseLiveDir,
         env: process.env,
       });
+      const { stdout: gitstdout2 } = await execa('git', ['status'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ gitstdout2 });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
