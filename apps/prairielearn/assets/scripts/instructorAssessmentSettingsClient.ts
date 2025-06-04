@@ -3,7 +3,6 @@ import './lib/changeIdButton.js';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import { resizeTextArea } from './lib/resizeTextarea.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(function () {
@@ -41,5 +40,3 @@ onDocumentReady(function () {
     }
   });
 });
-
-resizeTextArea();

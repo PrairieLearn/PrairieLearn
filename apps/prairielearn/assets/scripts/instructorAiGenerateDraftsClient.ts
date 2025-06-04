@@ -1,7 +1,5 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import { resizeTextArea } from './lib/resizeTextarea.js';
-
 onDocumentReady(() => {
   const userPromptExampleSelect = document.querySelector<HTMLSelectElement>('#user-prompt-example');
   userPromptExampleSelect?.addEventListener('change', () => {
@@ -16,5 +14,3 @@ onDocumentReady(() => {
     setInputValue('#user-prompt-llm', selection.prompt ?? '');
   });
 });
-
-resizeTextArea();

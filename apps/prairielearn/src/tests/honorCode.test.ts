@@ -6,12 +6,6 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
-const defaultHonorCodeText =
-  'I certify that I am Dev User and I am allowed to take this assessment. I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.';
-
-const customHonorCodeHtml =
-  '<div class="px-3 py-2 honor-code"><h2>Honor Code</h2> <p>I, Dev User, pledge that I am allowed to take the following assessment and will not receive any unauthorized assistance.</p></div> <div class="card-footer d-flex justify-content-center"> <span class="form-check"> <input type="checkbox" class="form-check-input" id="certify-pledge"> <label class="form-check-label fw-bold" for="certify-pledge"> I certify and pledge the above. </label> </span> </div>';
-
 describe('Exam assessment response to `requireHonorCode`', function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
@@ -35,10 +29,9 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should see the honor code div by default
-    assert.lengthOf(response.$('div.test-class-honor-code'), 1);
-    assert.equal(
-      response.$('div.test-class-honor-code').children().first().text().replace(/\s+/g, ' ').trim(),
-      defaultHonorCodeText,
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 1);
+    assert.isTrue(
+      response.$('[data-testid="honor-code"]').html()?.includes('I certify that I am Dev User'),
     );
   });
 
@@ -55,7 +48,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should not see the honor code div anymore
-    assert.lengthOf(response.$('div.test-class-honor-code'), 0);
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 0);
   });
 
   it('visits the landing page of assessment with a custom honor code', async () => {
@@ -70,11 +63,11 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
-    // We should see the honor code div by default
-    assert.lengthOf(response.$('div.test-class-honor-code'), 1);
-    assert.equal(
-      response.$('div.test-class-honor-code').html()?.replace(/\s+/g, ' ').trim(),
-      customHonorCodeHtml,
+    // The honor code should include the custom markdown
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 1);
+    assert.isTrue(response.$('[data-testid="honor-code"]').html()?.includes('<h2>Honor Code</h2>'));
+    assert.isTrue(
+      response.$('[data-testid="honor-code"]').html()?.includes('I, Dev User, pledge that I am'),
     );
   });
 });

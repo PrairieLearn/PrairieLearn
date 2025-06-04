@@ -137,7 +137,7 @@ function HonorPledge({
   customHonorCode?: string;
 }) {
   return html`
-    <div class="card card-secondary mb-4 test-class-honor-code">
+    <div class="card card-secondary mb-4" data-testid="honor-code">
       ${customHonorCode
         ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
         : html`<ul class="list-group list-group-flush">
