@@ -132,7 +132,6 @@ export async function markdownToHtml(
     interpretMath = true,
   }: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
 ) {
-  return (
-    await getProcessor({ inline, allowHtml, interpretMath }).process(original)
-  ).value.toString();
+  const processor = getProcessor({ inline, allowHtml, interpretMath });
+  return (await processor.process(original)).value.toString();
 }
