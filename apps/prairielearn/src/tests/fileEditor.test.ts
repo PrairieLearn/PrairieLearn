@@ -666,34 +666,39 @@ function doEdits(data) {
 function writeAndCommitFileInLive(fileName, fileContents) {
   describe(`commit a change to ${fileName} by exec`, function () {
     it('should write', async () => {
+        const { stdout: gitstdout1 } = await execa('git', ['status'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ gitstdout1 });
       await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
-      const { stdout: pwdstdout } = await execa('pwd', {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-      console.log({ pwdstdout });
-      const { stdout: gitstdout } = await execa('git', ['status'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
-      console.log({ gitstdout });
-      await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir,
-        env: process.env,
-      });
       const { stdout: gitstdout2 } = await execa('git', ['status'], {
         cwd: courseLiveDir,
         env: process.env,
       });
       console.log({ gitstdout2 });
+      await execa('git', ['add', '-A'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      const { stdout: gitstdout3 } = await execa('git', ['status'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ gitstdout3 });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
         cwd: courseLiveDir,
         env: process.env,
       });
+      const { stdout: gitstdout4 } = await execa('git', ['status'], {
+        cwd: courseLiveDir,
+        env: process.env,
+      });
+      console.log({ gitstdout4 });
     });
   });
 }
