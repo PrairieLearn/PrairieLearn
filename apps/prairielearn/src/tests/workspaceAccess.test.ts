@@ -5,6 +5,8 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, withUser } from './utils/auth.js';
@@ -43,10 +45,20 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
   beforeAll(async function () {
     await sqldb.queryAsync(sql.create_user, studentOne);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentOne.uid });
+    const userOne = await selectOptionalUserByUid(studentOne.uid);
+    assert.isNotNull(userOne);
+    if (!userOne) {
+      throw new Error('missing user one');
+    }
+    await ensureEnrollment({ user_id: userOne.user_id, course_instance_id: '1' });
 
     await sqldb.queryAsync(sql.create_user, studentTwo);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentTwo.uid });
+    const userTwo = await selectOptionalUserByUid(studentTwo.uid);
+    assert.isNotNull(userTwo);
+    if (!userTwo) {
+      throw new Error('missing user two');
+    }
+    await ensureEnrollment({ user_id: userTwo.user_id, course_instance_id: '1' });
 
     await sqldb.queryAsync(sql.create_user, studentNotEnrolled);
   });

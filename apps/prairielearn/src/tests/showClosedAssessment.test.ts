@@ -4,6 +4,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -46,7 +48,12 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
   });
 
   test.sequential('enroll the test student user in the course', async () => {
-    await sqldb.queryAsync(sql.enroll_student_in_course, []);
+    const user = await selectOptionalUserByUid('student@example.com');
+    assert.isNotNull(user);
+    if (!user) {
+      throw new Error('missing test student');
+    }
+    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
   });
 
   test.sequential('visit start exam page', async () => {

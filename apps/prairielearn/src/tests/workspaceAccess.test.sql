@@ -12,18 +12,6 @@ INSERT INTO
 VALUES
   ($uid, $uin, $name, 1);
 
--- BLOCK enroll_student_by_uid
-INSERT INTO
-  enrollments (user_id, course_instance_id) (
-    SELECT
-      u.user_id,
-      1
-    FROM
-      users AS u
-    WHERE
-      u.uid = $uid
-  );
-
 -- BLOCK give_owner_access_to_uid
 INSERT INTO
   course_permissions (user_id, course_id, course_role) (
