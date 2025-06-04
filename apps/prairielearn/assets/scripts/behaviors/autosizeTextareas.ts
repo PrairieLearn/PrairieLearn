@@ -1,4 +1,3 @@
-import { onDocumentReady } from '@prairielearn/browser-utils';
 import { observe } from 'selector-observer';
 
 function autosizeTextarea(textarea: HTMLTextAreaElement) {
