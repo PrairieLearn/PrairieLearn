@@ -1,6 +1,8 @@
 # https://prairielearn.readthedocs.io/en/latest/installingNative/
 
 FROM ubuntu:24.04
+ARG CACHEBUST=2025-05-15-14-16-41
+
 SHELL ["/bin/bash", "-c"]
 
 # Git and curl

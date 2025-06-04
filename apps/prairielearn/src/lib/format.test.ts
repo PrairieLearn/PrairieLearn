@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { formatFloat, formatPoints, formatPointsOrList } from './format.js';
 
@@ -57,7 +57,7 @@ describe('format library', () => {
     });
   });
 
-  it('formatPointsOrList', () => {
+  describe('formatPointsOrList', () => {
     it('should format numbers correctly', () => {
       assert.equal(formatPointsOrList(1), '1');
       assert.equal(formatPointsOrList(1.2345), '1.23');

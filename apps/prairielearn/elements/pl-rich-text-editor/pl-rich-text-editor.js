@@ -1,4 +1,4 @@
-/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify, bootstrap */
+/* global Quill, he, MathJax, QuillMarkdown, DOMPurify, bootstrap */
 
 (() => {
   const rtePurify = DOMPurify();
@@ -67,7 +67,7 @@
 
   Quill.register('modules/clipboard', PotentiallyDisabledClipboard, true);
 
-  window.PLRTE = function (uuid) {
+  window.PLRTE = async function (uuid) {
     const baseElement = document.getElementById(`rte-${uuid}`);
     const options = JSON.parse(baseElement.dataset.options);
 
@@ -112,18 +112,15 @@
 
     const inputElement = $('#rte-input-' + uuid);
     const quill = new Quill(baseElement, options);
-    let renderer = null;
-    if (options.format === 'markdown') {
-      renderer = new showdown.Converter({
-        literalMidWordUnderscores: true,
-        literalMidWordAsterisks: true,
-      });
-    }
+    initializeFormulaPopover(quill, uuid);
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     let contents = atob(inputElement.val());
-    if (contents && renderer) contents = renderer.makeHtml(contents);
+    if (contents && options.format === 'markdown') {
+      const marked = (await import('marked')).marked;
+      contents = marked.parse(contents);
+    }
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
@@ -131,7 +128,7 @@
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
-    quill.on('text-change', function () {
+    const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
       // this is treated as blank by the element's parse code and tagged as
@@ -167,7 +164,10 @@
       if (counter) {
         counter.update();
       }
-    });
+    };
+
+    quill.on('text-change', updateHiddenInput);
+    updateHiddenInput();
   };
 
   // Override default implementation of 'formula'
@@ -186,9 +186,7 @@
     static updateNode(node, value) {
       MathJax.startup.promise.then(async () => {
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
-        const formatted = html.innerHTML;
-        // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
-        node.innerHTML = formatted + '&#8201;';
+        node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
         node.setAttribute('data-value', value);
       });
@@ -204,3 +202,74 @@
 
   Quill.register('formats/formula', MathFormula, true);
 })();
+
+function initializeFormulaPopover(quill, uuid) {
+  const formulaButton = quill.getModule('toolbar')?.container?.querySelector('.ql-formula');
+  // If the formula button is not present (e.g., the editor is read-only), do not initialize the popover
+  if (!formulaButton) return;
+
+  const popoverContent = document.createElement('form');
+  popoverContent.innerHTML = `
+    <div class="mb-3">
+      <label for="rte-formula-input-${uuid}">Formula:</label>
+      <input type="text" class="form-control" id="rte-formula-input-${uuid}" placeholder="Enter Formula" />
+    </div>
+    <div class="mb-3" id="rte-formula-input-preview-${uuid}">
+    </div>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+    <button type="submit" class="btn btn-primary">Confirm</button>
+  `;
+
+  const popover = new bootstrap.Popover(formulaButton, {
+    content: popoverContent,
+    html: true,
+    container: '.question-container',
+    trigger: 'manual',
+    placement: 'bottom',
+    // Allow the popover to expand to the full width of the container if the formula input is long
+    customClass: 'mw-100',
+  });
+
+  const input = popoverContent.querySelector('input');
+  input.addEventListener('input', () => {
+    const value = input.value.trim();
+    MathJax.startup.promise.then(async () => {
+      const html = value
+        ? (await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value)).outerHTML
+        : '<div class="text-muted">Type a Latex formula, e.g., <code>e=mc^2</code></div>';
+      popoverContent.querySelector(`#rte-formula-input-preview-${uuid}`).innerHTML = html;
+      // Adjust the popover position if the content changes the size of the popover
+      popover.update();
+    });
+  });
+
+  popoverContent.addEventListener('submit', (e) => {
+    e.preventDefault();
+    popover.hide();
+    const value = input.value.trim();
+    if (!value) return;
+
+    const range = quill.getSelection(true) || { index: 0, length: 0 };
+    if (range.length > 0) quill.deleteText(range.index, range.length, 'user');
+    quill.insertEmbed(range.index, 'formula', value, 'user');
+    // Without trailing whitespace, cursor will not appear at end of text if
+    // LaTeX is at end. Also done by original handler:
+    // https://github.com/slab/quill/blob/ebe16ca24724ac4f52505628ac2c4934f0a98b85/packages/quill/src/themes/base.ts#L315
+    quill.insertText(range.index + 1, ' ', 'user');
+    quill.setSelection(range.index + 2, 0, 'user');
+  });
+
+  formulaButton.addEventListener('hide.bs.popover', () => {
+    quill.focus();
+  });
+
+  quill.getModule('toolbar').addHandler('formula', (enabled) => {
+    if (!enabled) return;
+    const range = quill.getSelection(true);
+    // If there is a selection, set the input value to the selected text
+    input.value = range?.length ? quill.getText(range.index, range.length) : '';
+    // Trigger input event to show initial preview or clear previous preview
+    input.dispatchEvent(new InputEvent('input'));
+    popover.show();
+  });
+}
