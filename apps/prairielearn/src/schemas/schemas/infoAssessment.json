@@ -168,7 +168,7 @@
       "type": "string"
     },
     "shareSourcePublicly": {
-      "description": "If true, the assessment's source code is shared publicly.",
+      "description": "If true, the assessment's JSON configuration and question list are available for others to view and copy.",
       "type": "boolean",
       "default": false
     }

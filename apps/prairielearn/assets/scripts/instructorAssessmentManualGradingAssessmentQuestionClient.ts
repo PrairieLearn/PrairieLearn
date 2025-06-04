@@ -22,7 +22,6 @@ onDocumentReady(() => {
     aiGradingEnabled,
     courseStaff,
     csrfToken,
-    aiGradingUrl,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -68,12 +67,7 @@ onDocumentReady(() => {
           id: 'js-ai-grade-button',
           title: 'AI grading',
         },
-        html: html`
-          <a class="btn btn-secondary" href="${aiGradingUrl}">
-            <i class="fa fa-pen" aria-hidden="true"></i>
-            AI Grading
-          </a>
-        `.toString(),
+        html: aiGradingDropdown(),
       },
       showStudentInfo: {
         text: 'Show student info',
@@ -269,30 +263,43 @@ onDocumentReady(() => {
           field: 'last_grader',
           title: 'Graded by',
           filterControl: 'select',
-          formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.last_grader_name : '&mdash;',
-        },
-        aiGradingEnabled
-          ? {
-              field: 'is_ai_graded',
-              title: 'AI Graded',
-              filterControl: 'select',
-              visible: aiGradingEnabled,
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.is_ai_graded ? 'Yes' : 'No',
+          filterCustomSearch: (text: string, value: string) => {
+            if (text === 'ai') {
+              return value.includes('js-custom-search-ai-grading');
             }
-          : null,
-      ].filter(Boolean),
+            return null;
+          },
+          formatter: (value: string, row: InstanceQuestionRow) =>
+            value
+              ? row.is_ai_graded
+                ? html`
+                    <span class="badge text-bg-secondary js-custom-search-ai-grading">AI</span>
+                  `.toString()
+                : row.last_grader_name
+              : '&mdash;',
+        },
+      ],
     ],
   });
 });
 
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
+  const formData = new FormData(this, e.submitter);
+
+  // Access specific values from the form data (or other fields)
+  const action = formData.get('__action');
+  const batchAction = formData.get('batch_action');
+
+  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+    // We'll handle this with a normal form submission since it redirects to another page.
+    return;
+  }
+
   e.preventDefault();
 
   const postBody = new URLSearchParams(
     // https://github.com/microsoft/TypeScript/issues/30584
-    new FormData(this, e.submitter) as any,
+    formData as any,
   );
 
   const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
@@ -324,6 +331,37 @@ function updatePointsPopoverHandlers(this: Element) {
     form.removeEventListener('submit', pointsFormEventListener);
     form.addEventListener('submit', pointsFormEventListener);
   });
+}
+
+function aiGradingDropdown() {
+  return html`
+    <div class="dropdown btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="ai-grading"
+      >
+        <i class="fa fa-pen" aria-hidden="true"></i> AI grading
+      </button>
+      <div class="dropdown-menu dropdown-menu-end">
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
+          Grade all ungraded
+        </button>
+        <button
+          class="dropdown-item grading-tag-button"
+          type="submit"
+          name="batch_action"
+          value="ai_grade_assessment_selected"
+        >
+          Grade selected
+        </button>
+        <button class="dropdown-item" type="button" onclick="$('#ai-grading-test').submit();">
+          Test accuracy
+        </button>
+      </div>
+    </div>
+  `.toString();
 }
 
 function gradingTagDropdown(courseStaff: User[]) {

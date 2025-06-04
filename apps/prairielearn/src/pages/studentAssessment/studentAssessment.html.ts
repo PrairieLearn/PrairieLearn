@@ -247,13 +247,14 @@ function GroupCreationJoinForm({
                     id="groupNameInput"
                     name="groupName"
                     maxlength="30"
+                    pattern="[a-zA-Z0-9]+"
                     placeholder="e.g. teamOne"
                     aria-label="Group name"
                     aria-describedby="groupNameHelp"
                   />
                   <small id="groupNameHelp" class="form-text text-muted">
                     Group names can only contain letters and numbers, with maximum length of 30
-                    characters.
+                    characters. If you leave this blank, a group name will be generated for you.
                   </small>
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
@@ -277,6 +278,9 @@ function GroupCreationJoinForm({
                     id="joinCodeInput"
                     name="join_code"
                     placeholder="abcd-1234"
+                    pattern="[a-zA-Z0-9]+-[0-9]{4}"
+                    maxlength="35"
+                    required
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">

@@ -98,7 +98,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
-    del data["submitted_answers"][answer_name]
+    data["submitted_answers"].pop(answer_name, None)
 
     try:
         parsed_files = json.loads(files)
