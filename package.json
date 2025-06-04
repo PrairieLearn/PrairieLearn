@@ -60,7 +60,7 @@
     "turbo": "^2.5.4",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.0",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.1"
   },
   "resolutions": {
     "notebookjs/jsdom": "^25.0.0",
