@@ -75,7 +75,6 @@ onDocumentReady(() => {
       } else {
         input.setCustomValidity('');
       }
-      return;
     } catch {
       input.setCustomValidity('Invalid JSON object format');
     }

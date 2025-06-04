@@ -43,18 +43,6 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
     checkDifferences();
   });
 
-  form.addEventListener('input', (e) => {
-    if (!(e.target instanceof HTMLTextAreaElement)) return;
-
-    if (e.target.value === e.target.defaultValue) {
-      valueHasChanged[(e.target as HTMLElement).id] = false;
-    } else {
-      valueHasChanged[(e.target as HTMLElement).id] = true;
-    }
-
-    checkDifferences();
-  });
-
   // Similar to the above, but for select elements. The difference here being that
   // select elements do not store the default value so we must store those in
   // `selectDefaultValues` and compare against those.
