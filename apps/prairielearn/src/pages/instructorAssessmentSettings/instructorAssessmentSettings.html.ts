@@ -278,7 +278,7 @@ ${resLocals.assessment.text}</textarea
                     id="honor_code_group"
                     ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
                   >
-                    <label class="form-label" for="honor_code">Custom honor Code</label>
+                    <label class="form-label" for="honor_code">Custom honor code</label>
                     <textarea
                       class="form-control js-textarea-autosize"
                       id="honor_code"
