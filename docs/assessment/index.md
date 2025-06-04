@@ -294,19 +294,21 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
+  "studentGroupChooseName": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+| Attribute                | Type    | Default | Description                                                                                                |
+| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
+| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
+| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
+| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
+| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 

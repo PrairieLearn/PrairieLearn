@@ -173,7 +173,7 @@ export async function initExpress(): Promise<Express> {
   });
 
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api'], sessionRouter));
+  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -432,7 +432,7 @@ export async function initExpress(): Promise<Express> {
 
   // Set and check `res.locals.__csrf_token`. We exclude API routes as those
   // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
