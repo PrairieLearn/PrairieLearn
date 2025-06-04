@@ -37,15 +37,15 @@ export function AssessmentNavigation({
         data-bs-target="#assessmentNavigationModal"
         hx-target="#assessmentNavigationModalContent"
       >
-        <span class="d-flex flex-column align-items-start me-1">
-          <span class="d-flex align-items-center gap-1 w-100 dropdown-toggle">
-            <span class="badge color-${assessmentSet.color}">
-              ${assessmentSet.abbreviation}${assessment.number}
-            </span>
-            <span class="h6 mb-0 overflow-hidden text-truncate">${assessment.title}</span>
+        <span class="d-flex flex-row align-items-center gap-2 w-100">
+          <span class="badge color-${assessmentSet.color}">
+            ${assessmentSet.abbreviation}${assessment.number}
           </span>
-          <span class="text-muted small overflow-hidden text-truncate w-100">
-            ${assessment.tid}
+          <span class="d-flex flex-column" style="min-width: 0;">
+            <span class="d-flex align-items-center gap-1 dropdown-toggle">
+              <span class="h6 mb-0 overflow-hidden text-truncate">${assessment.title}</span>
+            </span>
+            <span class="text-muted small overflow-hidden text-truncate">${assessment.tid}</span>
           </span>
         </span>
       </button>
