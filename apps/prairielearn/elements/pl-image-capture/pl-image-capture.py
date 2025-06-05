@@ -53,10 +53,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "uuid": pl.get_uuid(),
+        "answer_name": answer_name,
         "editable": image_capture_options["editable"],
         "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
-        "image_capture_options_json": json.dumps(image_capture_options),
     }
 
     course_id = data["options"].get("course_id")
@@ -82,6 +82,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         image_capture_options["external_image_capture_url"] = external_image_capture_url
     else:
         image_capture_options["external_image_capture_url"] = ""
+
+    html_params["image_capture_options_json"] = json.dumps(image_capture_options)
 
     with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
