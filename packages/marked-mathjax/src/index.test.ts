@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import { Marked } from 'marked';
 // @ts-expect-error MathJax does not include types
 import mathjax from 'mathjax';
+import { assert, beforeAll, describe, it } from 'vitest';
 
 import { addMathjaxExtension } from './index.js';
 
@@ -13,7 +13,7 @@ async function testMarkdown(original: string, expected: string) {
 }
 
 describe('Markdown processing', () => {
-  before(async () => {
+  beforeAll(async () => {
     const MathJax = await mathjax.init({
       options: { ignoreHtmlClass: 'mathjax_ignore|tex2jax_ignore' },
       tex: {

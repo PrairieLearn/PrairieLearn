@@ -1,9 +1,9 @@
-import { assert } from 'chai';
-import { afterAll, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
+import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -25,11 +25,17 @@ describe('student data access', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    let result = await sqldb.queryOneRowAsync(sql.select_homework1, []);
-    context.homeworkAssessmentId = result.rows[0].id;
+    const { id: homeworkAssessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw1-automaticTestSuite',
+    });
+    context.homeworkAssessmentId = homeworkAssessmentId;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;
-    result = await sqldb.queryOneRowAsync(sql.select_exam1, []);
-    context.examAssessmentId = result.rows[0].id;
+    const { id: examAssessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam1-automaticTestSuite',
+    });
+    context.examAssessmentId = examAssessmentId;
     context.examAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examAssessmentId}/`;
   });
 

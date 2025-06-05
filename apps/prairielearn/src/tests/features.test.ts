@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { queryAsync } from '@prairielearn/postgres';
 
@@ -154,9 +153,9 @@ describe('features', () => {
   it('validates and typechecks feature flags', async () => {
     const features = new FeatureManager(['valid']);
 
-    await assert.isFulfilled(features.enable('valid'));
+    await expect(features.enable('valid')).resolves.not.toThrow();
 
     // @ts-expect-error -- Invalid feature flag name.
-    await assert.isRejected(features.enable('invalid'));
+    await expect(features.enable('invalid')).rejects.toThrow();
   });
 });

@@ -236,7 +236,7 @@ export async function aiGradeTest({
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
         });
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
@@ -316,7 +316,7 @@ export async function aiGradeTest({
         }
       } else {
         const score_perc = instance_question.score_perc ?? 0;
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
