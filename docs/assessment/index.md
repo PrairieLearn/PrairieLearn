@@ -665,7 +665,15 @@ To disable this requirement, set `"requireHonorCode": false` as a top-level opti
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
 
-The honor code can also be set to custom text by setting `honorCode` in the `infoAssessment.json`. This field can support Markdown syntax for formatting. This field can also accept Mustache templating to include each user's name by using `{{user_name}}`.
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
 
 ## Linking to assessments
 
