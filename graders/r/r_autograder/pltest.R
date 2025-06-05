@@ -8,7 +8,7 @@
 #' that start with a specific key.
 #'
 #' @param file Path to a Jupyter notebook (.ipynb) file
-#' @param ipynb_key Character string that marks the beginning of R code cells to extract (default: "#R")
+#' @param ipynb_key Character string that marks the beginning of R code cells to extract (default: "#grade")
 #'
 #' @return A character string containing the concatenated R code from matching cells
 #'
