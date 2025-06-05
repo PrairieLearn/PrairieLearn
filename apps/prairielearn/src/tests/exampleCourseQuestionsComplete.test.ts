@@ -3,12 +3,11 @@ import { fileURLToPath } from 'url';
 
 import { A11yError, A11yResults } from '@sa11y/format';
 import axe from 'axe-core';
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { afterAll, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
