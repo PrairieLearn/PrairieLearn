@@ -3395,7 +3395,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     commander: "npm:^13.1.0"
     esbuild: "npm:^0.25.5"
     express: "npm:^4.21.2"
@@ -3408,7 +3408,7 @@ __metadata:
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   bin:
     compiled-assets: dist/cli.js
   languageName: unknown
@@ -3425,13 +3425,13 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.17"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     fs-extra: "npm:^11.3.0"
     lodash: "npm:^4.17.21"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     zod: "npm:^3.25.51"
   languageName: unknown
   linkType: soft
@@ -3443,13 +3443,13 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     csv-stringify: "npm:^6.5.2"
     multipipe: "npm:^4.0.0"
     stream-transform: "npm:^3.3.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3461,11 +3461,11 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     date-fns: "npm:^4.1.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3476,11 +3476,11 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     lodash: "npm:^4.17.21"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3492,10 +3492,10 @@ __metadata:
     "@types/node": "npm:^22.15.29"
     "@typescript-eslint/rule-tester": "npm:^8.33.1"
     "@typescript-eslint/utils": "npm:^8.33.1"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3512,11 +3512,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     express: "npm:^4.21.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3536,10 +3536,10 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.22"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3549,11 +3549,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     lodash: "npm:^4.17.21"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3580,7 +3580,7 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^22.15.29"
     "@types/tmp": "npm:^0.2.6"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     async: "npm:^3.2.6"
     byline: "npm:^5.0.0"
     dockerode: "npm:^4.0.6"
@@ -3593,7 +3593,7 @@ __metadata:
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     winston: "npm:^3.17.0"
     winston-transport: "npm:^4.9.0"
     zod: "npm:^3.25.51"
@@ -3608,11 +3608,11 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     ejs: "npm:^3.1.10"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3622,10 +3622,10 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3651,7 +3651,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.4"
     "@types/node": "npm:^22.15.29"
     "@types/unist": "npm:^3.0.3"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     mdast-util-math: "npm:^3.0.0"
     rehype-raw: "npm:^7.0.0"
     rehype-sanitize: "npm:^6.0.0"
@@ -3665,7 +3665,7 @@ __metadata:
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
     vfile: "npm:^6.0.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3674,12 +3674,12 @@ __metadata:
   resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     marked: "npm:^15.0.12"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3694,14 +3694,14 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     fs-extra: "npm:^11.3.0"
     serialize-error: "npm:^12.0.0"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     zod: "npm:^3.25.51"
   languageName: unknown
   linkType: soft
@@ -3760,10 +3760,10 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:^1.30.0"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3773,10 +3773,10 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -3815,7 +3815,7 @@ __metadata:
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^22.15.29"
     "@types/pg-cursor": "npm:^2.7.2"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.16.0"
     pg-cursor: "npm:^2.15.0"
@@ -3823,7 +3823,7 @@ __metadata:
     pg-protocol: "npm:^1.10.0"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     zod: "npm:^3.25.51"
   languageName: unknown
   linkType: soft
@@ -3928,7 +3928,7 @@ __metadata:
     "@types/tmp": "npm:^0.2.6"
     "@types/unzipper": "npm:^0.10.11"
     "@types/uuid": "npm:^10.0.0"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     "@viz-js/viz": "npm:^3.12.0"
     "@web3-storage/parse-link-header": "npm:^3.1.0"
     ace-builds: "npm:^1.42.0"
@@ -4067,7 +4067,7 @@ __metadata:
     unist-util-visit: "npm:^5.0.0"
     unzipper: "npm:^0.12.3"
     uuid: "npm:^11.1.0"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     winston: "npm:^3.17.0"
     xml-formatter: "npm:^3.6.6"
     xml2js: "npm:^0.6.2"
@@ -4115,10 +4115,10 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -4128,10 +4128,10 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -4163,7 +4163,7 @@ __metadata:
     "@types/on-headers": "npm:^1.0.3"
     "@types/set-cookie-parser": "npm:^2.4.10"
     "@types/uid-safe": "npm:^2.1.5"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     cookie: "npm:^0.7.2"
     cookie-signature: "npm:^1.2.2"
     express: "npm:^4.21.2"
@@ -4176,7 +4176,7 @@ __metadata:
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     uid-safe: "npm:^2.1.5"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 
@@ -4221,7 +4221,7 @@ __metadata:
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     async-mutex: "npm:^0.5.0"
@@ -4240,7 +4240,7 @@ __metadata:
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
     uuid: "npm:^11.1.0"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     yargs-parser: "npm:^21.1.1"
     zod: "npm:^3.25.51"
   languageName: unknown
@@ -4270,11 +4270,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
-    "@vitest/coverage-v8": "npm:^3.2.1"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     postgres-interval: "npm:^4.0.2"
     tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
-    vitest: "npm:^3.2.1"
+    vitest: "npm:^3.2.2"
     zod: "npm:^3.25.51"
   languageName: unknown
   linkType: soft
@@ -6809,7 +6809,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/coverage-v8@npm:^3.2.1, @vitest/coverage-v8@npm:^3.2.2":
+"@vitest/coverage-v8@npm:^3.2.2":
   version: 3.2.2
   resolution: "@vitest/coverage-v8@npm:3.2.2"
   dependencies:
@@ -17294,7 +17294,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:^3.2.1, vitest@npm:^3.2.2":
+"vitest@npm:^3.2.2":
   version: 3.2.2
   resolution: "vitest@npm:3.2.2"
   dependencies:
