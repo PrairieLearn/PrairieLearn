@@ -39,8 +39,8 @@ RUN echo "PATH=\"/usr/lib/postgresql/16/bin:/usr/local/sbin:/usr/local/bin:/usr/
     su postgres -c "initdb -D /var/postgres" && \
     sed -i 's/scram-sha-256/trust/g' /etc/postgresql/16/main/pg_hba.conf
 
-# Install Node.js 20
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs
     
 # Install Yarn
