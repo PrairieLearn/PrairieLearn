@@ -69,35 +69,36 @@ export class CustomGithubReporter extends GithubActionsReporter {
 //
 // We use the presence of any arguments starting with `dist/` or containing
 // `/dist/` to determine whether we're running in the latter mode.
-export default defineConfig(({ mode }) => {
-  const isRunningOnDist = mode === 'dist';
-  return {
-    test: {
-      reporters: process.env.GITHUB_ACTIONS ? ['default', new CustomGithubReporter()] : ['default'],
-      include: isRunningOnDist
-        ? [join(import.meta.dirname, 'dist/**/*.test.js')]
-        : [...configDefaults.include],
-      exclude: isRunningOnDist
-        ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
-        : configDefaults.exclude,
-      globalSetup: isRunningOnDist
-        ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
-        : join(import.meta.dirname, './src/tests/vitest.globalSetup.mts'),
-      setupFiles: isRunningOnDist
-        ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
-        : [join(import.meta.dirname, './src/tests/vitest.testSetup.mts')],
-      passWithNoTests: true,
-      hookTimeout: 20_000,
-      testTimeout: 20_000,
-      isolate: false,
-      sequence: {
-        sequencer: CustomSequencer,
-      },
-      coverage: {
-        all: true,
-        include: ['src/**'],
-        reporter: ['html', 'text-summary', 'cobertura'],
-      },
+const isRunningOnDist = process.argv
+  .slice(2)
+  .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
+
+export default defineConfig({
+  test: {
+    reporters: process.env.GITHUB_ACTIONS ? ['default', new CustomGithubReporter()] : ['default'],
+    include: isRunningOnDist
+      ? [join(import.meta.dirname, 'dist/**/*.test.js')]
+      : [...configDefaults.include],
+    exclude: isRunningOnDist
+      ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
+      : configDefaults.exclude,
+    globalSetup: isRunningOnDist
+      ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
+      : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
+    setupFiles: isRunningOnDist
+      ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
+      : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
+    passWithNoTests: true,
+    hookTimeout: 20_000,
+    testTimeout: 10_000,
+    isolate: false,
+    sequence: {
+      sequencer: CustomSequencer,
     },
-  };
+    coverage: {
+      all: true,
+      include: ['src/**'],
+      reporter: ['html', 'text-summary', 'cobertura'],
+    },
+  },
 });

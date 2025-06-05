@@ -22,8 +22,7 @@
     "release": "turbo run build && node scripts/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
     "start": "yarn workspace @prairielearn/prairielearn start",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
-    "test": "RUST_BACKTRACE=1 DEBUG=\"vite-node:*\" vitest run --coverage",
-    "test:dist": "vitest run --coverage --mode dist",
+    "test": "vitest run --coverage",
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
