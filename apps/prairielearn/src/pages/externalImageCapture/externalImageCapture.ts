@@ -14,9 +14,7 @@ import { ExternalImageCapture, ExternalImageCaptureSuccess } from './externalIma
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const router = express.Router({
-  mergeParams: true,
-});
+const router = express.Router({ mergeParams: true });
 
 router.get(
   '/answer/:answer_name',
