@@ -125,7 +125,7 @@ router.get(
     const questionReadmePath = path.join(
       path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
     );
-    // We do not not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
+    // We do not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
     // above will have already done that.
     const questionReadmeExists = await fs.pathExists(questionReadmePath);
     let readmeHtml = '';
