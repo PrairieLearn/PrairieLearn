@@ -10,27 +10,32 @@ const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
 // The question processor also includes the use of pl-code instead of pre,
 // and does not sanitize scripts
-const questionMarked = await createMarkedInstance({ sanitize: false, extensions: [{
-  renderer: {
-    code: ({text, lang}) => {
-    const attrs: HtmlValue[] = [];
+const questionMarked = await createMarkedInstance({
+  sanitize: false,
+  extensions: [
+    {
+      renderer: {
+        code: ({ text, lang }) => {
+          const attrs: HtmlValue[] = [];
 
-    const res = lang?.match(langRegex);
-    if (res) {
-      const language = res[1];
-      const highlightLines = res[3];
-      if (language) {
-        attrs.push(html`language="${language}"`);
-      }
-      if (highlightLines) {
-        attrs.push(html`highlight-lines="${highlightLines}"`);
-      }
-    }
+          const res = lang?.match(langRegex);
+          if (res) {
+            const language = res[1];
+            const highlightLines = res[3];
+            if (language) {
+              attrs.push(html`language="${language}"`);
+            }
+            if (highlightLines) {
+              attrs.push(html`highlight-lines="${highlightLines}"`);
+            }
+          }
 
-    return html`<pl-code ${joinHtml(attrs, ' ')}>${text}</pl-code>`.toString();
-    }
-  }
-}] });
+          return html`<pl-code ${joinHtml(attrs, ' ')}>${text}</pl-code>`.toString();
+        },
+      },
+    },
+  ],
+});
 
 export function processQuestion(html: string) {
   return html.replace(regex, (_match, originalContents: string) => {
@@ -41,6 +46,6 @@ export function processQuestion(html: string) {
         return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
       },
     );
-    return questionMarked.parse(decodedContents, {async: false});
+    return questionMarked.parse(decodedContents, { async: false });
   });
 }

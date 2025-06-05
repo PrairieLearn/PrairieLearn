@@ -9,7 +9,7 @@ export async function createMarkedInstance({
   sanitize = true,
   allowHtml = true,
   interpretMath = true,
-  extensions
+  extensions,
 }: {
   sanitize?: boolean;
   /**
