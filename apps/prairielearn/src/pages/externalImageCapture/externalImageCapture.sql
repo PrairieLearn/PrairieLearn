@@ -5,8 +5,9 @@ FROM
   external_image_capture AS eic
 WHERE
   eic.variant_id = $variant_id
-  AND eic.answer_name = $answer_name
-  -- BLOCK select_variant_by_id
+  AND eic.answer_name = $answer_name;
+
+-- BLOCK select_variant_by_id
 SELECT
   v.*,
   ai.assessment_id AS assessment_id,
