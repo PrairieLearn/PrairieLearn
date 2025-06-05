@@ -87,11 +87,15 @@ export async function aiGrade({
         continue;
       }
       const submission_id = await selectLastSubmissionId(instance_question.id);
+
+      // TODO: Incorporate submitted images into embedding generation? CLIP?s
+
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await generateSubmissionEmbedding({
           course,
           question,
+          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
@@ -108,7 +112,6 @@ export async function aiGrade({
       }
     }
     job.info(`Found ${number_to_grade} submissions to grade!`);
-
     let error_count = 0;
 
     // Grade each instance question
@@ -123,9 +126,13 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+        instance_question,
+        course_instance: { id: course_instance_id },
         questionRenderContext: 'ai_grading',
       };
+      
       // Get question html
+
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
@@ -136,6 +143,12 @@ export async function aiGrade({
         question_course,
         locals,
       );
+
+      job.info(
+        'Render question results: ' +
+          JSON.stringify(render_question_results, null, 2),
+      )
+
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
@@ -148,13 +161,17 @@ export async function aiGrade({
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
+          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
         });
       }
-      const submission_text = submission_embedding.submission_text;
 
+      const submission_text = submission_embedding.submission_text;
+      job.info(`submission: ${JSON.stringify(submission, null, 2)}`);
+      job.info(`submission_text: ${submission_text}`);
+      
       const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
@@ -169,12 +186,31 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
+      // TODO: Improve this comment
+      // Render the answer panel
+      const render_answer_results = await questionModule.render(
+        { question: false, submissions: false, answer: true },
+        variant,
+        question,
+        submission,
+        [submission],
+        question_course,
+        locals,
+      );
+
+      console.log('render_answer_results', render_answer_results);
+    
+      // TOOD: Extract the submitted images of the student.
+
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
+        submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
       });
+      
+      job.info(`Messages for AI grading: ${JSON.stringify(messages, null, 2)}`);
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
@@ -196,6 +232,7 @@ export async function aiGrade({
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
           temperature: OPEN_AI_TEMPERATURE,
         });
+
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
