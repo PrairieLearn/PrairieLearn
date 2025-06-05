@@ -111,6 +111,9 @@ export function InstructorQuestionPreview({
                   </div>
                   <div class="show" id="readme-card-body">
                     <div class="card-body markdown-body">${unsafeHtml(readmeHtml)}</div>
+                    <div class="card-footer">
+                      <p class="mb-0 small">This README is not visible to students.</p>
+                    </div>
                   </div>
                 </div>
               `
