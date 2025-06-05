@@ -36,14 +36,13 @@ def generate(data):
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
 
-Parameters set within `generate` can be used in the `question.html` file by using `{{params.NAME}}`. For example, you can use `data["params"]["x"]` with `{{params.x}}`. You can set parameters in other phases as well, but they may not be defined when the student initially views the question (only after a save or a submission). You can view the [question lifecycle diagram](#question-lifecycle) for more details.
+Parameters set within `generate` can be used in the `question.html` file by using `{{params.NAME}}`. For example, you can use `data["params"]["x"]` with `{{params.x}}`. You can set parameters in some other phases as well, but they may not be defined when the student initially views the question (only after a save or a submission). See the [question lifecycle diagram](#question-lifecycle) for more details.
 
-The snippet below uses a [Mustache comment](./template.md#hiding-staff-comments-in-questionhtml), and the [`<pl-question-panel>`](./elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+The snippet below uses the [`<pl-question-panel>`](./elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
 
 <!-- prettier-ignore -->
 ```html title="question.html"
 <pl-question-panel>
-  {{! The text of this question is only shown on the question panel. }}
   If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
 </pl-question-panel>
 ```
