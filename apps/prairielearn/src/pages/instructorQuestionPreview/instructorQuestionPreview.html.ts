@@ -54,6 +54,11 @@ export function InstructorQuestionPreview({
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
+      <style>
+        .markdown-body :last-child {
+          margin-bottom: 0;
+        }
+      </style>
     `,
     preContent: html`
       <div class="container-fluid">
@@ -89,20 +94,23 @@ export function InstructorQuestionPreview({
           ${readmeHtml
             ? html`
                 <div class="card mb-3">
-                  <div class="card-header bg-secondary text-white d-flex align-items-center">
+                  <div
+                    class="card-header bg-light text-dark d-flex align-items-center submission-header"
+                  >
+                    <h2 class="me-auto">README</h2>
                     <button
-                      class="btn btn-secondary btn-xs show-hide-btn"
+                      type="button"
+                      class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
                       data-bs-toggle="collapse"
                       data-bs-target="#readme-card-body"
                       aria-expanded="true"
                       aria-controls="#readme-card-body"
                     >
-                      <i class="fa fa-angle-up fa-fw expand-icon"></i>
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
-                    <h2>README</h2>
                   </div>
-                  <div class="card-body collapse show" id="readme-card-body">
-                    <div class="markdown-body">${unsafeHtml(readmeHtml)}</div>
+                  <div class="show" id="readme-card-body">
+                    <div class="card-body markdown-body">${unsafeHtml(readmeHtml)}</div>
                   </div>
                 </div>
               `

@@ -10,6 +10,7 @@ import * as error from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
+import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -20,6 +21,7 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
@@ -115,8 +117,10 @@ router.get(
     } else if (aiGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
+    const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+    const coursePath = getRuntimeDirectoryForCourse(question_course);
     const questionReadmePath = path.join(
-      path.join(res.locals.course.path, 'questions', res.locals.question.qid, 'README.md'),
+      path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
     );
     const questionReadmeExists = await fs.pathExists(questionReadmePath);
     let readmeHtml = '';
