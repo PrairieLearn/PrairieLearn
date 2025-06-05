@@ -23,7 +23,7 @@ More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can b
 
 ## Step 1: `generate`
 
-First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers.
+First, the `generate` function is called to generate the question variant. It should update `data["params"]` with any necessary parameters for the question, and `data["correct_answers"]` with the correct answers.
 
 ```python title="server.py"
 import random
