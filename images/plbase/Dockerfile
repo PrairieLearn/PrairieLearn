@@ -49,20 +49,9 @@ RUN corepack enable && corepack prepare yarn@stable --activate
 # Install D2
 RUN curl -fsSL https://d2lang.com/install.sh | sh -s --
 
-# Install uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Add uv to PATH
-ENV PATH="/venv/bin:$PATH"
-
-# Copy Python requirements file
+# Install Additional Libraries
 COPY python-requirements.txt .
-
-# Create and seed virtual environment using uv
-RUN /root/.local/bin/uv venv --python 3.10 --seed /venv
-
-# Install requirements inside the virtual environment using uv
-RUN /root/.local/bin/uv pip install -r python-requirements.txt
+RUN pip install --break-system-packages -r python-requirements.txt
 
 # Clean up to reduce image size
 RUN apt-get clean && \

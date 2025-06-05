@@ -570,7 +570,7 @@ const ConfigSchema = z.object({
    * A list of Python venvs in which to search for Python executables.
    * Will be resolved relative to the repository root.
    */
-  pythonVenvSearchPaths: z.string().array().default(['/venv', '.venv']),
+  pythonVenvSearchPaths: z.string().array().default(['.venv']),
   /**
    * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
    */
