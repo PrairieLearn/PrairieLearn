@@ -1,8 +1,5 @@
-import type { Code, Html, Root as MdastRoot } from 'mdast';
-import { visit } from 'unist-util-visit';
-
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
-import { createProcessor } from '@prairielearn/markdown';
+import { createMarkedInstance } from '@prairielearn/markdown';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -11,9 +8,11 @@ const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
-function visitCodeBlock(ast: MdastRoot) {
-  return visit(ast, 'code', (node: Code, index, parent) => {
-    const { lang, value } = node;
+// The question processor also includes the use of pl-code instead of pre,
+// and does not sanitize scripts
+const questionMarked = await createMarkedInstance({ sanitize: false, extensions: [{
+  renderer: {
+    code: ({text, lang}) => {
     const attrs: HtmlValue[] = [];
 
     const res = lang?.match(langRegex);
@@ -28,17 +27,10 @@ function visitCodeBlock(ast: MdastRoot) {
       }
     }
 
-    const newNode: Html = {
-      type: 'html',
-      value: html`<pl-code ${joinHtml(attrs, ' ')}>${value}</pl-code>`.toString(),
-    };
-    parent?.children.splice(index ?? 0, 1, newNode);
-  });
-}
-
-// The question processor also includes the use of pl-code instead of pre,
-// and does not sanitize scripts
-const questionProcessor = createProcessor({ mdastVisitors: [visitCodeBlock], sanitize: false });
+    return html`<pl-code ${joinHtml(attrs, ' ')}>${text}</pl-code>`.toString();
+    }
+  }
+}] });
 
 export function processQuestion(html: string) {
   return html.replace(regex, (_match, originalContents: string) => {
@@ -49,7 +41,6 @@ export function processQuestion(html: string) {
         return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
       },
     );
-    const res = questionProcessor.processSync(decodedContents);
-    return res.value.toString();
+    return questionMarked.parse(decodedContents, {async: false});
   });
 }
