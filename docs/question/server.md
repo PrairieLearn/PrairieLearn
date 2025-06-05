@@ -36,7 +36,7 @@ def generate(data):
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
 ```
 
-The values set can then be used in the `question.html` file by using `{{params.NAME}}`. So for example, you can use `data["params"]["x"]` with `{{params.x}}`.
+Parameters set within `generate` can be used in the `question.html` file by using `{{params.NAME}}`. For example, you can use `data["params"]["x"]` with `{{params.x}}`. You can set parameters in other phases as well, but they may not be defined when the student initially views the question (only after a save or a submission). You can view the [question lifecycle diagram](#question-lifecycle) for more details.
 
 The snippet below uses a [Mustache comment](./template.md#hiding-staff-comments-in-questionhtml), and the [`<pl-question-panel>`](./elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
 
