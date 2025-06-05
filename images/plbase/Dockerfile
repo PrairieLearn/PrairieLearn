@@ -51,7 +51,7 @@ RUN curl -fsSL https://d2lang.com/install.sh | sh -s --
 
 # Install Additional Libraries
 COPY python-requirements.txt /tmp/python-requirements.txt
-RUN pip install --break-system-packages -r --no-cache-dir /tmp/python-requirements.txt
+RUN pip install --break-system-packages --no-cache-dir -r /tmp/python-requirements.txt
 
 # Clean up to reduce image size
 RUN apt-get clean && \
