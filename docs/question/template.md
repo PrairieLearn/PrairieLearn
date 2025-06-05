@@ -86,6 +86,12 @@ This will be rendered as:
 <p>If m is 5, what is 5 * 3?</p>
 ```
 
+### Data available to Mustache templates
+
+When the student first views a question variant, `parse` and `grade` have not run yet, so parameters defined in those phases won't be available to the template. Each phase has restrictions on how they can be modified (outlined in the [`server.py` function table](./server.md#serverpy-functions)). For example, in the `generate` phase, you can only modify `data["params"]` and `data["correct_answers"]`.
+
+See the [question lifecycle diagram](./server.md#question-lifecycle) for more information about the ordering for when these functions are called, and when the student views the question. For example, after a student submission, if `data["params"]` was modified in `grade`, the updated `data["params"]` would be rendered back to the student when they view the question again.
+
 ### Advanced rendering
 
 You can use the following syntax to conditionally render a piece of HTML:
