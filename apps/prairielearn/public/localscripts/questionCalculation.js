@@ -27,6 +27,9 @@ requirejs.config({
     'jquery-ui': {
       deps: ['jquery'],
     },
+    'jquery.jsPlumb': {
+      deps: ['jquery', 'jquery-ui'],
+    },
   },
   config: {
     text: {
