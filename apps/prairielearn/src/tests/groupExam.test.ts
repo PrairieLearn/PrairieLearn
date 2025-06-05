@@ -36,7 +36,7 @@ async function generateThreeStudentUsers() {
  * Creates a new group in the given assessment as the user with the given CSRF token
  */
 async function createGroup(
-  groupName: string,
+  group_name: string,
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
@@ -45,7 +45,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName,
+      group_name,
     }),
   });
   assert.isOk(res.ok);
