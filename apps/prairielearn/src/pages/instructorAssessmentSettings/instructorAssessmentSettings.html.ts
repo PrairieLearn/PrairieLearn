@@ -166,8 +166,13 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="mb-3">
-              <label for="text">Text</label>
-              <textarea class="form-control" id="text" name="text" ${canEdit ? '' : 'disabled'}>
+              <label class="form-label" for="text">Text</label>
+              <textarea
+                class="form-control js-textarea-autosize"
+                id="text"
+                name="text"
+                ${canEdit ? '' : 'disabled'}
+              >
 ${resLocals.assessment.text}</textarea
               >
               <small class="form-text text-muted">
@@ -263,6 +268,31 @@ ${resLocals.assessment.text}</textarea
                     <div class="small text-muted">
                       Requires the student to accept an honor code before starting exam assessments.
                     </div>
+                  </div>
+                `
+              : ''}
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div
+                    class="mb-3"
+                    id="honor_code_group"
+                    ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
+                  >
+                    <label class="form-label" for="honor_code">Custom honor code</label>
+                    <textarea
+                      class="form-control js-textarea-autosize"
+                      id="honor_code"
+                      name="honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                    >
+${resLocals.assessment.honor_code}</textarea
+                    >
+                    <small class="form-text text-muted">
+                      Custom honor code text that will be shown to students before starting the
+                      exam. While this field cannot accept HTML, you can use Markdown formatting.
+                      The user's name can be included with Mustache templating:
+                      <code>{{user_name}}</code>. To use the default honor code, leave this blank.
+                    </small>
                   </div>
                 `
               : ''}
