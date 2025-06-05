@@ -42,46 +42,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
+    html_params = {
+        "uuid": pl.get_uuid(),
+        "answer_name": answer_name,
+        "editable": data["editable"],
+        "submission_files_url": data["options"].get("submission_files_url", ""),
+        "mobile_capture_enabled": mobile_capture_enabled,
+        "external_image_capture_url": data["options"].get(
+            "external_image_capture_url", ""
+        ),
+    }
+
     image_capture_options = {
         "answer_name": answer_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
-        "editable": data["editable"],
+        "editable": html_params["editable"],
+        "external_image_capture_url": html_params["external_image_capture_url"],
     }
-
-    html_params = {
-        "uuid": pl.get_uuid(),
-        "answer_name": answer_name,
-        "editable": image_capture_options["editable"],
-        "submission_files_url": data["options"].get("submission_files_url", ""),
-        "mobile_capture_enabled": mobile_capture_enabled,
-    }
-
-    course_id = data["options"].get("course_id")
-    course_instance_id = data["options"].get("course_instance_id")
-    question_id = data["options"].get("question_id")
-    instance_question_id = data["options"].get("instance_question_id")
-    server_canonical_host = data["options"].get("serverCanonicalHost")
-
-    if server_canonical_host is None and mobile_capture_enabled:
-        raise ValueError(
-            "The serverCanonicalHost option must be set to use pl-image-capture."
-        )
-
-    if mobile_capture_enabled:
-        if course_instance_id is not None and instance_question_id is not None:
-            external_image_capture_url = f"{server_canonical_host}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{image_capture_options['variant_id']}/external_image_capture/answer/{answer_name}"
-        elif course_id is not None and question_id is not None:
-            external_image_capture_url = f"{server_canonical_host}/pl/course/{course_id}/question/{question_id}/variants/{image_capture_options['variant_id']}/external_image_capture/answer/{answer_name}"
-        else:
-            raise ValueError(
-                "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."
-            )
-        image_capture_options["external_image_capture_url"] = external_image_capture_url
-    else:
-        image_capture_options["external_image_capture_url"] = ""
 
     html_params["image_capture_options_json"] = json.dumps(image_capture_options)
 

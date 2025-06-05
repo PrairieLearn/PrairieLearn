@@ -226,6 +226,9 @@
     }
 
     generateQrCode() {
+
+      console.log('external_image_capture_url', this.external_image_capture_url);
+
       const qrCodeSvg = new QRCode({
         content: this.external_image_capture_url,
         container: 'svg-viewbox',

@@ -1326,6 +1326,8 @@ async function renderPanel(
     course_instance_id: locals.course_instance?.id,
     instance_question_id: locals.instance_question?.id,
 
+    external_image_capture_url: `${config.serverCanonicalHost}${locals.externalImageCaptureUrl}`,
+
     serverCanonicalHost: config.serverCanonicalHost,
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
