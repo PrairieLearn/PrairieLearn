@@ -20,8 +20,8 @@
         },
         {
           "id": "aiGradingMultiImageCapture",
-          "manualPoints": 6,
-          "maxManualPoints": 6
+          "manualPoints": 18,
+          "maxManualPoints": 18
         }
       ]
     }

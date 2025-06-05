@@ -279,6 +279,12 @@ function splitSubmissionTextAndImages(
 
   const message_content: ChatCompletionContentPart[] = [];
 
+
+  message_content.push({
+    type: 'text',
+    text: 'The student submitted the following response: \n<response>\n',
+  });
+
   const splitSubmission = splitDivsWithSurrounding(submission_text);
   for (const submissionPart of splitSubmission) {
     let submittedImageName: string | undefined;

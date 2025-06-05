@@ -186,6 +186,20 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
+      // TODO: Improve this comment
+      // Render the answer panel
+      const render_answer_results = await questionModule.render(
+        { question: false, submissions: false, answer: true },
+        variant,
+        question,
+        submission,
+        [submission],
+        question_course,
+        locals,
+      );
+
+      console.log('render_answer_results', render_answer_results);
+    
       // TOOD: Extract the submitted images of the student.
 
       const { messages } = await generatePrompt({
@@ -195,6 +209,8 @@ export async function aiGrade({
         example_submissions,
         rubric_items,
       });
+      
+      job.info(`Messages for AI grading: ${JSON.stringify(messages, null, 2)}`);
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
