@@ -3,31 +3,43 @@
 (() => {
   class PLImageCapture {
     constructor(
-      uuid,
-      answer_name,
-      external_image_capture_url,
-      variant_id,
-      submitted_file_name,
-      submission_date,
-      editable,
-      mobile_capture_enabled,
+      uuid
     ) {
-      this.variant_opened_date = new Date();
       this.uuid = uuid;
-      this.answer_name = answer_name;
-      this.variant_id = variant_id;
-      this.submitted_file_name = submitted_file_name;
-      this.submission_date = submission_date;
-      this.external_image_capture_url = external_image_capture_url;
-      this.mobile_capture_enabled = mobile_capture_enabled === 'True';
-
+      this.variant_opened_date = new Date();
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
 
       if (!this.imageCaptureDiv) {
         throw new Error(`Image capture element with UUID ${uuid} not found.`);
       }
 
-      if (editable !== 'True') {
+      const options = JSON.parse(this.imageCaptureDiv.dataset.options);
+
+      console.log('options', options);
+
+
+      if (!options.answer_name) {
+        throw new Error('Answer name is required in image capture options');
+      }
+      if (!options.variant_id) {
+        throw new Error('Variant ID is required in image capture options');
+      }
+      if (!options.external_image_capture_url) {
+        throw new Error('External image capture URL is required in image capture options');
+      }
+      if (options.mobile_capture_enabled === undefined || options.mobile_capture_enabled === null) {
+        throw new Error('Mobile capture enabled option is required in image capture options');
+      }
+      
+      this.answer_name = options.answer_name;
+      this.variant_id = options.variant_id;
+
+      this.submitted_file_name = options.submitted_file_name;
+      this.submission_date = options.submission_date;
+      this.external_image_capture_url = options.external_image_capture_url;
+      this.mobile_capture_enabled = options.mobile_capture_enabled;
+
+      if (!options.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission(false);

@@ -1,3 +1,5 @@
+import json
+
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -40,15 +42,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
-    html_params = {
-        "uuid": pl.get_uuid(),
+    image_capture_options = {
         "answer_name": answer_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
-        "submission_files_url": data["options"].get("submission_files_url"),
-        "editable": data["editable"],
         "mobile_capture_enabled": mobile_capture_enabled,
+        "editable": data["editable"],
+    }
+
+    html_params = {
+        "uuid": pl.get_uuid(),
+        "editable": image_capture_options["editable"],
+        "submission_files_url": data["options"].get("submission_files_url", ""),
+        "mobile_capture_enabled": mobile_capture_enabled,
+        "image_capture_options_json": json.dumps(image_capture_options),
     }
 
     course_id = data["options"].get("course_id")
@@ -64,16 +72,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if mobile_capture_enabled:
         if course_instance_id is not None and instance_question_id is not None:
-            external_image_capture_url = f"{server_canonical_host}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+            external_image_capture_url = f"{server_canonical_host}/pl/course_instance/{course_instance_id}/instance_question/{instance_question_id}/variants/{image_capture_options['variant_id']}/external_image_capture/answer/{answer_name}"
         elif course_id is not None and question_id is not None:
-            external_image_capture_url = f"{server_canonical_host}/pl/course/{course_id}/question/{question_id}/variants/{html_params['variant_id']}/external_image_capture/answer/{answer_name}"
+            external_image_capture_url = f"{server_canonical_host}/pl/course/{course_id}/question/{question_id}/variants/{image_capture_options['variant_id']}/external_image_capture/answer/{answer_name}"
         else:
             raise ValueError(
                 "Either course_instance_id and instance_question_id or course_id and question_id must be available to use pl-image-capture."
             )
-        html_params["external_image_capture_url"] = external_image_capture_url
+        image_capture_options["external_image_capture_url"] = external_image_capture_url
     else:
-        html_params["external_image_capture_url"] = ""
+        image_capture_options["external_image_capture_url"] = ""
 
     with open("pl-image-capture.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

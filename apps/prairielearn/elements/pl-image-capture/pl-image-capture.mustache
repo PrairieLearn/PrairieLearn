@@ -1,19 +1,12 @@
 <script>
 $(function() {
     new window.PLImageCapture(
-      "{{uuid}}",
-      "{{answer_name}}",
-      "{{external_image_capture_url}}",
-      "{{variant_id}}",
-      "{{submitted_file_name}}",
-      "{{submission_date}}",
-      "{{editable}}",
-      "{{mobile_capture_enabled}}",
+      "{{uuid}}"
     );
 });
 </script>
 
-<div id="image-capture-{{uuid}}" class="card w-75 mb-3">
+<div id="image-capture-{{uuid}}" class="card w-75 mb-3" data-options="{{image_capture_options_json}}">
   <div class="card-header">
     Image capture
   </div>
