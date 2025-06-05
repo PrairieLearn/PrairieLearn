@@ -27,12 +27,10 @@ export function connection(socket: Socket) {
 
     socket.join(`variant-${msg.variant_id}-answer-${msg.answer_name}`);
 
-    const externalImageCaptureData: StatusMessage = {
+    callback({
       variant_id: msg.variant_id,
       answer_name: msg.answer_name,
-    };
-
-    callback(externalImageCaptureData);
+    } satisfies StatusMessage);
   });
 }
 
