@@ -8,7 +8,7 @@ export default defineConfig({
     coverage: {
       all: true,
       reporter: ['html', 'text-summary', 'cobertura'],
-      include: ['apps/prairielearn/src/**'],
+      include: ['{apps,packages}/*/src/**'],
     },
   },
 });
