@@ -52,8 +52,6 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
   debug('func()', 'param:', param);
   ```
 
-- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`/`.then()`/`.catch()` as appropriate, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, Node can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
-
 ## Debugging client-side JavaScript
 
 - Make sure you have the JavaScript Console open in your browser and reload the page.
