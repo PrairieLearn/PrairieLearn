@@ -117,11 +117,16 @@ router.get(
     } else if (aiGradingPreviewEnabled) {
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
+
+    // If we are on a chunk server, we need to make sure we are using the actual course directory
+    // and not the directory for the chunk server.
     const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
     const coursePath = getRuntimeDirectoryForCourse(question_course);
     const questionReadmePath = path.join(
       path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
     );
+    // We do not not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
+    // above will have already done that.
     const questionReadmeExists = await fs.pathExists(questionReadmePath);
     let readmeHtml = '';
     if (questionReadmeExists) {
