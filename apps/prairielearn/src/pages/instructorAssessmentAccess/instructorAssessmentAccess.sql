@@ -33,6 +33,7 @@ SELECT
   pt_c.name AS pt_course_name,
   pt_x.id AS pt_exam_id,
   pt_x.name AS pt_exam_name,
+  aar.json_comment AS comment,
   CASE
     WHEN aar.active THEN 'True'
     ELSE 'False'

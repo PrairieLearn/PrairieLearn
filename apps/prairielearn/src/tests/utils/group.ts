@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import { assert } from 'vitest';
 
 import { config } from '../../lib/config.js';
 import type { User } from '../../lib/db-types.js';

@@ -94,9 +94,16 @@ jobs:
         # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
         #
         # We put the Postgres data on a tmpfs volume, which should be much faster.
-        run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+        run: |
+          docker run --tty --detach \
+          --volume /var/run/docker.sock:/var/run/docker.sock \
+          --volume /tmp/prairielearn:/jobs \
+          --tmpfs=/var/postgres \
+          --env HOST_JOBS_DIR=/tmp/prairielearn \
+          --name=test_container \
+          prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec test_container sh -c "make -s -C /PrairieLearn test-js"
+        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-js"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
@@ -108,7 +115,7 @@ jobs:
       - name: Copy coverage reports to the host
         run: ./scripts/copy_docker_coverage_reports.sh test_container
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.2
+        uses: codecov/codecov-action@v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
@@ -123,11 +130,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install OS packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.5.0
-        with:
-          packages: git-restore-mtime
-          version: 1.0
-          execute_install_scripts: true
+        run: sudo apt-get install -y git-restore-mtime
 
       - name: Install additional dependencies
         run: |-
@@ -136,7 +139,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -193,11 +196,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install OS packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.5.0
-        with:
-          packages: graphviz libgraphviz-dev
-          version: 1.0
-          execute_install_scripts: true
+        run: sudo apt-get install -y graphviz libgraphviz-dev
 
       - name: Install additional dependencies
         run: |-
@@ -221,7 +220,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
@@ -247,7 +246,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.2
+        uses: codecov/codecov-action@v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python

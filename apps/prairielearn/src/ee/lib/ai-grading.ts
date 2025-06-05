@@ -55,12 +55,12 @@ export async function aiGrade({
   instance_question_ids?: string[];
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
-  if (!config.openAiApiKey || !config.openAiOrganization) {
+  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
   const openai = new OpenAI({
-    apiKey: config.openAiApiKey,
-    organization: config.openAiOrganization,
+    apiKey: config.aiGradingOpenAiApiKey,
+    organization: config.aiGradingOpenAiOrganization,
   });
 
   const question_course = await getQuestionCourse(question, course);
@@ -189,7 +189,7 @@ export async function aiGrade({
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
         });
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
@@ -254,7 +254,7 @@ export async function aiGrade({
           error_count++;
         }
       } else {
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
