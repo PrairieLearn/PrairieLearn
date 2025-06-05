@@ -88,7 +88,7 @@ This will be rendered as:
 
 ### Data available to Mustache templates
 
-When the student first views a question variant, `parse` and `grade` have not run yet, so parameters defined in those phases won't be available to the template. Each phase has restrictions on how they can be modified (outlined in the [`server.py` function table](./server.md#serverpy-functions)). For example, in the `generate` phase, you can only modify `data["params"]` and `data["correct_answers"]`.
+When the student first views a question variant, `parse` and `grade` have not run yet, so values set in `data` by those functions won't be available to the template. Each `server.py` function has restrictions on how the `data` object can be modified, which are documented in the [`server.py` function table](./server.md#serverpy-functions). For example, in the `generate` phase, you can only modify `data["params"]` and `data["correct_answers"]`.
 
 See the [question lifecycle diagram](./server.md#question-lifecycle) for detailed information on when the `server.py` functions are called. Note that any modifications to the `data` object in later phases like `parse` or `grade` will be persisted and used for any subsequent renderings of the question. For example, if the `grade` function alters `data["params"]` after a student submission, the updated `data["params"]` will be used when the question is rendered again.
 
