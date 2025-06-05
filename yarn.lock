@@ -6809,9 +6809,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/coverage-v8@npm:^3.2.0, @vitest/coverage-v8@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "@vitest/coverage-v8@npm:3.2.1"
+"@vitest/coverage-v8@npm:^3.2.1, @vitest/coverage-v8@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "@vitest/coverage-v8@npm:3.2.2"
   dependencies:
     "@ampproject/remapping": "npm:^2.3.0"
     "@bcoe/v8-coverage": "npm:^1.0.2"
@@ -6827,12 +6827,12 @@ __metadata:
     test-exclude: "npm:^7.0.1"
     tinyrainbow: "npm:^2.0.0"
   peerDependencies:
-    "@vitest/browser": 3.2.1
-    vitest: 3.2.1
+    "@vitest/browser": 3.2.2
+    vitest: 3.2.2
   peerDependenciesMeta:
     "@vitest/browser":
       optional: true
-  checksum: 10c0/8cce5f33a8e677ff98ac0404b87254b88dffa1b9af83544869172ac1f50e2c2589e923539f5dd048cb6dcd0d42b995a7e93d55048302da131ad0f0934b68f727
+  checksum: 10c0/d807f006ab9d4d3fb78c34586ab057a8e588746430b2d3ab07cfb972b5fabe65fde7033a9718ee598d0e3001085fa83edee76ff3f03a05e50a8879beee3ae37a
   languageName: node
   linkType: hard
 
@@ -14429,7 +14429,7 @@ __metadata:
     "@eslint-react/eslint-plugin": "npm:^1.51.0"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@types/tar-stream": "npm:^3.1.4"
-    "@vitest/coverage-v8": "npm:^3.2.0"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     "@vitest/eslint-plugin": "npm:^1.2.1"
     dependency-cruiser: "npm:^16.10.2"
     eslint: "npm:^9.28.0"
