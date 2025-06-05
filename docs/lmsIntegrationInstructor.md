@@ -36,25 +36,25 @@ take them into your course instance.
 
 Canvas courses must be "Published" for certain integration functionality, like grade reporting, to work.
 
-## Integrations tab in your PrairieLearn course instance
+## "Integrations" tab in your PrairieLearn course instance
 
-Use the course instance instructor Integrations tab to manage all integration configurations.
+Use the "Integrations" tab in your course instance to manage all integration configurations.
 
 ### Linking assessments
 
 To be able to send grades from PrairieLearn to Canvas, you first need to link the PrairieLearn
 assessment with a Canvas assignment. There are two ways to do this:
 
-1. **Create a new Canvas assignment for the PrairieLearn assessment.** In PrairieLearn, go to your course instance and then the Integrations tab. Click the "Link assignment" button and then the "Create a new assignment" button. This will create a new Canvas assignment and link it to the PrairieLearn assessment.
+1. **Create a new Canvas assignment for the PrairieLearn assessment.** In PrairieLearn, go to your course instance and then the "Integrations" tab. Click the "Link assignment" button and then the "Create a new assignment" button. This will create a new Canvas assignment and link it to the PrairieLearn assessment.
 2. **Link an existing Canvas assignment.** If you already have a Canvas assignment that you want to link to a PrairieLearn assessment, there is a multistep procedure:
 
    1. In PrairieLearn, go to the assessment, then the "Settings" tab, and copy the "Student Link".
    2. In Canvas, go to the Assignments page. Next to your assignment click the three-dots menu and select "Edit". Change the "Submission Type" to "External Tool" and set the "External Tool URL" to the student link that you copied above from PrairieLearn. Check "Load This Tool In A New Tab". Save the assignment changes.
-   3. In PrairieLearn, go to your course instance and then the Integrations tab. Click the "Link assignment" button and then the "Pick from existing" button. Select the Canvas assignment and click "Link assignment".
+   3. In PrairieLearn, go to your course instance and then the "Integrations" tab. Click the "Link assignment" button and then the "Pick from existing" button. Select the Canvas assignment and click "Link assignment".
 
 ### Sending grades from PrairieLearn to Canvas
 
-To send grades you first need to link the PrairieLearn assessment with a Canvas assignment, as described above. After doing this, go to your PrairieLearn assessment, select the Integrations tab, and then click "Send grades". Grades are always sent as percentage scores out of 100. These are the percentage "Score" values that PrairieLearn shows on the "Gradebook" page and the "Students" tab inside each assessment. Canvas will scale those percentages to the total points configured in the Canvas assignment.
+To send grades you first need to link the PrairieLearn assessment with a Canvas assignment, as described above. After doing this, go to your PrairieLearn assessment, select the "Integrations" tab, and then click "Send grades". Grades are always sent as percentage scores out of 100. These are the percentage "Score" values that PrairieLearn shows on the "Gradebook" page and the "Students" tab inside each assessment. Canvas will scale those percentages to the total points configured in the Canvas assignment.
 
 If you receive errors about students not being found in the course, check that your Canvas course is published before sending grades.
 
@@ -62,4 +62,4 @@ If you receive errors about students not being found in the course, check that y
 
 You can unlink a single PrairieLearn assessment from Canvas. This can be helpful if you want to link it to a different Canvas assignment. Unlinking does not change any grades in Canvas or PrairieLearn.
 
-To do this, go to your course instance in PrairieLearn, then the Integrations tab. For the assessment you want to unlink, select the dropdown arrow on the right of the "Send grades" button and select "Unlink assignment".
+To do this, go to your course instance in PrairieLearn, then the "Integrations" tab. For the assessment you want to unlink, select the dropdown arrow on the right of the "Send grades" button and select "Unlink assignment".

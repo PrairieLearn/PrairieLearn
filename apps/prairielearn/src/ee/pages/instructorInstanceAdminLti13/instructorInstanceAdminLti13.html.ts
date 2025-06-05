@@ -30,57 +30,11 @@ type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
-  ltiInstances,
-  institutionName,
+  lti13_instances,
 }: {
   resLocals: Record<string, any>;
-  ltiInstances: Lti13Instance[];
-  institutionName: string;
+  lti13_instances: Lti13Instance[];
 }): string {
-  const content = html`
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h1>Integrations with other learning systems</h1>
-      </div>
-      <div class="card-body">
-        <p>
-          PrairieLearn supports integrations with learning systems to pass status and grades between
-          them. No integrations have been configured yet for this course instance, but when that
-          happens you can configure them there.
-        </p>
-
-        ${ltiInstances.length === 0
-          ? html`
-              <p>
-                No integrations are present with ${institutionName}. Reach out to your learning
-                system admins to explore how they might integrate with PrairieLearn. The
-                <a target="_blank" href="https://prairielearn.readthedocs.io/en/latest/lti13/"
-                  >administrators LTI 1.3 configuration documentation</a
-                >
-                is a good starting point for them.
-              </p>
-            `
-          : html`
-              <p>
-                The following ${institutionName} learning systems are already integrated with
-                PrairieLearn. See the
-                <a
-                  target="_blank"
-                  href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
-                >
-                  instructor documentation for how to start using integrations.
-                </a>
-              </p>
-              <ul>
-                ${ltiInstances.map((i) => {
-                  return html`<li>${i.name}</li>`;
-                })}
-              </ul>
-            `}
-      </div>
-    </div>
-  `;
-
   return PageLayout({
     resLocals,
     pageTitle: 'Integrations',
@@ -93,7 +47,47 @@ export function InstructorInstanceAdminLti13NoInstances({
       fullWidth: true,
       marginBottom: true,
     },
-    content,
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Integrations with other learning systems</h1>
+        </div>
+        <div class="card-body">
+          ${lti13_instances.length === 0
+            ? html`
+                <p>
+                  No learning management systems (LMSes) at your institution are available for
+                  integration with PrairieLearn. Please contact your IT administrators to set up an
+                  integration. You can refer them to the
+                  <a target="_blank" href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                    >documentation</a
+                  >.
+                </p>
+              `
+            : html`
+                <p>
+                  The following learning management systems (LMSes) at your institution are
+                  available for integration with PrairieLearn:
+                </p>
+
+                <ul>
+                  ${lti13_instances.map((i) => {
+                    return html`<li>${i.name}</li>`;
+                  })}
+                </ul>
+                <p>
+                  <a
+                    target="_blank"
+                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                  >
+                    How can I integrate my course with an LMS?
+                  </a>
+                </p>
+              `}
+          <p>Integrating will allow you to push assessment scores from PrairieLearn to the LMS.</p>
+        </div>
+      </div>
+    `,
   });
 }
 

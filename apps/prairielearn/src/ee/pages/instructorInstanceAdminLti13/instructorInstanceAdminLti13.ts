@@ -59,7 +59,7 @@ router.get(
 
     if (instances.length === 0) {
       // See if we have configurations per institution
-      const lti_instances = await queryRows(
+      const lti13_instances = await queryRows(
         sql.select_lti13_instances,
         {
           institution_id: res.locals.institution.id,
@@ -70,8 +70,7 @@ router.get(
       res.send(
         InstructorInstanceAdminLti13NoInstances({
           resLocals: res.locals,
-          ltiInstances: lti_instances,
-          institutionName: res.locals.institution.short_name ?? 'your institution',
+          lti13_instances,
         }),
       );
       return;
