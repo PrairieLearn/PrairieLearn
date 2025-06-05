@@ -38,7 +38,7 @@
         this.createCapturePreviewListeners();
         this.createExternalCaptureListeners();
       }
-      this.createWebcamCaptureListeners();
+      this.createLocalCameraCaptureListeners();
 
       this.loadSubmission(false);
       if (this.mobile_capture_enabled) {
@@ -61,7 +61,7 @@
 
     createExternalCaptureListeners() {
       const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.capture-with-mobile-device-button',
+        '.js-capture-with-mobile-device-button',
       );
 
       if (!captureWithMobileDeviceButton) {
@@ -73,65 +73,69 @@
       });
     }
 
-    createWebcamCaptureListeners() {
-      const captureWithWebcamButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-webcam-button',
+    createLocalCameraCaptureListeners() {
+      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-local-camera-button',
       );
 
-      const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-webcam-image-button',
+      const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-local-camera-image-button',
       );
-      const cancelWebcamButton = this.imageCaptureDiv.querySelector('.js-cancel-webcam-button');
+      const cancelLocalCameraButton = this.imageCaptureDiv.querySelector(
+        '.js-cancel-local-camera-button',
+      );
 
-      const retakeWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.js-retake-webcam-image-button',
+      const retakeLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+        '.js-retake-local-camera-image-button',
       );
-      const confirmWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.js-confirm-webcam-image-button',
+      const confirmLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+        '.js-confirm-local-camera-image-button',
       );
-      const cancelWebcamConfirmationButton = this.imageCaptureDiv.querySelector(
-        '.js-cancel-webcam-confirmation-button',
+      const cancelLocalCameraConfirmationButton = this.imageCaptureDiv.querySelector(
+        '.js-cancel-local-camera-confirmation-button',
       );
 
       if (
-        !captureWithWebcamButton ||
-        !captureWebcamImageButton ||
-        !cancelWebcamButton ||
-        !retakeWebcamImageButton ||
-        !confirmWebcamImageButton ||
-        !cancelWebcamConfirmationButton
+        !captureWithLocalCameraButton ||
+        !captureLocalCameraImageButton ||
+        !cancelLocalCameraButton ||
+        !retakeLocalCameraImageButton ||
+        !confirmLocalCameraImageButton ||
+        !cancelLocalCameraConfirmationButton
       ) {
-        throw new Error('One or more webcam capture buttons not found in image capture element');
+        throw new Error(
+          'One or more local camera capture buttons not found in image capture element',
+        );
       }
 
-      captureWithWebcamButton.addEventListener('click', () => {
-        this.startWebcamCapture();
+      captureWithLocalCameraButton.addEventListener('click', () => {
+        this.startLocalCameraCapture();
       });
 
-      captureWebcamImageButton.addEventListener('click', (event) => {
+      captureLocalCameraImageButton.addEventListener('click', (event) => {
         event.preventDefault();
         this.handleCaptureImage();
       });
 
-      cancelWebcamButton.addEventListener('click', (event) => {
+      cancelLocalCameraButton.addEventListener('click', (event) => {
         event.preventDefault();
-        this.cancelWebcamCapture();
+        this.cancelLocalCameraCapture();
       });
 
-      retakeWebcamImageButton.addEventListener('click', (event) => {
+      retakeLocalCameraImageButton.addEventListener('click', (event) => {
         event.preventDefault();
-        this.cancelWebcamCapture();
-        this.startWebcamCapture();
+        this.cancelLocalCameraCapture();
+        this.startLocalCameraCapture();
       });
 
-      confirmWebcamImageButton.addEventListener('click', (event) => {
+      confirmLocalCameraImageButton.addEventListener('click', (event) => {
         event.preventDefault();
-        this.confirmWebcamCapture();
+        this.confirmLocalCameraCapture();
       });
 
-      cancelWebcamConfirmationButton.addEventListener('click', (event) => {
+      cancelLocalCameraConfirmationButton.addEventListener('click', (event) => {
         event.preventDefault();
-        this.cancelConfirmationWebcam();
+        this.cancelConfirmationLocalCamera();
       });
     }
 
@@ -139,7 +143,7 @@
      * Show the specified container within the image capture element and hide all others.
      *
      * @param {string} containerName The name of the container to open. Valid values are:
-     * 'capture-preview', 'webcam-capture', or 'webcam-confirmation'.
+     * 'capture-preview', 'local-camera-capture', or 'local-camera-confirmation'.
      */
     openContainer(containerName) {
       // Displays the captured image.
@@ -147,21 +151,29 @@
         '.js-capture-preview-container',
       );
 
-      // Renders a live preview of the webcam for the user to capture an image.
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-capture-container',
+      // Renders a live preview of the local camera for the user to capture an image.
+      const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-capture-container',
       );
 
-      // Displays the image captured from the webcam and allows the user to confirm or retake it.
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-confirmation-container',
+      // Displays the image captured from the local camera and allows the user to confirm or retake it.
+      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-confirmation-container',
       );
 
-      if (!capturePreviewContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
+      if (
+        !capturePreviewContainer ||
+        !localCameraCaptureContainer ||
+        !localCameraConfirmationContainer
+      ) {
         throw new Error('One or more containers not found in image capture element');
       }
 
-      if (!['capture-preview', 'webcam-capture', 'webcam-confirmation'].includes(containerName)) {
+      if (
+        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation'].includes(
+          containerName,
+        )
+      ) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
 
@@ -173,13 +185,13 @@
           flex: false,
         },
         {
-          name: 'webcam-capture',
-          element: webcamCaptureContainer,
+          name: 'local-camera-capture',
+          element: localCameraCaptureContainer,
           flex: true,
         },
         {
-          name: 'webcam-confirmation',
-          element: webcamConfirmationContainer,
+          name: 'local-camera-confirmation',
+          element: localCameraConfirmationContainer,
           flex: true,
         },
       ];
@@ -244,7 +256,7 @@
     }
 
     /**
-     * Reloads the most recent image capture. This can be from the last webcam capture,
+     * Reloads the most recent image capture. This can be from the last local camera capture,
      * the last external image capture, or the last submission.
      */
     async reload() {
@@ -257,11 +269,11 @@
 
       const availableCaptures = [];
 
-      // Add the last webcam capture, if available
-      if (this.lastLocalWebcamCaptureDate) {
+      // Add the last local camera capture, if available
+      if (this.lastLocalLocalCameraCaptureDate) {
         availableCaptures.push({
-          uploadDate: this.lastLocalWebcamCaptureDate,
-          method: 'webcam',
+          uploadDate: this.lastLocalLocalCameraCaptureDate,
+          method: 'local-camera',
         });
       }
 
@@ -309,7 +321,7 @@
 
       // Use the most recent capture to load the capture preview.
       switch (mostRecentCapture.method) {
-        case 'webcam':
+        case 'local-camera':
           this.loadCapturePreviewFromDataUrl(
             this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value,
           );
@@ -370,7 +382,7 @@
      */
     async loadSubmission(forExternalImageCapture = true) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-        '.uploaded-image-container',
+        '.js-uploaded-image-container',
       );
 
       if (!uploadedImageContainer) {
@@ -383,7 +395,7 @@
 
       if (!forExternalImageCapture && this.submitted_file_name) {
         const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-          '.capture-preview-container',
+          '.js-capture-preview-container',
         );
 
         const submissionFilesUrl = capturePreviewContainer.dataset.submissionFilesUrl;
@@ -444,7 +456,7 @@
 
     loadCapturePreviewFromDataUrl(dataUrl) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-        '.uploaded-image-container',
+        '.js-uploaded-image-container',
       );
 
       if (!uploadedImageContainer) {
@@ -476,139 +488,155 @@
       this.loadCapturePreviewFromDataUrl(`data:${type};base64,${data}`);
     }
 
-    async startWebcamCapture() {
+    async startLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.capture-preview-container',
+        '.js-capture-preview-container',
       );
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-capture-container',
+      const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-capture-container',
       );
-      const permissionMessage = webcamCaptureContainer.querySelector('.webcam-permission-message');
-
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-confirmation-container',
+      const permissionMessage = localCameraCaptureContainer.querySelector(
+        '.js-local-camera-permission-message',
       );
 
-      if (!capturePreviewContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
-        throw new Error('Capture preview or webcam capture container not found');
+      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-confirmation-container',
+      );
+
+      if (
+        !capturePreviewContainer ||
+        !localCameraCaptureContainer ||
+        !localCameraConfirmationContainer
+      ) {
+        throw new Error('Capture preview or local camera capture container not found');
       }
 
-      this.openContainer('webcam-capture');
+      this.openContainer('local-camera-capture');
 
       try {
-        // Stream the webcam video to the video element
-        this.webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = this.imageCaptureDiv.querySelector('.js-webcam-video');
-        video.srcObject = this.webcamStream;
+        // Stream the local camera video to the video element
+        this.localCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = this.imageCaptureDiv.querySelector('.js-local-camera-video');
+        video.srcObject = this.localCameraStream;
         await video.play();
 
         // Hide the permission message
         permissionMessage.classList.add('d-none');
 
-        const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
-          '.capture-webcam-image-button',
+        const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+          '.js-capture-local-camera-image-button',
         );
 
-        if (captureWebcamImageButton) {
+        if (captureLocalCameraImageButton) {
           // Allow the user to capture an image
-          captureWebcamImageButton.removeAttribute('disabled');
+          captureLocalCameraImageButton.removeAttribute('disabled');
         } else {
           throw new Error('Capture image button not found');
         }
       } catch (err) {
-        throw new Error('Could not start webcam: ' + err.message);
+        throw new Error('Could not start local camera: ' + err.message);
       }
     }
 
     deactivateVideoStream() {
-      const video = this.imageCaptureDiv.querySelector('.webcam-video');
-      if (this.webcamStream) {
-        this.webcamStream.getTracks().forEach((track) => track.stop());
-        this.webcamStream = null;
+      const video = this.imageCaptureDiv.querySelector('.js-local-camera-video');
+      if (this.localCameraStream) {
+        this.localCameraStream.getTracks().forEach((track) => track.stop());
+        this.localCameraStream = null;
       }
       video.srcObject = null;
       video.pause();
 
-      const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.capture-webcam-image-button',
+      const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-local-camera-image-button',
       );
 
-      // Prevent the user from capturing another image until the webcam is restarted.
-      if (captureWebcamImageButton) {
-        captureWebcamImageButton.setAttribute('disabled', 'disabled');
+      // Prevent the user from capturing another image until the local camera is restarted.
+      if (captureLocalCameraImageButton) {
+        captureLocalCameraImageButton.setAttribute('disabled', 'disabled');
       }
     }
 
     async handleCaptureImage() {
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-capture-container',
+      const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-capture-container',
       );
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-confirmation-container',
+      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-confirmation-container',
       );
-      const webcamImagePreviewCanvas = this.imageCaptureDiv.querySelector('.js-webcam-image-preview');
-      const webcamVideo = webcamCaptureContainer.querySelector('.webcam-video');
+      const localCameraImagePreviewCanvas = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-image-preview',
+      );
+      const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
 
       if (
-        !webcamCaptureContainer ||
-        !webcamConfirmationContainer ||
-        !webcamImagePreviewCanvas ||
-        !webcamVideo
+        !localCameraCaptureContainer ||
+        !localCameraConfirmationContainer ||
+        !localCameraImagePreviewCanvas ||
+        !localCameraVideo
       ) {
         throw new Error(
-          'Webcam capture, image preview, video, or confirmation container not found',
+          'Local camera capture, image preview, video, or confirmation container not found',
         );
       }
 
-      webcamImagePreviewCanvas.width = webcamVideo.videoWidth;
-      webcamImagePreviewCanvas.height = webcamVideo.videoHeight;
-      webcamImagePreviewCanvas
+      localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
+      localCameraImagePreviewCanvas.height = localCameraVideo.videoHeight;
+      localCameraImagePreviewCanvas
         .getContext('2d')
-        .drawImage(webcamVideo, 0, 0, webcamVideo.videoWidth, webcamVideo.videoHeight);
+        .drawImage(
+          localCameraVideo,
+          0,
+          0,
+          localCameraVideo.videoWidth,
+          localCameraVideo.videoHeight,
+        );
 
-      this.openContainer('webcam-confirmation');
+      this.openContainer('local-camera-confirmation');
 
       this.deactivateVideoStream();
     }
 
-    async confirmWebcamCapture() {
-      const canvas = this.imageCaptureDiv.querySelector('.js-webcam-image-preview');
+    async confirmLocalCameraCapture() {
+      const canvas = this.imageCaptureDiv.querySelector('.js-local-camera-image-preview');
       if (!canvas) {
-        throw new Error('Webcam image preview canvas not found');
+        throw new Error('Local camera image preview canvas not found');
       }
 
       const dataUrl = canvas.toDataURL('image/png');
       this.loadCapturePreviewFromDataUrl(dataUrl);
       this.closeConfirmationContainer();
 
-      this.lastLocalWebcamCaptureDate = new Date();
+      this.lastLocalLocalCameraCaptureDate = new Date();
     }
 
     closeConfirmationContainer() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.capture-preview-container',
+        '.js-capture-preview-container',
       );
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-confirmation-container',
+      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-confirmation-container',
       );
-      if (!capturePreviewContainer || !webcamConfirmationContainer) {
-        throw new Error('Webcam capture or confirmation container not found');
+      if (!capturePreviewContainer || !localCameraConfirmationContainer) {
+        throw new Error('Local camera capture or confirmation container not found');
       }
 
       this.openContainer('capture-preview');
     }
 
-    cancelWebcamCapture() {
+    cancelLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.capture-preview-container',
+        '.js-capture-preview-container',
       );
-      const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-capture-container',
+      const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-capture-container',
       );
-      const permissionMessage = this.imageCaptureDiv.querySelector('.js-webcam-permission-message');
+      const permissionMessage = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-permission-message',
+      );
 
-      if (!capturePreviewContainer || !webcamCaptureContainer) {
-        throw new Error('Capture preview or webcam capture container not found');
+      if (!capturePreviewContainer || !localCameraCaptureContainer) {
+        throw new Error('Capture preview or local camera capture container not found');
       }
 
       this.openContainer('capture-preview');
@@ -618,16 +646,16 @@
       this.deactivateVideoStream();
     }
 
-    cancelConfirmationWebcam() {
-      const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-webcam-confirmation-container',
+    cancelConfirmationLocalCamera() {
+      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-confirmation-container',
       );
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.capture-preview-container',
+        '.js-capture-preview-container',
       );
 
-      if (!webcamConfirmationContainer || !capturePreviewContainer) {
-        throw new Error('Webcam confirmation or capture container not found');
+      if (!localCameraConfirmationContainer || !capturePreviewContainer) {
+        throw new Error('Local camera confirmation or capture container not found');
       }
 
       this.openContainer('capture-preview');

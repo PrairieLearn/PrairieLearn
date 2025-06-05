@@ -5,8 +5,12 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { config } from './config.js';
-import type { StatusMessage } from './externalImageCaptureSocket.types.js';
 import * as socketServer from './socket-server.js';
+
+interface StatusMessage {
+  variant_id: string;
+  answer_name: string;
+}
 
 let namespace: Namespace;
 

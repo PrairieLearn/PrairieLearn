@@ -41,10 +41,10 @@ $(function() {
       <div class="d-flex gap-1 flex-wrap">
         <button
           type="button"
-          class="js-capture-with-webcam-button btn btn-info"
+          class="js-capture-with-local-camera-button btn btn-info"
         >
           <i class="bi bi-camera-fill me-1"></i>
-          Capture with webcam
+          Capture with local camera
         </button>
         {{#mobile_capture_enabled}}
           <button 
@@ -79,17 +79,17 @@ $(function() {
       </div>
     {{/editable}}
   </div>
-  <div class="js-webcam-capture-container d-none flex-column p-3">
+  <div class="js-local-camera-capture-container d-none flex-column p-3">
     <div class="position-relative">
       <video
-        class="js-webcam-video w-100 bg-body-secondary rounded border"
+        class="js-local-camera-video w-100 bg-body-secondary rounded border"
         autoplay
         playsinline
       >
       </video>
 
       <div
-        class="js-webcam-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+        class="js-local-camera-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
         style="pointer-events: none;"
       >
         Give permission to access your camera to capture an image.
@@ -101,32 +101,32 @@ $(function() {
     </p>
 
     <div class="d-flex gap-1 mt-1">
-      <button class="js-capture-webcam-image-button btn btn-info" disabled>
+      <button class="js-capture-local-camera-image-button btn btn-info" disabled>
         <i class="bi bi-camera-fill me-1"></i>
         Capture image
       </button>
-      <button class="js-cancel-webcam-button btn btn-secondary">
+      <button class="js-cancel-local-camera-button btn btn-secondary">
         Cancel
       </button>
     </div>
   </div>
-  <div class="js-webcam-confirmation-container d-none d-flex flex-column p-3">
+  <div class="js-local-camera-confirmation-container d-none d-flex flex-column p-3">
     <canvas
-      class="js-webcam-image-preview w-100 bg-body-secondary rounded border mb-1"
+      class="js-local-camera-image-preview w-100 bg-body-secondary rounded border mb-1"
       autoplay
       playsinline
     >
     </canvas>
     <div class="d-flex gap-1 mt-1">
-      <button class="js-confirm-webcam-image-button btn btn-info" type="submit">
+      <button class="js-confirm-local-camera-image-button btn btn-info" type="submit">
         <i class="bi bi-check2 me-1"></i>
         Use image
       </button>
-      <button class="js-retake-webcam-image-button btn btn-secondary">
+      <button class="js-retake-local-camera-image-button btn btn-secondary">
         <i class="bi bi-arrow-counterclockwise me-1"></i>
         Retake
       </button>
-      <button class="js-cancel-webcam-confirmation-button btn btn-secondary">
+      <button class="js-cancel-local-camera-confirmation-button btn btn-secondary">
         Cancel
       </button>
     </div>
