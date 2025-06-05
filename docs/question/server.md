@@ -23,7 +23,7 @@ More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can b
 
 ## Step 1: `generate`
 
-First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers. The parameters can then be used in the `question.html` file by using `{{params.NAME}}`.
+First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers.
 
 ```python title="server.py"
 import random
@@ -34,6 +34,18 @@ def generate(data):
 
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
+```
+
+The values set can then be used in the `question.html` file by using `{{params.NAME}}`. So for example, you can use `data["params"]["x"]` with `{{params.x}}`.
+
+The snippet below uses a [Mustache comment](./template.md#hiding-staff-comments-in-questionhtml), and the [`<pl-question-panel>`](./elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<pl-question-panel>
+  {{! The text of this question is only shown on the question panel. }}
+  If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
+</pl-question-panel>
 ```
 
 ### Randomization
