@@ -47,7 +47,7 @@
     }
 
     createCapturePreviewListeners() {
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
 
       if (!reloadButton) {
         throw new Error('Reload button not found in image capture element');
@@ -75,22 +75,22 @@
 
     createWebcamCaptureListeners() {
       const captureWithWebcamButton = this.imageCaptureDiv.querySelector(
-        '.capture-with-webcam-button',
+        '.js-capture-with-webcam-button',
       );
 
       const captureWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.capture-webcam-image-button',
+        '.js-capture-webcam-image-button',
       );
-      const cancelWebcamButton = this.imageCaptureDiv.querySelector('.cancel-webcam-button');
+      const cancelWebcamButton = this.imageCaptureDiv.querySelector('.js-cancel-webcam-button');
 
       const retakeWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.retake-webcam-image-button',
+        '.js-retake-webcam-image-button',
       );
       const confirmWebcamImageButton = this.imageCaptureDiv.querySelector(
-        '.confirm-webcam-image-button',
+        '.js-confirm-webcam-image-button',
       );
       const cancelWebcamConfirmationButton = this.imageCaptureDiv.querySelector(
-        '.cancel-webcam-confirmation-button',
+        '.js-cancel-webcam-confirmation-button',
       );
 
       if (
@@ -144,17 +144,17 @@
     openContainer(containerName) {
       // Displays the captured image.
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.capture-preview-container',
+        '.js-capture-preview-container',
       );
 
       // Renders a live preview of the webcam for the user to capture an image.
       const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-capture-container',
+        '.js-webcam-capture-container',
       );
 
       // Displays the image captured from the webcam and allows the user to confirm or retake it.
       const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-confirmation-container',
+        '.js-webcam-confirmation-container',
       );
 
       if (!capturePreviewContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
@@ -249,9 +249,9 @@
      */
     async reload() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-        '.uploaded-image-container',
+        '.js-uploaded-image-container',
       );
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
 
       this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
 
@@ -311,7 +311,7 @@
       switch (mostRecentCapture.method) {
         case 'webcam':
           this.loadCapturePreviewFromDataUrl(
-            this.imageCaptureDiv.querySelector('.hidden-capture-input').value,
+            this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value,
           );
           break;
         case 'external':
@@ -335,7 +335,7 @@
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
       }
-      const imagePlaceholderDiv = uploadedImageContainer.querySelector('.image-placeholder');
+      const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
       imagePlaceholderDiv.innerHTML = `
         <span class="text-muted">No image captured yet.</span>
       `;
@@ -352,7 +352,7 @@
 
       uploadedImageContainer.innerHTML = `
         <div
-            class="image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
             style="height: 200px;"
         >
             <div class="spinning-wheel spinner-border">
@@ -377,7 +377,7 @@
         throw new Error('Uploaded image container not found');
       }
 
-      const reloadButton = this.imageCaptureDiv.querySelector('.reload-capture-button');
+      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
 
       this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
 
@@ -426,7 +426,7 @@
 
         // Dismiss the QR code popover if it is open.
         const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-          '.capture-with-mobile-device-button',
+          '.js-capture-with-mobile-device-button',
         );
 
         if (captureWithMobileDeviceButton) {
@@ -460,7 +460,7 @@
       uploadedImageContainer.innerHTML = '';
       uploadedImageContainer.appendChild(capturePreview);
 
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.hidden-capture-input');
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
       hiddenCaptureInput.value = dataUrl;
     }
 
@@ -481,12 +481,12 @@
         '.capture-preview-container',
       );
       const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-capture-container',
+        '.js-webcam-capture-container',
       );
       const permissionMessage = webcamCaptureContainer.querySelector('.webcam-permission-message');
 
       const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-confirmation-container',
+        '.js-webcam-confirmation-container',
       );
 
       if (!capturePreviewContainer || !webcamCaptureContainer || !webcamConfirmationContainer) {
@@ -498,7 +498,7 @@
       try {
         // Stream the webcam video to the video element
         this.webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = this.imageCaptureDiv.querySelector('.webcam-video');
+        const video = this.imageCaptureDiv.querySelector('.js-webcam-video');
         video.srcObject = this.webcamStream;
         await video.play();
 
@@ -541,12 +541,12 @@
 
     async handleCaptureImage() {
       const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-capture-container',
+        '.js-webcam-capture-container',
       );
       const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-confirmation-container',
+        '.js-webcam-confirmation-container',
       );
-      const webcamImagePreviewCanvas = this.imageCaptureDiv.querySelector('.webcam-image-preview');
+      const webcamImagePreviewCanvas = this.imageCaptureDiv.querySelector('.js-webcam-image-preview');
       const webcamVideo = webcamCaptureContainer.querySelector('.webcam-video');
 
       if (
@@ -572,7 +572,7 @@
     }
 
     async confirmWebcamCapture() {
-      const canvas = this.imageCaptureDiv.querySelector('.webcam-image-preview');
+      const canvas = this.imageCaptureDiv.querySelector('.js-webcam-image-preview');
       if (!canvas) {
         throw new Error('Webcam image preview canvas not found');
       }
@@ -589,7 +589,7 @@
         '.capture-preview-container',
       );
       const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-confirmation-container',
+        '.js-webcam-confirmation-container',
       );
       if (!capturePreviewContainer || !webcamConfirmationContainer) {
         throw new Error('Webcam capture or confirmation container not found');
@@ -603,9 +603,9 @@
         '.capture-preview-container',
       );
       const webcamCaptureContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-capture-container',
+        '.js-webcam-capture-container',
       );
-      const permissionMessage = this.imageCaptureDiv.querySelector('.webcam-permission-message');
+      const permissionMessage = this.imageCaptureDiv.querySelector('.js-webcam-permission-message');
 
       if (!capturePreviewContainer || !webcamCaptureContainer) {
         throw new Error('Capture preview or webcam capture container not found');
@@ -620,7 +620,7 @@
 
     cancelConfirmationWebcam() {
       const webcamConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.webcam-confirmation-container',
+        '.js-webcam-confirmation-container',
       );
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.capture-preview-container',
