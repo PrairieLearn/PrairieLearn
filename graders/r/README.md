@@ -39,14 +39,16 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. The default is `#grade` as in the example question. This can be configured using the `IPYNB_KEY` environment variable in `info.json`:
 
 ```json
-"externalGradingOptions": {
-    "enabled": true,
-    "image": "prairielearn/grader-r",
-    "timeout": 20,
-    "environment": {
-      "IPYNB_KEY": "#student_code"
+{
+  "externalGradingOptions": {
+      "enabled": true,
+      "image": "prairielearn/grader-r",
+      "timeout": 20,
+      "environment": {
+        "IPYNB_KEY": "#student_code"
+      }
     }
-  }
+}
 ```
 
 ## Authors
