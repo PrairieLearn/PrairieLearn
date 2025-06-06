@@ -777,13 +777,15 @@ def test_get_boolean_attrib_invalid(html_str: str) -> None:
         ("<pl-thing></pl-thing>", False),
     ],
 )
-def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool) -> None:  # noqa: FBT001
+def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # noqa: FBT001
     """Test that using HTML boolean attributes is only valid when reading as boolean with default False."""
     element = lxml.html.fragment_fromstring(html_str)
     result = pl.get_boolean_attrib(element, "checked", False)  # noqa: FBT003
     assert result == expected_result
-    with pytest.raises(ValueError, match="boolean attribute"):
-        pl.get_boolean_attrib(element, "checked")
+    if not expected_result:
+        expected_result = None
+    result = pl.get_boolean_attrib(element, "checked")
+    assert result == expected_result
     with pytest.raises(ValueError, match="boolean attribute"):
         pl.get_boolean_attrib(element, "checked", True)  # noqa: FBT003
     with pytest.raises(ValueError, match="boolean attribute"):

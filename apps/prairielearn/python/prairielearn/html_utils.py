@@ -234,11 +234,11 @@ def get_boolean_attrib(
     # If the attribute is a boolean attribute, then its value is determined by its presence
     if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
         default_value = None if len(args) == 0 else args[0]
-        if default_value is not False:
+        if default_value:
             raise ValueError(
                 f'Attribute "{name}" is an HTML boolean attribute, and cannot be used with a default value of {default_value}.'
             )
-        return has_attrib(element, name)
+        return has_attrib(element, name) or default_value
 
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
