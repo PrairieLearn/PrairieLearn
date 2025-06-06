@@ -224,7 +224,7 @@
           "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         "role": {
-          "description": "DEPRECATED, DO NOT USE",
+          "description": "DEPRECATED -- do not use.",
           "type": "string",
           "enum": ["Student", "TA", "Instructor"],
           "deprecated": true
@@ -288,7 +288,7 @@
           "type": "string"
         },
         "comments": {
-          "description": "DEPRECATED, DO NOT USE",
+          "description": "DEPRECATED -- do not use.",
           "$ref": "#/definitions/CommentJsonSchema",
           "deprecated": true
         },

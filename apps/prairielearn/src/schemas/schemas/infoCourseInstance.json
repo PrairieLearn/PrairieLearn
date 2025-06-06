@@ -20,7 +20,7 @@
       "type": "string"
     },
     "shortName": {
-      "description": "DEPRECATED, DO NOT USE",
+      "description": "DEPRECATED -- do not use.",
       "type": "string",
       "deprecated": true
     },
@@ -29,7 +29,7 @@
       "type": "string"
     },
     "allowIssueReporting": {
-      "description": "DEPRECATED, DO NOT USE",
+      "description": "DEPRECATED -- do not use.",
       "type": "boolean",
       "default": true,
       "deprecated": true
@@ -40,7 +40,7 @@
       "default": false
     },
     "userRoles": {
-      "description": "DEPRECATED, DO NOT USE",
+      "description": "DEPRECATED -- do not use.",
       "type": "object",
       "additionalProperties": {},
       "properties": {},
@@ -59,7 +59,7 @@
             "$ref": "#/definitions/CommentJsonSchema"
           },
           "role": {
-            "description": "DEPRECATED, DO NOT USE",
+            "description": "DEPRECATED -- do not use.",
             "type": "string",
             "enum": ["Student", "TA", "Instructor", "Superuser"],
             "deprecated": true
