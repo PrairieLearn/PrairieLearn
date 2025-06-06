@@ -31,7 +31,7 @@ and more. We also include a few command-line applications such as `git` and `sql
 This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (test files must still be `.R` files) with the following caveats:
 
 - the student code must be written in a notebook called `student.ipynb`
-- the answer code must be in a single cell of the notebook that starts with the correct `ipynb_key` (see below)
+- the answer code must be in a single cell of the notebook that starts with the correct `IPYNB_KEY` (see below)
 - the test files use `/grade/student/student.R` (not `/student.ipynb`)
 
 ## Customizing the grading key
@@ -44,7 +44,7 @@ When grading an `ipynb` file you need to tell the autograder which cell to grade
     "image": "prairielearn/grader-r",
     "timeout": 20,
     "environment": {
-      "ipynb_key": "#student_code"
+      "IPYNB_KEY": "#student_code"
     }
   }
 ```

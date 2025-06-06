@@ -63,12 +63,12 @@ result <- tryCatch({
         print("[pltest] Found ipynb file")
 
         # Check for ipynb key
-        ipynb_key <- Sys.getenv("ipynb_key", unset = "#grade")
+        ipynb_key <- Sys.getenv("IPYNB_KEY", unset = "#grade")
 
         # Extract code
         code <- extract_r_code_from_ipynb(ipynb_file, ipynb_key)
         if (nchar(code) == 0) {
-            warning(paste0("No matching R code found in notebook using the ipynb_key of '", ipynb_key, "'"))
+            warning(paste0("No matching R code found in notebook using the IPYNB_KEY of '", ipynb_key, "'"))
             return(invisible(NULL))
         }
 
