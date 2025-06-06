@@ -215,7 +215,7 @@ export async function initExpress(): Promise<Express> {
   );
 
   app.post(
-    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)/answer/:answer_name',
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
 
@@ -266,12 +266,16 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view/*',
     upload.single('file'),
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
     upload.single('file'),
   );
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)/answer/:answer_name',
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
 
@@ -1077,6 +1081,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+  );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/grading_job',
@@ -1522,7 +1530,7 @@ export async function initExpress(): Promise<Express> {
   // External image capture page for a question variant generated on the question preview page. Enables
   // users to capture and submit images from an external device (e.g. a mobile phone).
   app.use(
-    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variants/:variant_id(\\d+)',
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
 

@@ -17,7 +17,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router({ mergeParams: true });
 
 router.get(
-  '/answer/:answer_name',
+  '/',
   asyncHandler(async (req, res) => {
     res.send(
       ExternalImageCapture({
@@ -29,10 +29,10 @@ router.get(
 
 // Handles image uploading from the external image capture page.
 router.post(
-  '/answer/:answer_name',
+  '/',
   asyncHandler(async (req, res) => {
     const variantId = req.params.variant_id as string;
-    const answerName = req.params.answer_name as string;
+    const answerName = req.query.answer_name as string;
 
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: variantId,
@@ -77,8 +77,12 @@ router.post(
 
 // Handles fetching the uploaded, externally-captured image for a specific answer.
 router.get(
-  '/answer/:answer_name/uploaded_image',
+  '/uploaded_image',
   asyncHandler(async (req, res) => {
+    if (!req.query.answer_name) {
+      throw new HttpStatusError(400, 'Missing answer_name query parameter');
+    }
+
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
       variant_course: res.locals.course,
@@ -100,7 +104,7 @@ router.get(
       sql.select_external_image_capture_by_variant_id_and_answer_name,
       {
         variant_id: parseInt(variant.id),
-        answer_name: req.params.answer_name,
+        answer_name: req.query.answer_name,
       },
       ExternalImageCaptureSchema,
     );

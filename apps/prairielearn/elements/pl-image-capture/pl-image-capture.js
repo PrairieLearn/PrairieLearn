@@ -15,9 +15,6 @@
 
       const options = JSON.parse(this.imageCaptureDiv.dataset.options);
 
-      console.log('options', options);
-
-
       if (!options.answer_name) {
         throw new Error('Answer name is required in image capture options');
       }
@@ -226,11 +223,8 @@
     }
 
     generateQrCode() {
-
-      console.log('external_image_capture_url', this.external_image_capture_url);
-
       const qrCodeSvg = new QRCode({
-        content: this.external_image_capture_url,
+        content: `${this.external_image_capture_url}?answer_name=${this.answer_name}`,
         container: 'svg-viewbox',
       }).svg();
 
@@ -296,7 +290,7 @@
       if (this.mobile_capture_enabled) {
         // Add the last external image capture, if available
         const externalImageCaptureResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image`,
+          `${this.external_image_capture_url}/uploaded_image?answer_name=${this.answer_name}`,
         );
 
         if (externalImageCaptureResponse.ok) {
@@ -430,7 +424,7 @@
         this.loadCapturePreviewFromBlob(await response.blob());
       } else {
         const submittedImageResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image`,
+          `${this.external_image_capture_url}/uploaded_image?answer_name=${this.answer_name}`,
         );
 
         if (!submittedImageResponse.ok) {
