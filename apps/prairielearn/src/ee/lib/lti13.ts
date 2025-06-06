@@ -557,7 +557,15 @@ export async function linkAssessment(
   });
 }
 
-function findValueByKey(obj: unknown, targetKey: string) {
+/**
+ * Recurse through nested object(s) to find the first instance of a key with a given name
+ * and return that key's value.
+ *
+ * @param obj Object to inspect
+ * @param targetKey Key to find
+ * @returns Contents of the targetKey variable
+ */
+export function findValueByKey(obj: unknown, targetKey: string): unknown {
   if (typeof obj !== 'object' || obj === null) return undefined;
   if (Object.hasOwn(obj, targetKey)) {
     return obj[targetKey];
@@ -599,22 +607,16 @@ export async function fetchRetry(
 
     if (!response.ok) {
       const resObject = (await response.json()) ?? {};
-      /*
-      Canvas error example with nested objects and message property.
-      {
-        errors: {
-          type: 'unprocessable_entity',
-          message: 'This course has concluded. AGS requests will no longer be accepted for this course.'
-        }
-      }
-      */
-      const msg = findValueByKey(resObject, 'message');
+      const resString = JSON.stringify(resObject);
+
+      // Examples of LMS error messages are in the lti13.test.ts file.
+      const msg = findValueByKey(resObject, 'message') ?? resString;
 
       throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${msg}`, {
         status: response.status,
         data: {
           statusText: response.statusText,
-          body: resObject,
+          body: resString,
         },
       });
     }
@@ -622,7 +624,13 @@ export async function fetchRetry(
   } catch (err) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
-    if (err.status === 403 || err.name === 'FetchError' || err.code === 'ECONNRESET') {
+    if (
+      // Common retry codes
+      [403, 429, 502, 503, 504].includes(err.status) ||
+      // node-fetch transient errors
+      err.name === 'FetchError' ||
+      err.code === 'ECONNRESET'
+    ) {
       // Retry logic
       fetchRetryOpts.retryLeft -= 1;
       if (fetchRetryOpts.retryLeft === 0) {
@@ -899,7 +907,7 @@ export async function updateLti13Scores(
       };
 
       try {
-        const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+        await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -907,13 +915,11 @@ export async function updateLti13Scores(
           },
           body: JSON.stringify(score),
         });
-
-        if (res.ok) {
-          counts.success++;
-        }
+        counts.success++;
       } catch (error) {
         counts.error++;
         job.warn(`\t${error.message}`);
+        job.verbose(error.data.body);
       }
     }
   }
