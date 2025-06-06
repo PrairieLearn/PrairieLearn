@@ -77,49 +77,39 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 
     const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
-    let manualGradingJob: GradingJobInfo | null = null;
-    let aiGradingJob: GradingJobInfo | null = null;
+    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
 
-    for (const grading_job of grading_jobs) {
-      assert(grading_job.graded_at);
-      if (grading_job.grading_method === 'Manual') {
-        manualGradingJob = grading_job;
-        instance_question.last_human_grader = grading_job.grader_name;
-      } else {
-        aiGradingJob = grading_job;
-        instance_question.ai_grading_status = 'Graded';
-        if (rubric_modify_time) {
-          instance_question.ai_grading_status =
-            grading_job.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
-        }
+    if (manualGradingJob) {
+      instance_question.last_human_grader = manualGradingJob.grader_name;
+    }
+
+    if (aiGradingJob) {
+      assert(aiGradingJob.graded_at);
+      instance_question.ai_grading_status = 'Graded';
+      if (rubric_modify_time) {
+        instance_question.ai_grading_status =
+          aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
       }
     }
 
-    if (
-      !manualGradingJob ||
-      !aiGradingJob ||
-      manualGradingJob.manual_points === null ||
-      aiGradingJob.manual_points === null
-    ) {
-      continue;
+    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+      instance_question.point_difference =
+        aiGradingJob.manual_points - manualGradingJob.manual_points;
     }
-    instance_question.point_difference =
-      aiGradingJob.manual_points - manualGradingJob.manual_points;
 
-    if (!manualGradingJob.manual_rubric_grading_id || !aiGradingJob.manual_rubric_grading_id) {
-      continue;
+    if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
+      const manualItems = manualGradingJob.rubric_items;
+      const aiItems = aiGradingJob.rubric_items;
+      const fpItems = aiItems
+        .filter((item) => !rubricListIncludes(manualItems, item))
+        .map((item) => ({ ...item, false_positive: true }));
+      const fnItems = manualItems
+        .filter((item) => !rubricListIncludes(aiItems, item))
+        .map((item) => ({ ...item, false_positive: false }));
+      instance_question.rubric_difference = fnItems.concat(fpItems);
     }
-    const manualItems = manualGradingJob.rubric_items;
-    const aiItems = aiGradingJob.rubric_items;
-    const fpItems = aiItems
-      .filter((item) => !rubricListIncludes(manualItems, item))
-      .map((item) => ({ ...item, false_positive: true }));
-    const fnItems = manualItems
-      .filter((item) => !rubricListIncludes(aiItems, item))
-      .map((item) => ({ ...item, false_positive: false }));
-    instance_question.rubric_difference = fnItems.concat(fpItems);
   }
-
   return results;
 }
 
