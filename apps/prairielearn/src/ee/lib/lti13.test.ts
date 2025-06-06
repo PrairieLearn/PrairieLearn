@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { fetchRetry, findValueByKey, fetchRetryPaginated } from './lti13.js';
+import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
 const PRODUCTS = [
   'Apple',
