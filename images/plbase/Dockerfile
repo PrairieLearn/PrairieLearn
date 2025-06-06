@@ -1,7 +1,7 @@
 # https://prairielearn.readthedocs.io/en/latest/installingNative/
 
 FROM ubuntu:24.04
-ARG CACHEBUST=2025-05-15-14-16-41
+ARG CACHEBUST=2025-06-05-17-00-00
 
 SHELL ["/bin/bash", "-c"]
 
@@ -9,7 +9,7 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get upgrade -y
 
 # Install system packages
-RUN apt-get install -y \
+RUN apt-get install -y --no-install-recommends \
         bash-completion \
         build-essential \
         ca-certificates \
@@ -41,7 +41,7 @@ RUN echo "PATH=\"/usr/lib/postgresql/16/bin:/usr/local/sbin:/usr/local/bin:/usr/
 
 # Install Node.js 22
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs
+    apt-get install -y --no-install-recommends nodejs
     
 # Install Yarn
 RUN corepack enable && corepack prepare yarn@stable --activate
