@@ -7,7 +7,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
 - Install the prerequisites:
 
   - [Git](https://git-scm.com)
-  - [Node.js 20](https://nodejs.org)
+  - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
   - [PostgreSQL 16](https://www.postgresql.org)
@@ -54,12 +54,12 @@ Most of these prerequisites can be installed using the package manager of your O
     pip install uv
     ```
 
-    Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
+    Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
 
     ```sh
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
     source ~/.bashrc # or your shell's equivalent
-    nvm install 20
+    nvm install 22
     ```
 
     Enable `corepack` to make `yarn` available:
