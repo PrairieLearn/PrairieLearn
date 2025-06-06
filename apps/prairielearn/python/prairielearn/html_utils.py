@@ -171,6 +171,25 @@ def get_string_attrib(
     return str_val
 
 
+LIBXML_BOOLEAN_ATTRIBUTES = frozenset(
+    {
+        "checked",
+        "compact",
+        "declare",
+        "defer",
+        "disabled",
+        "ismap",
+        "multiple",
+        "nohref",
+        "noresize",
+        "noshade",
+        "nowrap",
+        "readonly",
+        "selected",
+    }
+)
+
+
 # Order here matters, as we want to override the case where the args is omitted
 @overload
 def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
@@ -203,6 +222,15 @@ def get_boolean_attrib(
     Raises:
         ValueError: If the attribute is not a valid boolean value.
     """
+
+    # If the attribute is a boolean attribute, then its value is determined by its presence
+    if name in LIBXML_BOOLEAN_ATTRIBUTES:
+        if args[0] is not False:
+            raise ValueError(
+                f'Attribute "{name}" is treated as a boolean attribute, with a default value False.'
+            )
+        return has_attrib(element, name)
+
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
         return val
