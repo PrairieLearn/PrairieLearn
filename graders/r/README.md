@@ -32,7 +32,7 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 
 - the student code must be written in a notebook called `student.ipynb`
 - the answer code must be in a single cell of the notebook that starts with the correct `ipynb_key` (see below)
-- the test files use `/grade/student/student.R`
+- the test files use `/grade/student/student.R` (not `/student.ipynb`)
 
 ## ipynb_key
 
