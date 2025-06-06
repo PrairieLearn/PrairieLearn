@@ -48,9 +48,6 @@ This file specifies basic information about the course:
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
-  "options": {
-    "useNewQuestionRenderer": true
-  },
   "assessmentSets": [],
   "assessmentModules": [],
   "topics": [],
@@ -66,9 +63,6 @@ This file specifies basic information about the course:
       "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
       "name": "TAM 212",
       "title": "Introductory Dynamics",
-      "options": {
-        "useNewQuestionRenderer": true
-      },
       "assessmentSets": [
         {
           "abbreviation": "HW",
@@ -485,35 +479,3 @@ While every course should use the different roles in a way that best suits the c
 | TAs involved in grading              |         None          | Student data editor |
 | Other TAs                            |         None          | Student data viewer |
 | Instructors from other classes       | Course content viewer |        None         |
-
-## Course-wide options
-
-These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
-
-| Property                 | Default | Description                                                                                                                                                                                                                                                 |
-| ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useNewQuestionRenderer` | `false` | This controls whether to use the "legacy" renderer or the "new" renderer. Although the default is `false` currently to avoid issues with longstanding courses on the platform, all courses should set this to `true`, especially if they are newly created. |
-
-### Question renderers
-
-The "legacy" renderer is the original renderer used in PrairieLearn. It renders elements alphabetically in order of their name and thus provides inconsistent support for nesting elements. It should be avoided in new courses.
-
-The "new" question renderer processes elements in a tree, which allows it to consistently and predictably support nested elements. It's also more performant. If you have an existing course that predates the new renderer, you should migrate to it at your earliest convenience by setting `"useNewQuestionRenderer": true` in your `infoCourse.json` file:
-
-```json title="infoCourse.json"
-{
-  "options": {
-    "useNewQuestionRenderer": true
-  }
-}
-```
-
-The new renderer uses a stricter HTML processor that doesn't allow for element tags to be self-closing. Before upgrading to the new renderer, ensure that your questions aren't using self-closing tags for elements.
-
-```html
-<!-- This is incompatible with the new renderer -->
-<pl-figure file-name="bird.jpg" />
-
-<!-- You must use this instead -->
-<pl-figure file-name="bird.jpg"></pl-figure>
-```
