@@ -19,6 +19,7 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -52,6 +53,10 @@ router.get(
     const host = getCanonicalHost(req);
     const studentLink = new URL(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
+      host,
+    ).href;
+    const publicLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
       host,
     ).href;
     const infoAssessmentPath = encodePath(
@@ -95,6 +100,7 @@ router.get(
         assessmentGHLink,
         tids,
         studentLink,
+        publicLink,
         infoAssessmentPath,
         assessmentSets,
         assessmentModules,
@@ -172,6 +178,41 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
+      const normalizedText = req.body.text?.replace(/\r\n/g, '\n');
+      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
+      assessmentInfo.allowIssueReporting = propertyValueWithDefault(
+        assessmentInfo.allowIssueReporting,
+        req.body.allow_issue_reporting === 'on',
+        true,
+      );
+      assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
+        assessmentInfo.allowPersonalNotes,
+        req.body.allow_personal_notes === 'on',
+        true,
+      );
+      if (res.locals.assessment.type === 'Exam') {
+        assessmentInfo.multipleInstance = propertyValueWithDefault(
+          assessmentInfo.multipleInstance,
+          req.body.multiple_instance === 'on',
+          false,
+        );
+        assessmentInfo.autoClose = propertyValueWithDefault(
+          assessmentInfo.autoClose,
+          req.body.auto_close === 'on',
+          true,
+        );
+        assessmentInfo.requireHonorCode = propertyValueWithDefault(
+          assessmentInfo.requireHonorCode,
+          req.body.require_honor_code === 'on',
+          true,
+        );
+        assessmentInfo.honorCode = propertyValueWithDefault(
+          assessmentInfo.honorCode,
+          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          '',
+        );
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const tid_new = run(() => {

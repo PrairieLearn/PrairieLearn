@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -12,13 +11,12 @@ const queriesUrl = `${baseUrl}/administrator/queries`;
 const queryUrl = `${baseUrl}/administrator/query/db_running_queries`;
 const queryUuidsUrl = `${baseUrl}/administrator/query/generate_uuids`;
 
-describe('AdministratorQuery page', function () {
-  this.timeout(60000);
+describe('AdministratorQuery page', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  step('visit queries page', async () => {
+  test.sequential('visit queries page', async () => {
     const response = await helperClient.fetchCheerio(queriesUrl);
     assert.isTrue(response.ok);
 
@@ -31,7 +29,7 @@ describe('AdministratorQuery page', function () {
     assert.lengthOf(query2, 1);
   });
 
-  step('visit query page for a SQL-based query', async () => {
+  test.sequential('visit query page for a SQL-based query', async () => {
     const response = await helperClient.fetchCheerio(queryUrl);
     assert.isTrue(response.ok);
 
@@ -40,7 +38,7 @@ describe('AdministratorQuery page', function () {
     assert.lengthOf(results, 1);
   });
 
-  step('visit query page for a JS-based query', async () => {
+  test.sequential('visit query page for a JS-based query', async () => {
     const response = await helperClient.fetchCheerio(queryUuidsUrl);
     assert.isTrue(response.ok);
     const __csrf_token = response.$('#test_csrf_token').text();

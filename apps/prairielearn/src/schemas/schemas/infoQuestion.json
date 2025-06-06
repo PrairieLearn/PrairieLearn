@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -17,6 +17,7 @@
     },
     "type": {
       "description": "Type of the question.",
+      "type": "string",
       "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
     },
     "title": {
@@ -57,15 +58,18 @@
     },
     "gradingMethod": {
       "description": "The grading method used for this question.",
+      "type": "string",
       "enum": ["Internal", "External", "Manual"]
     },
     "singleVariant": {
-      "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
-      "type": "boolean"
+      "description": "Whether the question is not randomized and only generates a single variant.",
+      "type": "boolean",
+      "default": false
     },
     "showCorrectAnswer": {
-      "description": "Whether to show the correct answer panel (defaults to \"true\").",
-      "type": "boolean"
+      "description": "Whether to show the correct answer panel.",
+      "type": "boolean",
+      "default": true
     },
     "partialCredit": {
       "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
@@ -73,7 +77,9 @@
     },
     "options": {
       "description": "Options that define how the question will work, specific to the individual question type.",
-      "type": "object"
+      "type": "object",
+      "additionalProperties": {},
+      "properties": {}
     },
     "externalGradingOptions": {
       "description": "Options for externally graded questions.",
@@ -83,7 +89,7 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "enabled": {
           "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
@@ -95,7 +101,17 @@
         },
         "entrypoint": {
           "description": "Program or command to run as the entrypoint to your grader. If not provided, the default entrypoint for the image will be used.",
-          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         "serverFilesCourse": {
           "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
@@ -111,11 +127,15 @@
         },
         "enableNetworking": {
           "description": "Whether the grading containers should have network access. Access is disabled by default.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "environment": {
           "description": "Environment variables to set inside the grading container.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -126,25 +146,25 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
-          "deprecated": true,
           "type": "array",
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          }
+          },
+          "deprecated": true
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
-          "deprecated": true,
           "type": "array",
           "items": {
             "description": "A .js file located in /public/javascripts.",
             "type": "string"
-          }
+          },
+          "deprecated": true
         },
         "nodeModulesStyles": {
           "description": "The styles required by this question from /node_modules.",
@@ -171,7 +191,7 @@
           }
         },
         "clientFilesCourseScripts": {
-          "description": "The styles required by this question from clientFilesCourse.",
+          "description": "The scripts required by this question from clientFilesCourse.",
           "type": "array",
           "items": {
             "description": "A .js file located in clientFilesCourse.",
@@ -204,7 +224,7 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "image": {
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
@@ -219,12 +239,23 @@
           "type": "string"
         },
         "args": {
-          "description": "Command line arguments to pass to the Docker.",
-          "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+          "description": "Command line arguments to pass to the Docker container.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
         },
         "rewriteUrl": {
           "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": true
         },
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
@@ -236,11 +267,15 @@
         },
         "enableNetworking": {
           "description": "Whether the workspace should have network access. Access is disabled by default.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "environment": {
           "description": "Environment variables to set inside the workspace container.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
@@ -248,7 +283,8 @@
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
             "type": "string"
-          }
+          },
+          "deprecated": true
         }
       }
     },
@@ -267,6 +303,24 @@
     "shareSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

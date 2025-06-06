@@ -6,17 +6,6 @@ FROM
 WHERE
   u.uid = 'student@example.com';
 
--- BLOCK select_e1
-SELECT
-  a.id
-FROM
-  assessments AS a
-  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-WHERE
-  a.course_instance_id = 1
-  AND aset.abbreviation = 'E'
-  AND a.number = '1';
-
 -- BLOCK select_instance_question_addVectors
 SELECT
   iq.*

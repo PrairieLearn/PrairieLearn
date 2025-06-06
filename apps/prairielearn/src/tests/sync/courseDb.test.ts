@@ -1,13 +1,12 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert, describe, it } from 'vitest';
 
+import { type QuestionJsonInput } from '../../schemas/index.js';
 import * as courseDb from '../../sync/course-db.js';
 import * as infofile from '../../sync/infofile.js';
-
-import { type Question } from './util.js';
 
 async function withTempDirectory(callback: (dir: string) => Promise<void>) {
   const dir = await tmp.dir({ unsafeCleanup: true });
@@ -31,29 +30,29 @@ async function withTempFile(
   }
 }
 
-async function writeQuestion(courseDir: string, qid: string, question: Question) {
+async function writeQuestion(courseDir: string, qid: string, question: QuestionJsonInput) {
   await fs.mkdirs(path.join(courseDir, 'questions', qid));
   await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
 }
 
-function getQuestion(): Question {
+function getQuestion() {
   return {
     uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
     title: 'Test question',
     topic: 'Test',
     tags: ['test'],
     type: 'v3',
-  };
+  } satisfies QuestionJsonInput;
 }
 
-function getAlternativeQuestion(): Question {
+function getAlternativeQuestion() {
   return {
     uuid: '697a6188-8215-4806-92a1-592987342b9e',
     title: 'Another test question',
     topic: 'Test',
     tags: ['test'],
     type: 'Calculation',
-  };
+  } satisfies QuestionJsonInput;
 }
 
 const UUID = '1c811569-6d28-4ee5-a2c7-39591bf7cb40';

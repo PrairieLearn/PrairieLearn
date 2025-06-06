@@ -1,79 +1,170 @@
+<script>
+    $(function(){
+        document.querySelectorAll('.pl-string-input-multiline#pl-string-input-{{uuid}}-area').forEach((input) => {
+            input.addEventListener('input', function () {
+            // Adjusts the height based on the feedback content. If the feedback changes, the height
+            // changes as well. This is done by resetting the height (so the scrollHeight is computed
+            // based on the minimum height) and then using the scrollHeight plus padding as the new height.
+            this.style.height = '';
+            if (this.scrollHeight) {
+                const style = window.getComputedStyle(this);
+                this.style.height =
+                this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+            }
+            });
+            input.dispatchEvent(new Event('input'));
+        });
+    });
+</script>
+
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
-    <span class="input-group pl-string-input">
+    {{#multiline}}
         {{#label}}
-        <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
+        <label
+            class="form-label"
+            for="pl-string-input-{{uuid}}-area"
+        >{{{label}}}</label>
         {{/label}}
-        <input
-            name="{{name}}"
-            type="text"
-            inputmode="text"
-            class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-            {{#parse_error}}aria-invalid="true"{{/parse_error}}
-            size="{{size}}"
-            autocomplete="off"
-            autocorrect="off"
-            {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-string-input-{{uuid}}-suffix"
-            aria-labelledby="pl-string-input-{{uuid}}-label"
-            placeholder="{{placeholder}}"
-        />
-        {{#suffix}}<span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>{{/suffix}}
+        <span class="input-group pl-string-input">
+            <textarea
+                wrap="soft"
+                id="pl-string-input-{{uuid}}-area"
+                name="{{name}}"
+                inputmode="text"
+                class="form-control pl-string-input-input pl-string-input-multiline"
+                {{#parse_error}}aria-invalid="true" aria-describedby="pl-string-input-{{uuid}}-error"{{/parse_error}}
+                cols="{{size}}"
+                rows="2"
+                autocomplete="off"
+                autocorrect="off"
+                {{^editable}}disabled{{/editable}}
+                placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            >{{raw_submitted_answer}}</textarea>
+    {{/multiline}}
+    {{^multiline}}
+        <span class="input-group pl-string-input">
+            {{#label}}
+            <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
+            {{/label}}
+            <input
+                name="{{name}}"
+                type="text"
+                inputmode="text"
+                class="form-control pl-string-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+                {{#parse_error}}aria-invalid="true"{{/parse_error}}
+                size="{{size}}"
+                autocomplete="off"
+                autocorrect="off"
+                {{^editable}}disabled{{/editable}}
+                {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+                placeholder="{{placeholder}}"
+                {{#suffix}}aria-describedby="pl-string-input-{{uuid}}-suffix"{{/suffix}}
+                {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            />
+    {{/multiline}}
+    {{^multiline}}
+        {{#suffix}}
+        <span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>
+        {{/suffix}}
+    {{/multiline}}
+    {{#show_info}}
+        <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="String" data-bs-content="{{info}}" data-bs-placement="auto">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
+    {{/show_info}}
 
-        {{#show_info}}
-            <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="String" data-bs-content="{{info}}" data-bs-placement="auto">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
-        {{/show_info}}
-
-        {{#correct}}
-            <span class="input-group-text">
-                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-            </span>
-        {{/correct}}
-        {{#partial}}
-            <span class="input-group-text">
-                <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-            </span>
-        {{/partial}}
-        {{#incorrect}}
-            <span class="input-group-text">
-                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-            </span>
-        {{/incorrect}}
+    {{#correct}}
+        <span class="input-group-text">
+            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        </span>
+    {{/correct}}
+    {{#partial}}
+        <span class="input-group-text">
+            <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        </span>
+    {{/partial}}
+    {{#incorrect}}
+        <span class="input-group-text">
+            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+        </span>
+    {{/incorrect}}
     </span>
-        {{#parse_error}}
-            <span class="invalid-feedback d-block">
-                <span class="badge text-bg-danger">
-                    Invalid 
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                </span>
-                <a 
-                    class="link-primary"
-                    tabindex="0"
-                    role="button"
-                    data-bs-placement="auto" 
-                    data-bs-toggle="popover"
-                    data-bs-html="true"
-                    title="Format error"
-                    data-bs-content="{{parse_error}}"
-                >
-                    More info…
-                </a>
+    {{#parse_error}}
+        <span class="invalid-feedback d-block">
+            <span class="badge text-bg-danger">
+                Invalid
+                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
-        {{/parse_error}}
+            <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format error"
+                data-bs-content="{{parse_error}}"
+            >
+                More info…
+            </a>
+        </span>
+    {{/parse_error}}
+    {{#multiline}}
+        {{#suffix}}
+        <div id="pl-string-input-{{uuid}}-suffix" class="form-text">{{{suffix}}}</div>
+        {{/suffix}}
+    {{/multiline}}
 {{#inline}}</span>{{/inline}}
 {{/question}}
 
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
-{{#error}}
-<span >
-
-{{#parse_error}}
+{{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
+    {{#a_sub}}<code class="user-output">{{a_sub}}</code>{{/a_sub}}
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/multiline}}
+{{#multiline}}
+    {{#label}}
+    <label
+        class="form-label"
+        for="pl-string-input-{{uuid}}-area"
+    >{{{label}}}</label>
+    {{/label}}
+    <span class="input-group">
+        <textarea
+            id="pl-string-input-{{uuid}}-area"
+            wrap="soft"
+            inputmode="text"
+            class="form-control pl-string-input-multiline"
+            style="resize: none;"
+            disabled
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
+        >{{a_sub}}</textarea>
+        {{#a_sub}}
+        <button
+            class="btn btn-sm btn-secondary"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Raw string"
+            data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+            &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+            &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
+        >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
+        {{/a_sub}}
+    </span>
+{{/multiline}}
+
+{{#multiline}}<div class="mt-1">{{/multiline}}
+{{#parse_error}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
             Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
@@ -91,16 +182,16 @@
            More info…
         </a>
     </span>
-    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
+{{#multiline}}</div>{{/multiline}}
+
 {{#missing_input}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
-            Missing Input 
+            Missing input 
             <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
-        <a 
+        <a
             class="link-primary"
             tabindex="0"
             role="button"
@@ -113,31 +204,105 @@
            More info…
         </a>
     </span>
-    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
 
-</span>
-{{/error}}
-{{^error}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output">{{a_sub}}</code>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#multiline}}
+    {{#suffix}}
+        <div class="form-text" id="pl-string-input-submission-{{uuid}}-suffix">{{{suffix}}}</div>
+    {{/suffix}}
+{{/multiline}}
+
+
+{{^multiline}}
+{{#a_sub}}
+{{! Show raw value submitted answer was parsed from }}
+<button
+    class="ms-1 btn btn-sm btn-secondary"
+    data-bs-toggle="popover"
+    data-bs-html="true"
+    data-bs-placement="auto"
+    data-bs-title="Raw string"
+    data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
+>
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</button>
+{{/a_sub}}
+{{/multiline}}
+
+<span>
 {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-{{/error}}
+</span>
+
+{{#multiline}}
+</span>
+{{/multiline}}
+
 {{#inline}}</span>{{/inline}}
 {{/submission}}
 
 {{#answer}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<code class="user-output">{{a_tru}}</code>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{/answer}}
+{{^multiline}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <code class="user-output">{{a_tru}}</code>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/multiline}}
+{{#multiline}}
+    {{#label}}
+    <label
+        class="form-label"
+        for="pl-string-input-{{uuid}}-area"
+    >{{{label}}}</label>
+    {{/label}}
+    <span class="input-group">
+        <textarea
+            id="pl-string-input-{{uuid}}-area"
+            wrap="soft"
+            inputmode="text"
+            class="form-control pl-string-input-multiline"
+            style="resize: none;"
+            disabled
+            {{#suffix}}aria-describedby="pl-string-input-answer-{{uuid}}-suffix"{{/suffix}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        >{{a_tru}}</textarea>
+        {{! Show raw value correct answer was parsed from }}
+        <button
+            class="btn btn-sm btn-secondary"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Raw string"
+            data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+            &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+            &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+        >
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </button>
+    </span>
+    {{#suffix}}
+    <div class="form-text" id="pl-string-input-answer-{{uuid}}-suffix">{{{suffix}}}</div>
+    {{/suffix}}
+{{/multiline}}
 
-{{#format}}
-<p>
-    Your answer must be a piece of text (sequence of letters, numbers, and characters). Any symbolic expressions or numbers will be intepreted as text.<br>
-    {{space_hint}}
-</p>
-{{/format}}
+{{^multiline}}
+{{! Show raw value correct answer was parsed from }}
+<button
+    class="ms-1 btn btn-sm btn-secondary"
+    data-bs-toggle="popover"
+    data-bs-html="true"
+    data-bs-placement="auto"
+    data-bs-title="Raw string"
+    data-bs-content="&lt;p&gt;Invisible unicode characters are represented as
+    &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
+    &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
+>
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+</button>
+{{/multiline}}
+{{#multiline}}
+</span>
+{{/multiline}}
+{{/answer}}

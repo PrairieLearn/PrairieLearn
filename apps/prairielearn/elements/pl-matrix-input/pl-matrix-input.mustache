@@ -3,7 +3,16 @@
     {{#label}}
     <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" aria-labelledby="pl-matrix-input-{{uuid}}-label" />
+    <input
+        name="{{name}}"
+        type="text"
+        class="form-control pl-matrix-input-input"
+        {{^editable}}disabled{{/editable}}
+        {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+        placeholder="{{shortinfo}}"
+        {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        {{^aria_label}}{{#label}}aria-labelledby="pl-matrix-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+    />
     {{#show_info}}
     <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
     <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -32,18 +41,44 @@
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    
-    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-    
-    <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-danger">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Format error"
+            data-bs-content="{{parse_error}}"
+        >
+           More info…
+        </a>
+    </span>
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-
-    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
-    
-    <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Missing Input" data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </button>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-dark border">
+            Missing input 
+            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a 
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Missing input"
+            data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+        >
+           More info…
+        </a>
+    </span>
 {{/missing_input}}
 
 </span>

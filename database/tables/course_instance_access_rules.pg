@@ -3,6 +3,7 @@ columns
     end_date: timestamp with time zone
     id: bigint not null default nextval('course_instance_access_rules_id_seq'::regclass)
     institution: text
+    json_comment: jsonb
     number: integer
     start_date: timestamp with time zone
     uids: text[]

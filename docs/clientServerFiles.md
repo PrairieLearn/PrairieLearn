@@ -47,4 +47,4 @@ From within HTML, `clientFiles` directories can be templated with the following 
 
 ## Accessing files from `server.py` question code
 
-See the [accessing files on disk](question.md#accessing-files-on-disk) section for details.
+See the [accessing files on disk](question/server.md#accessing-files-on-disk) section for details.

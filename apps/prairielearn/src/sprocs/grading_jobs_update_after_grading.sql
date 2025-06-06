@@ -112,6 +112,7 @@ BEGIN
     UPDATE submissions
     SET
         graded_at = now(),
+        modified_at = now(),
         gradable = new_gradable,
         broken = new_broken,
         params = COALESCE(new_params, params),
@@ -128,7 +129,8 @@ BEGIN
     UPDATE variants AS v
     SET
         params = COALESCE(new_params, params),
-        true_answer = COALESCE(new_true_answer, true_answer)
+        true_answer = COALESCE(new_true_answer, true_answer),
+        modified_at = now()
     WHERE v.id = variant_id;
 
     UPDATE grading_jobs
@@ -136,7 +138,7 @@ BEGIN
         graded_at = now(),
         -- For internally-graded questions, these three timestamps will be NULL
         -- in this sproc's params. For the first two, we'll reuse the existing
-        -- values that were set in `grading_jobs_insert`, and for the finish
+        -- values that were set in `insertGradingJob`, and for the finish
         -- timestamp, we'll use the current time.
         grading_received_at = COALESCE(received_time, grading_received_at),
         grading_started_at = COALESCE(start_time, grading_started_at),

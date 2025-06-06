@@ -16,8 +16,9 @@ import type {
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
@@ -26,14 +27,18 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
   renderSubmissionSearchParams,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
 }) {
   const {
@@ -65,23 +70,39 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext, showFooter, manualGradingPreviewUrl })}
+              ${QuestionPanel({
+                resLocals,
+                questionContext,
+                questionRenderContext,
+                showFooter,
+                manualGradingPreviewUrl,
+                aiGradingPreviewUrl,
+              })}
             </form>
           `
         : QuestionPanel({ resLocals, showFooter, questionContext })}
-
-      <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">
-          <h2>Correct answer</h2>
-        </div>
-        <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
-      </div>
-
+      ${
+        // The correct answer isn't used when performing AI grading, so we hide
+        // it here to avoid confusion.
+        questionRenderContext !== 'ai_grading'
+          ? html`
+              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+                <div class="card-header bg-secondary text-white">
+                  <h2>Correct answer</h2>
+                </div>
+                <div class="card-body answer-body">
+                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                </div>
+              </div>
+            `
+          : ''
+      }
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,
               questionContext,
+              questionRenderContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
@@ -107,6 +128,7 @@ export function QuestionContainer({
                     ${SubmissionList({
                       resLocals,
                       questionContext,
+                      questionRenderContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
@@ -182,7 +204,7 @@ export function IssuePanel({
                 </tr>
                 <tr>
                   <th>Student message:</th>
-                  <td>${issue.student_message}</td>
+                  <td style="white-space: pre-wrap;">${issue.student_message}</td>
                 </tr>
                 <tr>
                   <th>Instructor message:</th>
@@ -193,7 +215,7 @@ export function IssuePanel({
               ? html`
                   <tr>
                     <th>Student message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                   <tr>
                     <th>Instructor message:</th>
@@ -203,7 +225,7 @@ export function IssuePanel({
               : html`
                   <tr>
                     <th>Message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                 `}
           <tr>
@@ -638,13 +660,17 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
 }) {
   const { question, questionHtml, question_copy_targets, course, instance_question_info } =
     resLocals;
@@ -682,7 +708,7 @@ function QuestionPanel({
                   </button>
                 `
               : ''}
-            ${manualGradingPreviewUrl
+            ${manualGradingPreviewUrl || aiGradingPreviewUrl
               ? html`
                   <div class="btn-group">
                     <button
@@ -694,11 +720,24 @@ function QuestionPanel({
                       View&hellip;
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="${manualGradingPreviewUrl}">
-                          Manual grading view
-                        </a>
-                      </li>
+                      ${manualGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                Manual grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
+                      ${aiGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                AI grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
                     </ul>
                   </div>
                 `
@@ -706,7 +745,11 @@ function QuestionPanel({
           </div>
         </div>
       </div>
-      <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
+      <div class="card-body question-body">
+        ${questionRenderContext === 'ai_grading'
+          ? AiGradingHtmlPreview(questionHtml)
+          : unsafeHtml(questionHtml)}
+      </div>
       ${showFooter
         ? QuestionFooter({
             // TODO: propagate more precise types upwards.
@@ -721,6 +764,7 @@ function QuestionPanel({
 function SubmissionList({
   resLocals,
   questionContext,
+  questionRenderContext,
   submissions,
   submissionHtmls,
   submissionCount,
@@ -728,6 +772,7 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
@@ -736,6 +781,7 @@ function SubmissionList({
   return submissions.map((submission, idx) =>
     SubmissionPanel({
       questionContext,
+      questionRenderContext,
       question: resLocals.question,
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,

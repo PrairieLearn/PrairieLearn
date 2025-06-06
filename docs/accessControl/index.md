@@ -2,7 +2,7 @@
 
 By default, course instances and assessments are only accessible to [course staff](../course/index.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
 
-## Two level of access control for assessments
+## Two levels of access control for assessments
 
 In PrairieLearn there are two levels of access control for students to gain access to assessments:
 
@@ -108,7 +108,9 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 ![Time limit illustrations](./exam_timer.svg)
 
-**Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
+??? note
+
+    Time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.
 
 ### Time limit adjustments for open assessments
 
@@ -255,7 +257,9 @@ An example of the `active` access rule restriction is shown below:
 
 In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. They will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `active` is `true` (by default), students can start the assessment and submit answers to questions on that day.
 
-## Course instance example
+## Example access rules
+
+### Course instance example
 
 ```json
 {
@@ -270,7 +274,7 @@ In the example above, from January 1st to February 15th, students can see the as
 
 The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
 
-## Exam example
+### Exam example
 
 ```json
 {
@@ -292,7 +296,7 @@ The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` fil
 
 The above `allowAccess` directive means that this assessment is available under two different circumstances and always for full credit. First, there are two specific students who have access to take the exam on Sept 12th. Second, any student can access this assessment from Sept 7th to Sept 10th. Note that exception rules are typically listed first, so that they take priority when access is determined. Also note that because the second rule does not overlap the first one, the two specific students listed in the first rule also have access to the exam during the range set in the second rule.
 
-## Exam with remote students example
+### Exam with remote students example
 
 **See [Remote Exams](../remoteExams.md) for more detailed examples.**
 
@@ -318,7 +322,7 @@ The above `allowAccess` directive is appropriate for an exam being taken by on-c
 
 The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
-## Homework example
+### Homework example
 
 ```json
 {
@@ -350,3 +354,20 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ```
 
 This `allowAccess` directive is suitable for a `Homework` assessment. Students can see that the homework exists before Oct 12th, but because it is `"active": false` they won't be able to see the questions or start the homework. They can start the homework anytime from Oct 12th onwards, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points, at any time after that. The homework visibility will also be limited by the [course instance access rules](#course-instance-example), so the homework won't be accessible in any way outside the course instance date range.
+
+## Preview access control
+
+Click on your user in the top right corner to see the role picker dropdown. This will allow you to preview the access control for different roles and users. The picker will have additional options depending on the page you are on.
+
+![The role picker dropdown](role_picker.png){ width=100% style="max-width: 400px" }
+
+This feature allows you to preview a course as yourself but with different roles and restrictions:
+
+- "Staff view": Default view.
+- "Student view": Simulates the student view.
+- "Student view without access restrictions": Simulates the student view without taking into account any access control.
+
+You can also change to a different effective user to see the course as they would. After entering a UID and clicking "Change UID", you can switch between two additional views:
+
+- "Student view": Simulates the view of a specific user.
+- "Student view without access restrictions": Simulates the view of a specific user without taking into account any access control.

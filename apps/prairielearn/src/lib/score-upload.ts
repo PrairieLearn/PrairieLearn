@@ -1,9 +1,12 @@
 import csvtojson from 'csvtojson';
+import isPlainObject from 'is-plain-obj';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { IdSchema } from './db-types.js';
@@ -11,12 +14,6 @@ import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 /**
  * Update question instance scores from a CSV file.
@@ -38,11 +35,8 @@ export async function uploadInstanceQuestionScores(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -162,11 +156,8 @@ export async function uploadAssessmentInstanceScores(
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
   }
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -286,8 +277,8 @@ function getFeedbackOrNull(json: Record<string, any>): Record<string, any> | nul
     } catch (e) {
       throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
     }
-    if (feedback_obj == null || !_.isPlainObject(feedback_obj)) {
-      throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_obj}`);
+    if (feedback_obj == null || !isPlainObject(feedback_obj)) {
+      throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_json}`);
     }
     feedback = feedback_obj;
     if (feedback_string != null) {
@@ -306,8 +297,8 @@ function getPartialScoresOrNull(json: Record<string, any>): Record<string, any> 
     } catch (e) {
       throw new Error(`Unable to parse "partial_scores" field as JSON: ${e}`);
     }
-    if (!_.isPlainObject(partial_scores)) {
-      throw new Error(`Parsed "partial_scores" is not a JSON object: ${partial_scores}`);
+    if (partial_scores != null && !isPlainObject(partial_scores)) {
+      throw new Error(`Parsed "partial_scores" is not a JSON object: ${partial_scores_json}`);
     }
   }
   return partial_scores;
@@ -373,7 +364,7 @@ async function updateInstanceQuestionFromJson(
       feedback: getFeedbackOrNull(json),
       partial_scores: getPartialScoresOrNull(json),
     };
-    if (_.some(Object.values(new_score), (value) => value != null)) {
+    if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
         assessment_id,
         submission_data.instance_question_id,

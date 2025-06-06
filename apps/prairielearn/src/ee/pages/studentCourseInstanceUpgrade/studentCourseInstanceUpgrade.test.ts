@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../../lib/config.js';
 import { ensureEnrollment } from '../../../models/enrollment.js';

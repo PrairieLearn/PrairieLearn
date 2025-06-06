@@ -1,33 +1,31 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
-
-import * as sqldb from '@prairielearn/postgres';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-describe('Exam assessment with real-time grading disabled', function () {
-  this.timeout(60000);
-
+describe('Exam assessment with real-time grading disabled', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function () {
-    await helperServer.before().call(this);
-    const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
-    context.assessmentId = results.rows[0].id;
+  beforeAll(async function () {
+    await helperServer.before()();
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam8-disableRealTimeGrading',
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
-  after('shut down testing server', helperServer.after);
 
-  step('visit start exam page', async () => {
+  afterAll(helperServer.after);
+
+  test.sequential('visit start exam page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
@@ -36,7 +34,7 @@ describe('Exam assessment with real-time grading disabled', function () {
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
-  step('start the exam', async () => {
+  test.sequential('start the exam', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({
@@ -55,14 +53,14 @@ describe('Exam assessment with real-time grading disabled', function () {
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
   });
 
-  step('check for grade button on the assessment page', async () => {
+  test.sequential('check for grade button on the assessment page', async () => {
     const response = await helperClient.fetchCheerio(context.assessmentUrl);
     assert.isTrue(response.ok);
 
     assert.lengthOf(response.$('form[name="grade-form"]'), 0);
   });
 
-  step('check for grade button on a question page', async () => {
+  test.sequential('check for grade button on a question page', async () => {
     const response = await helperClient.fetchCheerio(context.questionUrl);
     assert.isTrue(response.ok);
 
@@ -71,7 +69,7 @@ describe('Exam assessment with real-time grading disabled', function () {
     helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
   });
 
-  step('try to manually grade request on the question page', async () => {
+  test.sequential('try to manually grade request on the question page', async () => {
     const response = await fetch(context.assessmentInstanceUrl, {
       method: 'POST',
       body: new URLSearchParams({

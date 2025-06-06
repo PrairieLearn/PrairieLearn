@@ -16,6 +16,7 @@ let time = process.hrtime.bigint();
 interface NodeMetricsOptions {
   awsConfig: CloudWatchClientConfig;
   intervalSeconds: number;
+  namespace: string;
   dimensions: Dimension[];
   onError: (err: Error) => void;
 }
@@ -85,7 +86,7 @@ async function emit(options: NodeMetricsOptions) {
     // eslint-disable-next-line @prairielearn/aws-client-shared-config
     const cloudwatch = new CloudWatch(options.awsConfig);
     await cloudwatch.putMetricData({
-      Namespace: 'PrairieLearn',
+      Namespace: options.namespace,
       MetricData: metrics.map((m) => ({
         ...m,
         StorageResolution: 1,

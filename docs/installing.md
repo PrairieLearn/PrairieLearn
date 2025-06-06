@@ -58,24 +58,6 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on Apple Silicon and other ARM64 hardware
-
-If you're using an Apple Silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
-
-```console
-no matching manifest for linux/arm64/v8 in the manifest list entries
-```
-
-To fix this, add `--platform linux/amd64` before the image in any `docker run` commands. For example:
-
-```sh
-docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
-```
-
-When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
-
-If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
-
 ### Support for external graders and workspaces
 
 There are a few extra steps needed to run PrairieLearn locally with support for external graders and workspaces.
@@ -94,7 +76,6 @@ docker run -it --rm -p 3000:3000 \
   -v "$HOME/pl_ag_jobs:/jobs" `# Map the jobs directory into /jobs` \
   -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
   -v /var/run/docker.sock:/var/run/docker.sock `# Mount Docker into container so it can spawn others` \
-  --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
   --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
   prairielearn/prairielearn
 ```
@@ -105,6 +86,10 @@ docker run -it --rm -p 3000:3000 \
 
     - PrairieLearn needs a way of starting up Docker containers on the host machine from within another Docker container. This is achieved by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows it to run "sibling" containers.
     - PrairieLearn needs to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to either `/grade` in the grading container or the home directory in the workspace container. This is achieved by mounting a directory on the host machine to `/jobs` in the PrairieLearn container, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
+
+### Development
+
+If you want to contribute improvements or features to PrairieLearn, you will need to start up PrairieLearn differently. See the [local installation](./dev-guide/installingLocal.md) documentation for more details.
 
 #### Troubleshooting the --add-host option and network timeouts
 

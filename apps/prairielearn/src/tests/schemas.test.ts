@@ -1,7 +1,7 @@
 import { Ajv } from 'ajv';
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import * as schemas from '../schemas/index.js';
+import { ajvSchemas } from '../schemas/index.js';
 
 const isObject = (a) => !!a && a.constructor === Object;
 
@@ -32,11 +32,11 @@ const validateRequiredRecursive = (obj, path = '') => {
   return errors;
 };
 
-for (const schemaName of Object.keys(schemas)) {
+for (const schemaName of Object.keys(ajvSchemas)) {
   if (schemaName === 'default') continue;
 
   describe(`${schemaName} schema`, () => {
-    const schema = schemas[schemaName];
+    const schema = ajvSchemas[schemaName];
     it('compiles', () => {
       const ajv = new Ajv();
       const validate = ajv.compile(schema);

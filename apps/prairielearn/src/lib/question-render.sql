@@ -66,6 +66,7 @@ SELECT
   s.v2_score,
   s.variant_id,
   s.manual_rubric_grading_id,
+  s.modified_at,
   to_jsonb(gj) AS grading_job,
   format_date_full_compact (
     s.date,
@@ -248,5 +249,5 @@ SELECT
       questions
     WHERE
       id = $question_id
-      AND shared_publicly
+      AND share_publicly
   );

@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
@@ -148,7 +147,7 @@ export function getUniqueNames({
     // if oldLongName matches {longName} ({number from 0-9})
 
     oldLongNames.forEach((oldLongName) => {
-      if (!_.isString(oldLongName)) return;
+      if (typeof oldLongName !== 'string') return;
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
@@ -177,6 +176,36 @@ export function getUniqueNames({
       shortName: `${shortName}_${number}`,
       longName: `${longName} (${number})`,
     };
+  }
+}
+
+/**
+ * Returns the new value if it differs from the default value. Otherwise, returns undefined.
+ * This is helpful for setting JSON properties that we only want to write to if they are different
+ * than the default value.
+ *
+ * `defaultValue` may be either a value to compare directly with `===`, or a function
+ * that accepts a value and returns a boolean to indicate if it should be considered
+ * a default value.
+ */
+export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  const isExistingDefault =
+    typeof defaultValue === 'function'
+      ? defaultValue(existingValue)
+      : existingValue === defaultValue;
+  const isNewDefault =
+    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
+
+  if (existingValue === undefined) {
+    if (!isNewDefault) {
+      return newValue;
+    }
+  } else {
+    if (!isExistingDefault && isNewDefault) {
+      return undefined;
+    } else {
+      return newValue;
+    }
   }
 }
 
@@ -528,7 +557,7 @@ export abstract class Editor {
     }
 
     function getBaseLongName(oldname: string | null): string {
-      if (!_.isString(oldname)) return 'Unknown';
+      if (typeof oldname !== 'string') return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
       debug(found);
@@ -556,7 +585,7 @@ export abstract class Editor {
     function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
+        if (typeof oldname !== 'string') return;
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
         if (found) {
           const foundNumber = parseInt(found[1]);
@@ -618,7 +647,7 @@ export class AssessmentCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -642,6 +671,8 @@ export class AssessmentCopyEditor extends Editor {
 
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+
+    delete infoJson['shareSourcePublicly'];
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -814,7 +845,7 @@ export class AssessmentAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
       course_instance_id: this.course_instance.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -901,7 +932,7 @@ export class CourseInstanceCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = result.rows.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
@@ -1078,7 +1109,7 @@ export class CourseInstanceAddEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'long_name');
+    const oldNamesLong = result.rows.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(
@@ -1219,7 +1250,7 @@ export class QuestionAddEditor extends Editor {
       const result = await sqldb.queryAsync(sql.select_questions_with_course, {
         course_id: this.course.id,
       });
-      const oldNamesLong = _.map(result.rows, 'title');
+      const oldNamesLong = result.rows.map((row) => row.title);
 
       debug('Get all existing short names');
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
@@ -1617,7 +1648,7 @@ export class QuestionCopyEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
@@ -1703,7 +1734,7 @@ export class QuestionTransferEditor extends Editor {
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
       course_id: this.course.id,
     });
-    const oldNamesLong = _.map(result.rows, 'title');
+    const oldNamesLong = result.rows.map((row) => row.title);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');

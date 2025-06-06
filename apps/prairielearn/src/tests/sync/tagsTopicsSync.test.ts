@@ -1,5 +1,6 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -12,7 +13,7 @@ import * as util from './util.js';
 /**
  * Makes a new tag/topic to test with.
  */
-function makeEntity(): util.Tag | util.Topic {
+function makeEntity(): TagJsonInput | TopicJsonInput {
   return {
     name: 'a new entity',
     color: 'green1',
@@ -149,10 +150,11 @@ async function testImplicit(entityName: 'tags' | 'topics') {
 }
 
 describe('Tag/topic syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new tag', async () => {
     await testAdd('tags');
@@ -302,5 +304,55 @@ describe('Tag/topic syncing', () => {
     assert.lengthOf(syncedTags, 1);
     assert.equal(syncedTags[0].name, 'X');
     assert.equal(syncedTags[0].number, 1);
+  });
+
+  it('syncs JSON comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const newEntityStringComment = {
+      name: 'String comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: 'string comment',
+    } as TagJsonInput | TopicJsonInput;
+    const newEntityArrayComment = {
+      name: 'Array comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: ['comment1', 'comment2'],
+    } as TagJsonInput | TopicJsonInput;
+    const newEntityObjectComment = {
+      name: 'Object comment',
+      color: 'green1',
+      description: 'description for a new entity',
+      comment: { comment1: 'comment1', comment2: 'comment2' },
+    } as TagJsonInput | TopicJsonInput;
+    courseData.course.tags.push(
+      newEntityStringComment,
+      newEntityArrayComment,
+      newEntityObjectComment,
+    );
+    courseData.course.topics.push(
+      newEntityStringComment,
+      newEntityArrayComment,
+      newEntityObjectComment,
+    );
+    await util.writeAndSyncCourseData(courseData);
+    const syncedTags = await util.dumpTable('tags');
+    const syncedStringTag = syncedTags.find((t) => t.name === 'String comment');
+    const syncedArrayTag = syncedTags.find((t) => t.name === 'Array comment');
+    const syncedObjectTag = syncedTags.find((t) => t.name === 'Object comment');
+    assert.equal(syncedStringTag?.json_comment, 'string comment');
+    assert.deepEqual(syncedArrayTag?.json_comment, ['comment1', 'comment2']);
+    assert.deepEqual(syncedObjectTag?.json_comment, { comment1: 'comment1', comment2: 'comment2' });
+    const syncedTopics = await util.dumpTable('topics');
+    const syncedStringTopic = syncedTopics.find((t) => t.name === 'String comment');
+    const syncedArrayTopic = syncedTopics.find((t) => t.name === 'Array comment');
+    const syncedObjectTopic = syncedTopics.find((t) => t.name === 'Object comment');
+    assert.equal(syncedStringTopic?.json_comment, 'string comment');
+    assert.deepEqual(syncedArrayTopic?.json_comment, ['comment1', 'comment2']);
+    assert.deepEqual(syncedObjectTopic?.json_comment, {
+      comment1: 'comment1',
+      comment2: 'comment2',
+    });
   });
 });

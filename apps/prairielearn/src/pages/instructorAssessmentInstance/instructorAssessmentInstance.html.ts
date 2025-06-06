@@ -1,3 +1,4 @@
+import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -11,7 +12,12 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  type ClientFingerprint,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -330,7 +336,7 @@ export function InstructorAssessmentInstance({
                 ${instance_question.start_new_zone && instance_question.zone_title
                   ? html`
                       <tr>
-                        <th colspan="6">
+                        <th colspan="9">
                           ${instance_question.zone_title}
                           ${instance_question.zone_has_max_points
                             ? html`(maximum ${instance_question.zone_max_points} points)}`
@@ -600,20 +606,10 @@ export function InstructorAssessmentInstance({
                               data-bs-html="true"
                               data-bs-placement="auto"
                               data-bs-title="Fingerprint ${row.client_fingerprint_number}"
-                              data-bs-content="${escapeHtml(html`
-                                <div>
-                                  IP Address:
-                                  <a
-                                    href="https://client.rdap.org/?type=ip&object=${row
-                                      .client_fingerprint.ip_address}"
-                                    target="_blank"
-                                  >
-                                    ${row.client_fingerprint.ip_address}
-                                  </a>
-                                </div>
-                                <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
-                                <div>User Agent: ${row.client_fingerprint.user_agent}</div>
-                              `)}"
+                              data-bs-custom-class="popover-wide"
+                              data-bs-content="${escapeHtml(
+                                FingerprintContent({ fingerprint: row.client_fingerprint }),
+                              )}"
                             >
                               ${row.client_fingerprint_number}
                             </button>
@@ -694,6 +690,27 @@ export function InstructorAssessmentInstance({
       </div>
     `,
   });
+}
+
+function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
+  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  return html`
+    <div>
+      IP Address:
+      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+        ${fingerprint.ip_address}
+      </a>
+    </div>
+    <div>Session ID: ${fingerprint.user_session_id}</div>
+    <div>User Agent:</div>
+    <ul>
+      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      <li>Raw: <code>${fingerprint.user_agent}</code></li>
+    </ul>
+  `;
 }
 
 function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
