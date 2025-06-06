@@ -1,5 +1,4 @@
 import * as async from 'async';
-import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
