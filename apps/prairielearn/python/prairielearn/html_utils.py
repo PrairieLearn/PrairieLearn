@@ -17,6 +17,7 @@ from prairielearn.misc_utils import escape_unicode_string
 
 EnumT = TypeVar("EnumT", bound=Enum)
 
+# From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
 LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
     "checked",
     "compact",
