@@ -133,11 +133,12 @@ def _get_attrib(
     if len(args) > 1:
         raise ValueError("Only one additional argument is allowed")
 
-    # libxml2 sometimes changes the content of boolean attributes, so their
-    # value is not reliable. To avoid problems, we raise an error if the value
-    # is used for anything other than a boolean check. The boolean function has
-    # a test before this point with an early return, so this point should only
-    # be reached if this is being handled with a non-boolean value.
+    # libxml2 omits the content of certain boolean attributes during
+    # serialization, so their value is not reliable. To avoid problems, we raise
+    # an error if the value is used for anything other than a boolean check. The
+    # boolean function has a test before this point with an early return, so
+    # this point should only be reached if this is being handled with a
+    # non-boolean value.
     if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
         raise ValueError(
             f"The attribute '{name}' is an HTML boolean attribute, and should not be used."
