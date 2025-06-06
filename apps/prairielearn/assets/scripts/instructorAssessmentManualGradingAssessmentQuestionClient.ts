@@ -47,12 +47,14 @@ onDocumentReady(() => {
     );
     const aiGraders = graders.filter(
       (value) =>
-        value === generateAiGraderName('Latest') || value === generateAiGraderName('Outdated'),
+        value === generateAiGraderName('LatestRubric') ||
+        value === generateAiGraderName('OutdatedRubric'),
     );
     aiGraders.sort();
     const humanGraders = graders.filter(
       (value) =>
-        value !== generateAiGraderName('Latest') && value !== generateAiGraderName('Outdated'),
+        value !== generateAiGraderName('LatestRubric') &&
+        value !== generateAiGraderName('OutdatedRubric'),
     );
     humanGraders.sort();
     return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
@@ -352,7 +354,7 @@ onDocumentReady(() => {
                 html`${row.ai_grading_status !== 'None'
                   ? html`<span
                       class="badge text-bg-secondary ${row.ai_grading_status === 'Graded' ||
-                      row.ai_grading_status === 'Latest'
+                      row.ai_grading_status === 'LatestRubric'
                         ? 'js-custom-search-ai-grading-latest-rubric'
                         : 'js-custom-search-ai-grading-nonlatest-rubric'}"
                       >${generateAiGraderName(row.ai_grading_status)}</span
@@ -361,9 +363,9 @@ onDocumentReady(() => {
                 ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}`.toString(),
               filterData: 'func:gradersList',
               filterCustomSearch: (text: string, value: string) => {
-                if (text === generateAiGraderName('Latest').toLowerCase()) {
+                if (text === generateAiGraderName('LatestRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
-                } else if (text === generateAiGraderName('Outdated').toLowerCase()) {
+                } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
                 } else {
                   return value.toLowerCase().includes(text);
@@ -453,12 +455,14 @@ onDocumentReady(() => {
   });
 });
 
-function generateAiGraderName(ai_grading_status?: 'Graded' | 'Outdated' | 'Latest'): string {
+function generateAiGraderName(
+  ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
+): string {
   return (
     'AI' +
     (ai_grading_status === undefined ||
     ai_grading_status === 'Graded' ||
-    ai_grading_status === 'Latest'
+    ai_grading_status === 'LatestRubric'
       ? ''
       : ' (outdated)')
   );

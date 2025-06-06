@@ -26,7 +26,7 @@ type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 export interface AIGradingStats {
   last_human_grader: string | null;
-  ai_grading_status: 'Graded' | 'Latest' | 'Outdated' | 'None';
+  ai_grading_status: 'Graded' | 'LatestRubric' | 'OutdatedRubric' | 'None';
   point_difference: number | null;
   rubric_difference: (RubricItem & { false_positive: boolean })[] | null;
 }
@@ -48,10 +48,9 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     DateFromISOString,
   );
 
-  const instance_question_ids = instance_questions.map((iq) => iq.id);
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
-    { instance_question_ids },
+    { instance_question_ids: instance_questions.map((iq) => iq.id) },
     GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
   );
   // Construct mapping from instance question id to grading job info
@@ -91,7 +90,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
         instance_question.ai_grading_status = 'Graded';
         if (rubric_modify_time) {
           instance_question.ai_grading_status =
-            grading_job.graded_at > rubric_modify_time ? 'Latest' : 'Outdated';
+            grading_job.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
         }
       }
     }
