@@ -8,7 +8,7 @@
 #' that start with a specific key.
 #'
 #' @param file Path to a Jupyter notebook (.ipynb) file
-#' @param ipynb_key Character string that marks the beginning of R code cells to extract (default: "#grade")
+#' @param ipynb_key Character string that marks the beginning of R code cells to extract
 #'
 #' @return A character string containing the concatenated R code from matching cells
 #'
@@ -16,7 +16,7 @@
 #' \dontrun{
 #' code <- extract_r_code_from_ipynb("student.ipynb")
 #' }
-extract_r_code_from_ipynb <- function(file, ipynb_key = "#grade") {
+extract_r_code_from_ipynb <- function(file, ipynb_key) {
   nb <- jsonlite::fromJSON(file, simplifyVector = FALSE)
   content <- ""
   
@@ -62,10 +62,13 @@ result <- tryCatch({
         ipynb_file <- ipynb_files[1]
         print("[pltest] Found ipynb file")
 
+        # Check for ipynb key
+        ipynb_key <- Sys.getenv("ipynb_key", unset = "#grade")
+
         # Extract code
-        code <- extract_r_code_from_ipynb(ipynb_file)
+        code <- extract_r_code_from_ipynb(ipynb_file, ipynb_key)
         if (nchar(code) == 0) {
-            warning("No matching R code found in notebook.")
+            warning(paste0("No matching R code found in notebook using the ipynb_key of '", ipynb_key, "'"))
             return(invisible(NULL))
         }
 
