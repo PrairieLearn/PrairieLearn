@@ -28,7 +28,7 @@ and more. We also include a few command-line applications such as `git` and `sql
 
 ## File Support
 
-This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (not test files) with the following caveats:
+This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (test files must still be `.R` files) with the following caveats:
 
 - the student code must be written in a notebook called `student.ipynb`
 - the answer code must be in a single cell of the notebook that starts with the correct `ipynb_key` (see below)
@@ -36,7 +36,7 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 
 ## ipynb_key
 
-To tell the autograder which cell to grade, the cell must start with a specific key. The default is `#grade` as in the example question. This can be configured using the environment variable in `info.json`
+When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. The default is `#grade` as in the example question. This can be configured using the environment variable in `info.json`
 
 ```json
 "externalGradingOptions": {
