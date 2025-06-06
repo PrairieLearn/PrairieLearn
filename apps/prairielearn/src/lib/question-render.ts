@@ -202,7 +202,7 @@ export function buildQuestionUrls(
       clientFilesQuestionGeneratedFileUrl:
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
-      externalImageCaptureUrl: questionUrl + 'externalImageCapture/variant/' + variant.id
+      externalImageCaptureUrl: questionUrl + 'externalImageCapture/variant/' + variant.id,
     };
   } else {
     // student question pages

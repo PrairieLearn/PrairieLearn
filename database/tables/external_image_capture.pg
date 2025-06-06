@@ -1,5 +1,5 @@
 columns
-    answer_name: text not null
+    file_name: text not null
     created_at: timestamp with time zone not null default now()
     file_id: bigint
     id: bigint not null default nextval('external_image_capture_id_seq'::regclass)
@@ -8,7 +8,7 @@ columns
 
 indexes
     external_image_capture_pkey: PRIMARY KEY (id) USING btree (id)
-    external_image_capture_variant_id_and_answer_name_unique: UNIQUE (variant_id, answer_name) USING btree (variant_id, answer_name)
+    external_image_capture_variant_id_and_file_name_unique: UNIQUE (variant_id, file_name) USING btree (variant_id, file_name)
 
 foreign-key constraints
     external_image_capture_file_id_fkey: FOREIGN KEY (file_id) REFERENCES files(id) ON UPDATE CASCADE ON DELETE SET NULL

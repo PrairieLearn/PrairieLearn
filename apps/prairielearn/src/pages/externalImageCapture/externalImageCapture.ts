@@ -32,7 +32,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const variantId = req.params.variant_id as string;
-    const answerName = req.query.answer_name as string;
+    const fileName = req.query.file_name as string;
 
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: variantId,
@@ -61,7 +61,7 @@ router.post(
 
     await createExternalImageCapture({
       variantId,
-      answerName,
+      fileName,
       userId: res.locals.authn_user.user_id,
       fileBuffer: req.file.buffer,
       resLocals: res.locals,
@@ -75,12 +75,12 @@ router.post(
   }),
 );
 
-// Handles fetching the uploaded, externally-captured image for a specific answer.
+// Handles fetching the uploaded, externally-captured image for a specific file.
 router.get(
   '/uploaded_image',
   asyncHandler(async (req, res) => {
-    if (!req.query.answer_name) {
-      throw new HttpStatusError(400, 'Missing answer_name query parameter');
+    if (!req.query.file_name) {
+      throw new HttpStatusError(400, 'Missing file_name query parameter');
     }
 
     const variant = await selectAndAuthzVariant({
@@ -101,10 +101,10 @@ router.get(
     }
 
     const externalImageCapture = await queryOptionalRow(
-      sql.select_external_image_capture_by_variant_id_and_answer_name,
+      sql.select_external_image_capture_by_variant_id_and_file_name,
       {
         variant_id: parseInt(variant.id),
-        answer_name: req.query.answer_name,
+        file_name: req.query.file_name,
       },
       ExternalImageCaptureSchema,
     );
@@ -119,7 +119,7 @@ router.get(
         uploadDate: externalImageCapture.updated_at,
       });
     } else {
-      throw new HttpStatusError(404, 'No image submitted for this answer');
+      throw new HttpStatusError(404, 'No image submitted for this file');
     }
   }),
 );

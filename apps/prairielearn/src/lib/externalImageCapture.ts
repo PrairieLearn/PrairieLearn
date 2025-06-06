@@ -12,19 +12,19 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  */
 export const createExternalImageCapture = async ({
   variantId,
-  answerName,
+  fileName,
   userId,
   fileBuffer,
   resLocals,
 }: {
   variantId: string;
-  answerName: string;
+  fileName: string;
   userId: string;
   fileBuffer: Buffer;
   resLocals: Record<string, any>;
 }) => {
   const file_id = await uploadFile({
-    display_filename: `${answerName}.png`,
+    display_filename: `${fileName}.png`,
     contents: fileBuffer,
     type: 'image/png',
     assessment_id: resLocals.assessment?.id ?? null,
@@ -37,10 +37,10 @@ export const createExternalImageCapture = async ({
   // Create the ExternalImageCapture record
   await sqldb.queryAsync(sql.insert_new_external_image_capture, {
     variant_id: variantId,
-    answer_name: answerName,
+    file_name: fileName,
     file_id,
   });
 
   // Emit a socket event to notify the client that the image has been captured.
-  await emitExternalImageCapture(variantId, answerName);
+  await emitExternalImageCapture(variantId, fileName);
 };

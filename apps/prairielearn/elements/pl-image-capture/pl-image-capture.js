@@ -2,9 +2,7 @@
 
 (() => {
   class PLImageCapture {
-    constructor(
-      uuid
-    ) {
+    constructor(uuid) {
       this.uuid = uuid;
       this.variant_opened_date = new Date();
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
@@ -15,8 +13,8 @@
 
       const options = JSON.parse(this.imageCaptureDiv.dataset.options);
 
-      if (!options.answer_name) {
-        throw new Error('Answer name is required in image capture options');
+      if (!options.file_name) {
+        throw new Error('File name is required in image capture options');
       }
       if (!options.variant_id) {
         throw new Error('Variant ID is required in image capture options');
@@ -27,8 +25,8 @@
       if (options.mobile_capture_enabled === undefined || options.mobile_capture_enabled === null) {
         throw new Error('Mobile capture enabled option is required in image capture options');
       }
-      
-      this.answer_name = options.answer_name;
+
+      this.file_name = options.file_name;
       this.variant_id = options.variant_id;
 
       this.submitted_file_name = options.submitted_file_name;
@@ -224,7 +222,7 @@
 
     generateQrCode() {
       const qrCodeSvg = new QRCode({
-        content: `${this.external_image_capture_url}?answer_name=${this.answer_name}`,
+        content: `${this.external_image_capture_url}?file_name=${this.file_name}`,
         container: 'svg-viewbox',
       }).svg();
 
@@ -250,7 +248,7 @@
         {
           variant_id: this.variant_id,
           variant_token: questionContainer.dataset.variantToken,
-          answer_name: this.answer_name,
+          file_name: this.file_name,
         },
         (msg) => {
           if (!msg) {
@@ -290,7 +288,7 @@
       if (this.mobile_capture_enabled) {
         // Add the last external image capture, if available
         const externalImageCaptureResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image?answer_name=${this.answer_name}`,
+          `${this.external_image_capture_url}/uploaded_image?file_name=${this.file_name}`,
         );
 
         if (externalImageCaptureResponse.ok) {
@@ -424,7 +422,7 @@
         this.loadCapturePreviewFromBlob(await response.blob());
       } else {
         const submittedImageResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image?answer_name=${this.answer_name}`,
+          `${this.external_image_capture_url}/uploaded_image?file_name=${this.file_name}`,
         );
 
         if (!submittedImageResponse.ok) {

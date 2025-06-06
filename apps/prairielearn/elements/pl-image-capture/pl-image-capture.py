@@ -12,19 +12,23 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     pl.check_attribs(
         element,
-        required_attribs=["answer-name"],
+        required_attribs=["file-name"],
         optional_attribs=["mobile-capture-enabled"],
     )
 
-    answer_name = pl.get_string_attrib(element, "answer-name")
+    file_name = pl.get_string_attrib(element, "file-name")
+    if not file_name.endswith(".png"):
+        pl.add_files_format_error(
+            data, f"File name '{file_name}' must end with '.png'."
+        )
 
-    pl.check_answers_names(data, answer_name)
+    pl.check_answers_names(data, file_name)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
-    answer_name = pl.get_string_attrib(element, "answer-name")
+    file_name = pl.get_string_attrib(element, "file-name")
 
     mobile_capture_enabled = pl.get_boolean_attrib(
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
@@ -35,16 +39,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_files = data["submitted_answers"].get("_files", [])
 
-    answer_name_default = f"{answer_name}.png"
+    file_name_default = f"{file_name}.png"
     submitted_file_name = (
-        answer_name_default
-        if any(file["name"] == answer_name_default for file in submitted_files)
+        file_name_default
+        if any(file["name"] == file_name_default for file in submitted_files)
         else None
     )
 
     html_params = {
         "uuid": pl.get_uuid(),
-        "answer_name": answer_name,
+        "file_name": file_name,
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
@@ -54,7 +58,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     }
 
     image_capture_options = {
-        "answer_name": answer_name,
+        "file_name": file_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
@@ -71,24 +75,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answer-name")
+    file_name = pl.get_string_attrib(element, "file-name")
 
-    submitted_file_content = data["submitted_answers"].get(answer_name, None)
+    submitted_file_content = data["submitted_answers"].get(file_name, None)
 
     if not submitted_file_content:
-        pl.add_files_format_error(data, f"No image was submitted for {answer_name}.")
+        pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
         return
 
     if not submitted_file_content.startswith("data:"):
         pl.add_files_format_error(
-            data, f"Image submission for {answer_name} is not a data URI."
+            data, f"Image submission for {file_name} is not a data URI."
         )
         return
 
     # Validate that the data is a PNG image
     if not submitted_file_content.startswith("data:image/png;base64,"):
         pl.add_files_format_error(
-            data, f"Image submission for {answer_name} is not a PNG image."
+            data, f"Image submission for {file_name} is not a PNG image."
         )
         return
 
@@ -96,8 +100,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         _, b64_payload = submitted_file_content.split(",", 1)
     except ValueError:
         pl.add_files_format_error(
-            data, f"Image submission for {answer_name} has an invalid data URI format."
+            data, f"Image submission for {file_name} has an invalid data URI format."
         )
         return
 
-    pl.add_submitted_file(data, f"{answer_name}.png", b64_payload)
+    pl.add_submitted_file(data, f"{file_name}.png", b64_payload)

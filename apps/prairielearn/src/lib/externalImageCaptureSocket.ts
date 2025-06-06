@@ -9,7 +9,7 @@ import * as socketServer from './socket-server.js';
 
 interface StatusMessage {
   variant_id: string;
-  answer_name: string;
+  file_name: string;
 }
 
 let namespace: Namespace;
@@ -21,7 +21,7 @@ export function init() {
 
 export function connection(socket: Socket) {
   socket.on('joinExternalImageCapture', async (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token', 'answer_name'])) {
+    if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
       return callback(null);
     }
 
@@ -29,11 +29,11 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}-answer-${msg.answer_name}`);
+    socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
     callback({
       variant_id: msg.variant_id,
-      answer_name: msg.answer_name,
+      file_name: msg.file_name,
     } satisfies StatusMessage);
   });
 }
@@ -52,18 +52,14 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
 }
 
 /**
- * Emits an external image capture event for the specified variant and answer name.
+ * Emits an external image capture event for the specified variant and file name.
  */
-export async function emitExternalImageCapture(variant_id: string, answer_name: string) {
+export async function emitExternalImageCapture(variant_id: string, file_name: string) {
   try {
-    const eventData: StatusMessage = {
+    namespace.to(`variant-${variant_id}-file-${file_name}`).emit('externalImageCapture', {
       variant_id,
-      answer_name,
-    };
-
-    namespace
-      .to(`variant-${variant_id}-answer-${answer_name}`)
-      .emit('externalImageCapture', eventData);
+      file_name,
+    } satisfies StatusMessage);
   } catch (err) {
     logger.error('Error in emitExternalImageCapture', err);
     Sentry.captureException(err);
