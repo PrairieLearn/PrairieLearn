@@ -36,7 +36,7 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 
 ## ipynb_key
 
-When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. The default is `#grade` as in the example question. This can be configured using the environment variable in `info.json`
+When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. The default is `#grade` as in the example question. This can be configured using the `IPYNB_KEY` environment variable in `info.json`:
 
 ```json
 "externalGradingOptions": {
