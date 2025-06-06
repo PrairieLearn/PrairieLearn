@@ -224,7 +224,7 @@ def get_boolean_attrib(
     """
 
     # If the attribute is a boolean attribute, then its value is determined by its presence
-    if name in LIBXML_BOOLEAN_ATTRIBUTES:
+    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
         if args[0] is not False:
             raise ValueError(
                 f'Attribute "{name}" is treated as a boolean attribute, with a default value False.'
