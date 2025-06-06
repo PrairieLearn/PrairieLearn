@@ -34,7 +34,7 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 - the answer code must be in a single cell of the notebook that starts with the correct `ipynb_key` (see below)
 - the test files use `/grade/student/student.R` (not `/student.ipynb`)
 
-## ipynb_key
+## Customizing the grading key
 
 When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. The default is `#grade` as in the example question. This can be configured using the `IPYNB_KEY` environment variable in `info.json`:
 
