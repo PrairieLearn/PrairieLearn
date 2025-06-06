@@ -48,13 +48,13 @@ In this example, `#grade` is the key. Anything after the whitespace is optional,
 ```json
 {
   "externalGradingOptions": {
-      "enabled": true,
-      "image": "prairielearn/grader-r",
-      "timeout": 20,
-      "environment": {
-        "IPYNB_KEY": "#student_code"
-      }
+    "enabled": true,
+    "image": "prairielearn/grader-r",
+    "timeout": 20,
+    "environment": {
+      "IPYNB_KEY": "#student_code"
     }
+  }
 }
 ```
 
