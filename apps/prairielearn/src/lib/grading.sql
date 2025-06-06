@@ -133,9 +133,7 @@ INSERT INTO
     feedback,
     gradable,
     broken,
-    client_fingerprint_id,
-    -- TODO: remove once this column has a default
-    modified_at
+    client_fingerprint_id
   )
 VALUES
   (
@@ -152,8 +150,7 @@ VALUES
     $feedback,
     $gradable,
     $broken,
-    $client_fingerprint_id,
-    NOW()
+    $client_fingerprint_id
   )
 RETURNING
   id;
