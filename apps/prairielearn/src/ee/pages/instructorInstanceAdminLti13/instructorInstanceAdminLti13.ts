@@ -5,6 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -78,6 +79,7 @@ router.get(
         res.end(LineitemsInputs(await getLineitems(instance)));
       } catch (error) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.info('LineitemsInputs error', error);
       }
       return;
     }

@@ -605,22 +605,32 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    if (!response.ok) {
-      const resObject = (await response.json()) ?? {};
-      const resString = JSON.stringify(resObject);
-
-      // Examples of LMS error messages are in the lti13.test.ts file.
-      const msg = findValueByKey(resObject, 'message') ?? resString;
-
-      throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${msg}`, {
-        status: response.status,
-        data: {
-          statusText: response.statusText,
-          body: resString,
-        },
-      });
+    if (response.ok) {
+      return response;
     }
-    return response;
+
+    let errorMsg: string;
+    const resString = await response.text();
+
+    try {
+      // Try to pull the "message" property out of the error and highlight it.
+      // Fall back to showing the full error text.
+      //
+      // Examples of LMS error messages are in the lti13.test.ts file.
+      const resObject = JSON.parse(resString);
+
+      errorMsg = (findValueByKey(resObject, 'message') ?? resString).toString();
+    } catch {
+      errorMsg = resString;
+    }
+
+    throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
+      status: response.status,
+      data: {
+        statusText: response.statusText,
+        body: resString,
+      },
+    });
   } catch (err) {
     // https://canvas.instructure.com/doc/api/file.throttling.html
     // 403 Forbidden (Rate Limit Exceeded)
