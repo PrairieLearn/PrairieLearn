@@ -36,7 +36,7 @@ This grader primarily focuses on `.R` files for both student submissions and tes
 
 ## Customizing the grading key
 
-When grading an `ipynb` file you need to tell the autograder which cell to grade using a specific key. This key is a comment that must appear at the start of the student solution cell. All other cells will be ignored by the grader. Given it is a comment, the key must start with a hashtag (`#`). An example cell could be as follows:
+When grading an `ipynb` file, you need to tell the autograder which cells to grade using a specific key, which is a comment starting with `#`. All other cells will be ignored by the grader. A cell using the default key of `#grade` could be as follows:
 
 ```r
 #grade (write your code in this cell and DO NOT DELETE THIS LINE)
