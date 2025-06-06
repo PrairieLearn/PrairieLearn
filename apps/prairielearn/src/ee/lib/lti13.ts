@@ -919,7 +919,9 @@ export async function updateLti13Scores(
       } catch (error) {
         counts.error++;
         job.warn(`\t${error.message}`);
-        job.verbose(error.data.body);
+        if (error instanceof AugmentedError) {
+          job.verbose(error.data.body);
+        }
       }
     }
   }
