@@ -43,7 +43,7 @@ When grading an `ipynb` file you need to tell the autograder which cell to grade
 answer <- ...
 ```
 
-In this example, `#grade` is the key. Anything after the whitespace is optional, but recommended to remind students to not modify this comment. The default key is `#grade`, but it can be configured using the `IPYNB_KEY` environment variable in `info.json`:
+Any text following the key is optional but recommended to remind students to not modify this comment. A custom key can be configured using the `IPYNB_KEY` environment variable in `info.json`:
 
 ```json
 {
