@@ -44,6 +44,14 @@ describe('Markdown processing', () => {
     testMarkdownQuestion(question, expected);
   });
 
+  it('handles escaped dollar-sign symbols', async () => {
+    const question =
+      '<markdown>You need \\$2.00 for a muffin, \\\\$1.50 for a coffee, and \\\\\\$5.00 for a sandwich.</markdown>';
+    const expected =
+      '<p>You need <span class="mathjax_ignore">$</span>2.00 for a muffin, <span class="mathjax_ignore">$</span>1.50 for a coffee, and <span class="mathjax_ignore">$</span>5.00 for a sandwich.</p>';
+    testMarkdownQuestion(question, expected);
+  });
+
   it('handles escaped <markdown> tags', async () => {
     const question = '<markdown>```html\n<markdown#></markdown#>\n```</markdown>';
     const expected = '<pl-code language="html">&lt;markdown&gt;&lt;/markdown&gt;</pl-code>';

@@ -1,3 +1,5 @@
+import type { Tokens } from 'marked';
+
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { createMarkedInstance } from '@prairielearn/markdown';
 
@@ -33,6 +35,24 @@ const questionMarked = await createMarkedInstance({
           return html`<pl-code ${joinHtml(attrs, ' ')}>${text}</pl-code>`.toString();
         },
       },
+      extensions: [
+        {
+          // Historically, our markdown processor has been loose with escaping
+          // characters used by MathJax, leading to cases where `\\$` or `\\\$`
+          // was required to escape a dollar sign. This extension ensures that
+          // any question relying on this behavior continues to work as it was
+          // intended.
+          name: 'escape_math_delim',
+          level: 'inline',
+          start: (src) => src.match(/\\{1,3}\$/)?.index,
+          tokenizer(src): Tokens.Escape | undefined {
+            const rawMatch = src.match(/^\\{1,3}\$/);
+            if (rawMatch?.index !== 0) return undefined;
+            // Return a token that will be processed by the renderer.
+            return { type: 'escape', raw: rawMatch[0], text: '$' };
+          },
+        },
+      ],
     },
   ],
 });
