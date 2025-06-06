@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
+import { fillInstanceQuestionColumns } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -26,7 +27,14 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled }));
+    res.send(
+      AssessmentQuestion({
+        resLocals: res.locals,
+        courseStaff,
+        aiGradingEnabled,
+        aiGradingMode: res.locals.assessment_question.ai_grading_mode,
+      }),
+    );
   }),
 );
 
@@ -45,7 +53,13 @@ router.get(
       },
       InstanceQuestionRowSchema,
     );
-    res.send({ instance_questions });
+
+    res.send({
+      instance_questions: await fillInstanceQuestionColumns(
+        instance_questions,
+        res.locals.assessment_question,
+      ),
+    });
   }),
 );
 
@@ -181,6 +195,11 @@ router.post(
         mode: 'graded',
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'toggle_ai_grading_mode') {
+      await queryAsync(sql.toggle_ai_grading_mode, {
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
