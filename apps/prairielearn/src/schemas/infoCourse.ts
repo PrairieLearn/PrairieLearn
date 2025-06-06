@@ -91,9 +91,9 @@ export const CourseOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
-      .describe('Feature flag to enable the new question renderer.')
-      .optional()
-      .default(false),
+      .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
+      .default(false)
+      .optional(),
     devModeFeatures: z
       .union([
         z

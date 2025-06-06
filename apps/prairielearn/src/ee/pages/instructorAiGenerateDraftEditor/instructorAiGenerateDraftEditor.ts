@@ -19,7 +19,7 @@ import {
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
+import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
@@ -203,7 +203,6 @@ router.get(
     });
     await setQuestionCopyTargets(res);
     await logPageView('instructorQuestionPreview', req, res);
-    setRendererHeader(res);
 
     res.send(
       InstructorAiGenerateDraftEditor({
