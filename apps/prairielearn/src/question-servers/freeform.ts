@@ -16,6 +16,7 @@ import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
@@ -1361,6 +1362,8 @@ async function renderPanel(
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
     course,
+    variant,
+    submission,
     data,
     context,
     async () => {
@@ -1835,10 +1838,11 @@ export async function file(
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
       course,
+      variant,
+      null, // Files aren't associated with any particular submission.
       data,
       context,
       async () => {
-        // function to compute the file data and return the cachedData
         return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
             'file',
@@ -2080,13 +2084,37 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
 
 async function getCacheKey(
   course: Course,
+  variant: Variant,
+  submission: Submission | null,
   data: ExecutionData,
   context: QuestionProcessingContext,
-) {
+): Promise<string | null> {
   try {
     const commitHash = await getOrUpdateCourseCommitHash(course);
-    const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-    return `question:${commitHash}-${dataHash}`;
+
+    const dataHash = objectHash(
+      [
+        // We deliberately exclude large user-controlled objects from the cache key.
+        // Whenever these change, the `modified_at` column of `variants` and/or
+        // `submissions` will change, which will cause the cache to be invalidated.
+        _.omit(data, [
+          'params',
+          'correct_answers',
+          'submitted_answers',
+          'format_errors',
+          'partial_scores',
+          'raw_submitted_answers',
+        ]),
+        context,
+        variant.modified_at,
+        submission?.modified_at,
+      ],
+      { algorithm: 'sha1', encoding: 'base64' },
+    );
+
+    // The variant and submission IDs are included in the cache key to ensure
+    // that data never leaks between variants or submissions.
+    return `variant:${variant.id}:submission:${submission?.id}:${commitHash}-${dataHash}:cache`;
   } catch {
     return null;
   }
@@ -2094,6 +2122,8 @@ async function getCacheKey(
 
 async function getCachedDataOrCompute(
   course: Course,
+  variant: Variant,
+  submission: Submission | null,
   data: ExecutionData,
   context: QuestionProcessingContext,
   computeFcn: () => Promise<any>,
@@ -2130,7 +2160,7 @@ async function getCachedDataOrCompute(
   // cacheKey and either return the cachedData for a cache hit,
   // or compute the cachedData for a cache miss
   const getFromCacheOrCompute = async (cacheKey: string) => {
-    let cachedData;
+    let cachedData: unknown;
 
     try {
       cachedData = await cache.get(cacheKey);
@@ -2138,42 +2168,32 @@ async function getCachedDataOrCompute(
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);
+      Sentry.captureException(err);
     }
 
-    // Previously, there was a bug where we would cache operations
-    // that failed with a course issue. We've since fixed that bug,
-    // but so that we can gracefully deploy the fix alongside code
-    // that may still be incorrectly caching errors, we'll ignore
-    // any result from the cache that has course issues and
-    // unconditionally recompute it.
-    //
-    // TODO: once this has been deployed in production for a while,
-    // we can safely remove this check, as we can guarantee that the
-    // cache will no longer contain any entries with `courseIssues`.
-    const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
-    if (cachedData && !hasCachedCourseIssues) {
+    if (cachedData) {
       return {
         data: cachedData,
         cacheHit: true,
       };
-    } else {
-      return doCompute(cacheKey);
     }
+
+    return doCompute(cacheKey);
   };
 
   if (config.devMode) {
     // In dev mode, we should skip caching so that we'll immediately
     // pick up new changes from disk
     return doCompute(null);
+  }
+
+  const cacheKey = await getCacheKey(course, variant, submission, data, context);
+  // If for some reason we failed to get a cache key, don't
+  // actually fail the request, just skip the cache entirely
+  // and compute as usual
+  if (!cacheKey) {
+    return await doCompute(null);
   } else {
-    const cacheKey = await getCacheKey(course, data, context);
-    // If for some reason we failed to get a cache key, don't
-    // actually fail the request, just skip the cache entirely
-    // and compute as usual
-    if (!cacheKey) {
-      return doCompute(null);
-    } else {
-      return getFromCacheOrCompute(cacheKey);
-    }
+    return await getFromCacheOrCompute(cacheKey);
   }
 }
