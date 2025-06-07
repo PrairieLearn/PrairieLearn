@@ -1,0 +1,10 @@
+{
+  "controller": "pl-image-capture.py",
+  "dependencies": {
+    "nodeModulesScripts": [
+      "qrcode-svg/dist/qrcode.min.js",
+      "socket.io-client/dist/socket.io.min.js"
+    ],
+    "elementScripts": ["pl-image-capture.js"]
+  }
+}

@@ -1318,6 +1318,17 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+    submission_date: submission?.date ?? null,
+
+    variant_id: variant?.id,
+    course_id: course?.id,
+    question_id: locals.question?.id,
+    course_instance_id: locals.course_instance?.id,
+    instance_question_id: locals.instance_question?.id,
+
+    external_image_capture_url: `${config.serverCanonicalHost}${locals.externalImageCaptureUrl}`,
+
+    serverCanonicalHost: config.serverCanonicalHost,
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
