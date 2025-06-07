@@ -11,6 +11,13 @@ import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+router.use(async (_req, res, next) => {
+  if (!res.locals.lti11_enabled) {
+    throw new error.HttpStatusError(403, 'LTI 1.1 not enabled.');
+  }
+  next();
+});
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
