@@ -38,7 +38,8 @@ COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
 # hadolint ignore=SC3009
-RUN chmod +x /PrairieLearn/scripts/init.sh \
+RUN mkdir -p /etc/pki/tls/private /etc/pki/tls/certs \
+    && chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
     && mkdir -p /jobs \
@@ -51,6 +52,8 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && git config --global user.email "dev@example.com" \
     && git config --global user.name "Dev User" \
     && git config --global safe.directory '*'
+
+ENV PATH="/root/.local/bin:$PATH"
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD [ "/PrairieLearn/scripts/init.sh" ]
