@@ -284,6 +284,7 @@ async function testQuestion(
       options,
       require_open,
       client_fingerprint_id,
+      question.question_params,
     );
   } finally {
     const generateEnd = Date.now();

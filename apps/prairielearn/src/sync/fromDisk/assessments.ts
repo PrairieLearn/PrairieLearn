@@ -124,6 +124,7 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
         comment?: CommentJson;
+        questionParams: Record<string, any> | undefined;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -145,6 +146,7 @@ function getParamsForAssessment(
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            questionParams: alternative.questionParams ?? {},
           };
         });
       } else if (question.id) {
@@ -168,6 +170,7 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.alternatives ? undefined : question.comment,
+            questionParams: question.questionParams ?? {},
           },
         ];
       }
@@ -236,6 +239,7 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           comment: alternative.comment,
+          question_params: alternative.questionParams,
         };
       });
 
