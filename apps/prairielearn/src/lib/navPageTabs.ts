@@ -48,7 +48,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
             renderCondition: (resLocals) =>
-              resLocals.lti_enabled && resLocals.authz_data.has_course_permission_edit,
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
 
           {
@@ -91,7 +91,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
             renderCondition: (resLocals) =>
-              resLocals.lti_enabled && resLocals.authz_data.has_course_permission_edit,
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
           {
             activeSubPage: 'integrations',

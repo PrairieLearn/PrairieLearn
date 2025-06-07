@@ -761,8 +761,8 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      res.locals.lti_enabled =
-        config.hasLti && (await features.enabledFromLocals('lti', res.locals));
+      res.locals.lti11_enabled =
+        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
       next();
     }),
   );
