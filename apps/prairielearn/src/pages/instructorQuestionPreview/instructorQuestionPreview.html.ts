@@ -14,6 +14,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  readmeHtml,
   resLocals,
 }: {
   normalPreviewUrl: string;
@@ -22,6 +23,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewEnabled: boolean;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
+  readmeHtml: string;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -52,6 +54,11 @@ export function InstructorQuestionPreview({
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
+      <style>
+        .markdown-body :last-child {
+          margin-bottom: 0;
+        }
+      </style>
     `,
     preContent: html`
       <div class="container-fluid">
@@ -84,6 +91,33 @@ export function InstructorQuestionPreview({
         : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
+          ${readmeHtml
+            ? html`
+                <div class="card mb-3">
+                  <div
+                    class="card-header bg-light text-dark d-flex align-items-center submission-header"
+                  >
+                    <h2 class="me-auto">README</h2>
+                    <button
+                      type="button"
+                      class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#readme-card-body"
+                      aria-expanded="true"
+                      aria-controls="#readme-card-body"
+                    >
+                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                    </button>
+                  </div>
+                  <div class="show" id="readme-card-body">
+                    <div class="card-body markdown-body">${unsafeHtml(readmeHtml)}</div>
+                    <div class="card-footer">
+                      <p class="mb-0 small">This README is not visible to students.</p>
+                    </div>
+                  </div>
+                </div>
+              `
+            : ''}
           ${QuestionContainer({
             resLocals,
             showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
