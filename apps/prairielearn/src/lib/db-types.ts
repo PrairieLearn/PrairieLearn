@@ -493,7 +493,7 @@ export const FileTransferSchema = z.object({
   id: IdSchema,
   storage_filename: z.string(),
   to_course_id: IdSchema,
-  transfer_type: z.enum(['CopyQuestion']),
+  transfer_type: z.enum(['CopyQuestion', 'CopyCourseInstance']),
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;

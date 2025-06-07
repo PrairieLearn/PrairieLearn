@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
+import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { selectAssessments } from '../../models/assessment.js';
 import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
@@ -27,6 +28,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Course instance not public.');
     }
 
+    res.locals.user = res.locals.authn_user; // Need user to get copy targets. On public URLs, authn_user and user are always equal
+    const courseInstanceCopyTargets = await getCourseInstanceCopyTargets(res);
+
     const rows = await selectAssessments({
       course_instance_id: courseInstance.id,
     });
@@ -36,6 +40,7 @@ router.get(
         resLocals: res.locals,
         rows,
         courseInstance,
+        courseInstanceCopyTargets,
       }),
     );
   }),
