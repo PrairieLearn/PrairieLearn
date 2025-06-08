@@ -57,9 +57,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
-        "external_image_capture_url": data["options"].get(
-            "external_image_capture_url", ""
-        ),
     }
 
     external_image_capture_url = data["options"].get("external_image_capture_url")
@@ -103,7 +100,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    # Validate that the data is a PNG image
+    # Confirm that the data URI is a PNG image.
     if not submitted_file_content.startswith("data:image/png;base64,"):
         pl.add_files_format_error(
             data, f"Image submission for {file_name} is not a PNG image."

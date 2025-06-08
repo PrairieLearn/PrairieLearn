@@ -248,7 +248,7 @@
           type: 'image/png',
         });
 
-        // Acknowledge the receipt of the image capture
+        // Acknowledge that the external image capture has been received.
         socket.emit(
           'externalImageCaptureAck',
           {
@@ -262,12 +262,12 @@
           },
         );
 
-        // Dismiss the QR code popover if it is open.
         const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
           '.js-capture-with-mobile-device-button',
         );
 
         if (captureWithMobileDeviceButton) {
+          // Dismiss the QR code popover if it is open.
           const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
           if (popover) {
             popover.hide();

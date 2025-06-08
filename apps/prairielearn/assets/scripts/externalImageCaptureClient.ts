@@ -130,13 +130,15 @@ onDocumentReady(() => {
     }, timeoutMs);
 
     socket.on('externalImageCaptureAck', (msg: StatusMessage) => {
+      clearTimeout(timeout);
+      socket.disconnect();
+
       if (!msg) {
         changeState('failed');
         throw new Error('Failed to receive external image capture acknowledgement');
       }
+
       changeState('success');
-      clearTimeout(timeout);
-      socket.disconnect();
     });
   }
 
