@@ -48,6 +48,22 @@ router.use('/course_instances/:course_instance_id(\\d+)', [
   (await import('./endpoints/courseInstanceInfo/index.js')).default,
 ]);
 
+// All course pages require authorization
+router.use('/course/:course_id(\\d+)', [
+  (await import('../../middlewares/authzCourseOrInstance.js')).default,
+  assertNotExampleCourse,
+  // A student who is course staff in another course could use the API to
+  // infiltrate data into a secure exam. We'll forbid API access entirely
+  // while in exam mode.
+  (await import('../../middlewares/forbidAccessInExamMode.js')).default,
+  // Asserts that the user has either course preview or course instance student
+  // data access. If a route provides access to student data, you should also
+  // include the `authzHasCourseInstanceView` middleware to ensure that access
+  // to student data is properly limited.
+  (await import('../../middlewares/authzHasCoursePreviewOrInstanceView.js')).default,
+  (await import('./endpoints/courseInstanceInfo/index.js')).default,
+]);
+
 // ROUTES
 router.use(
   '/course_instances/:course_instance_id(\\d+)/assessments',
@@ -71,6 +87,14 @@ router.use(
 router.use(
   '/course_instances/:course_instance_id(\\d+)/course_instance_access_rules',
   (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
+);
+router.use(
+  '/course/:course_id(\\d+)/sync',
+  (await import('./endpoints/courseSync/index.js')).default,
+);
+router.use(
+  '/course/:course_id(\\d+)/sync/:job_sequence_id',
+  (await import('./endpoints/courseSync/index.js')).default,
 );
 
 // If no earlier routes matched, 404 the route.
