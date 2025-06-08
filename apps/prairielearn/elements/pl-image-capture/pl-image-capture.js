@@ -337,11 +337,6 @@
           throw new Error(`Failed to download file: ${response.status}`);
         }
 
-        if (!response) {
-          this.setNoCaptureAvailableYetState(uploadedImageContainer);
-          return; // No submitted image available, yet
-        }
-
         this.loadCapturePreviewFromBlob(await response.blob());
       } else {
         // No submitted image available, yet
@@ -503,8 +498,6 @@
       const dataUrl = canvas.toDataURL('image/png');
       this.loadCapturePreviewFromDataUrl(dataUrl);
       this.closeConfirmationContainer();
-
-      this.lastLocalLocalCameraCaptureDate = new Date();
     }
 
     closeConfirmationContainer() {
