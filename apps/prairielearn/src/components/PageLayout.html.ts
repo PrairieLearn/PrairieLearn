@@ -126,7 +126,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav">
+                  <div class="app-side-nav bg-light border-right">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
