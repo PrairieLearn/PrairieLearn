@@ -57,6 +57,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
     }
 
+    external_image_capture_url = data["options"].get("external_image_capture_url")
+    if not external_image_capture_url:
+        pl.add_files_format_error(
+            data,
+            "external_image_capture_url was not generated for the image capture question.",
+        )
+
+    external_image_capture_url = f"{external_image_capture_url}?file_name={file_name}"
+
     image_capture_options = {
         "file_name": file_name,
         "variant_id": data["options"].get("variant_id", ""),
@@ -64,7 +73,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_date": data["options"].get("submission_date", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
-        "external_image_capture_url": html_params["external_image_capture_url"],
+        "external_image_capture_url": external_image_capture_url,
     }
 
     html_params["image_capture_options_json"] = json.dumps(image_capture_options)

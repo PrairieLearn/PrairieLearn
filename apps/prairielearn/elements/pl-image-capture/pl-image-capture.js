@@ -208,7 +208,7 @@
 
     generateQrCode() {
       const qrCodeSvg = new QRCode({
-        content: `${this.external_image_capture_url}?file_name=${this.file_name}`,
+        content: this.external_image_capture_url,
         container: 'svg-viewbox',
       }).svg();
 
