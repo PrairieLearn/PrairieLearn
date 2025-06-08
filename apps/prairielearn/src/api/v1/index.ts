@@ -29,6 +29,16 @@ function assertNotExampleCourse(req: Request, res: Response, next: NextFunction)
   next();
 }
 
+/**
+ * Used to block access to course sync unless has course editor permissions
+ */
+const authzHasCourseEditor = asyncHandler(async (req, res, next) => {
+  if (!res.locals.authz_data.has_course_permission_edit) {
+    throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
+  }
+  next();
+});
+
 // Pretty-print all JSON responses.
 router.use((await import('./prettyPrintJson.js')).default);
 
@@ -52,15 +62,7 @@ router.use('/course_instances/:course_instance_id(\\d+)', [
 router.use('/course/:course_id(\\d+)', [
   (await import('../../middlewares/authzCourseOrInstance.js')).default,
   assertNotExampleCourse,
-  // A student who is course staff in another course could use the API to
-  // infiltrate data into a secure exam. We'll forbid API access entirely
-  // while in exam mode.
-  (await import('../../middlewares/forbidAccessInExamMode.js')).default,
-  // Asserts that the user has either course preview or course instance student
-  // data access. If a route provides access to student data, you should also
-  // include the `authzHasCourseInstanceView` middleware to ensure that access
-  // to student data is properly limited.
-  (await import('../../middlewares/authzHasCoursePreviewOrInstanceView.js')).default,
+  authzHasCourseEditor,
   (await import('./endpoints/courseInstanceInfo/index.js')).default,
 ]);
 
