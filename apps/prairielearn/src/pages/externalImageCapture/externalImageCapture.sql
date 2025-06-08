@@ -1,12 +1,3 @@
--- BLOCK select_external_image_capture_by_variant_id_and_file_name
-SELECT
-  eic.*
-FROM
-  external_image_capture AS eic
-WHERE
-  eic.variant_id = $variant_id
-  AND eic.file_name = $file_name;
-
 -- BLOCK select_variant_by_id
 SELECT
   v.*,

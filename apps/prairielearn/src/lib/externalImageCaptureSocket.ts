@@ -10,6 +10,7 @@ import * as socketServer from './socket-server.js';
 interface StatusMessage {
   variant_id: string;
   file_name: string;
+  file_content: string;
 }
 
 let namespace: Namespace;
@@ -34,6 +35,7 @@ export function connection(socket: Socket) {
     callback({
       variant_id: msg.variant_id,
       file_name: msg.file_name,
+      file_content: msg.file_content || '',
     } satisfies StatusMessage);
   });
 }
@@ -52,18 +54,51 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
 }
 
 /**
- * Emits an external image capture event for the specified variant and file name.
+ * Emits an external image capture event for the specified variant and file.
  */
-export async function emitExternalImageCapture(variant_id: string, file_name: string) {
-  try {
+export async function emitExternalImageCapture({
+  variant_id, 
+  file_name,
+  file_content 
+} : {
+  variant_id: string, 
+  file_name: string,
+  file_content: string
+}) {
     namespace.to(`variant-${variant_id}-file-${file_name}`).emit('externalImageCapture', {
       variant_id,
       file_name,
+      file_content,
     } satisfies StatusMessage);
-  } catch (err) {
-    logger.error('Error in emitExternalImageCapture', err);
-    Sentry.captureException(err);
-  }
+}
+
+/**
+ * Waits to potentially receive an acknowledgement from the client that the image capture was successful.
+ */
+export async function waitForExternalImageCaptureAck({
+  variantId,
+  fileName,
+  timeoutMs = 5000,
+} : {
+  variantId: string,
+  fileName: string,
+  timeoutMs?: number,
+}) {
+  return new Promise<StatusMessage | null>((resolve) => {
+    const ackHandler = (msg: StatusMessage) => {
+      if (msg.variant_id === variantId && msg.file_name === fileName) {
+        clearTimeout(timeout);
+        resolve(msg);
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      socketServer.io.of(`variant-${variantId}-file-${fileName}`).off('externalImageCaptureAck', ackHandler);
+      resolve(null);
+    }, timeoutMs);
+
+    socketServer.io.of(`variant-${variantId}-file-${fileName}`).on('externalImageCaptureAck', ackHandler);
+  });
 }
 
 function checkToken(token: string, variantId: string): boolean {

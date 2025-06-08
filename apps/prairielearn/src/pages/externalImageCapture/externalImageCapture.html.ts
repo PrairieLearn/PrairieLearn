@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
-export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, any> }) {
+export function ExternalImageCapture({ fileName, resLocals }: { fileName, resLocals: Record<string, any> }) {
   return PageLayout({
     resLocals,
     pageTitle: 'External image capture',
@@ -14,7 +14,12 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
     preContent: html` ${compiledScriptTag('externalImageCaptureClient.ts')} `,
     content: html`
       <h1>Capture solution</h1>
-      <form id="external-image-capture-form" method="POST" enctype="multipart/form-data">
+      <form 
+        id="external-image-capture-form" 
+        hx-post
+        hx-trigger="submit"
+        enctype="multipart/form-data"
+      >
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input
           type="file"
@@ -33,30 +38,31 @@ export function ExternalImageCapture({ resLocals }: { resLocals: Record<string, 
           class="visually-hidden"
           required
         />
-        <label
-          for="raw-camera-input"
-          class="d-flex flex-column align-items-center justify-content-center
-                        border border-primary rounded p-4 text-center"
-          style="cursor: pointer; border-style: dashed !important;"
-        >
-          <div id="preview-container" class="mt-4 text-center">
-            <img
-              id="image-preview"
-              class="img-fluid rounded border border-secondary mb-3"
-              style="max-height: 300px; display: none;"
-              alt="Image capture preview"
-            />
-          </div>
+        <div>
+          <label
+            for="raw-camera-input"
+            class="d-flex flex-column align-items-center justify-content-center
+                          border border-primary rounded p-4 text-center"
+            style="cursor: pointer; border-style: dashed !important;"
+          >
+            <div id="preview-container" class="mt-4 text-center">
+              <img
+                id="image-preview"
+                class="img-fluid rounded border border-secondary mb-3"
+                style="max-height: 300px; display: none;"
+                alt="Image capture preview"
+              />
+            </div>
 
-          <i class="bi bi-camera text-primary fs-1"></i>
-          <span class="text-primary">Take photo</span>
-        </label>
+            <i class="bi bi-camera text-primary fs-1"></i>
+            <span class="text-primary">Take photo</span>
+          </label>
 
-        <p class="text-muted mt-3">
-          Before uploading, ensure that your entire solution is visible, legible, and well-lit in
-          the image.
-        </p>
-
+          <p class="text-muted mt-3">
+            Before uploading, ensure that your entire solution is visible, legible, and well-lit in
+            the image.
+          </p>
+        </div>
         <button type="submit" class="btn btn-primary my-3" id="upload-button" disabled>
           Upload
         </button>

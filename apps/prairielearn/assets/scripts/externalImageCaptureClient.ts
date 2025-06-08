@@ -80,7 +80,7 @@ onDocumentReady(() => {
       uploadButton.disabled = true;
     }
   });
-  externalImageCaptureForm.addEventListener('submit', () => {
+  externalImageCaptureForm.addEventListener('htmx:beforeRequest', () => {
     rawCameraInput.disabled = true;
   });
 });

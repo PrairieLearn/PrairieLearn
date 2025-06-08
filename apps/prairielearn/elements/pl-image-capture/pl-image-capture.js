@@ -37,33 +37,19 @@
       if (!options.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
-        this.loadSubmission(false);
+        this.loadSubmission();
         return;
       }
 
       if (this.mobile_capture_enabled) {
-        this.createCapturePreviewListeners();
         this.createExternalCaptureListeners();
       }
       this.createLocalCameraCaptureListeners();
 
-      this.loadSubmission(false);
+      this.loadSubmission();
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
-    }
-
-    createCapturePreviewListeners() {
-      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
-
-      if (!reloadButton) {
-        throw new Error('Reload button not found in image capture element');
-      }
-
-      reloadButton.addEventListener('click', (event) => {
-        event.preventDefault();
-        this.reload();
-      });
     }
 
     createExternalCaptureListeners() {
@@ -257,97 +243,24 @@
         },
       );
 
-      socket.on('externalImageCapture', () => {
-        this.loadSubmission(true);
-      });
-    }
-
-    /**
-     * Reloads the most recent image capture. This can be from the last local camera capture,
-     * the last external image capture, or the last submission.
-     */
-    async reload() {
-      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container',
-      );
-      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
-
-      this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
-
-      const availableCaptures = [];
-
-      // Add the last local camera capture, if available
-      if (this.lastLocalLocalCameraCaptureDate) {
-        availableCaptures.push({
-          uploadDate: this.lastLocalLocalCameraCaptureDate,
-          method: 'local-camera',
+      socket.on('externalImageCapture', (msg) => {
+        this.loadCapturePreview({
+          data: msg.file_content,
+          type: 'image/png'
         });
-      }
 
-      let externalImageCaptureJson;
-      if (this.mobile_capture_enabled) {
-        // Add the last external image capture, if available
-        const externalImageCaptureResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image?file_name=${this.file_name}`,
+        // Dismiss the QR code popover if it is open.
+        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+          '.js-capture-with-mobile-device-button',
         );
 
-        if (externalImageCaptureResponse.ok) {
-          externalImageCaptureJson = await externalImageCaptureResponse.json();
-          if (
-            externalImageCaptureJson.uploadDate &&
-            // Excludes unsaved captures from previous page views of the current variant.
-            new Date(externalImageCaptureJson.uploadDate) >= this.variant_opened_date
-          ) {
-            availableCaptures.push({
-              uploadDate: new Date(externalImageCaptureJson.uploadDate),
-              method: 'external',
-            });
+        if (captureWithMobileDeviceButton) {
+          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
+          if (popover) {
+            popover.hide();
           }
         }
-      }
-
-      // Add the last submission, if available
-      if (this.submission_date && this.submitted_file_name) {
-        availableCaptures.push({
-          uploadDate: new Date(this.submission_date),
-          method: 'submission',
-        });
-      }
-
-      if (availableCaptures.length === 0) {
-        // No captures available
-        this.setNoCaptureAvailableYetState(uploadedImageContainer, reloadButton);
-        reloadButton.removeAttribute('disabled');
-        return;
-      }
-
-      // Select the most recent capture
-      const mostRecentCapture = availableCaptures.reduce((latest, current) => {
-        return new Date(current.uploadDate) > new Date(latest.uploadDate) ? current : latest;
       });
-
-      // Use the most recent capture to load the capture preview.
-      switch (mostRecentCapture.method) {
-        case 'local-camera':
-          this.loadCapturePreviewFromDataUrl(
-            this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value,
-          );
-          break;
-        case 'external':
-          if (externalImageCaptureJson) {
-            this.loadCapturePreview({
-              data: externalImageCaptureJson.data,
-              type: externalImageCaptureJson.type,
-            });
-          }
-          break;
-        case 'submission':
-          this.loadSubmission(false);
-          break;
-        default:
-          throw new Error('Unknown submission method');
-      }
-      reloadButton.removeAttribute('disabled');
     }
 
     setNoCaptureAvailableYetState(uploadedImageContainer) {
@@ -360,13 +273,9 @@
       `;
     }
 
-    setLoadingCaptureState(uploadedImageContainer, reloadButton) {
+    setLoadingCaptureState(uploadedImageContainer) {
       if (!uploadedImageContainer) {
         throw new Error('Uploaded image container not found');
-      }
-
-      if (reloadButton) {
-        reloadButton.setAttribute('disabled', 'disabled');
       }
 
       uploadedImageContainer.innerHTML = `
@@ -387,7 +296,7 @@
      * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
      * If false, load the image from the most recent submission.
      */
-    async loadSubmission(forExternalImageCapture = true) {
+    async loadSubmission() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -396,68 +305,34 @@
         throw new Error('Uploaded image container not found');
       }
 
-      const reloadButton = this.imageCaptureDiv.querySelector('.js-reload-capture-button');
+      this.setLoadingCaptureState(uploadedImageContainer);
 
-      this.setLoadingCaptureState(uploadedImageContainer, reloadButton);
-
-      if (!forExternalImageCapture && this.submitted_file_name) {
+      if (this.submitted_file_name) {
         const capturePreviewContainer = this.imageCaptureDiv.querySelector(
           '.js-capture-preview-container',
         );
 
         const submissionFilesUrl = capturePreviewContainer.dataset.submissionFilesUrl;
         if (!submissionFilesUrl) {
+          this.setNoCaptureAvailableYetState(uploadedImageContainer);
           throw new Error('Submission files URL not found');
         }
         const response = await fetch(`${submissionFilesUrl}/${this.submitted_file_name}`);
 
         if (!response.ok) {
+          this.setNoCaptureAvailableYetState(uploadedImageContainer);
           throw new Error(`Failed to download file: ${response.status}`);
         }
 
         if (!response) {
+        this.setNoCaptureAvailableYetState(uploadedImageContainer);
           return; // No submitted image available, yet
         }
 
         this.loadCapturePreviewFromBlob(await response.blob());
       } else {
-        const submittedImageResponse = await fetch(
-          `${this.external_image_capture_url}/uploaded_image?file_name=${this.file_name}`,
-        );
-
-        if (!submittedImageResponse.ok) {
-          if (reloadButton) {
-            reloadButton.removeAttribute('disabled');
-          }
-          if (submittedImageResponse.status === 404) {
-            this.setNoCaptureAvailableYetState(uploadedImageContainer, reloadButton);
-            return;
-          }
-          throw new Error('Failed to load submitted image');
-        }
-
-        const { data, type } = await submittedImageResponse.json();
-
-        this.loadCapturePreview({
-          data,
-          type,
-        });
-
-        // Dismiss the QR code popover if it is open.
-        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-          '.js-capture-with-mobile-device-button',
-        );
-
-        if (captureWithMobileDeviceButton) {
-          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
-          if (popover) {
-            popover.hide();
-          }
-        }
-      }
-
-      if (reloadButton) {
-        reloadButton.removeAttribute('disabled');
+        // No submitted image available, yet
+        this.setNoCaptureAvailableYetState(uploadedImageContainer);
       }
     }
 

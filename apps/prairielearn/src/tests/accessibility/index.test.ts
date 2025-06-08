@@ -344,9 +344,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/text/:filename',
 
   '/pl/course/:course_id/question/:question_id/externalImageCapture/variants/:variant_id/',
-  '/pl/course/:course_id/question/:question_id/externalImageCapture/variants/:variant_id/uploaded_image',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id',
-  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id/uploaded_image',
 
   '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
