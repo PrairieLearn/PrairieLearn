@@ -233,7 +233,6 @@
         'joinExternalImageCapture',
         {
           variant_id: this.variant_id,
-          variant_token: questionContainer.dataset.variantToken,
           file_name: this.file_name,
         },
         (msg) => {
@@ -246,8 +245,23 @@
       socket.on('externalImageCapture', (msg) => {
         this.loadCapturePreview({
           data: msg.file_content,
-          type: 'image/png'
+          type: 'image/png',
         });
+
+        // Acknowledge the receipt of the image capture
+        console.log('Acknowledging external image capture', this.variant_id, this.file_name);
+        socket.emit(
+          'externalImageCaptureAck',
+          {
+            variant_id: this.variant_id,
+            file_name: this.file_name,
+          },
+          (ackMsg) => {
+            if (!ackMsg) {
+              throw new Error('Failed to acknowledge external image capture');
+            }
+          },
+        );
 
         // Dismiss the QR code popover if it is open.
         const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
@@ -325,7 +339,7 @@
         }
 
         if (!response) {
-        this.setNoCaptureAvailableYetState(uploadedImageContainer);
+          this.setNoCaptureAvailableYetState(uploadedImageContainer);
           return; // No submitted image available, yet
         }
 

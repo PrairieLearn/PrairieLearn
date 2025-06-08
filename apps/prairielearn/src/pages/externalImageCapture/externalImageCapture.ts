@@ -6,16 +6,20 @@ import { HttpStatusError } from '@prairielearn/error';
 import { emitExternalImageCapture } from '../../lib/externalImageCaptureSocket.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
-import { ExternalImageCapture, ExternalImageCaptureSuccess } from './externalImageCapture.html.js';
+import { ExternalImageCapture } from './externalImageCapture.html.js';
 
 const router = express.Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    if (!req.query.file_name) {
+      throw new HttpStatusError(400, 'file_name query parameter is required');
+    }
     res.send(
       ExternalImageCapture({
-        fileName: req.query.file_name,
+        variantId: req.params.variant_id,
+        fileName: req.query.file_name as string,
         resLocals: res.locals,
       }),
     );
@@ -67,11 +71,7 @@ router.post(
       file_content: req.file.buffer.toString('base64'),
     });
 
-    res.send(
-      ExternalImageCaptureSuccess({
-        resLocals: res.locals,
-      }),
-    );
+    res.status(200).send('Success');
   }),
 );
 
