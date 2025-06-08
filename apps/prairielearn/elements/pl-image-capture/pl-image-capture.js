@@ -248,7 +248,7 @@
           type: 'image/png',
         });
 
-        // Acknowledge that the external image capture has been received.
+        // Acknowledge that the external image capture was received.
         socket.emit(
           'externalImageCaptureAck',
           {
