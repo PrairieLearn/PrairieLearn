@@ -20,7 +20,6 @@ onDocumentReady(() => {
 
   if (
     !cameraInput ||
-    !cameraInput ||
     !cameraInputLabelSpan ||
     !uploadButton ||
     !imagePreview ||
@@ -117,6 +116,7 @@ onDocumentReady(() => {
       },
       (msg: StatusMessageWithFileContent) => {
         if (!msg) {
+          changeState('failed');
           throw new Error('Failed to join external image capture room');
         }
       },

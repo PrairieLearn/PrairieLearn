@@ -439,8 +439,10 @@
         this.localCameraStream.getTracks().forEach((track) => track.stop());
         this.localCameraStream = null;
       }
-      video.srcObject = null;
-      video.pause();
+      if (video) {
+        video.srcObject = null;
+        video.pause();
+      }
 
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',

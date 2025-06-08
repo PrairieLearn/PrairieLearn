@@ -58,9 +58,7 @@ router.post(
       throw new HttpStatusError(400, 'No file uploaded');
     }
 
-    const fileBase64 = req.file.buffer.toString('base64');
-
-    if (fileBase64.length > 10 * 1024 * 1024) {
+    if (req.file.buffer.length > 10 * 1024 * 1024) {
       throw new HttpStatusError(400, 'File size exceeds the limit of 10MB');
     }
 

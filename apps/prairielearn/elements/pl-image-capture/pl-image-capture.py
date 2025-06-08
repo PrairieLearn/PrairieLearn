@@ -45,10 +45,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_files = data["submitted_answers"].get("_files", [])
 
-    file_name_default = f"{file_name}.png"
     submitted_file_name = (
-        file_name_default
-        if any(file["name"] == file_name_default for file in submitted_files)
+        file_name
+        if any(file["name"] == file_name for file in submitted_files)
         else None
     )
 
@@ -119,4 +118,4 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    pl.add_submitted_file(data, f"{file_name}.png", b64_payload)
+    pl.add_submitted_file(data, file_name, b64_payload)
