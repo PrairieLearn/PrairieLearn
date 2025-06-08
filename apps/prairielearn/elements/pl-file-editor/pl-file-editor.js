@@ -1,4 +1,4 @@
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -110,11 +110,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
-  let preview = this.element.find('.preview')[0];
+  const preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
-    let sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
+    const sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
     preview.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
@@ -291,12 +291,15 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let markdownRenderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    return async (value) => markdownRenderer.makeHtml(value);
+    let marked = null;
+    return async (value) => {
+      if (marked == null) {
+        marked = (await import('marked')).marked;
+        await MathJax.startup.promise;
+        (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
+      }
+      return marked.parse(value);
+    };
   })(),
   dot: (() => {
     let vizPromise = null;

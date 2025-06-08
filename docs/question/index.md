@@ -95,7 +95,7 @@ The `info.json` file for each question defines properties of the question. For e
 
 ### Question Sharing
 
-Any question that is marked with `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Any question that is marked with `"sharePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
+Any question that is marked with `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Any question that is marked with `"sharePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC-ND](https://creativecommons.org/licenses/by-nc-nd/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](../contentSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](../course/index.md#adding-sharing-sets).
 
 ```json title="info.json"
 {

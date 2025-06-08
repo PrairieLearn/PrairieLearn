@@ -39,6 +39,7 @@ export async function aiGrade({
   urlPrefix,
   authn_user_id,
   user_id,
+  instance_question_ids,
 }: {
   question: Question;
   course: Course;
@@ -47,14 +48,19 @@ export async function aiGrade({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
+  /**
+   * Limit grading to the specified instance questions. Omit to grade only
+   * the questions that are tagged as requiring manual grading.
+   */
+  instance_question_ids?: string[];
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
-  if (!config.openAiApiKey || !config.openAiOrganization) {
+  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
   const openai = new OpenAI({
-    apiKey: config.openAiApiKey,
-    organization: config.openAiOrganization,
+    apiKey: config.aiGradingOpenAiApiKey,
+    organization: config.aiGradingOpenAiOrganization,
   });
 
   const question_course = await getQuestionCourse(question, course);
@@ -77,6 +83,9 @@ export async function aiGrade({
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
     for (const instance_question of instance_questions) {
+      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+        continue;
+      }
       const submission_id = await selectLastSubmissionId(instance_question.id);
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
@@ -104,7 +113,10 @@ export async function aiGrade({
 
     // Grade each instance question
     for (const instance_question of instance_questions) {
-      if (!instance_question.requires_manual_grading) {
+      if (
+        (instance_question_ids && !instance_question_ids.includes(instance_question.id)) || // Grade selected: skip non-selected
+        (!instance_question_ids && !instance_question.requires_manual_grading) // Grade all: skip graded
+      ) {
         continue;
       }
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
@@ -177,7 +189,7 @@ export async function aiGrade({
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
         });
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
@@ -242,7 +254,7 @@ export async function aiGrade({
           error_count++;
         }
       } else {
-        const completion = await openai.beta.chat.completions.parse({
+        const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
