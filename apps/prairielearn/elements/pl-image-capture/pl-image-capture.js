@@ -249,7 +249,6 @@
         });
 
         // Acknowledge the receipt of the image capture
-        console.log('Acknowledging external image capture', this.variant_id, this.file_name);
         socket.emit(
           'externalImageCaptureAck',
           {
