@@ -1,3 +1,9 @@
+# The pl-image-capture element enables students to submit images to questions using
+# their local camera or an external device.
+
+# Neither this element nor its implementation strategy should be copied or forked
+# because it is tightly coupled with logic within PrairieLearn's web server.
+
 import json
 
 import chevron
