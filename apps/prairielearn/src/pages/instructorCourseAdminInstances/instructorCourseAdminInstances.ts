@@ -12,7 +12,7 @@ import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
-  selectCourseInstanceIdByUuid,
+  selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 
@@ -112,7 +112,7 @@ router.post(
         return;
       }
 
-      const courseInstanceId = await selectCourseInstanceIdByUuid({
+      const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
         course_id: res.locals.course.id,
       });
@@ -122,7 +122,7 @@ router.post(
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          courseInstanceId +
+          courseInstance.id +
           '/instructor/instance_admin/assessments',
       );
     } else {

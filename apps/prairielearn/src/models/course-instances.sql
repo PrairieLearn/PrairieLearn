@@ -117,9 +117,9 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
--- BLOCK select_course_instance_id_from_uuid
+-- BLOCK select_course_instance_by_uuid
 SELECT
-  ci.id AS course_instance_id
+  ci.*
 FROM
   course_instances AS ci
 WHERE

@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { selectAssessments } from '../../models/assessment.js';
 import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
 import { PublicAssessments } from './publicAssessments.html.js';
@@ -16,7 +16,7 @@ const router = express.Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectCourseInstanceById(req.params.course_instance_id);
+    const courseInstance = await selectOptionalCourseInstanceById(req.params.course_instance_id);
     if (courseInstance === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }

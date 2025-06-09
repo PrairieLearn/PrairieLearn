@@ -23,7 +23,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
-import { selectCourseInstanceIdByUuid } from '../../models/course-instances.js';
+import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -101,7 +101,8 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
-      const courseInstanceId = await selectCourseInstanceIdByUuid({
+
+      const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
         course_id: res.locals.course.id,
       });
@@ -113,7 +114,7 @@ router.post(
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          courseInstanceId +
+          courseInstance.id +
           '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
