@@ -18,6 +18,7 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import {
@@ -35,7 +36,6 @@ import {
   selectLastVariantAndSubmission,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import { assertNever } from '../../../lib/types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
