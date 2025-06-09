@@ -17,21 +17,18 @@ router.get(
     };
 
     const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
-    res.status(200).send('Sync started with job_sequence_id of "' + jobSequenceId + '"');
+    res.status(200).json({ job_sequence_id: jobSequenceId });
   }),
 );
 
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_job_status, {
+    const result = await sqldb.queryOneRowAsync(sql.select_job, {
       course_id: req.params.course_id,
       job_sequence_id: req.params.job_sequence_id,
     });
-    res.status(200).send({
-      job_sequence_id: req.params.job_sequence_id,
-      status: result.rows[0].status,
-    });
+    res.status(200).send(result.rows[0]);
   }),
 );
 

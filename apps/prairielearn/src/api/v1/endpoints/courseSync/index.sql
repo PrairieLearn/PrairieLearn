@@ -1,4 +1,4 @@
--- BLOCK select_job_status
+-- BLOCK select_job
 SELECT
   *
 FROM
