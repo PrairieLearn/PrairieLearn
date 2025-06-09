@@ -202,8 +202,8 @@ jobs:
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
 
-      # - name: Test JavaScript code
-      #   run: make test-js
+      - name: Test JavaScript code
+        run: make test-js
 
   native-checks-js:
     runs-on: ubuntu-latest
