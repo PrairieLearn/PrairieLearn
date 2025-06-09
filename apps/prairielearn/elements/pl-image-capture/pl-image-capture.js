@@ -241,7 +241,7 @@
       socket.on('externalImageCapture', (msg) => {
         this.loadCapturePreview({
           data: msg.file_content,
-          type: 'image/png',
+          type: 'image/jpg',
         });
 
         // Acknowledge that the external image capture was received.
@@ -493,7 +493,7 @@
         throw new Error('Local camera image preview canvas not found');
       }
 
-      const dataUrl = canvas.toDataURL('image/png');
+      const dataUrl = canvas.toDataURL('image/jpg');
       this.loadCapturePreviewFromDataUrl(dataUrl);
       this.closeConfirmationContainer();
     }

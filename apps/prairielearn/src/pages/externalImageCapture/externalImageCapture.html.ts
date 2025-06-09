@@ -60,7 +60,7 @@ export function ExternalImageCapture({
               type="file"
               id="camera-input"
               name="file"
-              accept="image/png"
+              accept="image/jpg"
               capture="environment"
               class="visually-hidden"
               required

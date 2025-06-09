@@ -23,9 +23,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
-    if not file_name.endswith(".png"):
+    if not file_name.endswith(".jpg"):
         pl.add_files_format_error(
-            data, f"File '{file_name}' must have extension '.png'."
+            data, f"File '{file_name}' must have extension '.jpg'."
         )
 
     pl.check_answers_names(data, file_name)
@@ -100,10 +100,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    # Confirm that the data URI is a PNG image.
-    if not submitted_file_content.startswith("data:image/png;base64,"):
+    # Confirm that the data URI is a JPG image.
+    if not submitted_file_content.startswith("data:image/jpg;base64,"):
         pl.add_files_format_error(
-            data, f"Image submission for {file_name} is not a PNG image."
+            data, f"Image submission for {file_name} is not a JPG image."
         )
         return
 
