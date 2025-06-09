@@ -3,4 +3,25 @@
   <p> What is the sum $c = a + b$?</p>
 </pl-question-panel>
 
-<pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+
+
+<pl-order-blocks
+  answers-name="conjunction-implies-conjunction"
+  grading-method="dag"
+  solution-placement="bottom"
+  feedback="first-wrong"
+>
+  <pl-answer correct="true" tag="1" depends=""  > <pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+ Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" >
+
+    <pl-multiple-choice display="dropdown" hide-letter-keys="true" order="ascend" answers-name="hume_mc" aria-label="A blank man proportions his belief to the evidence.">
+    <pl-answer correct="true">wise</pl-answer>
+    <pl-answer correct="false">clumsy</pl-answer>
+    <pl-answer correct="false">reckless</pl-answer>
+  </pl-multiple-choice>
+
+  Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>

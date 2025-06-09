@@ -4,7 +4,7 @@ SELECT
   v.question_id,
   v.instance_question_id,
   v.course_instance_id,
-  v.course_id,
+  v.course_id
 FROM
   workspaces AS w
   JOIN variants AS v ON (w.id = v.workspace_id)
