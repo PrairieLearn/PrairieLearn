@@ -88,7 +88,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
 
-    submitted_file_content = data["submitted_answers"].get(file_name, None)
+    submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
         pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
