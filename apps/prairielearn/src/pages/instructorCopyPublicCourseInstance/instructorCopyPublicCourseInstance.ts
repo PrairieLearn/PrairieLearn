@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
 const router = Router();
@@ -12,7 +12,7 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const courseInstance = await selectCourseInstanceById(req.body.course_instance_id);
+    const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
     if (courseInstance === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
