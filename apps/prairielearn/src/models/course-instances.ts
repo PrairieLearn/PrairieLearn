@@ -131,3 +131,17 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
   );
   return isPublic;
 }
+
+export async function selectCourseInstanceByUuid({
+  course_id,
+  uuid,
+}: {
+  course_id: string;
+  uuid: string;
+}): Promise<CourseInstance> {
+  return await queryRow(
+    sql.select_course_instance_by_uuid,
+    { uuid, course_id },
+    CourseInstanceSchema,
+  );
+}
