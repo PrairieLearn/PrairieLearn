@@ -5,7 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { CourseSchema, QuestionSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 
