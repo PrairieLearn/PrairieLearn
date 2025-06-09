@@ -1,8 +1,7 @@
 import { join } from 'path';
 
 import { configDefaults, defineConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification, type Vitest } from 'vitest/node';
-import { GithubActionsReporter } from 'vitest/reporters';
+import { BaseSequencer, type TestSpecification } from 'vitest/node';
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
