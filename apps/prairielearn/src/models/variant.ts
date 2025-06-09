@@ -102,11 +102,6 @@ export async function selectUserOwnsVariant({
   return await queryRow(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
-/**
- * TODO: We need to add checks for public question previews. That page should
- * only allow viewing of variants that are owned by the current user and that
- * were created on the public question preview page.
- */
 export async function selectAndAuthzVariant(options: {
   unsafe_variant_id: string;
   variant_course: Course;

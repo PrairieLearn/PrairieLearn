@@ -2,6 +2,36 @@
 ##
 ## Alton Barbehenn and Dirk Eddelbuettel, 2019 - 2025
 
+#' Extract R code from a Jupyter notebook
+#'
+#' This function parses a Jupyter notebook file and extracts R code from cells
+#' that start with a specific key.
+#'
+#' @param file Path to a Jupyter notebook (.ipynb) file
+#' @param ipynb_key Character string that marks the beginning of R code cells to extract
+#'
+#' @return A character string containing the concatenated R code from matching cells
+#'
+#' @examples
+#' \dontrun{
+#' code <- extract_r_code_from_ipynb("student.ipynb")
+#' }
+extract_r_code_from_ipynb <- function(file, ipynb_key) {
+  nb <- jsonlite::fromJSON(file, simplifyVector = FALSE)
+  content <- ""
+  
+  for (cell in nb$cells) {
+    if (cell$cell_type == "code") {
+      code <- paste(unlist(cell$source), collapse = "")
+      if (startsWith(trimws(code), ipynb_key)) {
+        content <- paste0(content, code, "\n")
+      }
+    }
+  }
+  
+  return(content)
+}
+
 result <- tryCatch({
 
     debug <- FALSE
@@ -22,6 +52,37 @@ result <- tryCatch({
         cat("[pltest] showing question_details\n")
         print(question_details)
         cat("[pltest] done question_details\n\n")
+    }
+
+    # List all files in the 'bin/' directory
+    ipynb_files <- list.files("bin", pattern = "\\.ipynb$", full.names = TRUE)
+
+    ## Check for ipynb
+    if (length(ipynb_files) == 1) {
+        ipynb_file <- ipynb_files[1]
+        print("[pltest] Found ipynb file")
+
+        # Check for ipynb key
+        ipynb_key <- Sys.getenv("IPYNB_KEY", unset = "#grade")
+
+        # Extract code
+        code <- extract_r_code_from_ipynb(ipynb_file, ipynb_key)
+        if (nchar(code) == 0) {
+            warning(paste0("No matching R code found in notebook using the IPYNB_KEY of '", ipynb_key, "'"))
+            return(invisible(NULL))
+        }
+
+        # Define new R file path inside 'bin'
+        base_name <- tools::file_path_sans_ext(basename(ipynb_file))
+        student_file <- file.path("..", "student", paste0(base_name, ".R"))
+        writeLines(code, student_file)
+        print(paste("[pltest] Extracted code written to", student_file))
+
+        # Delete the original .ipynb file
+        file.remove(file.path("..", "student", basename(ipynb_file)))
+        print("[pltest] Deleted original ipynb file")
+    } else if (length(ipynb_files) > 1) {
+        stop("This grader can only handle one notebook file")
     }
     
     ## Run tests in the test directory
@@ -64,7 +125,8 @@ result <- tryCatch({
     }
     
     ## Aggregate test results and process NAs as some question may have exited
-    res <- merge(test_results, question_details, by = "file", all = TRUE)
+    #res <- merge(test_results, question_details, by = "file", all = TRUE)
+    res <- cbind(test_results, question_details)
     ## Correct answers get full points, other get nothing
     res$points <- ifelse( !is.na(res$result) & res$result==TRUE,  res$max_points, 0)
     ## For false answer with ttdo support we collate call and diff output (from diffobj::diffPrint)
@@ -86,8 +148,8 @@ result <- tryCatch({
     ## And return components for JSON output
     list(tests = res, score = score, images = images, succeeded = TRUE)
 },
-warning = function(w) list(tests = plr::message_to_test_result(w), score = 0, succeeded = FALSE),
-error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succeeded = FALSE) )
+warning = function(w) list(tests = plr::message_to_test_result(w), score = 0, succeeded = FALSE, gradable = FALSE),
+error = function(e) list(tests = plr::message_to_test_result(e), score = 0, succeeded = FALSE, gradable = FALSE) )
 
 ## Record results as the required JSON object
 jsonlite::write_json(result, path = "results.json", auto_unbox = TRUE, force = TRUE)

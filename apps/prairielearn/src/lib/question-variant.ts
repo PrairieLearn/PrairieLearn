@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
@@ -283,7 +283,7 @@ async function makeAndInsertVariant(
       }
 
       if (course_instance_id != null) {
-        const course_instance = await selectCourseInstanceById(course_instance_id);
+        const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
         if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
           throw new error.HttpStatusError(403, 'Course instance not found in course');
         }
