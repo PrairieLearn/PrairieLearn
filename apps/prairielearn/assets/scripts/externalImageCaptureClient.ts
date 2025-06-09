@@ -7,6 +7,8 @@ import type {
   StatusMessageWithFileContent,
 } from '../../src/lib/externalImageCaptureSocket.types.js';
 
+const maxImageSideLength = 1000;
+
 onDocumentReady(() => {
   const cameraInput = document.querySelector<HTMLInputElement>('#camera-input');
   const cameraInputLabelSpan = document.querySelector<HTMLLabelElement>(
@@ -17,6 +19,9 @@ onDocumentReady(() => {
   const externalImageCaptureForm = document.querySelector<HTMLFormElement>(
     '#external-image-capture-form',
   );
+
+  let resizingCanvas: HTMLCanvasElement | null = null;
+  let resizingCtx: CanvasRenderingContext2D | null = null;
 
   if (
     !cameraInput ||
@@ -156,7 +161,7 @@ onDocumentReady(() => {
         // Perform scaling to ensure that user-uploaded images are not too large.
         // The scale factor ensures that the width and height of the image do not exceed 1000px.
         // If the image width and height are both less than 1000px, no scaling is applied.
-        const imageScaleFactor = 1000 / Math.max(image.width, image.height);
+        const imageScaleFactor = maxImageSideLength / Math.max(image.width, image.height);
 
         if (imageScaleFactor >= 1) {
           // No scaling is necessary, so we can directly use the original image.
@@ -167,29 +172,35 @@ onDocumentReady(() => {
         const targetWidth = Math.round(image.width * imageScaleFactor);
         const targetHeight = Math.round(image.height * imageScaleFactor);
 
-        const canvas = document.createElement('canvas');
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          throw new Error('Failed to get canvas context');
+        if (!resizingCanvas) {
+          resizingCanvas = document.createElement('canvas');
+        }
+        if (!resizingCtx) {
+          resizingCtx = resizingCanvas.getContext('2d');
+          if (!resizingCtx) {
+            throw new Error('Failed to get canvas context');
+          }
         }
 
-        ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+        resizingCanvas.width = targetWidth;
+        resizingCanvas.height = targetHeight;
+        resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-        canvas.toBlob((blob) => {
+        resizingCanvas.toBlob((blob) => {
           if (!blob) {
             URL.revokeObjectURL(url);
             throw new Error('Failed to create blob from canvas');
           }
+
           const resizedFile = new File([blob], file.name, { type: file.type });
           const dt = new DataTransfer();
           dt.items.add(resizedFile);
 
           cameraInput.files = dt.files;
 
-          displayImagePreview(canvas.toDataURL(file.type));
+          if (resizingCanvas) {
+            displayImagePreview(resizingCanvas.toDataURL(file.type));
+          }
 
           URL.revokeObjectURL(url);
 
