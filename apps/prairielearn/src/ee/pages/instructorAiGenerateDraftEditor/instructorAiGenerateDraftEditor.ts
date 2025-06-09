@@ -8,7 +8,6 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { getQuestionCopyTargets } from '../../../lib/copy-content.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
@@ -202,7 +201,6 @@ router.get(
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
-    const questionCopyTargets = await getQuestionCopyTargets(res);
     setRendererHeader(res);
 
     res.send(
@@ -211,7 +209,6 @@ router.get(
         prompts,
         question: res.locals.question,
         variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
-        questionCopyTargets,
       }),
     );
   }),

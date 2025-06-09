@@ -11,7 +11,6 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import type { CopyTarget } from '../../../lib/copy-content.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateDraftEditor({
@@ -19,13 +18,11 @@ export function InstructorAiGenerateDraftEditor({
   prompts,
   question,
   variantId,
-  questionCopyTargets,
 }: {
   resLocals: Record<string, any>;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
   variantId?: string | undefined;
-  questionCopyTargets: CopyTarget[] | null;
 }) {
   // This page has a very custom layout, so we don't use the usual `PageLayout`
   // component here. If we start building other similar pages, we might want to
@@ -144,9 +141,7 @@ export function InstructorAiGenerateDraftEditor({
                   </span>
                 </div>
               </div>
-              <div class="app-preview">
-                ${QuestionAndFilePreview({ resLocals, prompts, questionCopyTargets })}
-              </div>
+              <div class="app-preview">${QuestionAndFilePreview({ resLocals, prompts })}</div>
             </main>
           </div>
         </div>
@@ -253,11 +248,9 @@ function PromptHistory({
 
 function QuestionAndFilePreview({
   prompts,
-  questionCopyTargets,
   resLocals,
 }: {
   prompts: AiQuestionGenerationPrompt[];
-  questionCopyTargets: CopyTarget[] | null;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -267,7 +260,6 @@ function QuestionAndFilePreview({
           ${QuestionContainer({
             resLocals,
             questionContext: 'instructor',
-            questionCopyTargets,
           })}
         </div>
       </div>
