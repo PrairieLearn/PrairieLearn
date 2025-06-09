@@ -7,7 +7,7 @@ import type {
   StatusMessageWithFileContent,
 } from '../../src/lib/externalImageCaptureSocket.types.js';
 
-const maxImageSideLength = 1000;
+const MAX_IMAGE_SIDE_LENGTH = 1000;
 
 onDocumentReady(() => {
   const cameraInput = document.querySelector<HTMLInputElement>('#camera-input');
@@ -161,7 +161,7 @@ onDocumentReady(() => {
         // Perform scaling to ensure that user-uploaded images are not too large.
         // The scale factor ensures that the width and height of the image do not exceed 1000px.
         // If the image width and height are both less than 1000px, no scaling is applied.
-        const imageScaleFactor = maxImageSideLength / Math.max(image.width, image.height);
+        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
 
         if (imageScaleFactor >= 1) {
           // No scaling is necessary, so we can directly use the original image.
