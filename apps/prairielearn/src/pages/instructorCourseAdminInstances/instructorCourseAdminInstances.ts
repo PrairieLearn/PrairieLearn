@@ -8,7 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
