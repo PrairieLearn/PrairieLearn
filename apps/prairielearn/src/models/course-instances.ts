@@ -140,7 +140,7 @@ export async function selectCourseInstanceByUuid({
   uuid: string;
 }): Promise<CourseInstance> {
   return await queryRow(
-    sql.select_course_instance_id_from_uuid,
+    sql.select_course_instance_by_uuid,
     { uuid, course_id },
     CourseInstanceSchema,
   );
