@@ -5,11 +5,10 @@ ARG CACHEBUST=2025-06-05-17-00-00
 
 SHELL ["/bin/bash", "-c"]
 
-# Git and curl
-RUN apt-get update && apt-get upgrade -y
-
 # Install system packages
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
         bash-completion \
         build-essential \
         ca-certificates \
@@ -31,7 +30,8 @@ RUN apt-get install -y --no-install-recommends \
         tar \
         vim \
         python3.10 \
-        python3-pip
+        python3-pip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set up Postgres
 RUN echo "PATH=\"/usr/lib/postgresql/16/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin\"" > /etc/environment && \
