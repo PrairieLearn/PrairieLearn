@@ -4,6 +4,12 @@ See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/
 
 Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
 
+!!! info
+
+    When deciding on the attributes used by your element, avoid using attribute names that are generally interpreted as boolean attributes in HTML elements. These attribute names may be incorrectly interpreted and their values converted to mean something different than your original intent. In particular, you should avoid these attributes: `checked`, `compact`, `declare`, `defer`, `disabled`, `ismap`, `multiple`, `nohref`, `noresize`, `noshade`, `nowrap`, `readonly`, `selected`.
+
+    Additionally, you are encouraged to avoid attribute names that have special meaning in HTML (e.g., `onclick` or `style`), as they may be misinterpreted by IDEs.
+
 ## Anatomy of an element
 
 The system-wide elements available in the current build of the PrairieLearn server
