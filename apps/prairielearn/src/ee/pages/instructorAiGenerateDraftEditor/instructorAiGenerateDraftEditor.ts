@@ -200,7 +200,6 @@ router.get(
         newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
       },
     });
-
     await logPageView('instructorQuestionPreview', req, res);
     setRendererHeader(res);
 
