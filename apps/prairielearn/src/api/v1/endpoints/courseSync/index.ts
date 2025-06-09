@@ -28,7 +28,14 @@ router.get(
       course_id: req.params.course_id,
       job_sequence_id: req.params.job_sequence_id,
     });
-    res.status(200).send(result.rows[0]);
+
+    const data = result.rows[0].item;
+
+    if (data.length === 0) {
+      res.status(404).send({ message: 'Not Found' });
+    } else {
+      res.status(200).send(data[0]);
+    }
   }),
 );
 
