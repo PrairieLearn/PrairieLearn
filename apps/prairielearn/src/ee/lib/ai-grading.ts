@@ -125,9 +125,7 @@ export async function aiGrade({
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
         questionRenderContext: 'ai_grading',
       };
-
       // Get question html
-
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
@@ -138,7 +136,6 @@ export async function aiGrade({
         question_course,
         locals,
       );
-
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');

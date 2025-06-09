@@ -56,12 +56,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "uuid": pl.get_uuid(),
+        "file_name": file_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
         "submission_date": data["options"].get("submission_date", ""),
-        "submission_files_url": data["options"].get("submission_files_url"),
         "editable": data["editable"] and data["panel"] == "question",
-        "file_name": file_name,
+        "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
     }
 
