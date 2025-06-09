@@ -196,38 +196,42 @@ function splitSubmissionTextAndImages({
   let submissionTextBuffer = '';
 
   // Iterate over all top-level nodes (including text nodes)
-  $submission_html.root().find('body').contents().each((_, node) => {
-    const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-    if (imageCaptureUUID) {
-      if (submissionTextBuffer) {
+  $submission_html
+    .root()
+    .find('body')
+    .contents()
+    .each((_, node) => {
+      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      if (imageCaptureUUID) {
+        if (submissionTextBuffer) {
+          message_content.push({
+            type: 'text',
+            text: submissionTextBuffer,
+          });
+          submissionTextBuffer = '';
+        }
+
+        const options = $submission_html(node).data('options') as Record<string, string>;
+        const submittedImageName = options.submitted_file_name;
+
+        if (!submitted_answer) {
+          throw new Error('No submitted answers found.');
+        }
+
+        if (!submitted_answer[submittedImageName]) {
+          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        }
+
         message_content.push({
-          type: 'text',
-          text: submissionTextBuffer,
+          type: 'image_url',
+          image_url: {
+            url: submitted_answer[submittedImageName],
+          },
         });
-        submissionTextBuffer = '';
+      } else {
+        submissionTextBuffer += $submission_html(node).text();
       }
-
-      const options = $submission_html(node).data('options') as Record<string, string>;
-      const submittedImageName = options.submitted_file_name;
-
-      if (!submitted_answer) {
-        throw new Error('No submitted answers found.');
-      }
-
-      if (!submitted_answer[submittedImageName]) {
-        throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
-      }
-
-      message_content.push({
-        type: 'image_url',
-        image_url: {
-          url: submitted_answer[submittedImageName],
-        },
-      });
-    } else {
-      submissionTextBuffer += $submission_html(node).text();
-    }
-  });
+    });
 
   if (submissionTextBuffer) {
     message_content.push({
