@@ -1,35 +1,28 @@
 <script>
 $(function() {
     new window.PLImageCapture(
-      "{{uuid}}",
-      "{{answer_name}}",
-      "{{external_image_capture_url}}",
-      "{{variant_id}}",
-      "{{submitted_file_name}}",
-      "{{submission_date}}",
-      "{{editable}}",
-      "{{mobile_capture_enabled}}",
+      "{{uuid}}"
     );
 });
 </script>
 
-<div id="image-capture-{{uuid}}" class="card w-75 mb-3" {{#submitted_file_name}}data-submitted-image-name="{{submitted_file_name}}"{{/submitted_file_name}}>
+<div id="image-capture-{{uuid}}" class="card w-75 mb-3" data-options="{{image_capture_options_json}}">
   <div class="card-header">
     Image capture
   </div>
   <div 
-    class="capture-preview-container p-3" 
+    class="js-capture-preview-container p-3" 
     {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}
   >
     <input
-      class="hidden-capture-input"
+      class="js-hidden-capture-input"
       type="hidden"
-      name="{{answer_name}}"
+      name="{{file_name}}"
       data-skip-unload-check="true"
     />
-    <div class="mb-2 uploaded-image-container">
+    <div class="js-uploaded-image-container mb-2">
       <div
-        class="image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border"
+        class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border"
       >
         <div class="spinning-wheel spinner-border">
           <span class="visually-hidden">Loading...</span>
@@ -41,15 +34,15 @@ $(function() {
       <div class="d-flex gap-1 flex-wrap">
         <button
           type="button"
-          class="capture-with-webcam-button btn btn-info"
+          class="js-capture-with-local-camera-button btn btn-info"
         >
           <i class="bi bi-camera-fill me-1"></i>
-          Capture with webcam
+          Capture with local camera
         </button>
         {{#mobile_capture_enabled}}
           <button 
             type="button" 
-            class="capture-with-mobile-device-button btn btn-info"
+            class="js-capture-with-mobile-device-button btn btn-info"
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
@@ -65,29 +58,27 @@ $(function() {
               <p class="text-muted mb-0">
                 Scan the QR code with your mobile device to capture an image of your solution. 
               </p>
-            </div>'
+            </div>
+            '
           >
             <i class="bi bi-qr-code-scan me-1"></i>
             Capture with mobile device
-          </button>
-          <button class="btn btn-primary reload-capture-button" disabled>
-            <i class="bi bi-arrow-clockwise me-1"></i>
-            Reload
           </button>
         {{/mobile_capture_enabled}}
       </div>
     {{/editable}}
   </div>
-  <div class="webcam-capture-container d-none flex-column p-3">
+  <div class="js-local-camera-capture-container d-none flex-column p-3">
     <div class="position-relative">
       <video
-        class="webcam-video w-100 bg-body-secondary rounded border"
+        class="js-local-camera-video w-100 bg-body-secondary rounded border"
         autoplay
         playsinline
-      ></video>
+      >
+      </video>
 
       <div
-        class="webcam-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+        class="js-local-camera-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
         style="pointer-events: none;"
       >
         Give permission to access your camera to capture an image.
@@ -99,31 +90,32 @@ $(function() {
     </p>
 
     <div class="d-flex gap-1 mt-1">
-      <button class="capture-webcam-image-button btn btn-info" disabled>
+      <button class="js-capture-local-camera-image-button btn btn-info" disabled>
         <i class="bi bi-camera-fill me-1"></i>
         Capture image
       </button>
-      <button class="cancel-webcam-button btn btn-secondary">
+      <button class="js-cancel-local-camera-button btn btn-secondary">
         Cancel
       </button>
     </div>
   </div>
-  <div class="webcam-confirmation-container d-none d-flex flex-column p-3">
+  <div class="js-local-camera-confirmation-container d-none d-flex flex-column p-3">
     <canvas
-      class="webcam-image-preview w-100 bg-body-secondary rounded border mb-1"
+      class="js-local-camera-image-preview w-100 bg-body-secondary rounded border mb-1"
       autoplay
       playsinline
-    ></canvas>
+    >
+    </canvas>
     <div class="d-flex gap-1 mt-1">
-      <button class="confirm-webcam-image-button btn btn-info" type="submit">
+      <button class="js-confirm-local-camera-image-button btn btn-info" type="submit">
         <i class="bi bi-check2 me-1"></i>
         Use image
       </button>
-      <button class="retake-webcam-image-button btn btn-secondary">
+      <button class="js-retake-local-camera-image-button btn btn-secondary">
         <i class="bi bi-arrow-counterclockwise me-1"></i>
         Retake
       </button>
-      <button class="cancel-webcam-confirmation-button btn btn-secondary">
+      <button class="js-cancel-local-camera-confirmation-button btn btn-secondary">
         Cancel
       </button>
     </div>

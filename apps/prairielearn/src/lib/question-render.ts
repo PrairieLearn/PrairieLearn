@@ -15,12 +15,12 @@ import {
 } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
+import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
   SubmissionPanel,
 } from '../components/SubmissionPanel.html.js';
-import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -159,6 +159,7 @@ interface QuestionUrls {
   clientFilesCourseUrl: string;
   clientFilesQuestionGeneratedFileUrl: string;
   baseUrl: string;
+  externalImageCaptureUrl: string;
   workspaceUrl?: string;
 }
 
@@ -201,6 +202,8 @@ export function buildQuestionUrls(
       clientFilesQuestionGeneratedFileUrl:
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl:
+        config.serverCanonicalHost + questionUrl + 'externalImageCapture/variant/' + variant.id,
     };
   } else {
     // student question pages
@@ -221,6 +224,8 @@ export function buildQuestionUrls(
       clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
       clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl:
+        config.serverCanonicalHost + iqUrl + 'externalImageCapture/variant/' + variant.id,
     };
   }
 

@@ -55,5 +55,6 @@
   "python.testing.pytestEnabled": true,
   "[json]": {
     "files.insertFinalNewline": true
-  }
+  },
+  "vitest.maximumConfigs": 100
 }

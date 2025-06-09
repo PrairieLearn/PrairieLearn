@@ -2,27 +2,24 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
-import { queryOptionalRow } from '@prairielearn/postgres';
 
-import { ExternalImageCaptureSchema } from '../../lib/db-types.js';
-import { createExternalImageCapture } from '../../lib/externalImageCapture.js';
-import { getFile } from '../../lib/file-store.js';
+import { emitExternalImageCapture } from '../../lib/externalImageCaptureSocket.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
-import { ExternalImageCapture, ExternalImageCaptureSuccess } from './externalImageCapture.html.js';
+import { ExternalImageCapture } from './externalImageCapture.html.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const router = express.Router({
-  mergeParams: true,
-});
+const router = express.Router({ mergeParams: true });
 
 router.get(
-  '/answer/:answer_name',
+  '/',
   asyncHandler(async (req, res) => {
+    if (!req.query.file_name) {
+      throw new HttpStatusError(400, 'file_name query parameter is required');
+    }
     res.send(
       ExternalImageCapture({
+        variantId: req.params.variant_id,
+        fileName: req.query.file_name as string,
         resLocals: res.locals,
       }),
     );
@@ -31,10 +28,10 @@ router.get(
 
 // Handles image uploading from the external image capture page.
 router.post(
-  '/answer/:answer_name',
+  '/',
   asyncHandler(async (req, res) => {
     const variantId = req.params.variant_id as string;
-    const answerName = req.params.answer_name as string;
+    const fileName = req.query.file_name as string;
 
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: variantId,
@@ -61,64 +58,18 @@ router.post(
       throw new HttpStatusError(400, 'No file uploaded');
     }
 
-    await createExternalImageCapture({
-      variantId,
-      answerName,
-      userId: res.locals.authn_user.user_id,
-      fileBuffer: req.file.buffer,
-      resLocals: res.locals,
-    });
-
-    res.send(
-      ExternalImageCaptureSuccess({
-        resLocals: res.locals,
-      }),
-    );
-  }),
-);
-
-// Handles fetching the uploaded, externally-captured image for a specific answer.
-router.get(
-  '/answer/:answer_name/uploaded_image',
-  asyncHandler(async (req, res) => {
-    const variant = await selectAndAuthzVariant({
-      unsafe_variant_id: req.params.variant_id,
-      variant_course: res.locals.course,
-      question_id: res.locals.question.id,
-      course_instance_id: res.locals?.course_instance?.id,
-      instance_question_id: res.locals.instance_question?.id,
-      authz_data: res.locals.authz_data,
-      authn_user: res.locals.authn_user,
-      user: res.locals.user,
-      is_administrator: res.locals.is_administrator,
-      publicQuestionPreview: res.locals.public_question_preview,
-    });
-
-    if (!variant) {
-      throw new HttpStatusError(404, 'Variant not found');
+    if (req.file.buffer.length > 10 * 1024 * 1024) {
+      throw new HttpStatusError(400, 'File size exceeds the limit of 10MB');
     }
 
-    const externalImageCapture = await queryOptionalRow(
-      sql.select_external_image_capture_by_variant_id_and_answer_name,
-      {
-        variant_id: parseInt(variant.id),
-        answer_name: req.params.answer_name,
-      },
-      ExternalImageCaptureSchema,
-    );
+    // Emit a socket event to notify the client that the image has been captured.
+    await emitExternalImageCapture({
+      variant_id: variantId,
+      file_name: fileName,
+      file_content: req.file.buffer.toString('base64'),
+    });
 
-    if (externalImageCapture && externalImageCapture.file_id) {
-      const { contents, file } = await getFile(externalImageCapture.file_id);
-      const base64_contents = contents.toString('base64');
-      res.json({
-        filename: file.display_filename,
-        type: file.type,
-        data: base64_contents,
-        uploadDate: externalImageCapture.updated_at,
-      });
-    } else {
-      throw new HttpStatusError(404, 'No image submitted for this answer');
-    }
+    res.status(200).send('Success');
   }),
 );
 

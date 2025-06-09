@@ -1,11 +1,16 @@
+import { io } from 'socket.io-client';
+
 import { onDocumentReady } from '@prairielearn/browser-utils';
+
+import type {
+  StatusMessage,
+  StatusMessageWithFileContent,
+} from '../../src/lib/externalImageCaptureSocket.types.js';
 
 onDocumentReady(() => {
   const cameraInput = document.querySelector<HTMLInputElement>('#camera-input');
-  const rawCameraInput = document.querySelector<HTMLInputElement>('#raw-camera-input');
-
-  const rawCameraInputLabelSpan = document.querySelector<HTMLLabelElement>(
-    'label[for="raw-camera-input"] span',
+  const cameraInputLabelSpan = document.querySelector<HTMLLabelElement>(
+    'label[for="camera-input"] span',
   );
   const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
   const imagePreview = document.querySelector<HTMLImageElement>('#image-preview');
@@ -15,8 +20,7 @@ onDocumentReady(() => {
 
   if (
     !cameraInput ||
-    !rawCameraInput ||
-    !rawCameraInputLabelSpan ||
+    !cameraInputLabelSpan ||
     !uploadButton ||
     !imagePreview ||
     !externalImageCaptureForm
@@ -24,11 +28,125 @@ onDocumentReady(() => {
     throw new Error('Required elements not found in the document');
   }
 
-  rawCameraInput.addEventListener('change', () => {
-    rawCameraInput.disabled = false;
-    if (rawCameraInput.files && rawCameraInput.files.length > 0) {
+  function changeState(state: 'form' | 'loading' | 'success' | 'failed') {
+    const externalImageCaptureLoadingContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-loading-container',
+    );
+    const externalImageCaptureFormContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-form-container',
+    );
+    const formInputs =
+      externalImageCaptureFormContainer?.querySelector<HTMLDivElement>('#form-items');
+    const externalImageCaptureSuccessContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-success-container',
+    );
+    const externalImageCaptureFailedContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-failed-container',
+    );
+
+    if (
+      !externalImageCaptureLoadingContainer ||
+      !externalImageCaptureFormContainer ||
+      !formInputs ||
+      !externalImageCaptureSuccessContainer ||
+      !externalImageCaptureFailedContainer ||
+      !uploadButton
+    ) {
+      throw new Error('Required elements for changing state not found in the document');
+    }
+
+    if (state === 'form') {
+      externalImageCaptureFormContainer.classList.remove('d-none');
+      formInputs.classList.remove('d-none');
+    } else {
+      externalImageCaptureFormContainer.classList.add('d-none');
+    }
+
+    if (state === 'loading') {
+      externalImageCaptureLoadingContainer.classList.replace('d-none', 'd-flex');
+    } else {
+      externalImageCaptureLoadingContainer.classList.replace('d-flex', 'd-none');
+    }
+
+    if (state === 'success') {
+      externalImageCaptureSuccessContainer.classList.remove('d-none');
+    } else {
+      externalImageCaptureSuccessContainer.classList.add('d-none');
+    }
+
+    if (state === 'failed') {
+      externalImageCaptureFailedContainer.classList.remove('d-none');
+      externalImageCaptureFormContainer.classList.remove('d-none');
+      formInputs.classList.add('d-none');
+      uploadButton.innerHTML = 'Try again';
+    } else {
+      externalImageCaptureFailedContainer.classList.add('d-none');
+      formInputs.classList.remove('d-none');
+      uploadButton.innerHTML = 'Upload';
+    }
+  }
+
+  function displayImagePreview(dataUrl: string) {
+    if (!imagePreview || !uploadButton || !cameraInputLabelSpan) {
+      throw new Error(
+        'Required elements for displaying an image preview not found in the document',
+      );
+    }
+    imagePreview.src = dataUrl;
+    imagePreview.style.display = 'block';
+
+    uploadButton.disabled = false;
+    cameraInputLabelSpan.textContent = 'Retake photo';
+  }
+
+  function listenForImageCaptureAcknowledgement() {
+    if (!externalImageCaptureForm) {
+      throw new Error('External image capture form not found in the document');
+    }
+    const variant_id = externalImageCaptureForm.dataset.variantId;
+    const file_name = externalImageCaptureForm.dataset.fileName;
+
+    const socket = io('/external-image-capture');
+
+    socket.emit(
+      'joinExternalImageCapture',
+      {
+        variant_id,
+        file_name,
+      },
+      (msg: StatusMessageWithFileContent) => {
+        if (!msg) {
+          changeState('failed');
+          throw new Error('Failed to join external image capture room');
+        }
+      },
+    );
+
+    const timeoutMs = 10 * 1000; // 10 seconds
+
+    const timeout = setTimeout(() => {
+      changeState('failed');
+      socket.disconnect();
+    }, timeoutMs);
+
+    socket.on('externalImageCaptureAck', (msg: StatusMessage) => {
+      clearTimeout(timeout);
+      socket.disconnect();
+
+      if (!msg) {
+        changeState('failed');
+        throw new Error('Failed to receive external image capture acknowledgement');
+      }
+
+      changeState('success');
+    });
+  }
+
+  cameraInput.addEventListener('change', () => {
+    cameraInput.disabled = false;
+    if (cameraInput.files && cameraInput.files.length > 0) {
       // Select the image the user uploaded.
-      const file = rawCameraInput.files[0];
+      const file = cameraInput.files[0];
       const url = URL.createObjectURL(file);
       const image = new Image();
 
@@ -38,7 +156,13 @@ onDocumentReady(() => {
         // Perform scaling to ensure that user-uploaded images are not too large.
         // The scale factor ensures that the width and height of the image do not exceed 1000px.
         // If the image width and height are both less than 1000px, no scaling is applied.
-        const imageScaleFactor = Math.min(1000 / Math.max(image.width, image.height), 1);
+        const imageScaleFactor = 1000 / Math.max(image.width, image.height);
+
+        if (imageScaleFactor >= 1) {
+          // No scaling is necessary, so we can directly use the original image.
+          displayImagePreview(url);
+          return;
+        }
 
         const targetWidth = Math.round(image.width * imageScaleFactor);
         const targetHeight = Math.round(image.height * imageScaleFactor);
@@ -54,9 +178,6 @@ onDocumentReady(() => {
 
         ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-        imagePreview.src = canvas.toDataURL(file.type);
-        imagePreview.style.display = 'block';
-
         canvas.toBlob((blob) => {
           if (!blob) {
             URL.revokeObjectURL(url);
@@ -67,8 +188,8 @@ onDocumentReady(() => {
           dt.items.add(resizedFile);
 
           cameraInput.files = dt.files;
-          uploadButton.disabled = false;
-          rawCameraInputLabelSpan.textContent = 'Retake photo';
+
+          displayImagePreview(canvas.toDataURL(file.type));
 
           URL.revokeObjectURL(url);
 
@@ -80,7 +201,9 @@ onDocumentReady(() => {
       uploadButton.disabled = true;
     }
   });
+
   externalImageCaptureForm.addEventListener('submit', () => {
-    rawCameraInput.disabled = true;
+    changeState('loading');
+    listenForImageCaptureAcknowledgement();
   });
 });

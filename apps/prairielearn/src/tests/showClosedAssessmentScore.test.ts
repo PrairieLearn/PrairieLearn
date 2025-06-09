@@ -4,6 +4,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -50,7 +52,8 @@ describe(
     });
 
     test.sequential('enroll the test student user in the course', async () => {
-      await sqldb.queryAsync(sql.enroll_student_in_course, []);
+      const user = await selectUserByUid('student@example.com');
+      await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
     });
 
     test.sequential('visit start exam page', async () => {
