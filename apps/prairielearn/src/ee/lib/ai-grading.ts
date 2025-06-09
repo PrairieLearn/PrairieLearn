@@ -87,7 +87,6 @@ export async function aiGrade({
         continue;
       }
       const submission_id = await selectLastSubmissionId(instance_question.id);
-
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await generateSubmissionEmbedding({
@@ -110,6 +109,7 @@ export async function aiGrade({
       }
     }
     job.info(`Found ${number_to_grade} submissions to grade!`);
+
     let error_count = 0;
 
     // Grade each instance question
@@ -183,23 +183,7 @@ export async function aiGrade({
       job.info(gradedExampleInfo);
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
-
-      // TODO: Improve this comment
-      // Render the answer panel
-      const render_answer_results = await questionModule.render(
-        { question: false, submissions: false, answer: true },
-        variant,
-        question,
-        submission,
-        [submission],
-        question_course,
-        locals,
-      );
-
-      console.log('render_answer_results', render_answer_results);
-    
-      // TOOD: Extract the submitted images of the student.
-
+      
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,

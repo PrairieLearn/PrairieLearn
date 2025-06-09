@@ -157,19 +157,12 @@ export async function generatePrompt({
   }
 
   // Student response
-
   // Parse out all divs with data-submitted-image-name
   // These are images that were captured and submitted by the student.
-
-  const submittedMessage = splitSubmissionTextAndImages({
+  messages.push(splitSubmissionTextAndImages({
     submission_text,
     submitted_answer,
-  });
-  messages.push(submittedMessage);
-  // messages.push({
-  //   role: 'user',
-  //   content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
-  // });
+  }));
 
   return { messages };
 }
@@ -374,8 +367,6 @@ export async function generateSubmissionEmbedding({
     question_course,
     locals,
   );
-
-  console.log('render_submission_results', render_submission_results);
 
   const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
