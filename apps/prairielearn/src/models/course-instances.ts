@@ -20,7 +20,7 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById(
+export async function selectOptionalCourseInstanceById(
   course_instance_id: string,
 ): Promise<CourseInstance | null> {
   return queryOptionalRow(
