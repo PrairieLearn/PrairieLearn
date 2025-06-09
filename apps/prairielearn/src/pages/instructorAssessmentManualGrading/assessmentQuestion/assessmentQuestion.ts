@@ -192,7 +192,23 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        mode: 'graded',
+        mode: 'human_graded',
+      });
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'ai_grade_assessment_all') {
+      const ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!ai_grading_enabled) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+      const jobSequenceId = await aiGrade({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        mode: 'all',
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'toggle_ai_grading_mode') {

@@ -116,6 +116,10 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
+            <form method="POST" id="ai-grading-all">
+              <input type="hidden" name="__action" value="ai_grade_assessment_all" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
           `
         : ''}
       <div class="card mb-4">

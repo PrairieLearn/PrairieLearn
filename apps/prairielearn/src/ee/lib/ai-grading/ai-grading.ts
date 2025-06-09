@@ -62,7 +62,7 @@ export async function aiGrade({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
-  mode: 'ungraded' | 'graded' | 'all' | 'selected';
+  mode: 'ungraded' | 'human_graded' | 'all' | 'selected';
   /**
    * Limit grading to the specified instance questions.
    * Only use when mode is 'selected'.
@@ -122,7 +122,7 @@ export async function aiGrade({
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
-      if (mode === 'graded') {
+      if (mode === 'human_graded') {
         // Things that have been graded by a human
         return (
           !instance_question.requires_manual_grading &&
@@ -187,9 +187,9 @@ export async function aiGrade({
         embedding: submission_embedding.embedding,
         limit: 5,
       });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}\nGraded examples:`;
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
-        gradedExampleInfo += ` ${example.instance_question_id}`;
+        gradedExampleInfo += `\n- ${example.instance_question_id}`;
       }
       job.info(gradedExampleInfo);
 
