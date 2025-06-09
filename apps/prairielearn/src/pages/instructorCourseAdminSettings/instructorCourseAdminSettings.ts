@@ -141,9 +141,6 @@ router.post(
         name: path.basename(res.locals.course.path),
         title: path.basename(res.locals.course.path),
         timezone: res.locals.institution.display_timezone,
-        options: {
-          useNewQuestionRenderer: true,
-        },
         tags: [],
         topics: [],
       };
