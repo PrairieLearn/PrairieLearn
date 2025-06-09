@@ -154,22 +154,22 @@ describe('findValueByKey() generic tests', () => {
   };
 
   test('Top level', () => {
-    assert(findValueByKey(generic, 'val1') === 'one');
+    assert.equal(findValueByKey(generic, 'val1'), 'one');
   });
   test('Nested object', () => {
-    assert(findValueByKey(generic, 'val2') === 'two');
+    assert.equal(findValueByKey(generic, 'val2'), 'two');
   });
   test('Nested array', () => {
-    assert(findValueByKey(generic, 'val3') === 'three');
+    assert.equal(findValueByKey(generic, 'val3'), 'three');
   });
   test('Missing value is undefined', () => {
-    assert(findValueByKey(generic, 'missing') === undefined);
+    assert.isUndefined(findValueByKey(generic, 'missing'));
   });
 });
 
 describe('findValueByKey() Canvas errors', () => {
   test('course concluded', () => {
-    assert(
+    assert.equal(
       findValueByKey(
         {
           errors: {
@@ -179,11 +179,12 @@ describe('findValueByKey() Canvas errors', () => {
           },
         },
         'message',
-      ) === 'This course has concluded. AGS requests will no longer be accepted for this course.',
+      ),
+      'This course has concluded. AGS requests will no longer be accepted for this course.',
     );
   });
   test('user not found', () => {
-    assert(
+    assert.equal(
       findValueByKey(
         {
           errors: {
@@ -192,7 +193,8 @@ describe('findValueByKey() Canvas errors', () => {
           },
         },
         'message',
-      ) === 'User not found in course or is not a student',
+      ),
+      'User not found in course or is not a student',
     );
   });
 });

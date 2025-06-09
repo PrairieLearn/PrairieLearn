@@ -79,7 +79,7 @@ router.get(
         res.end(LineitemsInputs(await getLineitems(instance)));
       } catch (error) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
-        logger.info('LineitemsInputs error', error);
+        logger.error('LineitemsInputs error', error);
       }
       return;
     }
