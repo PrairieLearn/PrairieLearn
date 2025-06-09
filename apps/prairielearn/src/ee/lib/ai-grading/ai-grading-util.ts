@@ -170,8 +170,6 @@ export async function generatePrompt({
     }),
   );
 
-  console.log('Message', messages[messages.length - 1]);
-
   return { messages };
 }
 
