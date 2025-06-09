@@ -128,7 +128,7 @@ export async function aiGrade({
         course_instance: { id: course_instance_id },
         questionRenderContext: 'ai_grading',
       };
-      
+
       // Get question html
 
       const questionModule = questionServers.getModule(question.type);
@@ -141,11 +141,6 @@ export async function aiGrade({
         question_course,
         locals,
       );
-
-      job.info(
-        'Render question results: ' +
-          JSON.stringify(render_question_results, null, 2),
-      )
 
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
@@ -165,11 +160,8 @@ export async function aiGrade({
           openai,
         });
       }
-
       const submission_text = submission_embedding.submission_text;
-      job.info(`submission: ${JSON.stringify(submission, null, 2)}`);
-      job.info(`submission_text: ${submission_text}`);
-      
+
       const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
@@ -183,7 +175,7 @@ export async function aiGrade({
       job.info(gradedExampleInfo);
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
-      
+
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
@@ -191,8 +183,6 @@ export async function aiGrade({
         example_submissions,
         rubric_items,
       });
-      
-      job.info(`Messages for AI grading: ${JSON.stringify(messages, null, 2)}`);
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.

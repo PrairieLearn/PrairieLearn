@@ -1,5 +1,9 @@
 import { type OpenAI } from 'openai';
-import type { ChatCompletionContentPart, ChatCompletionMessageParam, ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ParsedChatCompletion,
+} from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
 import {
@@ -104,8 +108,7 @@ export async function generatePrompt({
         "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
         (example_submissions.length
           ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : '')
-        
+          : ''),
     });
     messages.push({
       role: 'system',
@@ -159,10 +162,12 @@ export async function generatePrompt({
   // Student response
   // Parse out all divs with data-submitted-image-name
   // These are images that were captured and submitted by the student.
-  messages.push(splitSubmissionTextAndImages({
-    submission_text,
-    submitted_answer,
-  }));
+  messages.push(
+    splitSubmissionTextAndImages({
+      submission_text,
+      submitted_answer,
+    }),
+  );
 
   return { messages };
 }
@@ -256,22 +261,17 @@ function splitDivsWithSurrounding(html: string): string[] {
   return results;
 }
 
-/** 
+/**
  * In the submission text, split out the text and images interlaced in the text.
-*/
-function splitSubmissionTextAndImages(
-  {
-    submission_text,
-    submitted_answer,
-  }: 
-  {
-    submission_text: string,
-    submitted_answer: Record<string, any> | null
-  }
-): ChatCompletionMessageParam {
-
+ */
+function splitSubmissionTextAndImages({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
-
 
   message_content.push({
     type: 'text',
@@ -290,7 +290,7 @@ function splitSubmissionTextAndImages(
         submittedImageName = match[1].replace('.png', '');
       }
     }
-    
+
     if (submittedImageName) {
       if (!submitted_answer) {
         throw new Error('Submitted answer is required to extract image URL.');
@@ -320,11 +320,10 @@ function splitSubmissionTextAndImages(
     text: '\n</response>\nHow would you grade this? Please return the JSON object.',
   });
 
-
   const message: ChatCompletionMessageParam = {
     role: 'user',
-    content: message_content
-  }  
+    content: message_content,
+  };
 
   return message;
 }
