@@ -88,8 +88,6 @@ export async function aiGrade({
       }
       const submission_id = await selectLastSubmissionId(instance_question.id);
 
-      // TODO: Incorporate submitted images into embedding generation? CLIP?s
-
       const submission_embedding = await selectEmbeddingForSubmission(submission_id);
       if (!submission_embedding) {
         await generateSubmissionEmbedding({

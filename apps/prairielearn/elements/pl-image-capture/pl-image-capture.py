@@ -10,7 +10,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     pl.check_attribs(
         element,
-        required_attribs=["answer-name", "title"],
+        required_attribs=["answer-name"],
         optional_attribs=["mobile-capture-enabled"],
     )
 
@@ -31,8 +31,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
     )
 
-    title = pl.get_string_attrib(element, "title")
-
     submitted_files = data["submitted_answers"].get("_files", [])
 
     submitted_file_name = None
@@ -42,7 +40,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "uuid": pl.get_uuid(),
-        "title": title,
         "answer_name": answer_name,
         "variant_id": data["options"].get("variant_id", ""),
         "submitted_file_name": submitted_file_name,
