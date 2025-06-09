@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
+import { setQuestionCopyTargets } from '../../../lib/copy-content.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
