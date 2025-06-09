@@ -204,7 +204,6 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', upload.single('file'));
-
   app.post(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
     upload.single('file'),
