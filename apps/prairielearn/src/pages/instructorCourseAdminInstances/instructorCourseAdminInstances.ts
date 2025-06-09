@@ -11,7 +11,10 @@ import * as sqldb from '@prairielearn/postgres';
 import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import {
+  selectCourseInstanceByUuid,
+  selectCourseInstancesWithStaffAccess,
+} from '../../models/course-instances.js';
 
 import {
   type CourseInstanceAuthzRow,
@@ -109,21 +112,17 @@ router.post(
         return;
       }
 
-      const courseInstanceId = await sqldb.queryRow(
-        sql.select_course_instance_id_from_uuid,
-        {
-          uuid: editor.uuid,
-          course_id: res.locals.course.id,
-        },
-        IdSchema,
-      );
+      const courseInstance = await selectCourseInstanceByUuid({
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
 
       flash('success', 'Course instance created successfully.');
 
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          courseInstanceId +
+          courseInstance.id +
           '/instructor/instance_admin/assessments',
       );
     } else {
