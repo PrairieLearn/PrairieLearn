@@ -11,11 +11,7 @@ import { setQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -113,7 +109,6 @@ router.get(
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
-    setRendererHeader(res);
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
