@@ -225,7 +225,11 @@ export function buildQuestionUrls(
   }
 
   if (variant.workspace_id) {
-    urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    if (urlPrefix.includes('public')) {
+      urls.workspaceUrl = `/pl/public/workspace/${variant.workspace_id}`;
+    } else {
+      urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    }
   }
 
   return urls;

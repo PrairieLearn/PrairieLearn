@@ -284,7 +284,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
     (await import('./middlewares/date.js')).default,
     (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }), // jumps to error handler if authz fails
     (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)/container', [
@@ -409,7 +409,6 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
-  app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
@@ -511,7 +510,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    (await import('./middlewares/authzWorkspace.js')).default,
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }),
   ]);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
@@ -1720,6 +1719,17 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
+  );
+  app.use('/pl/public/workspace/:workspace_id(\\d+)', [
+    (req: Request, res: Response, next: NextFunction) => {
+      res.locals.workspace_id = req.params.workspace_id;
+      next();
+    },
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: true }),
+  ]);
+  app.use(
+    '/pl/public/workspace/:workspace_id(\\d+)',
+    (await import('./pages/workspace/workspace.js')).default,
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
