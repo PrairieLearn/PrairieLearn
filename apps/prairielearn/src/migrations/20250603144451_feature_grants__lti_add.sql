@@ -7,7 +7,7 @@ INSERT INTO
     course_instance_id
   )
 SELECT DISTINCT
-  'lti',
+  'lti11',
   c.institution_id,
   c.id,
   ci.id

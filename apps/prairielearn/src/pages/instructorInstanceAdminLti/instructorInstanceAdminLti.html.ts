@@ -89,16 +89,13 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
                     to ensure it is appropriate for your course.
                   </strong>
                 </p>
-                ${!config.hasLti
-                  ? html`<p><em>LTI 1.1 is not enabled on this server.</em></p>`
-                  : ''}
                 ${!lti11_enabled
                   ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
                   : ''}
               </div>
             </div>
 
-            ${config.hasLti && lti11_enabled
+            ${lti11_enabled
               ? html`
                   ${LtiCredentialsCard({ lti_credentials, csrfToken })}
                   ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
