@@ -4,11 +4,14 @@
 # Neither this element nor its implementation strategy should be copied or forked
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
+import base64
 import json
+from io import BytesIO
 
 import chevron
 import lxml.html
 import prairielearn as pl
+from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = False
 
@@ -23,9 +26,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
-    if not file_name.endswith(".png"):
+    if not file_name.lower().endswith((".jpg", ".jpeg")):
         pl.add_files_format_error(
-            data, f"File name '{file_name}' must end with '.png'."
+            data, f"File '{file_name}' must have extension '.jpg' or '.jpeg'."
         )
 
     pl.check_answers_names(data, file_name)
@@ -91,7 +94,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
 
-    submitted_file_content = data["submitted_answers"].get(file_name, None)
+    submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
         pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
@@ -103,19 +106,31 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    # Confirm that the data URI is a PNG image.
-    if not submitted_file_content.startswith("data:image/png;base64,"):
+    _, b64_payload = submitted_file_content.split(",", 1)
+
+    try:
+        img = Image.open(BytesIO(base64.b64decode(b64_payload)))
+        img.load()
+    except Exception:
         pl.add_files_format_error(
-            data, f"Image submission for {file_name} is not a PNG image."
+            data,
+            f"Failed to load submission for {file_name}. It may not be a valid image.",
         )
         return
 
-    try:
-        _, b64_payload = submitted_file_content.split(",", 1)
-    except ValueError:
-        pl.add_files_format_error(
-            data, f"Image submission for {file_name} has an invalid data URI format."
-        )
-        return
+    if img.format != "JPEG":
+        # Attempt to convert the image to JPEG format.
+        try:
+            jpeg_buffer = BytesIO()
+            rgb_img = img.convert("RGB")
+            rgb_img.save(jpeg_buffer, format="JPEG")
+            jpeg_bytes = jpeg_buffer.getvalue()
+            b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
+        except Exception:
+            pl.add_files_format_error(
+                data,
+                f"Image submission for {file_name} is not a JPEG image and could not be converted to one.",
+            )
+            return
 
     pl.add_submitted_file(data, file_name, b64_payload)

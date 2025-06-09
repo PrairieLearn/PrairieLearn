@@ -15,10 +15,10 @@ import {
 } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
-import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  type SubmissionForRender,
   SubmissionPanel,
 } from '../components/SubmissionPanel.html.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';

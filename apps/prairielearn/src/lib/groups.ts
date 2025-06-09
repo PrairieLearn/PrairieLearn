@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
@@ -220,7 +220,7 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectCourseInstanceById(course_instance_id);
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
     if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {

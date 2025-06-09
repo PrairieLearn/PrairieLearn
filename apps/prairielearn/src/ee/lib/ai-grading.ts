@@ -200,7 +200,6 @@ export async function aiGrade({
           response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
           temperature: OPEN_AI_TEMPERATURE,
         });
-
         try {
           job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);

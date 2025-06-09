@@ -10,6 +10,34 @@ import { ExternalImageCapture } from './externalImageCapture.html.js';
 
 const router = express.Router({ mergeParams: true });
 
+router.use(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      course_instance_id: res.locals?.course_instance?.id,
+      instance_question_id: res.locals.instance_question?.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+      publicQuestionPreview: res.locals.public_question_preview,
+    });
+
+    if (!variant) {
+      throw new HttpStatusError(404, 'Variant not found');
+    }
+
+    if (!variant.open) {
+      throw new HttpStatusError(403, 'This variant is not open');
+    }
+
+    next();
+  }),
+);
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -31,27 +59,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const variantId = req.params.variant_id as string;
-    const fileName = req.query.file_name as string;
+    const fileName = req.body.file_name as string | undefined;
 
-    const variant = await selectAndAuthzVariant({
-      unsafe_variant_id: variantId,
-      variant_course: res.locals.course,
-      question_id: res.locals.question.id,
-      course_instance_id: res.locals?.course_instance?.id,
-      instance_question_id: res.locals.instance_question?.id,
-      authz_data: res.locals.authz_data,
-      authn_user: res.locals.authn_user,
-      user: res.locals.user,
-      is_administrator: res.locals.is_administrator,
-      publicQuestionPreview: res.locals.public_question_preview,
-    });
-
-    if (!variant) {
-      throw new HttpStatusError(404, 'Variant not found');
-    }
-
-    if (!variant.open) {
-      throw new HttpStatusError(403, 'This variant is not open');
+    if (!fileName) {
+      throw new HttpStatusError(400, 'file_name is required');
     }
 
     if (!req.file?.buffer) {

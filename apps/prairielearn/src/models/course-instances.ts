@@ -20,7 +20,7 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById(
+export async function selectOptionalCourseInstanceById(
   course_instance_id: string,
 ): Promise<CourseInstance | null> {
   return queryOptionalRow(
@@ -130,4 +130,18 @@ export async function selectCourseInstanceIsPublic(course_instance_id: string): 
     z.boolean(),
   );
   return isPublic;
+}
+
+export async function selectCourseInstanceByUuid({
+  course_id,
+  uuid,
+}: {
+  course_id: string;
+  uuid: string;
+}): Promise<CourseInstance> {
+  return await queryRow(
+    sql.select_course_instance_by_uuid,
+    { uuid, course_id },
+    CourseInstanceSchema,
+  );
 }
