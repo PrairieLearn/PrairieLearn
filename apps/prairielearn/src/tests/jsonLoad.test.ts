@@ -22,7 +22,7 @@ describe('JSON loading', () => {
     it('reads a JSON file', async () => {
       const json = await jsonLoad.readJSON(testfile('basic.json'));
       assert.deepEqual(json, {
-        hello: 'world',
+        hello: 'world1',
         testing: 1,
       });
     });
