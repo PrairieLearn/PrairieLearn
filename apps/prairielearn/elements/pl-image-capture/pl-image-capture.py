@@ -4,11 +4,14 @@
 # Neither this element nor its implementation strategy should be copied or forked
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
+import base64
 import json
+from io import BytesIO
 
 import chevron
 import lxml.html
 import prairielearn as pl
+from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = False
 
@@ -23,9 +26,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     file_name = pl.get_string_attrib(element, "file-name")
-    if not file_name.endswith(".jpg"):
+    if not file_name.lower().endswith((".jpg", ".jpeg")):
         pl.add_files_format_error(
-            data, f"File '{file_name}' must have extension '.jpg'."
+            data, f"File '{file_name}' must have extension '.jpg' or '.jpeg'."
         )
 
     pl.check_answers_names(data, file_name)
@@ -100,18 +103,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    # Confirm that the data URI is a JPG image.
-    if not submitted_file_content.startswith("data:image/jpg;base64,"):
-        pl.add_files_format_error(
-            data, f"Image submission for {file_name} is not a JPG image."
-        )
-        return
+    _, b64_payload = submitted_file_content.split(",", 1)
 
     try:
-        _, b64_payload = submitted_file_content.split(",", 1)
-    except ValueError:
+        img = Image.open(BytesIO(base64.b64decode(b64_payload)))
+        img.load()
+
+        if img.format != "JPEG":
+            jpeg_buffer = BytesIO()
+            rgb = img.convert("RGB")
+            rgb.save(jpeg_buffer, format="JPEG")
+            jpeg_bytes = jpeg_buffer.getvalue()
+            b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
+    except Exception:
         pl.add_files_format_error(
-            data, f"Image submission for {file_name} has an invalid data URI format."
+            data,
+            f"Image submission for {file_name} is not a JPEG image and failed to be converted to one.",
         )
         return
 
