@@ -1,6 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
-import request from 'request';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -193,24 +192,15 @@ export function testFileDownloads(
         assert.lengthOf(elemList, 1);
       });
       let page;
-      it('should download something with the link to clientFilesCourse/data.txt', function (callback) {
+      it('should download something with the link to clientFilesCourse/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (shouldAccessClientFilesCourse) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode !== 200) {
-              return callback(new Error('bad status: ' + response.statusCode));
-            }
-            page = body;
-          } else {
-            if (response.statusCode !== 404) {
-              return callback(new Error('Should not have been able to access clientFilesCourse'));
-            }
-          }
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        if (shouldAccessClientFilesCourse) {
+          assert.equal(res.status, 200);
+        } else {
+          assert.equal(res.status, 404, 'Should not have been able to access clientFilesCourse');
+        }
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function () {
         if (shouldAccessClientFilesCourse) {
@@ -224,18 +214,11 @@ export function testFileDownloads(
         elemList = locals.$('a[href*="clientFilesQuestion"][download]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the force-download link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the force-download link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -244,18 +227,11 @@ export function testFileDownloads(
         elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the new tab link to clientFilesQuestion/data.txt', function (callback) {
+      it('should download something with the new tab link to clientFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is specific to the question.');
@@ -267,18 +243,11 @@ export function testFileDownloads(
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/data.txt', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/data.txt', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(fileUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.text();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/data.txt', function () {
         assert.equal(page, 'This data is generated by code.');
@@ -290,22 +259,14 @@ export function testFileDownloads(
         elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
       });
-      it('should download something with the link to generatedFilesQuestion/figure.png', function (callback) {
+      it('should download something with the link to generatedFilesQuestion/figure.png', async () => {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request({ url: fileUrl, encoding: null }, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        });
+        const res = await fetch(fileUrl);
+        assert.equal(res.status, 200);
+        page = await res.arrayBuffer();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
-        // assert.equal(page,'This data is generated by code.')
-        assert.equal(page.slice(0, 8).toString('hex'), '89504e470d0a1a0a');
+        assert.equal(Buffer.from(page.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
       });
       it('should produce no issues', async function () {
         const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);

@@ -1,24 +1,18 @@
 {
-    "uuid": "c39b94e8-2f26-4c38-a7b4-d0fb3a26396a",
-    "type": "Exam",
-    "title": "Test limiting grade rate",
-    "set": "Exam",
-    "number": "10",
-    "gradeRateMinutes": 10,
-    "allowAccess": [
-        {
-            "mode": "Public",
-            "credit": 100,
-            "timeLimitMin": 50
-        }
-    ],
-    "zones": [
-        {
-            "questions": [
-                {"id": "partialCredit1", "points": [19, 19, 19]},
-                {"id": "partialCredit2", "points": [9, 9, 9]},
-                {"id": "partialCredit3", "points": [13, 13, 13]}
-              ]
-        }
-    ]
+  "uuid": "c39b94e8-2f26-4c38-a7b4-d0fb3a26396a",
+  "type": "Exam",
+  "title": "Test limiting grade rate",
+  "set": "Exam",
+  "number": "10",
+  "gradeRateMinutes": 10,
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
+  "zones": [
+    {
+      "questions": [
+        { "id": "partialCredit1", "points": [19, 19, 19] },
+        { "id": "partialCredit2", "points": [9, 9, 9] },
+        { "id": "partialCredit3", "points": [13, 13, 13] }
+      ]
+    }
+  ]
 }

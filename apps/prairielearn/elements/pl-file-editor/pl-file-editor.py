@@ -23,15 +23,7 @@ ALLOW_BLANK_DEFAULT = False
 
 
 def get_answer_name(file_name: str) -> str:
-    return "_file_editor_{0}".format(
-        hashlib.sha1(file_name.encode("utf-8")).hexdigest()
-    )
-
-
-def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
+    return "_file_editor_{}".format(hashlib.sha1(file_name.encode("utf-8")).hexdigest())
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -61,14 +53,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        raise Exception("There is more than one file editor with the same file name.")
+        raise ValueError("There is more than one file editor with the same file name.")
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise Exception(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise ValueError(
+            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -131,7 +126,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             directory = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(directory, source_file_name)
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
         text_display = "" if element.text is None else str(element.text)
@@ -151,7 +146,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         html_params["current_file_contents"] = html_params["original_file_contents"]
 
-    with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
+    with open("pl-file-editor.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 
@@ -167,13 +162,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data["submitted_answers"].get(answer_name, "")
     if not file_contents and not allow_blank:
-        add_format_error(data, "No submitted answer for {0}".format(file_name))
+        pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
-    del data["submitted_answers"][answer_name]
+    data["submitted_answers"].pop(answer_name, None)
 
     if normalize_to_ascii:
         try:
@@ -182,18 +177,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             file_contents = base64.b64encode(
                 normalized.encode("UTF-8").strip()
             ).decode()
-            data["submitted_answers"][answer_name] = file_contents
         except UnicodeError:
-            add_format_error(data, "Submitted answer is not a valid UTF-8 string.")
+            pl.add_files_format_error(
+                data, "Submitted answer is not a valid UTF-8 string."
+            )
 
-    if data["submitted_answers"].get("_files", None) is None:
-        data["submitted_answers"]["_files"] = []
-        data["submitted_answers"]["_files"].append(
-            {"name": file_name, "contents": file_contents}
-        )
-    elif isinstance(data["submitted_answers"].get("_files", None), list):
-        data["submitted_answers"]["_files"].append(
-            {"name": file_name, "contents": file_contents}
-        )
-    else:
-        add_format_error(data, "_files was present but was not an array.")
+    pl.add_submitted_file(data, file_name, file_contents)

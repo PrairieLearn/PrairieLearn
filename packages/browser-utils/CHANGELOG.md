@@ -1,5 +1,122 @@
 # @prairielearn/browser-utils
 
+## 2.2.11
+
+### Patch Changes
+
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
+## 2.2.10
+
+### Patch Changes
+
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
+## 2.2.9
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
+## 2.2.8
+
+### Patch Changes
+
+- Updated dependencies [03f1008]
+  - @prairielearn/html@4.0.12
+
+## 2.2.7
+
+### Patch Changes
+
+- Updated dependencies [984dc62]
+  - @prairielearn/html@4.0.11
+
+## 2.2.6
+
+### Patch Changes
+
+- 11766e0: Prevent scrolling when restoring focus after a focus trap is deactivated
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/html@4.0.10
+
+## 2.2.5
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- Updated dependencies [4a8b376]
+  - @prairielearn/html@4.0.9
+
+## 2.2.4
+
+### Patch Changes
+
+- Updated dependencies [9d7d790]
+  - @prairielearn/html@4.0.8
+
+## 2.2.3
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/html@4.0.7
+
+## 2.2.2
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/html@4.0.6
+
+## 2.2.1
+
+### Patch Changes
+
+- 0fa45be: Remove stray `console.log` call
+
+## 2.2.0
+
+### Minor Changes
+
+- d7f1045: Add `trapFocus` and `focusFirstFocusbaleChild` functions
+
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [852c2e2]
+  - @prairielearn/html@4.0.5
+
+## 2.1.2
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/html@4.0.4
+
+## 2.1.1
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+- Updated dependencies [24a93b8]
+  - @prairielearn/html@4.0.3
+
+## 2.1.0
+
+### Minor Changes
+
+- d28a15d: Support custom return type for parseHTMLElement
+
 ## 2.0.2
 
 ### Patch Changes

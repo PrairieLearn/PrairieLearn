@@ -1,28 +1,47 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
-
-import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
-import { IdSchema } from '../../lib/db-types.js';
 import {
-  QuestionRenameEditor,
-  QuestionDeleteEditor,
+  ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
+  IntegerFromStringOrEmptySchema,
+} from '@prairielearn/zod';
+
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
+import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import {
+  FileModifyEditor,
+  MultiEditor,
   QuestionCopyEditor,
+  QuestionDeleteEditor,
+  QuestionRenameEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
-import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
+import { selectQuestionByUuid } from '../../models/question.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
   InstructorQuestionSettings,
@@ -55,6 +74,7 @@ router.post(
         res.locals.question,
         res.locals.course_instance,
         res.locals.course,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -71,6 +91,7 @@ router.post(
           res.locals.question,
           res.locals.course_instance,
           res.locals.course,
+          res.locals.user.user_id,
           res.locals.authn_user.user_id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -89,62 +110,224 @@ router.post(
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
-    if (req.body.__action === 'change_id') {
-      if (!req.body.id) {
-        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.id}`);
+    if (req.body.__action === 'update_question') {
+      const infoPath = path.join(
+        res.locals.course.path,
+        'questions',
+        res.locals.question.qid,
+        'info.json',
+      );
+      if (!(await fs.pathExists(infoPath))) {
+        throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
+
+      const body = z
+        .object({
+          orig_hash: z.string(),
+          qid: z.string(),
+          title: z.string(),
+          topic: z.string().optional(),
+          tags: ArrayFromStringOrArraySchema.optional(),
+          grading_method: EnumGradingMethodSchema.optional(),
+          single_variant: BooleanFromCheckboxSchema,
+          show_correct_answer: BooleanFromCheckboxSchema,
+          workspace_image: z.string().optional(),
+          workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
+          workspace_home: z.string().optional(),
+          workspace_args: z
+            .string()
+            .transform((s) => shlex.split(s || ''))
+            .optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          // This will not correctly handle any filenames that have a comma in them.
+          // Currently, we do not have any such filenames in prod so we don't think that
+          // escaping commas in individual filenames is necessary.
+          workspace_graded_files: z
+            .string()
+            .transform((s) =>
+              s
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s !== ''),
+            )
+            .optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
+          workspace_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
         throw new error.HttpStatusError(
           400,
-          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-      let qid_new;
-      try {
-        qid_new = path.normalize(req.body.id);
-      } catch (err) {
-        throw new error.HttpStatusError(
-          400,
-          `Invalid QID (could not be normalized): ${req.body.id}`,
+
+      const paths = getPaths(undefined, res.locals);
+
+      const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
+
+      const origHash = body.orig_hash;
+      questionInfo.title = body.title;
+      questionInfo.topic = body.topic;
+      questionInfo.tags = propertyValueWithDefault(
+        questionInfo.tags,
+        body.tags,
+        (val) => !val || val.length === 0,
+      );
+
+      questionInfo.gradingMethod = propertyValueWithDefault(
+        questionInfo.gradingMethod,
+        body.grading_method,
+        'Internal',
+      );
+
+      questionInfo.singleVariant = propertyValueWithDefault(
+        questionInfo.singleVariant,
+        body.single_variant,
+        false,
+      );
+
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(
+        questionInfo.showCorrectAnswer,
+        body.show_correct_answer,
+        true,
+      );
+
+      const workspaceOptions = {
+        comment: questionInfo.workspaceOptions?.comment ?? undefined,
+        image: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.image,
+          body.workspace_image?.trim(),
+          '',
+        ),
+        port: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.port,
+          body.workspace_port,
+          null,
+        ),
+        home: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.home,
+          body.workspace_home?.trim(),
+          '',
+        ),
+        args: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.args,
+          body.workspace_args,
+          (v) => !v || v.length === 0,
+        ),
+        rewriteUrl: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.rewriteUrl,
+          body.workspace_rewrite_url,
+          true,
+        ),
+        gradedFiles: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.gradedFiles,
+          body.workspace_graded_files,
+          (v) => !v || v.length === 0,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.enableNetworking,
+          body.workspace_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.environment,
+          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
         );
-      }
-      if (res.locals.question.qid === qid_new) {
-        res.redirect(req.originalUrl);
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
       } else {
-        const editor = new QuestionRenameEditor({
-          locals: res.locals,
-          qid_new,
-        });
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-          res.redirect(req.originalUrl);
-        } catch (err) {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        }
+        questionInfo.workspaceOptions = undefined;
       }
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
+
+      const qid_new = run(() => {
+        try {
+          return path.normalize(req.body.qid);
+        } catch {
+          throw new error.HttpStatusError(
+            400,
+            `Invalid QID (could not be normalized): ${req.body.qid}`,
+          );
+        }
+      });
+
+      const editor = new MultiEditor(
+        {
+          locals: res.locals as any,
+          // This won't reflect if the operation is an update or a rename; we think that's OK.
+          description: `Update question ${res.locals.question.qid}`,
+        },
+        [
+          // Each of these editors will no-op if there wasn't any change.
+          new FileModifyEditor({
+            locals: res.locals as any,
+            container: {
+              rootPath: paths.rootPath,
+              invalidRootPaths: paths.invalidRootPaths,
+            },
+            filePath: path.join(paths.rootPath, 'info.json'),
+            editContents: b64EncodeUnicode(formattedJson),
+            origHash,
+          }),
+          new QuestionRenameEditor({
+            locals: res.locals as any,
+            qid_new,
+          }),
+        ],
+      );
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      flash('success', 'Question settings updated successfully');
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'copy_question') {
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
-          locals: res.locals,
+          locals: res.locals as any,
         });
         const serverJob = await editor.prepareServerJob();
         try {
           await editor.executeWithServerJob(serverJob);
-        } catch (err) {
+        } catch {
           return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
-        const questionId = await sqldb.queryRow(
-          sql.select_question_id_from_uuid,
-          { uuid: editor.uuid, course_id: res.locals.course.id },
-          IdSchema,
-        );
+
+        const question = await selectQuestionByUuid({
+          course_id: res.locals.course.id,
+          uuid: editor.uuid,
+        });
+
         flash(
           'success',
           'Question copied successfully. You are now viewing your copy of the question.',
         );
-        res.redirect(res.locals.urlPrefix + '/question/' + questionId + '/settings');
+        res.redirect(res.locals.urlPrefix + '/question/' + question.id + '/settings');
       } else {
         await copyQuestionBetweenCourses(res, {
           fromCourse: res.locals.course,
@@ -154,48 +337,16 @@ router.post(
       }
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
-        locals: res.locals,
+        locals: res.locals as any,
+        questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
         res.redirect(res.locals.urlPrefix + '/course_admin/questions');
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    } else if (req.body.__action === 'sharing_set_add') {
-      const questionSharingEnabled = await features.enabledFromLocals(
-        'question-sharing',
-        res.locals,
-      );
-      if (!questionSharingEnabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-      if (!res.locals.authz_data.has_course_permission_own) {
-        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
-      }
-      await sqldb.queryAsync(sql.sharing_set_add, {
-        course_id: res.locals.course.id,
-        question_id: res.locals.question.id,
-        unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
-      });
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'share_publicly') {
-      const questionSharingEnabled = await features.enabledFromLocals(
-        'question-sharing',
-        res.locals,
-      );
-      if (!questionSharingEnabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-      if (!res.locals.authz_data.has_course_permission_own) {
-        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
-      }
-      await sqldb.queryAsync(sql.update_question_shared_publicly, {
-        course_id: res.locals.course.id,
-        question_id: res.locals.question.id,
-      });
-      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
@@ -212,7 +363,7 @@ router.get(
     // `originalUrl` so that this router doesn't have to be aware of where it's
     // mounted.
     const host = getCanonicalHost(req);
-    let questionTestPath = new URL(`${host}${req.originalUrl}`).pathname;
+    let questionTestPath = new URL(req.originalUrl, host).pathname;
     if (!questionTestPath.endsWith('/')) {
       questionTestPath += '/';
     }
@@ -226,19 +377,14 @@ router.get(
     );
 
     let questionGHLink: string | null = null;
-    if (res.locals.course.repository) {
-      const githubRepoMatch = res.locals.course.repository.match(
-        /^git@github.com:\/?(.+?)(\.git)?\/?$/,
-      );
-      if (githubRepoMatch) {
-        questionGHLink =
-          'https://github.com/' +
-          githubRepoMatch[1] +
-          `/tree/${res.locals.course.branch}/questions/` +
-          res.locals.question.qid;
-      }
-    } else if (res.locals.course.example_course) {
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
       questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
+    } else if (res.locals.course.repository) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
+      }
     }
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
@@ -248,9 +394,13 @@ router.get(
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
+
+    const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
+    const courseTags = await selectTagsByCourseId(res.locals.course.id);
+
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn, sharingSetsOther;
+    let sharingSetsIn;
     if (sharingEnabled) {
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,
@@ -261,13 +411,22 @@ router.get(
         SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
-      sharingSetsOther = result.filter((row) => !row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: res.locals.user.user_id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
+    const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
+    const fullInfoPath = path.join(res.locals.course.path, infoPath);
+    const questionInfoExists = await fs.pathExists(fullInfoPath);
+
+    let origHash = '';
+    if (questionInfoExists) {
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
+    }
+
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     res.send(
       InstructorQuestionSettings({
@@ -279,9 +438,12 @@ router.get(
         assessmentsWithQuestion,
         sharingEnabled,
         sharingSetsIn,
-        sharingSetsOther,
         editableCourses,
         infoPath,
+        origHash,
+        canEdit,
+        courseTopics,
+        courseTags,
       }),
     );
   }),

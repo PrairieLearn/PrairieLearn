@@ -1,28 +1,17 @@
 import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import { z } from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import {
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  queryOptionalRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from './db-types.js';
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
+import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
@@ -47,11 +36,8 @@ export async function uploadInstanceGroups(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -77,8 +63,8 @@ export async function uploadInstanceGroups(
       async () => {
         job.verbose('Uploading group settings for ' + assessment_label);
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-        job.verbose(`----------------------------------------`);
-        job.verbose(`Processing group updates...`);
+        job.verbose('----------------------------------------');
+        job.verbose('Processing group updates...');
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
@@ -103,7 +89,7 @@ export async function uploadInstanceGroups(
         });
 
         const errorCount = groupAssignments.length - successCount;
-        job.verbose(`----------------------------------------`);
+        job.verbose('----------------------------------------');
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
         } else {
@@ -118,7 +104,7 @@ export async function uploadInstanceGroups(
 }
 
 /**
- * Auto generate group settings from input
+ * Randomly assign students to groups.
  *
  * @param assessment_id - The assessment to update.
  * @param user_id - The current user performing the update.
@@ -127,7 +113,7 @@ export async function uploadInstanceGroups(
  * @param min_group_size - min size of the group
  * @returns The job sequence ID.
  */
-export async function autoGroups(
+export async function randomGroups(
   assessment_id: string,
   user_id: string,
   authn_user_id: string,
@@ -138,11 +124,8 @@ export async function autoGroups(
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -150,8 +133,8 @@ export async function autoGroups(
     assessmentId: assessment_id,
     userId: user_id,
     authnUserId: authn_user_id,
-    type: 'auto_generate_groups',
-    description: `Auto generate group settings for ${assessment_label}`,
+    type: 'random_generate_groups',
+    description: `Randomly generate groups for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -167,9 +150,9 @@ export async function autoGroups(
       },
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
-        job.verbose('Auto generate group settings for ' + assessment_label);
-        job.verbose(`----------------------------------------`);
-        job.verbose(`Fetching the enrollment lists...`);
+        job.verbose('Randomly generate groups for ' + assessment_label);
+        job.verbose('----------------------------------------');
+        job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
           sql.select_enrolled_students_without_group,
           { assessment_id },
@@ -180,23 +163,36 @@ export async function autoGroups(
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
-        job.verbose(`----------------------------------------`);
-        job.verbose(`Creating groups with a max size of ${max_group_size}`);
+        job.verbose('----------------------------------------');
+        job.verbose(`Creating groups with a size between ${min_group_size} and ${max_group_size}`);
 
         let groupsCreated = 0,
           studentsGrouped = 0;
         await runInTransactionAsync(async () => {
-          // Find a group name of the format `groupNNN` that is not used
-          const unusedGroupNameSuffix = await queryOptionalRow(
-            sql.select_unused_group_name_suffix,
-            { assessment_id },
-            z.number(),
-          );
           // Create groups using the groups of maximum size where possible
-          for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
-            const groupName = `group${i}`;
-            const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
-            await createGroup(groupName, assessment_id, users, authn_user_id).then(
+          const userGroups = _.chunk(
+            studentsToGroup.map((user) => user.uid),
+            max_group_size,
+          );
+          // If the last group is too small, move students from larger groups to the last group
+          const smallGroup = userGroups.at(-1);
+          while (smallGroup && smallGroup.length < min_group_size) {
+            // Take one student from each large group and add them to the small group
+            const usersToMove = userGroups
+              .filter((group) => group.length > min_group_size)
+              .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
+              .map((group) => group.pop() as string);
+            if (usersToMove.length === 0) {
+              job.warn(
+                `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
+              );
+              break;
+            }
+            smallGroup.push(...usersToMove);
+          }
+
+          for (const users of userGroups) {
+            await createGroup(null, assessment_id, users, authn_user_id).then(
               () => {
                 groupsCreated++;
                 studentsGrouped += users.length;
@@ -212,7 +208,7 @@ export async function autoGroups(
           }
         });
         const errorCount = numStudents - studentsGrouped;
-        job.verbose(`----------------------------------------`);
+        job.verbose('----------------------------------------');
         if (studentsGrouped !== 0) {
           job.verbose(
             `Successfully grouped ${studentsGrouped} students into ${groupsCreated} groups`,

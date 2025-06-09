@@ -1,10 +1,11 @@
 columns
-    color: text
+    color: text not null
     course_id: bigint not null
-    description: text
+    description: text not null
     id: bigint not null default nextval('topics_id_seq'::regclass)
     implicit: boolean not null default false
-    name: text
+    json_comment: jsonb
+    name: text not null
     number: integer
 
 indexes

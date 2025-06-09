@@ -4,18 +4,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
-import { selectUserByUid } from '../models/user.js';
+import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
+  type GroupConfig,
+  GroupConfigSchema,
+  GroupRoleSchema,
   GroupSchema,
+  type GroupUserRole,
   IdSchema,
   type User,
   UserSchema,
-  GroupConfigSchema,
-  type GroupConfig,
-  GroupRoleSchema,
-  type GroupUserRole,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -189,6 +192,46 @@ export async function getUserRoles(group_id: string, user_id: string) {
   return await sqldb.queryRows(sql.select_user_roles, { group_id, user_id }, GroupRoleSchema);
 }
 
+async function selectUserInCourseInstance({
+  uid,
+  course_instance_id,
+}: {
+  uid: string;
+  course_instance_id: string;
+}) {
+  const user = await selectOptionalUserByUid(uid);
+  if (!user) return null;
+
+  // To be part of a group, the user needs to either be enrolled in the course
+  // instance, or be an instructor
+  if (
+    (await sqldb.callRow(
+      'users_is_instructor_in_course_instance',
+      [user.user_id, course_instance_id],
+      z.boolean(),
+    )) ||
+    (await getEnrollmentForUserInCourseInstance({
+      course_instance_id,
+      user_id: user.user_id,
+    }))
+  ) {
+    return user;
+  }
+
+  // In the example course, any user with instructor access in any other
+  // course should have access and thus be allowed to be added to a group.
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
+  if (course_instance) {
+    const course = await selectCourseById(course_instance.course_id);
+    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+      return user;
+    }
+  }
+
+  // We do not distinguish between an invalid user and a user that is not in the course instance
+  return null;
+}
+
 export async function addUserToGroup({
   assessment_id,
   group_id,
@@ -209,27 +252,14 @@ export async function addUserToGroup({
       GroupForUpdateSchema,
     );
     if (group == null) {
-      throw new GroupOperationError(`Group does not exist.`);
+      throw new GroupOperationError('Group does not exist.');
     }
 
-    const user = await selectUserByUid(uid);
-    const userIsInstructor =
-      user &&
-      (await sqldb.callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, group.course_instance_id],
-        z.boolean(),
-      ));
-    const userIsStudent =
-      user &&
-      !userIsInstructor &&
-      !!(await getEnrollmentForUserInCourseInstance({
-        course_instance_id: group.course_instance_id,
-        user_id: user.user_id,
-      }));
-    // To be part of a group, the user needs to either be enrolled in the course
-    // instance, or be an instructor
-    if (!userIsStudent && !userIsInstructor) {
+    const user = await selectUserInCourseInstance({
+      uid,
+      course_instance_id: group.course_instance_id,
+    });
+    if (!user) {
       throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
     }
 
@@ -245,7 +275,7 @@ export async function addUserToGroup({
     }
 
     if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
-      throw new GroupOperationError(`Group is already full.`);
+      throw new GroupOperationError('Group is already full.');
     }
 
     // Find a group role. If none of the roles can be assigned, assign no role.
@@ -278,7 +308,6 @@ export async function joinGroup(
   if (splitJoinCode.length !== 2 || splitJoinCode[1].length !== 4) {
     // the join code input by user is not valid (not in format of groupname+4-character)
     throw new GroupOperationError('The join code has an incorrect format');
-    return;
   }
 
   const group_name = splitJoinCode[0];
@@ -311,20 +340,22 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  group_name: string,
+  group_name: string | null,
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
 ): Promise<void> {
-  if (group_name.length > 30) {
-    throw new GroupOperationError(
-      'The group name is too long. Use at most 30 alphanumerical characters.',
-    );
-  }
-  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
-    throw new GroupOperationError(
-      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
-    );
+  if (group_name) {
+    if (group_name.length > 30) {
+      throw new GroupOperationError(
+        'The group name is too long. Use at most 30 alphanumerical characters.',
+      );
+    }
+    if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+      throw new GroupOperationError(
+        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -361,7 +392,13 @@ export async function createGroup(
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      if (group_name) {
+        throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      } else {
+        throw new GroupOperationError(
+          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+        );
+      }
     }
     throw err;
   }
@@ -632,4 +669,8 @@ export async function deleteAllGroups(assessmentId: string, authnUserId: string)
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });
+}
+
+export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] {
+  return groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((r) => r.role_name) ?? ['None'];
 }

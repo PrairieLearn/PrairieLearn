@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { z } from 'zod';
 
 import {
@@ -10,6 +9,8 @@ import {
 import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
+
+const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -107,7 +108,7 @@ const ConfigSchema = z.object({
   sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
-    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+    .default(DEV_MODE ? 'lax' : 'none'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -140,7 +141,6 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
-  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -324,7 +324,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(DEV_MODE ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -436,8 +439,6 @@ const ConfigSchema = z.object({
    */
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
-  sentryTracesSampleRate: z.number().nullable().default(null),
-  sentryProfilesSampleRate: z.number().nullable().default(null),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
@@ -478,8 +479,7 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  attachedFilesDialogEnabled: z.boolean().default(true),
-  devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
+  devMode: z.boolean().default(DEV_MODE),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -527,6 +527,13 @@ const ConfigSchema = z.object({
    */
   checkSharingOnSync: z.boolean().default(false),
   /**
+   * Determines if institution names in course instance access rules should be
+   * validated at sync time. This defaults to false in dev mode where institutions
+   * are not set up, but should be enabled in production to help instructors
+   * catch misconfigured access rules.
+   */
+  checkInstitutionsOnSync: z.boolean().default(false),
+  /**
    * A Stripe secret key to be used for billing. Only useful for enterprise
    * installations. See https://stripe.com/docs/keys.
    */
@@ -540,6 +547,35 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  aiGradingOpenAiApiKey: z.string().nullable().default(null),
+  aiGradingOpenAiOrganization: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  requireTermsAcceptance: z.boolean().default(false),
+  pyroscopeEnabled: z.boolean().default(false),
+  pyroscopeServerAddress: z.string().nullable().default(null),
+  pyroscopeBasicAuthUser: z.string().nullable().default(null),
+  pyroscopeBasicAuthPassword: z.string().nullable().default(null),
+  pyroscopeTags: z.record(z.string(), z.string()).default({}),
+  /**
+   * Keys used to sign and verify tRPC requests. Multiple keys are supported
+   * to allow for key rotation. The first key will always be used to sign
+   * requests. When verifying requests, all keys will be tried in order.
+   */
+  trpcSecretKeys: z.string().array().nullable().default(null),
+  courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
+  /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
+  courseFilesApiUrl: z.string().nullable().default(null),
+  /**
+   * A list of Python venvs in which to search for Python executables.
+   * Will be resolved relative to the repository root.
+   */
+  pythonVenvSearchPaths: z.string().array().default(['.venv']),
+  /**
+   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
+   */
+  costPerMillionPromptTokens: z.number().default(3.75),
+  costPerMillionCompletionTokens: z.number().default(15),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -567,14 +603,10 @@ export async function loadConfig(paths: string[]) {
     config.cacheType = config.questionRenderCacheType;
   }
 
-  // TODO: once the usages of this are no longer EJS, we should format the
-  // size on the fly instead of setting it on the global config.
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
-
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here
   // after the config has been completely loaded.
-  if (process.env.NODE_ENV === 'production') {
+  if (!DEV_MODE) {
     if (!config.cookieDomain) {
       throw new Error('cookieDomain must be set in production environments');
     }
@@ -583,13 +615,18 @@ export async function loadConfig(paths: string[]) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
   }
+
+  if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
+    throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
+  }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.homeUrl = config.homeUrl;
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }

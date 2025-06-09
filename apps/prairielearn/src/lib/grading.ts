@@ -6,19 +6,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
+import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { ensureChunksForCourseAsync } from './chunks.js';
 import {
-  Course,
+  type Course,
   DateFromISOString,
-  GradingJobSchema,
   IdSchema,
   IntervalSchema,
-  Question,
+  type Question,
   QuestionSchema,
-  Submission,
+  type Submission,
   SubmissionSchema,
-  Variant,
+  type Variant,
   VariantSchema,
 } from './db-types.js';
 import * as externalGrader from './externalGrader.js';
@@ -53,6 +55,7 @@ const VariantForSubmissionSchema = VariantSchema.extend({
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
+    user_id: string;
   };
 
 export async function insertSubmission({
@@ -61,11 +64,13 @@ export async function insertSubmission({
   format_errors,
   gradable,
   broken,
+  params,
   true_answer,
   feedback,
   credit,
   mode,
   variant_id,
+  user_id,
   auth_user_id,
   client_fingerprint_id,
 }: {
@@ -74,23 +79,30 @@ export async function insertSubmission({
   format_errors: Record<string, any> | null;
   gradable: boolean | null;
   broken: boolean | null;
+  params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
   feedback: Record<string, any> | null;
   credit?: number | null;
   mode?: Submission['mode'];
   variant_id: string;
+  user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
-}): Promise<string> {
+}): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
-    // Select the variant, while updating the variant's `correct_answer`, which
-    // is permitted to change during the `parse` phase (which occurs before this
-    // submission is inserted).
+    // Select the variant, while updating the variant's `params` and
+    // `correct_answer`, which is permitted to change during the `parse` phase
+    // (which occurs before this submission is inserted).
+    //
+    // Note that we do this mutation as part of the selection process to avoid another
+    // database round trip. This mutation is safe to do before the access checks below
+    // because if they fail, the transaction will be rolled back and the variant will
+    // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
-      { variant_id, true_answer },
+      { variant_id, params, true_answer },
       VariantForSubmissionSchema,
     );
 
@@ -131,7 +143,7 @@ export async function insertSubmission({
         credit,
         mode,
         delta,
-        params: variant.params,
+        params,
         true_answer,
         feedback,
         gradable,
@@ -140,6 +152,8 @@ export async function insertSubmission({
       },
       IdSchema,
     );
+
+    await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
       await sqldb.queryAsync(sql.update_instance_question_post_submission, {
@@ -152,7 +166,7 @@ export async function insertSubmission({
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
 
-    return submission_id;
+    return { submission_id, variant };
   });
 }
 
@@ -170,7 +184,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
-): Promise<string> {
+): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
@@ -192,6 +206,15 @@ export async function saveSubmission(
         // if we have workspace files, encode them into _files
         if (zipPath != null) {
           const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+
+          // Up until this point, `raw_submitted_answer` was just a reference to
+          // the `submitted_answer` object. If we naively wrote to
+          // `submitted_answer._files`, we'd end up storing the files twice in
+          // the database. To avoid this, we'll create a deep copy of
+          // `raw_submitted_answer` to ensure that we don't end up with
+          // duplicate file entries.
+          submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
+
           if (!('_files' in submission.submitted_answer)) {
             submission.submitted_answer['_files'] = [];
           }
@@ -227,6 +250,7 @@ export async function saveSubmission(
   await writeCourseIssues(
     courseIssues,
     variant,
+    submission.user_id,
     submission.auth_user_id,
     studentMessage,
     courseData,
@@ -307,6 +331,7 @@ async function selectSubmissionForGrading(
  * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
  */
@@ -315,6 +340,7 @@ export async function gradeVariant(
   check_submission_id: string | null,
   question: Question,
   variant_course: Course,
+  user_id: string | null,
   authn_user_id: string | null,
   overrideGradeRateCheck: boolean,
 ): Promise<void> {
@@ -332,16 +358,25 @@ export async function gradeVariant(
     if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }
 
-  const grading_job = await sqldb.callRow(
-    'grading_jobs_insert',
-    [submission.id, authn_user_id],
-    GradingJobSchema,
-  );
+  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
     // We haven't actually graded this question yet - don't attempt
     // to update the grading job or submission.
+    //
+    // Before starting the grading process, we need to ensure that any relevant
+    // chunks are available on disk. This uses the same list of chunks as
+    // `getContext` in `freeform.js`. We technically probably don't need to
+    // load element and element extension chunks, but we do so anyway to be
+    // consistent with the other code path.
+    await ensureChunksForCourseAsync(question_course.id, [
+      { type: 'question', questionId: question.id },
+      { type: 'clientFilesCourse' },
+      { type: 'serverFilesCourse' },
+      { type: 'elements' },
+      { type: 'elementExtensions' },
+    ]);
     await externalGrader.beginGradingJob(grading_job.id);
   } else {
     // For Internal grading we call the grading code. For Manual grading, if the question
@@ -360,34 +395,28 @@ export async function gradeVariant(
     await writeCourseIssues(
       courseIssues,
       variant,
+      user_id,
       submission.auth_user_id,
       studentMessage,
       courseData,
     );
 
-    const grading_job_post_update = await sqldb.callRow(
-      'grading_jobs_update_after_grading',
-      [
-        grading_job.id,
-        // `received_time` and `start_time` were already set when the
-        // grading job was inserted, so they'll remain unchanged.
-        // `finish_time` will be set to `now()` by this sproc.
-        null, // received_time
-        null, // start_time
-        null, // finish_time
-        data.submitted_answer,
-        data.format_errors,
-        !!data.gradable && !hasFatalIssue, // gradable
-        hasFatalIssue, // broken
-        data.params,
-        data.true_answer,
-        data.feedback,
-        data.partial_scores,
-        data.score,
-        data.v2_score,
-      ],
-      GradingJobSchema,
-    );
+    const grading_job_post_update = await updateGradingJobAfterGrading({
+      grading_job_id: grading_job.id,
+      // `received_time` and `start_time` were already set when the
+      // grading job was inserted, so they'll remain unchanged.
+      // `finish_time` will be set to `now()` by this function.
+      submitted_answer: data.submitted_answer,
+      format_errors: data.format_errors,
+      gradable: !!data.gradable && !hasFatalIssue,
+      broken: hasFatalIssue,
+      params: data.params,
+      true_answer: data.true_answer,
+      feedback: data.feedback,
+      partial_scores: data.partial_scores,
+      score: data.score,
+      v2_score: data.v2_score,
+    });
 
     // If the submission was marked invalid during grading the grading
     // job will be marked ungradable and we should bail here to prevent
@@ -422,12 +451,24 @@ export async function saveAndGradeSubmission(
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmission(submissionData, variant, question, course);
-  await gradeVariant(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
+    submissionData,
     variant,
+    question,
+    course,
+  );
+
+  await gradeVariant(
+    // Note that parsing a submission may modify the `params` and `true_answer`
+    // of the variant (for v3 questions, this is `data["params"]` and
+    // `data["correct_answers"])`. This is why we need to use the variant
+    // returned from `saveSubmission` rather than the one passed to this
+    // function.
+    updated_variant,
     submission_id,
     question,
     course,
+    submissionData.user_id,
     submissionData.auth_user_id,
     overrideGradeRateCheck,
   );

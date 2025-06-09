@@ -1,5 +1,4 @@
-/* eslint-env browser,jquery */
-
+/* global nb, DOMPurify, MathJax */
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -30,12 +29,18 @@
       const filePreview = document.querySelector('#file-preview-' + uuid);
       const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
 
-      filePreview.querySelectorAll('li').forEach((li) => {
-        const file = li.dataset.file;
+      filePreview.querySelectorAll('.js-file-preview-item').forEach((item) => {
+        const file = item.dataset.file;
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const errorMessage = li.querySelector('.alert.error');
+        const infoMessage = item.querySelector('.js-info-alert');
+        const errorMessage = item.querySelector('.js-error-alert');
+
+        function showInfoMessage(message) {
+          infoMessage.textContent = message;
+          infoMessage.classList.remove('d-none');
+        }
 
         function showErrorMessage(message) {
           errorMessage.textContent = message;
@@ -46,17 +51,16 @@
           errorMessage.classList.add('d-none');
         }
 
-        const toggleShowPreviewText = li.querySelector('.js-toggle-show-preview-text');
-        const toggleExpandPreviewText = li.querySelector('.js-toggle-expand-preview-text');
+        const toggleShowPreviewText = item.querySelector('.js-toggle-show-preview-text');
+        const toggleExpandPreviewText = item.querySelector('.js-toggle-expand-preview-text');
 
-        const preview = li.querySelector('.file-preview');
+        const preview = item.querySelector('.file-preview');
+        const container = item.querySelector('.file-preview-container');
+        const notebookPreview = item.querySelector('.js-notebook-preview');
         const pre = preview.querySelector('pre');
 
-        const downloadButton = li.querySelector('.file-preview-download');
-        downloadButton.addEventListener('click', (event) => {
-          // Prevent this click from toggling the collapse state.
-          event.stopPropagation();
-
+        const downloadButton = item.querySelector('.file-preview-download');
+        downloadButton.addEventListener('click', () => {
           downloadFile(path, file)
             .then(() => {
               hideErrorMessage();
@@ -67,7 +71,7 @@
             });
         });
 
-        const expandButton = li.querySelector('.file-preview-expand');
+        const expandButton = item.querySelector('.file-preview-expand');
 
         function updateExpandButton(expanded) {
           toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
@@ -80,17 +84,21 @@
           }
         }
 
-        expandButton.addEventListener('click', () => {
-          // The `<pre>` has a class with a `max-height` set which will only take
+        function toggleExpanded(expanded) {
+          const shouldExpand = expanded ?? !container.style.maxHeight;
+
+          // The container has a class with a `max-height` set which will only take
           // effect if there is no `max-height` set via the `style` attribute.
-          if (pre.style.maxHeight) {
-            pre.style.removeProperty('max-height');
-            updateExpandButton(false);
-          } else {
-            pre.style.maxHeight = 'none';
+          if (shouldExpand) {
+            container.style.maxHeight = 'none';
             updateExpandButton(true);
+          } else {
+            container.style.removeProperty('max-height');
+            updateExpandButton(false);
           }
-        });
+        }
+
+        expandButton.addEventListener('click', () => toggleExpanded());
 
         let wasOpened = false;
 
@@ -101,6 +109,7 @@
 
           const code = preview.querySelector('code');
           const img = preview.querySelector('img');
+          const iframe = preview.querySelector('iframe');
 
           fetch(path, { method: 'GET' })
             .then((result) => {
@@ -110,17 +119,51 @@
               return result.blob();
             })
             .then(async (blob) => {
+              hideErrorMessage();
+
               const type = blob.type;
               if (type === 'text/plain') {
                 const text = await blob.text();
-                code.textContent = text;
-                pre.classList.remove('d-none');
-                hideErrorMessage();
+                if (escapedFileName.endsWith('.ipynb')) {
+                  await Promise.all([
+                    import('marked'),
+                    import('@prairielearn/marked-mathjax'),
+                    // importing DOMPurify sets the global variable `DOMPurify`.
+                    import('dompurify'),
+                    // importing the notebookjs library sets the global variable `nb`.
+                    import('notebookjs'),
+                    // MathJax needs to have been loaded before the extension can be used.
+                    MathJax.startup.promise,
+                  ]).then(async ([Marked, markedMathjax]) => {
+                    markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
+                    nb.markdown = Marked.marked.parse;
+
+                    nb.sanitizer = (code) =>
+                      DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
+                    const notebook = nb.parse(JSON.parse(text));
+                    const rendered = notebook.render();
+
+                    notebookPreview.appendChild(rendered);
+                    notebookPreview.classList.remove('d-none');
+
+                    // Typeset any math that might be in the notebook.
+                    window.MathJax.typesetPromise([notebookPreview]);
+                  });
+                } else {
+                  code.textContent = text;
+                  pre.classList.remove('d-none');
+                }
 
                 // Only show the expand/collapse button if the content is tall
-                // enough where scrolling is necessary.
-                if (pre.scrollHeight > pre.clientHeight) {
+                // enough where scrolling is necessary. This must be done before
+                // auto-expansion happens below.
+                if (container.scrollHeight > container.clientHeight) {
                   expandButton.classList.remove('d-none');
+                }
+
+                // Always fully expand notebook previews.
+                if (escapedFileName.endsWith('.ipynb')) {
+                  toggleExpanded(true);
                 }
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
@@ -129,10 +172,16 @@
                   URL.revokeObjectURL(url);
                 };
                 img.classList.remove('d-none');
-                hideErrorMessage();
+              } else if (type === 'application/pdf') {
+                const url = URL.createObjectURL(blob);
+                iframe.src = url;
+                iframe.onload = () => {
+                  URL.revokeObjectURL(url);
+                };
+                iframe.closest('.embed-responsive').classList.remove('d-none');
               } else {
                 // We can't preview this file.
-                showErrorMessage('Content preview is not available for this type of file.');
+                showInfoMessage('Content preview is not available for this type of file.');
               }
               wasOpened = true;
             })

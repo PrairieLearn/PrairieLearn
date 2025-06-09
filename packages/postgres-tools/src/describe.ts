@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
 
-import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
+import { PostgresPool, loadSqlEquiv } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -238,7 +238,7 @@ export function formatDatabaseDescription(
               // Some unique indexes don't include the UNIQUE constraint
               // as part of the constraint definition, so we need to capture
               // that manually.
-              rowText += formatText(` UNIQUE`, chalk.green);
+              rowText += formatText(' UNIQUE', chalk.green);
             }
           }
           rowText += row.constraintdef ? formatText(` ${row.constraintdef}`, chalk.green) : '';

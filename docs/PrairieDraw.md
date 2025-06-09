@@ -1,10 +1,10 @@
 # PrairieDraw
 
-**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements/#pl-drawing-element) element instead.
+**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements.md#pl-drawing-element) element instead.
 
 ---
 
-The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the `pl-prairiedraw-figure` element (see [here](elements.md#pl-prairiedraw-figure-element)).
+The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the [`pl-prairiedraw-figure` element](elements.md#pl-prairiedraw-figure-element).
 
 Any parameters passed to the script from the `params-names` option in the `pl-prairiedraw-figure` element can be accessed with `this.params.get([parameter])`
 
@@ -12,10 +12,10 @@ Any parameters passed to the script from the `params-names` option in the `pl-pr
 
 PrairieDraw uses the `Sylvester.Vector` class to specify positions and directions for drawing; any Vector-type arguments listed below are of this type.
 
-Below is an incomplete selection of useful operations on Vector; the complete documentation is found [here](http://sylvester.jcoglan.com/docs.html).
+Below is an incomplete selection of useful operations on Vector; the complete documentation is found in the [documentation for the Sylvester library](http://sylvester.jcoglan.com/docs.html).
 
 `Sylvester.Vector.create(elements)`
-Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create` so you can write `$V([x,y])` later on.
+Creates and returns a new Vector from the array `elements`. It is often useful to alias this command in your script as `var $V = Sylvester.Vector.create`, so you can write `$V([x,y])` later on.
 
 `add(vector)`
 Returns a new Vector which is the sum of the receiver and the argument.
@@ -53,7 +53,7 @@ The script provided by `script_name` may access the PrairieDraw figure via `this
 
 In general, drawing objects are opaque, so the order in which items are added affects the final appearance of the figure.
 
-Below is an incomplete list of operations available from PrairieDraw; the library source code can be found [here](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/public/javascripts/PrairieDraw.js).
+Below is an incomplete list of operations available from PrairieDraw; the library source code can be found in the [PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/public/javascripts/PrairieDraw.js).
 
 ## Constants provided by PrairieDraw
 
@@ -82,7 +82,7 @@ Perform a combination of `scale`, `translate`, and `rotate` such that Vector poi
 
 ## Drawing object options
 
-Some drawing objects below have the optional `type` argument to specify a physical meaning for the line/arrow. When specified, a corresponding color is chosen for the object based on the TAM 2XX style guide [here](http://dynref.engr.illinois.edu/rvn.html#rvn-sc).
+Some drawing objects below have the optional `type` argument to specify a physical meaning for the line/arrow. When specified, a corresponding color is chosen for the object based on the [TAM 2XX style guide](http://dynref.engr.illinois.edu/rvn.html#rvn-sc).
 
 | Type           | Color              |
 | -------------- | ------------------ |
@@ -121,7 +121,7 @@ Draws a circle centered at `center` with radius `radius`.
 Draw a rectangle (aligned to the axes) of the given width and height. When not specified, `center` is assumed to be the origin. An `angle` to rotate can also be given.
 
 `rectangleGeneric(bottomLeft, bottomRight, height)`
-Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counter-clockwise) to this line.
+Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counterclockwise) to this line.
 
 ## Drawing vector arrows
 
@@ -189,7 +189,7 @@ Places text along the arc specified by `center`, `radius`, `startAngle`, and `en
 When using `PrairieDraw.js` to draw figures in questions, figure labels can be included using either plain text, like `pd.text(..., "label")`, or with LaTeX, like `pd.text(..., "TEX:$x$")`. If you are using LaTeX labels then they have to be rendered into image files before they can be displayed. This is done by running the command:
 
 ```sh
-docker run -it --rm -v PATH_TO_MY_COURSE:/course prairielearn/prairielearn /PrairieLearn/tools/generate_text.py
+docker run -it --rm -v PATH_TO_MY_COURSE:/course prairielearn/prairielearn /PrairieLearn/contrib/generate_text.py
 ```
 
 Replace `PATH_TO_MY_COURSE` above with your local course path directory, such as `/Users/mwest/git/pl-tam212` or `C:/GitHub/pl-tam212`.
@@ -211,9 +211,8 @@ These files should be committed to the `git` repository and pushed to the live s
 
 ## Advanced: Running without Docker
 
-If you want to generate LaTeX label images without docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run:
+If you want to generate LaTeX label images without Docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run the following command in the root of the PrairieLearn repository:
 
 ```sh
-cd <FULL-PATH>/PrairieLearn
-python tools/generate_text.py --subdir /path/to/course
+python contrib/generate_text.py --subdir /path/to/course
 ```

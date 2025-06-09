@@ -1,16 +1,19 @@
+# pyright: reportUnknownParameterType=false
+
 import json
 import math
 
 import numpy as np
 import prairielearn as pl
 from defaults import drawing_defaults
+from lxml.html import HtmlElement
 
 
 def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Get the position of the anchor point of the vector
     rpos = np.array([x1, y1])
     # Defining the direction of the vector
-    dir = np.array([math.cos(theta), math.sin(theta)])
+    direction = np.array([math.cos(theta), math.sin(theta)])
     # Defining the error box limit in the direction of the vector
     max_forward = offset_forward + tol
     max_backward = offset_backward + tol
@@ -18,7 +21,7 @@ def get_error_box(x1, y1, theta, tol, offset_forward, offset_backward):
     # Defining the error box limit in the direction perpendicular to the vector
     max_perp = tol
     hbox = 2 * max_perp
-    pc = rpos - (wbox / 2 - max_forward) * dir
+    pc = rpos - (wbox / 2 - max_forward) * direction
     return (pc, hbox, wbox, max_forward, max_backward)
 
 
@@ -36,30 +39,35 @@ elements = {}
 
 
 class BaseElement:
-    def generate(element, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         return {}
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return False
 
-    def grade(ref, student, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         return True
 
-    def grading_name(element):
+    @staticmethod
+    def grading_name(element: HtmlElement) -> str | None:
         return None
 
-    def validate_attributes():
+    @staticmethod
+    def validate_attributes() -> bool:
         return True
 
-    def get_attributes():
-        """
-        Returns a list of attributes that the element may contain.
-        """
+    @staticmethod
+    def get_attributes() -> list[str]:
+        """Return a list of attributes that the element may contain."""
         return []
 
 
 class ControlledLine(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         if "draw-error-box" in el.attrib:
             obj_draw = el.attrib["draw-error-box"] == "true"
         else:
@@ -89,10 +97,12 @@ class ControlledLine(BaseElement):
             "offset_y": offset_y,
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         ex1, ex2 = st["x1"], st["x2"]
         ey1, ey2 = st["y1"], st["y2"]
         rx1, rx2 = ref["x1"], ref["x2"]
@@ -110,7 +120,8 @@ class ControlledLine(BaseElement):
             and abserr(ey2, ry1) <= ref["offset_y"] + tol
         )
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -130,7 +141,8 @@ class ControlledLine(BaseElement):
 
 
 class ControlledCurvedLine(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         if "draw-error-box" in el.attrib:
             obj_draw = el.attrib["draw-error-box"] == "true"
         else:
@@ -171,10 +183,12 @@ class ControlledCurvedLine(BaseElement):
             "offset_control_y": offset_control_y,
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         ex1, ex2, exm = st["x1"], st["x3"], st["x2"]
         ey1, ey2, eym = st["y1"], st["y3"], st["y2"]
         rx1, rx2, rxm = ref["x1"], ref["x3"], ref["x2"]
@@ -198,7 +212,8 @@ class ControlledCurvedLine(BaseElement):
         )
         return b1 or b2
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -218,7 +233,8 @@ class ControlledCurvedLine(BaseElement):
 
 
 class Roller(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "brown1")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
@@ -241,7 +257,8 @@ class Roller(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -260,7 +277,8 @@ class Roller(BaseElement):
 
 
 class Clamped(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "black")
         return {
             "x1": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
@@ -280,7 +298,8 @@ class Clamped(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -296,7 +315,8 @@ class Clamped(BaseElement):
 
 
 class FixedPin(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "brown1")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         obj = {
@@ -320,7 +340,8 @@ class FixedPin(BaseElement):
         }
         return obj
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -339,7 +360,8 @@ class FixedPin(BaseElement):
 
 
 class Rod(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "white")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
@@ -372,7 +394,8 @@ class Rod(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -393,7 +416,8 @@ class Rod(BaseElement):
 
 
 class CollarRod(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         w = pl.get_float_attrib(el, "width", 20)
         color = pl.get_color_attrib(el, "color", "white")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
@@ -425,7 +449,8 @@ class CollarRod(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -452,7 +477,8 @@ class CollarRod(BaseElement):
 
 
 class ThreePointRod(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "white")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         x1 = pl.get_float_attrib(el, "x1", 40)
@@ -488,7 +514,8 @@ class ThreePointRod(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -514,7 +541,8 @@ class ThreePointRod(BaseElement):
 
 
 class FourPointRod(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "white")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         x1 = pl.get_float_attrib(el, "x1", 40)
@@ -558,7 +586,8 @@ class FourPointRod(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -589,7 +618,8 @@ class FourPointRod(BaseElement):
 
 
 class Pulley(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "gray")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         r = pl.get_float_attrib(el, "radius", 20)
@@ -620,7 +650,8 @@ class Pulley(BaseElement):
             "fill": color,
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -640,7 +671,8 @@ class Pulley(BaseElement):
 
 
 class Vector(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "red3")
         anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
         # This is the anchor point for Grading
@@ -708,10 +740,12 @@ class Vector(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         eang = st["angle"]
         elen = st["width"]
@@ -743,26 +777,21 @@ class Vector(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-                [np.sin(rang_rad), np.cos(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+            [np.sin(rang_rad), np.cos(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
-        if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
-            return False
+        return abs(relx) <= tol and -max_backward <= rely <= max_forward
 
-        return True
-
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -785,7 +814,8 @@ class Vector(BaseElement):
 
 
 class PairedVector(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         grid_size = pl.get_integer_attrib(el, "grid-size", 20)
         color = pl.get_color_attrib(el, "color", "red3")
         anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
@@ -880,10 +910,12 @@ class PairedVector(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         ref2 = ref.copy()
         st2 = st.copy()
         dup_attrs = [
@@ -922,7 +954,8 @@ class PairedVector(BaseElement):
             (poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])
         ) and angdiff < 2 * angtol
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -949,12 +982,14 @@ class PairedVector(BaseElement):
 
 
 class DoubleHeadedVector(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         obj = Vector.generate(el, data)
         obj["type"] = "pl-double-headed-vector"
         return obj
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -975,18 +1010,27 @@ class DoubleHeadedVector(BaseElement):
             "optional-grading",
         ]
 
+    @staticmethod
+    def is_gradable() -> bool:
+        return True
+
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
+        return Vector.grade(ref, st, tol, angtol)
+
 
 class ArcVector(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", False)
         color = pl.get_color_attrib(el, "color", "purple")
         clockwise_direction = pl.get_boolean_attrib(el, "clockwise-direction", True)
         if clockwise_direction:
-            drawStartArrow = False
-            drawEndArrow = True
+            draw_start_arrow = False
+            draw_end_arrow = True
         else:
-            drawStartArrow = True
-            drawEndArrow = False
+            draw_start_arrow = True
+            draw_end_arrow = False
         # Error box for grading
         x1 = pl.get_float_attrib(el, "x1", 40)
         y1 = pl.get_float_attrib(el, "y1", 40)
@@ -1015,8 +1059,8 @@ class ArcVector(BaseElement):
             "drawCenterPoint": json.loads(
                 pl.get_string_attrib(el, "draw-center", "true")
             ),
-            "drawStartArrow": drawStartArrow,
-            "drawEndArrow": drawEndArrow,
+            "drawStartArrow": draw_start_arrow,
+            "drawEndArrow": draw_end_arrow,
             "label": pl.get_string_attrib(el, "label", ""),
             "offsetx": pl.get_float_attrib(el, "offsetx", 0),
             "offsety": pl.get_float_attrib(el, "offsety", 0),
@@ -1039,10 +1083,12 @@ class ArcVector(BaseElement):
             "clockwiseDirection": clockwise_direction,
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         st_start_arrow = st["drawStartArrow"]
 
@@ -1055,13 +1101,10 @@ class ArcVector(BaseElement):
             return False
 
         # Check if correct orientation
-        if not ref["disregard_sense"]:
-            if st_start_arrow is not ref_start_arrow:
-                return False
+        return ref["disregard_sense"] or st_start_arrow == ref_start_arrow
 
-        return True
-
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1084,7 +1127,8 @@ class ArcVector(BaseElement):
 
 
 class DistributedLoad(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "red3")
         anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
         # This is the anchor point for Grading
@@ -1163,10 +1207,12 @@ class DistributedLoad(BaseElement):
             "selectable": drawing_defaults["selectable"],
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         eang = st["angle"]
         elen = st["range"]
@@ -1193,21 +1239,18 @@ class DistributedLoad(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Check width
         if abserr(elen, rlen) > tol:
             return False
 
         # Get position of student answer relative to reference answer
-        basis = np.array(
-            [
-                [-np.sin(rang_rad), -np.cos(rang_rad)],
-                [np.cos(rang_rad), -np.sin(rang_rad)],
-            ]
-        ).T
+        basis = np.array([
+            [-np.sin(rang_rad), -np.cos(rang_rad)],
+            [np.cos(rang_rad), -np.sin(rang_rad)],
+        ]).T
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
         if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
@@ -1218,14 +1261,15 @@ class DistributedLoad(BaseElement):
             if ew1 != ew2:
                 return False
         else:
-            if st.get("flipped", False):
+            if st.get("flipped"):
                 ew1, ew2 = ew2, ew1
             if (rw1 < rw2 and ew1 > ew2) or (rw1 > rw2 and ew1 < ew2):
                 return False
 
         return True
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1253,7 +1297,8 @@ class DistributedLoad(BaseElement):
 
 
 class Point(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "black")
         # Error box for grading
         x1 = pl.get_float_attrib(el, "x1", 40)
@@ -1295,25 +1340,26 @@ class Point(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return True
 
-    def grade(ref, st, tol, angtol):
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         rpos = np.array([ref["left"], ref["top"]])
         # Check if correct position
         relx, rely = epos - rpos
-        if relx > tol or relx < -tol or rely > tol or rely < -tol:
-            return False
+        return abs(relx) <= tol and abs(rely) <= tol
 
-        return True
-
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["x1", "y1", "radius", "label", "offsetx", "offsety", "opacity", "color"]
 
 
 class Coordinates(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "black")
         return {
             "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
@@ -1341,7 +1387,8 @@ class Coordinates(BaseElement):
             "selectable": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1364,7 +1411,8 @@ class Coordinates(BaseElement):
 
 
 class Dimensions(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "stroke-color", "black")
         offset = pl.get_float_attrib(el, "dim-offset", 0)
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
@@ -1426,7 +1474,8 @@ class Dimensions(BaseElement):
             "selectable": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1451,7 +1500,8 @@ class Dimensions(BaseElement):
 
 
 class ArcDimensions(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
             "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
@@ -1484,7 +1534,8 @@ class ArcDimensions(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1507,7 +1558,8 @@ class ArcDimensions(BaseElement):
 
 
 class Rectangle(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "green1")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
@@ -1533,7 +1585,8 @@ class Rectangle(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1549,7 +1602,8 @@ class Rectangle(BaseElement):
 
 
 class Triangle(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "red1")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
@@ -1582,7 +1636,8 @@ class Triangle(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1599,7 +1654,8 @@ class Triangle(BaseElement):
 
 
 class Circle(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         color = pl.get_color_attrib(el, "color", "grey")
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         return {
@@ -1627,7 +1683,8 @@ class Circle(BaseElement):
             "scaling": True,
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1644,7 +1701,8 @@ class Circle(BaseElement):
 
 
 class Polygon(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         pointlist = json.loads(
             pl.get_string_attrib(
                 el,
@@ -1669,7 +1727,8 @@ class Polygon(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "plist",
             "opacity",
@@ -1681,7 +1740,8 @@ class Polygon(BaseElement):
 
 
 class Spring(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
@@ -1711,7 +1771,8 @@ class Spring(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1728,7 +1789,8 @@ class Spring(BaseElement):
 
 
 class Coil(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
@@ -1757,7 +1819,8 @@ class Coil(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1773,7 +1836,8 @@ class Coil(BaseElement):
 
 
 class Line(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
@@ -1809,7 +1873,8 @@ class Line(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1825,7 +1890,8 @@ class Line(BaseElement):
 
 
 class Arc(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
         theta1 = (
             pl.get_float_attrib(el, "start-angle", drawing_defaults["angle"])
@@ -1863,7 +1929,8 @@ class Arc(BaseElement):
             "originY": "center",
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -1878,7 +1945,8 @@ class Arc(BaseElement):
 
 
 class Text(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         return {
             "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
             "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
@@ -1891,12 +1959,14 @@ class Text(BaseElement):
             "latex": pl.get_boolean_attrib(el, "latex", True),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["label", "latex", "font-size", "x1", "y1", "offsetx", "offsety"]
 
 
 class Axes(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         if "origin" in el.attrib:
             origin = json.loads(pl.get_string_attrib(el, "origin"))
             origin_x = origin["x"]
@@ -1931,7 +2001,8 @@ class Axes(BaseElement):
             "evented": drawing_defaults["selectable"],
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "origin",
             "xneg",
@@ -1952,7 +2023,8 @@ class Axes(BaseElement):
 
 
 class GraphLine(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         curved_line = False
 
         if "origin" in el.attrib:
@@ -1979,35 +2051,33 @@ class GraphLine(BaseElement):
                 y3 = line[2]["y"]
                 curved_line = True
             else:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
         else:
-            raise Exception(
+            raise ValueError(
                 "pl-graph-line error: required attribute end-points is missing."
             )
 
         if "end-gradients" in el.attrib:
             if curved_line:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
-            else:
-                grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
-                if len(grads) != 2:
-                    raise Exception(
-                        "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
-                    )
-                grad1 = grads[0]
-                grad2 = grads[1]
-                if abs(grad1 - grad2) < 1e-9:
-                    raise Exception(
-                        "The provided gradients are not compatible to compute a quadratic curve between the given points."
-                    )
-                else:
-                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
-                    y3 = (y1 - grad1 * x1) + grad1 * x3
-                    curved_line = True
+            grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
+            if len(grads) != 2:
+                raise ValueError(
+                    "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
+                )
+            grad1 = grads[0]
+            grad2 = grads[1]
+            if abs(grad1 - grad2) < 1e-9:
+                raise ValueError(
+                    "The provided gradients are not compatible to compute a quadratic curve between the given points."
+                )
+            x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+            y3 = (y1 - grad1 * x1) + grad1 * x3
+            curved_line = True
 
         if "draw-error-box" in el.attrib:
             obj_draw = el.attrib["draw-error-box"] == "true"
@@ -2048,18 +2118,17 @@ class GraphLine(BaseElement):
         if not curved_line:
             obj.update({"x2": x0 + x2, "y2": y0 - y2, "type": "pl-controlled-line"})
         else:
-            obj.update(
-                {
-                    "x3": x0 + x2,
-                    "y3": y0 - y2,
-                    "x2": x0 + x3,
-                    "y2": y0 - y3,
-                    "type": "pl-controlled-curved-line",
-                }
-            )
+            obj.update({
+                "x3": x0 + x2,
+                "y3": y0 - y2,
+                "x2": x0 + x3,
+                "y2": y0 - y3,
+                "type": "pl-controlled-curved-line",
+            })
         return obj
 
-    def grading_name(element):
+    @staticmethod
+    def grading_name(element: HtmlElement) -> str | None:
         curved_line = False
         if "end-points" in element.attrib:
             line = json.loads(pl.get_string_attrib(element, "end-points"))
@@ -2067,15 +2136,15 @@ class GraphLine(BaseElement):
             n_end_points = len(line)
             n_grads = len(grads)
             if n_end_points < 2 or n_end_points > 3:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
-            if n_grads != 0 and n_grads != 2:
-                raise Exception(
+            if n_grads not in (0, 2):
+                raise ValueError(
                     "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
                 )
             if n_end_points > 2 and n_grads > 0:
-                raise Exception(
+                raise ValueError(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
             if n_end_points == 3:
@@ -2087,7 +2156,8 @@ class GraphLine(BaseElement):
         else:
             return "pl-controlled-curved-line"
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "origin",
             "end-points",
@@ -2103,7 +2173,8 @@ class GraphLine(BaseElement):
 
 
 class Capacitor(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
         if "x2" in el.attrib and "y2" in el.attrib:
@@ -2138,7 +2209,8 @@ class Capacitor(BaseElement):
             "polarized": pl.get_boolean_attrib(el, "polarized", False),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -2159,7 +2231,8 @@ class Capacitor(BaseElement):
 
 
 class Battery(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
         if "x2" in el.attrib and "y2" in el.attrib:
@@ -2193,7 +2266,8 @@ class Battery(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -2213,7 +2287,8 @@ class Battery(BaseElement):
 
 
 class Resistor(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
         if "x2" in el.attrib and "y2" in el.attrib:
@@ -2247,7 +2322,8 @@ class Resistor(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -2267,7 +2343,8 @@ class Resistor(BaseElement):
 
 
 class Inductor(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
         if "x2" in el.attrib and "y2" in el.attrib:
@@ -2301,7 +2378,8 @@ class Inductor(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -2321,7 +2399,8 @@ class Inductor(BaseElement):
 
 
 class Switch(BaseElement):
-    def generate(el, data):
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
         x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
         y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
         if "x2" in el.attrib and "y2" in el.attrib:
@@ -2356,7 +2435,8 @@ class Switch(BaseElement):
             ),
         }
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "x1",
             "y1",
@@ -2417,23 +2497,29 @@ elements["pl-switch"] = Switch
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
-    def generate(element):
-        raise Exception("Cannot create element!")
+    @staticmethod
+    def generate(el: HtmlElement, data: dict) -> dict:
+        raise RuntimeError("Cannot create element!")
 
-    def is_gradable():
+    @staticmethod
+    def is_gradable() -> bool:
         return False
 
-    def grade(ref, st, tol, angtol):
-        raise Exception(
+    @staticmethod
+    def grade(ref: dict, st: dict, tol: float, angtol: float) -> bool:
+        raise NotImplementedError(
             "This element should not be graded!  If you see this message, something has gone terribly wrong!"
         )
 
 
 class DrawingElement(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return [
             "gradable",
             "answers-name",
+            "aria-label",
+            "aria-description",
             "width",
             "height",
             "grid-size",
@@ -2449,35 +2535,42 @@ class DrawingElement(UnplaceableBaseElement):
 
 
 class DrawingInitial(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["draw-error-box"]
 
 
 class DrawingAnswer(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["draw-error-box"]
 
 
 class DrawingGroup(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["visible"]
 
 
 class DrawingControls(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return []
 
 
 class DrawingControlsGroup(UnplaceableBaseElement):
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["label"]
 
 
 class DrawingControlsButton(UnplaceableBaseElement):
-    def validate_attributes():
+    @staticmethod
+    def validate_attributes() -> bool:
         return False
 
-    def get_attributes():
+    @staticmethod
+    def get_attributes() -> list[str]:
         return ["type"]
 
 
@@ -2497,21 +2590,23 @@ registered_elements = {}
 # Helper Functions
 
 
-def should_validate_attributes(name):
+def should_validate_attributes(name: str):
     if name in elements:
         return elements[name].validate_attributes()
     else:
         return False
 
 
-def get_attributes(name):
+def get_attributes(name: str):
     if name in elements:
         return elements[name].get_attributes()
     else:
         return []
 
 
-def generate(element, name, defaults={}):
+def generate(element: HtmlElement, name: str, defaults: dict | None = None):
+    if defaults is None:
+        defaults = {}
     if name in elements:
         obj = defaults.copy()
         cls = elements[name]
@@ -2519,24 +2614,24 @@ def generate(element, name, defaults={}):
         obj.update(cls.generate(element, data))
 
         # By default, set the grading name to the element name
-        gradingName = cls.grading_name(element)
-        if gradingName is None:
-            gradingName = name
+        grading_name = cls.grading_name(element)
+        if grading_name is None:
+            grading_name = name
 
-        obj["gradingName"] = gradingName
-        obj["type"] = gradingName
+        obj["gradingName"] = grading_name
+        obj["type"] = grading_name
         return obj
     else:
         return {}
 
 
-def is_gradable(name):
+def is_gradable(name: str):
     if name in elements:
         return elements[name].is_gradable()
     return False
 
 
-def grade(reference, element, name, tol, angtol):
+def grade(reference: dict, element: dict, name: str, tol: float, angtol: float):
     if name in elements:
         cls = elements[name]
         if cls.is_gradable():

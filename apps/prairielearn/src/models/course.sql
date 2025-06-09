@@ -6,6 +6,15 @@ FROM
 where
   id = $course_id;
 
+-- BLOCK select_course_by_instance_id
+SELECT
+  c.*
+FROM
+  course_instances AS ci
+  JOIN pl_courses AS c on ci.course_id = c.id
+WHERE
+  ci.id = $course_instance_id;
+
 -- BLOCK update_course_commit_hash
 UPDATE pl_courses
 SET
@@ -76,3 +85,52 @@ SELECT
   *
 FROM
   inserted_course;
+
+-- BLOCK delete_course
+UPDATE pl_courses AS c
+SET
+  deleted_at = current_timestamp
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
+-- BLOCK insert_course
+INSERT INTO
+  pl_courses AS c (
+    short_name,
+    title,
+    display_timezone,
+    path,
+    repository,
+    branch,
+    institution_id,
+    show_getting_started
+  )
+VALUES
+  (
+    $short_name,
+    $title,
+    $display_timezone,
+    $path,
+    $repository,
+    $branch,
+    $institution_id,
+    TRUE
+  )
+RETURNING
+  *;
+
+-- BLOCK update_course_show_getting_started
+UPDATE pl_courses
+SET
+  show_getting_started = $show_getting_started
+WHERE
+  id = $course_id;
+
+-- BLOCK update_course_sharing_name
+UPDATE pl_courses
+SET
+  sharing_name = $sharing_name
+WHERE
+  id = $course_id;

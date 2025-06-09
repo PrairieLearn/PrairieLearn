@@ -3,13 +3,20 @@ import { FeatureManager } from './manager.js';
 const featureNames = [
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
-  // Can only be applied to courses/institutions.
-  'process-questions-in-worker',
+  // Should only be applied to courses/institutions.
+  'process-questions-in-server',
   'question-sharing',
+  'consume-public-questions',
+  'ai-grading',
   'disable-public-workspaces',
-  // Can only be applied to institutions.
-  'lti13',
-  'terms-clickthrough',
+  // Should be applied to courses only.
+  'ai-question-generation-course-toggle',
+  // Can be applied to any context.
+  'ai-question-generation',
+  // Should only be applied globally.
+  'enhanced-navigation-user-toggle',
+  // Can be applied to any context.
+  'enhanced-navigation',
 ] as const;
 
 const features = new FeatureManager(featureNames);

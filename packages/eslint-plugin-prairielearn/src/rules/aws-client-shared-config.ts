@@ -1,3 +1,5 @@
+import { ESLintUtils } from '@typescript-eslint/utils';
+
 import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
@@ -18,17 +20,27 @@ import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
  * This rules works in tandem with `aws-client-mandatory-config` to ensure that
  * we're properly configuring AWS SDK clients.
  */
-export default {
-  create(context: any) {
+export default ESLintUtils.RuleCreator.withoutDocs({
+  meta: {
+    type: 'problem',
+    messages: {
+      improperConfig:
+        'Config for {{clientName}} must be obtained by calling {{desiredConfigFunctionName}}().',
+      unknownConfig: 'Unknown config provided to AWS client.',
+    },
+    schema: [],
+  },
+  defaultOptions: [],
+  create(context) {
     const awsClientImports = new Set<string>();
 
     return {
       // Handle `import ...` statements
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node) {
         const clientNames = getAwsClientNamesFromImportDeclaration(node);
         clientNames.forEach((clientName) => awsClientImports.add(clientName));
       },
-      NewExpression(node: any) {
+      NewExpression(node) {
         if (node.callee.type === 'Identifier' && awsClientImports.has(node.callee.name)) {
           // We're constructing an AWS client. Ensure that the first argument
           // comes from one of our config providers.
@@ -50,18 +62,29 @@ export default {
           if (configArgument.type !== 'CallExpression') {
             context.report({
               node,
-              message: `Config for ${node.callee.name} must be obtained by calling ${desiredConfigFunctionName}().`,
+              messageId: 'improperConfig',
+              data: {
+                clientName: node.callee.name,
+                desiredConfigFunctionName,
+              },
             });
             return;
           }
 
           // Handle member calls to the function.
-          if (configArgument.callee.type === 'MemberExpression') {
+          if (
+            configArgument.callee.type === 'MemberExpression' &&
+            configArgument.callee.property.type === 'Identifier'
+          ) {
             const functionName = configArgument.callee.property.name;
             if (functionName !== desiredConfigFunctionName) {
               context.report({
                 node,
-                message: `Config for ${node.callee.name} must be obtained by calling ${desiredConfigFunctionName}().`,
+                messageId: 'improperConfig',
+                data: {
+                  clientName: node.callee.name,
+                  desiredConfigFunctionName,
+                },
               });
             }
             return;
@@ -72,7 +95,11 @@ export default {
             if (functionName !== desiredConfigFunctionName) {
               context.report({
                 node,
-                message: `Config for ${node.callee.name} must be obtained by calling ${desiredConfigFunctionName}().`,
+                messageId: 'improperConfig',
+                data: {
+                  clientName: node.callee.name,
+                  desiredConfigFunctionName,
+                },
               });
             }
             return;
@@ -80,10 +107,10 @@ export default {
 
           context.report({
             node,
-            message: `Unknown config provided to AWS client.`,
+            messageId: 'unknownConfig',
           });
         }
       },
     };
   },
-};
+});

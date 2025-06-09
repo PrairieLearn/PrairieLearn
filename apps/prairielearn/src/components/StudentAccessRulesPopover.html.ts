@@ -14,35 +14,25 @@ export const AuthzAccessRuleSchema = z.object({
 });
 export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
 
-export function StudentAccessRulesPopover({
-  assessmentSetName,
-  assessmentNumber,
-  accessRules,
-}: {
-  assessmentSetName: string;
-  assessmentNumber: string;
-  accessRules: AuthzAccessRule[];
-}) {
+export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
-    <a
-      tabindex="0"
-      class="btn btn-xs"
-      role="button"
-      data-toggle="popover"
-      data-trigger="focus"
-      data-container="body"
-      data-html="true"
-      title="${assessmentSetName} ${assessmentNumber}"
-      data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-title="Access details"
+      data-bs-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
     >
       <i class="fa fa-question-circle"></i>
-    </a>
+    </button>
   `;
 }
 
 function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
-    <table class="table">
+    <table class="table" aria-label="Access details">
       <tr>
         <th>Credit</th>
         <th>Start</th>

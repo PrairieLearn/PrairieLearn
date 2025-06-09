@@ -1,22 +1,22 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
+import * as syncUtil from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const locals: Record<string, any> = {};
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
@@ -29,18 +29,44 @@ const courseDir = courseLiveDir;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
+
+const courseUrl = baseUrl + '/course/1';
+const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
+
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
-const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
 
-const testEditData = [
+const newQuestionUrl = `${courseInstanceUrl}/question/2/settings`;
+const newQuestionFromTemplateUrl = `${courseInstanceUrl}/question/3/settings`;
+const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
+const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
+
+const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
+const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
+
+interface EditData {
+  url?: string;
+  formSelector: string;
+  button?: string;
+  action?: string;
+  files: Set<string>;
+  info?: string;
+  data?: Record<string, string | number>;
+}
+
+const testEditData: EditData[] = [
   {
     url: questionsUrl,
-    formSelector: 'form[name="add-question-form"]',
+    formSelector: '#createQuestionModal',
     action: 'add_question',
     info: 'questions/New_1/info.json',
+    data: {
+      qid: 'New',
+      title: 'New',
+      start_from: 'Empty question',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -55,13 +81,17 @@ const testEditData = [
     ]),
   },
   {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
+    // Create a question with a template question as the starting point
+    url: questionsUrl,
+    formSelector: '#createQuestionModal',
+    action: 'add_question',
+    info: 'questions/custom_id/info.json',
     data: {
-      id: 'newQuestion',
+      qid: 'custom_id',
+      title: 'Custom Question',
+      start_from: 'Empty question',
+      template_qid: 'template/string-input/random',
     },
-    action: 'change_id',
-    info: 'questions/newQuestion/info.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -70,12 +100,34 @@ const testEditData = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'questions/newQuestion/info.json',
-      'questions/newQuestion/question.html',
-      'questions/newQuestion/server.py',
+      'questions/New_1/info.json',
+      'questions/New_1/question.html',
+      'questions/New_1/server.py',
+      'questions/custom_id/info.json',
+      'questions/custom_id/question.html',
+      'questions/custom_id/server.py',
     ]),
   },
   {
+    url: newQuestionUrl,
+    formSelector: '#deleteQuestionModal',
+    action: 'delete_question',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/custom_id/info.json',
+      'questions/custom_id/question.html',
+      'questions/custom_id/server.py',
+    ]),
+  },
+  {
+    // Delete the question created from a template question
+    url: newQuestionFromTemplateUrl,
     formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
@@ -125,9 +177,15 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    formSelector: 'form[name="add-assessment-form"]',
+    formSelector: '#createAssessmentModal',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
+    data: {
+      title: 'New',
+      aid: 'New',
+      type: 'Homework',
+      set: 'Homework',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -140,48 +198,7 @@ const testEditData = [
     ]),
   },
   {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newAssessment/nested',
-    },
-    action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
-    ]),
-  },
-  // This second rename specifically tests the case where an existing assessment
-  // is renamed such that it leaves behind an empty directory. We want to make
-  // sure that that empty directory is cleaned up and not treated as an actual
-  // assessment during sync.
-  {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newAssessmentNotNested',
-    },
-    action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
-    ]),
-  },
-  {
+    url: newAssessmentSettingsUrl,
     formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
@@ -225,28 +242,13 @@ const testEditData = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: 'form[name="add-course-instance-form"]',
+    formSelector: '#createCourseInstanceModal',
     action: 'add_course_instance',
-    info: `courseInstances/New_1/infoCourseInstance.json`,
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      `courseInstances/New_1/infoCourseInstance.json`,
-    ]),
-  },
-  {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
+    info: 'courseInstances/New_1/infoCourseInstance.json',
     data: {
-      id: 'newCourseInstance',
+      short_name: 'New',
+      long_name: 'New',
     },
-    action: 'change_id',
-    info: 'courseInstances/newCourseInstance/infoCourseInstance.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -255,10 +257,11 @@ const testEditData = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/newCourseInstance/infoCourseInstance.json',
+      'courseInstances/New_1/infoCourseInstance.json',
     ]),
   },
   {
+    url: newCourseInstanceSettingsUrl,
     formSelector: '#deleteCourseInstanceModal',
     action: 'delete_course_instance',
     files: new Set([
@@ -303,39 +306,68 @@ const testEditData = [
   },
 ];
 
-describe('test course editor', function () {
-  this.timeout(20000);
+const publicCopyTestData: EditData[] = [
+  {
+    url: `${baseUrl}/public/course/2/question/2/preview`,
+    formSelector: 'form.js-copy-question-form',
+    data: {
+      course_id: 2,
+      question_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+    ]),
+  },
+];
 
+describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
-    before('create test course files', async () => {
-      await createCourseFiles();
-    });
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
 
-    before('set up testing server', helperServer.before(courseDir));
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-    before('update course repository in database', async () => {
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
     });
 
-    after('shut down testing server', helperServer.after);
-
-    after('delete test course files', async () => {
-      await deleteCourseFiles();
+    describe('verify edits', function () {
+      testEditData.forEach((element) => {
+        testEdit(element);
+      });
     });
+  });
 
-    describe('the locals object', function () {
-      it('should be cleared', function () {
-        for (const prop in locals) {
-          delete locals[prop];
-        }
+  describe('Copy from another course', function () {
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
+
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
+
+    beforeAll(async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
       });
     });
 
-    describe('verify edits', function () {
-      testEditData.forEach((element) => {
+    beforeAll(createSharedCourse);
+
+    describe('verify edits', async function () {
+      publicCopyTestData.forEach((element) => {
         testEdit(element);
       });
     });
@@ -381,60 +413,79 @@ async function getFiles(options): Promise<Set<string>> {
   });
 }
 
-function testEdit(params) {
+// Some tests follow a redirect, and so we have a couple of globals to keep
+// information about the current page to persist to the next test
+let currentUrl: string;
+let currentPage$: cheerio.CheerioAPI;
+function testEdit(params: EditData) {
+  let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
+      const url = params.url;
       it('should load successfully', async () => {
-        const res = await fetch(params.url);
+        const res = await fetch(url);
+
         assert.isOk(res.ok);
-        locals.$ = cheerio.load(await res.text());
+        currentPage$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
+      let maybeToken: string | undefined;
       if (params.button) {
-        let elemList = locals.$(params.button);
-        assert.lengthOf(elemList, 1);
-
-        const $ = cheerio.load(elemList[0].attribs['data-content']);
-        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
+        let elem = currentPage$(params.button);
+        assert.lengthOf(elem, 1);
+        const formContent = elem.attr('data-bs-content');
+        assert.ok(formContent);
+        const $ = cheerio.load(formContent);
+        elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       } else {
-        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
+        const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       }
+      assert.ok(maybeToken);
+      __csrf_token = maybeToken;
     });
   });
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: params.action,
-        __csrf_token: locals.__csrf_token,
+      const url = run(() => {
+        // to handle the difference between POSTing to the same URL as the page you are
+        // on vs. POSTing to a different URL
+        if (!params.action) {
+          const elem = currentPage$(params.formSelector);
+          assert.lengthOf(elem, 1);
+          return `${siteUrl}${elem.attr('action')}`;
+        } else {
+          return params.url || currentUrl;
+        }
+      });
+      const urlParams: Record<string, string> = {
+        __csrf_token,
+        ...(params.action ? { __action: params.action } : {}),
         ...(params?.data ?? {}),
       };
-      const res = await fetch(params.url || locals.url, {
+      const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams(urlParams),
       });
       assert.isOk(res.ok);
-      locals.url = res.url;
-      locals.$ = cheerio.load(await res.text());
+      currentUrl = res.url;
+      currentPage$ = cheerio.load(await res.text());
     });
   });
 
   describe('The job sequence', () => {
+    let job_sequence_id: string;
     it('should have an id', async () => {
       const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      locals.job_sequence_id = result.rows[0].id;
+      job_sequence_id = result.rows[0].id;
     });
     it('should complete', async () => {
-      await helperServer.waitForJobSequenceSuccess(locals.job_sequence_id);
+      await helperServer.waitForJobSequenceSuccess(job_sequence_id);
     });
   });
 
@@ -459,8 +510,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
+      const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
@@ -497,6 +549,38 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
+}
+
+async function createSharedCourse() {
+  const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const sharingCourseData = syncUtil.getCourseData();
+  sharingCourseData.course.name = 'SHARING 101';
+  sharingCourseData.questions = {
+    [PUBLICLY_SHARED_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111111',
+      type: 'v3',
+      title: 'Shared publicly',
+      topic: 'TOPIC HERE',
+      sharePublicly: true,
+      shareSourcePublicly: true,
+    },
+  };
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+    {
+      questions: [
+        {
+          id: PUBLICLY_SHARED_QUESTION_QID,
+          points: 1,
+        },
+      ],
+    },
+  ];
+
+  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
 
 async function deleteCourseFiles() {

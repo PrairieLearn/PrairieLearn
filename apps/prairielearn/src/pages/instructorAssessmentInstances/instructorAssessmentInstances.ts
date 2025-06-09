@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -6,10 +7,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   checkBelongs,
-  gradeAssessmentInstance,
-  gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
+  gradeAllAssessmentInstances,
+  gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
 
@@ -62,6 +63,7 @@ router.post(
       const overrideGradeRate = true;
       await gradeAssessmentInstance(
         assessment_instance_id,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
         requireOpen,
         close,
@@ -111,22 +113,29 @@ router.post(
         assessment_instance_id: req.body.assessment_instance_id,
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         authn_user_id: res.locals.authz_data.authn_user.user_id,
+        exact_date: new Date(),
       };
-      if (req.body.plus_minus === 'unlimited') {
+      if (req.body.action === 'unlimited' || req.body.reopen_without_limit === 'true') {
         params.base_time = 'null';
-      } else if (req.body.plus_minus === 'expire') {
+      } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
-      } else if (req.body.plus_minus === 'set_total') {
+      } else if (req.body.action === 'set_total') {
         params.base_time = 'start_date';
-      } else if (req.body.plus_minus === 'set_rem') {
+      } else if (req.body.action === 'set_rem') {
         params.base_time = 'current_date';
-      } else {
-        params.time_add *= req.body.plus_minus;
+      } else if (req.body.action === 'set_exact') {
+        params.base_time = 'exact_date';
+        params.time_add = 0;
+        params.exact_date = new Date(
+          Temporal.PlainDateTime.from(req.body.date).toZonedDateTime(
+            res.locals.course_instance.display_timezone,
+          ).epochMilliseconds,
+        );
+      } else if (req.body.action === 'subtract') {
+        params.time_add *= -1;
       }
       await sqldb.queryAsync(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
@@ -134,23 +143,30 @@ router.post(
       const params = {
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         reopen_closed: !!req.body.reopen_closed,
         authn_user_id: res.locals.authz_data.authn_user.user_id,
+        exact_date: new Date(),
       };
-      if (req.body.plus_minus === 'unlimited') {
+      if (req.body.action === 'unlimited') {
         params.base_time = 'null';
-      } else if (req.body.plus_minus === 'expire') {
+      } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
-      } else if (req.body.plus_minus === 'set_total') {
+      } else if (req.body.action === 'set_total') {
         params.base_time = 'start_date';
-      } else if (req.body.plus_minus === 'set_rem') {
+      } else if (req.body.action === 'set_rem') {
         params.base_time = 'current_date';
-      } else {
-        params.time_add *= req.body.plus_minus;
+      } else if (req.body.action === 'set_exact') {
+        params.base_time = 'exact_date';
+        params.time_add = 0;
+        params.exact_date = new Date(
+          Temporal.PlainDateTime.from(req.body.date).toZonedDateTime(
+            res.locals.course_instance.display_timezone,
+          ).epochMilliseconds,
+        );
+      } else if (req.body.action === 'subtract') {
+        params.time_add *= -1;
       }
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));

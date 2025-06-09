@@ -6,7 +6,6 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
-!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !.yarnrc.yml
@@ -15,16 +14,16 @@
 !.yarn/
 !pyproject.toml
 !apps/
+!contrib/
 !database/
 !docs/
-!docker/
 !exampleCourse/
 !Makefile
 !package.json
 !yarn.lock
 !packages/
+!scripts/
 !testCourse/
-!tools/
 
 # Forbid specific patterns.
 .DS_Store

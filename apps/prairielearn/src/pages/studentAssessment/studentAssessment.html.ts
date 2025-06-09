@@ -1,21 +1,24 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { html, unsafeHtml } from '@prairielearn/html';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
-import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
+import { type GroupInfo } from '../../lib/groups.js';
 
 export function StudentAssessment({
   resLocals,
   groupConfig,
   groupInfo,
   userCanAssignRoles,
+  customHonorCode,
 }: {
   resLocals: Record<string, any>;
   groupConfig?: GroupConfig;
   groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
+  customHonorCode: string;
 }) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
 
@@ -23,18 +26,19 @@ export function StudentAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('studentAssessmentClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
+        <style>
+          .honor-code :last-child {
+            margin-bottom: 0;
+          }
+        </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}
+              <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
               ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
             </div>
 
@@ -66,7 +70,13 @@ export function StudentAssessment({
                 : ''}
               ${assessment.group_work
                 ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
-                : StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: true })}
+                : StartAssessmentForm({
+                    assessment,
+                    user,
+                    __csrf_token,
+                    startAllowed: true,
+                    customHonorCode,
+                  })}
             </div>
           </div>
         </main>
@@ -79,15 +89,21 @@ function StartAssessmentForm({
   user,
   __csrf_token,
   startAllowed,
+  customHonorCode,
 }: {
   assessment: Assessment;
   user: User;
   __csrf_token: string;
   startAllowed: boolean;
+  customHonorCode?: string;
 }) {
   return html`
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
-      ? HonorPledge({ user, groupWork: !!assessment.group_work })
+      ? HonorPledge({
+          user,
+          groupWork: !!assessment.group_work,
+          customHonorCode,
+        })
       : ''}
     <form
       id="confirm-form"
@@ -111,25 +127,34 @@ function StartAssessmentForm({
   `;
 }
 
-function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
+function HonorPledge({
+  user,
+  groupWork,
+  customHonorCode,
+}: {
+  user: User;
+  groupWork: boolean;
+  customHonorCode?: string;
+}) {
   return html`
-    <div class="card card-secondary mb-4 test-class-honor-code">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item py-2">
-          I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
-          take this assessment.
-        </li>
-        <li class="list-group-item py-2">
-          ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
-          ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
-          assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
-        </li>
-      </ul>
-
-      <div class="card-footer text-center border-top-0 py-2">
-        <span class="form-check d-inline">
+    <div class="card card-secondary mb-4" data-testid="honor-code">
+      ${customHonorCode
+        ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
+        : html`<ul class="list-group list-group-flush">
+            <li class="list-group-item py-2">
+              I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
+              take this assessment.
+            </li>
+            <li class="list-group-item py-2">
+              ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
+              ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+              assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
+            </li>
+          </ul>`}
+      <div class="card-footer d-flex justify-content-center">
+        <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
-          <label class="form-check-label font-weight-bold" for="certify-pledge">
+          <label class="form-check-label fw-bold" for="certify-pledge">
             I certify and pledge the above.
           </label>
         </span>
@@ -215,22 +240,29 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <h6>Group name</h6>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="groupNameInput"
-                    name="groupName"
-                    maxlength="30"
-                    placeholder="e.g. teamOne"
-                    aria-describedby="groupNameHelp"
-                  />
-                  <small id="groupNameHelp" class="form-text text-muted">
-                    Group names can only contain letters and numbers, with maximum length of 30
-                    characters.
-                  </small>
+                  ${groupConfig.student_authz_choose_name
+                    ? html`
+                        <label for="group-name-input">Group name</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="group-name-input"
+                          name="group_name"
+                          maxlength="30"
+                          pattern="[a-zA-Z0-9]+"
+                          placeholder="e.g. teamOne"
+                          aria-label="Group name"
+                          aria-describedby="group-name-help"
+                        />
+                        <small id="group-name-help" class="form-text text-muted">
+                          Group names can only contain letters and numbers, with maximum length of
+                          30 characters. If you leave this blank, a group name will be generated for
+                          you.
+                        </small>
+                      `
+                    : ''}
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="form-group mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="create_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Create new group</button>
@@ -244,16 +276,19 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="joingroup-form" name="joingroup-form" method="POST">
-                  <h6>Join code</h6>
+                  <label for="join-code-input">Join code</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="joinCodeInput"
+                    id="join-code-input"
                     name="join_code"
                     placeholder="abcd-1234"
+                    pattern="[a-zA-Z0-9]+-[0-9]{4}"
+                    maxlength="35"
+                    required
                   />
                   <div class="mt-4 d-flex justify-content-center">
-                    <div class="form-group mb-0">
+                    <div class="mb-3">
                       <input type="hidden" name="__action" value="join_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Join group</button>

@@ -71,6 +71,7 @@ module.exports = {
         pathNot: [
           '.(spec|test).(js|mjs|cjs|ts|ls|coffee|litcoffee|coffee.md)$',
           'src/tests/',
+          'src/ee/tests/',
           '[.]d[.]ts$',
           'test-utils[.]ts$',
         ],
@@ -82,7 +83,6 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '[.]yarn/' },
     tsPreCompilationDeps: true,
-    tsConfig: { fileName: 'tsconfig.json' },
     enhancedResolveOptions: {
       exportsFields: ['exports'],
       conditionNames: ['import', 'require', 'node', 'default'],

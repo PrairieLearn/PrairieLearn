@@ -1,67 +1,53 @@
 {
   "name": "@prairielearn/grader-host",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev:no-watch": "tsx src/index.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "dev:no-watch": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "test": "c8 mocha src/**/*.test.{js,ts}"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.588.0",
-    "@aws-sdk/client-ecr": "^3.588.0",
-    "@aws-sdk/client-s3": "^3.588.0",
-    "@aws-sdk/client-sqs": "^3.588.0",
-    "@aws-sdk/credential-providers": "^3.588.0",
-    "@aws-sdk/lib-storage": "^3.588.0",
+    "@aws-sdk/client-auto-scaling": "^3.823.0",
+    "@aws-sdk/client-ecr": "^3.823.0",
+    "@aws-sdk/client-s3": "^3.823.0",
+    "@aws-sdk/client-sqs": "^3.823.0",
+    "@aws-sdk/credential-providers": "^3.823.0",
+    "@aws-sdk/lib-storage": "^3.823.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
+    "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
+    "@prairielearn/run": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ajv": "^8.14.0",
-    "async": "^3.2.5",
+    "async": "^3.2.6",
     "byline": "^5.0.0",
-    "chai": "^5.1.1",
-    "chai-as-promised": "^8.0.0",
-    "dockerode": "^4.0.2",
-    "execa": "^9.2.0",
-    "fs-extra": "^11.2.0",
-    "logform": "^2.6.0",
+    "dockerode": "^4.0.6",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.0",
+    "logform": "^2.7.0",
+    "shlex": "^2.1.2",
     "tmp-promise": "^3.0.3",
-    "winston": "^3.13.0",
-    "winston-transport": "^4.7.0",
-    "zod": "^3.23.8"
+    "winston": "^3.17.0",
+    "winston-transport": "^4.9.0",
+    "zod": "^3.25.51"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/chai": "^4.3.16",
-    "@types/dockerode": "^3.3.29",
+    "@types/dockerode": "^3.3.39",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.13.0",
-    "@types/sinon": "^17.0.3",
+    "@types/node": "^22.15.29",
     "@types/tmp": "^0.2.6",
-    "c8": "^9.1.0",
-    "mocha": "^10.4.0",
-    "nodemon": "^3.1.2",
-    "sinon": "^18.0.0",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5",
-    "typescript-cp": "^0.1.9"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
+    "@vitest/coverage-v8": "^3.2.1",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-cp": "^0.1.9",
+    "vitest": "^3.2.1"
   }
 }

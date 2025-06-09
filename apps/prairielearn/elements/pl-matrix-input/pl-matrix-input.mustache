@@ -1,72 +1,84 @@
 {{#question}}
-<script>
-    $(function() {
-        $('#pl-matrix-input-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-matrix-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-<div id="pl-matrix-input-{{uuid}}" class="input-group">
+<div class="input-group">
     {{#label}}
-    <span class="input-group-prepend">
-        <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
-    </span>
+    <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-matrix-input-{{uuid}}-label" placeholder="{{shortinfo}}" />
-    <div class="input-group-append">
-        {{#show_info}}
-        <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>
-        {{/show_info}}
-        {{^show_info}}
-        <span class="d-flex align-items-center">
-        {{/show_info}}
+    <input
+        name="{{name}}"
+        type="text"
+        class="form-control pl-matrix-input-input"
+        {{^editable}}disabled{{/editable}}
+        {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+        placeholder="{{shortinfo}}"
+        {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        {{^aria_label}}{{#label}}aria-labelledby="pl-matrix-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+    />
+    {{#show_info}}
+    <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
+    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    {{/show_info}}
+    {{^show_info}}
+    <span class="d-flex align-items-center">
+    {{/show_info}}
 
-        {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-        {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-        {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+    {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+    {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
-        {{#show_info}}
-        </a>
-        {{/show_info}}
-        {{#show_info}}
-        </span>
-        {{/show_info}}
-    </div>
+    {{#show_info}}
+    </button>
+    {{/show_info}}
+    {{#show_info}}
+    </span>
+    {{/show_info}}
 </div>
 {{/question}}
 
 {{#submission}}
 {{#error}}
-        
-<script>
-    $(function() {
-        $('#pl-matrix-input-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-matrix-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-<span id="pl-matrix-input-submission-{{uuid}}">
+<span>
 
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    
-    <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-    
-    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-danger">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Format error"
+            data-bs-content="{{parse_error}}"
+        >
+           More info…
+        </a>
+    </span>
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-
-    <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
-    
-    <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </a>
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-dark border">
+            Missing input 
+            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a 
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Missing input"
+            data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+        >
+           More info…
+        </a>
+    </span>
 {{/missing_input}}
 
 </span>
@@ -75,9 +87,9 @@
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <code class="user-output" style="white-space: break-spaces;">{{a_sub}}</code>
-{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/error}}
 {{/submission}}
 
@@ -91,8 +103,8 @@
 <div id="pl-matrix-input-answer-{{uuid}}" class="card mb-4 pl-matrix-input-answer ">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
-            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-toggle="pill">matlab</a></li>
-            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">python</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-bs-toggle="pill">matlab</a></li>
+            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-bs-toggle="pill">python</a></li>
         </ul>
     </div>
     <div class="card-body">

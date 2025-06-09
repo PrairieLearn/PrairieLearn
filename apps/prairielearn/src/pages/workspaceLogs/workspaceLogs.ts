@@ -3,14 +3,13 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
 
-import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 
 import {
-  WorkspaceLogRow,
+  type WorkspaceLogRow,
   WorkspaceLogRowSchema,
   WorkspaceLogs,
   WorkspaceVersionLogs,
@@ -113,16 +112,10 @@ async function loadLogsForWorkspaceVersion(
 }
 
 // Only instructors and admins can access these routes. We don't need to check
-// if the instructor has access to the workspace; that's already been checked
-// by the workspace authorization middleware.
-router.use((req, res, next) => {
-  // TODO: is `authn_is_instructor` the right permission to check?
-  if (!res.locals.authn_is_administrator && !res.locals.authn_is_instructor) {
-    next(new error.HttpStatusError(403, 'Access denied'));
-  } else {
-    next();
-  }
-});
+// if the instructor has access to the workspace (i.e., course instance student
+// data view permission, or access to a workspace owned by the user); that's
+// already been checked by the workspace authorization middleware.
+router.use((await import('../../middlewares/authzHasCoursePreviewOrInstanceView.js')).default);
 
 // Overview of workspace logs, including all state transitions and links to
 // logs for individual versions.

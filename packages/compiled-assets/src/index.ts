@@ -1,13 +1,12 @@
-import http from 'node:http';
+import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import path from 'path';
 
-import esbuild, { Metafile } from 'esbuild';
-import type { RequestHandler } from 'express';
+import esbuild, { type Metafile } from 'esbuild';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
 
-import { html, HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {
   dev: process.env.NODE_ENV !== 'production',
@@ -53,7 +52,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     //
     // Note that esbuild doesn't support globs, so the server will not pick up
     // new entrypoints that are added while the server is running.
-    const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,css}');
+    const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,jsx,tsx,css}');
     const sourcePaths = await globby(sourceGlob);
 
     // Save the result of globbing for the source paths so that we can later
@@ -62,7 +61,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
 
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
-      target: 'es6',
+      target: 'es2017',
       format: 'iife',
       sourcemap: 'inline',
       bundle: true,
@@ -76,7 +75,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       entryNames: '[dir]/[name]',
     });
 
-    esbuildServer = await esbuildContext.serve();
+    esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
   }
 }
 
@@ -93,7 +92,7 @@ export function assertConfigured(): void {
   }
 }
 
-export function handler(): RequestHandler {
+export function handler() {
   assertConfigured();
 
   if (!options?.dev) {
@@ -115,18 +114,31 @@ export function handler(): RequestHandler {
     throw new Error('esbuild server not initialized');
   }
 
-  const { host, port } = esbuildServer;
+  const { port } = esbuildServer;
 
-  // We're running in dev mode, so we need to boot up ESBuild to start building
+  // We're running in dev mode, so we need to boot up esbuild to start building
   // and watching our assets.
-  return function (req, res) {
+  return function (req: IncomingMessage, res: ServerResponse) {
+    // esbuild will reject requests that come from hosts other than the host on
+    // which the esbuild dev server is listening:
+    // https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d
+    // https://github.com/evanw/esbuild/releases/tag/v0.25.0
+    // We work around this by modifying the request headers to make it look like
+    // the request is coming from localhost, which esbuild won't reject.
+    const headers = structuredClone(req.headers);
+    headers.host = 'localhost';
+    delete headers['x-forwarded-for'];
+    delete headers['x-forwarded-host'];
+    delete headers['x-forwarded-proto'];
+    delete headers['referer'];
+
     const proxyReq = http.request(
       {
-        hostname: host,
+        hostname: '127.0.0.1',
         port,
         path: req.url,
         method: req.method,
-        headers: req.headers,
+        headers,
       },
       (proxyRes) => {
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
@@ -171,7 +183,7 @@ function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): stri
     throw new Error(`Unknown ${type} asset: ${sourceFile}`);
   }
 
-  return `${options.publicPath}/${assetPath}`;
+  return options.publicPath + assetPath;
 }
 
 export function compiledScriptPath(sourceFile: string): string {
@@ -196,7 +208,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
   const files = await globby(path.join(sourceDirectory, '*/*.{js,jsx,ts,tsx,css}'));
   const buildResult = await esbuild.build({
     entryPoints: files,
-    target: 'es6',
+    target: 'es2017',
     format: 'iife',
     sourcemap: 'linked',
     bundle: true,

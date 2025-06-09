@@ -1,13 +1,14 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert, fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -22,16 +23,18 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 
 const storedConfig: Record<string, any> = {};
 
-describe('Group based homework assess control on student side', function () {
-  this.timeout(20000);
-  before('set authenticated user', async () => {
+describe('Group based homework assess control on student side', { timeout: 20_000 }, function () {
+  beforeAll(async () => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
-  after('unset authenticated user', async () => {
+
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+
+  afterAll(helperServer.after);
+
+  afterAll(async () => {
     Object.assign(config, storedConfig);
   });
 
@@ -113,11 +116,11 @@ describe('Group based homework assess control on student side', function () {
 
   describe('6. get 5 student user', function () {
     it('should insert/get 5 users into/from the DB', async () => {
-      const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
-      assert.lengthOf(result.rows, 5);
-      locals.studentUsers = result.rows.slice(0, 3);
-      locals.studentUserNotGrouped = result.rows[3];
-      locals.studentUserInDiffGroup = result.rows[4];
+      const result = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      assert.lengthOf(result, 5);
+      locals.studentUsers = result.slice(0, 3);
+      locals.studentUserNotGrouped = result[3];
+      locals.studentUserInDiffGroup = result[4];
       locals.groupCreator = locals.studentUsers[0];
       assert.lengthOf(locals.studentUsers, 3);
     });
@@ -149,7 +152,7 @@ describe('Group based homework assess control on student side', function () {
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
+          group_name: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -162,7 +165,7 @@ describe('Group based homework assess control on student side', function () {
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: 'secondgroup',
+          group_name: 'secondgroup',
         }),
       });
       assert.equal(response.status, 200);
@@ -351,14 +354,12 @@ describe('Group based homework assess control on student side', function () {
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group', async () => {
-      locals.group_name = 'groupBBCCDD';
+    it('should be able to create a group without a name', async () => {
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -533,7 +534,7 @@ describe('Group based homework assess control on student side', function () {
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative1,
+          group_name: locals.group_name_alternative1,
         }),
       });
       assert.equal(response.status, 200);
@@ -584,7 +585,7 @@ describe('Group based homework assess control on student side', function () {
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative2,
+          group_name: locals.group_name_alternative2,
         }),
       });
       assert.equal(response.status, 200);

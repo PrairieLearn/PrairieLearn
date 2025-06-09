@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import { getJobSequence } from '../../lib/server-jobs.js';
 
 import { JobSequence } from './jobSequence.html.js';
 
@@ -14,7 +14,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course?.id ?? null;
-    const job_sequence = await getJobSequenceWithFormattedOutput(job_sequence_id, course_id);
+    const job_sequence = await getJobSequence(job_sequence_id, course_id);
 
     // Verify existence of authz_data, which means that we are accessing the job
     // sequence through a course or a course instance. If authz_data does not

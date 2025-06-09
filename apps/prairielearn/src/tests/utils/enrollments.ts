@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { assert } from 'vitest';
 import { z } from 'zod';
 
 import { queryRow } from '@prairielearn/postgres';
@@ -8,7 +8,7 @@ import { queryRow } from '@prairielearn/postgres';
 import '../helperServer';
 import { config } from '../../lib/config.js';
 
-import { AuthUser, withUser } from './auth.js';
+import { type AuthUser, withUser } from './auth.js';
 import { getCsrfToken } from './csrf.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;

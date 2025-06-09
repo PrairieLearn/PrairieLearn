@@ -36,7 +36,8 @@ SELECT
     WHERE
       qt.question_id = q.id
   ) AS tags,
-  q.shared_publicly,
+  q.share_publicly,
+  q.share_source_publicly,
   (
     SELECT
       jsonb_agg(to_jsonb(ss))
@@ -54,6 +55,7 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
+  AND q.draft IS FALSE
 GROUP BY
   q.id,
   top.id,
@@ -81,14 +83,20 @@ SELECT
       JOIN tags ON (tags.id = qt.tag_id)
     WHERE
       qt.question_id = q.id
-  ) AS tags
+  ) AS tags,
+  q.share_publicly,
+  q.share_source_publicly
 FROM
   questions AS q
   JOIN topics AS top ON (top.id = q.topic_id)
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
-  AND q.shared_publicly
+  AND q.draft IS FALSE
+  AND (
+    q.share_publicly
+    OR q.share_source_publicly
+  )
 GROUP BY
   q.id,
   top.id

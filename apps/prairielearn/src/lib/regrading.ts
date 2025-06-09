@@ -1,13 +1,27 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import * as sqldb from '@prairielearn/postgres';
+import {
+  callRow,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { IdSchema } from './db-types.js';
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
+import { updateAssessmentInstance } from './assessment.js';
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  IdSchema,
+  QuestionSchema,
+} from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),
@@ -17,21 +31,15 @@ const RegradeAssessmentInstanceInfoSchema = z.object({
   course_instance_id: IdSchema,
   course_id: IdSchema,
 });
-const RegradeAssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance_id: IdSchema,
   assessment_instance_label: z.string(),
   user_uid: z.string(),
 });
-const AssessmentInstanceRegradeSchema = z.object({
+const AssessmentInstancesGradeSchema = z.object({
   updated: z.boolean(),
-  updated_question_names: z.array(z.string()),
+  new_points: z.number(),
   new_score_perc: z.number(),
-  old_score_perc: z.number(),
 });
 
 /**
@@ -42,7 +50,7 @@ export async function regradeAssessmentInstance(
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
-  const assessmentInstance = await sqldb.queryRow(
+  const assessmentInstance = await queryRow(
     sql.select_regrade_assessment_instance_info,
     { assessment_instance_id },
     RegradeAssessmentInstanceInfoSchema,
@@ -69,19 +77,18 @@ export async function regradeAssessmentInstance(
 
   serverJob.executeInBackground(async (job) => {
     job.info('Regrading ' + assessment_instance_label + ' for ' + jobInfo);
-    const regrade = await sqldb.callRow(
-      'assessment_instances_regrade',
-      [assessment_instance_id, authn_user_id],
-      AssessmentInstanceRegradeSchema,
-    );
+    const regrade = await regradeSingleAssessmentInstance({
+      assessment_instance_id,
+      authn_user_id,
+    });
     job.info('Regrading complete');
     if (regrade.updated) {
-      job.info('Questions updated: ' + regrade.updated_question_names.join(', '));
+      job.info('Questions updated: ' + regrade.updatedQuestionQids.join(', '));
       job.info(
         'New score: ' +
-          Math.floor(regrade.new_score_perc) +
+          Math.floor(regrade.newScorePerc) +
           '% (was ' +
-          Math.floor(regrade.old_score_perc) +
+          Math.floor(regrade.oldScorePerc ?? 0) +
           '%)',
       );
     } else {
@@ -100,11 +107,8 @@ export async function regradeAllAssessmentInstances(
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_regrade_assessment_info,
-    { assessment_id },
-    RegradeAssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -119,7 +123,7 @@ export async function regradeAllAssessmentInstances(
   serverJob.executeInBackground(async (job) => {
     job.info('Regrading all assessment instances for ' + assessment_label);
 
-    const assessment_instances = await sqldb.queryRows(
+    const assessment_instances = await queryRows(
       sql.select_regrade_assessment_instances,
       { assessment_id },
       RegradeAssessmentInstancesSchema,
@@ -136,17 +140,16 @@ export async function regradeAllAssessmentInstances(
     for (const row of assessment_instances) {
       let msg: string;
       try {
-        const regrade = await sqldb.callRow(
-          'assessment_instances_regrade',
-          [row.assessment_instance_id, authn_user_id],
-          AssessmentInstanceRegradeSchema,
-        );
+        const regrade = await regradeSingleAssessmentInstance({
+          assessment_instance_id: row.assessment_instance_id,
+          authn_user_id,
+        });
         msg = `Regraded ${row.assessment_instance_label} for ${row.user_uid}: `;
         if (regrade.updated) {
           updated_count++;
           msg += `New score: ${Math.floor(
-            regrade.new_score_perc,
-          )}% (was ${Math.floor(regrade.old_score_perc)}%), Questions updated: ${regrade.updated_question_names.join(', ')}`;
+            regrade.newScorePerc,
+          )}% (was ${Math.floor(regrade.oldScorePerc ?? 0)}%), Questions updated: ${regrade.updatedQuestionQids.join(', ')}`;
         } else {
           msg += 'No changes made';
         }
@@ -177,4 +180,53 @@ export async function regradeAllAssessmentInstances(
   });
 
   return serverJob.jobSequenceId;
+}
+
+async function regradeSingleAssessmentInstance({
+  assessment_instance_id,
+  authn_user_id,
+}: {
+  assessment_instance_id: string;
+  authn_user_id: string;
+}) {
+  return await runInTransactionAsync(async () => {
+    const assessmentInstance = await queryRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema.extend({ assessment_type: AssessmentSchema.shape.type }),
+    );
+
+    const assessmentUpdated =
+      assessmentInstance.assessment_type === 'Homework'
+        ? await updateAssessmentInstance(
+            assessment_instance_id,
+            authn_user_id,
+            false, // Do not trigger a grade (we'll do that below)
+          )
+        : false;
+
+    const updatedQuestionQids = await queryRows(
+      sql.regrade_instance_questions,
+      { assessment_instance_id, authn_user_id },
+      QuestionSchema.shape.qid,
+    );
+
+    const { updated: gradeUpdated, new_score_perc: newScorePerc } = await callRow(
+      'assessment_instances_grade',
+      [
+        assessment_instance_id,
+        authn_user_id,
+        null, // credit
+        true, // only_log_if_score_updated
+      ],
+      AssessmentInstancesGradeSchema,
+    );
+
+    return {
+      updated: assessmentUpdated || updatedQuestionQids.length > 0 || gradeUpdated,
+      updatedQuestionQids,
+      newScorePerc,
+      oldScorePerc: assessmentInstance.score_perc,
+    };
+  });
 }

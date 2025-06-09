@@ -1,7 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
-import request from 'request';
+import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -61,13 +60,12 @@ const testQuestions = [
   customElement,
 ];
 
-describe('Instructor questions', function () {
-  this.timeout(60000);
+describe('Instructor questions', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  let page, questionData;
+  let questionData;
 
   describe('the database', function () {
     let questions;
@@ -81,7 +79,7 @@ describe('Instructor questions', function () {
 
     for (const testQuestion of testQuestions) {
       it(`should contain the ${testQuestion.qid} question`, function () {
-        const foundQuestion = _.find(questions, { directory: testQuestion.qid });
+        const foundQuestion = questions.find((question) => question.directory === testQuestion.qid);
         assert.isDefined(foundQuestion);
         testQuestion.id = foundQuestion.id;
       });
@@ -90,20 +88,10 @@ describe('Instructor questions', function () {
 
   describe('GET ' + questionsUrlCourse, function () {
     let parsedPage;
-    it('should load successfully', function (callback) {
-      request(questionsUrlCourse, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
-    });
-    it('should parse', function () {
-      parsedPage = cheerio.load(page);
+    it('should load successfully and contain question data', async () => {
+      const res = await fetch(questionsUrlCourse);
+      assert.equal(res.status, 200);
+      parsedPage = cheerio.load(await res.text());
     });
     it('should contain question data', function () {
       questionData = parsedPage('#questionsTable').data('data');
@@ -123,19 +111,10 @@ describe('Instructor questions', function () {
 
   describe('GET ' + questionsUrl, function () {
     let parsedPage;
-    it('should load successfully', function (callback) {
-      request(questionsUrl, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
-    });
-    it('should parse', function () {
+    it('should load successfully', async () => {
+      const res = await fetch(questionsUrl);
+      assert.equal(res.status, 200);
+      const page = await res.text();
       parsedPage = cheerio.load(page);
     });
     it('should contain question data', function () {
@@ -165,5 +144,25 @@ describe('Instructor questions', function () {
     testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
     testFileDownloads(previewPageInfo, downloadFile, true);
     testElementClientFiles(previewPageInfo, customElement);
+  });
+
+  describe('QID redirect routes', () => {
+    it('redirects to the correct question from course route', async () => {
+      const res = await fetch(`${questionsUrlCourse}/qid/addNumbers?variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course/1/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
+
+    it('redirects to the correct question from instance route', async () => {
+      const res = await fetch(`${questionsUrl}/qid/addNumbers?variant_seed=1234`);
+      assert.equal(res.status, 200);
+      assert.equal(
+        res.url,
+        `${baseUrl}/course_instance/1/instructor/question/${addNumbers.id}/preview?variant_seed=1234`,
+      );
+    });
   });
 });

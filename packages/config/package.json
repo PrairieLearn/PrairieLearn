@@ -1,43 +1,30 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.0.2",
+  "version": "3.1.2",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "c8 mocha src/**/*.test.ts"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.588.0",
-    "@aws-sdk/client-secrets-manager": "^3.588.0",
+    "@aws-sdk/client-ec2": "^3.823.0",
+    "@aws-sdk/client-secrets-manager": "^3.823.0",
     "@prairielearn/aws-imds": "workspace:^",
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.0",
     "lodash": "^4.17.21",
-    "zod": "^3.23.8"
+    "zod": "^3.25.51"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.4",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.13.0",
-    "c8": "^9.1.0",
-    "chai": "^5.1.1",
-    "mocha": "^10.4.0",
+    "@types/lodash": "^4.17.17",
+    "@types/node": "^22.15.29",
+    "@vitest/coverage-v8": "^3.2.1",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
   }
 }

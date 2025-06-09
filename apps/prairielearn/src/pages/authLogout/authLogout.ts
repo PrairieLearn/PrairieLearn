@@ -22,9 +22,6 @@ router.get(
       setCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn'], '1');
     }
 
-    // Hold-over from the old express-session implementation
-    clearCookie(res, 'connect.sid');
-
     await req.session.destroy();
 
     const redirect = req.query.redirect;

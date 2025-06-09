@@ -3,22 +3,31 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
+import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
+
+import { run } from '@prairielearn/run';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import {
+  type AssessmentJson,
+  type AssessmentSetJson,
+  type CourseInstanceJson,
+  type CourseJson,
+  type QuestionJson,
+  type QuestionPointsJson,
+  type TagJson,
+} from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
-import { makePerformance } from './performance.js';
-
-const perf = makePerformance('course-db');
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -32,7 +41,7 @@ const DEFAULT_COURSE_INSTANCE_INFO = {
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
-const DEFAULT_ASSESSMENT_SETS = [
+const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
     abbreviation: 'HW',
     name: 'Homework',
@@ -74,7 +83,7 @@ const DEFAULT_ASSESSMENT_SETS = [
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
-const DEFAULT_TAGS = [
+const DEFAULT_TAGS: TagJson[] = [
   {
     name: 'numeric',
     color: 'brown1',
@@ -185,225 +194,41 @@ const FILE_UUID_REGEX =
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
 
-interface CourseOptions {
-  useNewQuestionRenderer: boolean;
-}
-
-interface Tag {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-interface Topic {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-interface AssessmentSet {
-  abbreviation: string;
-  name: string;
-  heading: string;
-  color: string;
-}
-
-interface AssessmentModule {
-  name: string;
-  heading: string;
-}
-
-interface Course {
-  uuid: string;
-  name: string;
-  title: string;
-  path: string;
-  timezone: string;
-  exampleCourse: boolean;
-  options: CourseOptions;
-  tags: Tag[];
-  topics: Topic[];
-  assessmentSets: AssessmentSet[];
-  assessmentModules: AssessmentModule[];
-}
-
-interface CourseInstanceAllowAccess {
-  role: string; // Role is only allowed in legacy questions
-  uids: string[];
-  startDate: string;
-  endDate: string;
-  institution: string;
-}
-
-export interface CourseInstance {
-  uuid: string;
-  longName: string;
-  number: number;
-  timezone: string;
-  hideInEnrollPage: boolean;
-  allowAccess: CourseInstanceAllowAccess[];
-  allowIssueReporting: boolean;
-  groupAssessmentsBy: 'Set' | 'Module';
-}
-
-export interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam';
-  examUuid: string;
-  role: string; // Role is only allowed in legacy questions
-  uids: string[];
-  credit: number;
-  startDate: string;
-  endDate: string;
-  active: boolean;
-  timeLimitMin: number;
-  password: string;
-}
-
-interface QuestionAlternative {
-  points: number | number[];
-  autoPoints: number | number[];
-  maxPoints: number;
-  manualPoints: number;
-  maxAutoPoints: number;
-  id: string;
-  forceMaxPoints: boolean;
-  triesPerVariant: number;
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
-
-interface ZoneQuestion {
-  points: number | number[];
-  autoPoints: number | number[];
-  maxPoints: number;
-  manualPoints: number;
-  maxAutoPoints: number;
-  id?: string;
-  forceMaxPoints: boolean;
-  alternatives?: QuestionAlternative[];
-  numberChoose: number;
-  triesPerVariant: number;
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
-
-interface Zone {
-  title: string;
-  maxPoints: number;
-  numberChoose: number;
-  bestQuestions: number;
-  questions: ZoneQuestion[];
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
-
-interface GroupRole {
-  name: string;
-  minimum: number;
-  maximum: number;
-  canAssignRoles: boolean;
-}
-
-export interface Assessment {
-  uuid: string;
-  type: 'Homework' | 'Exam';
-  title: string;
-  set: string;
-  module: string;
-  number: string;
-  allowIssueReporting: boolean;
-  allowRealTimeGrading: boolean;
-  multipleInstance: boolean;
-  shuffleQuestions: boolean;
-  allowAccess: AssessmentAllowAccess[];
-  text: string;
-  maxBonusPoints: number;
-  maxPoints: number;
-  autoClose: boolean;
-  zones: Zone[];
-  constantQuestionValue: boolean;
-  groupWork: boolean;
-  groupMaxSize: number;
-  groupMinSize: number;
-  studentGroupCreate: boolean;
-  studentGroupJoin: boolean;
-  studentGroupLeave: boolean;
-  groupRoles: GroupRole[];
-  canView: string[];
-  canSubmit: string[];
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-}
-
-interface QuestionExternalGradingOptions {
-  enabled: boolean;
-  image: string;
-  entrypoint: string;
-  serverFilesCourse: string[];
-  timeout: number;
-  enableNetworking: boolean;
-  environment: Record<string, string | null>;
-}
-
-interface QuestionWorkspaceOptions {
-  image: string;
-  port: number;
-  home: string;
-  args: string;
-  gradedFiles: string[];
-  rewriteUrl: string;
-  enableNetworking: boolean;
-  environment: Record<string, string | null>;
-}
-
-export interface Question {
-  id: string;
-  qid: string;
-  uuid: string;
-  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
-  title: string;
-  topic: string;
-  tags: string[];
-  clientFiles: string[];
-  clientTemplates: string[];
-  template: string;
-  gradingMethod: 'Internal' | 'External' | 'Manual';
-  singleVariant: boolean;
-  showCorrectAnswer: boolean;
-  partialCredit: boolean;
-  options: Record<string, any>;
-  externalGradingOptions: QuestionExternalGradingOptions;
-  workspaceOptions?: QuestionWorkspaceOptions;
-  dependencies: Record<string, string>;
-}
-
 export interface CourseInstanceData {
-  courseInstance: InfoFile<CourseInstance>;
-  assessments: Record<string, InfoFile<Assessment>>;
+  courseInstance: InfoFile<CourseInstanceJson>;
+  assessments: Record<string, InfoFile<AssessmentJson>>;
 }
 
 export interface CourseData {
-  course: InfoFile<Course>;
-  questions: Record<string, InfoFile<Question>>;
+  course: InfoFile<CourseJson>;
+  questions: Record<string, InfoFile<QuestionJson>>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
+/**
+ * Loads and validates an entire course from a directory on disk.
+ * Downstream callers of this function can use
+ * ...Json types instead of ...JsonInput types.
+ */
 export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
 ): Promise<CourseData> {
-  const courseInfo = await loadCourseInfo(courseId, courseDir);
-  perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
-  perf.end('loadQuestions');
+  const tagsInUse = new Set<string>();
+
+  for (const question of Object.values(questions)) {
+    if (question.data?.tags) {
+      for (const tag of question.data.tags) {
+        tagsInUse.add(tag);
+      }
+    }
+  }
+
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
+  const assessmentSetsInUse = new Set<string>();
+
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
@@ -422,11 +247,25 @@ export async function loadFullCourse(
       questions,
     );
 
+    for (const assessment of Object.values(assessments)) {
+      if (assessment.data?.set) {
+        assessmentSetsInUse.add(assessment.data?.set);
+      }
+    }
+
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
     };
   }
+
+  const courseInfo = await loadCourseInfo({
+    courseId,
+    coursePath: courseDir,
+    assessmentSetsInUse,
+    tagsInUse,
+  });
+
   return {
     course: courseInfo,
     questions,
@@ -534,16 +373,13 @@ export async function loadInfoFile<T extends { uuid: string }>({
   const absolutePath = path.join(coursePath, filePath);
   let contents: string;
   try {
-    // perf.start(`readfile:${absolutePath}`);
     // fs-extra uses graceful-fs, which in turn will enqueue open operations.
     // this slows us down an unnecessary amount. Avoiding this queueing means
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-    // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
-    // perf.end(`readfile:${absolutePath}`);
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -608,7 +444,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     } catch (err) {
       return infofile.makeError(err.message);
     }
-  } catch (err) {
+  } catch {
     // Invalid JSON; let's reparse with jju to get a better error message
     // for the user.
     let result: InfoFile<T> = { errors: [], warnings: [] };
@@ -644,11 +480,18 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo(
-  courseId: string | null,
-  coursePath: string,
-): Promise<InfoFile<Course>> {
-  const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
+export async function loadCourseInfo({
+  courseId,
+  coursePath,
+  assessmentSetsInUse,
+  tagsInUse,
+}: {
+  courseId: string | null;
+  coursePath: string;
+  assessmentSetsInUse: Set<string>;
+  tagsInUse: Set<string>;
+}): Promise<InfoFile<CourseJson>> {
+  const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -675,8 +518,8 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
-  >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -710,17 +553,43 @@ export async function loadCourseInfo(
     return [...known.values()];
   }
 
+  // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
+  // course info JSON file. This ensures that default assessment sets are added if
+  // an assessment uses them, and removed if not.
+  const defaultAssessmentSetsInUse = DEFAULT_ASSESSMENT_SETS.filter((set) =>
+    assessmentSetsInUse.has(set.name),
+  );
+
   const assessmentSets = getFieldWithoutDuplicates(
     'assessmentSets',
     'name',
-    DEFAULT_ASSESSMENT_SETS,
+    defaultAssessmentSetsInUse,
   );
-  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+
+  // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
+  // file. This ensures that default tags are added if a question uses them, and
+  // removed if not.
+  const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
+
+  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
-  const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
-  if (devModeFeatures.length > 0) {
+  const devModeFeatures = run(() => {
+    const features = info?.options?.devModeFeatures ?? {};
+
+    // Support for legacy values, where features were an array of strings instead
+    // of an object mapping feature names to booleans.
+    if (Array.isArray(features)) {
+      return Object.fromEntries(features.map((feature) => [feature, true]));
+    }
+
+    return features;
+  });
+
+  if (Object.keys(devModeFeatures).length > 0) {
     if (courseId == null) {
       if (!config.devMode) {
         infofile.addWarning(
@@ -731,7 +600,7 @@ export async function loadCourseInfo(
     } else {
       const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      for (const feature of new Set(devModeFeatures)) {
+      for (const [feature, overrideEnabled] of Object.entries(devModeFeatures)) {
         // Check if the feature even exists.
         if (!features.hasFeature(feature)) {
           infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
@@ -746,17 +615,20 @@ export async function loadCourseInfo(
           institution_id: institution.id,
           course_id: courseId,
         });
-        if (!featureEnabled) {
-          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        if (overrideEnabled && !featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is enabled in devModeFeatures, but is actually disabled.`,
+          );
+        } else if (!overrideEnabled && featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is disabled in devModeFeatures, but is actually enabled.`,
+          );
         }
       }
     }
   }
-
-  const exampleCourse =
-    info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
-    info.title === 'Example Course' &&
-    info.name === 'XC 101';
 
   const course = {
     uuid: info.uuid.toLowerCase(),
@@ -768,11 +640,12 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
-    exampleCourse,
+    sharingSets,
     options: {
-      useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
+    comment: info.comment,
   };
 
   loadedData.data = course;
@@ -817,7 +690,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  loadedJson.data = _.defaults(loadedJson.data, defaults);
+  loadedJson.data = { ...defaults, ...loadedJson.data };
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }
@@ -849,7 +722,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
-  const walk = async (relativeDir) => {
+  const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
@@ -878,7 +751,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
               `Missing JSON file: ${infoFilePath}`,
             );
           }
-          _.assign(infoFiles, subInfoFiles);
+          Object.assign(infoFiles, subInfoFiles);
         } catch (e) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
@@ -1018,8 +891,34 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   };
 }
 
+/**
+ * It seems to be relatively common for instructors to accidentally put multiple
+ * UIDs in the same string, like "uid1@example.com, uid2@example.com". While we
+ * are pretty loose in what we accept as UIDs, they should never contain commas or
+ * whitespace, so we'll warn about that.
+ */
+function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
+  const warnings: string[] = [];
+
+  const uidsWithWhitespace = (rule.uids ?? []).filter((uid) => /\s/.test(uid));
+  if (uidsWithWhitespace.length > 0) {
+    warnings.push(
+      `The following access rule UIDs contain unexpected whitespace: ${formatValues(uidsWithWhitespace)}`,
+    );
+  }
+
+  const uidsWithCommas = (rule.uids ?? []).filter((uid) => /,/.test(uid));
+  if (uidsWithCommas.length > 0) {
+    warnings.push(
+      `The following access rule UIDs contain unexpected commas: ${formatValues(uidsWithCommas)}`,
+    );
+  }
+
+  return warnings;
+}
+
 async function validateQuestion(
-  question: Question,
+  question: QuestionJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1046,37 +945,55 @@ async function validateQuestion(
   return { warnings, errors };
 }
 
+/**
+ * Formats a set or array of strings into a string for use in error messages.
+ * @returns A comma-separated list of double-quoted values.
+ */
+function formatValues(qids: Set<string> | string[]) {
+  return Array.from(qids)
+    .map((qid) => `"${qid}"`)
+    .join(', ');
+}
+
 async function validateAssessment(
-  assessment: Assessment,
-  questions: Record<string, InfoFile<Question>>,
+  assessment: AssessmentJson,
+  questions: Record<string, InfoFile<QuestionJson>>,
   courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
     if (!allowRealTimeGrading) {
-      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+      errors.push('Real-time grading cannot be disabled for Homework-type assessments');
     }
 
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
-      errors.push(`"multipleInstance" cannot be used for Homework-type assessments`);
+      errors.push('"multipleInstance" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.requireHonorCode) {
+      errors.push('"requireHonorCode" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.honorCode) {
+      errors.push('"honorCode" cannot be used for Homework-type assessments');
     }
   }
 
   // Check assessment access rules.
   (assessment.allowAccess || []).forEach((rule) => {
-    const allowAccessResult = checkAllowAccessDates(rule);
+    const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
-      errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+      errors.push('Invalid allowAccess rule: credit must be 0 if active is false');
     }
 
-    errors.push(...allowAccessResult.errors);
+    errors.push(...dateErrors.errors);
   });
 
   // When additional validation is added, we don't want to warn for past course
@@ -1085,18 +1002,19 @@ async function validateAssessment(
   // which are accessible either now or any time in the future.
   if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
-      const allowAccessWarnings = checkAllowAccessRoles(rule);
-      warnings.push(...allowAccessWarnings);
+      warnings.push(...checkAllowAccessRoles(rule));
+      warnings.push(...checkAllowAccessUids(rule));
 
-      if (rule.examUuid && rule.mode !== 'Exam') {
-        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      if (rule.examUuid && rule.mode === 'Public') {
+        warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
     });
   }
 
-  const foundQids = new Set();
-  const duplicateQids = new Set();
-  const missingQids = new Set();
+  const foundQids = new Set<string>();
+  const duplicateQids = new Set<string>();
+  const missingQids = new Set<string>();
+  const draftQids = new Set<string>();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1111,24 +1029,22 @@ async function validateAssessment(
     } else {
       duplicateQids.add(qid);
     }
+
+    if (isDraftQid(qid)) {
+      draftQids.add(qid);
+    }
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`,
+          'Cannot specify an array of multiple point values for a question if real-time grading is disabled',
         );
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: {
-        points: number | number[];
-        autoPoints: number | number[];
-        maxPoints: number;
-        maxAutoPoints: number;
-        manualPoints: number;
-      }[] = [];
+      let alternatives: QuestionPointsJson[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
@@ -1137,7 +1053,7 @@ async function validateAssessment(
           const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`,
+              'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
             );
           }
           return {
@@ -1160,7 +1076,7 @@ async function validateAssessment(
           },
         ];
       } else {
-        errors.push(`Zone question must specify either "alternatives" or "id"`);
+        errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
       alternatives.forEach((alternative) => {
@@ -1212,10 +1128,29 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (
+              alternative.points === 0 &&
+              alternative.maxPoints !== undefined &&
+              alternative.maxPoints > 0
+            ) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (
+              alternative.autoPoints === 0 &&
+              alternative.maxAutoPoints !== undefined &&
+              alternative.maxAutoPoints > 0
+            ) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });
@@ -1223,21 +1158,25 @@ async function validateAssessment(
   });
 
   if (duplicateQids.size > 0) {
-    errors.push(
-      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`,
-    );
+    errors.push(`The following questions are used more than once: ${formatValues(duplicateQids)}`);
   }
 
   if (missingQids.size > 0) {
     errors.push(
-      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+      `The following questions do not exist in this course: ${formatValues(missingQids)}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatValues(draftQids)}`,
     );
   }
 
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
+      (role) => role.canAssignRoles && role.minimum !== undefined && role.minimum >= 1,
     );
 
     if (!foundCanAssignRoles) {
@@ -1246,22 +1185,34 @@ async function validateAssessment(
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (role.minimum > assessment.groupMinSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMinSize &&
+        role.minimum > assessment.groupMinSize
+      ) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (role.minimum && role.minimum > assessment.groupMaxSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMaxSize &&
+        role.minimum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
-      if (role.maximum && role.maximum > assessment.groupMaxSize) {
+      if (
+        role.maximum !== undefined &&
+        assessment.groupMaxSize &&
+        role.maximum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
-      if (role.minimum > role.maximum) {
+      if (role.minimum !== undefined && role.maximum !== undefined && role.minimum > role.maximum) {
         errors.push(
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
@@ -1278,14 +1229,15 @@ async function validateAssessment(
       canSubmit: string[] | null | undefined,
       area: string,
     ): void => {
-      (canView || []).forEach((roleName) => {
+      canView?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
-      (canSubmit || []).forEach((roleName) => {
+
+      canSubmit?.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
@@ -1315,12 +1267,12 @@ async function validateAssessment(
 }
 
 async function validateCourseInstance(
-  courseInstance: CourseInstance,
+  courseInstance: CourseInstanceJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (_.has(courseInstance, 'allowIssueReporting')) {
+  if ('allowIssueReporting' in courseInstance) {
     if (courseInstance.allowIssueReporting) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
@@ -1341,16 +1293,28 @@ async function validateCourseInstance(
   });
 
   if (accessibleInFuture) {
-    // Only warn about new roles for current or future courses.
+    // Only warn about new roles and invalid UIDs for current or future course instances.
     (courseInstance.allowAccess || []).forEach((rule) => {
-      const allowAccessWarnings = checkAllowAccessRoles(rule);
-      warnings.push(...allowAccessWarnings);
+      warnings.push(...checkAllowAccessRoles(rule));
+      warnings.push(...checkAllowAccessUids(rule));
     });
 
-    if (_.has(courseInstance, 'userRoles')) {
+    if ('userRoles' in courseInstance) {
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 
@@ -1362,7 +1326,7 @@ async function validateCourseInstance(
  */
 export async function loadQuestions(
   coursePath: string,
-): Promise<Record<string, InfoFile<Question>>> {
+): Promise<Record<string, InfoFile<QuestionJson>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
@@ -1376,7 +1340,7 @@ export async function loadQuestions(
   // used to import questions from other courses.
   for (const qid in questions) {
     if (qid[0] === '@') {
-      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+      infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
   checkDuplicateUUIDs(
@@ -1391,7 +1355,7 @@ export async function loadQuestions(
  */
 export async function loadCourseInstances(
   coursePath: string,
-): Promise<Record<string, InfoFile<CourseInstance>>> {
+): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
@@ -1415,8 +1379,8 @@ export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
   courseInstanceExpired: boolean,
-  questions: Record<string, InfoFile<Question>>,
-): Promise<Record<string, InfoFile<Assessment>>> {
+  questions: Record<string, InfoFile<QuestionJson>>,
+): Promise<Record<string, InfoFile<AssessmentJson>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   const assessments = await loadInfoForDirectory({
     coursePath,
@@ -1424,7 +1388,7 @@ export async function loadAssessments(
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: (assessment: Assessment) =>
+    validate: (assessment: AssessmentJson) =>
       validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });

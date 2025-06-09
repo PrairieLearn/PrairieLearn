@@ -8,7 +8,14 @@ declare global {
   }
 }
 
-const mathjaxPromise = new Promise<void>((resolve) => {
+const mathjaxPromise = new Promise<void>((resolve, reject) => {
+  if (window.MathJax) {
+    // Something else already loaded MathJax on this page. Just resolve the promise
+    // once MathJax reports that it is ready.
+    window.MathJax.startup.promise.then(resolve, reject);
+    return;
+  }
+
   window.MathJax = {
     options: {
       // We previously documented the `tex2jax_ignore` class, so we'll keep
@@ -59,16 +66,34 @@ const mathjaxPromise = new Promise<void>((resolve) => {
         };
       },
       pageReady: () => {
-        window.MathJax.startup.defaultPageReady();
-        resolve();
+        return window.MathJax.startup.defaultPageReady().then(
+          () => resolve(),
+          (err: any) => reject(err),
+        );
       },
     },
   };
+
+  // The MathJax initialization script will wipe our `typesetPromise` function
+  // until it has loaded itself, so we'll do this hacky little thing to ensure
+  // that `typesetPromise` is always available, even while MathJax is loading.
+  let mj = window.MathJax;
+  Object.defineProperty(window, 'MathJax', {
+    set: (value) => {
+      mj = value;
+      mj.typesetPromise = mathjaxTypeset;
+    },
+    get() {
+      return mj;
+    },
+    configurable: true,
+    enumerable: true,
+  });
 });
 
-export async function mathjaxTypeset() {
+export async function mathjaxTypeset(elements?: Element[]) {
   await mathjaxPromise;
-  return window.MathJax.typesetPromise();
+  return window.MathJax.typesetPromise(elements);
 }
 
 export async function mathjaxConvert(value: string) {

@@ -1,4 +1,3 @@
-import math
 import random
 
 import chevron
@@ -8,6 +7,7 @@ import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 COMPARISON_DEFAULT = "relabs"
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
@@ -16,12 +16,13 @@ ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
         "weight",
         "label",
+        "aria-label",
         "comparison",
         "rtol",
         "atol",
@@ -34,10 +35,11 @@ def prepare(element_html, data):
     pl.check_answers_names(data, name)
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
 
     if "_pl_matrix_input_format" in data["submitted_answers"]:
         format_type = data["submitted_answers"]["_pl_matrix_input_format"].get(
@@ -56,62 +58,54 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
             raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {
+        html_params: dict[str, bool | str | float | None] = {
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "editable": editable,
             "info": info,
             "shortinfo": shortinfo,
@@ -124,22 +118,14 @@ def render(element_html, data):
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                 raw_submitted_answer
             )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -154,7 +140,7 @@ def render(element_html, data):
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
-                raise Exception("submitted answer is None")
+                raise ValueError("submitted answer is None")
 
             # If answer is in a format generated by pl.to_json, convert it
             # back to a standard type (otherwise, do nothing)
@@ -180,22 +166,14 @@ def render(element_html, data):
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
 
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -234,8 +212,7 @@ def render(element_html, data):
                 )
             else:
                 raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -250,24 +227,24 @@ def render(element_html, data):
                 html_params["default_is_matlab"] = True
             else:
                 html_params["default_is_python"] = True
-            with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matrix-input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
 
-def get_format_string(message):
+def get_format_string(message: str) -> str:
     params = {"format_error": True, "format_error_message": message}
-    with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+    with open("pl-matrix-input.mustache", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -299,7 +276,7 @@ def parse(element_html, data):
     data["submitted_answers"]["_pl_matrix_input_format"][name] = info["format_type"]
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
 
@@ -329,7 +306,7 @@ def grade(element_html, data):
     a_sub = np.array(a_sub)
 
     # If true and submitted answers have different shapes, score is zero
-    if not (a_sub.shape == a_tru.shape):
+    if a_sub.shape != a_tru.shape:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return
 
@@ -348,7 +325,7 @@ def grade(element_html, data):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     if correct:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -356,7 +333,7 @@ def grade(element_html, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -432,21 +409,20 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = random.choice(invalid_cases[error])
             data["format_errors"][name] = error
         else:
-            raise Exception("invalid result: %s" % result)
+            raise RuntimeError(f"invalid result: {result}")
+    # python
+    elif result == "correct":
+        data["raw_submitted_answers"][name] = str(np.array(a_tru).tolist())
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
+    elif result == "incorrect":
+        data["raw_submitted_answers"][name] = str(
+            (a_tru + (random.uniform(1, 10) * random.choice([-1, 1]))).tolist()
+        )
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
+    elif result == "invalid":
+        # FIXME: add more invalid expressions, make text of format_errors
+        # correct, and randomize
+        data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
+        data["format_errors"][name] = "invalid"
     else:
-        # python
-        if result == "correct":
-            data["raw_submitted_answers"][name] = str(np.array(a_tru).tolist())
-            data["partial_scores"][name] = {"score": 1, "weight": weight}
-        elif result == "incorrect":
-            data["raw_submitted_answers"][name] = str(
-                (a_tru + (random.uniform(1, 10) * random.choice([-1, 1]))).tolist()
-            )
-            data["partial_scores"][name] = {"score": 0, "weight": weight}
-        elif result == "invalid":
-            # FIXME: add more invalid expressions, make text of format_errors
-            # correct, and randomize
-            data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
-            data["format_errors"][name] = "invalid"
-        else:
-            raise Exception("invalid result: %s" % result)
+        raise RuntimeError(f"invalid result: {result}")

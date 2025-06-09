@@ -2,13 +2,15 @@
 
 As the PrairieLearn source code is publicly-available, it's possible to run PrairieLearn on your own infrastructure. Running a single instance of the PrairieLearn server may be appropriate for tens or hundreds of total users, and a number of universities have done this successfully.
 
+This documentation does not cover vital information for production usage such as database backups or high availability.
+
 ## Running in Production with Docker
 
 PrairieLearn can also be run in production mode in a Docker container [using Docker Compose](./docker-compose.md).
 
 ## Getting started
 
-Follow the steps to [install PrairieLearn natively](../installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
+Follow the steps to [install PrairieLearn natively](../dev-guide/installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
 
 ### Configuration
 
@@ -18,7 +20,7 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
 NODE_ENV=production node apps/prairielearn/dist/server.js --config /path/to/config.json
 ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
 ### Reverse Proxy
 
@@ -26,7 +28,7 @@ A reverse proxy can be implemented using something like [Apache](https://httpd.a
 
 In `config.json` to configure your domain add:
 
-```json
+```json title="config.json"
 {
   "serverCanonicalHost": "https://yourdomain"
 }
@@ -34,11 +36,11 @@ In `config.json` to configure your domain add:
 
 ### Authentication
 
-PrairieLearn currently has 4 ways to do user authentication. Read more at [authentication](./authentication.md).
+Read more in the [authentication documentation](./authentication.md).
 
 ### Admin User
 
-You will need to be an [Admin User](./admin-user.md) to setup PrairieLearn.
+You will need to be an [Admin User](./admin-user.md) to set up PrairieLearn.
 
 ## Productionalizing
 
@@ -56,4 +58,4 @@ Zero-downtime deploys are possible (we do them on [prairielearn.com](https://www
 
 ## Support
 
-Due to the custom nature of self-hosted installations and the difficulty associated with operating complex software in production, we do not offer any specific recommendations or guidance around deploying, operating, or scaling self-hosted installations. Over at [prairielearn.com](https://www.prairielearn.com/), we do what works best for the thousands of instructors and students who are using our hosting offering, and we'd love to work with you there once your self-hosted install becomes a burden instead of a joy.
+Due to the custom nature of self-hosted installations and the difficulty associated with operating complex software in production, we do not offer any specific recommendations or guidance around deploying, operating, or scaling self-hosted installations. Over at [prairielearn.com](https://www.prairielearn.com/), we do what works best for the thousands of instructors and students who are using our hosting offering, and we'd love to work with you there once your self-hosted installation becomes a burden instead of a joy.

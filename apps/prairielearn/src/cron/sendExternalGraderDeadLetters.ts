@@ -1,8 +1,8 @@
 import {
-  SQSClient,
+  DeleteMessageCommand,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
-  DeleteMessageCommand,
+  SQSClient,
 } from '@aws-sdk/client-sqs';
 import * as async from 'async';
 
@@ -33,7 +33,7 @@ export async function run() {
   const msg = jobsMessages + resultsMessages;
   await opsbot
     .sendMessage(msg)
-    .catch((err) => logger.error(`Error posting external grading dead letters to slack`, err.data));
+    .catch((err) => logger.error('Error posting external grading dead letters to slack', err.data));
 }
 
 async function loadQueueUrl(sqs: SQSClient, queueName: string) {

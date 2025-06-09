@@ -14,6 +14,15 @@ FROM
 WHERE
   uid = $uid;
 
+-- BLOCK select_user_by_uin
+SELECT
+  *
+FROM
+  users
+WHERE
+  uin = $uin
+  AND institution_id = $institution_id;
+
 -- BLOCK select_and_lock_user_by_id
 SELECT
   *
@@ -57,3 +66,12 @@ SELECT
   *
 FROM
   inserted_user;
+
+-- BLOCK insert_user
+INSERT INTO
+  users (uid, name, email)
+VALUES
+  ($uid, $name, $email)
+ON CONFLICT DO NOTHING
+RETURNING
+  *;

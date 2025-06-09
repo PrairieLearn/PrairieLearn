@@ -1,40 +1,40 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
-describe('test auto group and delete groups', function () {
-  this.timeout(20000);
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
+describe('test random groups and delete groups', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
 
-  step('get group-based homework assessment', async () => {
+  afterAll(helperServer.after);
+
+  test.sequential('get group-based homework assessment', async () => {
     const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
     assert.notEqual(result.rows.length, 0);
     assert.notEqual(result.rows[0].id, undefined);
     locals.assessment_id = result.rows[0].id;
   });
 
-  step('create 500 users', async () => {
-    const result = await sqldb.queryAsync(sql.generate_500, []);
-    assert.equal(result.rows.length, 500);
+  test.sequential('create 500 users', async () => {
+    const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
+    assert.equal(result.length, 500);
   });
 
-  step('auto assign groups', async () => {
+  test.sequential('randomly assign groups', async () => {
     const user_id = '1';
     const authn_user_id = '1';
     const max_group_size = 10;
     const min_group_size = 10;
-    const job_sequence_id = await groupUpdate.autoGroups(
+    const job_sequence_id = await groupUpdate.randomGroups(
       locals.assessment_id,
       user_id,
       authn_user_id,
@@ -44,7 +44,7 @@ describe('test auto group and delete groups', function () {
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
-  step('check groups and users', async () => {
+  test.sequential('check groups and users', async () => {
     const groupUserCounts = await sqldb.queryAsync(
       'SELECT count(group_id) FROM group_users GROUP BY group_id',
       [],
@@ -55,7 +55,7 @@ describe('test auto group and delete groups', function () {
     assert.equal(groupUsers.rows.length, 500);
   });
 
-  step('delete groups', async () => {
+  test.sequential('delete groups', async () => {
     await deleteAllGroups(locals.assessment_id, '1');
 
     const groups = await sqldb.queryAsync(

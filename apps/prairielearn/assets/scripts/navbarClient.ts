@@ -12,23 +12,6 @@ onDocumentReady(() => {
   // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
   if (!usernameNav) return;
 
-  // Ideally we'd have HTMX listen for the `show.bs.dropdown` event, but
-  // Bootstrap 4 doesn't use native browser events. Once we upgrade to
-  // Bootstrap 5, we can update the HTMX trigger to use the native event.
-  $('#navbar-course-switcher').on('show.bs.dropdown', () => {
-    document
-      .getElementById('navbarDropdownMenuCourseAdminLink')
-      ?.dispatchEvent(new Event('show-course-switcher'));
-  });
-  $('#navbar-course-instance-switcher').on('show.bs.dropdown', () => {
-    document
-      .getElementById('navbarDropdownMenuInstanceAdminLink')
-      ?.dispatchEvent(new Event('show-course-instance-switcher'));
-    document
-      .getElementById('navbarDropdownMenuInstanceChooseLink')
-      ?.dispatchEvent(new Event('show-course-instance-switcher'));
-  });
-
   // Old cookies did not have a domain.
   const OldCookies = CookiesModule.withAttributes({
     path: '/',
@@ -71,7 +54,6 @@ onDocumentReady(() => {
     removeCookie(['pl_requested_uid', 'pl2_requested_uid']);
     removeCookie(['pl_requested_course_role', 'pl2_requested_course_role']);
     removeCookie(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookie(['pl_requested_mode', 'pl2_requested_mode']);
     removeCookie(['pl_requested_date', 'pl2_requested_date']);
     setCookie(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
   });
@@ -91,7 +73,6 @@ onDocumentReady(() => {
     removeCookie(['pl_requested_uid', 'pl2_requested_uid']);
     removeCookie(['pl_requested_course_role', 'pl2_requested_course_role']);
     removeCookie(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookie(['pl_requested_mode', 'pl2_requested_mode']);
     removeCookie(['pl_requested_date', 'pl2_requested_date']);
     setCookie(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
 

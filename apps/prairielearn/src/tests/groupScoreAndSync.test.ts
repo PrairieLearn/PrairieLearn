@@ -1,12 +1,13 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -24,20 +25,21 @@ const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
-  this.timeout(10000);
-
   const storedConfig: Record<string, any> = {};
-  before('store authenticated user', () => {
+
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  after('unset authenticated user', () => {
+
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+
+  afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
       const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
@@ -70,12 +72,9 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('3. user and group initialization', function () {
     it('create 3 users', async () => {
-      const result = await sqldb.queryAsync(sql.generate_and_enroll_3_users, []);
-
-      assert.lengthOf(result.rows, 3);
-      locals.studentUsers = result.rows.slice(0, 3);
-      locals.groupCreator = locals.studentUsers[0];
+      locals.studentUsers = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 3);
+      locals.groupCreator = locals.studentUsers[0];
     });
     it('put 3 users in a group', async () => {
       const res = await fetch(locals.instructorAssessmentsUrlGroupTab, {
@@ -240,12 +239,11 @@ describe('assessment instance group synchronization test', function () {
     });
   });
   describe('7. check Score for another student', function () {
-    it('should be able to switch user we generated', function (callback) {
+    it('should be able to switch user we generated', function () {
       const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const res = await fetch(locals.assessmentUrl);

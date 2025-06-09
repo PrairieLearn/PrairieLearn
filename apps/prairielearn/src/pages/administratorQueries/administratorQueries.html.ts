@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { PageLayout } from '../../components/PageLayout.html.js';
 
 export const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),
@@ -17,11 +18,10 @@ export const AdministratorQueryJsonSchema = z.object({
   comment: z.string().optional(),
   params: z.array(AdministratorQueryJsonParamsSchema).optional(),
 });
-export type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
+type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
 
-interface AdministratorQuery extends AdministratorQueryJson {
-  sqlFilename: string;
-  link: string;
+export interface AdministratorQuery extends AdministratorQueryJson {
+  filePrefix: string;
 }
 
 export function AdministratorQueries({
@@ -31,42 +31,41 @@ export function AdministratorQueries({
   queries: AdministratorQuery[];
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'queries',
-        })}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Queries</div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
-                <tbody>
-                  ${queries.map(
-                    (query) => html`
-                      <tr>
-                        <td>
-                          <a href="${`${resLocals.urlPrefix}/administrator/query/${query.link}`}">
-                            <code>${query.sqlFilename}</code>
-                          </a>
-                        </td>
-                        <td>${query.description}</td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Administrator Queries',
+    navContext: {
+      type: 'plain',
+      page: 'admin',
+      subPage: 'queries',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Queries</h1>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Queries">
+            <tbody>
+              ${queries.map(
+                (query) => html`
+                  <tr>
+                    <td>
+                      <a href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}">
+                        <code>${query.filePrefix}</code>
+                      </a>
+                    </td>
+                    <td>${query.description}</td>
+                  </tr>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `,
+  });
 }

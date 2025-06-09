@@ -16,17 +16,45 @@
       "source.organizeImports": "explicit"
     }
   },
-
-  "[javascript][typescript]": {
+  "[javascript][typescript][javascriptreact][typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit"
     }
   },
-
-  "[html][css][json][yaml][sql][markdown]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
-  }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/assessments/**/infoAssessment.json"
+      ],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    },
+    {
+      "fileMatch": [
+        "{exampleCourse,testCourse,templateCourse}/courseInstances/**/infoCourseInstance.json"
+      ],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+    },
+    {
+      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/infoCourse.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoCourse.json"
+    },
+    {
+      "fileMatch": ["{exampleCourse,testCourse,templateCourse}/questions/**/info.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+    }
+  ],
+  "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "[json]": {
+    "files.insertFinalNewline": true
+  },
+  "vitest.maximumConfigs": 100
 }

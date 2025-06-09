@@ -1,43 +1,30 @@
 {
   "name": "@prairielearn/docker-utils",
   "version": "2.0.12",
-  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/docker-utils"
   },
+  "private": true,
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "c8 mocha src/**/*.test.ts"
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ecr": "^3.823.0",
+    "@prairielearn/logger": "workspace:^",
+    "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.13.0",
-    "c8": "^9.1.0",
-    "chai": "^5.1.1",
-    "mocha": "^10.4.0",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
-  },
-  "dependencies": {
-    "@aws-sdk/client-ecr": "^3.588.0",
-    "@prairielearn/logger": "workspace:^",
-    "date-fns": "^3.6.0"
-  },
-  "c8": {
-    "reporter": [
-      "html",
-      "text-summary",
-      "cobertura"
-    ],
-    "all": true,
-    "include": [
-      "src/**"
-    ]
+    "@types/node": "^22.15.29",
+    "@vitest/coverage-v8": "^3.2.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.1"
   }
 }

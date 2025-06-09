@@ -69,6 +69,7 @@ interface DynamicWorkspaceFile {
   contents?: string;
   encoding?: BufferEncoding;
   questionFile?: string;
+  serverFilesCourseFile?: string;
 }
 
 interface InitializeResult {
@@ -209,7 +210,7 @@ async function controlContainer(
     }
 
     const contentDisposition = res.headers.get('content-disposition');
-    if (contentDisposition == null) throw new Error(`Content-Disposition is null`);
+    if (contentDisposition == null) throw new Error('Content-Disposition is null');
     const match = contentDisposition.match(/^attachment; filename="(.*)"$/);
     if (!match) throw new Error(`Content-Disposition format error: ${contentDisposition}`);
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
@@ -326,7 +327,6 @@ async function startup(workspace_id: string): Promise<void> {
 
   let workspace_host_id: string | null = null;
   let attempt = 0;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (attempt > config.workspaceLaunchingRetryAttempts) {
       throw new Error('Time exceeded to deploy more computational resources');
@@ -375,6 +375,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   // local workspace files
   const questionBasePath = path.join(course_path, 'questions', question.qid);
+  const serverFilesCoursePath = path.join(course_path, 'serverFilesCourse');
 
   // base workspace directory wherever we are uploading to
   const remoteDirName = `workspace-${workspace_id}-${workspace.version}`;
@@ -385,6 +386,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
   const sourcePath = `${destinationPath}-${uuidv4()}`;
 
   const { fileGenerationErrors } = await generateWorkspaceFiles({
+    serverFilesCoursePath,
     questionBasePath,
     params: variant.params,
     correctAnswers: variant.true_answer,
@@ -421,6 +423,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
           })),
         },
       },
+      userId: null,
       authnUserId: null,
     });
   }
@@ -429,11 +432,13 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 }
 
 export async function generateWorkspaceFiles({
+  serverFilesCoursePath,
   questionBasePath,
   params,
   correctAnswers,
   targetPath,
 }: {
+  serverFilesCoursePath: string;
   questionBasePath: string;
   params: Record<string, any> | null;
   correctAnswers: Record<string, any> | null;
@@ -515,13 +520,17 @@ export async function generateWorkspaceFiles({
           }
           const normalizedFilename = path.normalize(file.name);
 
-          if (file.questionFile) {
-            const localPath = path.join(questionBasePath, file.questionFile);
+          if (file.questionFile || file.serverFilesCourseFile) {
+            const basePath = file.questionFile ? questionBasePath : serverFilesCoursePath;
+            const localPath = path.join(
+              basePath,
+              file.questionFile ?? file.serverFilesCourseFile ?? '',
+            );
             // Discard paths with directory traversal outside the question
-            if (!contains(questionBasePath, localPath, false)) {
+            if (!contains(basePath, localPath, false)) {
               fileGenerationErrors.push({
                 file: file.name,
-                msg: 'Dynamic workspace file points to a local file outside the question directory. File ignored.',
+                msg: `Dynamic workspace file points to a local file outside the ${file.questionFile ? 'question' : 'serverFilesCourse'} directory. File ignored.`,
                 data: file,
               });
               return null;
@@ -547,7 +556,7 @@ export async function generateWorkspaceFiles({
           if (!('contents' in file)) {
             fileGenerationErrors.push({
               file: file.name,
-              msg: `Dynamic workspace file has neither "contents" nor "questionFile". Blank file created.`,
+              msg: 'Dynamic workspace file has neither "contents" nor "questionFile" nor "serverFilesCourseFile". Blank file created.',
               data: file,
             });
           }

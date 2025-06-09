@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import {
+  AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AssessmentAccessRuleSchema,
 } from '../../lib/db-types.js';
 
 export const StudentGradebookRowSchema = z.object({
@@ -20,35 +22,44 @@ export const StudentGradebookRowSchema = z.object({
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   start_new_set: z.boolean(),
 });
-type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;
+export type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;
 
 export function StudentGradebook({
   resLocals,
   rows,
+  csvFilename,
 }: {
   resLocals: Record<string, any>;
   rows: StudentGradebookRow[];
+  csvFilename: string;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Gradebook' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'gradebook',
-        })}
+        ${Navbar({ resLocals, navPage: 'gradebook', navSubPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Gradebook</div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Gradebook</h1>
+              <a
+                href="/pl/course_instance/${resLocals.course_instance.id}/gradebook/${csvFilename}"
+                class="btn btn-light btn-sm ms-auto"
+                aria-label="Download gradebook CSV"
+              >
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Download</span>
+              </a>
+            </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
-                  <th style="width: 1%"><span class="sr-only">Label</span></th>
-                  <th><span class="sr-only">Title</span></th>
+                  <th style="width: 1%"><span class="visually-hidden">Label</span></th>
+                  <th><span class="visually-hidden">Title</span></th>
                   <th class="text-center">Score</th>
                 </tr>
               </thead>
@@ -64,9 +75,7 @@ export function StudentGradebook({
                       : ''}
                     <tr>
                       <td class="align-middle" style="width: 1%">
-                        <span class="badge color-${row.assessment_set_color} color-hover">
-                          ${row.label}
-                        </span>
+                        <span class="badge color-${row.assessment_set_color}">${row.label}</span>
                       </td>
                       <td class="align-middle">
                         ${row.title}
@@ -76,9 +85,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                              score: row.assessment_instance_score_perc,
-                            })
+                          ? Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' })
                           : 'Score not shown'}
                       </td>
                     </tr>

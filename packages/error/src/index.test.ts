@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import { make, makeWithData, addData, newMessage, makeWithInfo, augmentError } from './index.js';
+import { addData, augmentError, make, makeWithData, makeWithInfo, newMessage } from './index.js';
 
 describe('make', () => {
   it('makes an error without data', () => {

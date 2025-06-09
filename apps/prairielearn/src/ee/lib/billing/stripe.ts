@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/p
 import { config } from '../../../lib/config.js';
 import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
 
-import { PlanName } from './plans-types.js';
+import { type PlanName } from './plans-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -15,7 +15,7 @@ export function getStripeClient() {
     throw new Error('Stripe is not configured.');
   }
 
-  return new Stripe(config.stripeSecretKey, { apiVersion: '2024-04-10' });
+  return new Stripe(config.stripeSecretKey);
 }
 
 export async function getOrCreateStripeCustomerId(

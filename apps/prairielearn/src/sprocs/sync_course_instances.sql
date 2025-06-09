@@ -87,6 +87,19 @@ BEGIN
         SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
         FROM matched_rows
         WHERE dest_id IS NULL
+        -- This is a total hack, but the test suite hardcoded course instance ID 1
+        -- for the test course in a lot of places. To avoid having to change tons
+        -- of tests after adding a new course instance to the test course, we'll
+        -- alphabetically sort the course instances by name to ensure that `Sp15`
+        -- will have ID 1. This assumes that it is in fact that first course instance,
+        -- which is currently true.
+        --
+        -- Mainly, this ensures that the tests are deterministic. So even if we do
+        -- add a new course instance, the tests will fail if a new course instance
+        -- would be assigned ID 1.
+        --
+        -- We specifically use C collation to ensure that "Sp15" ends up before "public".
+        ORDER BY src_short_name COLLATE "C" ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller
@@ -126,13 +139,15 @@ BEGIN
     -- update all those rows with the new information from disk (if we
     -- have any).
 
-    -- First pass: update complete information for all course instances without errors
+    -- First pass: update complete information for all course instances without errors.
     UPDATE course_instances AS dest
     SET
         long_name = src.data->>'long_name',
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        json_comment = (src.data->>'comment')::jsonb,
+        share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
@@ -144,52 +159,59 @@ BEGIN
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NULL OR src.errors = '');
 
-    -- Now, loop over all valid course instances and sync access rules for them
-    FOR valid_course_instance IN (
+    -- Now, sync access rules for all valid course instances.
+    WITH valid_course_instances AS (
         SELECT short_name, data
         FROM disk_course_instances AS src
         WHERE (src.errors IS NULL OR src.errors = '')
-    ) LOOP
-        SELECT ci.id, ci.display_timezone
-        INTO STRICT syncing_course_instance_id, course_instance_timezone
+    ), synced_course_instances AS (
+        SELECT
+            ci.id,
+            ci.display_timezone,
+            vci.data
         FROM course_instances AS ci
+        JOIN valid_course_instances AS vci ON (vci.short_name = ci.short_name)
         WHERE
-            ci.short_name = valid_course_instance.short_name
+            ci.course_id = syncing_course_id
             AND ci.deleted_at IS NULL
-            AND ci.course_id = syncing_course_id;
-
+    ), inserted_access_rules AS (
         INSERT INTO course_instance_access_rules (
             course_instance_id,
             number,
             uids,
             start_date,
             end_date,
-            institution
-        ) SELECT
-            syncing_course_instance_id,
+            institution,
+            json_comment
+        )
+        SELECT
+            ci.id,
             number,
             CASE
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
                 ELSE jsonb_array_to_text_array(access_rule->'uids')
             END,
-            input_date(access_rule->>'start_date', course_instance_timezone),
-            input_date(access_rule->>'end_date', course_instance_timezone),
-            access_rule->>'institution'
+            input_date(access_rule->>'start_date', ci.display_timezone),
+            input_date(access_rule->>'end_date', ci.display_timezone),
+            access_rule->>'institution',
+            access_rule->'comment'
         FROM
-            JSONB_ARRAY_ELEMENTS(valid_course_instance.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
+            synced_course_instances AS ci,
+            JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
         ON CONFLICT (number, course_instance_id) DO UPDATE
         SET
             uids = EXCLUDED.uids,
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,
-            institution = EXCLUDED.institution;
-
-        -- Delete excess access rules
-        DELETE FROM course_instance_access_rules
-        WHERE
-            course_instance_id = syncing_course_instance_id
-            AND number > JSONB_ARRAY_LENGTH(valid_course_instance.data->'access_rules');
-    END LOOP;
+            institution = EXCLUDED.institution,
+            json_comment = EXCLUDED.json_comment
+    )
+    DELETE FROM course_instance_access_rules AS ciar
+    USING
+        synced_course_instances AS ci
+    WHERE
+        ciar.course_instance_id = ci.id
+        AND ciar.number > JSONB_ARRAY_LENGTH(ci.data->'access_rules');
 
     -- Second pass: add errors where needed.
     UPDATE course_instances AS dest

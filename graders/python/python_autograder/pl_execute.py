@@ -1,43 +1,57 @@
+import contextlib
 import json
+import linecache
 import os
-import os.path as path
 import random
 import sys
 from copy import deepcopy
+from os import path
 from types import ModuleType
+from typing import Any
 
 import numpy as np
-import pl_helpers
+from faker import Faker
+from pl_helpers import extract_ipynb_contents
 
 
-class UserCodeFailed(Exception):
-    def __init__(self, err, *args):
+class UserCodeFailedError(Exception):
+    def __init__(self, err: Any, *args: Any) -> None:
         self.err = err
-        super(UserCodeFailed, self).__init__(err, *args)
+        super().__init__(err, *args)
 
 
-def set_random_seed(seed=None):
+def set_random_seed(seed: int | None = None) -> None:
     np.random.seed(seed)
     random.seed(seed)
+    Faker.seed(seed)
 
 
-def try_read(fname):
+def try_read(fname: str) -> str:
     try:
-        with open(fname, "r", encoding="utf-8") as f:
+        with open(fname, encoding="utf-8") as f:
             contents = f.read()
     except Exception:
         contents = ""
     return contents
 
 
+def populate_linecache(fname: str, contents: str) -> None:
+    linecache.cache[fname] = (
+        len(contents),
+        None,
+        [line + "\n" for line in contents.splitlines()],
+        fname,
+    )
+
+
 def execute_code(
-    fname_ref,
-    fname_student,
-    include_plt=False,
-    console_output_fname=None,
-    test_iter_num=0,
-    ipynb_key="#grade",
-):
+    fname_ref: str,
+    fname_student: str,
+    include_plt: bool = False,  # noqa: FBT001
+    console_output_fname: str | None = None,
+    test_iter_num: int = 0,
+    ipynb_key: str = "#grade",
+) -> tuple[dict[str, Any], dict[str, Any], ModuleType | None]:
     """
     execute_code(fname_ref, fname_student)
 
@@ -56,12 +70,14 @@ def execute_code(
     """
 
     filenames_dir = os.environ.get("FILENAMES_DIR")
+    if filenames_dir is None:
+        raise ValueError("FILENAMES_DIR not set in environment variables")
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
         data = json.load(f)
-    with open(path.join(filenames_dir, "setup_code.py"), "r", encoding="utf-8") as f:
+    with open(path.join(filenames_dir, "setup_code.py"), encoding="utf-8") as f:
         str_setup = f.read()
-    with open(fname_ref, "r", encoding="utf-8") as f:
+    with open(fname_ref, encoding="utf-8") as f:
         str_ref = f.read()
 
     # Read in leading, trailing code
@@ -69,13 +85,13 @@ def execute_code(
     str_trailing = try_read(path.join(filenames_dir, "trailing_code.py"))
 
     # Read student code (and transform if necessary) and append leading/trailing code
-    with open(fname_student, "r", encoding="utf-8") as f:
-        filename, extension = path.splitext(fname_student)
+    with open(fname_student, encoding="utf-8") as f:
+        _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
-            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
+            str_student = extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
-    str_student = str_leading + str_student + str_trailing
+    str_student = "\n".join(filter(bool, (str_leading, str_student, str_trailing)))
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
         str_test = f.read()
@@ -84,81 +100,100 @@ def execute_code(
     os.remove(path.join(filenames_dir, "data.json"))
     os.remove(fname_ref)
     os.remove(path.join(filenames_dir, "setup_code.py"))
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "leading_code.py"))
-    except FileNotFoundError:
-        pass
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "trailing_code.py"))
-    except FileNotFoundError:
-        pass
     os.remove(path.join(filenames_dir, "test.py"))
 
-    repeated_setup_name = "repeated_setup()"
-    if repeated_setup_name not in str_setup:
-        repeated_setup_name = "pass"
+    # Since we've deleted some files, we need to manually populate
+    # the linecache so that `traceback` can find the correct contents when
+    # printing any exceptions.
+    populate_linecache(path.join(filenames_dir, "setup_code.py"), str_setup)
+    populate_linecache(fname_ref, str_ref)
 
     # Seed student code and answer code with same seed
     seed = random.randint(0, (2**32) - 1)
 
-    setup_code = {"test_iter_num": test_iter_num, "data": data}
+    setup_globals = {"test_iter_num": test_iter_num, "data": data}
     # make all the variables in setup_code.py available to ans.py
-    exec(str_setup, setup_code)
-    exec(repeated_setup_name, setup_code)
+    code_setup = compile(str_setup, path.join(filenames_dir, "setup_code.py"), "exec")
+    exec(code_setup, setup_globals)
 
-    names_for_user = []
-    for variable in data["params"]["names_for_user"]:
-        names_for_user.append(variable["name"])
+    # If the setup code has a repeated_setup function, run it.
+    repeated_setup = setup_globals.get("repeated_setup")
+    if repeated_setup is not None and callable(repeated_setup):
+        repeated_setup()
+
+    names_for_user = [v["name"] for v in data["params"].get("names_for_user", [])]
 
     # Make copies of variables that go to the user so we do not clobber them
     ref_code = {}
-    for i, j in setup_code.items():
+    for i, j in setup_globals.items():
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            ref_code[i] = j
+            ref_code[i] = j  # noqa: PERF403 (too complex)
     ref_code = deepcopy(ref_code)
 
     # Add any other variables to reference namespace and do not copy
-    for i, j in setup_code.items():
+    for i, j in setup_globals.items():
         if not (
             i == "__builtins__" or isinstance(j, ModuleType) or i in names_for_user
         ):
             ref_code[i] = j
     set_random_seed(seed)
-    exec(str_ref, ref_code)
+    code_ref = compile(str_ref, fname_ref, "exec")
+    exec(code_ref, ref_code)
     # ref_code contains the correct answers
 
     if include_plt:
-        for i, j in ref_code.items():
-            if isinstance(j, ModuleType):
-                if j.__dict__["__name__"] == "matplotlib.pyplot":
-                    j.close("all")
+        for j in ref_code.values():
+            if (
+                isinstance(j, ModuleType)
+                and j.__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                j.close("all")
 
     # make only the variables listed in names_for_user available to student
-    names_from_user = []
-    for variable in data["params"]["names_from_user"]:
-        names_from_user.append(variable["name"])
+    names_from_user = [
+        variable["name"] for variable in data["params"]["names_from_user"]
+    ]
 
-    exec(repeated_setup_name, setup_code)
+    # If the setup code has a repeated_setup function, run it.
+    repeated_setup = setup_globals.get("repeated_setup")
+    if repeated_setup is not None and callable(repeated_setup):
+        repeated_setup()
 
-    student_code = {}
-    for i, j in setup_code.items():
+    # Remove the setup and answer code from the linecache to make it slightly
+    # harder for students to read it.
+    linecache.cache.pop(path.join(filenames_dir, "setup_code.py"), None)
+    linecache.cache.pop(fname_ref, None)
+
+    student_globals = {}
+    for i, j in setup_globals.items():
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            student_code[i] = j
-    student_code = deepcopy(student_code)
+            student_globals[i] = j  # noqa: PERF403 (too complex)
+    student_globals = deepcopy(student_globals)
 
     # Execute student code
     previous_stdout = sys.stdout
     if console_output_fname:
-        sys.stdout = open(console_output_fname, "w", encoding="utf-8")
+        sys.stdout = open(console_output_fname, "w", encoding="utf-8")  # noqa: SIM115
 
     set_random_seed(seed)
 
+    # The file at path `fname_student` doesn't actually correspond to the
+    # code that we're going to execute, since it doesn't include the leading
+    # and trailing code. We'll manually construct a `linecache` entry for it
+    # so that the traceback will show the correct code for each line.
+    populate_linecache(fname_student, str_student)
+
     try:
-        exec(str_student, student_code)
+        code_student = compile(str_student, fname_student, "exec")
+        exec(code_student, student_globals)
         err = None
     except Exception:
         err = sys.exc_info()
@@ -183,7 +218,7 @@ def execute_code(
     with open(path.join(filenames_dir, "test.py"), "w", encoding="utf-8") as f:
         f.write(str_test)
     if err is not None:
-        raise UserCodeFailed(err)
+        raise UserCodeFailedError(err)
 
     # Redirect stdout back to normal
     sys.stdout.flush()
@@ -192,25 +227,28 @@ def execute_code(
     ref_result = {}
     for i, j in ref_code.items():
         if not (i.startswith("_") or isinstance(j, ModuleType)):
-            ref_result[i] = j
+            ref_result[i] = j  # noqa: PERF403 (too complex)
 
     student_result = {}
     for name in names_from_user:
-        student_result[name] = student_code.get(name, None)
+        student_result[name] = student_globals.get(name, None)
 
     plot_value = None
     if include_plt:
-        for key in list(student_code):
-            if isinstance(student_code[key], ModuleType):
-                if student_code[key].__dict__["__name__"] == "matplotlib.pyplot":
-                    plot_value = student_code[key]
+        for val in student_globals.values():
+            if (
+                isinstance(val, ModuleType)
+                and val.__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                plot_value = val
+
         if not plot_value:
-            import matplotlib
+            import matplotlib as mpl
+            import matplotlib.pyplot as plt
 
-            matplotlib.use("Agg")
-            import matplotlib.pyplot
+            mpl.use("Agg")
 
-            plot_value = matplotlib.pyplot
+            plot_value = plt
 
     # Re-seed before running tests
     set_random_seed()

@@ -1,16 +1,33 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  RegenerateInstanceAlert,
+  RegenerateInstanceModal,
+} from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
+import type { User } from '../../lib/db-types.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
 
-export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
+export function StudentInstanceQuestion({
+  resLocals,
+  userCanDeleteAssessmentInstance,
+  assignedGrader,
+  lastGrader,
+}: {
+  resLocals: Record<string, any>;
+  userCanDeleteAssessmentInstance: boolean;
+  assignedGrader?: User | null;
+  lastGrader?: User | null;
+}) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
 
@@ -18,8 +35,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('question.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('question.ts')}
         ${resLocals.assessment.type === 'Exam'
           ? html`
               ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -29,6 +45,8 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                   serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                   serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
+                  showsTimeoutWarning: true,
+                  reloadOnFail: true,
                   csrfToken: resLocals.__csrf_token,
                 },
                 'time-limit-data',
@@ -54,25 +72,27 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
-        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="row">
             <div class="col-lg-9 col-sm-12">
               ${resLocals.variant == null
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        ${QuestionTitle({
-                          questionContext,
-                          question: resLocals.question,
-                          questionNumber: resLocals.instance_question_info.question_number,
-                        })}
+                        <h1>
+                          ${QuestionTitle({
+                            questionContext,
+                            question: resLocals.question,
+                            questionNumber: resLocals.instance_question_info.question_number,
+                          })}
+                        </h1>
                       </div>
                       <div class="card-body">
                         This question was not viewed while the assessment was open, so no variant
@@ -88,13 +108,15 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-secondary">
-                        <a
-                          class="text-white"
-                          href="${resLocals.urlPrefix}/assessment_instance/${resLocals
-                            .assessment_instance.id}/"
-                        >
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </a>
+                        <h2>
+                          <a
+                            class="text-white"
+                            href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                              .assessment_instance.id}/"
+                          >
+                            ${resLocals.assessment_set.name} ${resLocals.assessment.number}
+                          </a>
+                        </h2>
                       </div>
 
                       <div class="card-body">
@@ -149,14 +171,20 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
                 nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-                userGroupRoles: resLocals.assessment_instance.user_group_roles,
+                userGroupRoles: resLocals.group_info
+                  ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+                  : null,
               })}
-              ${config.attachedFilesDialogEnabled
-                ? renderEjs(
-                    import.meta.url,
-                    "<%- include('../partials/attachFilePanel') %>",
-                    resLocals,
-                  )
+              ${resLocals.assessment.allow_personal_notes
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant?.id,
+                    csrfToken: resLocals.__csrf_token,
+                  })
                 : ''}
               ${InstructorInfoPanel({
                 course: resLocals.course,
@@ -164,9 +192,10 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
                 assessment: resLocals.assessment,
                 assessment_instance: resLocals.assessment_instance,
                 instance_question: resLocals.instance_question,
+                assignedGrader,
+                lastGrader,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

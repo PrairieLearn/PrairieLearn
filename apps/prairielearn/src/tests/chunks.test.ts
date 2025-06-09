@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -139,7 +139,7 @@ describe('chunks', () => {
       );
     });
 
-    it('should identify complex assessment in simple course instance', () => {
+    it('should identify complex assessment in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
@@ -260,9 +260,7 @@ describe('chunks', () => {
     });
   });
 
-  describe('ensureChunksForCourse', function () {
-    this.timeout(60000);
-
+  describe('ensureChunksForCourse', { timeout: 60_000 }, function () {
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
@@ -270,8 +268,9 @@ describe('chunks', () => {
     let courseInstanceId;
     let assessmentId;
     let questionId;
+    let nestedQuestionId;
 
-    beforeEach('set up testing server', async () => {
+    beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
@@ -292,7 +291,7 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await helperServer.before(tempTestCourseDir.path).call(this);
+      await helperServer.before(tempTestCourseDir.path)();
 
       // Find the ID of this course
       const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
@@ -317,16 +316,22 @@ describe('chunks', () => {
         qid: 'addNumbers',
       });
       questionId = questionResults.rows[0].id;
+
+      // Find the ID of a nested question.
+      const nestedQuestionResults = await sqldb.queryOneRowAsync(sql.select_question, {
+        qid: 'subfolder/nestedQuestion',
+      });
+      nestedQuestionId = nestedQuestionResults.rows[0].id;
     });
 
-    afterEach('shut down testing server', async () => {
+    afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();
         await tempChunksDir.cleanup();
       } catch (err) {
         console.error(err);
       }
-      await helperServer.after.call(this);
+      await helperServer.after();
 
       config.chunksConsumer = false;
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;
@@ -385,6 +390,59 @@ describe('chunks', () => {
         await fs.pathExists(
           path.join(courseRuntimeDir, 'questions', 'addNumbers', 'addNumbersNested', 'info.json'),
         ),
+      );
+    });
+
+    it('handles question unnesting after a rename', async () => {
+      // Scenario: there's a question named `foo/bar/baz` (that is,
+      // `foo/bar/baz/info.json` exists). We load the chunk for that
+      // question. We then move that `info.json` file to `foo/bar/info.json`. We
+      // then try to load that chunk again. In the past, we'd fail to load the
+      // new chunk correctly. This test ensures that it's loaded correctly.
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
+
+      // Generate chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'question', questionId: nestedQuestionId }];
+
+      // Load the question's chunk.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Move the question. We can't directly move a directory to one of its
+      // parent directories, so we move it to a temporary location first.
+      const oldPath = path.join(courseDir, 'questions', 'subfolder', 'nestedQuestion');
+      const tempPath = path.join(courseDir, 'questions', 'subfolderTemp');
+      const newPath = path.join(courseDir, 'questions', 'subfolder');
+      await fs.move(oldPath, tempPath);
+      await fs.remove(newPath);
+      await fs.move(tempPath, newPath);
+
+      // Sync course to DB.
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Regenerate chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Reload chunks.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Check that the chunk was written to the correct location.
+      assert.isOk(
+        await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'subfolder', 'info.json')),
       );
     });
 

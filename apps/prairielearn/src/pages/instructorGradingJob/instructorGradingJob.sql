@@ -13,32 +13,11 @@ SELECT
     )
   END AS aai,
   to_jsonb(gj.*) AS grading_job,
-  format_date_full_compact_ms (
-    gj.grading_requested_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_grading_requested_at,
-  format_date_full_compact_ms (
-    gj.grading_submitted_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_grading_submitted_at,
-  format_date_full_compact_ms (
-    gj.grading_received_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_grading_received_at,
-  format_date_full_compact_ms (
-    gj.grading_started_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_grading_started_at,
-  format_date_full_compact_ms (
-    gj.grading_finished_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_grading_finished_at,
-  format_date_full_compact_ms (
-    gj.graded_at,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_graded_at,
-  q.directory AS question_qid,
-  u.uid AS user_uid
+  q.id AS question_id,
+  q.qid AS question_qid,
+  u.uid AS user_uid,
+  v.id AS variant_id,
+  v.instance_question_id AS instance_question_id
 FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)

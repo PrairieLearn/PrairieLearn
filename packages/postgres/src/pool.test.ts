@@ -1,24 +1,21 @@
 import { Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { use as chaiUse, assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import { z, ZodError } from 'zod';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { ZodError, z } from 'zod';
 
 import {
-  queryAsync,
-  queryRows,
-  queryRow,
-  queryOptionalRow,
-  callRows,
-  callRow,
   callOptionalRow,
+  callRow,
+  callRows,
+  queryAsync,
   queryCursor,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
   queryValidatedCursor,
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
-
-chaiUse(chaiAsPromised);
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_postgres',
@@ -35,7 +32,7 @@ const SprocTwoColumnsSchema = z.object({
 });
 
 describe('@prairielearn/postgres', function () {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
     await queryAsync(
       'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
@@ -60,7 +57,7 @@ describe('@prairielearn/postgres', function () {
     );
   });
 
-  after(async () => {
+  afterAll(async () => {
     await postgresTestUtils.dropDatabase();
   });
 
@@ -68,23 +65,23 @@ describe('@prairielearn/postgres', function () {
     it('enforces SQL must be a string', async () => {
       // @ts-expect-error SQL must be a string
       const rows = queryAsync({ invalid: true }, {});
-      await assert.isRejected(rows, 'SQL must be a string');
+      await expect(rows).rejects.toThrow('SQL must be a string');
     });
 
     it('enforces params must be array or object', async () => {
       // @ts-expect-error params must be an array or object
       const rows = queryAsync('SELECT 33;', 33);
-      await assert.isRejected(rows, 'params must be array or object');
+      await expect(rows).rejects.toThrow('params must be array or object');
     });
 
     it('rejects missing parameters', async () => {
       const rows = queryAsync('SELECT $missing;', {});
-      await assert.isRejected(rows, 'Missing parameter');
+      await expect(rows).rejects.toThrow('Missing parameter');
     });
 
     it('rejects unused parameters in testing', async () => {
       const rows = queryAsync('SELECT 33;', { unsed_parameter: true });
-      await assert.isRejected(rows, 'Unused parameter');
+      await expect(rows).rejects.toThrow('Unused parameter');
     });
   });
 
@@ -131,12 +128,12 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with zero rows', async () => {
       const rows = queryRow('SELECT * FROM workspaces WHERE id = -1;', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 0');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 0');
     });
 
     it('rejects results with multiple rows', async () => {
       const rows = queryRow('SELECT * FROM workspaces', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -173,7 +170,7 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects with multiple rows', async () => {
       const rows = queryOptionalRow('SELECT * FROM workspaces', WorkspaceSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -219,12 +216,12 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with zero rows', async () => {
       const row = callRow('test_sproc_two_columns', [0], SprocTwoColumnsSchema);
-      await assert.isRejected(row, 'Incorrect rowCount: 0');
+      await expect(row).rejects.toThrow('Incorrect rowCount: 0');
     });
 
     it('rejects results with multiple rows', async () => {
       const rows = callRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -253,7 +250,7 @@ describe('@prairielearn/postgres', function () {
 
     it('rejects results with multiple rows', async () => {
       const rows = callOptionalRow('test_sproc_two_columns', [100], SprocTwoColumnsSchema);
-      await assert.isRejected(rows, 'Incorrect rowCount: 100');
+      await expect(rows).rejects.toThrow('Incorrect rowCount: 100');
     });
   });
 
@@ -413,7 +410,7 @@ describe('@prairielearn/postgres', function () {
           },
         });
 
-        await assert.isRejected(pipeline(stream, writable, { signal: ac.signal }));
+        await expect(pipeline(stream, writable, { signal: ac.signal })).rejects.toThrow();
         assert.lengthOf(rows, 1);
       });
     });

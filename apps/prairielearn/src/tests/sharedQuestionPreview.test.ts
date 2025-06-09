@@ -1,3 +1,4 @@
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -7,8 +8,8 @@ import { features } from '../lib/features/index.js';
 
 import {
   testElementClientFiles,
-  testQuestionPreviews,
   testFileDownloads,
+  testQuestionPreviews,
 } from './helperQuestionPreview.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -44,17 +45,16 @@ const customElement = {
 };
 const testQuestions = [addNumbers, addVectors, downloadFile, customElement];
 
-describe('Shared Question Preview', function () {
-  this.timeout(60000);
+describe('Shared Question Preview', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  before('ensure course has question sharing enabled', async () => {
+  beforeAll(async () => {
     await features.enable('question-sharing');
   });
 
-  before('Get question IDs from database', async function () {
+  beforeAll(async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
@@ -63,17 +63,17 @@ describe('Shared Question Preview', function () {
         },
         z.string(),
       );
-      await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
     }
   });
 
-  before('set up another course to consume shared questions from ', async () => {
+  beforeAll(async () => {
+    // Set up another course to consume shared questions from.
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
-  describe('Public Question Previews', function () {
+  describe('Public Question Previews', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -82,18 +82,56 @@ describe('Shared Question Preview', function () {
       isStudentPage: false,
     };
 
-    testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+    describe('When questions are share_source_publicly but not share_publicly', () => {
+      beforeAll(async () => {
+        for (const testQuestion of testQuestions) {
+          await sqldb.queryAsync(sql.update_share_source_publicly, {
+            question_id: testQuestion.id,
+          });
+        }
+      });
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
 
-    testFileDownloads(previewPageInfo, downloadFile, false);
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
+    });
 
-    testElementClientFiles(previewPageInfo, customElement);
+    describe('When questions are share_publicly', () => {
+      beforeAll(async () => {
+        // Publicly share all questions.
+        for (const testQuestion of testQuestions) {
+          await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
+        }
+      });
+
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
+
+      it('blocks access in Exam mode', async () => {
+        const res = await fetch(`${previewPageInfo.questionBaseUrl}/${addNumbers.id}/preview`, {
+          headers: {
+            Cookie: 'pl_test_mode=Exam',
+          },
+        });
+        assert.equal(res.status, 403);
+      });
+    });
   });
 
-  describe('Shared Question Previews Within a Course', function () {
+  describe('Shared Question Previews Within a Course', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course/2/question`,
+      questionBaseUrl: baseUrl + '/course/2/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };
@@ -105,11 +143,11 @@ describe('Shared Question Preview', function () {
     testElementClientFiles(previewPageInfo, customElement);
   });
 
-  describe('Shared Question Previews Within a Course Instance', function () {
+  describe('Shared Question Previews Within a Course Instance', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course_instance/2/instructor/question`,
+      questionBaseUrl: baseUrl + '/course_instance/3/instructor/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };

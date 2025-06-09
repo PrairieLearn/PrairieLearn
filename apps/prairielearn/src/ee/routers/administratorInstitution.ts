@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { features } from '../../lib/features/index.js';
 import authzIsAdministrator from '../../middlewares/authzIsAdministrator.js';
+import adminRouter from '../pages/administratorInstitutionAdmins/administratorInstitutionAdmins.js';
 import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse.js';
 import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance.js';
 import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses.js';
@@ -13,9 +14,6 @@ import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitu
 
 const router = Router({ mergeParams: true });
 
-// Currently, we don't have any notion of institution-level administrators, so
-// we only allow global admins to do institution-level administration things.
-// We should change this in the future.
 router.use(authzIsAdministrator);
 
 router.use(
@@ -23,13 +21,17 @@ router.use(
     // The navbar relies on this property.
     res.locals.urlPrefix = req.baseUrl;
 
-    const hasLti13 = await features.enabled('lti13', { institution_id: req.params.institution_id });
-    res.locals.lti13_enabled = hasLti13;
+    const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+      institution_id: req.params.institution_id,
+      user_id: res.locals.authn_user.user_id,
+    });
+    res.locals.has_enhanced_navigation = hasEnhancedNavigation;
     next();
   }),
 );
 
 router.use('/', generalRouter);
+router.use('/admins', adminRouter);
 router.use('/courses', coursesRouter);
 router.use('/course/:course_id', courseRouter);
 router.use('/course_instance/:course_instance_id', courseInstanceRouter);

@@ -2,5 +2,7 @@
   "uuid": "331ba231-dba1-4f3f-b93e-4793224b652d",
   "title": "Element pl-order-blocks: Dragging blocks to form the solution of a problem",
   "topic": "Element",
-  "type": "v3"
+  "type": "v3",
+  "sharePublicly": true,
+  "shareSourcePublicly": true
 }

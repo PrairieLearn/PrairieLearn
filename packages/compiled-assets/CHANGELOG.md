@@ -1,5 +1,127 @@
 # @prairielearn/compiled-assets
 
+## 3.0.18
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 3.0.17
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
+## 3.0.16
+
+### Patch Changes
+
+- deb4635: Drop `express` dependency
+
+## 3.0.15
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
+## 3.0.14
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
+## 3.0.13
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [03f1008]
+  - @prairielearn/html@4.0.12
+
+## 3.0.12
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+- Updated dependencies [984dc62]
+  - @prairielearn/html@4.0.11
+
+## 3.0.11
+
+### Patch Changes
+
+- 49bb3fa: Upgrade all JavaScript dependencies
+- Updated dependencies [49bb3fa]
+  - @prairielearn/html@4.0.10
+
+## 3.0.10
+
+### Patch Changes
+
+- 0921653: Upgrade to latest version of esbuild
+
+## 3.0.9
+
+### Patch Changes
+
+- 4a8b376: Upgrade all JavaScript dependencies
+- Updated dependencies [4a8b376]
+  - @prairielearn/html@4.0.9
+
+## 3.0.8
+
+### Patch Changes
+
+- 9d7d790: Upgrade all JavaScript dependencies
+- Updated dependencies [9d7d790]
+  - @prairielearn/html@4.0.8
+
+## 3.0.7
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/html@4.0.7
+
+## 3.0.6
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/html@4.0.6
+
+## 3.0.5
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+- Updated dependencies [852c2e2]
+  - @prairielearn/html@4.0.5
+
+## 3.0.4
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/html@4.0.4
+
+## 3.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+- Updated dependencies [24a93b8]
+  - @prairielearn/html@4.0.3
+
 ## 3.0.2
 
 ### Patch Changes

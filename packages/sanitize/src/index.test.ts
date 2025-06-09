@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import { sanitizeObject, recursivelyTruncateStrings } from './index.js';
+import { recursivelyTruncateStrings, sanitizeObject } from './index.js';
 
 describe('sanitizeObject', () => {
   it('sanitizes an empty object', () => {
@@ -12,6 +12,12 @@ describe('sanitizeObject', () => {
   it('handles null byte in top-level string', () => {
     const input = { test: 'test\u0000ing' };
     const expected = { test: 'test\\u0000ing' };
+    assert.deepEqual(expected, sanitizeObject(input));
+  });
+
+  it('handles multiple null bytes in top-level string', () => {
+    const input = { test: 'test\u0000ing\u0000' };
+    const expected = { test: 'test\\u0000ing\\u0000' };
     assert.deepEqual(expected, sanitizeObject(input));
   });
 

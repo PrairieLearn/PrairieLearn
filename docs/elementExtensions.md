@@ -10,7 +10,7 @@ Each extension needs only an `info.json` containing metadata about the element, 
 
 The `info.json` file is structurally similar to the element info file and may contain the following fields:
 
-```json
+```json title="info.json"
 {
   "controller": "Python script",
   "dependencies": {
@@ -29,6 +29,8 @@ The `info.json` file is structurally similar to the element info file and may co
 }
 ```
 
+See the [reference for `infoElementExtension.json`](./schemas/infoElementExtension.md) for more information about what can be added to this file.
+
 ### Python Controller
 
 The main Python controller script has no general structure and is instead defined by the element that is being extended. Any global functions and variables are available for use by the host element.
@@ -37,7 +39,7 @@ A host element can call the `load_extension()` function to load one specific ext
 
 A two-way flow of logic and information exists between elements and their extensions.
 
-##### Importing an Extension From an Element
+#### Importing an Extension From an Element
 
 Loading extension Python scripts returns a named tuple of all globally defined functions and variables. Loading all extensions will return a dictionary mapping the extension name to its named tuple. For example, if an extension were to define the following in their controller:
 
@@ -59,7 +61,7 @@ def render(element_html, data):
 
 This small example above will render `"hello world!"` to the question page. Note that when loading all extensions with `load_all_extensions()`, modules are returned in ascending alphabetical order.
 
-##### Importing a Host Element From an Extension
+#### Importing a Host Element From an Extension
 
 Extensions can also import files from their host element with the `load_host_script()` function. This can be used to obtain helper functions, class definitions, constant variables, etc.
 If the host element were to contain, for example:
@@ -77,7 +79,7 @@ def render(element_html, data):
 
 The extension could then access `STATIC_VARIABLE` by importing the host script:
 
-```python
+```python hl_lines="3"
 import prairielearn as pl
 
 host_element = pl.load_host_script("pl-host-element.py")
