@@ -14,4 +14,6 @@ SET
 WHERE
   ft.id = $id
   AND ft.user_id = $user_id
-  AND ft.deleted_at IS NULL;
+  AND ft.deleted_at IS NULL
+RETURNING
+  ft.id;
