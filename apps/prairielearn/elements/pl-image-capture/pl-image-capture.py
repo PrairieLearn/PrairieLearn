@@ -25,7 +25,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     file_name = pl.get_string_attrib(element, "file-name")
     if not file_name.endswith(".png"):
         pl.add_files_format_error(
-            data, f"File name '{file_name}' must end with '.png'."
+            data, f"File '{file_name}' must have extension '.png'."
         )
 
     pl.check_answers_names(data, file_name)
