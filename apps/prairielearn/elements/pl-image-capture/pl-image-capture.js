@@ -19,7 +19,7 @@
       if (!options.variant_id) {
         throw new Error('Variant ID is required in image capture options');
       }
-      if (!options.external_image_capture_url) {
+      if (options.editable && !options.external_image_capture_url) {
         throw new Error('External image capture URL is required in image capture options');
       }
       if (options.mobile_capture_enabled === undefined || options.mobile_capture_enabled === null) {
@@ -28,6 +28,7 @@
 
       this.file_name = options.file_name;
       this.variant_id = options.variant_id;
+      this.editable = options.editable;
 
       this.submitted_file_name = options.submitted_file_name;
       this.submission_date = options.submission_date;
@@ -105,29 +106,24 @@
         this.startLocalCameraCapture();
       });
 
-      captureLocalCameraImageButton.addEventListener('click', (event) => {
-        event.preventDefault();
+      captureLocalCameraImageButton.addEventListener('click', () => {
         this.handleCaptureImage();
       });
 
-      cancelLocalCameraButton.addEventListener('click', (event) => {
-        event.preventDefault();
+      cancelLocalCameraButton.addEventListener('click', () => {
         this.cancelLocalCameraCapture();
       });
 
-      retakeLocalCameraImageButton.addEventListener('click', (event) => {
-        event.preventDefault();
+      retakeLocalCameraImageButton.addEventListener('click', () => {
         this.cancelLocalCameraCapture();
         this.startLocalCameraCapture();
       });
 
-      confirmLocalCameraImageButton.addEventListener('click', (event) => {
-        event.preventDefault();
+      confirmLocalCameraImageButton.addEventListener('click', () => {
         this.confirmLocalCameraCapture();
       });
 
-      cancelLocalCameraConfirmationButton.addEventListener('click', (event) => {
-        event.preventDefault();
+      cancelLocalCameraConfirmationButton.addEventListener('click', () => {
         this.cancelConfirmationLocalCamera();
       });
     }
@@ -362,8 +358,10 @@
       uploadedImageContainer.innerHTML = '';
       uploadedImageContainer.appendChild(capturePreview);
 
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      hiddenCaptureInput.value = dataUrl;
+      if (this.editable) {
+        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+        hiddenCaptureInput.value = dataUrl;
+      }
     }
 
     loadCapturePreviewFromBlob(blob) {

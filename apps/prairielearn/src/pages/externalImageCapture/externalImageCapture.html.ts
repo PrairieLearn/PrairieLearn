@@ -55,6 +55,7 @@ export function ExternalImageCapture({
             <h1>Capture solution</h1>
 
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="file_name" value="${fileName}" />
             <input
               type="file"
               id="camera-input"

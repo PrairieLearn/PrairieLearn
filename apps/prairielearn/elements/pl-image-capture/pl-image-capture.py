@@ -32,6 +32,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "answer":
+        return ""
+
     element = lxml.html.fragment_fromstring(element_html)
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -39,9 +42,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     mobile_capture_enabled = pl.get_boolean_attrib(
         element, "mobile-capture-enabled", MOBILE_CAPTURE_ENABLED_DEFAULT
     )
-
-    if data["panel"] != "question":
-        return ""
 
     submitted_files = data["submitted_answers"].get("_files", [])
 
@@ -54,7 +54,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
-        "editable": data["editable"],
+        "editable": data["editable"] and data["panel"] == "question",
         "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
     }

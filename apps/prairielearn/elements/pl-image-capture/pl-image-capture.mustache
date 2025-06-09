@@ -14,12 +14,14 @@ $(function() {
     class="js-capture-preview-container p-3" 
     {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}
   >
-    <input
-      class="js-hidden-capture-input"
-      type="hidden"
-      name="{{file_name}}"
-      data-skip-unload-check="true"
-    />
+    {{#editable}}
+      <input
+        class="js-hidden-capture-input"
+        type="hidden"
+        name="{{file_name}}"
+        data-skip-unload-check="true"
+      />
+    {{/editable}}
     <div class="js-uploaded-image-container mb-2">
       <div
         class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border"
@@ -68,72 +70,74 @@ $(function() {
       </div>
     {{/editable}}
   </div>
-  <div class="js-local-camera-capture-container d-none flex-column p-3">
-    <div class="position-relative">
-      <video
-        class="js-local-camera-video w-100 bg-body-secondary rounded border"
+  {{#editable}}
+    <div class="js-local-camera-capture-container d-none flex-column p-3">
+      <div class="position-relative">
+        <video
+          class="js-local-camera-video w-100 bg-body-secondary rounded border"
+          autoplay
+          playsinline
+        >
+        </video>
+
+        <div
+          class="js-local-camera-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
+          style="pointer-events: none;"
+        >
+          Give permission to access your camera to capture an image.
+        </div>
+      </div>
+
+      <p class="text-muted mt-0">
+        Ensure that your entire solution is visible, legible, and well-lit.
+      </p>
+
+      <div class="d-flex gap-1 mt-1">
+        <button 
+          type="button"
+          class="js-capture-local-camera-image-button btn btn-info" 
+          disabled
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          Capture image
+        </button>
+        <button 
+          type="button"
+          class="js-cancel-local-camera-button btn btn-secondary"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+    <div class="js-local-camera-confirmation-container d-none d-flex flex-column p-3">
+      <canvas
+        class="js-local-camera-image-preview w-100 bg-body-secondary rounded border mb-1"
         autoplay
         playsinline
       >
-      </video>
-
-      <div
-        class="js-local-camera-permission-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2"
-        style="pointer-events: none;"
-      >
-        Give permission to access your camera to capture an image.
+      </canvas>
+      <div class="d-flex gap-1 mt-1">
+        <button 
+          type="button" 
+          class="js-confirm-local-camera-image-button btn btn-info"
+        >
+          <i class="bi bi-check2 me-1"></i>
+          Use image
+        </button>
+        <button 
+          type="button"
+          class="js-retake-local-camera-image-button btn btn-secondary"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i>
+          Retake
+        </button>
+        <button 
+          type="button"
+          class="js-cancel-local-camera-confirmation-button btn btn-secondary"
+        >
+          Cancel
+        </button>
       </div>
     </div>
-
-    <p class="text-muted mt-0">
-      Ensure that your entire solution is visible, legible, and well-lit.
-    </p>
-
-    <div class="d-flex gap-1 mt-1">
-      <button 
-        type="button"
-        class="js-capture-local-camera-image-button btn btn-info" 
-        disabled
-      >
-        <i class="bi bi-camera-fill me-1"></i>
-        Capture image
-      </button>
-      <button 
-        type="button"
-        class="js-cancel-local-camera-button btn btn-secondary"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-  <div class="js-local-camera-confirmation-container d-none d-flex flex-column p-3">
-    <canvas
-      class="js-local-camera-image-preview w-100 bg-body-secondary rounded border mb-1"
-      autoplay
-      playsinline
-    >
-    </canvas>
-    <div class="d-flex gap-1 mt-1">
-      <button 
-        type="button" 
-        class="js-confirm-local-camera-image-button btn btn-info"
-      >
-        <i class="bi bi-check2 me-1"></i>
-        Use image
-      </button>
-      <button 
-        type="button"
-        class="js-retake-local-camera-image-button btn btn-secondary"
-      >
-        <i class="bi bi-arrow-counterclockwise me-1"></i>
-        Retake
-      </button>
-      <button 
-        type="button"
-        class="js-cancel-local-camera-confirmation-button btn btn-secondary"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
+  {{/editable}}
 </div>
