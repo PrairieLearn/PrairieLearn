@@ -35,6 +35,7 @@ import {
   selectLastVariantAndSubmission,
   selectRubricForGrading,
 } from './ai-grading-util.js';
+import { assertNever } from '../../../lib/types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -135,9 +136,11 @@ export async function aiGrade({
       } else if (mode === 'all') {
         // Everything
         return true;
-      } else {
+      } else if (mode === 'selected') {
         // Things that have been selected by checkbox
         return instance_question_ids?.includes(instance_question.id);
+      } else {
+        assertNever(mode);
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
