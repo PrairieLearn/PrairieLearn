@@ -92,7 +92,6 @@ export const CourseOptionsJsonSchema = z
     useNewQuestionRenderer: z
       .boolean()
       .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
-      .default(false)
       .optional(),
     devModeFeatures: z
       .union([
