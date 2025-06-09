@@ -59,7 +59,7 @@ export default defineConfig({
             'github-actions',
             {
               onWritePath(path: string) {
-                return path.replace(/^\/PrairieLearn\//, '/');
+                return path.replace(/^\/PrairieLearn\//, '');
               },
             },
           ],
