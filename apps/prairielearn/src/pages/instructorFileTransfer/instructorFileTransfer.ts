@@ -15,6 +15,7 @@ import {
   QuestionTransferEditor,
 } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
   selectCourseInstanceByUuid,
@@ -118,12 +119,14 @@ router.get(
 
       flash(
         'success',
-        'Course Instance copied successfully. You are now viewing your copy of the Course Instance.',
+        'Course instance copied successfully. You are now viewing your copy of the course instance.',
       );
       // Redirect to the copied course instance
       res.redirect(
         `${res.locals.plainUrlPrefix}/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
       );
+    } else {
+      assertNever(file_transfer.transfer_type);
     }
   }),
 );
