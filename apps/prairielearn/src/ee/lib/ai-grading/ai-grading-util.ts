@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import type {
   ChatCompletionContentPart,
@@ -175,95 +176,6 @@ export async function generatePrompt({
 }
 
 /**
- * Splits a large HTML string into an array of alternating “non-<div>” and “<div>…</div>” chunks.
- * Specifically:
- *  - Any text before the first top-level <div> is one chunk,
- *  - Each complete top-level <div>…</div> is its own chunk,
- *  - Any text between two top-level <div> blocks is its own chunk,
- *  - Any trailing text after the last <div> is its own chunk.
- */
-function splitDivsWithSurrounding(html: string): string[] {
-  const results: string[] = [];
-  let cursor = 0;
-
-  while (true) {
-    // 1) Find the next "<div" from 'cursor'
-    const openTagStart = html.indexOf('<div', cursor);
-    if (openTagStart === -1) break;
-
-    // 2) If there’s content before this <div>, capture it as a chunk
-    if (openTagStart > cursor) {
-      results.push(html.slice(cursor, openTagStart));
-    }
-
-    // 3) Find the end of this opening tag (the ">" after "<div ...>")
-    const firstTagEnd = html.indexOf('>', openTagStart);
-    if (firstTagEnd === -1) {
-      // Malformed: no closing ">" for this <div> tag
-      // Just push the rest and bail out
-      results.push(html.slice(openTagStart));
-      return results;
-    }
-
-    // 4) Initialize nesting depth at 1 to match this opening <div>
-    let depth = 1;
-    let scanPos = firstTagEnd + 1;
-    let closeTagEnd = -1;
-
-    // 5) Scan forward until we find the matching "</div>" that brings depth back to 0
-    while (depth > 0) {
-      const nextOpen = html.indexOf('<div', scanPos);
-      const nextClose = html.indexOf('</div>', scanPos);
-
-      if (nextClose === -1) {
-        // No more closing tags → malformed. Capture the rest as one chunk and return.
-        results.push(html.slice(openTagStart));
-        return results;
-      }
-
-      if (nextOpen !== -1 && nextOpen < nextClose) {
-        // Found a nested "<div" before the next "</div>"
-        const nestedTagEnd = html.indexOf('>', nextOpen);
-        if (nestedTagEnd === -1) {
-          // Malformed nested <div> (no ">"). Capture the rest and return.
-          results.push(html.slice(openTagStart));
-          return results;
-        }
-        depth++;
-        scanPos = nestedTagEnd + 1;
-      } else {
-        // We hit a closing "</div>"
-        depth--;
-        scanPos = nextClose + '</div>'.length;
-        if (depth === 0) {
-          closeTagEnd = scanPos;
-          break;
-        }
-      }
-    }
-
-    if (closeTagEnd === -1) {
-      // Couldn't match the closing tag (malformed). Capture the rest and return.
-      results.push(html.slice(openTagStart));
-      return results;
-    }
-
-    // 6) Extract the entire "<div...> ... </div>"
-    results.push(html.slice(openTagStart, closeTagEnd));
-
-    // 7) Advance cursor to just after this closing tag
-    cursor = closeTagEnd;
-  }
-
-  // 8) Any trailing content after the last matched <div>
-  if (cursor < html.length) {
-    results.push(html.slice(cursor));
-  }
-
-  return results;
-}
-
-/**
  * In the submission text, split out the text and images interlaced in the text.
  */
 function splitSubmissionTextAndImages({
@@ -280,28 +192,32 @@ function splitSubmissionTextAndImages({
     text: 'The student submitted the following response: \n<response>\n',
   });
 
-  const splitSubmission = splitDivsWithSurrounding(submission_text);
-  for (const submissionPart of splitSubmission) {
-    let submittedImageName: string | undefined;
+  const $submission_html = cheerio.load(submission_text);
+  let submissionTextBuffer = '';
 
-    if (submissionPart.trim().startsWith('<div')) {
-      const endTag = submissionPart.indexOf('>');
-      const initialDiv = submissionPart.slice(0, endTag + 1);
-      const match = initialDiv.match(/data-submitted-image-name="([^"]+)"/);
-      if (match) {
-        submittedImageName = match[1].replace('.png', '');
+  // Iterate over all top-level nodes (including text nodes)
+  $submission_html.root().find('body').contents().each((_, node) => {
+    const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+    if (imageCaptureUUID) {
+      if (submissionTextBuffer) {
+        message_content.push({
+          type: 'text',
+          text: submissionTextBuffer,
+        });
+        submissionTextBuffer = '';
       }
-    }
 
-    if (submittedImageName) {
+      const options = $submission_html(node).data('options') as Record<string, string>;
+      const submittedImageName = options.submitted_file_name;
+
       if (!submitted_answer) {
-        throw new Error('Submitted answer is required to extract image URL.');
+        throw new Error('No submitted answers found.');
       }
+
       if (!submitted_answer[submittedImageName]) {
         throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
       }
 
-      // Extract the image from the submitted answers
       message_content.push({
         type: 'image_url',
         image_url: {
@@ -309,12 +225,15 @@ function splitSubmissionTextAndImages({
         },
       });
     } else {
-      // If this is not an image, just add the text content
-      message_content.push({
-        type: 'text',
-        text: submissionPart,
-      });
+      submissionTextBuffer += $submission_html(node).text();
     }
+  });
+
+  if (submissionTextBuffer) {
+    message_content.push({
+      type: 'text',
+      text: submissionTextBuffer,
+    });
   }
 
   message_content.push({
