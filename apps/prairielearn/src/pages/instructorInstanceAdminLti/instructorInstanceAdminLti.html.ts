@@ -85,8 +85,8 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
                 </p>
                 <p>
                   <strong>
-                    This version of LTI is deprecated. Check with PrairieLearn admins before using
-                    to ensure it is appropriate for your course.
+                    This version of LTI is deprecated. See the "Integrations" tab for more
+                    information about newer integration methods.
                   </strong>
                 </p>
                 ${!lti11_enabled
