@@ -169,6 +169,8 @@ export async function generatePrompt({
     }),
   );
 
+  console.log('Message', messages[messages.length - 1]);
+
   return { messages };
 }
 
@@ -331,14 +333,12 @@ function splitSubmissionTextAndImages({
 export async function generateSubmissionEmbedding({
   course,
   question,
-  course_instance_id,
   instance_question,
   urlPrefix,
   openai,
 }: {
   question: Question;
   course: Course;
-  course_instance_id?: string;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
@@ -347,13 +347,6 @@ export async function generateSubmissionEmbedding({
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-
-    instance_question,
-    course_instance: course_instance_id ? { id: course_instance_id } : undefined,
-    variant,
-    question,
-    course: question_course,
-
     questionRenderContext: 'ai_grading',
   };
   const questionModule = questionServers.getModule(question.type);

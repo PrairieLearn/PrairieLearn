@@ -105,7 +105,6 @@ export async function aiGradeTest({
         await generateSubmissionEmbedding({
           course,
           question,
-          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
@@ -195,7 +194,6 @@ export async function aiGradeTest({
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
-          course_instance_id,
           instance_question,
           urlPrefix,
           openai,

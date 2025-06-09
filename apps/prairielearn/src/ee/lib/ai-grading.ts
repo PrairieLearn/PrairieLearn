@@ -92,7 +92,6 @@ export async function aiGrade({
         await generateSubmissionEmbedding({
           course,
           question,
-          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
@@ -124,8 +123,6 @@ export async function aiGrade({
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-        instance_question,
-        course_instance: { id: course_instance_id },
         questionRenderContext: 'ai_grading',
       };
 
@@ -154,7 +151,6 @@ export async function aiGrade({
         submission_embedding = await generateSubmissionEmbedding({
           course,
           question,
-          course_instance_id,
           instance_question,
           urlPrefix,
           openai,
