@@ -264,7 +264,7 @@
     }
 
     /**
-     * Updates the image placeholder to display that no image has been captured yet.
+     * Updates the uploaded image container to display that no image has been captured yet.
      * @param {HTMLElement} uploadedImageContainer
      */
     setNoCaptureAvailableYetState(uploadedImageContainer) {
@@ -280,7 +280,7 @@
     }
 
     /**
-     * Updates the image placeholder to display a loading state.
+     * Updates the uploaded image container to display a loading state.
      * @param {HTMLElement} uploadedImageContainer
      */
     setLoadingCaptureState(uploadedImageContainer) {
@@ -549,8 +549,7 @@
     }
 
     /**
-     * Ensures that the provided elements exist.
-     * Throws an error if any element is not present.
+     * Ensures that the provided elements exist. Throws an error if any element is not present.
      * @param {Object} containers An object wherein keys are element names and values are the elements.
      */
     ensureElementsExist(elements) {
