@@ -19,31 +19,48 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
-export default mergeConfig(
-  sharedConfig,
-  defineConfig({
-    test: {
-      include: isRunningOnDist
-        ? [join(import.meta.dirname, 'dist/**/*.test.js')]
-        : [...configDefaults.include],
-      exclude: isRunningOnDist
-        ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
-        : configDefaults.exclude,
-      globalSetup: isRunningOnDist
-        ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
-        : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
-      setupFiles: isRunningOnDist
-        ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
-        : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
-      passWithNoTests: true,
-      hookTimeout: 20_000,
-      testTimeout: 10_000,
+// For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
+// We control this via the `mode` argument passed to the Vitest CLI
+const dockerOnlyTests = ['src/tests/exampleCourseQuestions.test.ts'];
 
-      coverage: {
-        all: true,
-        include: ['src/**'],
-        reporter: ['html', 'text-summary', 'cobertura'],
+export default defineConfig(({ mode }) => {
+  let include: string[] = configDefaults.include;
+  let exclude: string[] = configDefaults.exclude;
+
+  if (mode === 'only-docker') {
+    if (isRunningOnDist) throw new Error('Cannot run only-docker tests on dist files.');
+    include = dockerOnlyTests;
+  } else if (mode === 'only-local') {
+    if (isRunningOnDist) throw new Error('Cannot run only-local tests on dist files.');
+    exclude = [...dockerOnlyTests, ...configDefaults.exclude];
+  } else if (isRunningOnDist) {
+    include = [join(import.meta.dirname, 'dist/**/*.test.js')];
+    exclude = configDefaults.exclude.filter((e) => !e.includes('/dist/'));
+  }
+
+  return mergeConfig(
+    sharedConfig,
+    defineConfig({
+      test: {
+        name: '@prairielearn/prairielearn',
+        include,
+        exclude,
+        globalSetup: isRunningOnDist
+          ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
+          : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
+        setupFiles: isRunningOnDist
+          ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
+          : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
+        passWithNoTests: true,
+        hookTimeout: 20_000,
+        testTimeout: 10_000,
+
+        coverage: {
+          all: true,
+          include: ['src/**'],
+          reporter: ['html', 'text-summary', 'cobertura'],
+        },
       },
-    },
-  }),
-);
+    }),
+  );
+});

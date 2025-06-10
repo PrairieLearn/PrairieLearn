@@ -11,6 +11,8 @@
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
+    "test:only-docker": "vitest run --coverage --mode=docker-only",
+    "test:only-local": "vitest run --coverage --mode=local-only",
     "test:dist": "vitest run --coverage dist/**/*.test.js"
   },
   "dependencies": {
