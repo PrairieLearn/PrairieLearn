@@ -74,6 +74,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import { authzWorkspace } from './models/workspace.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -284,7 +285,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
     (await import('./middlewares/date.js')).default,
     (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
+    // (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
+    asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+      await authzWorkspace(req, res);
+      next();
+    }),
     (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)/container', [
@@ -511,7 +516,11 @@ export async function initExpress(): Promise<Express> {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    (await import('./middlewares/authzWorkspace.js')).default,
+    // (await import('./middlewares/authzWorkspace.js')).default,
+    asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+      await authzWorkspace(req, res);
+      next();
+    }),
   ]);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
