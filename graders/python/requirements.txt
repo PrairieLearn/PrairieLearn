@@ -18,7 +18,7 @@ PuLP==3.2.1
 Pygments==2.19.1
 pyarrow==20.0.0
 pygraphviz==1.14
-requests==2.32.3
+requests==2.32.4
 scikit-image==0.25.2
 scikit-learn==1.6.1
 scipy==1.15.2
