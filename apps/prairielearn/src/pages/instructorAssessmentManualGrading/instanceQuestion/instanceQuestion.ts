@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import qs from 'qs';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ import {
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
