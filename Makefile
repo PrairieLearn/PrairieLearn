@@ -49,9 +49,9 @@ start-s3rver:
 
 test: test-js test-python
 test-js: start-support
-	@yarn turbo run test
-test-js-dist: start-support
-	@yarn turbo run test:dist
+	@yarn test
+test-js-dist: start-support build
+	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
