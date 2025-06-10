@@ -1685,7 +1685,7 @@ async function getCacheKey(
 
     // The variant and submission IDs are included in the cache key to ensure
     // that data never leaks between variants or submissions.
-    return `variant:${variant.id}:submission:${submission?.id}:${commitHash}-${dataHash}:cache`;
+    return `variant:${variant.id}:submission:${submission?.id ?? null}:${commitHash}-${dataHash}:cache`;
   } catch {
     return null;
   }
