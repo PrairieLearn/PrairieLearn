@@ -30,9 +30,10 @@
       this.variant_id = options.variant_id;
       this.editable = options.editable;
 
+      this.external_image_capture_url = options.external_image_capture_url;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_date = options.submission_date;
-      this.external_image_capture_url = options.external_image_capture_url;
+      this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
       if (!options.editable) {
@@ -317,16 +318,11 @@
       this.setLoadingCaptureState(uploadedImageContainer);
 
       if (this.submitted_file_name) {
-        const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-          '.js-capture-preview-container',
-        );
-
-        const submissionFilesUrl = capturePreviewContainer.dataset.submissionFilesUrl;
-        if (!submissionFilesUrl) {
+        if (!this.submission_files_url) {
           this.setNoCaptureAvailableYetState(uploadedImageContainer);
           throw new Error('Submission files URL not found');
         }
-        const response = await fetch(`${submissionFilesUrl}/${this.submitted_file_name}`);
+        const response = await fetch(`${this.submission_files_url}/${this.submitted_file_name}`);
 
         if (!response.ok) {
           this.setNoCaptureAvailableYetState(uploadedImageContainer);
