@@ -249,6 +249,7 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
+// TODO: Move this and the two below into ai-grading-stats after #12102 is merged
 export function pearsonCorrelation(x: number[], y: number[]): number {
   if (x.length !== y.length || x.length === 0) {
     throw new Error('Both arrays must have the same nonzero length.');

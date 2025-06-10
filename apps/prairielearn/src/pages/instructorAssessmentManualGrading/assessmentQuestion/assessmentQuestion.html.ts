@@ -5,6 +5,7 @@ import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpen
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -19,11 +20,13 @@ export function AssessmentQuestion({
   courseStaff,
   aiGradingEnabled,
   aiGradingMode,
+  aiGradingStats,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
+  aiGradingStats: AiGradingGeneralStats | null;
 }) {
   const {
     number_in_alternative_group,
@@ -122,6 +125,34 @@ export function AssessmentQuestion({
         <div class="card-header bg-primary text-white">
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
         </div>
+        ${aiGradingStats
+          ? html`<div>
+              <p>Manual points: ${assessment_question.max_manual_points}</p>
+              <p>Root mean squared error: ${aiGradingStats.rmse}</p>
+              <p>Pearson's r: ${aiGradingStats.r}</p>
+              ${aiGradingStats.rubric_accuracy.length
+                ? html`<table>
+                    <thead>
+                      <tr>
+                        <td>Rubric item</td>
+                        <td>Accuracy percentage</td>
+                        <td>Selection percentage</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${aiGradingStats.rubric_accuracy.map(
+                        (item) =>
+                          html`<tr>
+                            <td>${item.rubric_item.description}</td>
+                            <td>${item.accuracy_percentage}%</td>
+                            <td>${item.selection_percentage}%</td>
+                          </tr>`,
+                      )}
+                    </tbody>
+                  </table>`
+                : ''}
+            </div>`
+          : ''}
         <form name="grading-form" method="POST">
           <input type="hidden" name="__action" value="batch_action" />
           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />

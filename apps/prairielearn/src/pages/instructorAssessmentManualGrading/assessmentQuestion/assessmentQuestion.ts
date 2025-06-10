@@ -4,7 +4,10 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { fillInstanceQuestionColumns } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import {
+  calculateAiGradingStats,
+  fillInstanceQuestionColumns,
+} from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGradeTest } from '../../../ee/lib/ai-grading/ai-grading-test.js';
 import { aiGrade } from '../../../ee/lib/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
@@ -34,6 +37,9 @@ router.get(
         courseStaff,
         aiGradingEnabled,
         aiGradingMode: res.locals.assessment_question.ai_grading_mode,
+        aiGradingStats: res.locals.assessment_question.ai_grading_mode
+          ? await calculateAiGradingStats(res.locals.assessment_question)
+          : null,
       }),
     );
   }),
