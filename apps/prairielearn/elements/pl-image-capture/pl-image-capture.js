@@ -198,18 +198,16 @@
     }
 
     generateQrCode() {
-      const qrCodeSvg = new QRCode({
-        content: this.external_image_capture_url,
-        container: 'svg-viewbox',
-      }).svg();
-
       const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
 
       if (!qrCode) {
         throw new Error('QR code element not found.');
       }
 
-      qrCode.innerHTML = qrCodeSvg;
+      qrCode.innerHTML = new QRCode({
+        content: this.external_image_capture_url,
+        container: 'svg-viewbox',
+      }).svg();
     }
 
     /**
