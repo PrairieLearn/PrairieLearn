@@ -107,11 +107,6 @@ body:has(div.app-container) {
   margin: 0;
 }
 
-/* Hide the header text when the side nav is collapsed */
-.app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
-  display: none;
-}
-
 .side-nav-link .suffix {
   display: flex;
   align-items: center;
@@ -184,6 +179,11 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.collapsed .side-nav-header {
     justify-content: center;
     border-bottom: 1px solid var(--bs-border-color);
+  }
+
+  /* Hide the header text when the side nav is collapsed */
+  .app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
+    display: none;
   }
 
   /* When the side nav is collapsed, hide side nav link suffixes
