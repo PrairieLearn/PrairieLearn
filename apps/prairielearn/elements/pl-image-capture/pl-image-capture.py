@@ -6,6 +6,7 @@
 
 import base64
 import json
+import urllib.parse
 from io import BytesIO
 
 import chevron
@@ -69,7 +70,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "external_image_capture_url was not generated for the image capture question.",
         )
 
-    external_image_capture_url = f"{external_image_capture_url}?file_name={file_name}"
+    external_image_capture_url = (
+        f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
+    )
 
     image_capture_options = {
         "file_name": file_name,
