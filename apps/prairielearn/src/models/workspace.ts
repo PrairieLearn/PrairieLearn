@@ -69,7 +69,7 @@ export async function authzWorkspace(req: Request, res: Response) {
       await selectAndAuthzInstanceQuestion(req, res);
       if (!checkStudentAssessmentAccess(req, res)) {
         // We've already sent a response, just bail.
-        return;
+        res.end();
       }
     }
   } else if (res.locals.course_id) {
