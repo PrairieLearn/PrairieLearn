@@ -162,7 +162,7 @@ export async function generatePrompt({
 
   // Student response
   messages.push(
-    splitSubmissionTextAndImages({
+    generateSubmissionMessage({
       submission_text,
       submitted_answer,
     }),
@@ -172,9 +172,9 @@ export async function generatePrompt({
 }
 
 /**
- * Generate a message containing the text and images that the student submitted.
+ * Parses the student's submission text and answer to generate a message for the AI model.
  */
-function splitSubmissionTextAndImages({
+function generateSubmissionMessage({
   submission_text,
   submitted_answer,
 }: {
@@ -278,7 +278,6 @@ export async function generateSubmissionEmbedding({
     question_course,
     locals,
   );
-
   const submission_text = render_submission_results.data.submissionHtmls[0];
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
