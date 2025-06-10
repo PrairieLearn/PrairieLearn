@@ -59,6 +59,9 @@ export default defineConfig({
             'github-actions',
             {
               onWritePath(path: string) {
+                // GitHub expects that when formatting an error message, the filename is relative to the project root.
+                // Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
+                // https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
                 return path.replace(/^\/PrairieLearn\//, '');
               },
             },
