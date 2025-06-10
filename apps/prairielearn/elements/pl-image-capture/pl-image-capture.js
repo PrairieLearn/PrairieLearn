@@ -35,7 +35,7 @@
       this.submission_date = options.submission_date;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
-      
+
       if (!options.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
