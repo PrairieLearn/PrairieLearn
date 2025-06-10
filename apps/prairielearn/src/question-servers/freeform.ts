@@ -956,11 +956,13 @@ async function renderPanel(
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-    course,
-    variant,
-    submission,
-    data,
-    context,
+    {
+      course,
+      variant,
+      submission,
+      data,
+      context,
+    },
     async () => {
       const { courseIssues, html, renderedElementNames } = await processQuestion(
         'render',
@@ -1423,11 +1425,13 @@ export async function file(
     } satisfies ExecutionData;
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-      course,
-      variant,
-      null, // Files aren't associated with any particular submission.
-      data,
-      context,
+      {
+        course,
+        variant,
+        submission: null, // Files aren't associated with any particular submission.
+        data,
+        context,
+      },
       async () => {
         return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
@@ -1692,11 +1696,19 @@ async function getCacheKey(
 }
 
 async function getCachedDataOrCompute(
-  course: Course,
-  variant: Variant,
-  submission: Submission | null,
-  data: ExecutionData,
-  context: QuestionProcessingContext,
+  {
+    course,
+    variant,
+    submission,
+    data,
+    context,
+  }: {
+    course: Course;
+    variant: Variant;
+    submission: Submission | null;
+    data: ExecutionData;
+    context: QuestionProcessingContext;
+  },
   computeFcn: () => Promise<any>,
 ) {
   // This function will compute the cachedData and cache it if
