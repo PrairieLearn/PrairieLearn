@@ -285,8 +285,8 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
     (await import('./middlewares/date.js')).default,
     (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    // (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
     asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+      // jumps to error handler if authz fails
       await authzWorkspace(req, res);
       next();
     }),
@@ -511,17 +511,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
-  app.use('/pl/workspace/:workspace_id(\\d+)', [
+  app.use(
+    '/pl/workspace/:workspace_id(\\d+)',
     (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    // (await import('./middlewares/authzWorkspace.js')).default,
-    asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-      await authzWorkspace(req, res);
-      next();
-    }),
-  ]);
+  );
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
     (await import('./pages/workspace/workspace.js')).default,

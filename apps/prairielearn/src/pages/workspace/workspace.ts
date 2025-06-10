@@ -7,7 +7,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../../lib/config.js';
-import { selectVariantIdForWorkspace } from '../../models/workspace.js';
+import { authzWorkspace, selectVariantIdForWorkspace } from '../../models/workspace.js';
 
 import { Workspace } from './workspace.html.js';
 
@@ -36,6 +36,8 @@ async function getNavTitleHref(res: express.Response): Promise<string> {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    await authzWorkspace(req, res);
+
     let navTitle: string, pageTitle: string | undefined, pageNote: string | undefined;
     if (res.locals.assessment == null) {
       // instructor preview
