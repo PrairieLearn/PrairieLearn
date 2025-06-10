@@ -59,7 +59,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
-        "submission_files_url": data["options"].get("submission_files_url", ""),
         "mobile_capture_enabled": mobile_capture_enabled,
     }
 
@@ -76,9 +75,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     image_capture_options = {
         "file_name": file_name,
-        "variant_id": data["options"].get("variant_id", ""),
+        "variant_id": data["options"].get("variant_id"),
         "submitted_file_name": submitted_file_name,
-        "submission_date": data["options"].get("submission_date", ""),
+        "submission_date": data["options"].get("submission_date"),
+        "submission_files_url": data["options"].get("submission_files_url"),
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
