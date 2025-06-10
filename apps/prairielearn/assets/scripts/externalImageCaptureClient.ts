@@ -150,7 +150,7 @@ onDocumentReady(() => {
   cameraInput.addEventListener('change', () => {
     cameraInput.disabled = false;
 
-    if (!cameraInput || !cameraInput.files || cameraInput.files.length === 0) {
+    if (!cameraInput.files || cameraInput.files.length === 0) {
       // The user cannot submit if no file was uploaded.
       uploadButton.disabled = true;
       return;
