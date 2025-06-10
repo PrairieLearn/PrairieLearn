@@ -3,7 +3,16 @@
     {{#label}}
     <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" aria-labelledby="pl-matrix-input-{{uuid}}-label" />
+    <input
+        name="{{name}}"
+        type="text"
+        class="form-control pl-matrix-input-input"
+        {{^editable}}disabled{{/editable}}
+        {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+        placeholder="{{shortinfo}}"
+        {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        {{^aria_label}}{{#label}}aria-labelledby="pl-matrix-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+    />
     {{#show_info}}
     <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
     <i class="fa fa-question-circle" aria-hidden="true"></i>

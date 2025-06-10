@@ -294,19 +294,21 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
+  "studentGroupChooseName": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+| Attribute                | Type    | Default | Description                                                                                                |
+| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
+| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
+| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
+| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
+| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
@@ -611,7 +613,7 @@ For assessments with type "Exam", each student will only be presented with a sin
 
 For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
 
-- the question is set to [`"singleVariant": true` in the question configuration file](../question.md#the-singlevariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
+- the question is set to [`"singleVariant": true` in the question configuration file](../question/index.md#non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
@@ -662,6 +664,16 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
 
 ## Linking to assessments
 

@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { assert } from 'chai';
 import * as tmp from 'tmp-promise';
+import { assert, describe, it } from 'vitest';
 
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateWorkspaceFiles } from '../lib/workspace.js';

@@ -642,9 +642,9 @@ export async function loadCourseInfo({
     topics,
     sharingSets,
     options: {
-      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
+    comment: info.comment,
   };
 
   loadedData.data = course;
@@ -890,6 +890,32 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
   };
 }
 
+/**
+ * It seems to be relatively common for instructors to accidentally put multiple
+ * UIDs in the same string, like "uid1@example.com, uid2@example.com". While we
+ * are pretty loose in what we accept as UIDs, they should never contain commas or
+ * whitespace, so we'll warn about that.
+ */
+function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
+  const warnings: string[] = [];
+
+  const uidsWithWhitespace = (rule.uids ?? []).filter((uid) => /\s/.test(uid));
+  if (uidsWithWhitespace.length > 0) {
+    warnings.push(
+      `The following access rule UIDs contain unexpected whitespace: ${formatValues(uidsWithWhitespace)}`,
+    );
+  }
+
+  const uidsWithCommas = (rule.uids ?? []).filter((uid) => /,/.test(uid));
+  if (uidsWithCommas.length > 0) {
+    warnings.push(
+      `The following access rule UIDs contain unexpected commas: ${formatValues(uidsWithCommas)}`,
+    );
+  }
+
+  return warnings;
+}
+
 async function validateQuestion(
   question: QuestionJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
@@ -919,10 +945,10 @@ async function validateQuestion(
 }
 
 /**
- * Formats a set of QIDs into a string for use in error messages.
- * @returns A comma-separated list of double-quoted QIDs.
+ * Formats a set or array of strings into a string for use in error messages.
+ * @returns A comma-separated list of double-quoted values.
  */
-function formatQids(qids: Set<string>) {
+function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
@@ -948,17 +974,25 @@ async function validateAssessment(
     if (assessment.multipleInstance) {
       errors.push('"multipleInstance" cannot be used for Homework-type assessments');
     }
+
+    if (assessment.requireHonorCode) {
+      errors.push('"requireHonorCode" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.honorCode) {
+      errors.push('"honorCode" cannot be used for Homework-type assessments');
+    }
   }
 
   // Check assessment access rules.
   (assessment.allowAccess || []).forEach((rule) => {
-    const allowAccessResult = checkAllowAccessDates(rule);
+    const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
       errors.push('Invalid allowAccess rule: credit must be 0 if active is false');
     }
 
-    errors.push(...allowAccessResult.errors);
+    errors.push(...dateErrors.errors);
   });
 
   // When additional validation is added, we don't want to warn for past course
@@ -967,8 +1001,8 @@ async function validateAssessment(
   // which are accessible either now or any time in the future.
   if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
-      const allowAccessWarnings = checkAllowAccessRoles(rule);
-      warnings.push(...allowAccessWarnings);
+      warnings.push(...checkAllowAccessRoles(rule));
+      warnings.push(...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
         warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
@@ -1123,16 +1157,18 @@ async function validateAssessment(
   });
 
   if (duplicateQids.size > 0) {
-    errors.push(`The following questions are used more than once: ${formatQids(duplicateQids)}`);
+    errors.push(`The following questions are used more than once: ${formatValues(duplicateQids)}`);
   }
 
   if (missingQids.size > 0) {
-    errors.push(`The following questions do not exist in this course: ${formatQids(missingQids)}`);
+    errors.push(
+      `The following questions do not exist in this course: ${formatValues(missingQids)}`,
+    );
   }
 
   if (draftQids.size > 0) {
     errors.push(
-      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatQids(draftQids)}`,
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${formatValues(draftQids)}`,
     );
   }
 
@@ -1256,10 +1292,10 @@ async function validateCourseInstance(
   });
 
   if (accessibleInFuture) {
-    // Only warn about new roles for current or future courses.
+    // Only warn about new roles and invalid UIDs for current or future course instances.
     (courseInstance.allowAccess || []).forEach((rule) => {
-      const allowAccessWarnings = checkAllowAccessRoles(rule);
-      warnings.push(...allowAccessWarnings);
+      warnings.push(...checkAllowAccessRoles(rule));
+      warnings.push(...checkAllowAccessUids(rule));
     });
 
     if ('userRoles' in courseInstance) {

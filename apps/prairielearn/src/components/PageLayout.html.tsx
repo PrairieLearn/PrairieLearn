@@ -1,14 +1,14 @@
-import { clsx } from 'clsx';
-
-import { type HtmlValue, html } from '@prairielearn/html';
-import { type VNode } from '@prairielearn/preact-cjs';
+import clsx from 'clsx';
 
 import {
   compiledScriptPath,
   compiledScriptTag,
   compiledStylesheetPath,
   compiledStylesheetTag,
-} from '../lib/assets.js';
+} from '@prairielearn/compiled-assets';
+import { type HtmlValue, html } from '@prairielearn/html';
+import { type VNode } from '@prairielearn/preact-cjs';
+
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
@@ -132,7 +132,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav">
+                  <div class="app-side-nav bg-light border-right">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -144,12 +144,12 @@ export function PageLayout({
             <div class="${sideNavEnabled ? 'app-main' : ''}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
-                resLocals.assessments &&
+                resLocals.course_instance &&
                 AssessmentNavigation({
+                  courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,
-                  courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
-                  assessments: resLocals.assessments,
+                  assessmentSet: resLocals.assessment_set,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({
@@ -178,44 +178,44 @@ export function PageLayout({
         </body>
       </html>
     `.toString();
-  }
-
-  return html`
-    <!doctype html>
-    <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
-      <head>
-        ${HeadContents({
-          resLocals,
-          pageTitle,
-          pageNote: options.pageNote,
-        })}
-        ${headContent}
-      </head>
-      <body
-        class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
-        hx-ext="${options.hxExt}"
-      >
-        ${Navbar({
-          resLocals,
-          navPage: navContext.page,
-          navSubPage: navContext.subPage,
-          navbarType: navContext.type,
-        })}
-        ${preContent}
-        <main
-          id="content"
-          class="
-            ${options.fullWidth ? 'container-fluid' : 'container'}
+  } else {
+    return html`
+      <!doctype html>
+      <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
+        <head>
+          ${HeadContents({
+            resLocals,
+            pageTitle,
+            pageNote: options.pageNote,
+          })}
+          ${headContent}
+        </head>
+        <body
+          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
+        >
+          ${Navbar({
+            resLocals,
+            navPage: navContext.page,
+            navSubPage: navContext.subPage,
+            navbarType: navContext.type,
+          })}
+          ${preContent}
+          <main
+            id="content"
+            class="
+            ${options.fullWidth ? 'container-fluid' : 'container'} 
             ${marginBottom ? 'mb-4' : ''}
             ${options.fullHeight ? 'flex-grow-1' : ''}
           "
-        >
-          ${content}
-        </main>
-        ${postContent}
-      </body>
-    </html>
-  `.toString();
+          >
+            ${content}
+          </main>
+          ${postContent}
+        </body>
+      </html>
+    `.toString();
+  }
 }
 
 export function PreactPageLayout({
@@ -306,9 +306,8 @@ export function PreactPageLayout({
             pageTitle={pageTitle}
             pageNote={options.pageNote}
           />
-          <link rel="stylesheet" href={compiledStylesheetPath('pageLayout.css')} />
-          {headContent}
-          <script src={compiledScriptPath('pageLayoutClient.ts')} />
+          <link rel="stylesheet" href={compiledStylesheetPath('pageLayout.css')} /> {headContent}
+          {sideNavEnabled && compiledScriptTag('pageLayoutClient.ts')}
         </head>
         <body class={options.fullHeight ? 'd-flex flex-column h-100' : ''} hx-ext={options.hxExt}>
           <div
@@ -330,7 +329,7 @@ export function PreactPageLayout({
             </div>
             {sideNavEnabled ? (
               <div
-                class="app-side-nav"
+                class="app-side-nav bg-light border-right"
                 // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
                   __html: SideNav({
@@ -350,10 +349,10 @@ export function PreactPageLayout({
                     // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
                     dangerouslySetInnerHTML={{
                       __html: AssessmentNavigation({
+                        courseInstanceId: resLocals.course_instance.id,
                         subPage: navContext.subPage,
-                        courseInstance: resLocals.course_instance,
                         assessment: resLocals.assessment,
-                        assessments: resLocals.assessments,
+                        assessmentSet: resLocals.assessment_set,
                       }).toString(),
                     }}
                   />

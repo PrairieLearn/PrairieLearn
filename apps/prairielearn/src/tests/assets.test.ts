@@ -1,8 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as assets from '../lib/assets.js';
 import { config } from '../lib/config.js';
@@ -33,8 +33,8 @@ async function getOrLoadElementsInfo() {
 }
 
 describe('Static assets', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   it('serves all element node_modules assets', async () => {
     const elementsInfo = await getOrLoadElementsInfo();

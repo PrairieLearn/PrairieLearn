@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -26,11 +26,10 @@ const redirects = [
   },
 ];
 
-describe('Redirects', function () {
-  this.timeout(20000);
+describe('Redirects', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   redirects.forEach((redirect) => {
     it(`redirects ${redirect.original}`, async () => {

@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { queryAsync } from '@prairielearn/postgres';
 
@@ -8,8 +8,8 @@ import * as helperCourse from './helperCourse.js';
 import * as helperDb from './helperDb.js';
 
 describe('features', () => {
-  before(async function () {
-    await helperDb.before.call(this);
+  beforeAll(async function () {
+    await helperDb.before();
     await helperCourse.syncCourse();
     await queryAsync('INSERT INTO users (name, uid) VALUES ($name, $uid);', {
       name: 'Test User',
@@ -21,8 +21,8 @@ describe('features', () => {
     await queryAsync('DELETE FROM feature_grants', {});
   });
 
-  after(async function () {
-    await helperDb.after.call(this);
+  afterAll(async function () {
+    await helperDb.after();
   });
 
   it('enables and disables a global feature flag', async () => {
@@ -153,9 +153,9 @@ describe('features', () => {
   it('validates and typechecks feature flags', async () => {
     const features = new FeatureManager(['valid']);
 
-    await assert.isFulfilled(features.enable('valid'));
+    await expect(features.enable('valid')).resolves.not.toThrow();
 
     // @ts-expect-error -- Invalid feature flag name.
-    await assert.isRejected(features.enable('invalid'));
+    await expect(features.enable('invalid')).rejects.toThrow();
   });
 });

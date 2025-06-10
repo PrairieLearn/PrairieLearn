@@ -1,15 +1,13 @@
-import { assert } from 'chai';
 import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import * as jose from 'jose';
-import { step } from 'mocha-steps';
 import nodeJose from 'node-jose';
-import { z } from 'zod';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { fetchRetry, fetchRetryPaginated, getAccessToken } from '../ee/lib/lti13.js';
+import { getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectOptionalUserByUid } from '../models/user.js';
@@ -262,7 +260,7 @@ describe('LTI 1.3', () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
-  before(async () => {
+  beforeAll(async () => {
     config.isEnterprise = true;
     config.features.lti13 = true;
     await helperServer.before()();
@@ -281,13 +279,13 @@ describe('LTI 1.3', () => {
     });
   });
 
-  after(async () => {
+  afterAll(async () => {
     helperServer.after();
     config.isEnterprise = false;
     config.features = {};
   });
 
-  step('create and configure an LTI instance', async () => {
+  test.sequential('create and configure an LTI instance', async () => {
     await createLti13Instance({
       issuer_params: {
         issuer: `http://localhost:${oidcProviderPort}`,
@@ -298,7 +296,7 @@ describe('LTI 1.3', () => {
     });
   });
 
-  step('enable LTI 1.3 as an authentication provider', async () => {
+  test.sequential('enable LTI 1.3 as an authentication provider', async () => {
     const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
     assert.equal(ssoResponse.status, 200);
 
@@ -318,7 +316,7 @@ describe('LTI 1.3', () => {
     assert.equal(enableLtiResponse.status, 200);
   });
 
-  step('validate metadata', async () => {
+  test.sequential('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
     const data = await fetch(url).then((res) => res.json() as any);
 
@@ -330,7 +328,7 @@ describe('LTI 1.3', () => {
     assert.equal(data.custom_fields.uin, '$Canvas.user.sisIntegrationId');
   });
 
-  step('perform login', async () => {
+  test.sequential('perform login', async () => {
     // `openid-client` relies on the session to store state, so we need to use
     // a cookie-aware version of fetch.
     const fetchWithCookies = fetchCookie(fetch);
@@ -362,7 +360,7 @@ describe('LTI 1.3', () => {
     assert.equal(repeatLoginRes.status, 500);
   });
 
-  step('validate login', async () => {
+  test.sequential('validate login', async () => {
     // There should be a new user.
     const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
@@ -382,7 +380,7 @@ describe('LTI 1.3', () => {
     assert.equal(ltiUser?.lti13_instance_id, '1');
   });
 
-  step('malformed requests fail', async () => {
+  test.sequential('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
     // Malformed login
@@ -436,7 +434,7 @@ describe('LTI 1.3', () => {
     assert.equal(finishBadLoginResponse.status, 500);
   });
 
-  step('request access token', async () => {
+  test.sequential('request access token', async () => {
     const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
 
     // Run a server to respond to token requests.
@@ -478,7 +476,7 @@ describe('LTI 1.3', () => {
     // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
 
-    step('create second LTI 1.3 instance', async () => {
+    test.sequential('create second LTI 1.3 instance', async () => {
       await createLti13Instance({
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
@@ -496,7 +494,7 @@ describe('LTI 1.3', () => {
       });
     });
 
-    step('perform LTI 1.3 login without prior auth', async () => {
+    test.sequential('perform LTI 1.3 login without prior auth', async () => {
       const callbackUrl = `${siteUrl}/pl/lti13_instance/2/auth/callback`;
       const executor = await makeLoginExecutor({
         user: {
@@ -524,7 +522,7 @@ describe('LTI 1.3', () => {
       assert.isNull(user);
     });
 
-    step('authenticate with dev mode login', async () => {
+    test.sequential('authenticate with dev mode login', async () => {
       const res = await fetchCheerio(`${siteUrl}/pl/login`);
       assert.equal(res.status, 200);
 
@@ -565,7 +563,7 @@ describe('LTI 1.3', () => {
       assert.equal(ltiUser.lti13_instance_id, '2');
     });
 
-    step('perform LTI 1.3 login after prior auth', async () => {
+    test.sequential('perform LTI 1.3 login after prior auth', async () => {
       // We use a new set of cookies to simulate a new session.
       const fetchWithCookies = fetchCookie(fetch);
 
@@ -591,154 +589,6 @@ describe('LTI 1.3', () => {
       // Assert that they've been redirected to the course navigation page.
       // This means that the login succeeded.
       assert.equal(res.url, targetLinkUri);
-    });
-  });
-});
-
-describe('fetchRetry()', async () => {
-  let apiProviderPort: number;
-  const app = express();
-  let baseUrl: string;
-
-  let apiCount: number;
-
-  // Thanks chatGPT
-  const products = [
-    'Apple',
-    'Banana',
-    'Cherry',
-    'Date',
-    'Eggplant',
-    'Fig',
-    'Grapes',
-    'Honeydew',
-    'Iceberg',
-    'Jackfruit',
-    'Kiwi',
-    'Lemon',
-    'Mango',
-    'Nectarine',
-    'Orange',
-    'Papaya',
-    'Quince',
-    'Raspberry',
-    'Strawberry',
-    'Tomato',
-    'Ugli fruit',
-    'Vanilla',
-    'Watermelon',
-    'Xigua',
-    'Yam',
-    'Zucchini',
-  ];
-
-  const productApi = (req, res) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const totalPages = Math.ceil(products.length / limit);
-
-    // Base URL for links
-    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
-
-    // Generate Link Header
-    const links: string[] = [];
-
-    if (page < totalPages) {
-      links.push(`<${baseUrl}?page=${page + 1}&limit=${limit}>; rel="next"`);
-    }
-    if (page > 1) {
-      links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
-    }
-    links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
-    links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
-
-    res.set('Link', links.join(', '));
-
-    const returning = products.slice(startIndex, endIndex);
-    res.json(returning);
-  };
-
-  function respond403(res: express.Response) {
-    res.status(403).json([]);
-  }
-
-  before(async () => {
-    apiProviderPort = await getPort();
-    baseUrl = `http://localhost:${apiProviderPort}/`;
-    // Run a server to respond to API requests.
-    app.use(express.urlencoded({ extended: true }));
-
-    app.use((req, res, next) => {
-      apiCount++;
-      next();
-    });
-
-    app.get('/403all', async (req, res) => {
-      respond403(res);
-    });
-
-    app.get('/403oddAttempt', async (req, res) => {
-      if (apiCount % 2 === 1) {
-        respond403(res);
-      } else {
-        productApi(req, res);
-      }
-    });
-
-    app.get('/', productApi);
-  });
-
-  step('should return the full list by iterating', async () => {
-    apiCount = 0;
-    await withServer(app, apiProviderPort, async () => {
-      const resultArray = await fetchRetryPaginated(baseUrl, {}, { sleepMs: 100 });
-      assert.equal(resultArray.length, 3);
-      // Unwrap to one combined array
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 3);
-    });
-  });
-
-  step('should return the full list with a large limit', async () => {
-    apiCount = 0;
-    await withServer(app, apiProviderPort, async () => {
-      const res = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
-      const products = z
-        .string()
-        .array()
-        .parse(await res.json());
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 1);
-    });
-  });
-
-  step('should throw an error on all 403s', async () => {
-    apiCount = 0;
-    await withServer(app, apiProviderPort, async () => {
-      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /fetch error/);
-      assert.equal(apiCount, 5);
-    });
-  });
-
-  step('should return the full list by iterating with intermittant 403s', async () => {
-    apiCount = 0;
-    await withServer(app, apiProviderPort, async () => {
-      const resultArray = await fetchRetryPaginated(
-        baseUrl + '403oddAttempt',
-        {},
-        { sleepMs: 100 },
-      );
-      assert.equal(resultArray.length, 3);
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.flat();
-      assert.equal(fullList.length, 26);
-      assert.equal(apiCount, 6);
     });
   });
 });

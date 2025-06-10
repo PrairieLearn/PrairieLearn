@@ -6,13 +6,7 @@ import asyncHandler from 'express-async-handler';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryCursor,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   updateAssessmentStatistics,
@@ -27,13 +21,13 @@ import {
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { selectAssessments, selectAssessmentsCursor } from '../../models/assessment.js';
 
 import {
   AssessmentStats,
   InstructorAssessments,
   PreactInstructorAssessments,
 } from './instructorAssessments.html.js';
-import { AssessmentRowSchema } from './instructorAssessments.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -47,16 +41,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
-    const rows = await queryRows(
-      sql.select_assessments,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
-      },
-      AssessmentRowSchema,
-    );
+    const rows = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     // TODO: just for testing.
     const assessmentIdsNeedingStatsUpdate = rows
@@ -142,8 +129,6 @@ router.get(
       {
         course_instance_id: res.locals.course_instance.id, // for authz checking
         assessment_id: req.params.assessment_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
       },
       AssessmentSchema,
     );
@@ -170,11 +155,8 @@ router.get(
       // update assessment statistics if needed
       await updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      const cursor = await queryCursor(sql.select_assessments, {
+      const cursor = await selectAssessmentsCursor({
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
       });
 
       const stringifier = stringifyStream({

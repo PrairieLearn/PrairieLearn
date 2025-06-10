@@ -46,16 +46,14 @@ body:has(div.app-container) {
 .app-side-nav {
   grid-area: side-nav;
   padding: 0.5rem;
+  padding-top: 0.3rem;
   overflow-y: auto;
-
-  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
-  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
-  background-color: #cfe2ff;
   transition: 300ms;
 }
 
 .app-container.side-nav-enabled.collapsed .app-side-nav {
   padding: 0.5rem 0;
+  padding-top: 0.3rem;
 }
 
 .app-main {
@@ -99,7 +97,7 @@ body:has(div.app-container) {
 
 .side-nav-link:hover,
 .side-nav-link-active {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
 .side-nav-link-active {
@@ -112,8 +110,8 @@ body:has(div.app-container) {
   height: 100%;
   width: 4px;
   position: absolute;
-  left: -0.75rem;
-  background-color: var(--bs-primary);
+  left: -0.5rem;
+  background-color: var(--bs-secondary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
@@ -135,9 +133,10 @@ body:has(div.app-container) {
   text-transform: uppercase;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.3rem;
   margin-bottom: 0.5rem;
   white-space: nowrap;
+  transition: border-bottom 300ms ease-in-out;
 }
 
 /* Center the side nav toggle button when the side nav is collapsed */
@@ -150,9 +149,9 @@ body:has(div.app-container) {
   margin: 0;
 }
 
-/* .app-container.side-nav-enabled.collapsed .side-nav-header {
-  padding-bottom: 0.5rem;
-} */
+.app-container.side-nav-enabled.collapsed .side-nav-header {
+  border-bottom: 1px solid var(--bs-border-color);
+}
 
 /* Hide the header text when the side nav is collapsed */
 .app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
@@ -195,9 +194,42 @@ body:has(div.app-container) {
 }
 
 #side-nav-toggler:hover {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
 .app-container.side-nav-enabled.collapsed #side-nav-toggler {
   padding: 0.5rem 1rem;
+}
+
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }

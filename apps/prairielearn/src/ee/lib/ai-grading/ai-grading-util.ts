@@ -1,17 +1,28 @@
 import { type OpenAI } from 'openai';
+import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type Course,
+  IdSchema,
   type InstanceQuestion,
+  InstanceQuestionSchema,
   type Question,
   type RubricItem,
   RubricItemSchema,
+  type Submission,
   type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
+  type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -21,7 +32,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
-export const API_TEMPERATURE = 0.2;
+export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -127,13 +138,7 @@ export async function generatePrompt({
       // or the rubric may have changed significantly since the example was graded.
       // We'll show whatever items were selected anyways, since it'll likely
       // still be useful context to the LLM.
-      const rubric_grading_items = await queryRows(
-        sql.select_rubric_grading_items,
-        {
-          manual_rubric_grading_id: example.manual_rubric_grading_id,
-        },
-        RubricItemSchema,
-      );
+      const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
         rubric_grading_info += `description: ${item.description}\n`;
@@ -177,11 +182,7 @@ export async function generateSubmissionEmbedding({
   openai: OpenAI;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
-  const { variant, submission } = await queryRow(
-    sql.select_last_variant_and_submission,
-    { instance_question_id: instance_question.id },
-    SubmissionVariantSchema,
-  );
+  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     questionRenderContext: 'ai_grading',
@@ -296,4 +297,119 @@ export function rubricItemAccuracy(
   });
   const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
   return accuracy;
+}
+
+export async function selectInstanceQuestionsForAssessmentQuestion(
+  assessment_question_id: string,
+): Promise<InstanceQuestion[]> {
+  return await queryRows(
+    sql.select_instance_questions_for_assessment_question,
+    {
+      assessment_question_id,
+    },
+    InstanceQuestionSchema,
+  );
+}
+
+export async function selectRubricGradingItems(
+  manual_rubric_grading_id: string | null,
+): Promise<RubricItem[]> {
+  return await queryRows(
+    sql.select_rubric_grading_items,
+    {
+      manual_rubric_grading_id,
+    },
+    RubricItemSchema,
+  );
+}
+
+export async function insertAiGradingJob({
+  grading_job_id,
+  job_sequence_id,
+  prompt,
+  completion,
+  course_id,
+  course_instance_id,
+}: {
+  grading_job_id: string;
+  job_sequence_id: string;
+  prompt: {
+    role: 'system' | 'user';
+    content: string;
+  }[];
+  completion: ParsedChatCompletion<any>;
+  course_id: string;
+  course_instance_id?: string;
+}): Promise<void> {
+  await queryAsync(sql.insert_ai_grading_job, {
+    grading_job_id,
+    job_sequence_id,
+    prompt: JSON.stringify(prompt),
+    completion,
+    model: OPEN_AI_MODEL,
+    prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+    completion_tokens: completion.usage?.completion_tokens ?? 0,
+    cost: calculateApiCost(completion.usage),
+    course_id,
+    course_instance_id,
+  });
+}
+
+export async function selectLastVariantAndSubmission(
+  instance_question_id: string,
+): Promise<{ variant: Variant; submission: Submission }> {
+  return await queryRow(
+    sql.select_last_variant_and_submission,
+    { instance_question_id },
+    SubmissionVariantSchema,
+  );
+}
+
+export async function selectClosestSubmissionInfo({
+  submission_id,
+  assessment_question_id,
+  embedding,
+  limit,
+}: {
+  submission_id: string;
+  assessment_question_id: string;
+  embedding: string;
+  limit: number;
+}): Promise<GradedExample[]> {
+  return await queryRows(
+    sql.select_closest_submission_info,
+    {
+      submission_id,
+      assessment_question_id,
+      embedding,
+      limit,
+    },
+    GradedExampleSchema,
+  );
+}
+
+export async function selectRubricForGrading(
+  assessment_question_id: string,
+): Promise<RubricItem[]> {
+  return await queryRows(
+    sql.select_rubric_for_grading,
+    {
+      assessment_question_id,
+    },
+    RubricItemSchema,
+  );
+}
+
+export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
+  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+}
+
+export async function selectEmbeddingForSubmission(
+  submission_id: string,
+): Promise<SubmissionGradingContextEmbedding | null> {
+  return await queryOptionalRow(
+    sql.select_embedding_for_submission,
+    { submission_id },
+    SubmissionGradingContextEmbeddingSchema,
+  );
 }

@@ -15,13 +15,10 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderForClientHydration, renderHtmlDocument } from '../../lib/preact.js';
+import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { InstructorAssessmentsCard } from './InstructorAssessmentsCard.js';
-import {
-  type AssessmentRow,
-  type AssessmentStatsRow,
-  type StatsUpdateData,
-} from './instructorAssessments.types.js';
+import { type StatsUpdateData } from './instructorAssessments.types.js';
 
 export function InstructorAssessments({
   resLocals,

@@ -413,6 +413,12 @@ export class CodeCallerContainer implements CodeCaller {
         AutoRemove: true,
         // Prevent forkbombs
         PidsLimit: 64,
+        // We use stdout to communicate from the container to the host, so the logs
+        // would rapidly fill up the host's disk space if we didn't disable logging.
+        LogConfig: {
+          Type: 'none',
+          Config: {},
+        },
       },
       Env: [
         // Proxy the `DEBUG` environment variable to the container so we can
@@ -431,6 +437,7 @@ export class CodeCallerContainer implements CodeCaller {
       stdin: true,
       stdout: true,
       stderr: true,
+      hijack: true,
     });
     this.stdinStream = new MemoryStream();
     this.stdoutStream = new MemoryStream();

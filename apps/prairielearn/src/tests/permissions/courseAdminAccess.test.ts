@@ -1,5 +1,4 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -86,9 +85,10 @@ function runTest(context) {
 
   let new_user = 'garbage@example.com';
 
-  before('set up testing server', helperServer.before().bind(this));
+  beforeAll(helperServer.before().bind(this));
 
-  before('insert users and make instructor course owner', async function () {
+  beforeAll(async function () {
+    // Insert necessary users.
     for (const user of users) {
       await sqldb.callAsync('users_select_or_insert', [
         user.uid,
@@ -98,6 +98,8 @@ function runTest(context) {
         'Shibboleth',
       ]);
     }
+
+    // Make the instructor a course owner.
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -108,13 +110,13 @@ function runTest(context) {
     if (result.rowCount) new_user = result.rows[0].uid;
   });
 
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
-  step('permissions should match', async () => {
+  test.sequential('permissions should match', async () => {
     await checkPermissions(users);
   });
 
-  step('can add multiple users', async () => {
+  test.sequential('can add multiple users', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -140,7 +142,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can add valid subset of multiple users', async () => {
+  test.sequential('can add valid subset of multiple users', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -166,7 +168,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can add course instance permission', async () => {
+  test.sequential('can add course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -191,7 +193,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can delete user', async () => {
+  test.sequential('can delete user', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -215,7 +217,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot delete self', async () => {
+  test.sequential('cannot delete self', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -235,7 +237,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can change course role', async () => {
+  test.sequential('can change course role', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -260,7 +262,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot change course role of self', async () => {
+  test.sequential('cannot change course role of self', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -281,7 +283,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot delete self even when emulating another owner', async () => {
+  test.sequential('cannot delete self even when emulating another owner', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     };
@@ -304,31 +306,34 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot change course role of self even when emulating another owner', async () => {
-    const headers = {
-      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
-    };
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'course_permissions_update_role',
-        __csrf_token,
-        user_id: context.userId,
-        course_role: 'None',
-      }),
-      headers,
-    });
-    assert.equal(response.status, 403);
-    await checkPermissions(users);
-  });
+  test.sequential(
+    'cannot change course role of self even when emulating another owner',
+    async () => {
+      const headers = {
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
+      };
+      let response = await helperClient.fetchCheerio(context.pageUrl, {
+        headers,
+      });
+      assert.isTrue(response.ok);
+      const __csrf_token = response.$('span[id=test_csrf_token]').text();
+      assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+      response = await helperClient.fetchCheerio(context.pageUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'course_permissions_update_role',
+          __csrf_token,
+          user_id: context.userId,
+          course_role: 'None',
+        }),
+        headers,
+      });
+      assert.equal(response.status, 403);
+      await checkPermissions(users);
+    },
+  );
 
-  step('can add user', async () => {
+  test.sequential('can add user', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -353,7 +358,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can add course instance permission', async () => {
+  test.sequential('can add course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -378,7 +383,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can update course instance permission', async () => {
+  test.sequential('can update course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -404,7 +409,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can add course instance permission', async () => {
+  test.sequential('can add course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -429,7 +434,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can delete course instance permission', async () => {
+  test.sequential('can delete course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -454,7 +459,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can delete all course instance permissions', async () => {
+  test.sequential('can delete all course instance permissions', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -477,7 +482,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can add course instance permission', async () => {
+  test.sequential('can add course instance permission', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -502,7 +507,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can delete users with no access', async () => {
+  test.sequential('can delete users with no access', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -526,7 +531,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can delete non-owners', async () => {
+  test.sequential('can delete non-owners', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -549,7 +554,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('can change course role', async () => {
+  test.sequential('can change course role', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
@@ -574,7 +579,7 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot GET if not an owner', async () => {
+  test.sequential('cannot GET if not an owner', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=staff04@example.com',
     };
@@ -585,9 +590,7 @@ function runTest(context) {
   });
 }
 
-describe('course admin access page through course route', function () {
-  this.timeout(60000);
-
+describe('course admin access page through course route', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl/course/1`;
@@ -595,12 +598,14 @@ describe('course admin access page through course route', function () {
   runTest(context);
 });
 
-describe('course admin access page through course instance route', function () {
-  this.timeout(60000);
+describe(
+  'course admin access page through course instance route',
+  { timeout: 60_000 },
+  function () {
+    const context: Record<string, any> = {};
+    context.siteUrl = `http://localhost:${config.serverPort}`;
+    context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
 
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
-  context.baseUrl = `${context.siteUrl}/pl/course_instance/1/instructor`;
-
-  runTest(context);
-});
+    runTest(context);
+  },
+);
