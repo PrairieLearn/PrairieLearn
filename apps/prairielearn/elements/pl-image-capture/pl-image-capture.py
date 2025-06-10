@@ -118,6 +118,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
+    # Images submitted are expected to be in JPEG format. This is a safeguard to
+    # ensure that all images uploaded are ultimately stored as JPEGs.
     if img.format != "JPEG":
         # Attempt to convert the image to JPEG format.
         try:
