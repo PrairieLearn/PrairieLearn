@@ -1,5 +1,3 @@
-# https://prairielearn.readthedocs.io/en/latest/installingNative/
-
 FROM ubuntu:24.04
 ARG CACHEBUST=2025-06-05-17-00-00
 
@@ -17,7 +15,9 @@ RUN apt-get update && \
         graphviz \
         libgraphviz-dev \
         imagemagick \
+        libffi-dev \
         libjpeg-dev \
+        libssl-dev \
         lsof \
         make \
         openssl \
@@ -29,9 +29,24 @@ RUN apt-get update && \
         redis-server \
         tar \
         vim \
-        python3.10 \
-        python3-pip && \
+        wget \
+        zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# Download and build Python 3.10
+RUN cd /usr/src && \
+    wget https://www.python.org/ftp/python/3.10.14/Python-3.10.14.tgz && \
+    tar xzf Python-3.10.14.tgz && \
+    cd Python-3.10.14 && \
+    ./configure --enable-optimizations && \
+    make -j"$(nproc)" && \
+    make altinstall
+
+# Set python3.10 as the default python3 and pip
+RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10 1 && \
+    update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.10 1 && \
+    /usr/local/bin/python3.10 -m ensurepip && \
+    /usr/local/bin/python3.10 -m pip install --upgrade pip
 
 # Set up Postgres
 RUN echo "PATH=\"/usr/lib/postgresql/16/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin\"" > /etc/environment && \
@@ -46,12 +61,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 # Install Yarn
 RUN corepack enable && corepack prepare yarn@stable --activate
 
-# Install D2
-RUN curl -fsSL https://d2lang.com/install.sh | sh -s --
-
 # Install Additional Libraries
-COPY python-requirements.txt /tmp/python-requirements.txt
-RUN pip install --break-system-packages --no-cache-dir -r /tmp/python-requirements.txt
+COPY python-requirements.txt /python-requirements.txt
+RUN /usr/local/bin/python3.10 -m pip install --break-system-packages --no-cache-dir -r /python-requirements.txt
 
 # Clean up to reduce image size
 RUN apt-get clean && \
