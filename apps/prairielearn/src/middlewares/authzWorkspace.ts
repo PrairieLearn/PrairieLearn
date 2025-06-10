@@ -45,11 +45,6 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
     }
     Object.assign(res.locals, result);
 
-    if (publicQuestionEndpoint) {
-      res.locals.course = await selectCourseById(result.course_id);
-      res.locals.user = UserSchema.parse(res.locals.authn_user);
-    }
-
     if (result.course_instance_id) {
       req.params.course_instance_id = result.course_instance_id;
       await authzCourseOrInstance(req, res);
@@ -93,6 +88,11 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Access denied');
       }
+    }
+
+    if (publicQuestionEndpoint) {
+      res.locals.course = await selectCourseById(result.course_id);
+      res.locals.user = UserSchema.parse(res.locals.authn_user);
     }
 
     await selectAndAuthzVariant({
