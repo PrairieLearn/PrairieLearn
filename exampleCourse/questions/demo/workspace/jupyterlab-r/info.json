@@ -2,7 +2,7 @@
   "uuid": "56a78a08-60a2-451f-9089-763161432561",
   "title": "Workspace demo: JupyterLab (R)",
   "topic": "Workspace",
-  "tags": ["su20", "tyang15", "mfsilva", "nnytko2"],
+  "tags": ["demo", "r-autograder", "ipynb"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {
@@ -10,9 +10,9 @@
     "port": 8080,
     "home": "/home/jovyan",
     "rewriteUrl": false,
-    "gradedFiles": ["student.R"],
+    "gradedFiles": ["student.ipynb"],
     "environment": {
-      "LAUNCH_FILE_NAME": "student.R"
+      "LAUNCH_FILE_NAME": "student.ipynb"
     }
   },
   "gradingMethod": "External",
