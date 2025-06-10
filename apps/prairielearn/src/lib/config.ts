@@ -563,7 +563,7 @@ const ConfigSchema = z.object({
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
-  aiQuestionGenerationRateLimit: z.number().default(1),
+  aiQuestionGenerationRateLimitDollars: z.number().default(1),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
