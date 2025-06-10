@@ -66,6 +66,7 @@ export const sharedConfig = defineConfig({
 });
 
 export default defineConfig(async ({ mode }) => {
+  // Resolve the Vitest configuration for PrairieLearn with the given mode. By default, the configuration is not resolved with the mode.
   const { vitestConfig: prairielearnTestConfig } = await resolveConfig({
     mode,
     config: 'vitest.config.ts',
