@@ -549,7 +549,7 @@
     }
 
     /**
-     * Ensures that the provided elements are present in the image capture element.
+     * Ensures that the provided elements exist.
      * Throws an error if any element is not present.
      * @param {Object} containers An object wherein keys are element names and values are the elements.
      */
