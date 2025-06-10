@@ -90,7 +90,7 @@
         '.js-cancel-local-camera-confirmation-button',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         captureWithLocalCameraButton,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
@@ -155,7 +155,7 @@
         '.js-local-camera-confirmation-container',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraConfirmationContainer,
@@ -271,6 +271,11 @@
      */
     setNoCaptureAvailableYetState(uploadedImageContainer) {
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
+
+      this.ensureElementsExist({
+        imagePlaceholderDiv,
+      });
+
       imagePlaceholderDiv.innerHTML = `
         <span class="text-muted">No image captured yet.</span>
       `;
@@ -304,7 +309,7 @@
         '.js-uploaded-image-container',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         uploadedImageContainer,
       });
 
@@ -334,7 +339,7 @@
         '.js-uploaded-image-container',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         uploadedImageContainer,
       });
 
@@ -380,11 +385,14 @@
         '.js-local-camera-confirmation-container',
       );
 
-      this.ensureContainersExist({
+      const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
+
+      this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         permissionMessage,
         localCameraConfirmationContainer,
+        localCameraVideo,
       });
 
       this.openContainer('local-camera-capture');
@@ -392,9 +400,9 @@
       try {
         // Stream the local camera video to the video element
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = this.imageCaptureDiv.querySelector('.js-local-camera-video');
-        video.srcObject = this.localCameraStream;
-        await video.play();
+        localCameraVideo.srcObject = this.localCameraStream;
+
+        await localCameraVideo.play();
 
         // Hide the permission message
         permissionMessage.classList.add('d-none');
@@ -415,24 +423,26 @@
     }
 
     deactivateVideoStream() {
-      const video = this.imageCaptureDiv.querySelector('.js-local-camera-video');
-      if (this.localCameraStream) {
-        this.localCameraStream.getTracks().forEach((track) => track.stop());
-        this.localCameraStream = null;
-      }
-      if (video) {
-        video.srcObject = null;
-        video.pause();
-      }
-
+      const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
       );
 
-      // Prevent the user from capturing another image until the local camera is restarted.
-      if (captureLocalCameraImageButton) {
-        captureLocalCameraImageButton.setAttribute('disabled', 'disabled');
+      this.ensureElementsExist({
+        localCameraVideo,
+        captureLocalCameraImageButton,
+      });
+
+      if (this.localCameraStream) {
+        this.localCameraStream.getTracks().forEach((track) => track.stop());
+        this.localCameraStream = null;
       }
+
+      localCameraVideo.srcObject = null;
+      localCameraVideo.pause();
+
+      // Prevent the user from capturing another image until the local camera is restarted.
+      captureLocalCameraImageButton.setAttribute('disabled', 'disabled');
     }
 
     async handleCaptureImage() {
@@ -447,7 +457,7 @@
       );
       const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         localCameraCaptureContainer,
         localCameraConfirmationContainer,
         localCameraImagePreviewCanvas,
@@ -476,7 +486,7 @@
         '.js-local-camera-image-preview',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         imagePreviewCanvas,
       });
 
@@ -492,7 +502,7 @@
         '.js-local-camera-confirmation-container',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         capturePreviewContainer,
         localCameraConfirmationContainer,
       });
@@ -511,7 +521,7 @@
         '.js-local-camera-permission-message',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         permissionMessage,
@@ -532,7 +542,7 @@
         '.js-capture-preview-container',
       );
 
-      this.ensureContainersExist({
+      this.ensureElementsExist({
         localCameraConfirmationContainer,
         capturePreviewContainer,
       });
@@ -541,15 +551,15 @@
     }
 
     /**
-     * Ensures that the provided containers are present in the image capture element.
-     * Throws an error if any container is not present.
-     * @param {Object} containers An object wherein keys are container names and values are the container elements.
+     * Ensures that the provided elements are present in the image capture element.
+     * Throws an error if any element is not present.
+     * @param {Object} containers An object wherein keys are element names and values are the elements.
      */
-    ensureContainersExist(containers) {
-      for (const containerName in containers) {
-        if (!containers[containerName]) {
+    ensureElementsExist(elements) {
+      for (const elementName in elements) {
+        if (!elements[elementName]) {
           throw new Error(
-            `Container ${containerName} not found in image capture element with UUID ${this.uuid}`,
+            `Element ${elementName} not found in image capture element with UUID ${this.uuid}`,
           );
         }
       }
