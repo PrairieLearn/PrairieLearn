@@ -3,7 +3,7 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 import { histmini } from './lib/histmini.js';
 
 onDocumentReady(() => {
-  $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
+  document.getElementById('resetQuestionVariantsModal')?.addEventListener('show.bs.modal', (e) => {
     const button = (e as any).relatedTarget as HTMLElement;
     const modal = e.target as HTMLElement;
 

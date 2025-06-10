@@ -118,9 +118,9 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
 }
 
 function fetchResults(submissionId: string) {
-  $('#submissionInfoModal-' + submissionId).modal('hide');
+  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
 
-  const submissionPanel = document.getElementById('submission-' + submissionId);
+  const submissionPanel = document.getElementById(`submission-${submissionId}`);
   if (!submissionPanel) return;
 
   const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');

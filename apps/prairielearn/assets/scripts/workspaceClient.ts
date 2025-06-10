@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client';
 
+import { onDocumentReady } from '@prairielearn/browser-utils';
+
 function getNumericalAttribute(element: HTMLElement, name: string, defaultValue: number): number {
   const value = element.getAttribute(name);
   if (value === null) {
@@ -12,7 +14,7 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
   return parsedValue;
 }
 
-$(function () {
+onDocumentReady(function () {
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
