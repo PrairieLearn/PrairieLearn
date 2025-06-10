@@ -23,6 +23,7 @@ import express, {
   type Request,
   type RequestHandler,
   type Response,
+  Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
 import multer from 'multer';
@@ -152,7 +153,7 @@ export async function initExpress(): Promise<Express> {
     },
   });
 
-  const sessionRouter = express.Router();
+  const sessionRouter = Router();
   sessionRouter.use(sessionMiddleware);
   sessionRouter.use(flashMiddleware());
   sessionRouter.use((req, res, next) => {
@@ -285,7 +286,7 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = express.Router();
+  const workspaceAuthRouter = Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
     // authn/authz for a specific workspace. We run the following

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
@@ -35,7 +35,7 @@ const PRODUCTS = [
   'Zucchini',
 ];
 
-function productApi(req: express.Request, res: express.Response) {
+function productApi(req: Request, res: Response) {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 

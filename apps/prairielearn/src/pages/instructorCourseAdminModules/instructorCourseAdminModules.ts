@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -7,7 +7,7 @@ import { AssessmentModuleSchema } from '../../lib/db-types.js';
 
 import { InstructorCourseAdminModules } from './instructorCourseAdminModules.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
