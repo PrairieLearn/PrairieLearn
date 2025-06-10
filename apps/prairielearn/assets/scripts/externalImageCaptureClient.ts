@@ -196,7 +196,7 @@ onDocumentReady(() => {
       cameraInput.src = dataURL;
       displayImagePreview(dataURL);
       URL.revokeObjectURL(url);
-      
+
       uploadButton.disabled = false;
     };
   });

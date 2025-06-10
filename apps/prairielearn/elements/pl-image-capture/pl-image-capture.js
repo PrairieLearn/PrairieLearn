@@ -90,18 +90,14 @@
         '.js-cancel-local-camera-confirmation-button',
       );
 
-      if (
-        !captureWithLocalCameraButton ||
-        !captureLocalCameraImageButton ||
-        !cancelLocalCameraButton ||
-        !retakeLocalCameraImageButton ||
-        !confirmLocalCameraImageButton ||
-        !cancelLocalCameraConfirmationButton
-      ) {
-        throw new Error(
-          'One or more local camera capture buttons not found in image capture element',
-        );
-      }
+      this.ensureContainersExist({
+        captureWithLocalCameraButton,
+        captureLocalCameraImageButton,
+        cancelLocalCameraButton,
+        retakeLocalCameraImageButton,
+        confirmLocalCameraImageButton,
+        cancelLocalCameraConfirmationButton,
+      });
 
       captureWithLocalCameraButton.addEventListener('click', () => {
         this.startLocalCameraCapture();
@@ -136,6 +132,14 @@
      * 'capture-preview', 'local-camera-capture', or 'local-camera-confirmation'.
      */
     openContainer(containerName) {
+      if (
+        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation'].includes(
+          containerName,
+        )
+      ) {
+        throw new Error(`Invalid container name: ${containerName}`);
+      }
+
       // Displays the captured image.
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
@@ -151,21 +155,11 @@
         '.js-local-camera-confirmation-container',
       );
 
-      if (
-        !capturePreviewContainer ||
-        !localCameraCaptureContainer ||
-        !localCameraConfirmationContainer
-      ) {
-        throw new Error('One or more containers not found in image capture element');
-      }
-
-      if (
-        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation'].includes(
-          containerName,
-        )
-      ) {
-        throw new Error(`Invalid container name: ${containerName}`);
-      }
+      this.ensureContainersExist({
+        capturePreviewContainer,
+        localCameraCaptureContainer,
+        localCameraConfirmationContainer,
+      });
 
       // element corresponds to the container element. flex indicates if the container uses a flexbox layout when shown.
       const containers = [
@@ -271,21 +265,22 @@
       });
     }
 
+    /**
+     * Updates the image placeholder to display that no image has been captured yet.
+     * @param {HTMLElement} uploadedImageContainer
+     */
     setNoCaptureAvailableYetState(uploadedImageContainer) {
-      if (!uploadedImageContainer) {
-        throw new Error('Uploaded image container not found');
-      }
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
       imagePlaceholderDiv.innerHTML = `
         <span class="text-muted">No image captured yet.</span>
       `;
     }
 
+    /**
+     * Updates the image placeholder to display a loading state.
+     * @param {HTMLElement} uploadedImageContainer
+     */
     setLoadingCaptureState(uploadedImageContainer) {
-      if (!uploadedImageContainer) {
-        throw new Error('Uploaded image container not found');
-      }
-
       uploadedImageContainer.innerHTML = `
         <div
             class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
@@ -309,9 +304,9 @@
         '.js-uploaded-image-container',
       );
 
-      if (!uploadedImageContainer) {
-        throw new Error('Uploaded image container not found');
-      }
+      this.ensureContainersExist({
+        uploadedImageContainer,
+      });
 
       this.setLoadingCaptureState(uploadedImageContainer);
 
@@ -339,9 +334,9 @@
         '.js-uploaded-image-container',
       );
 
-      if (!uploadedImageContainer) {
-        throw new Error('Uploaded image container not found');
-      }
+      this.ensureContainersExist({
+        uploadedImageContainer,
+      });
 
       const capturePreview = document.createElement('img');
       capturePreview.id = 'capture-preview';
@@ -385,13 +380,12 @@
         '.js-local-camera-confirmation-container',
       );
 
-      if (
-        !capturePreviewContainer ||
-        !localCameraCaptureContainer ||
-        !localCameraConfirmationContainer
-      ) {
-        throw new Error('Capture preview or local camera capture container not found');
-      }
+      this.ensureContainersExist({
+        capturePreviewContainer,
+        localCameraCaptureContainer,
+        permissionMessage,
+        localCameraConfirmationContainer,
+      });
 
       this.openContainer('local-camera-capture');
 
@@ -453,16 +447,12 @@
       );
       const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
 
-      if (
-        !localCameraCaptureContainer ||
-        !localCameraConfirmationContainer ||
-        !localCameraImagePreviewCanvas ||
-        !localCameraVideo
-      ) {
-        throw new Error(
-          'Local camera capture, image preview, video, or confirmation container not found',
-        );
-      }
+      this.ensureContainersExist({
+        localCameraCaptureContainer,
+        localCameraConfirmationContainer,
+        localCameraImagePreviewCanvas,
+        localCameraVideo,
+      });
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
       localCameraImagePreviewCanvas.height = localCameraVideo.videoHeight;
@@ -482,13 +472,15 @@
     }
 
     async confirmLocalCameraCapture() {
-      const canvas = this.imageCaptureDiv.querySelector('.js-local-camera-image-preview');
-      if (!canvas) {
-        throw new Error('Local camera image preview canvas not found');
-      }
+      const imagePreviewCanvas = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-image-preview',
+      );
 
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      this.loadCapturePreviewFromDataUrl(dataUrl);
+      this.ensureContainersExist({
+        imagePreviewCanvas,
+      });
+
+      this.loadCapturePreviewFromDataUrl(imagePreviewCanvas.toDataURL('image/jpeg'));
       this.closeConfirmationContainer();
     }
 
@@ -499,9 +491,11 @@
       const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-confirmation-container',
       );
-      if (!capturePreviewContainer || !localCameraConfirmationContainer) {
-        throw new Error('Local camera capture or confirmation container not found');
-      }
+
+      this.ensureContainersExist({
+        capturePreviewContainer,
+        localCameraConfirmationContainer,
+      });
 
       this.openContainer('capture-preview');
     }
@@ -517,9 +511,11 @@
         '.js-local-camera-permission-message',
       );
 
-      if (!capturePreviewContainer || !localCameraCaptureContainer) {
-        throw new Error('Capture preview or local camera capture container not found');
-      }
+      this.ensureContainersExist({
+        capturePreviewContainer,
+        localCameraCaptureContainer,
+        permissionMessage,
+      });
 
       this.openContainer('capture-preview');
 
@@ -536,11 +532,27 @@
         '.js-capture-preview-container',
       );
 
-      if (!localCameraConfirmationContainer || !capturePreviewContainer) {
-        throw new Error('Local camera confirmation or capture container not found');
-      }
+      this.ensureContainersExist({
+        localCameraConfirmationContainer,
+        capturePreviewContainer,
+      });
 
       this.openContainer('capture-preview');
+    }
+
+    /**
+     * Ensures that the provided containers are present in the image capture element.
+     * Throws an error if any container is not present.
+     * @param {Object} containers An object wherein keys are container names and values are the container elements.
+     */
+    ensureContainersExist(containers) {
+      for (const containerName in containers) {
+        if (!containers[containerName]) {
+          throw new Error(
+            `Container ${containerName} not found in image capture element with UUID ${this.uuid}`,
+          );
+        }
+      }
     }
   }
 
