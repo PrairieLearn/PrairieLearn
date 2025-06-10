@@ -1678,6 +1678,7 @@ async function getCacheKey(
           'submitted_answers',
           'format_errors',
           'partial_scores',
+          'feedback',
           'raw_submitted_answers',
         ]),
         context,
