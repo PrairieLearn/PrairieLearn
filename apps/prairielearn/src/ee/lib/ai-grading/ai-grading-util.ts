@@ -161,8 +161,6 @@ export async function generatePrompt({
   }
 
   // Student response
-  // Parse out all divs with data-submitted-image-name
-  // These are images that were captured and submitted by the student.
   messages.push(
     splitSubmissionTextAndImages({
       submission_text,
@@ -174,7 +172,7 @@ export async function generatePrompt({
 }
 
 /**
- * In the submission text, split out the text and images interlaced in the text.
+ * Generate a message containing the text and images that the student submitted.
  */
 function splitSubmissionTextAndImages({
   submission_text,
@@ -191,9 +189,8 @@ function splitSubmissionTextAndImages({
   });
 
   const $submission_html = cheerio.load(submission_text);
-  let submissionTextBuffer = '';
+  let submissionTextSegment = '';
 
-  // Iterate over all top-level nodes (including text nodes)
   $submission_html
     .root()
     .find('body')
@@ -201,16 +198,19 @@ function splitSubmissionTextAndImages({
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
       if (imageCaptureUUID) {
-        if (submissionTextBuffer) {
+        if (submissionTextSegment) {
+          // Push and reset the current text segment before adding the image.
           message_content.push({
             type: 'text',
-            text: submissionTextBuffer,
+            text: submissionTextSegment,
           });
-          submissionTextBuffer = '';
+          submissionTextSegment = '';
         }
 
         const options = $submission_html(node).data('options') as Record<string, string>;
         const submittedImageName = options.submitted_file_name;
+
+        // submitted_answer contains the base-64 encoded image data for the image capture.
 
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
@@ -227,14 +227,14 @@ function splitSubmissionTextAndImages({
           },
         });
       } else {
-        submissionTextBuffer += $submission_html(node).text();
+        submissionTextSegment += $submission_html(node).text();
       }
     });
 
-  if (submissionTextBuffer) {
+  if (submissionTextSegment) {
     message_content.push({
       type: 'text',
-      text: submissionTextBuffer,
+      text: submissionTextSegment,
     });
   }
 
@@ -243,12 +243,10 @@ function splitSubmissionTextAndImages({
     text: '\n</response>\nHow would you grade this? Please return the JSON object.',
   });
 
-  const message: ChatCompletionMessageParam = {
+  return {
     role: 'user',
     content: message_content,
-  };
-
-  return message;
+  } satisfies ChatCompletionMessageParam;
 }
 
 export async function generateSubmissionEmbedding({
