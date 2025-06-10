@@ -228,9 +228,11 @@ onDocumentReady(() => {
   if (showDetail && showDetailButton) {
     showDetail.addEventListener('hide.bs.collapse', () => {
       showDetailButton.textContent = 'Show detail';
+      showDetailButton.ariaExpanded = 'false';
     });
     showDetail.addEventListener('show.bs.collapse', () => {
       showDetailButton.textContent = 'Hide detail';
+      showDetailButton.ariaExpanded = 'true';
     });
   }
 
