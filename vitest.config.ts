@@ -19,12 +19,18 @@ class CustomSequencer extends BaseSequencer {
     const sortedFiles = await super.sort(files);
 
     // Put all the slow tests at the beginning.
-    const slowTests = sortedFiles.filter((file) =>
-      SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest)),
-    );
-    const otherTests = sortedFiles.filter(
-      (file) => !SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest)),
-    );
+    const slowTests = sortedFiles.filter((file) => {
+      return (
+        file.project.config.root.includes('apps/prairielearn') &&
+        SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
+      );
+    });
+    const otherTests = sortedFiles.filter((file) => {
+      return (
+        !file.project.config.root.includes('apps/prairielearn') ||
+        !SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
+      );
+    });
 
     return [...slowTests, ...otherTests];
   }
