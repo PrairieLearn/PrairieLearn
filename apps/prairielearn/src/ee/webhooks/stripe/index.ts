@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { type Request, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import type Stripe from 'stripe';
 
@@ -15,9 +15,9 @@ import {
   updateStripeCheckoutSessionData,
 } from '../../models/stripe-checkout-sessions.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
-function constructEvent(req: express.Request) {
+function constructEvent(req: Request) {
   if (!config.stripeWebhookSigningSecret) {
     throw new Error('Stripe is not configured.');
   }
