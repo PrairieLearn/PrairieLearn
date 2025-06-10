@@ -149,68 +149,70 @@ onDocumentReady(() => {
 
   cameraInput.addEventListener('change', () => {
     cameraInput.disabled = false;
-    if (cameraInput.files && cameraInput.files.length > 0) {
-      // Select the image the user uploaded.
-      const file = cameraInput.files[0];
-      const url = URL.createObjectURL(file);
-      const image = new Image();
 
-      image.src = url;
-
-      image.onload = () => {
-        // Perform scaling to ensure that user-uploaded images are not too large.
-        // The scale factor ensures that the width and height of the image do not exceed 1000px.
-        // If the image width and height are both less than 1000px, no scaling is applied.
-        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
-
-        if (imageScaleFactor >= 1) {
-          // No scaling is necessary, so we can directly use the original image.
-          displayImagePreview(url);
-          return;
-        }
-
-        const targetWidth = Math.round(image.width * imageScaleFactor);
-        const targetHeight = Math.round(image.height * imageScaleFactor);
-
-        if (!resizingCanvas) {
-          resizingCanvas = document.createElement('canvas');
-        }
-        if (!resizingCtx) {
-          resizingCtx = resizingCanvas.getContext('2d');
-          if (!resizingCtx) {
-            throw new Error('Failed to get canvas context');
-          }
-        }
-
-        resizingCanvas.width = targetWidth;
-        resizingCanvas.height = targetHeight;
-        resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
-
-        resizingCanvas.toBlob((blob) => {
-          if (!blob) {
-            URL.revokeObjectURL(url);
-            throw new Error('Failed to create blob from canvas');
-          }
-
-          const resizedFile = new File([blob], file.name, { type: file.type });
-          const dt = new DataTransfer();
-          dt.items.add(resizedFile);
-
-          cameraInput.files = dt.files;
-
-          if (resizingCanvas) {
-            displayImagePreview(resizingCanvas.toDataURL(file.type));
-          }
-
-          URL.revokeObjectURL(url);
-
-          uploadButton.disabled = false;
-        }, file.type);
-      };
-    } else {
+    if (!cameraInput || !cameraInput.files || cameraInput.files.length === 0) {
       // The user cannot submit if no file was uploaded.
       uploadButton.disabled = true;
+      return;
     }
+
+    // Select the image the user uploaded.
+    const file = cameraInput.files[0];
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.src = url;
+
+    image.onload = () => {
+      // Perform scaling to ensure that user-uploaded images are not too large.
+      // The scale factor ensures that the width and height of the image do not exceed 1000px.
+      // If the image width and height are both less than 1000px, no scaling is applied.
+      const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+
+      if (imageScaleFactor >= 1) {
+        // No scaling is necessary, so we can directly use the original image.
+        displayImagePreview(url);
+        return;
+      }
+
+      const targetWidth = Math.round(image.width * imageScaleFactor);
+      const targetHeight = Math.round(image.height * imageScaleFactor);
+
+      if (!resizingCanvas) {
+        resizingCanvas = document.createElement('canvas');
+      }
+      if (!resizingCtx) {
+        resizingCtx = resizingCanvas.getContext('2d');
+        if (!resizingCtx) {
+          throw new Error('Failed to get canvas context');
+        }
+      }
+
+      resizingCanvas.width = targetWidth;
+      resizingCanvas.height = targetHeight;
+      resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+      resizingCanvas.toBlob((blob) => {
+        if (!blob) {
+          URL.revokeObjectURL(url);
+          throw new Error('Failed to create blob from canvas');
+        }
+
+        const resizedFile = new File([blob], file.name, { type: file.type });
+        const dt = new DataTransfer();
+        dt.items.add(resizedFile);
+
+        cameraInput.files = dt.files;
+
+        if (resizingCanvas) {
+          displayImagePreview(resizingCanvas.toDataURL(file.type));
+        }
+
+        URL.revokeObjectURL(url);
+
+        uploadButton.disabled = false;
+      }, file.type);
+    };
   });
 
   externalImageCaptureForm.addEventListener('submit', () => {
