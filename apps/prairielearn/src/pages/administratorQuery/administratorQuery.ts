@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
@@ -17,7 +17,7 @@ import {
   QueryRunRowSchema,
 } from './administratorQuery.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');

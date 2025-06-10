@@ -464,7 +464,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         urlSuffix: '/lti13',
         iconClasses: 'fa fa-school-flag',
         tabLabel: 'LTI 1.3',
-        renderCondition: (resLocals) => resLocals.lti13_enabled,
       },
     ],
     institution_admin: [

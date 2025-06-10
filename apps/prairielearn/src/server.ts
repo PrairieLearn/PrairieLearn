@@ -23,6 +23,7 @@ import express, {
   type Request,
   type RequestHandler,
   type Response,
+  Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
 import multer from 'multer';
@@ -151,7 +152,7 @@ export async function initExpress(): Promise<Express> {
     },
   });
 
-  const sessionRouter = express.Router();
+  const sessionRouter = Router();
   sessionRouter.use(sessionMiddleware);
   sessionRouter.use(flashMiddleware());
   sessionRouter.use((req, res, next) => {
@@ -173,7 +174,7 @@ export async function initExpress(): Promise<Express> {
   });
 
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api'], sessionRouter));
+  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -270,7 +271,7 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = express.Router();
+  const workspaceAuthRouter = Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
     // authn/authz for a specific workspace. We run the following
@@ -432,7 +433,7 @@ export async function initExpress(): Promise<Express> {
 
   // Set and check `res.locals.__csrf_token`. We exclude API routes as those
   // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -490,6 +491,13 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authzCourseOrInstance.js')).default,
       (await import('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher.js'))
         .default,
+    ],
+  );
+  app.use(
+    '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );
 
@@ -751,6 +759,15 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor',
+    asyncHandler(async (req, res, next) => {
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      next();
+    }),
+  );
 
   // single assessment
   app.use(
@@ -1172,9 +1189,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );

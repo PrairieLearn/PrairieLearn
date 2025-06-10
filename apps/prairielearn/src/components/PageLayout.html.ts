@@ -126,7 +126,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav">
+                  <div class="app-side-nav bg-light border-right">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -138,12 +138,12 @@ export function PageLayout({
             <div class="${sideNavEnabled ? 'app-main' : ''}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
-                resLocals.assessments &&
+                resLocals.course_instance &&
                 AssessmentNavigation({
+                  courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,
-                  courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
-                  assessments: resLocals.assessments,
+                  assessmentSet: resLocals.assessment_set,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({

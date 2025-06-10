@@ -559,6 +559,11 @@ const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  /**
+   * The hourly spending rate limit for AI question generation, in US dollars.
+   * Accounts for both input and output tokens.
+   */
+  aiQuestionGenerationRateLimit: z.number().default(1),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
@@ -579,11 +584,6 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
-  /**
-   * The hourly spending rate limit for AI question generation, in US dollars.
-   * Accounts for both input and output tokens.
-   */
-  aiQuestionGenerationRateLimit: z.number().default(1),
   /**
    * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
    */
@@ -632,6 +632,10 @@ export async function loadConfig(paths: string[]) {
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

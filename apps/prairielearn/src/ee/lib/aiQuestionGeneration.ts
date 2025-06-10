@@ -7,9 +7,14 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
@@ -404,24 +409,36 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
-      question_id: saveResults.question_id,
-      prompting_user_id: authnUserId,
-      prompt_type: 'initial',
-      user_prompt: prompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: serverJob.jobSequenceId,
-    });
+    const ai_question_generation_prompt_id = await queryRow(
+      sql.insert_ai_question_generation_prompt,
+      {
+        question_id: saveResults.question_id,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: prompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+        job_sequence_id: serverJob.jobSequenceId,
+      },
+      IdSchema,
+    );
+
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
 
     job.data['promptTokens'] = completion.usage?.prompt_tokens;
     job.data['completionTokens'] = completion.usage?.completion_tokens;
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId: ai_question_generation_prompt_id,
+      authnUserId,
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
+    });
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -598,19 +615,23 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
-    question_id: questionId,
-    prompting_user_id: authnUserId,
-    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-    user_prompt: revisionPrompt,
-    system_prompt: sysPrompt,
-    response: completion.choices[0].message.content,
-    html,
-    python,
-    errors,
-    completion,
-    job_sequence_id: jobSequenceId,
-  });
+  const ai_question_generation_prompt_id = await queryRow(
+    sql.insert_ai_question_generation_prompt,
+    {
+      question_id: questionId,
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html,
+      python,
+      errors,
+      completion,
+      job_sequence_id: jobSequenceId,
+    },
+    IdSchema,
+  );
 
   const files: Record<string, string> = {};
   if (results?.html) {
@@ -639,6 +660,13 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   job.data['promptTokens'] = completion.usage?.prompt_tokens;
   job.data['completionTokens'] = completion.usage?.completion_tokens;
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId: ai_question_generation_prompt_id,
+    authnUserId,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+  });
 
   job.data.html = html;
   job.data.python = python;
