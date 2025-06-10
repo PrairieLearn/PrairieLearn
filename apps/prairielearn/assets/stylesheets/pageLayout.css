@@ -110,7 +110,7 @@ body:has(div.app-container) {
   height: 100%;
   width: 4px;
   position: absolute;
-  left: -0.75rem;
+  left: -0.5rem;
   background-color: var(--bs-secondary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
@@ -136,7 +136,7 @@ body:has(div.app-container) {
   padding-bottom: 0.3rem;
   margin-bottom: 0.5rem;
   white-space: nowrap;
-  transition: 300ms;
+  transition: border-bottom 300ms ease-in-out;
 }
 
 /* Center the side nav toggle button when the side nav is collapsed */
