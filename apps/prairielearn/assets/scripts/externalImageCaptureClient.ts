@@ -192,26 +192,12 @@ onDocumentReady(() => {
       resizingCanvas.height = targetHeight;
       resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
 
-      resizingCanvas.toBlob((blob) => {
-        if (!blob) {
-          URL.revokeObjectURL(url);
-          throw new Error('Failed to create blob from canvas');
-        }
-
-        const resizedFile = new File([blob], file.name, { type: file.type });
-        const dt = new DataTransfer();
-        dt.items.add(resizedFile);
-
-        cameraInput.files = dt.files;
-
-        if (resizingCanvas) {
-          displayImagePreview(resizingCanvas.toDataURL(file.type));
-        }
-
-        URL.revokeObjectURL(url);
-
-        uploadButton.disabled = false;
-      }, file.type);
+      const dataURL = resizingCanvas.toDataURL(file.type);
+      cameraInput.src = dataURL;
+      displayImagePreview(dataURL);
+      URL.revokeObjectURL(url);
+      
+      uploadButton.disabled = false;
     };
   });
 

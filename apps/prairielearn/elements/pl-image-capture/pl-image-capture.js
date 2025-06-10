@@ -210,20 +210,18 @@
       }).svg();
 
       const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
-      if (qrCode) {
-        qrCode.innerHTML = qrCodeSvg;
-      } else {
+
+      if (!qrCode) {
         throw new Error('QR code element not found.');
       }
+
+      qrCode.innerHTML = qrCodeSvg;
     }
 
     /**
      * Listen for external image captures submitted from the user's mobile device.
      */
     listenForExternalImageCapture() {
-      const questionContainer = document.querySelector('.question-container');
-      if (!questionContainer) return;
-
       const socket = io('/external-image-capture');
 
       socket.emit(
