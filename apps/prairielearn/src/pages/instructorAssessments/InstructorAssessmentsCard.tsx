@@ -3,10 +3,10 @@ import { useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import type { AssessmentModule, AssessmentSet } from '../../lib/db-types.js';
+import type { AssessmentRow } from '../../models/assessment.js';
 
 import { InstructorAssessmentCreationModal } from './InstructorAssessmentCreationModal.js';
 import { InstructorAssessmentsTable } from './InstructorAssessmentsTable.js';
-import type { AssessmentRow } from './instructorAssessments.types.js';
 
 export function InstructorAssessmentsCard({
   // TODO: reorder for consistency.

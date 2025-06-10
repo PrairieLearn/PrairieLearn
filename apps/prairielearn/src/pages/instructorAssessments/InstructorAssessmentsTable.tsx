@@ -11,8 +11,7 @@ import { HistminiPreact } from '../../components/HistminiPreact.js';
 import { IssueBadgePreact } from '../../components/IssueBadge.html.js';
 import { ScorebarPreact } from '../../components/Scorebar.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-
-import type { AssessmentRow, AssessmentStatsRow } from './instructorAssessments.types.js';
+import type { AssessmentRow, AssessmentStatsRow } from '../../models/assessment.js';
 
 type StatsOverride =
   | {
