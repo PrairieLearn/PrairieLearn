@@ -11,7 +11,6 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { IdSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -24,6 +23,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -98,11 +98,10 @@ router.post(
         return;
       }
 
-      const courseInstanceID = await sqldb.queryRow(
-        sql.select_course_instance_id_from_uuid,
-        { uuid: editor.uuid, course_id: res.locals.course.id },
-        IdSchema,
-      );
+      const courseInstance = await selectCourseInstanceByUuid({
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
 
       flash(
         'success',
@@ -111,7 +110,7 @@ router.post(
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          courseInstanceID +
+          courseInstance.id +
           '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {
