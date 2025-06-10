@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,7 +18,7 @@ import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',

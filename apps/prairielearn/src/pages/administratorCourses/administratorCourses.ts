@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -15,7 +15,7 @@ import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
