@@ -8,6 +8,7 @@ onDocumentReady(() => {
     const popover = window.bootstrap.Popover.getOrCreateInstance(e.trigger, {
       content: 'Copied!',
       placement: 'bottom',
+      trigger: 'manual',
     });
     popover.show();
     window.setTimeout(() => popover.hide(), 1000);
