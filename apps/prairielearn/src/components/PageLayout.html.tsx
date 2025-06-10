@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 
 import {
-  compiledScriptPath,
   compiledScriptTag,
   compiledStylesheetPath,
   compiledStylesheetTag,
