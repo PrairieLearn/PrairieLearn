@@ -38,7 +38,6 @@ export default mergeConfig(
       passWithNoTests: true,
       hookTimeout: 20_000,
       testTimeout: 10_000,
-      isolate: false,
 
       coverage: {
         all: true,
