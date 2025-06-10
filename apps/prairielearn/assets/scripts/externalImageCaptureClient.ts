@@ -208,8 +208,6 @@ onDocumentReady(() => {
           displayImagePreview(resizingCanvas.toDataURL(file.type));
         }
 
-        URL.revokeObjectURL(url);
-
         uploadButton.disabled = false;
       }, file.type);
 
