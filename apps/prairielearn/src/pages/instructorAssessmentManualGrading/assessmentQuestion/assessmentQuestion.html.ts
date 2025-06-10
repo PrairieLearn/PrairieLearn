@@ -126,31 +126,45 @@ export function AssessmentQuestion({
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
         </div>
         ${aiGradingStats
-          ? html`<div>
-              <p>Manual points: ${assessment_question.max_manual_points}</p>
-              <p>Root mean squared error: ${aiGradingStats.rmse}</p>
-              <p>Pearson's r: ${aiGradingStats.r}</p>
-              ${aiGradingStats.rubric_accuracy.length
-                ? html`<table>
-                    <thead>
-                      <tr>
-                        <td>Rubric item</td>
-                        <td>Accuracy percentage</td>
-                        <td>Selection percentage</td>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${aiGradingStats.rubric_accuracy.map(
-                        (item) =>
-                          html`<tr>
-                            <td>${item.rubric_item.description}</td>
-                            <td>${item.accuracy_percentage}%</td>
-                            <td>${item.selection_percentage}%</td>
-                          </tr>`,
-                      )}
-                    </tbody>
-                  </table>`
-                : ''}
+          ? html`<div class="card border-info m-2">
+              <div class="card-header bg-info text-white">AI grading accuracy statistics</div>
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                  <div class="row">
+                    <div class="col">Manual points: ${assessment_question.max_manual_points}</div>
+                    <div class="col">Root mean squared error: ${aiGradingStats.rmse}</div>
+                    <div class="col">Pearson's r: ${aiGradingStats.r}</div>
+                  </div>
+                </li>
+                ${aiGradingStats.rubric_accuracy.length
+                  ? html`<li class="list-group-item">
+                      <div class="table-responsive">
+                        <table
+                          class="table table-sm table-striped mt-2"
+                          aria-label="AI grading rubric item stats"
+                        >
+                          <thead>
+                            <tr>
+                              <td>Rubric item</td>
+                              <td>Accuracy percentage</td>
+                              <td>Selection percentage</td>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${aiGradingStats.rubric_accuracy.map(
+                              (item) =>
+                                html`<tr>
+                                <td>${item.rubric_item.description}</td>
+                                <td>${item.accuracy_percentage}%</td>
+                                <td>${item.selection_percentage}%</td>
+                              </tr></li>`,
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </li>`
+                  : ''}
+              </ul>
             </div>`
           : ''}
         <form name="grading-form" method="POST">
