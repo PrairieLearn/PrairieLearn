@@ -19,6 +19,7 @@ body:has(div.app-container) {
   position: relative;
   height: 100%;
   width: 100%;
+  overflow-x: hidden;
   transition: 300ms;
   grid-template:
     'top-nav top-nav' auto
