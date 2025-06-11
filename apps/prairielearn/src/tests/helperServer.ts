@@ -111,9 +111,6 @@ export async function after(): Promise<void> {
     debug('after(): stop server');
     await server.stopServer();
 
-    debug('after(): close socket server');
-    await socketServer.close();
-
     debug('after(): close load estimators');
     load.close();
 
@@ -122,6 +119,11 @@ export async function after(): Promise<void> {
 
     debug('after(): close server jobs');
     await serverJobs.stop();
+
+    // This should come after anything that will emit socket events, namely
+    // server jobs and cron.
+    debug('after(): close socket server');
+    await socketServer.close();
 
     debug('after(): close cache');
     await cache.close();
