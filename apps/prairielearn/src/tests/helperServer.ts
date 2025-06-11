@@ -111,14 +111,14 @@ export async function after(): Promise<void> {
     debug('after(): stop server');
     await server.stopServer();
 
-    debug('after(): close load estimators');
-    load.close();
-
     debug('after(): stop cron');
     await cron.stop();
 
     debug('after(): close server jobs');
     await serverJobs.stop();
+
+    debug('after(): close cache');
+    await cache.close();
 
     // This should come after anything that will emit socket events, namely
     // server jobs and cron. We want to try to ensure that nothing is still
@@ -126,8 +126,8 @@ export async function after(): Promise<void> {
     debug('after(): close socket server');
     await socketServer.close();
 
-    debug('after(): close cache');
-    await cache.close();
+    debug('after(): close load estimators');
+    load.close();
 
     debug('after(): finish DB');
     await helperDb.after();
