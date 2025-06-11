@@ -22,7 +22,7 @@ export function JobSequence({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledScriptTag('jobSequenceClient.ts')],
+    headContent: compiledScriptTag('jobSequenceClient.ts'),
     content: html`
       <h1 class="visually-hidden">Job Sequence</h1>
       <div class="row">

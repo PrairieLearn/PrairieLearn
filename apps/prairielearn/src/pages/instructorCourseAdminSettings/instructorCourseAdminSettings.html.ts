@@ -30,7 +30,7 @@ export function InstructorCourseAdminSettings({
       page: 'course_admin',
       subPage: 'settings',
     },
-    headContent: [compiledScriptTag('instructorCourseAdminSettingsClient.ts')],
+    headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

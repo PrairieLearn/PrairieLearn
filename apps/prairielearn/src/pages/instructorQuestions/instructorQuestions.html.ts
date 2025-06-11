@@ -32,7 +32,7 @@ export const QuestionsPage = ({
     options: {
       fullWidth: true,
     },
-    headContent: [QuestionsTableHead()],
+    headContent: QuestionsTableHead(),
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

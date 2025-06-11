@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -13,10 +13,7 @@ import { Workspace } from './workspace.html.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getNavTitleHref(
-  res: express.Response,
-  publicQuestionEndpoint: boolean,
-): Promise<string> {
+async function getNavTitleHref(res: Response, publicQuestionEndpoint: boolean): Promise<string> {
   const variant_id = await selectVariantIdForWorkspace(res.locals.workspace_id);
 
   if (publicQuestionEndpoint) {
@@ -38,7 +35,7 @@ async function getNavTitleHref(
 }
 
 export default function ({ publicQuestionEndpoint }) {
-  const router = express.Router();
+  const router = Router();
 
   router.get(
     '/',
