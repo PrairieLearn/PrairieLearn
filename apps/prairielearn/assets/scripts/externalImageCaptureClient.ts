@@ -19,6 +19,9 @@ onDocumentReady(() => {
   const externalImageCaptureForm = document.querySelector<HTMLFormElement>(
     '#external-image-capture-form',
   );
+  const tryAgainButton = document.querySelector<HTMLButtonElement>(
+    '#try-again-button',
+  );
 
   let resizingCanvas: HTMLCanvasElement | null = null;
   let resizingCtx: CanvasRenderingContext2D | null = null;
@@ -28,7 +31,8 @@ onDocumentReady(() => {
     !cameraInputLabelSpan ||
     !uploadButton ||
     !imagePreview ||
-    !externalImageCaptureForm
+    !externalImageCaptureForm ||
+    !tryAgainButton
   ) {
     throw new Error('Required elements not found in the document');
   }
@@ -40,7 +44,7 @@ onDocumentReady(() => {
     const externalImageCaptureFormContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-form-container',
     );
-    const formInputs =
+    const formItems =
       externalImageCaptureFormContainer?.querySelector<HTMLDivElement>('#form-items');
     const externalImageCaptureSuccessContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-success-container',
@@ -48,23 +52,34 @@ onDocumentReady(() => {
     const externalImageCaptureFailedContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-failed-container',
     );
+    const tryAgainButtonSpan = document.querySelector<HTMLButtonElement>(
+      '#try-again-button span',
+    );
+    const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
+    const uploadButtonSpan = document.querySelector<HTMLButtonElement>(
+      '#upload-button span',
+    );
 
     if (
       !externalImageCaptureLoadingContainer ||
       !externalImageCaptureFormContainer ||
-      !formInputs ||
+      !formItems ||
       !externalImageCaptureSuccessContainer ||
       !externalImageCaptureFailedContainer ||
-      !uploadButton
+      !tryAgainButton || 
+      !uploadButton || 
+      !uploadButtonSpan
     ) {
       throw new Error('Required elements for changing state not found in the document');
     }
 
     if (state === 'form') {
       externalImageCaptureFormContainer.classList.remove('d-none');
-      formInputs.classList.remove('d-none');
+      formItems.classList.remove('d-none');
     } else {
-      externalImageCaptureFormContainer.classList.add('d-none');
+      if (!externalImageCaptureFormContainer.classList.contains('d-none')) {
+        externalImageCaptureFormContainer.classList.add('d-none');
+      }
     }
 
     if (state === 'loading') {
@@ -75,19 +90,55 @@ onDocumentReady(() => {
 
     if (state === 'success') {
       externalImageCaptureSuccessContainer.classList.remove('d-none');
+      externalImageCaptureFormContainer.classList.remove('d-none');
+      formItems.classList.add('d-none');
+
+      if (!uploadButton.classList.contains('d-none')) {
+        uploadButton.classList.add('d-none');
+      }
+      uploadButton.disabled = true;
+      if (!imagePreview) {
+        throw new Error('Image preview element not found in the document');
+      }
+      imagePreview.style.display = 'none';
+      if (!imagePreview.src) {
+        throw new Error('Image preview source is empty');
+      }
+      URL.revokeObjectURL(imagePreview.src);
+      imagePreview.src = '';
+      if (!cameraInputLabelSpan) {
+        throw new Error('Camera input label span not found in the document');
+      }
+      cameraInputLabelSpan.textContent = 'Take photo';
+      
+
+      uploadButtonSpan.textContent = 'Upload';
     } else {
-      externalImageCaptureSuccessContainer.classList.add('d-none');
+      if (!externalImageCaptureSuccessContainer.classList.contains('d-none')) {
+        externalImageCaptureSuccessContainer.classList.add('d-none');
+      }
     }
 
     if (state === 'failed') {
       externalImageCaptureFailedContainer.classList.remove('d-none');
       externalImageCaptureFormContainer.classList.remove('d-none');
-      formInputs.classList.add('d-none');
-      uploadButton.innerHTML = 'Try again';
+      formItems.classList.add('d-none');
+
+      tryAgainButton.classList.remove('d-none');
+
+      console.log('uploadButtonSpan', uploadButtonSpan);
+      uploadButtonSpan.textContent = 'Reupload';
+      console.log('uploadButtonSpan', uploadButtonSpan);
     } else {
-      externalImageCaptureFailedContainer.classList.add('d-none');
-      formInputs.classList.remove('d-none');
-      uploadButton.innerHTML = 'Upload';
+      if (!externalImageCaptureFailedContainer.classList.contains('d-none')) {
+        externalImageCaptureFailedContainer.classList.add('d-none');
+      }
+      if (state !== 'success') {
+        formItems.classList.remove('d-none');
+        if (!tryAgainButton.classList.contains('d-none')) {
+          tryAgainButton.classList.add('d-none');
+        }
+      }
     }
   }
 
@@ -101,6 +152,7 @@ onDocumentReady(() => {
     imagePreview.style.display = 'block';
 
     uploadButton.disabled = false;
+    uploadButton.classList.remove('d-none');
     cameraInputLabelSpan.textContent = 'Retake photo';
   }
 
@@ -152,6 +204,9 @@ onDocumentReady(() => {
 
     if (!cameraInput.files || cameraInput.files.length === 0) {
       // The user cannot submit if no file was uploaded.
+      if (!uploadButton.classList.contains('d-none')) {
+        uploadButton.classList.add('d-none');
+      }
       uploadButton.disabled = true;
       return;
     }
@@ -207,8 +262,6 @@ onDocumentReady(() => {
         if (resizingCanvas) {
           displayImagePreview(resizingCanvas.toDataURL(file.type));
         }
-
-        uploadButton.disabled = false;
       }, file.type);
 
       URL.revokeObjectURL(url);
@@ -218,5 +271,9 @@ onDocumentReady(() => {
   externalImageCaptureForm.addEventListener('submit', () => {
     changeState('loading');
     listenForImageCaptureAcknowledgement();
+  });
+
+  tryAgainButton.addEventListener('click', () => {
+    changeState('form');
   });
 });
