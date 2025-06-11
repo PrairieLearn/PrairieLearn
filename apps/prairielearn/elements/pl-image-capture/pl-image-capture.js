@@ -373,8 +373,8 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const localCameraMessage = localCameraCaptureContainer.querySelector(
-        '.js-local-camera-message',
+      const localCameraErrorMessage = localCameraCaptureContainer.querySelector(
+        '.js-local-camera-error-message',
       );
 
       const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
@@ -386,15 +386,15 @@
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        localCameraMessage,
+        localCameraErrorMessage,
         localCameraConfirmationContainer,
         localCameraVideo,
       });
 
       this.openContainer('local-camera-capture');
 
-      if (!localCameraMessage.classList.contains('d-none')) {
-        localCameraMessage.classList.add('d-none');
+      if (!localCameraErrorMessage.classList.contains('d-none')) {
+        localCameraErrorMessage.classList.add('d-none');
       }
 
       try {
@@ -415,15 +415,16 @@
           throw new Error('Capture image button not found');
         }
       } catch (err) {
-        localCameraMessage.classList.remove('d-none');
+        localCameraErrorMessage.classList.remove('d-none');
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          localCameraMessage.textContent =
+          localCameraErrorMessage.textContent =
             'Give permission to access your camera to capture an image.';
         } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          localCameraMessage.textContent =
+          localCameraErrorMessage.textContent =
             'No camera found. Please connect a camera to your device.';
         } else {
-          localCameraMessage.textContent = 'An error occurred while trying to access your camera.';
+          localCameraErrorMessage.textContent =
+            'An error occurred while trying to access your camera.';
         }
         throw new Error('Could not start local camera: ' + err.message, err.name);
       }
@@ -524,18 +525,20 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const localCameraMessage = this.imageCaptureDiv.querySelector('.js-local-camera-message');
+      const localCameraErrorMessage = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-error-message',
+      );
 
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        localCameraMessage,
+        localCameraErrorMessage,
       });
 
       this.openContainer('capture-preview');
 
-      if (!localCameraMessage.classList.contains('d-none')) {
-        localCameraMessage.classList.add('d-none');
+      if (!localCameraErrorMessage.classList.contains('d-none')) {
+        localCameraErrorMessage.classList.add('d-none');
       }
 
       this.deactivateVideoStream();
