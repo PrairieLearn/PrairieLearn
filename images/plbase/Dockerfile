@@ -34,13 +34,14 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Download and build Python 3.10
-RUN cd /usr/src && \
-    wget https://www.python.org/ftp/python/3.10.14/Python-3.10.14.tgz && \
+WORKDIR /usr/src
+RUN wget -q https://www.python.org/ftp/python/3.10.14/Python-3.10.14.tgz && \
     tar xzf Python-3.10.14.tgz && \
     cd Python-3.10.14 && \
     ./configure --enable-optimizations && \
     make -j"$(nproc)" && \
     make altinstall
+WORKDIR /
 
 # Set python3.10 as the default python3 and pip
 RUN update-alternatives --install /usr/bin/python python /usr/local/bin/python3.10 1 && \
@@ -55,7 +56,7 @@ RUN echo "PATH=\"/usr/lib/postgresql/16/bin:/usr/local/sbin:/usr/local/bin:/usr/
     sed -i 's/scram-sha-256/trust/g' /etc/postgresql/16/main/pg_hba.conf
 
 # Install Node.js 22
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+RUN wget -qO- https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs
     
 # Install Yarn
