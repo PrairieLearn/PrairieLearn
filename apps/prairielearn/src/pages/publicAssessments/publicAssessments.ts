@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -10,7 +10,7 @@ import { selectCourseById } from '../../models/course.js';
 
 import { PublicAssessments } from './publicAssessments.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',

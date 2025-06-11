@@ -1,11 +1,11 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import { InstructorCourseAdminTopics } from './instructorCourseAdminTopics.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',
