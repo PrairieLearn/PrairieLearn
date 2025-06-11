@@ -209,13 +209,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          # We need accurate timestamps to avoid prettier cache invalidation.
-          # We'll use `git restore-mtime`, which requires the full history.
-          fetch-depth: 0
-
-      - name: Install OS packages
-        run: sudo apt-get install -y git-restore-mtime
 
       - name: Install additional dependencies
         run: |-
@@ -250,10 +243,7 @@ jobs:
           key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
 
       - name: Run the JavaScript linter
-        # Use git-restore-mtime due to a bug in prettier's content cache (https://github.com/prettier/prettier/issues/17278)
-        run: |
-          git restore-mtime
-          make lint-js-cached
+        run: make lint-js-cached
       - name: Run the links linter
         run: make lint-links
 

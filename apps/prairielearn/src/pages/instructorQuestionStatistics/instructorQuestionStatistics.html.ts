@@ -54,7 +54,7 @@ export function InstructorQuestionStatistics({
       fullWidth: true,
       pageNote: resLocals.question.qid,
     },
-    headContent: [compiledScriptTag('instructorQuestionStatisticsClient.ts')],
+    headContent: compiledScriptTag('instructorQuestionStatisticsClient.ts'),
     content: html`
       ${QuestionSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

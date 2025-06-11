@@ -28,7 +28,7 @@ export const QuestionsPage = ({
     options: {
       fullWidth: true,
     },
-    headContent: [QuestionsTableHead()],
+    headContent: QuestionsTableHead(),
     content: html`
       ${resLocals.course.sharing_name
         ? QuestionsTable({
