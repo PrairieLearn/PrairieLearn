@@ -94,10 +94,6 @@ router.use(
   '/course/:course_id(\\d+)/sync',
   (await import('./endpoints/courseSync/index.js')).default,
 );
-router.use(
-  '/course/:course_id(\\d+)/sync/:job_sequence_id',
-  (await import('./endpoints/courseSync/index.js')).default,
-);
 
 // If no earlier routes matched, 404 the route.
 router.use((await import('./notFound.js')).default);
