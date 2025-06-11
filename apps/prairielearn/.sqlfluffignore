@@ -1,7 +1,2 @@
 dist/
-src/migrations/201*
-src/migrations/2020*
-src/migrations/2021*
-src/migrations/2022*
-src/migrations/2023*
-src/migrations/2024*
+src/migrations/

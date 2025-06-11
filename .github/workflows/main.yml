@@ -325,8 +325,10 @@ jobs:
         run: make lint-shell
       - name: Run the Markdown linter
         run: make lint-markdown
-      - name: Run the SQL linter
+      - name: Run the SQL query linter
         run: make lint-sql
+      - name: Run the SQL migrations linter
+        run: make lint-sql-migrations
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.
