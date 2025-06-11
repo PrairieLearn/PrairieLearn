@@ -1718,7 +1718,7 @@ export async function initExpress(): Promise<Express> {
   // Public course pages ///////////////////////////////////////////////
 
   // Prevent access to public pages when in exam mode.
-  // app.use('/pl/public', (await import('./middlewares/forbidAccessInExamMode.js')).default);
+  app.use('/pl/public', (await import('./middlewares/forbidAccessInExamMode.js')).default);
 
   app.use('/pl/public/course/:course_id(\\d+)', [
     function (req: Request, res: Response, next: NextFunction) {
