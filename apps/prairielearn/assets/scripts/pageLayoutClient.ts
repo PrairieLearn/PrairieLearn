@@ -16,6 +16,8 @@ onDocumentReady(async () => {
   const courseNavToggler = document.querySelector<HTMLButtonElement>('#course-nav-toggler');
   const courseNavDiv = document.querySelector<HTMLDivElement>('#course-nav');
 
+  const navbarDropdown = document.querySelector<HTMLDivElement>('#navbarDropdown');
+
   if (
     !sideNavTogglerButton ||
     !sideNavMobileButton ||
@@ -23,7 +25,8 @@ onDocumentReady(async () => {
     !appContainerDiv ||
     !appSideNavDiv ||
     !courseNavToggler ||
-    !courseNavDiv
+    !courseNavDiv ||
+    !navbarDropdown
   ) {
     return;
   }
@@ -108,7 +111,10 @@ onDocumentReady(async () => {
     }
     appSideNavDiv.addEventListener(
       'transitionend',
-      () => {
+      (event) => {
+        if (event.target !== appSideNavDiv) {
+          return;
+        }
         // Remove the animation class after the transition ends
         appContainerDiv.classList.remove('animate');
       },
@@ -127,6 +133,7 @@ onDocumentReady(async () => {
 
     // Animate the course nav
     appContainerDiv.classList.add('animate');
+
     if (courseNavExpanded) {
       // Collapse the course nav
       courseNavDiv.classList.add('mobile-collapsed');
@@ -137,7 +144,10 @@ onDocumentReady(async () => {
 
     courseNavDiv.addEventListener(
       'transitionend',
-      () => {
+      (event) => {
+        if (event.target !== courseNavDiv) {
+          return;
+        }
         // Remove the animation class after the transition ends
         appContainerDiv.classList.remove('animate');
       },
@@ -147,6 +157,40 @@ onDocumentReady(async () => {
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
       // Collapse the side nav when the course nav is expanded
+      appContainerDiv.classList.add('mobile-collapsed');
+    }
+  });
+
+  // Display the course nav when the navbar dropdown is shown. This prevents
+  // user interface glitches and ensures that the user can continue interacting
+  // with the user dropdown menu while the course nav is expanded.
+  navbarDropdown.addEventListener('show.bs.dropdown', () => {
+    // Do not expand the course nav if on a smaller viewport.
+    if (window.innerWidth < 768) {
+      return;
+    }
+    // Expand the course nav on mobile
+    courseNavDiv.classList.remove('mobile-collapsed');
+
+    // Collapse the side nav on mobile
+    if (!appContainerDiv.classList.contains('mobile-collapsed')) {
+      appContainerDiv.classList.add('mobile-collapsed');
+    }
+  });
+
+  navbarDropdown.addEventListener('hide.bs.dropdown', () => {
+    // Do not collapse the course nav if on a smaller viewport.
+    if (window.innerWidth < 768) {
+      return;
+    }
+
+    // Collapse the course nav on mobile
+    if (!courseNavDiv.classList.contains('mobile-collapsed')) {
+      courseNavDiv.classList.add('mobile-collapsed');
+    }
+
+    // Collapse the side nav on mobile
+    if (!appContainerDiv.classList.contains('mobile-collapsed')) {
       appContainerDiv.classList.add('mobile-collapsed');
     }
   });

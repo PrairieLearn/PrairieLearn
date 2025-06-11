@@ -19,7 +19,6 @@ body:has(div.app-container) {
   position: relative;
   height: 100%;
   width: 100%;
-  overflow-x: hidden;
   transition: 300ms;
   grid-template:
     'top-nav top-nav' auto
@@ -265,11 +264,11 @@ body:has(div.app-container) {
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
     min-height: 100vh;
+    will-change: transform; /* Performance optimization */
   }
 
   .app-container.side-nav-enabled.animate .app-side-nav {
     transition: transform 300ms;
-    will-change: transform; /* Performance optimization */
   }
 
   .app-container.side-nav-enabled #course-nav {
@@ -283,11 +282,11 @@ body:has(div.app-container) {
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
+    will-change: transform; /* Performance optimization */
   }
 
   .app-container.side-nav-enabled.animate #course-nav {
     transition: transform 300ms;
-    will-change: transform; /* Performance optimization */
   }
 
   .app-container.side-nav-enabled #course-nav.mobile-collapsed {
@@ -308,8 +307,7 @@ body:has(div.app-container) {
 
   /* Prevent content to the side of the course/side nav from being visible when
   *  either nav is open. */
-  .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)),
-  .app-container.side-nav-enabled:not(.mobile-collapsed) {
+  .app-container.side-nav-enabled {
     overflow-x: hidden;
   }
 
