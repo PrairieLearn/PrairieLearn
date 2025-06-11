@@ -169,10 +169,12 @@ onDocumentReady(async () => {
       appContainerDiv.classList.add('mobile-collapsed');
     }
   });
+  // If the user is on a larger viewport and opens the user dropdown menu,
+  // expand the course nav on mobile so they can continue interacting with it
+  // if they shrink their viewport to a small size.
 
-  // Display the course nav when the navbar dropdown is shown. This prevents
-  // user interface glitches and ensures that the user can continue interacting
-  // with the user dropdown menu while the course nav is expanded.
+  // This also prevents several user interface glitches that are related to
+  // the dropdown closing while sidebar collapsing occurs.
   navbarDropdown.addEventListener('show.bs.dropdown', () => {
     // Do not expand the course nav if on a smaller viewport.
     if (window.innerWidth < 768) {
@@ -187,6 +189,11 @@ onDocumentReady(async () => {
     }
   });
 
+  // If the user closes the user dropdown menu, collapse the course nav
+  // on mobile / smaller viewports.
+
+  // This also prevents several user interface glitches that are related to
+  // the dropdown closing while sidebar collapsing occurs.
   navbarDropdown.addEventListener('hide.bs.dropdown', () => {
     // Do not collapse the course nav if on a smaller viewport.
     if (window.innerWidth < 768) {
