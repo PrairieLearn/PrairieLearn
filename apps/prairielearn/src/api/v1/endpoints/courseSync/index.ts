@@ -8,7 +8,7 @@ import * as syncHelpers from '../../../../pages/shared/syncHelpers.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = express.Router({ mergeParams: true });
 
-router.get(
+router.post(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.course = {
