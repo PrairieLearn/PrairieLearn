@@ -355,20 +355,22 @@ onDocumentReady(() => {
               formatter: (value: boolean, row: InstanceQuestionRow) => {
                 const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
 
-                return html`${row.ai_grading_status !== 'None'
-                  ? html`
-                      <span
-                        class="badge rounded-pill text-bg-light border ${row.ai_grading_status ===
-                          'Graded' || row.ai_grading_status === 'LatestRubric'
-                          ? 'js-custom-search-ai-grading-latest-rubric'
-                          : 'js-custom-search-ai-grading-nonlatest-rubric'}"
-                      >
-                        ${generateAiGraderName(row.ai_grading_status)}
-                      </span>
-                    `
-                  : ''}
-                ${showPlus ? ' + ' : ''}
-                ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}`.toString();
+                return html`
+                  ${row.ai_grading_status !== 'None'
+                    ? html`
+                        <span
+                          class="badge rounded-pill text-bg-light border ${row.ai_grading_status ===
+                            'Graded' || row.ai_grading_status === 'LatestRubric'
+                            ? 'js-custom-search-ai-grading-latest-rubric'
+                            : 'js-custom-search-ai-grading-nonlatest-rubric'}"
+                        >
+                          ${generateAiGraderName(row.ai_grading_status)}
+                        </span>
+                      `
+                    : ''}
+                  ${showPlus ? ' + ' : ''}
+                  ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}
+                `.toString();
               },
               filterData: 'func:gradersList',
               filterCustomSearch: (text: string, value: string) => {
