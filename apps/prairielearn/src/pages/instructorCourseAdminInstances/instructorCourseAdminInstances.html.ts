@@ -51,7 +51,7 @@ export function InstructorCourseAdminInstances({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledScriptTag('instructorCourseAdminInstancesClient.ts')],
+    headContent: compiledScriptTag('instructorCourseAdminInstancesClient.ts'),
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

@@ -36,7 +36,7 @@ export function InstructorInstanceAdminSettings({
       page: 'instance_admin',
       subPage: 'settings',
     },
-    headContent: [compiledScriptTag('instructorInstanceAdminSettingsClient.ts')],
+    headContent: compiledScriptTag('instructorInstanceAdminSettingsClient.ts'),
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
