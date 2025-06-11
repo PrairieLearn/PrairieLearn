@@ -1,7 +1,5 @@
 export function copyContentModal(copyForm: HTMLFormElement | null) {
-  if (!copyForm) {
-    return;
-  }
+  if (!copyForm) return;
 
   const courseSelect = copyForm.querySelector<HTMLSelectElement>('select[name="to_course_id"]');
   courseSelect?.addEventListener('change', () => {
