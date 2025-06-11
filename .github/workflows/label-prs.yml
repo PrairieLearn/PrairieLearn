@@ -3,7 +3,7 @@ on:
   - pull_request_target
 
 jobs:
-  change-labeler:
+  label-by-changes:
     name: 'PR changes'
     permissions:
       contents: read
@@ -14,9 +14,9 @@ jobs:
         with:
           sync-labels: false
   # labeler cannot label PRs by title: https://github.com/actions/labeler/issues/55
-  title-labeler:
+  label-by-title:
     # To prevent labeler from removing labels added by this job, it should run beforehand.
-    needs: [change-labeler]
+    needs: [label-by-changes]
     name: 'PR title'
     permissions:
       contents: read
