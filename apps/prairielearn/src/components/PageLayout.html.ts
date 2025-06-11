@@ -41,13 +41,13 @@ export function PageLayout({
     fullHeight?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlSafeString;
+  headContent?: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlSafeString;
+  preContent?: HtmlSafeString | HtmlSafeString[];
   /** The main content of the page within the main container. */
-  content: HtmlSafeString;
+  content: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlSafeString;
+  postContent?: HtmlSafeString | HtmlSafeString[];
 }) {
   const marginBottom = options.marginBottom ?? true;
 
