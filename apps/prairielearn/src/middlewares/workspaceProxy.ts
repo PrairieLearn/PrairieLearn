@@ -1,7 +1,7 @@
 import type http from 'http';
 import type { Socket } from 'net';
 
-import type express from 'express';
+import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
@@ -73,7 +73,7 @@ export function getStatusCode(err: any): number {
   }
 }
 
-function getRequestPath(req: express.Request): string {
+function getRequestPath(req: Request): string {
   // `req.originalUrl` won't be defined for websocket requests, but for
   // non-websocket requests, `req.url` won't contain the full path. So we
   // need to handle both.
@@ -82,7 +82,7 @@ function getRequestPath(req: express.Request): string {
 
 export function makeWorkspaceProxyMiddleware() {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
-  const workspaceProxyOptions: httpProxyMiddleware.Options<express.Request, express.Response> = {
+  const workspaceProxyOptions: httpProxyMiddleware.Options<Request, Response> = {
     target: 'invalid',
     ws: true,
     pathFilter: (_path, req) => {

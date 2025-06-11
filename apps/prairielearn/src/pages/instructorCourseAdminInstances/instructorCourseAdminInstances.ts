@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -21,7 +21,7 @@ import {
   InstructorCourseAdminInstances,
 } from './instructorCourseAdminInstances.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(

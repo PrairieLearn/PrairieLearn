@@ -1,7 +1,6 @@
 import * as path from 'path';
 
-import * as express from 'express';
-import { type Response } from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { flash } from '@prairielearn/flash';
@@ -23,7 +22,7 @@ import {
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getFileTransfer(file_transfer_id: string, user_id: string): Promise<FileTransfer> {

@@ -557,12 +557,29 @@ export async function linkAssessment(
   });
 }
 
-/* Throttling notes
-// https://canvas.instructure.com/doc/api/file.throttling.html
-// 403 Forbidden (Rate Limit Exceeded)
-// X-Request-Cost
-// X-Rate-Limit-Remaining
-*/
+/**
+ * Recurse through nested object(s) to find the first instance of a key with a given name
+ * and return that key's value.
+ *
+ * @param obj Object to inspect
+ * @param targetKey Key to find
+ * @returns Contents of the targetKey variable
+ */
+export function findValueByKey(obj: unknown, targetKey: string): unknown {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  if (Object.hasOwn(obj, targetKey)) {
+    return obj[targetKey];
+  }
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      const result = findValueByKey(obj[key], targetKey);
+      if (result !== undefined) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
 
 /**
  * Make HTTP fetch requests with retries
@@ -588,29 +605,53 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    switch (response.status) {
-      // 422 Unprocessable Entity, User not found in course or is not a student
-      case 422:
-        return response;
+    if (response.ok) {
+      return response;
     }
 
-    if (!response.ok) {
-      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
-        data: {
-          status: response.status,
-          statusText: response.statusText,
-          body: await response.text(),
-        },
-      });
+    let errorMsg: string;
+    const resString = await response.text();
+
+    try {
+      // Try to pull the "message" property out of the error and highlight it.
+      // Fall back to showing the full error text.
+      //
+      // Examples of LMS error messages are in the lti13.test.ts file.
+      const resObject = JSON.parse(resString);
+
+      errorMsg = (findValueByKey(resObject, 'message') ?? resString).toString();
+    } catch {
+      errorMsg = resString;
     }
-    return response;
+
+    throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
+      status: response.status,
+      data: {
+        statusText: response.statusText,
+        body: resString,
+      },
+    });
   } catch (err) {
-    fetchRetryOpts.retryLeft -= 1;
-    if (fetchRetryOpts.retryLeft === 0) {
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    if (
+      // Common retry codes
+      [403, 429, 502, 503, 504].includes(err.status) ||
+      // node-fetch transient errors
+      err.name === 'FetchError' ||
+      err.code === 'ECONNRESET'
+    ) {
+      // Retry logic
+      fetchRetryOpts.retryLeft -= 1;
+      if (fetchRetryOpts.retryLeft === 0) {
+        throw err;
+      }
+      await sleep(fetchRetryOpts.sleepMs);
+      return await fetchRetry(input, opts, fetchRetryOpts);
+    } else {
+      // Error immediately
       throw err;
     }
-    await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
   }
 }
 
@@ -875,24 +916,22 @@ export async function updateLti13Scores(
         },
       };
 
-      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-type': 'application/vnd.ims.lis.v1.score+json',
-        },
-        body: JSON.stringify(score),
-      });
-
-      if (res.ok) {
+      try {
+        await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-type': 'application/vnd.ims.lis.v1.score+json',
+          },
+          body: JSON.stringify(score),
+        });
         counts.success++;
-      } else {
+      } catch (error) {
         counts.error++;
-        const results = await res.json();
-
-        // Default to showing the whole error
-        job.warn(`\t${res.statusText}`);
-        job.warn(`\t${JSON.stringify(results)}`);
+        job.warn(`\t${error.message}`);
+        if (error instanceof AugmentedError && error.data.body) {
+          job.verbose(error.data.body);
+        }
       }
     }
   }
