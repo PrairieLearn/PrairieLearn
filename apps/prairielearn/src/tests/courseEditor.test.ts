@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -387,7 +388,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     beforeAll(createSharedCourse);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.set_sharing_name, { course_id: 2, sharing_name: 'test-course' });
+      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
     });
 
     describe('verify edits', async function () {
