@@ -10,15 +10,12 @@ import { selectLti13InstanceIdentitiesForCourseInstance } from '../models/lti13-
  * the basic authorization middleware that confirms the user has access to the course instance.
  */
 export default asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  // W'll skip the check in several cases:
+  // W'll skip the check in two cases:
   // 1. If the user is impersonating another user. This could be a useful
   //    escape hatch for instructors.
-  // 2. If the user isn't already enrolled in the course instance. We'll
-  //    allow them proceed through any necessary enrollment steps first.
-  // 3. If the user has any instructor permissions in the course or instance.
+  // 2. If the user has any instructor permissions in the course or instance.
   if (
     !idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) ||
-    !res.locals.authz_data.has_student_access_with_enrollment ||
     res.locals.authz_data.has_course_permission_preview ||
     res.locals.authz_data.has_course_instance_permission_view
   ) {
