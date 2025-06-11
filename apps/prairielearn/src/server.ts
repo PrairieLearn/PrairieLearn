@@ -409,6 +409,7 @@ export async function initExpress(): Promise<Express> {
     },
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
+  app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
