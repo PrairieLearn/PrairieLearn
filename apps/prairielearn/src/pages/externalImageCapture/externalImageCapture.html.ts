@@ -86,7 +86,7 @@ export function ExternalImageCapture({
               </label>
 
               <p class="text-muted mt-3">
-                Before uploading, ensure that your entire solution is visible, legible, and well-lit
+                Before uploading, make sure your photo is clear, well-lit, and shows all your work legibly.
                 in the image.
               </p>
             </div>

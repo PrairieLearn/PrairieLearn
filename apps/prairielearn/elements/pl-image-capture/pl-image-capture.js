@@ -4,7 +4,6 @@
   class PLImageCapture {
     constructor(uuid) {
       this.uuid = uuid;
-      this.variant_opened_date = new Date();
       this.imageCaptureDiv = document.querySelector(`#image-capture-${uuid}`);
 
       if (!this.imageCaptureDiv) {
@@ -32,7 +31,6 @@
 
       this.external_image_capture_url = options.external_image_capture_url;
       this.submitted_file_name = options.submitted_file_name;
-      this.submission_date = options.submission_date;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
@@ -375,8 +373,8 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const permissionMessage = localCameraCaptureContainer.querySelector(
-        '.js-local-camera-permission-message',
+      const localCameraMessage = localCameraCaptureContainer.querySelector(
+        '.js-local-camera-message',
       );
 
       const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
@@ -388,12 +386,16 @@
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        permissionMessage,
+        localCameraMessage,
         localCameraConfirmationContainer,
         localCameraVideo,
       });
 
       this.openContainer('local-camera-capture');
+
+      if (!localCameraMessage.classList.contains('d-none')) {
+        localCameraMessage.classList.add('d-none');
+      }
 
       try {
         // Stream the local camera video to the video element
@@ -401,9 +403,6 @@
         localCameraVideo.srcObject = this.localCameraStream;
 
         await localCameraVideo.play();
-
-        // Hide the permission message
-        permissionMessage.classList.add('d-none');
 
         const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
           '.js-capture-local-camera-image-button',
@@ -416,7 +415,17 @@
           throw new Error('Capture image button not found');
         }
       } catch (err) {
-        throw new Error('Could not start local camera: ' + err.message);
+        localCameraMessage.classList.remove('d-none');
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          localCameraMessage.textContent =
+            'Give permission to access your camera to capture an image.';
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          localCameraMessage.textContent =
+            'No camera found. Please connect a camera to your device.';
+        } else {
+          localCameraMessage.textContent = 'An error occurred while trying to access your camera.';
+        }
+        throw new Error('Could not start local camera: ' + err.message, err.name);
       }
     }
 
@@ -515,19 +524,19 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const permissionMessage = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-permission-message',
-      );
+      const localCameraMessage = this.imageCaptureDiv.querySelector('.js-local-camera-message');
 
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        permissionMessage,
+        localCameraMessage,
       });
 
       this.openContainer('capture-preview');
 
-      permissionMessage.classList.remove('d-none');
+      if (!localCameraMessage.classList.contains('d-none')) {
+        localCameraMessage.classList.add('d-none');
+      }
 
       this.deactivateVideoStream();
     }
