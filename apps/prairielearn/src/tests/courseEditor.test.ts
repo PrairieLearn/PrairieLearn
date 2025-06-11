@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
@@ -345,6 +346,7 @@ const publicCopyTestData: EditData[] = [
       'questions/test/question/server.py',
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
       'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      // 'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
     ]),
   },
 ];
@@ -383,6 +385,12 @@ describe('test course editor', { timeout: 20_000 }, function () {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
+      await features.enable('question-sharing');
+      config.checkSharingOnSync = true;
+    });
+
+    afterAll(() => {
+      config.checkSharingOnSync = false;
     });
 
     beforeAll(createSharedCourse);
@@ -602,6 +610,9 @@ async function createSharedCourse() {
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  // sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
+  //   sharingCourseData.courseInstances['Fa19'].assessments['test'];
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
