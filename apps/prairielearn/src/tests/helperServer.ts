@@ -121,7 +121,8 @@ export async function after(): Promise<void> {
     await serverJobs.stop();
 
     // This should come after anything that will emit socket events, namely
-    // server jobs and cron.
+    // server jobs and cron. We want to try to ensure that nothing is still
+    // emitting events when we close the socket server.
     debug('after(): close socket server');
     await socketServer.close();
 
