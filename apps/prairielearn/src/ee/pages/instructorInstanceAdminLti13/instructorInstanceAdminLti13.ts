@@ -122,14 +122,6 @@ router.get(
         const byAssessmentId = a_assessmentId.localeCompare(b_assessmentId);
         if (byAssessmentId !== 0) return byAssessmentId;
 
-        // For unlinked, if our assessment_id is the lineitem resourceId, put it first
-        if (req.query.assessment_id === a.resourceId) {
-          return -1;
-        }
-        if (req.query.assessment_id === b.resourceId) {
-          return 1;
-        }
-
         // Finally, reverse sort by the lineitem id to get the newest first
         return b.id.localeCompare(a.id);
       });
@@ -140,7 +132,6 @@ router.get(
           assessmentsById,
           lti13AssessmentsByLineItemIdUrl,
           urlPrefix: res.locals.urlPrefix,
-          unsafeTargetAssessmentId: req.query?.assessment_id?.toString(),
         }),
       );
       return;

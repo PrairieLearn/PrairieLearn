@@ -279,7 +279,7 @@ function LinkedAssessments({
                         <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
                         <button
                           class="btn btn-primary"
-                          hx-get="?lineitems&assessment_id=${row.id}"
+                          hx-get="?lineitems"
                           hx-target="next .line-items-inputs"
                           onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
                         >
@@ -372,13 +372,11 @@ export function LineitemsInputs({
   assessmentsById,
   lti13AssessmentsByLineItemIdUrl,
   urlPrefix,
-  unsafeTargetAssessmentId,
 }: {
   lineitems: Lineitems;
   assessmentsById: Record<string, AssessmentRow>;
   lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments>;
   urlPrefix: string;
-  unsafeTargetAssessmentId: string | undefined;
 }): string {
   const disclaimer = html`
     <details>
@@ -419,12 +417,6 @@ export function LineitemsInputs({
                     required
                   />
                   <span title="${lineitem.id}">${lineitem.label}</span>
-                  <!--
-                  <br /><code>${lineitem.resourceId}</code>
-                  -->
-                  ${lineitem.resourceId === unsafeTargetAssessmentId
-                    ? html`<span class="badge text-bg-info">Recommended</span>`
-                    : ''}
                 </label>
               </div>
             </td>
