@@ -176,6 +176,7 @@ export function buildQuestionUrls(
   variant: Variant,
   question: Question,
   instance_question: InstanceQuestion | null,
+  publicQuestionPreview = false,
 ): QuestionUrls {
   let urls: QuestionUrls;
 
@@ -224,7 +225,7 @@ export function buildQuestionUrls(
   }
 
   if (variant.workspace_id) {
-    if (urlPrefix.includes('public')) {
+    if (publicQuestionPreview) {
       urls.workspaceUrl = `/pl/public/workspace/${variant.workspace_id}`;
     } else {
       urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
@@ -486,7 +487,13 @@ export async function getAndRenderVariant(
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
+  const urls = buildQuestionUrls(
+    urlPrefix,
+    variant,
+    question,
+    instance_question ?? null,
+    publicQuestionPreview,
+  );
   Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 
