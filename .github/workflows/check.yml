@@ -77,6 +77,7 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
       # This step runs at the end, since it is common for it to fail in
