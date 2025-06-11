@@ -164,7 +164,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -228,8 +228,12 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
+      - name: Set up Yarn
+        # We only install the dependencies in the root workspace to avoid
+        # installing dependencies that won't be used.
+        run: yarn workspaces focus prairielearn
       - name: Download blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -238,7 +242,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge reports
-        run: npx vitest --merge-reports
+        run: yarn vitest --merge-reports
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
