@@ -25,6 +25,7 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { type AssessmentRow, selectAssessments } from '../../../models/assessment.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
+  type Lineitems,
   Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
   getLineitems,
@@ -32,7 +33,6 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
-  type Lineitems,
 } from '../../lib/lti13.js';
 
 import {

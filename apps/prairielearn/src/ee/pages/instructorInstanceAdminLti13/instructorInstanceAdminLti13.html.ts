@@ -4,8 +4,8 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type Lti13Assessments } from '../../../lib/db-types.js';
-import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 import type { AssessmentRow } from '../../../models/assessment.js';
+import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export function InstructorInstanceAdminLti13({
   resLocals,
