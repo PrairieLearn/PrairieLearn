@@ -24,6 +24,7 @@ env:
 
 jobs:
   build-images:
+    name: Build
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +64,7 @@ jobs:
           overwrite: true
 
   combine-images:
+    name: Combine
     needs: [build-images]
 
     runs-on: ubuntu-24.04
