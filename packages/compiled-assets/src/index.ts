@@ -281,11 +281,11 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
-    metafile: true,
+    metafile: true, // Write metadata about the build
   });
 
   const scriptBundleFiles = await globby(
-    path.join(sourceDirectory, 'scripts', 'split-bundles', '**/*.{js,jsx,ts,tsx}'),
+    path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );
   const chunkBuildResult = await esbuild.build({
     entryPoints: scriptBundleFiles,
