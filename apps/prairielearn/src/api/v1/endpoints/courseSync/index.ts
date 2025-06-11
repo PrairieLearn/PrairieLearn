@@ -22,7 +22,7 @@ router.post(
 );
 
 router.get(
-  '/:job_sequence_id',
+  '/:job_sequence_id(\\d+)',
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryOneRowAsync(sql.select_job, {
       course_id: req.params.course_id,
