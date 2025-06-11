@@ -977,6 +977,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
+    infoJson['allowAccess'] = [];
 
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson['shareSourcePublicly'];
@@ -1007,8 +1008,9 @@ async function updateInfoAssessmentFilesForInstanceCopy(
       if (await fs.pathExists(infoAssessmentPath)) {
         const infoJson = await fs.readJson(infoAssessmentPath);
 
-        // We do not want to preserve sharing settings when copying an assessment to another course
+        // We do not want to preserve certain settings when copying an assessment to another course
         delete infoJson['shareSourcePublicly'];
+        infoJson['allowAccess'] = [];
 
         // Rewrite the question IDs to include the course sharing name
         for (const zone of infoJson.zones) {
