@@ -946,14 +946,19 @@ export class CourseInstanceCopyEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForCopy(
-      this.course_instance.short_name,
-      oldNamesShort,
-      this.course_instance.long_name,
-      oldNamesLong,
-    );
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    let shortName = this.course_instance.short_name;
+    let longName = this.course_instance.long_name;
+    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+      const names = this.getNamesForCopy(
+        this.course_instance.short_name,
+        oldNamesShort,
+        this.course_instance.long_name,
+        oldNamesLong,
+      );
+      shortName = names.shortName;
+      longName = names.longName;
+    }
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
     const toPath = courseInstancePath;
 
@@ -978,7 +983,7 @@ export class CourseInstanceCopyEditor extends Editor {
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
     debug('Write infoCourseInstance.json with new longName and uuid');
-    infoJson.longName = names.longName;
+    infoJson.longName = longName;
     infoJson.uuid = this.uuid;
     infoJson['allowAccess'] = [];
 
@@ -990,7 +995,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
+      commitMessage: `copy course instance ${this.course_instance.short_name} to ${shortName}`,
     };
   }
 }
