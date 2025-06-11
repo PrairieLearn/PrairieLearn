@@ -31,7 +31,7 @@ export function Enroll({
       type: 'plain',
       page: 'enroll',
     },
-    headContent: [compiledScriptTag('enrollClient.ts')],
+    headContent: compiledScriptTag('enrollClient.ts'),
     preContent: html`
       ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
       ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}

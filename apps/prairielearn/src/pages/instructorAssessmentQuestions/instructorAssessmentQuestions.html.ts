@@ -28,7 +28,7 @@ export function InstructorAssessmentQuestions({
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    headContent: [compiledScriptTag('instructorAssessmentQuestionsClient.ts')],
+    headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
     navContext: {
       type: 'instructor',
       page: 'assessment',
