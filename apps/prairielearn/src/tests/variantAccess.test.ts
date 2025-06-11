@@ -104,7 +104,7 @@ async function assertVariantAccess({
   submissionId,
   workspaceUrl,
   expectedAccess,
-  workspaceExpectedAccess,
+  workspaceExpectedAccess = true,
 }: {
   questionBasePath: string;
   variantId: string;
@@ -314,6 +314,18 @@ describe('Variant access', () => {
     });
   });
 
+  test.sequential('public preview allows access to workspaces', async () => {
+    await withUser(PUBLIC_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/public/course/1/question/${question.id}`,
+        variantId: publicVariantId,
+        workspaceUrl: publicVariantWorkspaceUrl,
+        submissionId: publicVariantSubmissionId,
+        expectedAccess: true,
+      });
+    });
+  });
+
   test.sequential('public preview does not show variant for different user', async () => {
     await withUser(PUBLIC_USER, async () => {
       await assertVariantAccess({
@@ -360,77 +372,77 @@ describe('Variant access', () => {
         // TODO: Once we make the necessary changes, this should 403. We'll have to
         // update the name of this test too.
         expectedAccess: true,
-        workspaceExpectedAccess: false,
+        workspaceExpectedAccess: false, // workspace access correctly 403s
       });
     });
   });
 
-  // test.sequential('instructor preview shows variant created by student', async () => {
-  //   await withUser(INSTRUCTOR_USER, async () => {
-  //     await assertVariantAccess({
-  //       questionBasePath: `/pl/course/1/question/${question.id}`,
-  //       variantId: studentVariantId,
-  //       workspaceUrl: studentVariantWorkspaceUrl,
-  //       submissionId: studentVariantSubmissionId,
-  //       expectedAccess: true,
-  //     });
-  //   });
-  // });
+  test.sequential('instructor preview shows variant created by student', async () => {
+    await withUser(INSTRUCTOR_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/course/1/question/${question.id}`,
+        variantId: studentVariantId,
+        workspaceUrl: studentVariantWorkspaceUrl,
+        submissionId: studentVariantSubmissionId,
+        expectedAccess: true,
+      });
+    });
+  });
 
-  // test.sequential('course assistant preview does not show variant created by student', async () => {
-  //   await withUser(COURSE_ASSISTANT_USER, async () => {
-  //     await assertVariantAccess({
-  //       questionBasePath: `/pl/course/1/question/${question.id}`,
-  //       variantId: studentVariantId,
-  //       workspaceUrl: studentVariantWorkspaceUrl,
-  //       submissionId: studentVariantSubmissionId,
-  //       expectedAccess: false,
-  //     });
-  //   });
-  // });
+  test.sequential('course assistant preview does not show variant created by student', async () => {
+    await withUser(COURSE_ASSISTANT_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/course/1/question/${question.id}`,
+        variantId: studentVariantId,
+        workspaceUrl: studentVariantWorkspaceUrl,
+        submissionId: studentVariantSubmissionId,
+        expectedAccess: false,
+      });
+    });
+  });
 
-  // test.sequential(
-  //   'student instance question does not show variant created by other student',
-  //   async () => {
-  //     await withUser(STUDENT_USER, async () => {
-  //       await assertVariantAccess({
-  //         questionBasePath: studentInstanceQuestionPath,
-  //         variantId: otherStudentVariantId,
-  //         workspaceUrl: otherStudentVariantWorkspaceUrl,
-  //         submissionId: otherStudentVariantSubmissionId,
-  //         expectedAccess: false,
-  //       });
-  //     });
-  //   },
-  // );
+  test.sequential(
+    'student instance question does not show variant created by other student',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: otherStudentVariantId,
+          workspaceUrl: otherStudentVariantWorkspaceUrl,
+          submissionId: otherStudentVariantSubmissionId,
+          expectedAccess: false,
+        });
+      });
+    },
+  );
 
-  // test.sequential(
-  //   'student instance question does not show variant created by instructor',
-  //   async () => {
-  //     await withUser(STUDENT_USER, async () => {
-  //       await assertVariantAccess({
-  //         questionBasePath: studentInstanceQuestionPath,
-  //         variantId: instructorVariantId,
-  //         workspaceUrl: instructorVariantWorkspaceUrl,
-  //         submissionId: instructorVariantSubmissionId,
-  //         expectedAccess: false,
-  //       });
-  //     });
-  //   },
-  // );
+  test.sequential(
+    'student instance question does not show variant created by instructor',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: instructorVariantId,
+          workspaceUrl: instructorVariantWorkspaceUrl,
+          submissionId: instructorVariantSubmissionId,
+          expectedAccess: false,
+        });
+      });
+    },
+  );
 
-  // test.sequential(
-  //   'student instance question does not show variant created in public preview',
-  //   async () => {
-  //     await withUser(STUDENT_USER, async () => {
-  //       await assertVariantAccess({
-  //         questionBasePath: studentInstanceQuestionPath,
-  //         variantId: publicVariantId,
-  //         workspaceUrl: publicVariantWorkspaceUrl,
-  //         submissionId: publicVariantSubmissionId,
-  //         expectedAccess: false,
-  //       });
-  //     });
-  //   },
-  // );
+  test.sequential(
+    'student instance question does not show variant created in public preview',
+    async () => {
+      await withUser(STUDENT_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: studentInstanceQuestionPath,
+          variantId: publicVariantId,
+          workspaceUrl: publicVariantWorkspaceUrl,
+          submissionId: publicVariantSubmissionId,
+          expectedAccess: false,
+        });
+      });
+    },
+  );
 });
