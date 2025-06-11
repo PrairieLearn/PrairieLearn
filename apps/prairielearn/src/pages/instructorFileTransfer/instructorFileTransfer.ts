@@ -56,7 +56,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
   });
 }
 
-function getContentFolder(fullPath: string, parentDir: string): string {
+export function getContentDir(fullPath: string, parentDir: string): string {
   const path_exploded = path.normalize(fullPath).split(path.sep);
   const content_dir_idx = path_exploded.findIndex((x) => x === parentDir);
   return path_exploded.slice(content_dir_idx + 1).join(path.sep);
@@ -73,7 +73,7 @@ router.get(
     const from_course = await selectCourseById(file_transfer.from_course_id);
 
     if (file_transfer.transfer_type === 'CopyQuestion') {
-      const qid = getContentFolder(file_transfer.from_filename, 'questions');
+      const qid = getContentDir(file_transfer.from_filename, 'questions');
       const editor = new QuestionTransferEditor({
         locals: res.locals as any,
         from_qid: qid,
@@ -95,7 +95,7 @@ router.get(
       res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
     } else if (file_transfer.transfer_type === 'CopyCourseInstance') {
       const course = await selectCourseById(file_transfer.from_course_id);
-      const shortName = getContentFolder(file_transfer.from_filename, 'courseInstances');
+      const shortName = getContentDir(file_transfer.from_filename, 'courseInstances');
 
       const fromCourseInstance = await selectCourseInstanceByShortName({
         course_id: file_transfer.from_course_id,
