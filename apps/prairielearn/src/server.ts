@@ -271,37 +271,53 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = Router();
-  workspaceAuthRouter.use([
-    // We use a short-lived cookie to cache a successful
-    // authn/authz for a specific workspace. We run the following
-    // middlewares in this separate sub-router so that we can
-    // short-circuit out of authzWorkspaceCookieCheck if we find
-    // the workspace-authz cookie. Short-circuiting will exit this
-    // sub-router immediately, so we can either exit this
-    // sub-router by finding the cookie, or by running regular
-    // authn/authz.
+  async function makeWorkspaceContainerRoutes(
+    url: string,
+    containerPathRegex: RegExp,
+    publicQuestionEndpoint: boolean,
+  ) {
+    const workspaceAuthRouter = Router();
+    workspaceAuthRouter.use([
+      // We use a short-lived cookie to cache a successful
+      // authn/authz for a specific workspace. We run the following
+      // middlewares in this separate sub-router so that we can
+      // short-circuit out of authzWorkspaceCookieCheck if we find
+      // the workspace-authz cookie. Short-circuiting will exit this
+      // sub-router immediately, so we can either exit this
+      // sub-router by finding the cookie, or by running regular
+      // authn/authz.
 
-    (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
-    (await import('./middlewares/date.js')).default,
-    (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }), // jumps to error handler if authz fails
-    (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
-  ]);
-  app.use('/pl/workspace/:workspace_id(\\d+)/container', [
-    cookieParser(),
-    (req: Request, res: Response, next: NextFunction) => {
-      // Needed for workspaceAuthRouter.
-      res.locals.workspace_id = req.params.workspace_id;
-      next();
-    },
-    workspaceAuthRouter,
-    (req: Request, res: Response, next: NextFunction) => {
-      workspaceProxySocketActivityMetrics.addSocket(req.socket);
-      next();
-    },
-    makeWorkspaceProxyMiddleware(),
-  ]);
+      (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
+      (await import('./middlewares/date.js')).default,
+      (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
+      (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
+    ]);
+    app.use(url, [
+      cookieParser(),
+      (req: Request, res: Response, next: NextFunction) => {
+        // Needed for workspaceAuthRouter.
+        res.locals.workspace_id = req.params.workspace_id;
+        next();
+      },
+      workspaceAuthRouter,
+      (req: Request, res: Response, next: NextFunction) => {
+        workspaceProxySocketActivityMetrics.addSocket(req.socket);
+        next();
+      },
+      makeWorkspaceProxyMiddleware(containerPathRegex),
+    ]);
+  }
+  await makeWorkspaceContainerRoutes(
+    '/pl/workspace/:workspace_id(\\d+)/container',
+    /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+    false,
+  );
+  await makeWorkspaceContainerRoutes(
+    '/pl/public/workspace/:workspace_id(\\d+)/container',
+    /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+    true,
+  );
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
