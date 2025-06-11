@@ -13,14 +13,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
-    if (courseInstance === null) {
+    if (courseInstance === null || !courseInstance.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
     const course = await selectCourseById(courseInstance.course_id);
-
-    if (!courseInstance.share_source_publicly) {
-      throw new error.HttpStatusError(400, 'Copying this course instance is not permitted');
-    }
 
     await copyCourseInstanceBetweenCourses(res, {
       fromCourse: course,
