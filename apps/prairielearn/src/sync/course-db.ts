@@ -642,7 +642,6 @@ export async function loadCourseInfo({
     topics,
     sharingSets,
     options: {
-      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
     comment: info.comment,
@@ -974,6 +973,14 @@ async function validateAssessment(
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
       errors.push('"multipleInstance" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.requireHonorCode) {
+      errors.push('"requireHonorCode" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.honorCode) {
+      errors.push('"honorCode" cannot be used for Homework-type assessments');
     }
   }
 

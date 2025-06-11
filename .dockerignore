@@ -11,6 +11,7 @@
 !.yarnrc.yml
 !tsconfig.json
 !turbo.json
+!vitest.config.ts
 !.yarn/
 !pyproject.toml
 !apps/

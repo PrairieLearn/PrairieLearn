@@ -3,18 +3,9 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
-import {
-  type Lti13Assessments,
-  type Lti13CourseInstance,
-  type Lti13Instance,
-} from '../../../lib/db-types.js';
+import { type Lti13Assessments } from '../../../lib/db-types.js';
+import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 import type { AssessmentRow } from '../../../models/assessment.js';
-import { type Lineitems } from '../../lib/lti13.js';
-
-interface Lti13FullInstance {
-  lti13_course_instance: Lti13CourseInstance;
-  lti13_instance: Lti13Instance;
-}
 
 export function InstructorInstanceAdminLti13({
   resLocals,
@@ -25,8 +16,8 @@ export function InstructorInstanceAdminLti13({
   lti13AssessmentsByAssessmentId,
 }: {
   resLocals: Record<string, any>;
-  instance: Lti13FullInstance;
-  instances: Lti13FullInstance[];
+  instance: Lti13CombinedInstance;
+  instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;

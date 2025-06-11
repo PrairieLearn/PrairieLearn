@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +16,7 @@ import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(

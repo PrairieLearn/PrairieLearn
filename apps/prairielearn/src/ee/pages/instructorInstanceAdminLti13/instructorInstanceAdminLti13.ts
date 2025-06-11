@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -30,7 +32,7 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
-  validateLti13CourseInstance,
+  type Lineitems,
 } from '../../lib/lti13.js';
 
 import {
@@ -40,15 +42,6 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-router.use(
-  asyncHandler(async (req, res, next) => {
-    if (!(await validateLti13CourseInstance(res.locals))) {
-      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
-    }
-    next();
-  }),
-);
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
@@ -106,7 +99,15 @@ router.get(
         assessmentsById[a.id] = a;
       }
 
-      const lineitems = await getLineitems(instance);
+      let lineitems: Lineitems;
+
+      try {
+        lineitems = await getLineitems(instance);
+      } catch (error) {
+        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.error('LineitemsInputs error', error);
+        return;
+      }
 
       const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
       for (const a of lti13_assessments) {

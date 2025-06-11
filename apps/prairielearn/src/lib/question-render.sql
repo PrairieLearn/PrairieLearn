@@ -66,6 +66,7 @@ SELECT
   s.v2_score,
   s.variant_id,
   s.manual_rubric_grading_id,
+  s.modified_at,
   to_jsonb(gj) AS grading_job,
   format_date_full_compact (
     s.date,

@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -205,6 +205,11 @@ router.post(
           assessmentInfo.requireHonorCode,
           req.body.require_honor_code === 'on',
           true,
+        );
+        assessmentInfo.honorCode = propertyValueWithDefault(
+          assessmentInfo.honorCode,
+          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          '',
         );
       }
 
