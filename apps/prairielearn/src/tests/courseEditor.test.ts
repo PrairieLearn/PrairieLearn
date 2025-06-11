@@ -346,7 +346,7 @@ const publicCopyTestData: EditData[] = [
       'questions/test/question/server.py',
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
       'courseInstances/Fa19/assessments/test/infoAssessment.json',
-      // 'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
     ]),
   },
 ];
@@ -611,8 +611,8 @@ async function createSharedCourse() {
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
-  // sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
-  //   sharingCourseData.courseInstances['Fa19'].assessments['test'];
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
+    sharingCourseData.courseInstances['Fa19'].assessments['test'];
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

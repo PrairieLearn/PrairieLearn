@@ -974,6 +974,7 @@ export class CourseInstanceCopyEditor extends Editor {
       // Its ok that we are writing these directly to disk because when copying to another course
       // we are working from a temporary folder
       await updateInfoAssessmentFilesForInstanceCopy(
+        this.course_instance.id,
         courseInstancePath,
         this.from_course.sharing_name,
       );
@@ -1001,43 +1002,43 @@ export class CourseInstanceCopyEditor extends Editor {
 }
 
 async function updateInfoAssessmentFilesForInstanceCopy(
+  courseInstanceId: string,
   courseInstancePath: string,
   fromCourseSharingName: string,
 ) {
-  const assessmentsPath = path.join(courseInstancePath, 'assessments');
-  const assessmentDirs = await fs.readdir(assessmentsPath);
+  const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+    course_instance_id: courseInstanceId,
+  });
+  const assessments = result.rows;
+  for (const assessment of assessments) {
+    const infoPath = path.join(
+      courseInstancePath,
+      'assessments',
+      assessment.assessment_directory,
+      'infoAssessment.json',
+    );
 
-  for (const dir of assessmentDirs) {
-    const assessmentPath = path.join(assessmentsPath, dir);
+    const infoJson = await fs.readJson(infoPath);
 
-    const stat = await fs.stat(assessmentPath);
-    if (stat.isDirectory()) {
-      const infoAssessmentPath = path.join(assessmentPath, 'infoAssessment.json');
-      if (await fs.pathExists(infoAssessmentPath)) {
-        const infoJson = await fs.readJson(infoAssessmentPath);
+    // We do not want to preserve certain settings when copying an assessment to another course
+    delete infoJson['shareSourcePublicly'];
+    infoJson['allowAccess'] = [];
 
-        // We do not want to preserve certain settings when copying an assessment to another course
-        delete infoJson['shareSourcePublicly'];
-        infoJson['allowAccess'] = [];
-
-        // Rewrite the question IDs to include the course sharing name
-        for (const zone of infoJson.zones) {
-          for (const question of zone.questions) {
-            if (question.id && question.id[0] !== '@') {
-              question.id = `@${fromCourseSharingName}/${question.id}`;
-            } else if (question.alternatives) {
-              for (const alternative of question.alternatives) {
-                if (alternative.id && alternative.id[0] !== '@') {
-                  alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
-                }
-              }
+    // Rewrite the question IDs to include the course sharing name
+    for (const zone of infoJson.zones) {
+      for (const question of zone.questions) {
+        if (question.id && question.id[0] !== '@') {
+          question.id = `@${fromCourseSharingName}/${question.id}`;
+        } else if (question.alternatives) {
+          for (const alternative of question.alternatives) {
+            if (alternative.id && alternative.id[0] !== '@') {
+              alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
             }
           }
         }
-
-        await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 4 });
       }
     }
+    await fs.writeJson(infoPath, infoJson, { spaces: 4 });
   }
 }
 
