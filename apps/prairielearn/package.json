@@ -12,8 +12,8 @@
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
     "test:dist": "vitest run --coverage dist/**/*.test.js",
-    "test:only-docker": "vitest run --coverage --mode=only-docker",
-    "test:only-local": "vitest run --coverage --mode=only-local"
+    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests",
+    "test:exclude-docker-smoke-tests": "vitest run --coverage --mode=exclude-docker-smoke-tests"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.823.0",
