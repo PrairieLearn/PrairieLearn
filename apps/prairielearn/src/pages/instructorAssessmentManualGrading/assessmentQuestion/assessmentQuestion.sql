@@ -25,7 +25,13 @@ SELECT
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
   to_jsonb(aq.*) AS assessment_question,
   COALESCE(g.name, u.name) AS user_or_group_name,
-  ic.open_issue_count
+  ic.open_issue_count,
+  -- Pseudo-random deterministic stable order of instance questions. This will
+  -- always return the same set of instance questions in the same order, but it
+  -- is designed to reduce the impact of the order of the instance questions on
+  -- individual students, which reduces bias. See
+  -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
+  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -41,7 +47,7 @@ WHERE
   AND iq.assessment_question_id = $assessment_question_id
   AND iq.status != 'unanswered'
 ORDER BY
-  user_or_group_name,
+  iq_stable_order,
   iq.id;
 
 -- BLOCK update_instance_questions
@@ -58,3 +64,10 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::BIGINT[]);
+
+-- BLOCK toggle_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;

@@ -45,7 +45,7 @@ cd /nvm
 git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")"
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 20
+nvm install 22
 npm install yarn@latest -g
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 

@@ -1,20 +1,22 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import {
   uploadAssessmentInstanceScores,
   uploadInstanceQuestionScores,
 } from '../../lib/score-upload.js';
+import { uploadSubmissions } from '../../lib/submissions-upload.js';
 
 import {
   InstructorAssessmentUploads,
   UploadJobSequenceSchema,
 } from './instructorAssessmentUploads.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -49,6 +51,18 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
       const jobSequenceId = await uploadAssessmentInstanceScores(
+        res.locals.assessment.id,
+        req.file,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id,
+      );
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'upload_submissions') {
+      if (!config.devMode) {
+        throw new error.HttpStatusError(400, 'Submission uploads are only allowed in dev mode');
+      }
+
+      const jobSequenceId = await uploadSubmissions(
         res.locals.assessment.id,
         req.file,
         res.locals.user.user_id,

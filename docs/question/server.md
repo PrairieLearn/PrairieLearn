@@ -23,7 +23,7 @@ More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can b
 
 ## Step 1: `generate`
 
-First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers. The parameters can then be used in the `question.html` file by using `{{params.NAME}}`.
+First, the `generate` function is called to generate the question variant. It should update `data["params"]` with any necessary parameters for the question, and `data["correct_answers"]` with the correct answers.
 
 ```python title="server.py"
 import random
@@ -34,6 +34,17 @@ def generate(data):
 
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
+```
+
+These values can be used in the `question.html` file with Mustache syntax. For example, you can use `data["params"]["x"]` with `{{params.x}}`.
+
+The snippet below uses the [`<pl-question-panel>`](../elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<pl-question-panel>
+  If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
+</pl-question-panel>
 ```
 
 ### Randomization
@@ -170,7 +181,7 @@ def grade(data):
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.
 
-Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]`, which you can override in the grading function. This field is often a string, though some elements such as `<pl-drawing>` and `<pl-checkbox>` use different types. The feedback provided here will be attached to the student's answer for that element, which can make it easier for students to interpret the feedback they received in longer questions. Since not elements provide feedback this way, and use different data structures to represent the feedback they give, we recommend using `data["feedback"][NAME]` to provide question-specific feedback instead.
+Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]`, which you can override in the grading function. This field is often a string, though some elements such as `<pl-drawing>` and `<pl-checkbox>` use different types. The feedback provided here will be attached to the student's answer for that element, which can make it easier for students to interpret the feedback they received in longer questions. Since not all elements provide feedback this way, and some use different data structures to represent the feedback they give, we recommend using `data["feedback"][NAME]` to provide question-specific feedback instead.
 
 !!! tip "Answer-specific feedback"
 
@@ -237,7 +248,7 @@ If you prefer not to show score badges for individual parts, you can unset the d
 
 The diagram below shows the lifecycle of a question, including the server functions called, the different panels that are rendered, and points of interaction with the student.
 
-![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.5" pad="0" }
+![Diagram showing the lifecycle of a question](./lifecycle.d2){layout="dagre" scale="0.6" pad="0" }
 
 ## Complete example
 
@@ -293,6 +304,7 @@ This table summarizes the functions that can be defined in `server.py`.
 | `parse()`    | :white_check_mark: | `correct_answers`, `format_errors`, `feedback`, `submitted_answers`                                      | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
 | `grade()`    | :white_check_mark: | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
 | `file()`     | :x:                | N/A. Returns an `object` (string, bytes-like, file-like)                                                 | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
+| `test()`     | :white_check_mark: | `partial_scores`, `format_errors`, `score`, `raw_submitted_answers`, `feedback`, `gradable`              | Test the question, and ensure it can grade a variety of student inputs.                                                                                                                                                                                                       |
 
 As shown in the table, all functions (except for `render`) accept a single argument, `data` (a dictionary), and modify it in place. The `render` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements.
 
@@ -311,6 +323,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                         |
 | `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
+| `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                 |
 
 The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
 
@@ -405,3 +418,22 @@ We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-
     <p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
     <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
     ```
+
+## Testing questions with `test()`
+
+The question testing functionality is available under the "Settings" tab for a question.
+
+![Test buttons](test-buttons.png)
+
+The `test()` function is called to test the question. This function can be used to ensure that your question is working correctly. The `raw_submitted_answers` generated by the `test()` function will be used in place of the student's submission, and the remaining fields will be compared to the result of parsing and grading. If your code crashes, or if any of the fields are different, the test will report an issue.
+
+!!! warning "Important"
+
+    Most questions do not need to implement the `test()` function in `server.py`. You only need to implement it if:
+
+    1. You don't set `correct_answers` in the `generate` or `prepare` stage of your question. In this scenario, the elements you use don't know how to generate the correct set of inputs, and the responsibility shifts to the `test()` function in `server.py`.
+    2. You are using elements that haven't implemented the `test()` function. All first-party elements have this function implemented, so this is only a concern if you use a custom course element.
+
+The `test()` function receives the output of `prepare()`, along with a `test_type` parameter. The `test_type` is either `correct`, `incorrect`, or `invalid`. Your function should generate `raw_submitted_answers` based on the inputs (e.g. `data["correct_answers"]`) and `test_type`. It should also update `score` and `feedback`.
+
+![Testing lifecycle](./test-cycle.d2){ pad="0" scale="1"}
