@@ -335,5 +335,20 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 403);
     });
+
+    test.sequential('POST to API to start a course sync', async function () {
+      locals.apiCourseUrl = locals.apiUrl + '/course/1';
+      locals.apiCourseSyncUrl = locals.apiCourseUrl + '/sync';
+      const res = await fetch(locals.apiCourseSyncUrl, {
+        method: 'POST',
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+    });
   });
 });
