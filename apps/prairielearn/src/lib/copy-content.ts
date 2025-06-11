@@ -11,7 +11,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { selectCoursesWithEditAccess } from '../models/course.js';
 
 import { config } from './config.js';
-import { type Course, type CourseInstance, type Question } from './db-types.js';
+import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
 import { idsEqual } from './id.js';
 
 export interface CopyTarget {
@@ -23,54 +23,102 @@ export interface CopyTarget {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getCopyTargets(res: Response, urlSuffix: string): Promise<CopyTarget[] | null> {
+async function getCopyTargets({
+  course,
+  is_administrator,
+  authn_user,
+  user,
+  urlSuffix,
+}: {
+  course: Course;
+  is_administrator: boolean;
+  authn_user: User;
+  user: User;
+  urlSuffix: string;
+}): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
-    user_id: res.locals.user.user_id,
-    is_administrator: res.locals.is_administrator,
+    user_id: user.user_id,
+    is_administrator,
   });
 
   return editableCourses
     .filter(
-      (course) =>
+      (editableCourse) =>
         // The example course cannot be updated in the web interface.
-        !course.example_course &&
+        !editableCourse.example_course &&
         // Question copying cannot be done within the same course.
-        !idsEqual(course.id, res.locals.course.id),
+        !idsEqual(editableCourse.id, course.id),
     )
-    .map((course) => {
-      const copyUrl = `/pl/course/${course.id}/${urlSuffix}`;
+    .map((editableCourse) => {
+      const copyUrl = `/pl/course/${editableCourse.id}/${urlSuffix}`;
 
       // The copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
       const csrfToken = generateSignedToken(
         {
           url: copyUrl,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: authn_user.user_id,
         },
         config.secretKey,
       );
 
       return {
-        id: course.id,
-        short_name: course.short_name,
+        id: editableCourse.id,
+        short_name: editableCourse.short_name,
         copy_url: copyUrl,
         __csrf_token: csrfToken,
       };
     });
 }
 
-export async function getQuestionCopyTargets(res: Response): Promise<CopyTarget[] | null> {
-  if (!res.locals.course.template_course && !res.locals.question.share_source_publicly) {
+export async function getQuestionCopyTargets({
+  course,
+  is_administrator,
+  authn_user,
+  user,
+  question,
+}: {
+  course: Course;
+  is_administrator: boolean;
+  authn_user: User;
+  user: User;
+  question: Question;
+}): Promise<CopyTarget[] | null> {
+  if (!course.template_course && !question.share_source_publicly) {
     return null;
   }
-  return getCopyTargets(res, 'copy_public_question');
+  return getCopyTargets({
+    urlSuffix: 'copy_public_question',
+    course,
+    is_administrator,
+    authn_user,
+    user,
+  });
 }
 
-export async function getCourseInstanceCopyTargets(res: Response): Promise<CopyTarget[] | null> {
-  if (!res.locals.course.template_course && !res.locals.course_instance.share_source_publicly) {
+export async function getCourseInstanceCopyTargets({
+  course,
+  is_administrator,
+  authn_user,
+  user,
+  courseInstance,
+}: {
+  course: Course;
+  is_administrator: boolean;
+  authn_user: User;
+  user: User;
+  courseInstance: CourseInstance;
+}): Promise<CopyTarget[] | null> {
+  if (!course.template_course && !courseInstance.share_source_publicly) {
     return null;
   }
-  return getCopyTargets(res, 'copy_public_course_instance');
+  return getCopyTargets({
+    urlSuffix: 'copy_public_course_instance',
+    course,
+    is_administrator,
+    authn_user,
+    user,
+  });
 }
 
 async function initiateFileTransfer({

@@ -104,7 +104,13 @@ router.get(
       publicQuestionPreview: true,
     });
     await logPageView('publicQuestionPreview', req, res);
-    const questionCopyTargets = await getQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
     res.send(PublicQuestionPreview({ resLocals: res.locals, questionCopyTargets }));
   }),
 );

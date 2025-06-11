@@ -59,7 +59,13 @@ router.get(
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
-    const questionCopyTargets = await getQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
     const searchParams = getSearchParams(req);
 
     // Construct a URL to preview the question as it would appear in the manual

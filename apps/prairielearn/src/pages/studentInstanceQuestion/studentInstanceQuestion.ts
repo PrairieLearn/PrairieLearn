@@ -319,7 +319,13 @@ router.get(
     await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
-    const questionCopyTargets = await getQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
 
     res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
