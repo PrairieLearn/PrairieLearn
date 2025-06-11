@@ -201,6 +201,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
@@ -987,6 +988,7 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
+  modified_at: DateFromISOString.nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -1063,6 +1065,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
+  modified_at: DateFromISOString.nullable(),
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),
