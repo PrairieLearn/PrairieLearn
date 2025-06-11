@@ -14,6 +14,15 @@ const brotli = promisify(zlib.brotliCompress);
 
 type CompressedSizes = Record<string, Record<string, number>>;
 
+/**
+ * Writes gzip and brotli compressed versions of the assets in the specified directory.
+ * It reads each asset file, compresses it using gzip and brotli algorithms, and writes the compressed files
+ * with appropriate extensions (.gz and .br) in the same directory.
+ *
+ * @param destination Directory where the compressed assets will be written.
+ * @param manifest The assets manifest containing information about the assets.
+ * @returns A promise that resolves to an object containing the sizes of the original, gzip, and brotli compressed assets.
+ */
 async function writeCompressedAssets(
   destination: string,
   manifest: AssetsManifest,
