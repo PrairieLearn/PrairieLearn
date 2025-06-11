@@ -124,10 +124,7 @@ onDocumentReady(async () => {
       }
     }
 
-    appSideNavDiv.addEventListener(
-      'transitionend',
-      handleTransitionEnd
-    );
+    appSideNavDiv.addEventListener('transitionend', handleTransitionEnd);
 
     const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
     if (courseNavExpanded) {
@@ -164,10 +161,7 @@ onDocumentReady(async () => {
       }
     }
 
-    courseNavDiv.addEventListener(
-      'transitionend',
-      handleTransitionEnd
-    );
+    courseNavDiv.addEventListener('transitionend', handleTransitionEnd);
 
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
     if (sideNavExpanded) {
