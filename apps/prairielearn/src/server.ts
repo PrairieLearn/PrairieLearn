@@ -515,7 +515,7 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
-    (await import('./pages/workspace/workspace.js')).default,
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: false }),
   );
   app.use(
     '/pl/workspace/:workspace_id(\\d+)/logs',
@@ -1730,7 +1730,7 @@ export async function initExpress(): Promise<Express> {
   ]);
   app.use(
     '/pl/public/workspace/:workspace_id(\\d+)',
-    (await import('./pages/workspace/workspace.js')).default,
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: true }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',

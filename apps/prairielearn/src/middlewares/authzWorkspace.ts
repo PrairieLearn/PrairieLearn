@@ -9,6 +9,7 @@ import { UserSchema } from '../lib/db-types.js';
 import { getModeForRequest } from '../lib/exam-mode.js';
 import { isEnterprise } from '../lib/license.js';
 import { selectCourseById } from '../models/course.js';
+import { selectQuestionById } from '../models/question.js';
 import { selectAndAuthzVariant } from '../models/variant.js';
 
 import { authzCourseOrInstance } from './authzCourseOrInstance.js';
@@ -48,6 +49,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
     if (publicQuestionEndpoint) {
       res.locals.course = await selectCourseById(result.course_id);
       res.locals.user = UserSchema.parse(res.locals.authn_user);
+      res.locals.question = await selectQuestionById(result.question_id);
     }
 
     if (result.course_instance_id) {
