@@ -34,7 +34,7 @@ async function getNavTitleHref(res: Response, publicQuestionEndpoint: boolean): 
   }
 }
 
-export default function ({ publicQuestionEndpoint }) {
+export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: boolean }) {
   const router = Router();
 
   router.get(
