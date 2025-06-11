@@ -28,7 +28,7 @@ export function AdministratorInstitutionLti13({
       institution,
     },
     pageTitle: 'LTI 1.3 - Institution Admin',
-    headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
+    headContent: compiledScriptTag('administratorInstitutionLti13Client.ts'),
     navContext: {
       type: 'administrator_institution',
       page: 'administrator_institution',
