@@ -22,7 +22,7 @@ const newUserUids = {};
 const newUserNames = {};
 
 function anonymizeJSON(contents) {
-  for (let instance of contents) {
+  for (const instance of contents) {
     if (instance['user_id']) {
       instance.user_id = getUUID(newUserIds, instance.user_id);
     }
@@ -40,8 +40,8 @@ function anonymizeJSON(contents) {
     }
 
     if (instance['uids']) {
-      let newUids = [];
-      for (let uid of instance.uids) {
+      const newUids = [];
+      for (const uid of instance.uids) {
         newUids.push(getUUID(newUserUids, uid));
       }
       instance.uids = newUids;

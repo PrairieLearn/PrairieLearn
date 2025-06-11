@@ -92,16 +92,13 @@ $(function () {
       workspaceFrame.src = 'about:blank';
       if (previousState === 'running') {
         showStoppedFrame();
-      } else if (previousState !== 'uninitialized') {
+      } else if (previousState === 'launching') {
         // When the workspace is first created, it will be in the `uninitialized`
         // state. It then transitions to the `stopped` state, and then immediately
         // to `launching`.
         //
         // We don't want to consider the initial transition to `stopped` as a
-        // failure, so we specifically ignore transitions from `uninitialized`.
-        //
-        // Put differently: we'll really only show the failure message if we
-        // transition directly from `launching` to `stopped`.
+        // failure, so we specifically only consider transitions from `launching`.
         showFailedFrame();
       }
     }
@@ -123,8 +120,7 @@ $(function () {
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
-    // TODO: remove second argument once all servers no longer require it.
-    socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg: any) => {
+    socket.emit('joinWorkspace', (msg: any) => {
       console.log('joinWorkspace, msg =', msg);
       if (msg.errorMessage) {
         setMessage('Error joining workspace: ' + msg.errorMessage);
@@ -135,8 +131,7 @@ $(function () {
   });
 
   // Only start the workspace when the page is first loaded, not on reconnects.
-  // TODO: remove second argument once all servers no longer require it.
-  socket.emit('startWorkspace', { workspace_id: workspaceId });
+  socket.emit('startWorkspace');
 
   let lastVisibleTime = Date.now();
   setInterval(() => {
@@ -146,8 +141,7 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      // TODO: remove second argument once all servers no longer require it.
-      socket.emit('heartbeat', { workspace_id: workspaceId }, (msg: any) => {
+      socket.emit('heartbeat', (msg: any) => {
         console.log('heartbeat, msg =', msg);
       });
     }

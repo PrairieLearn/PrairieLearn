@@ -50,7 +50,9 @@ WITH
         authn_user_id,
         workspace_id,
         course_id,
-        client_fingerprint_id
+        client_fingerprint_id,
+        -- TODO: remove once this column has a default
+        modified_at
       )
     VALUES
       (
@@ -72,7 +74,8 @@ WITH
         $authn_user_id,
         $workspace_id,
         $course_id,
-        $client_fingerprint_id
+        $client_fingerprint_id,
+        NOW()
       )
     RETURNING
       *

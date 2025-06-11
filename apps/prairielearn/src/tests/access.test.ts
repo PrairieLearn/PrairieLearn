@@ -1,11 +1,12 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -18,11 +19,10 @@ const courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 const assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 const assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
-describe('Access control', function () {
-  this.timeout(20000);
+describe('Access control', { timeout: 20000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   /*
       There are three nested time periods:
@@ -132,8 +132,11 @@ describe('Access control', function () {
 
   describe('5. database', function () {
     it('should contain E1', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_e1, []);
-      assessment_id = result.rows[0].id;
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam1-automaticTestSuite',
+      });
+      assessment_id = assessment.id;
     });
   });
 

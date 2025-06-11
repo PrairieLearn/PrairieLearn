@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert, describe, it } from 'vitest';
 
 import { type QuestionJsonInput } from '../../schemas/index.js';
 import * as courseDb from '../../sync/course-db.js';

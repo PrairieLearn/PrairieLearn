@@ -49,9 +49,9 @@ start-s3rver:
 
 test: test-js test-python
 test-js: start-support
-	@yarn turbo run test
-test-js-dist: start-support
-	@yarn turbo run test:dist
+	@yarn test
+test-js-dist: start-support build
+	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
@@ -71,11 +71,11 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --report-unused-disable-directives "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
-	@yarn eslint --report-unused-disable-directives --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@python3 -m ruff check ./
@@ -96,11 +96,11 @@ lint-actions:
 
 format: format-js format-python
 format-js:
-	@yarn eslint --ext js --fix "**/*.{js,ts}"
+	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
 format-js-cached:
-	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,ts}"
+	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-python:

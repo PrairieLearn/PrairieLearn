@@ -1,6 +1,7 @@
 import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentSetSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -13,6 +14,7 @@ interface DesiredAssessmentSet {
   abbreviation: string;
   heading: string;
   color: string;
+  comment?: CommentJson;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -94,6 +96,7 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });
@@ -110,6 +113,7 @@ export async function sync(courseId: string, courseData: CourseData) {
               as.color,
               as.number,
               as.implicit,
+              as.comment,
             ]),
           ),
         });

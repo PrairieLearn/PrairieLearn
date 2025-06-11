@@ -6,7 +6,14 @@
         <div class="pl-matching-statement-select">
             <select name="{{name}}" class="form-select" {{^editable}}disabled{{/editable}} aria-labelledby="statement-label-{{statement_id}}">
                 {{#options}}
-                    <option {{selected}} value="{{index}}">{{value}}</option>
+                    <option 
+                       {{selected}}
+                       value="{{index}}"
+                       {{#blank}}aria-label="Blank"{{/blank}}
+                       {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
+                    >
+                      {{value}}
+                    </option>
                 {{/options}}
             </select>
         </div>
@@ -30,7 +37,9 @@
 <div class="pl-matching-options">
 <ol>
 {{#options}}
-    <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">{{{html}}}</li>
+    <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">
+        <span id="pl-matching-{{uuid}}-option-{{counter}}-content">{{{html}}}</span>
+    </li>
 {{/options}}
 </ol>
 </div>
@@ -42,7 +51,7 @@
 {{/question}}
 
 {{#submission}}
-<div style="display: flex;">
+<div class="d-flex">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
@@ -88,7 +97,7 @@
 {{/submission}}
 
 {{#answer}}
-<div style="display: flex;">
+<div class="d-flex">
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">

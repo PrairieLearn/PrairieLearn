@@ -18,6 +18,29 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
+    '#show-workspace-options-button',
+  );
+  const workspaceOptions = document.querySelector<HTMLDivElement>('#workspace-options');
+  const workspaceImageInput = document.querySelector<HTMLInputElement>('#workspace_image');
+  const workspacePortInput = document.querySelector<HTMLInputElement>('#workspace_port');
+  const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
+  const workspaceEnvironmentInput =
+    document.querySelector<HTMLInputElement>('#workspace_environment');
+
+  let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
+
+  function updateWorkspaceOptionsValidation() {
+    if (workspaceOptionsShown) {
+      workspaceImageInput?.setAttribute('required', 'true');
+      workspacePortInput?.setAttribute('required', 'true');
+      workspaceHomeInput?.setAttribute('required', 'true');
+    } else {
+      workspaceImageInput?.removeAttribute('required');
+      workspacePortInput?.removeAttribute('required');
+      workspaceHomeInput?.removeAttribute('required');
+    }
+  }
 
   if (document.getElementById('topic')) {
     new TomSelect('#topic', {
@@ -70,6 +93,40 @@ onDocumentReady(() => {
   qidField.addEventListener('input', () => validateId({ input: qidField, otherIds: otherQids }));
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
-  if (!questionSettingsForm || !saveButton) return;
-  saveButtonEnabling(questionSettingsForm, saveButton);
+  workspaceEnvironmentInput?.addEventListener('input', (e) => {
+    if ((e.target as HTMLInputElement).value === '') {
+      workspaceEnvironmentInput?.setCustomValidity('');
+      return;
+    }
+    try {
+      const value = JSON.parse((e.target as HTMLInputElement).value);
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
+      } else {
+        workspaceEnvironmentInput?.setCustomValidity('');
+      }
+      return;
+    } catch {
+      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
+    }
+  });
+
+  if (questionSettingsForm && saveButton) {
+    saveButtonEnabling(questionSettingsForm, saveButton);
+  }
+
+  updateWorkspaceOptionsValidation();
+  showWorkspaceOptionsButton?.addEventListener('click', () => {
+    workspaceOptions?.removeAttribute('hidden');
+    showWorkspaceOptionsButton.setAttribute('hidden', 'true');
+    workspaceOptionsShown = true;
+    updateWorkspaceOptionsValidation();
+  });
+
+  questionSettingsForm?.addEventListener('submit', (e) => {
+    if (!questionSettingsForm.checkValidity()) {
+      e.preventDefault();
+      questionSettingsForm.reportValidity();
+    }
+  });
 });

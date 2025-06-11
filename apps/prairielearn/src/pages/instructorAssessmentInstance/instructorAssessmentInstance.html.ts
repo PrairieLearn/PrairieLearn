@@ -336,7 +336,7 @@ export function InstructorAssessmentInstance({
                 ${instance_question.start_new_zone && instance_question.zone_title
                   ? html`
                       <tr>
-                        <th colspan="6">
+                        <th colspan="9">
                           ${instance_question.zone_title}
                           ${instance_question.zone_has_max_points
                             ? html`(maximum ${instance_question.zone_max_points} points)}`

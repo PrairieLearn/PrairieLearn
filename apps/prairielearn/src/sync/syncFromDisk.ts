@@ -4,8 +4,10 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
@@ -22,6 +24,7 @@ import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
   checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
   checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
@@ -52,6 +55,11 @@ export async function checkSharingConfigurationValid(
   if (!config.checkSharingOnSync) {
     return true;
   }
+  const institution = await selectInstitutionForCourse({ course_id: courseId });
+  const sharingEnabled = await features.enabled('question-sharing', {
+    course_id: courseId,
+    institution_id: institution.id,
+  });
 
   const sharedQuestions = await selectSharedQuestions(courseId);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
@@ -71,9 +79,13 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
-  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
-
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(
+    sharingEnabled,
+    courseData,
+    logger,
+  );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
     !existInvalidRenames &&
@@ -82,6 +94,7 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
     !existInvalidSharedAssessment &&
+    !existInvalidSharedCourseInstance &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }

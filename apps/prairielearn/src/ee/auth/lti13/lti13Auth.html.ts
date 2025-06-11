@@ -47,6 +47,43 @@ export function Lti13Test({
   `.toString();
 }
 
+export function Lti13AuthIframe({ parameters }: { parameters: Record<string, any> }) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals: {}, pageTitle: 'LTI 1.3 redirect' })}
+      </head>
+      <body>
+        <main id="content" class="m-3">
+          <form id="interceptForm" method="POST" action="" target="_blank">
+            ${Object.entries(parameters).map(
+              ([key, value]) =>
+                html`<input type="hidden" name="${key}" value="${String(value)}" />`,
+            )}
+            <button id="submitButton" class="btn btn-primary mb-2">
+              Open PrairieLearn in a new window
+            </button>
+          </form>
+          <div id="message">If there are login errors, reload this page to start again.</div>
+
+          <script>
+            const form = document.getElementById('interceptForm');
+            const button = document.getElementById('submitButton');
+            const messageDiv = document.getElementById('message');
+
+            form.addEventListener('submit', function () {
+              button.disabled = true;
+              button.textContent = 'Opened PrairieLearn in a new window';
+              messageDiv.textContent = 'Reload this page to access PrairieLearn again.';
+            });
+          </script>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
+
 export function Lti13AuthRequired({
   institution_id,
   resLocals,

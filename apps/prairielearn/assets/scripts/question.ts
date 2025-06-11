@@ -189,18 +189,20 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       // must be executed. Typical vanilla JS alternatives don't support
       // this kind of script.
       $(answerContainer).html(msg.answerPanel);
-      mathjaxTypeset();
+      mathjaxTypeset([answerContainer]);
       answerContainer.closest('.grading-block')?.classList.remove('d-none');
     }
   }
 
   if (msg.submissionPanel) {
+    const submissionPanelSelector = `#submission-${submissionId}`;
     // Using jQuery here because msg.submissionPanel may contain scripts
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
-    $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
-    mathjaxTypeset();
+    $(submissionPanelSelector).replaceWith(msg.submissionPanel);
+    mathjaxTypeset([document.querySelector(submissionPanelSelector) as HTMLElement]);
   }
+
   if (msg.questionScorePanel) {
     const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
 
@@ -212,12 +214,14 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
+
   if (msg.assessmentScorePanel) {
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
     if (assessmentScorePanel) {
       assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
     }
   }
+
   if (msg.questionPanelFooter) {
     const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
 
@@ -229,12 +233,14 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
+
   if (msg.questionNavNextButton) {
     const questionNavNextButton = document.getElementById('question-nav-next');
     if (questionNavNextButton) {
       questionNavNextButton.outerHTML = msg.questionNavNextButton;
     }
   }
+
   setupDynamicObjects();
 }
 

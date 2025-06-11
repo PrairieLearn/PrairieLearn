@@ -33,7 +33,7 @@ import prairielearn.sympy_utils as psu
 
 !!! warning
 
-    The following imports are now deprecated.
+    The following imports are now deprecated. They will be removed in a future release. Please update your code to use the new imports
 
     === "Old"
 

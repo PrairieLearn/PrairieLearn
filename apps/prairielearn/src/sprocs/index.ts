@@ -40,7 +40,6 @@ export async function init() {
       'authz_assessment.sql',
       'authz_assessment_instance.sql',
       'assessment_instance_label.sql',
-      'assessment_label.sql',
       'admin_assessment_question_number.sql',
       'authz_course.sql',
       'authz_course_instance.sql',

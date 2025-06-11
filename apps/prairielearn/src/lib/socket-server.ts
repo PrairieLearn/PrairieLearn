@@ -43,7 +43,6 @@ function attachEventListeners(client: Redis, type: string) {
 export let io: Server;
 
 let pub: Redis;
-
 let sub: Redis;
 
 export async function init(server: http.Server) {
@@ -64,16 +63,20 @@ export async function init(server: http.Server) {
 }
 
 export async function close() {
-  await pub?.quit();
-  await sub?.quit();
-
   // Note that we don't use `io.close()` here, as that actually tries to close
   // the underlying HTTP server. In our desired shutdown sequence, we first
   // close the HTTP server and then later disconnect all sockets. There's some
   // discussion about this behavior here:
   // https://github.com/socketio/socket.io/discussions/4002#discussioncomment-4080748
   //
+  // The following sequence is based on what `io.close()` would do internally.
+  //
   // Note the use of `io.local`, which prevents the server from attempting to
   // broadcast the disconnect to other servers via Redis.
   io.local.disconnectSockets(true);
+  await Promise.all([...io._nsps.values()].map((nsp) => nsp.adapter.close()));
+  io.engine.close();
+
+  await pub?.quit();
+  await sub?.quit();
 }

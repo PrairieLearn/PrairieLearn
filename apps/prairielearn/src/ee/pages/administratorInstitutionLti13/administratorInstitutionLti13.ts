@@ -27,16 +27,6 @@ const lti13_instance_defaults = {
   require_linked_lti_user: false,
 };
 
-// Middleware to check for feature and access
-router.use(
-  asyncHandler(async (req, res, next) => {
-    if (!res.locals.lti13_enabled) {
-      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-    }
-    next();
-  }),
-);
-
 router.get(
   '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {

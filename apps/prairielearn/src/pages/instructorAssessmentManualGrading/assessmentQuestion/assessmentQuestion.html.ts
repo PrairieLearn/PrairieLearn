@@ -18,10 +18,12 @@ export function AssessmentQuestion({
   resLocals,
   courseStaff,
   aiGradingEnabled,
+  aiGradingMode,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
 }) {
   const {
     number_in_alternative_group,
@@ -74,7 +76,7 @@ export function AssessmentQuestion({
           aiGradingEnabled,
           courseStaff,
           csrfToken: __csrf_token,
-          aiGradingUrl: `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/ai_grading_runs`,
+          aiGradingMode,
         },
         'instance-question-table-data',
       )}
@@ -100,6 +102,22 @@ export function AssessmentQuestion({
         <i class="fas fa-arrow-left"></i>
         Back to ${assessment_set.name} ${assessment.number} Overview
       </a>
+      ${aiGradingEnabled
+        ? html`
+            <form method="POST" id="toggle-ai-grading-mode">
+              <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="ai-grading">
+              <input type="hidden" name="__action" value="ai_grade_assessment" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="ai-grading-test">
+              <input type="hidden" name="__action" value="ai_grade_assessment_test" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+          `
+        : ''}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
@@ -111,7 +129,7 @@ export function AssessmentQuestion({
         </form>
       </div>
     `,
-    postContent: [GradingConflictModal()],
+    postContent: GradingConflictModal(),
   });
 }
 

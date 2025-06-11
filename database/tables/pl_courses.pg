@@ -11,6 +11,7 @@ columns
     example_course: boolean not null default false
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
+    json_comment: jsonb
     options: jsonb not null default '{}'::jsonb
     path: text not null
     repository: text

@@ -1,5 +1,3 @@
-/* eslint-env browser,jquery */
-
 (() => {
   function escapePath(path) {
     return path

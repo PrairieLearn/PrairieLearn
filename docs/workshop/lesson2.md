@@ -4,7 +4,7 @@
 
 ## Quick overview
 
-Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment/index.md).
+Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [assessment documentation](../assessment/index.md).
 
 The beginning of the `infoAssessment.json` usually looks like this:
 

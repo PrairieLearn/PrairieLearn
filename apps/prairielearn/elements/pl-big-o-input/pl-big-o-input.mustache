@@ -14,7 +14,8 @@
                     {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                     placeholder="{{placeholder}}"
                     {{#suffix}}aria-describedby="pl-big-o-input-{{uuid}}-suffix"{{/suffix}}
-                    aria-labelledby="pl-big-o-input-{{uuid}}-label"
+                    {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+                    {{^aria_label}}aria-labelledby="pl-big-o-input-{{uuid}}-label"{{/aria_label}}
                 />
                 <span
                     class="input-group-text"

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
@@ -18,6 +19,8 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+export type InstanceQuestionRowWithAIGradingStats = WithAIGradingStats<InstanceQuestionRow>;
+
 export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
@@ -26,7 +29,7 @@ export interface InstanceQuestionTableData {
   maxPoints: number | null;
   maxAutoPoints: number | null;
   aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
   courseStaff: User[];
   csrfToken: string;
-  aiGradingUrl: string;
 }

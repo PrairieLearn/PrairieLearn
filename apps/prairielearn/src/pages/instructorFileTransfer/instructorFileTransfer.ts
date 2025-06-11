@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import debugfn from 'debug';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { flash } from '@prairielearn/flash';
@@ -14,7 +14,7 @@ import { idsEqual } from '../../lib/id.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 

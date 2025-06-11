@@ -139,6 +139,7 @@ export interface ExecutionData {
   raw_submitted_answers?: Record<string, unknown>;
   editable?: boolean;
   manual_grading?: boolean;
+  ai_grading?: boolean;
   panel?: 'question' | 'answer' | 'submission';
   num_valid_submissions?: number;
   filename?: string;

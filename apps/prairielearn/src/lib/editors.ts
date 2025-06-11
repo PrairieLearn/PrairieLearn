@@ -183,14 +183,25 @@ export function getUniqueNames({
  * Returns the new value if it differs from the default value. Otherwise, returns undefined.
  * This is helpful for setting JSON properties that we only want to write to if they are different
  * than the default value.
+ *
+ * `defaultValue` may be either a value to compare directly with `===`, or a function
+ * that accepts a value and returns a boolean to indicate if it should be considered
+ * a default value.
  */
 export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+  const isExistingDefault =
+    typeof defaultValue === 'function'
+      ? defaultValue(existingValue)
+      : existingValue === defaultValue;
+  const isNewDefault =
+    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
+
   if (existingValue === undefined) {
-    if (newValue !== defaultValue) {
+    if (!isNewDefault) {
       return newValue;
     }
   } else {
-    if (existingValue !== defaultValue && newValue === defaultValue) {
+    if (!isExistingDefault && isNewDefault) {
       return undefined;
     } else {
       return newValue;

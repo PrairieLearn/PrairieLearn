@@ -20,12 +20,26 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
 });
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
-export async function selectCourseInstanceById(
+export async function selectOptionalCourseInstanceById(
   course_instance_id: string,
 ): Promise<CourseInstance | null> {
   return queryOptionalRow(
     sql.select_course_instance_by_id,
     { course_instance_id },
+    CourseInstanceSchema,
+  );
+}
+
+export async function selectCourseInstanceByShortName({
+  course_id,
+  short_name,
+}: {
+  course_id: string;
+  short_name: string;
+}): Promise<CourseInstance> {
+  return queryRow(
+    sql.select_course_instance_by_short_name,
+    { course_id, short_name },
     CourseInstanceSchema,
   );
 }
@@ -107,4 +121,27 @@ export async function selectCourseHasCourseInstances({
   course_id: string;
 }): Promise<boolean> {
   return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
+}
+
+export async function selectCourseInstanceIsPublic(course_instance_id: string): Promise<boolean> {
+  const isPublic = await queryRow(
+    sql.check_course_instance_is_public,
+    { course_instance_id },
+    z.boolean(),
+  );
+  return isPublic;
+}
+
+export async function selectCourseInstanceByUuid({
+  course_id,
+  uuid,
+}: {
+  course_id: string;
+  uuid: string;
+}): Promise<CourseInstance> {
+  return await queryRow(
+    sql.select_course_instance_by_uuid,
+    { uuid, course_id },
+    CourseInstanceSchema,
+  );
 }

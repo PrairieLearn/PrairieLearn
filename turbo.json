@@ -4,15 +4,6 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "public/build/**"]
-    },
-    "test": {
-      "outputs": [],
-      "passThroughEnv": ["*"]
-    },
-    "test:dist": {
-      "dependsOn": ["build"],
-      "outputs": [],
-      "passThroughEnv": ["*"]
     }
   }
 }

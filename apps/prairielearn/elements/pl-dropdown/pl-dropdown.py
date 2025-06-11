@@ -11,6 +11,7 @@ BLANK_ANSWER = " "
 BLANK_DEFAULT = True
 SORT_DEFAULT = "random"
 ALLOW_BLANK_DEFAULT = False
+ARIA_LABEL_DEFAULT = None
 
 
 class SortTypes(Enum):
@@ -58,7 +59,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank", "allow-blank", "weight", "sort", "label"],
+        optional_attribs=["blank", "allow-blank", "weight", "sort", "aria-label"],
     )
 
     if pl.get_boolean_attrib(
@@ -81,7 +82,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, "answers-name")
-    aria_label = pl.get_string_attrib(element, "label", None)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     dropdown_options = get_options(element, data)
     submitted_answer = data["submitted_answers"].get(answers_name, None)
 

@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import express from 'express';
+import express, { Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
 import { v4 as uuid } from 'uuid';
 
@@ -134,6 +134,8 @@ function assertAssetsPrefix(): string {
   return assetsPrefix;
 }
 
+let initialized = false;
+
 /**
  * Computes the hashes of directories from which we serve cacheable assets.
  * Should be run at server startup before any responses are served.
@@ -141,6 +143,14 @@ function assertAssetsPrefix(): string {
  * Also initializes the assets compiler.
  */
 export async function init() {
+  // Specifically for tests, we avoid re-initializing things. The hashes typically
+  // won't change during tests, and if they do, we won't actually care about them
+  // since we won't try to load the assets from the tests.
+  //
+  // In production use cases, this should only be called once per process, so this
+  // guard won't have any effect.
+  if (initialized) return;
+
   await Promise.all([computeElementsHash(), computePublicHash()]);
   assetsPrefix = config.assetsPrefix;
 
@@ -150,6 +160,8 @@ export async function init() {
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,
   });
+
+  initialized = true;
 }
 
 /**
@@ -164,7 +176,7 @@ export async function close() {
  */
 export function applyMiddleware(app: express.Application) {
   const assetsPrefix = assertAssetsPrefix();
-  const router = express.Router();
+  const router = Router();
 
   // Compiled assets have a digest/hash embedded in their filenames, so they
   // don't require a separate cachebuster.

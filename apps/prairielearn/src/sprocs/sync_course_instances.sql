@@ -87,6 +87,19 @@ BEGIN
         SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
         FROM matched_rows
         WHERE dest_id IS NULL
+        -- This is a total hack, but the test suite hardcoded course instance ID 1
+        -- for the test course in a lot of places. To avoid having to change tons
+        -- of tests after adding a new course instance to the test course, we'll
+        -- alphabetically sort the course instances by name to ensure that `Sp15`
+        -- will have ID 1. This assumes that it is in fact that first course instance,
+        -- which is currently true.
+        --
+        -- Mainly, this ensures that the tests are deterministic. So even if we do
+        -- add a new course instance, the tests will fail if a new course instance
+        -- would be assigned ID 1.
+        --
+        -- We specifically use C collation to ensure that "Sp15" ends up before "public".
+        ORDER BY src_short_name COLLATE "C" ASC
         RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
     -- Make a map from CIID to ID to return to the caller
@@ -133,6 +146,8 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        json_comment = (src.data->>'comment')::jsonb,
+        share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
@@ -166,7 +181,8 @@ BEGIN
             uids,
             start_date,
             end_date,
-            institution
+            institution,
+            json_comment
         )
         SELECT
             ci.id,
@@ -177,7 +193,8 @@ BEGIN
             END,
             input_date(access_rule->>'start_date', ci.display_timezone),
             input_date(access_rule->>'end_date', ci.display_timezone),
-            access_rule->>'institution'
+            access_rule->>'institution',
+            access_rule->'comment'
         FROM
             synced_course_instances AS ci,
             JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
@@ -186,7 +203,8 @@ BEGIN
             uids = EXCLUDED.uids,
             start_date = EXCLUDED.start_date,
             end_date = EXCLUDED.end_date,
-            institution = EXCLUDED.institution
+            institution = EXCLUDED.institution,
+            json_comment = EXCLUDED.json_comment
     )
     DELETE FROM course_instance_access_rules AS ciar
     USING

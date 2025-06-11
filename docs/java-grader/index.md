@@ -1,6 +1,6 @@
 # Java Autograder
 
-This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) documentation.
 
 ## Overview
 

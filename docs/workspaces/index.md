@@ -150,9 +150,9 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 ## Creating files in the workspace home directory
 
-Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
+Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/index.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/index.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
 
 ```txt
 # ...
@@ -241,17 +241,17 @@ If you're using your own editor, you must ensure that it frequently autosaves an
 
 ## Running locally (on Docker)
 
-In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 
-For development, run the Docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the Docker command line. Inside the container, run:
+For development, run the Docker container as described in [Installing with local source code](../dev-guide/installingLocal.md) but also add the workspace-specific arguments described above to the Docker command line. Inside the container, run:
 
 ```sh
 make dev-all
 ```
 
-Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development, it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/contrib/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently.
 
 ## Permissions in production
 

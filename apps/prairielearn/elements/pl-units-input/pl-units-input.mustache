@@ -17,7 +17,8 @@
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             placeholder="{{placeholder}}"
             {{#suffix}}aria-describedby="pl-units-input-{{uuid}}-suffix"{{/suffix}}
-            {{#label}}aria-labelledby="pl-units-input-{{uuid}}-label"{{/label}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+            {{^aria_label}}{{#label}}aria-labelledby="pl-units-input-{{uuid}}-label"{{/label}}{{/aria_label}}
         />
 
         {{#suffix}}

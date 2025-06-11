@@ -20,7 +20,7 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "original-preact": "npm:preact@^10.26.5"
+    "original-preact": "npm:preact@^10.26.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

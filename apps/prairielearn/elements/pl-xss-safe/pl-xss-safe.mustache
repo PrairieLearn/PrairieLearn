@@ -1,5 +1,5 @@
 <script>
-  $(function() {
+  $(async function() {
     const element = $('#xss-{{uuid}}');
     const language = element.attr("data-language");
     let code = element.attr("data-code");
@@ -7,14 +7,14 @@
     // conversion and xss filter for compatibility and to avoid
     // confusion
     if (language == "markdown") {
-      let renderer = new showdown.Converter({
-        'literalMidWordUnderscores':true,
-        'literalMidWordAsterisks':true,
-      });
-      code = renderer.makeHtml(code);
+      const marked = (await import('marked')).marked;
+      await MathJax.startup.promise;
+      (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
+      code = marked.parse(code);
     }
     code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
     element.html(code);
+    await MathJax.typesetPromise([element.get(0)]);
   });
 </script>
 <div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>

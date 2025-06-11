@@ -1,4 +1,4 @@
-import { type HtmlValue, html } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -166,8 +166,13 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="mb-3">
-              <label for="text">Text</label>
-              <textarea class="form-control" id="text" name="text" ${canEdit ? '' : 'disabled'}>
+              <label class="form-label" for="text">Text</label>
+              <textarea
+                class="form-control js-textarea-autosize"
+                id="text"
+                name="text"
+                ${canEdit ? '' : 'disabled'}
+              >
 ${resLocals.assessment.text}</textarea
               >
               <small class="form-text text-muted">
@@ -263,6 +268,31 @@ ${resLocals.assessment.text}</textarea
                     <div class="small text-muted">
                       Requires the student to accept an honor code before starting exam assessments.
                     </div>
+                  </div>
+                `
+              : ''}
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div
+                    class="mb-3"
+                    id="honor_code_group"
+                    ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
+                  >
+                    <label class="form-label" for="honor_code">Custom honor code</label>
+                    <textarea
+                      class="form-control js-textarea-autosize"
+                      id="honor_code"
+                      name="honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                    >
+${resLocals.assessment.honor_code}</textarea
+                    >
+                    <small class="form-text text-muted">
+                      Custom honor code text that will be shown to students before starting the
+                      exam. While this field cannot accept HTML, you can use Markdown formatting.
+                      The user's name can be included with Mustache templating:
+                      <code>{{user_name}}</code>. To use the default honor code, leave this blank.
+                    </small>
                   </div>
                 `
               : ''}
@@ -402,49 +432,43 @@ function AssessmentSharing({
     return html`<p>This assessment is not being shared.</p>`;
   }
 
-  const details: HtmlValue[] = [];
-
-  if (assessment.share_source_publicly) {
-    details.push(html`
-      <p>
-        <span class="badge color-green3 me-1">Public source</span>
-        This assessment's source is publicly shared.
-      </p>
-      <div>
-        <label for="publicLink">Public Link</label>
-        <span class="input-group">
-          <input
-            type="text"
-            class="form-control"
-            id="publicLink"
-            name="publicLink"
-            value="${publicLink}"
-            disabled
-          />
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary btn-copy"
-            data-clipboard-text="${publicLink}"
-            aria-label="Copy public link"
-          >
-            <i class="far fa-clipboard"></i>
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary"
-            aria-label="Public Link QR Code"
-            data-bs-toggle="modal"
-            data-bs-target="#publicLinkModal"
-          >
-            <i class="fas fa-qrcode"></i>
-          </button>
-        </span>
-        <small class="form-text text-muted">
-          The link that other instructors can use to view this assessment.
-        </small>
-      </div>
-    `);
-  }
-
-  return details;
+  return html`
+    <p>
+      <span class="badge color-green3 me-1">Public source</span>
+      This assessment's source is publicly shared.
+    </p>
+    <div class="mb-3">
+      <label for="publicLink">Public link</label>
+      <span class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          id="publicLink"
+          name="publicLink"
+          value="${publicLink}"
+          disabled
+        />
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary btn-copy"
+          data-clipboard-text="${publicLink}"
+          aria-label="Copy public link"
+        >
+          <i class="far fa-clipboard"></i>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Public Link QR Code"
+          data-bs-toggle="modal"
+          data-bs-target="#publicLinkModal"
+        >
+          <i class="fas fa-qrcode"></i>
+        </button>
+      </span>
+      <small class="form-text text-muted">
+        The link that other instructors can use to view this assessment.
+      </small>
+    </div>
+  `;
 }

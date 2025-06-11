@@ -56,9 +56,9 @@ def generate(data):
     data["params"]["length_track"] = length_track
 
     rA = np.array([xA, yA])
-    e1 = np.array([b, a])
+    e1 = np.array([b, a], dtype=np.float64)
     e1 /= la.norm(e1, 2)
-    e2 = np.array([-a, b])
+    e2 = np.array([-a, b], dtype=np.float64)
     e2 /= la.norm(e2, 2)
     rE = rA + circle_radius * e2
     rF = rE - 2 * circle_radius * e1
