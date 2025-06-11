@@ -127,6 +127,9 @@ export async function selectAndAuthzVariant(options: {
     publicQuestionPreview,
   } = options;
 
+  // console.log('Authorizing variant with options', options);
+  // console.trace();
+
   const variant = await queryOptionalRow(
     sql.select_variant_by_id,
     { variant_id: unsafe_variant_id },
