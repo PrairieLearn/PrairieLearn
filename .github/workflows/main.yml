@@ -202,6 +202,8 @@ jobs:
         run: make lint-markdown
       - name: Run the GitHub Actions linter
         run: make lint-actions
+      - name: Run the SQL linter
+        run: make lint-sql
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.
