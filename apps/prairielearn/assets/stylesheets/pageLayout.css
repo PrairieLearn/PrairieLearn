@@ -305,8 +305,7 @@ body:has(div.app-container) {
     overflow-y: hidden;
   }
 
-  /* Prevent content to the side of the course/side nav from being visible when
-  *  either nav is open. */
+  /* Prevent content to the side of the course/side nav from being visible. */
   .app-container.side-nav-enabled {
     overflow-x: hidden;
   }

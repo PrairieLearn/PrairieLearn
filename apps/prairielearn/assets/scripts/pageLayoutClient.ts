@@ -109,16 +109,24 @@ onDocumentReady(async () => {
       sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
     }
+
+    function handleTransitionEnd(event: TransitionEvent) {
+      // Ensure that the transition occurred on the app side nav div
+      if (event.target !== appSideNavDiv) {
+        return;
+      }
+      // Remove the animation class after the transition ends
+      if (appContainerDiv) {
+        appContainerDiv.classList.remove('animate');
+      }
+      if (appSideNavDiv) {
+        appSideNavDiv.removeEventListener('transitionend', handleTransitionEnd);
+      }
+    }
+
     appSideNavDiv.addEventListener(
       'transitionend',
-      (event) => {
-        if (event.target !== appSideNavDiv) {
-          return;
-        }
-        // Remove the animation class after the transition ends
-        appContainerDiv.classList.remove('animate');
-      },
-      { once: true },
+      handleTransitionEnd
     );
 
     const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
@@ -142,16 +150,23 @@ onDocumentReady(async () => {
       courseNavDiv.classList.remove('mobile-collapsed');
     }
 
+    function handleTransitionEnd(event: TransitionEvent) {
+      // Ensure that the transition occurred on the course nav div
+      if (event.target !== courseNavDiv) {
+        return;
+      }
+      // Remove the animation class after the transition ends
+      if (appContainerDiv) {
+        appContainerDiv.classList.remove('animate');
+      }
+      if (courseNavDiv) {
+        courseNavDiv.removeEventListener('transitionend', handleTransitionEnd);
+      }
+    }
+
     courseNavDiv.addEventListener(
       'transitionend',
-      (event) => {
-        if (event.target !== courseNavDiv) {
-          return;
-        }
-        // Remove the animation class after the transition ends
-        appContainerDiv.classList.remove('animate');
-      },
-      { once: true },
+      handleTransitionEnd
     );
 
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
