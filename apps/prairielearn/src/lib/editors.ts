@@ -964,7 +964,10 @@ export class CourseInstanceCopyEditor extends Editor {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
+
       // Update the infoAssessment.json files to include the course sharing name for each question
+      // Its ok that we are writing these directly to disk because when copying to another course
+      // we are working from a temporary folder
       await updateInfoAssessmentFilesForInstanceCopy(
         courseInstancePath,
         this.from_course.sharing_name,
