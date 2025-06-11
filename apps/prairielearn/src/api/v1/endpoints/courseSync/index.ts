@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -6,7 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as syncHelpers from '../../../../pages/shared/syncHelpers.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
 router.post(
   '/',
