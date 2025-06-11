@@ -24,7 +24,7 @@ env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  checks-js:
+  check-js:
     name: JavaScript
     runs-on: ubuntu-latest
     steps:
@@ -85,7 +85,7 @@ jobs:
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
 
-  checks-other:
+  check-other:
     name: Other
     runs-on: ubuntu-latest
     steps:
