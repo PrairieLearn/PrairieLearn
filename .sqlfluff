@@ -6,8 +6,6 @@ sql_file_exts = .sql
 exclude_rules = layout.indent, 
     ambiguous.join,
     capitalisation.identifiers,
-    # https://github.com/sqlfluff/sqlfluff/issues/6865
-    convention.join_condition,
     capitalisation.functions,
     layout.select_targets,
     layout.long_lines,
