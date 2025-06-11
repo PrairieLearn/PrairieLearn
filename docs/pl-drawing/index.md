@@ -1741,7 +1741,7 @@ This button deletes objects that were previously placed on the canvas.
 
 ## Elements for sketching plots
 
-![Screenshot of the pl-graph element](pl-graph.png) { width=100% style="max-width: 300px" }
+![Screenshot of the pl-graph element](pl-graph.png){ width=100% style="max-width: 300px" }
 
 ```html
 <pl-drawing-initial>
