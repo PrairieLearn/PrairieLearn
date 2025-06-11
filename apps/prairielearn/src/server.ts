@@ -271,11 +271,15 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  async function makeWorkspaceContainerRoutes(
-    url: string,
-    containerPathRegex: RegExp,
-    publicQuestionEndpoint: boolean,
-  ) {
+  async function makeWorkspaceContainerRoutes({
+    url,
+    containerPathRegex,
+    publicQuestionEndpoint,
+  }: {
+    url: string;
+    containerPathRegex: RegExp;
+    publicQuestionEndpoint: boolean;
+  }) {
     const workspaceAuthRouter = Router();
     workspaceAuthRouter.use([
       // We use a short-lived cookie to cache a successful
@@ -308,16 +312,16 @@ export async function initExpress(): Promise<Express> {
       makeWorkspaceProxyMiddleware(containerPathRegex),
     ]);
   }
-  await makeWorkspaceContainerRoutes(
-    '/pl/workspace/:workspace_id(\\d+)/container',
-    /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
-    false,
-  );
-  await makeWorkspaceContainerRoutes(
-    '/pl/public/workspace/:workspace_id(\\d+)/container',
-    /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
-    true,
-  );
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: false,
+  });
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: true,
+  });
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
