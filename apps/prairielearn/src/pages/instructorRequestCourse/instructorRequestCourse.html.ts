@@ -285,15 +285,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
                 <label for="role-student" class="mb-0 form-check-label">Student</label>
               </li>
             </ul>
-            <div class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning">
-              <b>A new course instance must be requested by the instructor.</b> Please ask the
-              official course instructor to submit this form.
+            <div
+              class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning"
+              role="alert"
+            >
+              <strong>A new course instance must be requested by the instructor.</strong> Please ask
+              the official course instructor to submit this form.
             </div>
-            <div class="d-none role-comment role-comment-student alert alert-warning">
-              <b>This is the wrong form for you.</b> If you would like to enroll in an existing
-              course, please use the <a href="enroll">form to Enroll in a course</a>. If your course
-              is not listed there, contact your instructor for instructions on how to access your
-              assessments.
+            <div class="d-none role-comment role-comment-student alert alert-warning" role="alert">
+              <strong>This is the wrong form for you.</strong> If you would like to enroll in an
+              existing course, please use the <a href="enroll">form to Enroll in a course</a>. If
+              your course is not listed there, contact your instructor for instructions on how to
+              access your assessments.
             </div>
           </div>
         </div>
