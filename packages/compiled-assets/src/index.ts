@@ -62,10 +62,11 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
       target: 'es2017',
-      format: 'iife',
+      format: 'esm',
       sourcemap: 'inline',
       bundle: true,
       write: false,
+      splitting: true,
       loader: {
         '.woff': 'file',
         '.woff2': 'file',
@@ -195,7 +196,7 @@ export function compiledStylesheetPath(sourceFile: string): string {
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
-  return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
+  return html`<script type="module" src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
 export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
