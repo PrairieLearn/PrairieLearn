@@ -20,6 +20,8 @@ function CopyCourseInstanceModal({
   questionsForCopy: QuestionForCopy[];
 }) {
   if (courseInstanceCopyTargets == null) return '';
+  const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
+  const questionsToImport = questionsForCopy.filter((q) => !q.should_copy).length;
   return Modal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
@@ -59,11 +61,15 @@ function CopyCourseInstanceModal({
             If you choose to copy this course instance to your course:
             <ul>
               <li>
-                <strong>${questionsForCopy.filter((q) => q.should_copy).length}</strong> questions
+                <strong>${questionsToCopy}</strong> ${questionsToCopy === 1
+                  ? 'question'
+                  : 'questions'}
                 used by this course instance will be copied to your course.
               </li>
               <li>
-                <strong>${questionsForCopy.filter((q) => !q.should_copy).length}</strong> questions
+                <strong>${questionsToImport}</strong> ${questionsToImport === 1
+                  ? 'question'
+                  : 'questions'}
                 used by this course instance will not be copied, but included by import from
                 original course.
               </li>

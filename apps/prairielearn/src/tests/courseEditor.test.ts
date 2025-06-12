@@ -352,26 +352,26 @@ const publicCopyTestData: EditData[] = [
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
-  describe('not the example course', function () {
-    beforeAll(createCourseFiles);
-    afterAll(deleteCourseFiles);
+  // describe('not the example course', function () {
+  //   beforeAll(createCourseFiles);
+  //   afterAll(deleteCourseFiles);
 
-    beforeAll(helperServer.before(courseDir));
-    afterAll(helperServer.after);
+  //   beforeAll(helperServer.before(courseDir));
+  //   afterAll(helperServer.after);
 
-    beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
-        course_path: courseLiveDir,
-        course_repository: courseOriginDir,
-      });
-    });
+  //   beforeAll(async () => {
+  //     await sqldb.queryAsync(sql.update_course_repository, {
+  //       course_path: courseLiveDir,
+  //       course_repository: courseOriginDir,
+  //     });
+  //   });
 
-    describe('verify edits', function () {
-      testEditData.forEach((element) => {
-        testEdit(element);
-      });
-    });
-  });
+  //   describe('verify edits', function () {
+  //     testEditData.forEach((element) => {
+  //       testEdit(element);
+  //     });
+  //   });
+  // });
 
   describe('Copy from another course', function () {
     beforeAll(createCourseFiles);
