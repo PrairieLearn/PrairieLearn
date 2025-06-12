@@ -140,6 +140,7 @@ async function initiateFileTransfer({
   // directory into the target course. The reasons why it is done this way in the
   // first place are a little bit lost to history, but the main reason seems to be
   // related to authorization.
+  //
   // Because our authorization workflow relies so heavily on middlewares, it is
   // hard to authorize a user for two separate courses at the same time. Thus, we
   // authorize them for the source course under the original URL, and then authorize
