@@ -586,6 +586,8 @@ async function createCourseFiles() {
 
 async function createSharedCourse() {
   const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const PUBLICLY_SHARED_SOURCE_QUESTION_QID = 'shared-source-publicly';
+
   const sharingCourseData = syncUtil.getCourseData();
   sharingCourseData.course.name = 'SHARING 101';
   sharingCourseData.questions = {
@@ -597,12 +599,23 @@ async function createSharedCourse() {
       sharePublicly: true,
       shareSourcePublicly: true,
     },
+    [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111112',
+      type: 'v3',
+      title: 'Shared source publicly',
+      topic: 'TOPIC HERE',
+      shareSourcePublicly: true,
+    },
   };
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
       questions: [
         {
           id: PUBLICLY_SHARED_QUESTION_QID,
+          points: 1,
+        },
+        {
+          id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
           points: 1,
         },
       ],

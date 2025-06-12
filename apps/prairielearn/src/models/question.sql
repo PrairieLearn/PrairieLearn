@@ -35,3 +35,13 @@ FROM
   JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
   iq.id = $instance_question_id;
+
+-- BLOCK select_questions_for_course_instance_copy
+SELECT
+  q.*
+FROM
+  questions AS q
+  JOIN assessment_questions AS aq ON (aq.question_id = q.id)
+  JOIN assessments AS a ON (aq.assessment_id = a.id)
+WHERE
+  a.course_instance_id = $course_instance_id;
