@@ -267,28 +267,29 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   const scriptFiles = await globby(path.join(sourceDirectory, 'scripts', '*.{js,jsx,ts,tsx}'));
   const styleFiles = await globby(path.join(sourceDirectory, 'stylesheets', '*.css'));
   const files = [...scriptFiles, ...styleFiles];
-  const buildResult = await esbuild.build({
-    entryPoints: files,
-    target: 'es2017',
-    format: 'iife',
-    sourcemap: 'linked',
-    bundle: true,
-    minify: true,
-    loader: {
-      '.woff': 'file',
-      '.woff2': 'file',
-    },
-    entryNames: '[dir]/[name]-[hash]',
-    outbase: sourceDirectory,
-    outdir: buildDirectory,
-    metafile: true, // Write metadata about the build
-  });
+  // const buildResult = await esbuild.build({
+  //   entryPoints: files,
+  //   target: 'es2017',
+  //   format: 'iife',
+  //   sourcemap: 'linked',
+  //   bundle: true,
+  //   minify: true,
+  //   loader: {
+  //     '.woff': 'file',
+  //     '.woff2': 'file',
+  //   },
+  //   entryNames: '[dir]/[name]-[hash]',
+  //   outbase: sourceDirectory,
+  //   outdir: buildDirectory,
+  //   metafile: true, // Write metadata about the build
+  // });
 
-  const scriptBundleFiles = await globby(
-    path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
-  );
+  // All scripts that can be split
+  // const scriptBundleFiles = await globby(
+  //   path.join(sourceDirectory, 'scripts', '**/*.{js,jsx,ts,tsx}'),
+  // );
   const chunkBuildResult = await esbuild.build({
-    entryPoints: scriptBundleFiles,
+    entryPoints: files,
     target: 'es2017',
     format: 'esm',
     sourcemap: 'linked',
@@ -302,12 +303,12 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   });
 
   // Merge the resulting metafiles.
-  const metafile: Metafile = {
-    inputs: { ...buildResult.metafile.inputs, ...chunkBuildResult.metafile.inputs },
-    outputs: { ...buildResult.metafile.outputs, ...chunkBuildResult.metafile.outputs },
-  };
+  // const metafile: Metafile = {
+  //   inputs: { ...buildResult.metafile.inputs, ...chunkBuildResult.metafile.inputs },
+  //   outputs: { ...buildResult.metafile.outputs, ...chunkBuildResult.metafile.outputs },
+  // };
 
-  return metafile;
+  return chunkBuildResult.metafile;
 }
 
 function makeManifest(
