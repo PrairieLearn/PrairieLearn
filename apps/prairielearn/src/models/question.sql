@@ -37,7 +37,7 @@ WHERE
   iq.id = $instance_question_id;
 
 -- BLOCK select_questions_for_course_instance_copy
-SELECT
+SELECT DISTINCT
   q.*
 FROM
   questions AS q

@@ -8,13 +8,16 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
+import type { QuestionForCopy } from '../../models/question.js';
 
 function CopyCourseInstanceModal({
   courseInstance,
   courseInstanceCopyTargets,
+  questionsForCopy,
 }: {
   courseInstance: CourseInstance;
   courseInstanceCopyTargets: CopyTarget[] | null;
+  questionsForCopy: QuestionForCopy[];
 }) {
   if (courseInstanceCopyTargets == null) return '';
   return Modal({
@@ -52,6 +55,19 @@ function CopyCourseInstanceModal({
                 `,
               )}
             </select>
+            <hr />
+            If you choose to copy this course instance to your course:
+            <ul>
+              <li>
+                <strong>${questionsForCopy.filter((q) => q.should_copy).length}</strong> questions
+                used by this course instance will be copied to your course.
+              </li>
+              <li>
+                <strong>${questionsForCopy.filter((q) => !q.should_copy).length}</strong> questions
+                used by this course instance will not be copied, but included by import from
+                original course.
+              </li>
+            </ul>
           `,
     footer: html`
       <input
@@ -82,11 +98,13 @@ export function PublicAssessments({
   rows,
   courseInstance,
   courseInstanceCopyTargets,
+  questionsForCopy,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   courseInstance: CourseInstance;
   courseInstanceCopyTargets: CopyTarget[] | null;
+  questionsForCopy: QuestionForCopy[];
 }) {
   return PageLayout({
     resLocals,
@@ -163,7 +181,7 @@ export function PublicAssessments({
           </table>
         </div>
       </div>
-      ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets })}
+      ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets, questionsForCopy })}
     `,
   });
 }
