@@ -1,7 +1,7 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  $('#add-course-modal').on('show.bs.modal', (e) => {
+  document.getElementById('add-course-modal')?.addEventListener('show.bs.modal', (e) => {
     const button = (e as any).relatedTarget as HTMLElement;
     const modal = e.target as HTMLElement;
 
@@ -11,7 +11,7 @@ onDocumentReady(() => {
     });
   });
 
-  $('#remove-course-modal').on('show.bs.modal', (e) => {
+  document.getElementById('remove-course-modal')?.addEventListener('show.bs.modal', (e) => {
     const button = (e as any).relatedTarget as HTMLElement;
     const modal = e.target as HTMLElement;
 
