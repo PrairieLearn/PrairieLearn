@@ -642,7 +642,6 @@ export async function loadCourseInfo({
     topics,
     sharingSets,
     options: {
-      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
     comment: info.comment,

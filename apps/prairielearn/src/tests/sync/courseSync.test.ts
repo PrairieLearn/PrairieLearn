@@ -20,7 +20,6 @@ describe('Course syncing', () => {
   it('syncs for known features as object', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: { [sampleFeature1]: true },
     };
 
@@ -36,7 +35,6 @@ describe('Course syncing', () => {
   it('syncs for known features as array', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: [sampleFeature1],
     };
 
@@ -52,7 +50,6 @@ describe('Course syncing', () => {
   it('adds a warning for an unknown feature', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: { [invalidFeature]: true },
     };
 
@@ -75,7 +72,6 @@ describe('Course syncing', () => {
 
       const courseData = util.getCourseData();
       courseData.course.options = {
-        useNewQuestionRenderer: true,
         devModeFeatures: {
           [sampleFeature1]: true,
           [sampleFeature2]: true,
