@@ -137,7 +137,7 @@ if (check) {
         process.exit(1);
       }
     } catch (error) {
-      console.error(`Error reading config path ${path}:`, error);
+      console.error(`Error reading config path ${filePath}:`, error);
       process.exit(1);
     }
   }
@@ -149,7 +149,7 @@ if (check) {
     fs.writeFileSync(`${schemaDir}/${name}.json`, orderedStringify(schema));
   }
 
-  for (const [path, schema] of Object.entries(configSchemas)) {
-    fs.writeFileSync(path, JSON.stringify(schema, null, 2));
+  for (const [filePath, schema] of Object.entries(configSchemas)) {
+    fs.writeFileSync(filePath, orderedStringify(schema));
   }
 }
