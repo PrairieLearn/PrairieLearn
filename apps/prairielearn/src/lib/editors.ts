@@ -1641,7 +1641,7 @@ export class QuestionCopyEditor extends Editor {
 
     super({
       ...params,
-      description: `Copy question ${from_qid} ${is_transfer ? `from ${from_course}` : ''}`,
+      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course}` : ''}`,
     });
 
     this.from_qid = from_qid;
