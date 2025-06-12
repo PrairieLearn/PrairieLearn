@@ -2,19 +2,19 @@
   "json.schemas": [
     {
       "fileMatch": ["courseInstances/**/assessments/**/infoAssessment.json"],
-      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/refs/heads/master/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/master/apps/prairielearn/src/schemas/schemas/infoAssessment.json"
     },
     {
       "fileMatch": ["courseInstances/**/infoCourseInstance.json"],
-      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/refs/heads/master/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/master/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
     },
     {
       "fileMatch": ["infoCourse.json"],
-      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/refs/heads/master/apps/prairielearn/src/schemas/schemas/infoCourse.json"
+      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/master/apps/prairielearn/src/schemas/schemas/infoCourse.json"
     },
     {
       "fileMatch": ["questions/**/info.json"],
-      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/refs/heads/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
+      "url": "https://raw.githubusercontent.com/PrairieLearn/PrairieLearn/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
     }
   ]
 }
