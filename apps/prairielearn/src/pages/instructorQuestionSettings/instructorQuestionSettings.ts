@@ -310,6 +310,9 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course_short_name: res.locals.course.short_name,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
         });
         const serverJob = await editor.prepareServerJob();
         try {

@@ -1619,80 +1619,6 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
-  private question: Question;
-
-  public readonly uuid: string;
-
-  constructor(params: BaseEditorOptions<{ question: Question }>) {
-    const {
-      locals: { question },
-    } = params;
-
-    super({
-      ...params,
-      description: `Copy question ${question.qid}`,
-    });
-
-    this.question = question;
-
-    this.uuid = uuidv4();
-  }
-
-  async write() {
-    assert(this.question.qid, 'question.qid is required');
-
-    debug('QuestionCopyEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
-
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
-
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    const names = this.getNamesForCopy(
-      this.question.qid,
-      oldNamesShort,
-      this.question.title,
-      oldNamesLong,
-    );
-    const qid = names.shortName;
-    const questionPath = path.join(questionsPath, qid);
-
-    const fromPath = path.join(questionsPath, this.question.qid);
-    const toPath = questionPath;
-
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = names.longName;
-    infoJson.uuid = this.uuid;
-
-    // Even when copying a question within a course, we don't want to preserve
-    // sharing settings because they cannot be undone
-    delete infoJson['sharingSets'];
-    delete infoJson['sharePublicly'];
-    delete infoJson['shareSourcePublicly'];
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
-
-    return {
-      pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.question.qid} to ${qid}`,
-    };
-  }
-}
-
-export class QuestionTransferEditor extends Editor {
   private from_qid: string;
   private from_course: string;
   private from_path: string;
@@ -1723,7 +1649,7 @@ export class QuestionTransferEditor extends Editor {
   }
 
   async write() {
-    debug('QuestionTransferEditor: write()');
+    debug('QuestionCopyEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
 
     debug('Get title of question that is being copied');
