@@ -6,7 +6,7 @@ onDocumentReady(() => {
       const role = document.querySelector<HTMLInputElement>('input[name=cr-role]:checked')?.value;
 
       document
-        .querySelectorAll<HTMLButtonElement>('.question-form button')
+        .querySelectorAll<HTMLButtonElement>('.question-form button[type=submit]')
         .forEach((button) => (button.disabled = role !== 'instructor'));
       document
         .querySelectorAll<HTMLElement>('.role-comment')
