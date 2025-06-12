@@ -349,6 +349,35 @@ describe('API', { timeout: 60_000 }, function () {
 
       const json = (await res.json()) as any;
       assert.exists(json.job_sequence_id);
+      locals.course_sync_job_sequence_id = json.job_sequence_id;
     });
+
+    test.sequential('GET to API for course sync status info succeeds', async function () {
+      locals.apiCourseSyncJobUrl =
+        locals.apiCourseSyncUrl + '/' + locals.course_sync_job_sequence_id;
+      const res = await fetch(locals.apiCourseSyncJobUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+      assert.exists(json.status);
+    });
+
+    test.sequential(
+      'GET to API for course sync status info fails with invalid job_sequence_id',
+      async function () {
+        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/2';
+        const res = await fetch(locals.apiCourseSyncJobUrl, {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 404);
+      },
+    );
   });
 });
