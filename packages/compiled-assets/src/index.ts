@@ -247,6 +247,25 @@ export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
   return html`<link rel="stylesheet" href="${compiledStylesheetPath(sourceFile)}" />`;
 }
 
+export function compiledScriptModuleTag(sourceFile: string): HtmlSafeString {
+  // Creates a module script tag for an ESM source file.
+  return html`<script type="module" src="${compiledScriptPath(sourceFile)}"></script>`;
+}
+
+export function compiledScriptModulePreloadTags(sourceFile: string): HtmlSafeString[] {
+  // Creates module preload tags for an ESM source file.
+  const preloadPaths = compiledScriptPreloadPaths(sourceFile);
+  return preloadPaths.map(
+    (preloadPath) => html`<link rel="modulepreload" href="${preloadPath}" />`,
+  );
+}
+
+export function compiledScriptPreloadTags(sourceFile: string): HtmlSafeString[] {
+  // Creates preload tags for a CJS source file.
+  const preloadPaths = compiledScriptPreloadPaths(sourceFile);
+  return preloadPaths.map((preloadPath) => html`<link rel="preload" href="${preloadPath}" />`);
+}
+
 export function compiledScriptPreloadPaths(sourceFile: string): string[] {
   assertConfigured();
 

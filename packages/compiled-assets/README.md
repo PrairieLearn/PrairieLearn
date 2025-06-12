@@ -29,7 +29,7 @@ assets
         └── shared-code.ts
 ```
 
-All of these assets will be processed as a CJS file for compatibility reasons. You can place additional assets in in the `assets/scripts/esm-bundles/` directory, which will be processed as ESM files with code splitting. This is useful for libraries that can be loaded asynchronously, like Preact components.
+All of these assets will be processed with CJS for compatibility reasons. You can place additional assets in in the `assets/scripts/esm-bundles/` directory, which will be processed as ESM files with code splitting. This is useful for libraries that can be loaded asynchronously, like Preact components.
 
 ```text
 assets
@@ -37,6 +37,8 @@ assets
     ├── esm-bundles
     │   └── baz.tsx
 ```
+
+The import tree of all files will be analyzed, and any dependencies will be marked as preloads.
 
 ### Application integration
 
@@ -63,18 +65,30 @@ const app = express();
 app.use('/build/', assets.handler());
 ```
 
-To include a bundle on your page, you can use the `compiledScriptTag` or `compiledScriptPath` functions. The name of the bundle passed to this function is the filename of your bundle within the `scripts` directory.
+To include a bundle on your page, you can use the `compiledScriptTag` or `compiledScriptPath` functions. The name of the bundle passed to this function is the filename of your bundle within the `scripts` directory. You can use `compiledScriptPreloadTags` to get a list of tags that should be preloaded in the `<head>` of your HTML document, or `compiledScriptPreloadPaths` to get the paths.
+
+If your file is located in the `esm-bundles` folder (and processed with ESM + code splitting), you can use the `compiledScriptModuleTag` function. You can use `compiledScriptModulePreloadTags` to get a list of tags that should be preloaded in the `<head>` of your HTML document.
 
 ```ts
 import { html } from '@prairielearn/html';
-import { compiledScriptTag, compiledScriptPath } from '@prairielearn/compiled-assets';
+import {
+  compiledScriptTag,
+  compiledScriptPreloadTags,
+  compiledScriptPath,
+  compiledScriptModuleTag,
+  compiledScriptModulePreloadTags,
+} from '@prairielearn/compiled-assets';
 
 router.get(() => {
   return html`
     <html>
       <head>
         ${compiledScriptTag('foo.ts')}
+        ${compiledScriptPreloadTags('bar.ts')}
         <script src="${compiledScriptPath('bar.ts')}"></script>
+
+        ${compiledScriptModuleTag('baz.tsx')}
+        ${compiledScriptModulePreloadTags('baz.tsx')}
       </head>
       </body>
         Hello, world.
