@@ -1,5 +1,4 @@
-import { dirname, join, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 
 import { A11yError, A11yResults } from '@sa11y/format';
 import axe from 'axe-core';
