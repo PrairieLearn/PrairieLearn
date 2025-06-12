@@ -1646,6 +1646,7 @@ export class QuestionCopyEditor extends Editor {
 
     this.from_qid = from_qid;
     this.from_path = from_path;
+    this.from_course = from_course;
     this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
