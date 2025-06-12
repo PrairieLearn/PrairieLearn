@@ -1736,7 +1736,7 @@ export class QuestionCopyEditor extends Editor {
     const { questionPath, qid } = await doQuestionCopy(
       this.course,
       this.from_path,
-      this.from_course,
+      this.from_qid,
       this.uuid,
     );
 
@@ -1753,7 +1753,7 @@ async function doQuestionCopy(
   from_qid: string,
   uuid: string,
 ): Promise<{ questionPath: string; qid: string }> {
-  const questionsPath = path.join(this.course.path, 'questions');
+  const questionsPath = path.join(course.path, 'questions');
 
   debug('Get title of question that is being copied');
   const sourceInfoJson = await fs.readJson(path.join(from_path, 'info.json'));
