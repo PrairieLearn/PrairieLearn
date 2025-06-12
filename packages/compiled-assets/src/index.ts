@@ -239,6 +239,7 @@ export function compiledStylesheetPath(sourceFile: string): string {
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
+  // Creates a script tag for a CJS source file.
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
@@ -284,6 +285,8 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     metafile: true, // Write metadata about the build
   });
 
+  // For now, we only build ESM bundles for scripts that are split into chunks (i.e. Preact components)
+  // Using 'type=module' in the script tag for ESM means that it is loaded after all 'classic' scripts, which causes issues with bootstrap-table. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );

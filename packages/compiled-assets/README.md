@@ -2,7 +2,7 @@
 
 This package enables the transpilation and bundling of client-side assets, namely JavaScript.
 
-This tool is meant to produce many small, independent bundles that can then be included as needed on each page.
+This tool is meant to produce many small, independent bundles that can then be included as needed on each page, as well as providing mechanisms for code splitting larger ESM bundles.
 
 ## Usage
 
@@ -20,13 +20,22 @@ Create a directory of assets that you wish to bundle, e.g. `assets/`. Within tha
 You can locate shared code in directories inside this directory. As long as those files aren't in the root of the `scripts/` directory, they won't become separate bundles.
 
 ```text
-├── assets/
-│   ├── scripts/
-|   │   ├── lib/
-|   │   │   ├── shared-code.ts
-|   │   │   └── more-shared-code.ts
-|   │   ├── foo.ts
-│   |   └── bar.ts
+assets
+└── scripts
+    ├── bar.ts
+    ├── foo.ts
+    └── lib
+        ├── more-shared-code.ts
+        └── shared-code.ts
+```
+
+All of these assets will be processed as a CJS file for compatibility reasons. You can place additional assets in in the `assets/scripts/esm-bundles/` directory, which will be processed as ESM files with code splitting. This is useful for libraries that can be loaded asynchronously, like Preact components.
+
+```text
+assets
+└── scripts
+    ├── esm-bundles
+    │   └── baz.tsx
 ```
 
 ### Application integration
@@ -37,6 +46,8 @@ Early in your application initialization process, initialize this library with t
 import * as compiledAssets from '@prairielearn/compiled-assets';
 
 assets.init({
+  // Assets will be watched for changes in development mode, and the latest version will be served.
+  // In production mode, assets will be precompiled and served from the build directory.
   dev: process.env.NODE_ENV !== 'production',
   sourceDirectory: './assets',
   buildDirectory: './public/build',
