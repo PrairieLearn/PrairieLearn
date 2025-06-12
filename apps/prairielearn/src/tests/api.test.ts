@@ -370,7 +370,7 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential(
       'GET to API for course sync status info fails with invalid job_sequence_id',
       async function () {
-        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/2';
+        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/NA';
         const res = await fetch(locals.apiCourseSyncJobUrl, {
           headers: {
             'Private-Token': locals.api_token,
