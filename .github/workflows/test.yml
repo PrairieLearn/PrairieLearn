@@ -25,7 +25,7 @@ env:
 
 jobs:
   test-prairielearn:
-    name: Docker
+    name: Native
     runs-on: ubuntu-latest
 
     env:
