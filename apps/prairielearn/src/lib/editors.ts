@@ -25,6 +25,7 @@ import {
   getOrUpdateCourseCommitHash,
   updateCourseCommitHash,
 } from '../models/course.js';
+import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -983,6 +984,24 @@ export class CourseInstanceCopyEditor extends Editor {
       // making the copied course instance available to users.
       infoJson['allowAccess'] = [];
 
+      const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
+      const questionsToImport = new Set(
+        questionsForCopy.filter((q) => !q.should_copy).map((q) => q.qid),
+      );
+
+      const questionsToCopy = new Set(questionsForCopy.filter((q) => q.should_copy));
+      const newQids = {};
+      for (const question of questionsToCopy) {
+        if (!question.qid) {
+          continue; // TODO better error handling?
+        }
+        const from_path = path.join(this.from_course.path, 'questions', question.qid);
+        const from_qid = path.join(this.from_course.sharing_name, question.qid);
+        const { qid } = await doQuestionCopy(this.course, from_path, from_qid, uuidv4());
+
+        newQids[question.qid] = qid;
+      }
+
       // Update the infoAssessment.json files to include the course sharing name for each question
       // It's OK that we are writing these directly to disk because when copying to another course
       // we are working from a temporary folder
@@ -990,6 +1009,8 @@ export class CourseInstanceCopyEditor extends Editor {
         this.course_instance.id,
         courseInstancePath,
         this.from_course.sharing_name,
+        questionsToImport,
+        newQids,
       );
     }
 
@@ -1014,6 +1035,8 @@ async function updateInfoAssessmentFilesForTargetCourse(
   courseInstanceId: string,
   courseInstancePath: string,
   fromCourseSharingName: string,
+  questionsToImport: Set<string | null>,
+  newQids: Record<string, string>,
 ) {
   const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
     course_instance_id: courseInstanceId,
@@ -1033,14 +1056,24 @@ async function updateInfoAssessmentFilesForTargetCourse(
     delete infoJson['shareSourcePublicly'];
     infoJson['allowAccess'] = [];
 
-    // Rewrite the question IDs to include the course sharing name
+    // Rewrite the question IDs to include the course sharing name,
+    // or to point to the new path if the question was copied
+    function shouldAddSharingPrefix(qid) {
+      return qid && qid[0] !== '@' && questionsToImport.has(qid);
+    }
     for (const zone of infoJson.zones) {
       for (const question of zone.questions) {
-        if (question.id && question.id[0] !== '@') {
-          question.id = `@${fromCourseSharingName}/${question.id}`;
+        if (question.id) {
+          if (question.id in newQids) {
+            question.id = newQids[question.id];
+          } else if (shouldAddSharingPrefix(question.id)) {
+            question.id = `@${fromCourseSharingName}/${question.id}`;
+          }
         } else if (question.alternatives) {
           for (const alternative of question.alternatives) {
-            if (alternative.id && alternative.id[0] !== '@') {
+            if (alternative.id in newQids) {
+              alternative.id = newQids[alternative.id];
+            } else if (shouldAddSharingPrefix(question.id)) {
               alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
             }
           }
