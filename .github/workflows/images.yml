@@ -25,6 +25,7 @@ env:
 
 jobs:
   build-workspace-images:
+    name: Workspaces
     uses: ./.github/workflows/image-builder.yml
     with:
       group: workspaces
@@ -32,6 +33,7 @@ jobs:
     secrets: inherit
 
   build-grader-images:
+    name: Graders
     uses: ./.github/workflows/image-builder.yml
     with:
       group: graders
@@ -40,6 +42,7 @@ jobs:
     secrets: inherit
 
   build-core-images:
+    name: Core
     uses: ./.github/workflows/image-builder.yml
     with:
       group: core
