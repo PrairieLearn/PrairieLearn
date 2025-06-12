@@ -11,6 +11,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -19,11 +20,7 @@ import * as helperServer from './helperServer.js';
 
 const htmlvalidate = new HtmlValidate();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const exampleCoursePath = resolve(__dirname, '..', '..', '..', '..', 'exampleCourse');
-const questionsPath = join(exampleCoursePath, 'questions');
+const questionsPath = join(EXAMPLE_COURSE_PATH, 'questions');
 
 // Helper function to find question directories recursively
 const findQuestionDirectories = (dir: string): string[] => {
@@ -113,7 +110,7 @@ const validateHtml = async (html: string) => {
       // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
       'prefer-tbody': 'off',
 
-      // False positive https://getbootstrap.com/docs/5.3/components/modal/#accessibility
+      // False positive, since this attribute is controlled via JS. https://getbootstrap.com/docs/5.3/components/modal/#accessibility
       // https://html-validate.org/rules/hidden-focusable.html
       'hidden-focusable': 'off',
 
@@ -173,7 +170,7 @@ const validateHtml = async (html: string) => {
       ],
 
       // https://html-validate.org/rules/wcag/h37.html
-      // TODO:
+      // TODO: Provide alternative text for all example course images / diagrams. Waiting on https://github.com/PrairieLearn/PrairieLearn/pull/11929 to show the alternative text nicely.
       'wcag/h37': 'off',
 
       // https://html-validate.org/rules/element-permitted-content.html
@@ -243,7 +240,7 @@ const internallyGradedQuestions = allQuestionDirs
   );
 
 const course = {
-  path: exampleCoursePath,
+  path: EXAMPLE_COURSE_PATH,
   // Note: this doesn't respect any course-level options set.
 } as unknown as Course;
 
