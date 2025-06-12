@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
@@ -41,13 +41,13 @@ export function PageLayout({
     fullHeight?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlValue;
+  headContent?: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlValue;
+  preContent?: HtmlSafeString | HtmlSafeString[];
   /** The main content of the page within the main container. */
-  content: HtmlValue;
+  content: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlValue;
+  postContent?: HtmlSafeString | HtmlSafeString[];
 }) {
   const marginBottom = options.marginBottom ?? true;
 
@@ -126,7 +126,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav">
+                  <div class="app-side-nav bg-light border-right">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -143,6 +143,7 @@ export function PageLayout({
                   courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,
                   assessment: resLocals.assessment,
+                  assessmentSet: resLocals.assessment_set,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({

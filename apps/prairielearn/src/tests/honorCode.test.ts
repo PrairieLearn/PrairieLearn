@@ -29,7 +29,10 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should see the honor code div by default
-    assert.lengthOf(response.$('div.test-class-honor-code'), 1);
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 1);
+    assert.isTrue(
+      response.$('[data-testid="honor-code"]').html()?.includes('I certify that I am Dev User'),
+    );
   });
 
   it('visits landing page of assessment with disabled honor code', async () => {
@@ -45,6 +48,26 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should not see the honor code div anymore
-    assert.lengthOf(response.$('div.test-class-honor-code'), 0);
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 0);
+  });
+
+  it('visits the landing page of assessment with a custom honor code', async () => {
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam2-miscProblems',
+    });
+    const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
+
+    const response = await helperClient.fetchCheerio(assessmentUrl);
+    assert.isTrue(response.ok);
+
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
+
+    // The honor code should include the custom markdown
+    assert.lengthOf(response.$('[data-testid="honor-code"]'), 1);
+    assert.isTrue(response.$('[data-testid="honor-code"]').html()?.includes('<h2>Honor Code</h2>'));
+    assert.isTrue(
+      response.$('[data-testid="honor-code"]').html()?.includes('I, Dev User, pledge that I am'),
+    );
   });
 });

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import type { Assessment } from '../lib/db-types.js';
+import type { Assessment, AssessmentSet } from '../lib/db-types.js';
 
 import { Modal } from './Modal.html.js';
 import type { NavSubPage } from './Navbar.types.js';
@@ -13,16 +13,18 @@ export function AssessmentNavigation({
   courseInstanceId,
   subPage,
   assessment,
+  assessmentSet,
 }: {
   courseInstanceId: string;
   subPage: NavSubPage;
   assessment: Assessment;
+  assessmentSet: AssessmentSet;
 }) {
   return html`
-    <div class="dropdown bg-light pt-2 px-3">
+    <div class="bg-light pt-2 px-3">
       <button
         type="button"
-        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
+        class="btn btn-ghost text-start"
         style="max-width: 100%;"
         aria-label="Change assessment"
         aria-haspopup="true"
@@ -35,7 +37,17 @@ export function AssessmentNavigation({
         data-bs-target="#assessmentNavigationModal"
         hx-target="#assessmentNavigationModalContent"
       >
-        <span class="h6 mb-0 me-1 overflow-hidden text-truncate">${assessment.title}</span>
+        <span class="d-flex flex-row align-items-center gap-2 w-100">
+          <span class="badge color-${assessmentSet.color}">
+            ${assessmentSet.abbreviation}${assessment.number}
+          </span>
+          <span class="d-flex flex-column" style="min-width: 0;">
+            <span class="d-flex align-items-center gap-1 dropdown-toggle">
+              <span class="h6 mb-0 overflow-hidden text-truncate">${assessment.title}</span>
+            </span>
+            <span class="text-muted small overflow-hidden text-truncate">${assessment.tid}</span>
+          </span>
+        </span>
       </button>
       ${AssessmentNavigationModal()}
     </div>

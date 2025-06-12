@@ -178,14 +178,6 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.test.{js,ts,mjs}'],
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-      },
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {

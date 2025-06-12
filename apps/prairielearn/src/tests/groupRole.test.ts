@@ -249,7 +249,7 @@ describe(
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
+          group_name: locals.group_name,
         }),
       });
       assert.isOk(res.ok);
@@ -1149,7 +1149,7 @@ describe(
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
+          group_name: locals.group_name,
         }),
       });
       assert.isOk(res.ok);
@@ -1267,7 +1267,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       body: new URLSearchParams({
         __action: 'create_group',
         __csrf_token: locals.__csrf_token,
-        groupName: locals.group_name,
+        group_name: locals.group_name,
       }),
     });
     assert.isOk(joinRes.ok);
