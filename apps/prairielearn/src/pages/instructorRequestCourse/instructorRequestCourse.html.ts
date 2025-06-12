@@ -42,7 +42,7 @@ export function RequestCourse({
       type: 'plain',
       page: 'request_course',
     },
-    headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
+    headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
       <h1 class="visually-hidden">Request a Course</h1>
       ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
