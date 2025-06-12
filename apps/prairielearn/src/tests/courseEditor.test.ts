@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -344,6 +345,7 @@ const publicCopyTestData: EditData[] = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
       'courseInstances/Fa19/assessments/test/infoAssessment.json',
       'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
@@ -352,26 +354,26 @@ const publicCopyTestData: EditData[] = [
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
-  // describe('not the example course', function () {
-  //   beforeAll(createCourseFiles);
-  //   afterAll(deleteCourseFiles);
+  describe('not the example course', function () {
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
 
-  //   beforeAll(helperServer.before(courseDir));
-  //   afterAll(helperServer.after);
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-  //   beforeAll(async () => {
-  //     await sqldb.queryAsync(sql.update_course_repository, {
-  //       course_path: courseLiveDir,
-  //       course_repository: courseOriginDir,
-  //     });
-  //   });
+    beforeAll(async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+    });
 
-  //   describe('verify edits', function () {
-  //     testEditData.forEach((element) => {
-  //       testEdit(element);
-  //     });
-  //   });
-  // });
+    describe('verify edits', function () {
+      testEditData.forEach((element) => {
+        testEdit(element);
+      });
+    });
+  });
 
   describe('Copy from another course', function () {
     beforeAll(createCourseFiles);
@@ -599,13 +601,13 @@ async function createSharedCourse() {
       sharePublicly: true,
       shareSourcePublicly: true,
     },
-    // [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
-    //   uuid: '11111111-1111-1111-1111-111111111112',
-    //   type: 'v3',
-    //   title: 'Shared source publicly',
-    //   topic: 'TOPIC HERE',
-    //   shareSourcePublicly: true,
-    // },
+    [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111112',
+      type: 'v3',
+      title: 'Shared source publicly',
+      topic: 'TOPIC HERE',
+      shareSourcePublicly: true,
+    },
   };
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
@@ -614,18 +616,20 @@ async function createSharedCourse() {
           id: PUBLICLY_SHARED_QUESTION_QID,
           points: 1,
         },
-        // {
-        //   id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
-        //   points: 1,
-        // },
+        {
+          id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
+          points: 1,
+        },
       ],
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
-  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
-    sharingCourseData.courseInstances['Fa19'].assessments['test'];
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
+    sharingCourseData.courseInstances['Fa19'].assessments['test'],
+  );
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

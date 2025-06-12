@@ -975,6 +975,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Read infoCourseInstance.json');
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
+    const pathsToAdd: string[] = [];
     if (this.is_transfer) {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
@@ -997,9 +998,15 @@ export class CourseInstanceCopyEditor extends Editor {
         }
         const from_path = path.join(this.from_course.path, 'questions', question.qid);
         const from_qid = path.join(this.from_course.sharing_name, question.qid);
-        const { qid } = await doQuestionCopy(this.course, from_path, from_qid, uuidv4());
+        const { questionPath, qid } = await doQuestionCopy(
+          this.course,
+          from_path,
+          from_qid,
+          uuidv4(),
+        );
 
         newQids[question.qid] = qid;
+        pathsToAdd.push(questionPath);
       }
 
       // Update the infoAssessment.json files to include the course sharing name for each question
@@ -1024,8 +1031,9 @@ export class CourseInstanceCopyEditor extends Editor {
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
+    pathsToAdd.push(courseInstancePath);
     return {
-      pathsToAdd: [courseInstancePath],
+      pathsToAdd,
       commitMessage: `copy course instance ${this.course_instance.short_name}${this.is_transfer ? ` (from ${this.from_course.short_name})` : ''} to ${shortName}`,
     };
   }
@@ -1058,7 +1066,7 @@ async function updateInfoAssessmentFilesForTargetCourse(
 
     // Rewrite the question IDs to include the course sharing name,
     // or to point to the new path if the question was copied
-    function shouldAddSharingPrefix(qid) {
+    function shouldAddSharingPrefix(qid: string) {
       return qid && qid[0] !== '@' && questionsToImport.has(qid);
     }
     for (const zone of infoJson.zones) {
