@@ -541,73 +541,73 @@ export abstract class Editor {
     debug('getExistingShortNames() returning', files);
     return files;
   }
+}
 
-  getNamesForCopy(
-    oldShortName: string,
-    shortNames: string[],
-    oldLongName: string | null,
-    longNames: string[],
-  ): { shortName: string; longName: string } {
-    function getBaseShortName(oldname: string): string {
-      const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
-      if (found) {
-        return found[1];
-      } else {
-        return oldname;
-      }
+function getNamesForCopy(
+  oldShortName: string,
+  shortNames: string[],
+  oldLongName: string | null,
+  longNames: string[],
+): { shortName: string; longName: string } {
+  function getBaseShortName(oldname: string): string {
+    const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
+    if (found) {
+      return found[1];
+    } else {
+      return oldname;
     }
-
-    function getBaseLongName(oldname: string | null): string {
-      if (typeof oldname !== 'string') return 'Unknown';
-      debug(oldname);
-      const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
-      debug(found);
-      if (found) {
-        return found[1];
-      } else {
-        return oldname;
-      }
-    }
-
-    function getNumberShortName(basename: string, oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    function getNumberLongName(basename: string, oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (typeof oldname !== 'string') return;
-        const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    const baseShortName = getBaseShortName(oldShortName);
-    const baseLongName = getBaseLongName(oldLongName);
-    const numberShortName = getNumberShortName(baseShortName, shortNames);
-    const numberLongName = getNumberLongName(baseLongName, longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `${baseShortName}_copy${number}`,
-      longName: `${baseLongName} (copy ${number})`,
-    };
   }
+
+  function getBaseLongName(oldname: string | null): string {
+    if (typeof oldname !== 'string') return 'Unknown';
+    debug(oldname);
+    const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
+    debug(found);
+    if (found) {
+      return found[1];
+    } else {
+      return oldname;
+    }
+  }
+
+  function getNumberShortName(basename: string, oldnames: string[]): number {
+    let number = 1;
+    oldnames.forEach((oldname) => {
+      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
+      if (found) {
+        const foundNumber = parseInt(found[1]);
+        if (foundNumber >= number) {
+          number = foundNumber + 1;
+        }
+      }
+    });
+    return number;
+  }
+
+  function getNumberLongName(basename: string, oldnames: string[]): number {
+    let number = 1;
+    oldnames.forEach((oldname) => {
+      if (typeof oldname !== 'string') return;
+      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
+      if (found) {
+        const foundNumber = parseInt(found[1]);
+        if (foundNumber >= number) {
+          number = foundNumber + 1;
+        }
+      }
+    });
+    return number;
+  }
+
+  const baseShortName = getBaseShortName(oldShortName);
+  const baseLongName = getBaseLongName(oldLongName);
+  const numberShortName = getNumberShortName(baseShortName, shortNames);
+  const numberLongName = getNumberLongName(baseLongName, longNames);
+  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  return {
+    shortName: `${baseShortName}_copy${number}`,
+    longName: `${baseLongName} (copy ${number})`,
+  };
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -654,7 +654,7 @@ export class AssessmentCopyEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForCopy(
+    const names = getNamesForCopy(
       this.assessment.tid,
       oldNamesShort,
       this.assessment.title,
@@ -949,7 +949,7 @@ export class CourseInstanceCopyEditor extends Editor {
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
     if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
-      const names = this.getNamesForCopy(
+      const names = getNamesForCopy(
         this.course_instance.short_name,
         oldNamesShort,
         this.course_instance.long_name,
@@ -1723,7 +1723,7 @@ export class QuestionCopyEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug('Generate qid and title');
-    const names = this.getNamesForCopy(
+    const names = getNamesForCopy(
       this.question.qid,
       oldNamesShort,
       this.question.title,
@@ -1793,63 +1793,66 @@ export class QuestionTransferEditor extends Editor {
 
   async write() {
     debug('QuestionTransferEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
-
-    debug('Get title of question that is being copied');
-    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
-    const from_title = sourceInfoJson.title || 'Empty Title';
-
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
-
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    let qid = this.from_qid;
-    let questionTitle = from_title;
-    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
-      const names = this.getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
-      qid = names.shortName;
-      questionTitle = names.longName;
-    }
-    const questionPath = path.join(questionsPath, qid);
-
-    const fromPath = this.from_path;
-    const toPath = questionPath;
-
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = questionTitle;
-    infoJson.uuid = this.uuid;
-
-    // When transferring a question from an example/template course, drop the tags. They
-    // are likely undesirable in the template course.
-    if (this.course.example_course || this.course.template_course) {
-      delete infoJson.tags;
-    }
-
-    // We do not want to preserve sharing settings when copying a question to another course
-    delete infoJson['sharingSets'];
-    delete infoJson['sharePublicly'];
-    delete infoJson['shareSourcePublicly'];
-
-    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
       commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
     };
   }
+}
+
+async function doQuestionCopy() {
+  const questionsPath = path.join(this.course.path, 'questions');
+
+  debug('Get title of question that is being copied');
+  const sourceInfoJson = await fs.readJson(path.join(from_path, 'info.json'));
+  const from_title = sourceInfoJson.title || 'Empty Title';
+
+  debug('Get all existing long names');
+  const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+    course_id: course.id,
+  });
+  const oldNamesLong = result.rows.map((row) => row.title);
+
+  debug('Get all existing short names');
+  const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
+
+  debug('Generate qid and title');
+  let qid = from_qid;
+  let questionTitle = from_title;
+  if (oldNamesShort.includes(from_qid) || oldNamesLong.includes(from_title)) {
+    const names = getNamesForCopy(from_qid, oldNamesShort, from_title, oldNamesLong);
+    qid = names.shortName;
+    questionTitle = names.longName;
+  }
+  const questionPath = path.join(questionsPath, qid);
+
+  const fromPath = from_path;
+  const toPath = questionPath;
+
+  debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+  await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+  debug('Read info.json');
+  const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
+
+  debug('Write info.json with new title and uuid');
+  infoJson.title = questionTitle;
+  infoJson.uuid = uuid;
+
+  // When transferring a question from an example/template course, drop the tags. They
+  // are likely undesirable in the template course.
+  if (course.example_course || course.template_course) {
+    delete infoJson.tags;
+  }
+
+  // We do not want to preserve sharing settings when copying a question to another course
+  delete infoJson['sharingSets'];
+  delete infoJson['sharePublicly'];
+  delete infoJson['shareSourcePublicly'];
+
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+  await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 }
 
 export class FileDeleteEditor extends Editor {
