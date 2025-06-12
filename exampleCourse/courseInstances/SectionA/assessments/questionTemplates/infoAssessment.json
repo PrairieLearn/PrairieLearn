@@ -19,7 +19,9 @@
         { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
         { "id": "demo/matrixAlgebra", "points": 2, "maxPoints": 10 },
         { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
-        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
+        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 },
+        { "id": "template/imageCaptureMobileCaptureEnabled", "points": 1, "maxPoints": 1 },
+        { "id": "template/imageCaptureMobileCaptureDisabled", "points": 1, "maxPoints": 1 }
       ]
     },
     {
