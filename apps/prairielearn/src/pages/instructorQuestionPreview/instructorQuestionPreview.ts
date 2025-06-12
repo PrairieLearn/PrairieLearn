@@ -11,7 +11,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { setQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
@@ -130,7 +130,6 @@ router.get(
       readmeHtml = await markdownToHtml(readme, { allowHtml: false });
     }
 
-    setRendererHeader(res);
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
