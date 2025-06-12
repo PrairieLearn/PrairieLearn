@@ -112,7 +112,9 @@ You can use this syntax to render over an array of strings (the `.` represents t
 
 !!! info "HTML rendering"
 
-    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+    By default, Mustache escapes special characters when using double braces (`{{params.x}}`). This ensures that any content that may contain characters used by HTML (such as quotes or `<` characters) is displayed or interpreted in its original context.
+
+    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML without escaping. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
 
 ### Hiding staff comments in `question.html`
 
