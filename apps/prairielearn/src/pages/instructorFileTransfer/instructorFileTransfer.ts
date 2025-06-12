@@ -55,6 +55,7 @@ router.get(
       from_qid: qid,
       from_course_short_name: from_course.short_name,
       from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+      is_transfer: true,
     });
     const serverJob = await editor.prepareServerJob();
     try {

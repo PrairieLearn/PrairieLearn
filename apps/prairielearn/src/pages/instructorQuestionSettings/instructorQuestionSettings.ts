@@ -313,6 +313,7 @@ router.post(
           from_qid: res.locals.question.qid,
           from_course_short_name: res.locals.course.short_name,
           from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {

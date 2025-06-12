@@ -1622,6 +1622,7 @@ export class QuestionCopyEditor extends Editor {
   private from_qid: string;
   private from_course: string;
   private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
@@ -1630,6 +1631,7 @@ export class QuestionCopyEditor extends Editor {
       from_qid: string;
       from_course_short_name: Course['short_name'];
       from_path: string;
+      is_transfer: boolean;
     },
   ) {
     const { from_qid, from_course_short_name, from_path } = params;
@@ -1639,7 +1641,7 @@ export class QuestionCopyEditor extends Editor {
 
     super({
       ...params,
-      description: `Copy question ${from_qid} from ${from_course}`,
+      description: `Copy question ${from_qid} ${params.is_transfer ? `from ${from_course}` : ''}`,
     });
 
     this.from_qid = from_qid;
@@ -1704,7 +1706,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid} ${this.is_transfer ? `(from ${this.from_course})` : ''} to ${qid}`,
     };
   }
 }
