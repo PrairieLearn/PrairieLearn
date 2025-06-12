@@ -164,6 +164,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            honor_code = valid_assessment.data->>'honor_code',
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
@@ -198,6 +199,7 @@ BEGIN
                 maximum,
                 minimum,
                 student_authz_create,
+                student_authz_choose_name,
                 student_authz_join,
                 student_authz_leave,
                 has_roles
@@ -207,6 +209,7 @@ BEGIN
                 (valid_assessment.data->>'group_max_size')::bigint,
                 (valid_assessment.data->>'group_min_size')::bigint,
                 (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_choose_name')::boolean,
                 (valid_assessment.data->>'student_group_join')::boolean,
                 (valid_assessment.data->>'student_group_leave')::boolean,
                 (valid_assessment.data->>'has_roles')::boolean
@@ -216,6 +219,7 @@ BEGIN
                 maximum = EXCLUDED.maximum,
                 minimum = EXCLUDED.minimum,
                 student_authz_create = EXCLUDED.student_authz_create,
+                student_authz_choose_name = EXCLUDED.student_authz_choose_name,
                 student_authz_join = EXCLUDED.student_authz_join,
                 student_authz_leave = EXCLUDED.student_authz_leave,
                 has_roles = EXCLUDED.has_roles,

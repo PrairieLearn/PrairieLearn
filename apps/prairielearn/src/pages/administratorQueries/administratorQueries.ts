@@ -1,7 +1,7 @@
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as jsonLoad from '../../lib/json-load.js';
@@ -12,7 +12,7 @@ import {
   AdministratorQueryJsonSchema,
 } from './administratorQueries.html.js';
 
-const router = express.Router();
+const router = Router();
 const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
 router.get(

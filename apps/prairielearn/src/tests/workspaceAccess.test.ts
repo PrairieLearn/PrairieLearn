@@ -5,9 +5,10 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
-import { type AuthUser, withUser } from './utils/auth.js';
+import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -42,13 +43,13 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   afterAll(helperServer.after);
 
   beforeAll(async function () {
-    await sqldb.queryAsync(sql.create_user, studentOne);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentOne.uid });
+    const studentOneUser = await getOrCreateUser(studentOne);
+    await ensureEnrollment({ user_id: studentOneUser.user_id, course_instance_id: '1' });
 
-    await sqldb.queryAsync(sql.create_user, studentTwo);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentTwo.uid });
+    const studentTwoUser = await getOrCreateUser(studentTwo);
+    await ensureEnrollment({ user_id: studentTwoUser.user_id, course_instance_id: '1' });
 
-    await sqldb.queryAsync(sql.create_user, studentNotEnrolled);
+    await getOrCreateUser(studentNotEnrolled);
   });
 
   describe('workspaces created by instructors in a course instance', function () {
