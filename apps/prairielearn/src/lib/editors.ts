@@ -965,10 +965,14 @@ export class CourseInstanceCopyEditor extends Editor {
     debug(`Copy course instance\n from ${this.from_path}\n to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
+    debug('Read infoCourseInstance.json');
+    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+
     if (!idsEqual(this.course.id, this.from_course.id)) {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
+      infoJson['allowAccess'] = [];
 
       // Update the infoAssessment.json files to include the course sharing name for each question
       // Its ok that we are writing these directly to disk because when copying to another course
@@ -980,13 +984,9 @@ export class CourseInstanceCopyEditor extends Editor {
       );
     }
 
-    debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
-
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = longName;
     infoJson.uuid = this.uuid;
-    infoJson['allowAccess'] = [];
 
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson['shareSourcePublicly'];
