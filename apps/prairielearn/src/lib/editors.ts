@@ -1634,18 +1634,19 @@ export class QuestionCopyEditor extends Editor {
       is_transfer: boolean;
     },
   ) {
-    const { from_qid, from_course_short_name, from_path } = params;
+    const { from_qid, from_course_short_name, from_path, is_transfer } = params;
 
     const from_course =
       from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
 
     super({
       ...params,
-      description: `Copy question ${from_qid} ${params.is_transfer ? `from ${from_course}` : ''}`,
+      description: `Copy question ${from_qid} ${is_transfer ? `from ${from_course}` : ''}`,
     });
 
     this.from_qid = from_qid;
     this.from_path = from_path;
+    this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
   }
