@@ -12,9 +12,7 @@ onDocumentReady(() => {
         .querySelectorAll<HTMLElement>('.role-comment')
         .forEach((comment) => comment.classList.add('d-none'));
       if (role) {
-        document
-          .querySelectorAll<HTMLElement>(`.role-comment-${role}`)
-          .forEach((comment) => comment.classList.remove('d-none'));
+        document.querySelector<HTMLElement>(`.role-comment-${role}`)?.classList.remove('d-none');
       }
     }),
   );
