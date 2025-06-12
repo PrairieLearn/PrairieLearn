@@ -14,14 +14,14 @@ import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
 import { idsEqual } from './id.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
 export interface CopyTarget {
   id: string;
   short_name: string | null;
   copy_url: string;
   __csrf_token: string;
 }
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getCopyTargets({
   course,
