@@ -31,7 +31,6 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
-  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {
@@ -142,10 +141,6 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
-    }
-
-    if (!(await validateLti13CourseInstance(res.locals))) {
-      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
     }
 
     const instance = await queryRow(
