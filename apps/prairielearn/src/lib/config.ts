@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import {
   ConfigLoader,
@@ -579,6 +580,8 @@ const ConfigSchema = z.object({
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
+
+export const ConfigJsonSchema = zodToJsonSchema(ConfigSchema, {});
 
 const loader = new ConfigLoader(ConfigSchema);
 

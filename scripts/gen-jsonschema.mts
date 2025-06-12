@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import { ConfigJsonSchema } from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 
 // determine if we are checking or writing
@@ -85,6 +86,8 @@ const orderedStringify = (schema) => {
 
 console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
+const configSchema = path.resolve(import.meta.dirname, '../docs/assets/config.schema.json');
+
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // Compare abstract contents are the same since prettier formatting may be different
@@ -101,6 +104,17 @@ if (check) {
       process.exit(1);
     }
   }
+  // docs/assets/config.json
+  try {
+    const file = fs.readFileSync(configSchema, 'utf8');
+    if (file !== JSON.stringify(ConfigJsonSchema, null, 2)) {
+      console.error('Mismatch in config schema (Do you need to run `make update-jsonschema`?)');
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error('Error reading config schema file:', error);
+    process.exit(1);
+  }
 } else {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // These schemas still need to be prettified, so we won't format them at all
@@ -108,4 +122,6 @@ if (check) {
 
     fs.writeFileSync(`${schemaDir}/${name}.json`, orderedStringify(schema));
   }
+
+  fs.writeFileSync(configSchema, JSON.stringify(ConfigJsonSchema, null, 2));
 }
