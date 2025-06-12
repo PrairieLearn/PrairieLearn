@@ -209,10 +209,11 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
   const buildResult = await esbuild.build({
     entryPoints: files,
     target: 'es2017',
-    format: 'iife',
+    format: 'esm',
     sourcemap: 'linked',
     bundle: true,
     minify: true,
+    splitting: true,
     loader: {
       '.woff': 'file',
       '.woff2': 'file',
