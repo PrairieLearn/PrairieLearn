@@ -1708,7 +1708,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} ${this.is_transfer ? `(from ${this.from_course})` : ''} to ${qid}`,
+      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course})` : ''} to ${qid}`,
     };
   }
 }
