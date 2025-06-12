@@ -257,10 +257,7 @@ function QuestionAndFilePreview({
     <div class="tab-content" style="height: 100%">
       <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
         <div class="question-wrapper mx-auto p-3">
-          ${QuestionContainer({
-            resLocals,
-            questionContext: 'instructor',
-          })}
+          ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
         </div>
       </div>
       <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">

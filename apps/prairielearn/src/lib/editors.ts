@@ -909,6 +909,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
   private from_course: Course;
   private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
@@ -919,10 +920,15 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: any;
     },
   ) {
-    super({ ...params, description: `Copy course instance ${params.course_instance.short_name}` });
+    const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
+    super({
+      ...params,
+      description: `Copy course instance ${params.course_instance.short_name}${is_transfer ? ` from ${params.from_course.short_name}` : ''}`,
+    });
     this.course_instance = params.course_instance;
     this.from_course = params.from_course;
     this.from_path = params.from_path;
+    this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
   }
@@ -965,28 +971,31 @@ export class CourseInstanceCopyEditor extends Editor {
     debug(`Copy course instance\n from ${this.from_path}\n to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
-    if (!idsEqual(this.course.id, this.from_course.id)) {
+    debug('Read infoCourseInstance.json');
+    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+
+    if (this.is_transfer) {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
 
+      // Clear access rules to avoid leaking student PII or unexpectedly
+      // making the copied course instance available to users.
+      infoJson['allowAccess'] = [];
+
       // Update the infoAssessment.json files to include the course sharing name for each question
-      // Its ok that we are writing these directly to disk because when copying to another course
+      // It's OK that we are writing these directly to disk because when copying to another course
       // we are working from a temporary folder
-      await updateInfoAssessmentFilesForInstanceCopy(
+      await updateInfoAssessmentFilesForTargetCourse(
         this.course_instance.id,
         courseInstancePath,
         this.from_course.sharing_name,
       );
     }
 
-    debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
-
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = longName;
     infoJson.uuid = this.uuid;
-    infoJson['allowAccess'] = [];
 
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson['shareSourcePublicly'];
@@ -996,12 +1005,12 @@ export class CourseInstanceCopyEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${shortName}`,
+      commitMessage: `copy course instance ${this.course_instance.short_name}${this.is_transfer ? ` (from ${this.from_course.short_name})` : ''} to ${shortName}`,
     };
   }
 }
 
-async function updateInfoAssessmentFilesForInstanceCopy(
+async function updateInfoAssessmentFilesForTargetCourse(
   courseInstanceId: string,
   courseInstancePath: string,
   fromCourseSharingName: string,
@@ -1688,30 +1697,46 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
-  private question: Question;
+  private from_qid: string;
+  private from_course: string;
+  private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions<{ question: Question }>) {
-    const {
-      locals: { question },
-    } = params;
+  constructor(
+    params: BaseEditorOptions & {
+      from_qid: string;
+      from_course_short_name: Course['short_name'];
+      from_path: string;
+      is_transfer: boolean;
+    },
+  ) {
+    const { from_qid, from_course_short_name, from_path, is_transfer } = params;
+
+    const from_course =
+      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
 
     super({
       ...params,
-      description: `Copy question ${question.qid}`,
+      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course}` : ''}`,
     });
 
-    this.question = question;
+    this.from_qid = from_qid;
+    this.from_path = from_path;
+    this.from_course = from_course;
+    this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
   }
 
   async write() {
-    assert(this.question.qid, 'question.qid is required');
-
     debug('QuestionCopyEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
+
+    debug('Get title of question that is being copied');
+    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
+    const from_title = sourceInfoJson.title || 'Empty Title';
 
     debug('Get all existing long names');
     const result = await sqldb.queryAsync(sql.select_questions_with_course, {
@@ -1723,16 +1748,16 @@ export class QuestionCopyEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug('Generate qid and title');
-    const names = getNamesForCopy(
-      this.question.qid,
-      oldNamesShort,
-      this.question.title,
-      oldNamesLong,
-    );
-    const qid = names.shortName;
+    let qid = this.from_qid;
+    let questionTitle = from_title;
+    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
+      const names = getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
+      qid = names.shortName;
+      questionTitle = names.longName;
+    }
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(questionsPath, this.question.qid);
+    const fromPath = this.from_path;
     const toPath = questionPath;
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
@@ -1742,11 +1767,16 @@ export class QuestionCopyEditor extends Editor {
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug('Write info.json with new title and uuid');
-    infoJson.title = names.longName;
+    infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
 
-    // Even when copying a question within a course, we don't want to preserve
-    // sharing settings because they cannot be undone
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
+
+    // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
@@ -1756,47 +1786,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.question.qid} to ${qid}`,
-    };
-  }
-}
-
-export class QuestionTransferEditor extends Editor {
-  private from_qid: string;
-  private from_course: string;
-  private from_path: string;
-
-  public readonly uuid: string;
-
-  constructor(
-    params: BaseEditorOptions & {
-      from_qid: string;
-      from_course_short_name: Course['short_name'];
-      from_path: string;
-    },
-  ) {
-    const { from_qid, from_course_short_name, from_path } = params;
-
-    const from_course =
-      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
-
-    super({
-      ...params,
-      description: `Copy question ${from_qid} from ${from_course}`,
-    });
-
-    this.from_qid = from_qid;
-    this.from_path = from_path;
-
-    this.uuid = uuidv4();
-  }
-
-  async write() {
-    debug('QuestionTransferEditor: write()');
-
-    return {
-      pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course})` : ''} to ${qid}`,
     };
   }
 }

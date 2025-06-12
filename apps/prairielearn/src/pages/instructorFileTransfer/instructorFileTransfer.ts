@@ -8,11 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
-import {
-  CourseInstanceCopyEditor,
-  type Editor,
-  QuestionTransferEditor,
-} from '../../lib/editors.js';
+import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -74,11 +70,12 @@ router.get(
 
     if (file_transfer.transfer_type === 'CopyQuestion') {
       const qid = getContentDir(file_transfer.from_filename, 'questions');
-      const editor = new QuestionTransferEditor({
+      const editor = new QuestionCopyEditor({
         locals: res.locals as any,
         from_qid: qid,
         from_course_short_name: from_course.short_name,
         from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+        is_transfer: true,
       });
 
       await doTransfer(res, editor, file_transfer.id);

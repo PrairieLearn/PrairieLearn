@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { getContentDir } from '../pages/instructorFileTransfer/instructorFileTransfer.js';
+import { getContentDir } from './instructorFileTransfer.js';
 
 describe('Test file transfer helper function', function () {
   it('should split URLs successfully', () => {
