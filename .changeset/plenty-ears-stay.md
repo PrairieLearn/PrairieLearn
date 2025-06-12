@@ -2,4 +2,4 @@
 '@prairielearn/compiled-assets': minor
 ---
 
-Support preloaded assets in ESBuild
+Support preloading assets, and assets processed with ESM + code splitting
