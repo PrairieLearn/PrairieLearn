@@ -144,6 +144,7 @@ async function initiateFileTransfer({
   // hard to authorize a user for two separate courses at the same time. Thus, we
   // authorize them for the source course under the original URL, and then authorize
   // them for the target course under the URL we redirect to.
+  //
   // In the future, if we get all of the auth code properly pulled out of middleware
   // in such a way that makes it easy to authorize multiple courses under the same
   // URL, we can consider scrapping this whole workflow and just copy the files
