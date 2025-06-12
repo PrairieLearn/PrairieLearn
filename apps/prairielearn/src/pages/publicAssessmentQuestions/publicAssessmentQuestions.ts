@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -12,7 +12,7 @@ import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
 import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',

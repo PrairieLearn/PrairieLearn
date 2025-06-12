@@ -6,17 +6,13 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { setQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
@@ -349,7 +345,6 @@ router.get(
         );
       }
     }
-    setRendererHeader(res);
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;

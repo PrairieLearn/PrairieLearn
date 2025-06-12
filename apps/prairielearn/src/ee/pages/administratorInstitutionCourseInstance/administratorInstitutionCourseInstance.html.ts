@@ -26,7 +26,7 @@ export function AdministratorInstitutionCourseInstance({
   return PageLayout({
     resLocals: { ...resLocals, institution },
     pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
-    headContent: [compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')],
+    headContent: compiledScriptTag('administratorInstitutionCourseInstanceClient.ts'),
     navContext: {
       type: 'administrator_institution',
       page: 'administrator_institution',

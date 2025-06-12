@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
@@ -20,7 +20,7 @@ import {
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
@@ -49,7 +49,7 @@ import {
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(

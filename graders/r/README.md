@@ -26,6 +26,38 @@ See the Dockerfile for full details but we include:
 
 and more. We also include a few command-line applications such as `git` and `sqlite3`.
 
+## File Support
+
+This grader primarily focuses on `.R` files for both student submissions and test files. The `.R` file can be named anything, provided it uses the same name in the test files. Additionally, `.ipynb` notebooks are supported for student submissions (test files must still be `.R` files) with the following caveats:
+
+- the student code must be written in a notebook called `student.ipynb`
+- the answer code must be in a single cell of the notebook that starts with the correct `IPYNB_KEY` (see below)
+- the test files use `/grade/student/student.R` (not `/student.ipynb`)
+
+## Customizing the grading key
+
+When grading an `ipynb` file, you need to tell the autograder which cells to grade using a specific key, which is a comment starting with `#`. All other cells will be ignored by the grader. A cell using the default key of `#grade` could be as follows:
+
+```r
+#grade (write your code in this cell and DO NOT DELETE THIS LINE)
+answer <- ...
+```
+
+Any text following the key is optional but recommended to remind students to not modify this comment. A custom key can be configured using the `IPYNB_KEY` environment variable in `info.json`:
+
+```json
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-r",
+    "timeout": 20,
+    "environment": {
+      "IPYNB_KEY": "#student_code"
+    }
+  }
+}
+```
+
 ## Authors
 
 Alton Barbehenn and Dirk Eddelbuettel
