@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -8,7 +8,7 @@ import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { ExternalImageCapture } from './externalImageCapture.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
 router.use(
   '/',

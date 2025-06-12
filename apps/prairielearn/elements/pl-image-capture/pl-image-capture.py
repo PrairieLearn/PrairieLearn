@@ -14,7 +14,7 @@ import lxml.html
 import prairielearn as pl
 from PIL import Image
 
-MOBILE_CAPTURE_ENABLED_DEFAULT = False
+MOBILE_CAPTURE_ENABLED_DEFAULT = True
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -77,7 +77,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "file_name": file_name,
         "variant_id": data["options"].get("variant_id"),
         "submitted_file_name": submitted_file_name,
-        "submission_date": data["options"].get("submission_date"),
         "submission_files_url": data["options"].get("submission_files_url"),
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
@@ -118,6 +117,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
+    # Images submitted are expected to be in JPEG format. This is a safeguard to
+    # ensure that all images uploaded are ultimately stored as JPEGs.
     if img.format != "JPEG":
         # Attempt to convert the image to JPEG format.
         try:

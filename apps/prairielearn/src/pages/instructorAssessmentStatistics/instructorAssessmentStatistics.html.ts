@@ -70,7 +70,7 @@ export function InstructorAssessmentStatistics({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledScriptTag('instructorAssessmentStatisticsClient.ts')],
+    headContent: compiledScriptTag('instructorAssessmentStatisticsClient.ts'),
     content: html`
       ${AssessmentSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,

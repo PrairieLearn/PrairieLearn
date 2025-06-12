@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -28,11 +28,11 @@ import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGen
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
 async function saveGeneratedQuestion(
-  res: express.Response,
+  res: Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
   title?: string,

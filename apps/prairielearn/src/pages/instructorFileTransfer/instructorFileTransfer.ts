@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import debugfn from 'debug';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { flash } from '@prairielearn/flash';
@@ -9,12 +9,12 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
-import { QuestionTransferEditor } from '../../lib/editors.js';
+import { QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 
@@ -50,11 +50,12 @@ router.get(
     const question_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
     const questions_dir_idx = question_exploded.findIndex((x) => x === 'questions');
     const qid = question_exploded.slice(questions_dir_idx + 1).join(path.sep);
-    const editor = new QuestionTransferEditor({
+    const editor = new QuestionCopyEditor({
       locals: res.locals as any,
       from_qid: qid,
       from_course_short_name: from_course.short_name,
       from_path: path.join(config.filesRoot, file_transfer.storage_filename),
+      is_transfer: true,
     });
     const serverJob = await editor.prepareServerJob();
     try {
