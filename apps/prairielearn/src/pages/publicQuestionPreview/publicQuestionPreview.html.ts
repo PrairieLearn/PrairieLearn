@@ -5,8 +5,15 @@ import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.j
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
+import type { CopyTarget } from '../../lib/copy-content.js';
 
-export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
+export function PublicQuestionPreview({
+  resLocals,
+  questionCopyTargets,
+}: {
+  resLocals: Record<string, any>;
+  questionCopyTargets: CopyTarget[] | null;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: resLocals.question.qid,
@@ -39,7 +46,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     content: html`
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${QuestionContainer({ resLocals, questionContext: 'public' })}
+          ${QuestionContainer({ resLocals, questionContext: 'public', questionCopyTargets })}
         </div>
 
         <div class="col-lg-3 col-sm-12">

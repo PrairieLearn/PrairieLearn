@@ -10,6 +10,7 @@ import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
+import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -32,23 +33,7 @@ onDocumentReady(() => {
   });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-  if (copyQuestionForm) {
-    const courseSelect = copyQuestionForm.querySelector<HTMLSelectElement>(
-      'select[name="to_course_id"]',
-    );
-    courseSelect?.addEventListener('change', () => {
-      const option = courseSelect.selectedOptions[0];
-
-      if (option) {
-        copyQuestionForm.action = option?.dataset.copyUrl ?? '';
-        copyQuestionForm
-          .querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]')
-          .forEach((input) => {
-            input.value = option?.dataset.csrfToken ?? '';
-          });
-      }
-    });
-  }
+  copyContentModal(copyQuestionForm);
 });
 
 function externalGradingLiveUpdate() {
@@ -118,9 +103,9 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
 }
 
 function fetchResults(submissionId: string) {
-  $('#submissionInfoModal-' + submissionId).modal('hide');
+  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
 
-  const submissionPanel = document.getElementById('submission-' + submissionId);
+  const submissionPanel = document.getElementById(`submission-${submissionId}`);
   if (!submissionPanel) return;
 
   const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
