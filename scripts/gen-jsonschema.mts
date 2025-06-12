@@ -129,11 +129,11 @@ if (check) {
     }
   }
   // docs/assets/config.json
-  for (const [path, schema] of Object.entries(configSchemas)) {
+  for (const [filePath, schema] of Object.entries(configSchemas)) {
     try {
-      const file = orderedStringify(JSON.parse(fs.readFileSync(path, 'utf8')));
+      const file = orderedStringify(JSON.parse(fs.readFileSync(filePath, 'utf8')));
       if (file !== orderedStringify(schema)) {
-        console.error(`Mismatch in ${path} (Do you need to run \`make update-jsonschema\`?)`);
+        console.error(`Mismatch in ${filePath} (Do you need to run \`make update-jsonschema\`?)`);
         process.exit(1);
       }
     } catch (error) {
