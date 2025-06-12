@@ -72,26 +72,20 @@ export function ExternalImageCapture({
               alt="Image capture preview"
             />
             <p class="text-muted mt-3">
-              Before uploading, make sure your photo is clear, well-lit, and shows all your work legibly.
+              Before uploading, make sure your photo is clear, well-lit, and shows all your work
+              legibly.
             </p>
-            <button type="submit" class="btn btn-primary d-none" id="upload-button" disabled>
-              <i class="bi bi-check2 me-1"></i>
-              <span>Upload</span>
-            </button>
-            <label
-              for="camera-input"
-              style="cursor: pointer;"
-<<<<<<< HEAD
-            >
-=======
-            > 
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
-              <button type="button" class="btn btn-primary pe-none">
-                <i class="bi bi-camera-fill me-1"></i>
-                <span>Take photo</span>
-              </button>
-            </label>
           </div>
+          <button type="submit" class="btn btn-primary d-none" id="upload-button" disabled>
+            <i class="bi bi-check2 me-1"></i>
+            <span>Upload</span>
+          </button>
+          <label for="camera-input" style="cursor: pointer;">
+            <button type="button" class="btn btn-primary pe-none">
+              <i class="bi bi-camera-fill me-1"></i>
+              <span>Take photo</span>
+            </button>
+          </label>
           <button type="button" class="btn btn-primary d-none" id="try-again-button">
             <i class="bi bi-arrow-counterclockwise me-1"></i>
             <span>Try again</span>

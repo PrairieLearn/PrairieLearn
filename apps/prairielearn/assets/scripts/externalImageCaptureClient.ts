@@ -19,9 +19,7 @@ onDocumentReady(() => {
   const externalImageCaptureForm = document.querySelector<HTMLFormElement>(
     '#external-image-capture-form',
   );
-  const tryAgainButton = document.querySelector<HTMLButtonElement>(
-    '#try-again-button',
-  );
+  const tryAgainButton = document.querySelector<HTMLButtonElement>('#try-again-button');
 
   let resizingCanvas: HTMLCanvasElement | null = null;
   let resizingCtx: CanvasRenderingContext2D | null = null;
@@ -52,16 +50,11 @@ onDocumentReady(() => {
     const externalImageCaptureFailedContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-failed-container',
     );
-    const tryAgainButtonSpan = document.querySelector<HTMLButtonElement>(
-      '#try-again-button span',
-    );
-<<<<<<< HEAD
+    const tryAgainButtonSpan = document.querySelector<HTMLButtonElement>('#try-again-button span');
     const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
-=======
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
-    const uploadButtonSpan = document.querySelector<HTMLButtonElement>(
-      '#upload-button span',
-    );
+    const uploadButtonSpan = document.querySelector<HTMLButtonElement>('#upload-button span');
+
+    const cameraInputLabel = document.querySelector<HTMLLabelElement>('label[for="camera-input"]');
 
     if (
       !externalImageCaptureLoadingContainer ||
@@ -69,16 +62,12 @@ onDocumentReady(() => {
       !formItems ||
       !externalImageCaptureSuccessContainer ||
       !externalImageCaptureFailedContainer ||
-      !tryAgainButton || 
-<<<<<<< HEAD
-      !uploadButton || 
-      !uploadButtonSpan
-=======
-      !tryAgainButtonSpan || 
-      !uploadButtonSpan || 
-      !uploadButton || 
+      !tryAgainButton ||
+      !tryAgainButtonSpan ||
+      !uploadButtonSpan ||
+      !uploadButton ||
+      !cameraInputLabel ||
       !cameraInputLabelSpan
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
     ) {
       throw new Error('Required elements for changing state not found in the document');
     }
@@ -86,10 +75,11 @@ onDocumentReady(() => {
     if (state === 'form') {
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.remove('d-none');
+
+      uploadButton.classList.remove('d-none');
+      cameraInputLabel.classList.remove('d-none');
     } else {
-      if (!externalImageCaptureFormContainer.classList.contains('d-none')) {
-        externalImageCaptureFormContainer.classList.add('d-none');
-      }
+      externalImageCaptureFormContainer.classList.add('d-none');
     }
 
     if (state === 'loading') {
@@ -102,66 +92,9 @@ onDocumentReady(() => {
       externalImageCaptureSuccessContainer.classList.remove('d-none');
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.add('d-none');
-
-<<<<<<< HEAD
-      if (!uploadButton.classList.contains('d-none')) {
-        uploadButton.classList.add('d-none');
-      }
-      uploadButton.disabled = true;
-      if (!imagePreview) {
-        throw new Error('Image preview element not found in the document');
-      }
-      imagePreview.style.display = 'none';
-      if (!imagePreview.src) {
-        throw new Error('Image preview source is empty');
-      }
-      URL.revokeObjectURL(imagePreview.src);
-      imagePreview.src = '';
-      if (!cameraInputLabelSpan) {
-        throw new Error('Camera input label span not found in the document');
-      }
-      cameraInputLabelSpan.textContent = 'Take photo';
-      
-
-      uploadButtonSpan.textContent = 'Upload';
-=======
-      tryAgainButtonSpan.textContent = 'Retake photo';
-      tryAgainButton.classList.remove('d-none');
-
-      // Reset the uploaded image 
-      if (imagePreview) {
-        imagePreview.src = '';
-        imagePreview.style.display = 'none';
-      }
-
-      // Reset the upload button
-      uploadButton.disabled = true;
       uploadButton.classList.add('d-none');
-      uploadButtonSpan.textContent = 'Upload';
-      
-      // Reset the camera input label
-      cameraInputLabelSpan.textContent = 'Take photo';
-
-      // Click the camera input button to trigger the file input
-      const cameraInputLabel = document.querySelector<HTMLInputElement>(
-        '#camera-input'
-      );
-      console.log(cameraInputLabel);
-      cameraInputLabel?.click();
-
-      // ^ the above works. The only thing is you have to trigger 
-      // the click when the user actually clicks retake photo.
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
     } else {
-      if (!externalImageCaptureSuccessContainer.classList.contains('d-none')) {
-        externalImageCaptureSuccessContainer.classList.add('d-none');
-      }
-<<<<<<< HEAD
-=======
-      if (!tryAgainButton.classList.contains('d-none')) {
-        tryAgainButton.classList.add('d-none');
-      }
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
+      externalImageCaptureSuccessContainer.classList.add('d-none');
     }
 
     if (state === 'failed') {
@@ -169,32 +102,18 @@ onDocumentReady(() => {
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.add('d-none');
 
-<<<<<<< HEAD
       tryAgainButton.classList.remove('d-none');
 
-      console.log('uploadButtonSpan', uploadButtonSpan);
+      uploadButton.classList.add('d-none');
       uploadButtonSpan.textContent = 'Reupload';
-      console.log('uploadButtonSpan', uploadButtonSpan);
-=======
-      tryAgainButtonSpan.textContent = 'Try again';
-      tryAgainButton.classList.remove('d-none');
 
-      uploadButtonSpan.textContent = 'Reupload';
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
+      cameraInputLabel.classList.add('d-none');
     } else {
-      if (!externalImageCaptureFailedContainer.classList.contains('d-none')) {
-        externalImageCaptureFailedContainer.classList.add('d-none');
-      }
+      externalImageCaptureFailedContainer.classList.add('d-none');
+      tryAgainButton.classList.add('d-none');
       if (state !== 'success') {
         formItems.classList.remove('d-none');
-        if (!tryAgainButton.classList.contains('d-none')) {
-          tryAgainButton.classList.add('d-none');
-        }
       }
-<<<<<<< HEAD
-=======
-      uploadButtonSpan.textContent = 'Upload';
->>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
     }
   }
 
@@ -318,6 +237,8 @@ onDocumentReady(() => {
         if (resizingCanvas) {
           displayImagePreview(resizingCanvas.toDataURL(file.type));
         }
+
+        changeState('form');
       }, file.type);
 
       URL.revokeObjectURL(url);
