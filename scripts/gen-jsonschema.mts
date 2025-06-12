@@ -112,6 +112,9 @@ const configSchemas = {
     zodToJsonSchema(GraderHostConfigSchema),
 };
 
+console.log(configSchemas);
+console.log(schemaDir);
+
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // Compare abstract contents are the same since prettier formatting may be different
