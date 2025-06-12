@@ -9,6 +9,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   type Lti13Assessments,
+  type Lti13Instance,
 } from '../../../lib/db-types.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 

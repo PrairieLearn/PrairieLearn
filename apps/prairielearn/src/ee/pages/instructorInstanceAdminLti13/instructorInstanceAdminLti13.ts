@@ -31,6 +31,7 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
+  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {
