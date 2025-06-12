@@ -115,6 +115,7 @@
     "html-rewriter-wasm": "^0.4.1",
     "html-validate": "^9.5.5",
     "htmx-ext-loading-states": "^2.0.1",
+    "htmx-ext-morphdom-swap": "^2.0.1",
     "htmx.org": "2.0.4",
     "http-proxy-middleware": "^3.0.5",
     "http-status": "^2.1.0",

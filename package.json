@@ -28,7 +28,6 @@
   "dependencies": {
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
-    "htmx-ext-morphdom-swap": "^2.0.1",
     "node-gyp": "^11.2.0",
     "preact-compat": "^3.19.0",
     "react": "^19.1.0",
