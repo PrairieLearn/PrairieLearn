@@ -81,7 +81,11 @@ export function ExternalImageCapture({
             <label
               for="camera-input"
               style="cursor: pointer;"
+<<<<<<< HEAD
             >
+=======
+            > 
+>>>>>>> 8e97e7584 ((WIP) implementing support for retake photo button on external image capture page)
               <button type="button" class="btn btn-primary pe-none">
                 <i class="bi bi-camera-fill me-1"></i>
                 <span>Take photo</span>
