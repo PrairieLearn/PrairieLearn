@@ -12,11 +12,6 @@ const router = Router({ mergeParams: true });
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    res.locals.course = {
-      ...(res.locals.course || {}),
-      id: req.params.course_id,
-    };
-
     const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
     res.status(200).json({ job_sequence_id: jobSequenceId });
   }),
@@ -25,18 +20,15 @@ router.post(
 router.get(
   '/:job_sequence_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_job, {
+    const { rows } = await sqldb.queryAsync(sql.select_job, {
       course_id: req.params.course_id,
       job_sequence_id: req.params.job_sequence_id,
     });
 
-    const data = result.rows[0].item;
-
-    if (data.length === 0) {
-      throw new error.HttpStatusError(404, 'Not Found');
-    } else {
-      res.status(200).send(data[0]);
+    if (rows.length === 0 || rows[0].item.length === 0) {
+      throw new error.HttpStatusError(404, 'Job sequence not found');
     }
+    res.status(200).send(rows[0].item[0]);
   }),
 );
 
