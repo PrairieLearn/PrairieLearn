@@ -138,14 +138,12 @@ async function initiateFileTransfer({
   // copying it, we first copy content from the source course to a temporary
   // directory, and then redirect to another URL that copies it from the temporary
   // directory into the target course. The reasons why it is done this way in the
-  // first place are a little bit lost to history, but there are two reasons why
-  // it is useful
-  // 1. Because our authorization workflow relies so heavily on middlewares, it is
+  // first place are a little bit lost to history, but the main reason seems to be
+  // related to authorization.
+  // Because our authorization workflow relies so heavily on middlewares, it is
   // hard to authorize a user for two separate courses at the same time. Thus, we
   // authorize them for the source course under the original URL, and then authorize
-  // them for the target course under the URL we redirect to
-  // 2. We can do modifications to the files in the temporary directory in
-  // preparation for copying them to the target course
+  // them for the target course under the URL we redirect to.
   // In the future, if we get all of the auth code properly pulled out of middleware
   // in such a way that makes it easy to authorize multiple courses under the same
   // URL, we can consider scrapping this whole workflow and just copy the files
