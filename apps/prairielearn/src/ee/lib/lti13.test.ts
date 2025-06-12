@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { fetchRetry, fetchRetryPaginated } from './lti13.js';
+import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
 const PRODUCTS = [
   'Apple',
@@ -138,5 +138,63 @@ describe('fetchRetry()', () => {
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 6);
     });
+  });
+});
+
+describe('findValueByKey() generic tests', () => {
+  const generic = {
+    val1: 'one',
+    nest1: {
+      val2: 'two',
+    },
+    array1: [null, { val3: 'three' }],
+    nest2: {
+      val1: 'nest2',
+    },
+  };
+
+  test('Top level', () => {
+    assert.equal(findValueByKey(generic, 'val1'), 'one');
+  });
+  test('Nested object', () => {
+    assert.equal(findValueByKey(generic, 'val2'), 'two');
+  });
+  test('Nested array', () => {
+    assert.equal(findValueByKey(generic, 'val3'), 'three');
+  });
+  test('Missing value is undefined', () => {
+    assert.isUndefined(findValueByKey(generic, 'missing'));
+  });
+});
+
+describe('findValueByKey() Canvas errors', () => {
+  test('course concluded', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message:
+              'This course has concluded. AGS requests will no longer be accepted for this course.',
+          },
+        },
+        'message',
+      ),
+      'This course has concluded. AGS requests will no longer be accepted for this course.',
+    );
+  });
+  test('user not found', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message: 'User not found in course or is not a student',
+          },
+        },
+        'message',
+      ),
+      'User not found in course or is not a student',
+    );
   });
 });
