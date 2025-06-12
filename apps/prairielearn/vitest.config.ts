@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     if (isRunningOnDist) throw new Error('Cannot run docker-smoke-tests tests on dist files.');
     include = dockerSmokeTests;
   } else if (mode === 'exclude-docker-smoke-tests') {
-    if (isRunningOnDist) throw new Error('Cannot run only-local tests on dist files.');
+    if (isRunningOnDist) throw new Error('Cannot run exclude-docker-smoke-tests tests on dist files.');
     exclude = [...dockerSmokeTests, ...configDefaults.exclude];
   } else if (isRunningOnDist) {
     include = [join(import.meta.dirname, 'dist/**/*.test.js')];
