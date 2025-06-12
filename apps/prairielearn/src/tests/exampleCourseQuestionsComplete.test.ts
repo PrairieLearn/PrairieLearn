@@ -118,7 +118,7 @@ const validateHtml = async (html: string) => {
       'hidden-focusable': 'off',
 
       // https://html-validate.org/rules/wcag/h63.html
-      // For simple tables that have the headers in the first row or column, it is sufficient to simply use the th elements without scope.
+      // For simple tables that have the headers in the first row or column, it is sufficient to simply use the <th> elements without scope.
       'wcag/h63': 'off',
 
       // https://html-validate.org/rules/attribute-boolean-style.html
