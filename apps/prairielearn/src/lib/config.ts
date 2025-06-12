@@ -13,7 +13,7 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-const ConfigSchema = z.object({
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -580,8 +580,6 @@ const ConfigSchema = z.object({
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
-
-export const ConfigJsonSchema = zodToJsonSchema(ConfigSchema, {});
 
 const loader = new ConfigLoader(ConfigSchema);
 

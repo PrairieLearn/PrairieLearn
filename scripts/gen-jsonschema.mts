@@ -4,9 +4,13 @@
 import fs from 'fs';
 import path from 'path';
 
-import { ConfigJsonSchema } from '../apps/prairielearn/src/lib/config.js';
-import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
+import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
+import { ConfigSchema as PrairieLearnConfigSchema } from '../apps/prairielearn/src/lib/config.js';
+import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
+import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';
 
@@ -88,6 +92,11 @@ console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
 const configSchema = path.resolve(import.meta.dirname, '../docs/assets/config.schema.json');
 
+const UnifiedConfigSchema = zodToJsonSchema(
+  z.union([PrairieLearnConfigSchema, WorkspaceHostConfigSchema, GraderHostConfigSchema]),
+  {},
+);
+
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
     // Compare abstract contents are the same since prettier formatting may be different
@@ -107,7 +116,7 @@ if (check) {
   // docs/assets/config.json
   try {
     const file = fs.readFileSync(configSchema, 'utf8');
-    if (file !== JSON.stringify(ConfigJsonSchema, null, 2)) {
+    if (file !== JSON.stringify(UnifiedConfigSchema, null, 2)) {
       console.error('Mismatch in config schema (Do you need to run `make update-jsonschema`?)');
       process.exit(1);
     }
@@ -123,5 +132,5 @@ if (check) {
     fs.writeFileSync(`${schemaDir}/${name}.json`, orderedStringify(schema));
   }
 
-  fs.writeFileSync(configSchema, JSON.stringify(ConfigJsonSchema, null, 2));
+  fs.writeFileSync(configSchema, JSON.stringify(UnifiedConfigSchema, null, 2));
 }
