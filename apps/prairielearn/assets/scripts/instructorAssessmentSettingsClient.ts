@@ -1,5 +1,4 @@
 import './lib/clipboardPopover.js';
-import './lib/changeIdButton.js';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
