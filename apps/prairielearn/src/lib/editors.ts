@@ -975,7 +975,7 @@ export class CourseInstanceCopyEditor extends Editor {
       infoJson['allowAccess'] = [];
 
       // Update the infoAssessment.json files to include the course sharing name for each question
-      // Its ok that we are writing these directly to disk because when copying to another course
+      // It's OK that we are writing these directly to disk because when copying to another course
       // we are working from a temporary folder
       await updateInfoAssessmentFilesForInstanceCopy(
         this.course_instance.id,
