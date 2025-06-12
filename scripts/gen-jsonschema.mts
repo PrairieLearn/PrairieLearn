@@ -90,12 +90,27 @@ const orderedStringify = (schema) => {
 
 console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
-const configSchema = path.resolve(import.meta.dirname, '../docs/assets/config.schema.json');
 
-const UnifiedConfigSchema = zodToJsonSchema(
-  z.union([PrairieLearnConfigSchema, WorkspaceHostConfigSchema, GraderHostConfigSchema]),
-  {},
+const UnifiedConfigJsonSchema = zodToJsonSchema(
+  z.object({
+    ...GraderHostConfigSchema.shape,
+    ...WorkspaceHostConfigSchema.shape,
+    // We want PrairieLearn config to be the last one, so it overrides any
+    // conflicting properties from the other two schemas.
+    ...PrairieLearnConfigSchema.shape,
+  }),
 );
+
+const configSchemas = {
+  [path.resolve(import.meta.dirname, '../docs/assets/config-unified.schema.json')]:
+    UnifiedConfigJsonSchema,
+  [path.resolve(import.meta.dirname, '../docs/assets/config-prairielearn.schema.json')]:
+    zodToJsonSchema(PrairieLearnConfigSchema),
+  [path.resolve(import.meta.dirname, '../docs/assets/config-workspace-host.schema.json')]:
+    zodToJsonSchema(WorkspaceHostConfigSchema),
+  [path.resolve(import.meta.dirname, '../docs/assets/config-grader-host.schema.json')]:
+    zodToJsonSchema(GraderHostConfigSchema),
+};
 
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
@@ -105,7 +120,7 @@ if (check) {
         JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')),
       );
       if (file !== orderedStringify(schema)) {
-        console.error(`Mismatch in ${name} (Do you need to run \`make update-jsonschema\`?)`);
+        console.error(`Mismatch in ${name} (Do you need to ruan \`make update-jsonschema\`?)`);
         process.exit(1);
       }
     } catch (error) {
@@ -114,15 +129,17 @@ if (check) {
     }
   }
   // docs/assets/config.json
-  try {
-    const file = fs.readFileSync(configSchema, 'utf8');
-    if (file !== JSON.stringify(UnifiedConfigSchema, null, 2)) {
-      console.error('Mismatch in config schema (Do you need to run `make update-jsonschema`?)');
+  for (const [path, schema] of Object.entries(configSchemas)) {
+    try {
+      const file = fs.readFileSync(path, 'utf8');
+      if (file !== JSON.stringify(schema, null, 2)) {
+        console.error(`Mismatch in ${path} (Do you need to run \`make update-jsonschema\`?)`);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(`Error reading config path ${path}:`, error);
       process.exit(1);
     }
-  } catch (error) {
-    console.error('Error reading config schema file:', error);
-    process.exit(1);
   }
 } else {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
@@ -132,5 +149,7 @@ if (check) {
     fs.writeFileSync(`${schemaDir}/${name}.json`, orderedStringify(schema));
   }
 
-  fs.writeFileSync(configSchema, JSON.stringify(UnifiedConfigSchema, null, 2));
+  for (const [path, schema] of Object.entries(configSchemas)) {
+    fs.writeFileSync(path, JSON.stringify(schema, null, 2));
+  }
 }

@@ -51,7 +51,19 @@
     },
     {
       "fileMatch": ["config.json"],
-      "url": "/docs/assets/config.schema.json"
+      "url": "/docs/assets/config-unified.schema.json"
+    },
+    {
+      "fileMatch": ["apps/prairielearn/config.json"],
+      "url": "/docs/assets/config-prairielearn.schema.json"
+    },
+    {
+      "fileMatch": ["apps/grader-host/config.json"],
+      "url": "/docs/assets/config-grader-host.schema.json"
+    },
+    {
+      "fileMatch": ["apps/workspace-host/config.json"],
+      "url": "/docs/assets/config-workspace-host.schema.json"
     }
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
