@@ -909,6 +909,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
   private from_course: Course;
   private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
@@ -919,10 +920,15 @@ export class CourseInstanceCopyEditor extends Editor {
       course_instance: any;
     },
   ) {
-    super({ ...params, description: `Copy course instance ${params.course_instance.short_name}` });
+    const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
+    super({
+      ...params,
+      description: `Copy course instance ${params.course_instance.short_name}${is_transfer ? ` from ${params.from_course.short_name}` : ''}`,
+    });
     this.course_instance = params.course_instance;
     this.from_course = params.from_course;
     this.from_path = params.from_path;
+    this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
   }
@@ -968,7 +974,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Read infoCourseInstance.json');
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
-    if (!idsEqual(this.course.id, this.from_course.id)) {
+    if (this.is_transfer) {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
@@ -999,7 +1005,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${shortName}`,
+      commitMessage: `copy course instance ${this.course_instance.short_name}${this.is_transfer ? ` (from ${this.from_course.short_name})` : ''} to ${shortName}`,
     };
   }
 }
