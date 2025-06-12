@@ -972,6 +972,9 @@ export class CourseInstanceCopyEditor extends Editor {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
+
+      // Clear access rules to avoid leaking student PII or unexpectedly
+      // making the copied course instance available to users.
       infoJson['allowAccess'] = [];
 
       // Update the infoAssessment.json files to include the course sharing name for each question
