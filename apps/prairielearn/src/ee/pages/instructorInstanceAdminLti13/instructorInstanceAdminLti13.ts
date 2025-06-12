@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -29,7 +31,6 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
-  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {
@@ -95,7 +96,12 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      res.send(LineitemsInputs(await getLineitems(instance)));
+      try {
+        res.end(LineitemsInputs(await getLineitems(instance)));
+      } catch (error) {
+        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.error('LineitemsInputs error', error);
+      }
       return;
     }
 

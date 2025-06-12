@@ -276,6 +276,7 @@ function getParamsForAssessment(
     allow_real_time_grading: allowRealTimeGrading,
     allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
+    honor_code: assessment.honorCode,
     auto_close: assessment.autoClose ?? true,
     max_points: assessment.maxPoints,
     max_bonus_points: assessment.maxBonusPoints,

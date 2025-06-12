@@ -2,7 +2,7 @@ import type * as stream from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import { NoSuchKey, S3 } from '@aws-sdk/client-s3';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -12,7 +12,7 @@ import { makeS3ClientConfig } from '../../lib/aws.js';
 
 import { GradingJobRowSchema, InstructorGradingJob } from './instructorGradingJob.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(

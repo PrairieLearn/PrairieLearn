@@ -137,7 +137,7 @@ export function InstanceQuestion({
         </div>
       </div>
     `,
-    postContent: [RubricSettingsModal({ resLocals })],
+    postContent: RubricSettingsModal({ resLocals }),
   });
 }
 
