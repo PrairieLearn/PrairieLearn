@@ -977,7 +977,7 @@ export class CourseInstanceCopyEditor extends Editor {
       // Update the infoAssessment.json files to include the course sharing name for each question
       // It's OK that we are writing these directly to disk because when copying to another course
       // we are working from a temporary folder
-      await updateInfoAssessmentFilesForInstanceCopy(
+      await updateInfoAssessmentFilesForTargetCourse(
         this.course_instance.id,
         courseInstancePath,
         this.from_course.sharing_name,
@@ -1001,7 +1001,7 @@ export class CourseInstanceCopyEditor extends Editor {
   }
 }
 
-async function updateInfoAssessmentFilesForInstanceCopy(
+async function updateInfoAssessmentFilesForTargetCourse(
   courseInstanceId: string,
   courseInstancePath: string,
   fromCourseSharingName: string,
