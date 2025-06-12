@@ -78,7 +78,9 @@ export function InstructorInstanceAdminLti13NoInstances({
                   </a>
                 </p>
               `}
-          <p>Integrating will allow you to push assessment scores from PrairieLearn to the LMS.</p>
+          <p class="mb-0">
+            Integrating will allow you to push assessment scores from PrairieLearn to the LMS.
+          </p>
         </div>
       </div>
     `,
