@@ -120,7 +120,7 @@ if (check) {
         JSON.parse(fs.readFileSync(`${schemaDir}/${name}.json`, 'utf8')),
       );
       if (file !== orderedStringify(schema)) {
-        console.error(`Mismatch in ${name} (Do you need to ruan \`make update-jsonschema\`?)`);
+        console.error(`Mismatch in ${name} (Do you need to run \`make update-jsonschema\`?)`);
         process.exit(1);
       }
     } catch (error) {
@@ -131,8 +131,8 @@ if (check) {
   // docs/assets/config.json
   for (const [path, schema] of Object.entries(configSchemas)) {
     try {
-      const file = fs.readFileSync(path, 'utf8');
-      if (file !== JSON.stringify(schema, null, 2)) {
+      const file = orderedStringify(JSON.parse(fs.readFileSync(path, 'utf8')));
+      if (file !== orderedStringify(schema)) {
         console.error(`Mismatch in ${path} (Do you need to run \`make update-jsonschema\`?)`);
         process.exit(1);
       }

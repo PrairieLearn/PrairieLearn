@@ -22,10 +22,7 @@
       "default": true
     },
     "cacheImageRegistry": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "parallelInitPulls": {
@@ -89,10 +86,7 @@
       "default": "grading_jobs_dev"
     },
     "jobsQueueUrl": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "resultsQueueName": {
@@ -100,10 +94,7 @@
       "default": "grading_results_dev"
     },
     "resultsQueueUrl": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "timeoutOverhead": {
@@ -123,10 +114,7 @@
       "default": "postgres"
     },
     "postgresqlPassword": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "postgresqlPoolSize": {
@@ -138,10 +126,7 @@
       "default": 30000
     },
     "autoScalingGroupName": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "instanceId": {
@@ -149,10 +134,7 @@
       "default": "server"
     },
     "sentryDsn": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": ["string", "null"],
       "default": null
     },
     "sentryEnvironment": {
