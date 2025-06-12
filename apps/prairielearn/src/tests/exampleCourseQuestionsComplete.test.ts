@@ -257,7 +257,7 @@ const accessibilitySkip = [
   'element/dataframe',
 ];
 
-describe('Internally Graded Question Lifecycle Tests', { timeout: 60_000 }, function () {
+describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
 
   beforeAll(async function () {
