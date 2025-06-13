@@ -91,6 +91,10 @@ lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
 	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+lint-sql:
+	@sqlfluff lint
+lint-sql-migrations:
+	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 
