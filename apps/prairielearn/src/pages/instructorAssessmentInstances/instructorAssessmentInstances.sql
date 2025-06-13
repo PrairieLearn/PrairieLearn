@@ -138,7 +138,7 @@ INSERT INTO
     auth_user_id
   ) (
     SELECT
-      true,
+      TRUE,
       results.assessment_instance_id,
       results.date_limit,
       $authn_user_id
@@ -191,7 +191,7 @@ INSERT INTO
     auth_user_id
   ) (
     SELECT
-      true,
+      TRUE,
       results.assessment_instance_id,
       results.date_limit,
       $authn_user_id

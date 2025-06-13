@@ -26,7 +26,7 @@ exclude_rules = layout.indent,
     aliasing.expression, 
     structure.using, 
     aliasing.table, 
-    capitalisation.literals, 
+    # capitalisation.literals, 
     structure.unused_cte, 
     structure.subquery,
     capitalisation.types, 
@@ -44,6 +44,9 @@ exclude_rules = layout.indent,
     convention.left_join, 
     structure.distinct, 
     ambiguous.column_references
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = upper
 
 [sqlfluff:templater:placeholder]
 param_style = dollar

@@ -17,8 +17,8 @@ SELECT
 FROM
   (
     VALUES
-      (true),
-      (false)
+      (TRUE),
+      (FALSE)
   ) AS tmp (open)
   LEFT JOIN counts USING (open)
 ORDER BY

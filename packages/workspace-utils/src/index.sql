@@ -148,7 +148,7 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
+  coalesce(ai.include_in_statistics, FALSE),
   make_interval(
     secs => $duration_milliseconds::double precision / 1000.0
   )
