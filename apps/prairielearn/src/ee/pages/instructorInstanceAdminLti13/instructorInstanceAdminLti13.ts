@@ -16,13 +16,16 @@ import {
 
 import {
   AssessmentSchema,
+  type Lti13Assessments,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { type AssessmentRow, selectAssessments } from '../../../models/assessment.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
+  type Lineitems,
   Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
   getLineitems,
@@ -33,7 +36,6 @@ import {
 } from '../../lib/lti13.js';
 
 import {
-  AssessmentRowSchema,
   InstructorInstanceAdminLti13,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
@@ -74,28 +76,11 @@ router.get(
       throw error.make(404, 'LTI 1.3 instance not found.');
     }
 
-    if ('lineitems' in req.query) {
-      try {
-        res.end(LineitemsInputs(await getLineitems(instance)));
-      } catch (error) {
-        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
-        logger.error('LineitemsInputs error', error);
-      }
-      return;
-    }
+    const assessments = await selectAssessments({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
-    const assessments = await queryRows(
-      sql.select_assessments,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-        assessments_group_by: res.locals.course_instance.assessments_group_by,
-      },
-      AssessmentRowSchema,
-    );
-
-    const lineitems = await queryRows(
+    const lti13_assessments = await queryRows(
       sql.select_lti13_assessments,
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
@@ -103,13 +88,63 @@ router.get(
       Lti13AssessmentsSchema,
     );
 
+    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
+    for (const a of lti13_assessments) {
+      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
+    }
+
+    if ('lineitems' in req.query) {
+      const assessmentsById: Record<string, AssessmentRow> = {};
+      for (const a of assessments) {
+        assessmentsById[a.id] = a;
+      }
+
+      let lineitems: Lineitems;
+
+      try {
+        lineitems = await getLineitems(instance);
+      } catch (error) {
+        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.error('LineitemsInputs error', error);
+        return;
+      }
+
+      const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
+      for (const a of lti13_assessments) {
+        lti13AssessmentsByLineItemIdUrl[a.lineitem_id_url] = a;
+      }
+
+      lineitems.sort((a, b) => {
+        // First sort by assessment_id, puts unlinked first and ordered by ID
+        const a_assessmentId = lti13AssessmentsByLineItemIdUrl[a.id]?.assessment_id ?? '';
+        const b_assessmentId = lti13AssessmentsByLineItemIdUrl[b.id]?.assessment_id ?? '';
+
+        const byAssessmentId = a_assessmentId.localeCompare(b_assessmentId);
+        if (byAssessmentId !== 0) return byAssessmentId;
+
+        // Finally, reverse sort by the lineitem id to get the newest first
+        return b.id.localeCompare(a.id);
+      });
+
+      res.send(
+        LineitemsInputs({
+          lineitems,
+          assessmentsById,
+          lti13AssessmentsByLineItemIdUrl,
+          urlPrefix: res.locals.urlPrefix,
+        }),
+      );
+      return;
+    }
+
     res.send(
       InstructorInstanceAdminLti13({
         resLocals: res.locals,
         instance,
         instances,
         assessments,
-        lineitems,
+        assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        lti13AssessmentsByAssessmentId,
       }),
     );
   }),
