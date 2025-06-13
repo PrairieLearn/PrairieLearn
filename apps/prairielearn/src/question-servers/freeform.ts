@@ -2,15 +2,11 @@ import assert from 'node:assert';
 import * as path from 'node:path';
 
 import * as async from 'async';
-// Use slim export, which relies on htmlparser2 instead of parse5. This provides
-// support for questions with legacy renderer.
-import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
-import * as parse5 from 'parse5';
 
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
@@ -20,11 +16,9 @@ import { run } from '@prairielearn/run';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
-import { type CallType } from '../lib/code-caller/code-caller-shared.js';
 import { type CodeCaller, FunctionMissingError, withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
@@ -61,7 +55,6 @@ interface QuestionProcessingContext {
   course_dir_host: string;
   question_dir: string;
   question_dir_host: string;
-  renderer: 'experimental' | 'default' | 'legacy';
   course_elements: ElementNameMap;
   course_element_extensions: ElementExtensionNameDirMap;
 }
@@ -324,86 +317,6 @@ function resolveElement(elementName: string, context: QuestionProcessingContext)
   }
 }
 
-function getElementController(elementName, context) {
-  const element = resolveElement(elementName, context);
-  return path.join(element.directory, element.controller);
-}
-
-/**
- * Add clientFiles urls for elements and extensions.
- * Returns a copy of data with the new urls inserted.
- */
-function getElementClientFiles(
-  data: ExecutionData,
-  elementName: string,
-  context: QuestionProcessingContext,
-) {
-  const dataCopy = structuredClone(data);
-  // The options field wont contain URLs unless in the 'render' stage, so
-  // check if it is populated before adding the element url
-  if ('base_url' in data.options) {
-    dataCopy.options.client_files_element_url = assets.courseElementAssetPath(
-      context.course.commit_hash,
-      data.options.base_url,
-      `${elementName}/clientFilesElement`,
-    );
-    dataCopy.options.client_files_extensions_url = {};
-
-    if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-      Object.keys(context.course_element_extensions[elementName]).forEach((extension) => {
-        const url = assets.courseElementExtensionAssetPath(
-          context.course.commit_hash,
-          data.options.base_url,
-          `${elementName}/${extension}/clientFilesExtension`,
-        );
-        dataCopy.options.client_files_extensions_url[extension] = url;
-      });
-    }
-  }
-  return dataCopy;
-}
-
-async function elementFunction<T extends ExecutionData>(
-  codeCaller: CodeCaller,
-  fcn: Phase,
-  elementName: string,
-  elementHtml: string,
-  data: T,
-  context: QuestionProcessingContext,
-) {
-  const resolvedElement = resolveElement(elementName, context);
-  const { controller, type: resolvedElementType, name: resolvedElementName } = resolvedElement;
-  const dataCopy = getElementClientFiles(data, elementName, context);
-
-  const pythonArgs = [elementHtml, dataCopy];
-  const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-  const type = `${resolvedElementType}-element` satisfies CallType;
-  const directory = resolvedElementName;
-
-  try {
-    return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
-  } catch (err) {
-    if (err instanceof FunctionMissingError) {
-      // function wasn't present in server
-      return {
-        result: defaultElementFunctionRet(fcn, dataCopy),
-        output: '',
-      };
-    }
-    throw err;
-  }
-}
-
-function defaultElementFunctionRet(phase: Phase, data: ExecutionData) {
-  if (phase === 'render') {
-    return '';
-  } else if (phase === 'file') {
-    return '';
-  } else {
-    return data;
-  }
-}
-
 function defaultServerRet(phase: Phase, data: ExecutionData, html: string) {
   if (phase === 'render') {
     return html;
@@ -464,16 +377,8 @@ async function execPythonServer(
 
 async function execTemplate(htmlFilename: string, data: ExecutionData) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
-  let html = mustache.render(rawFile, data);
-  html = markdown.processQuestion(html);
-  const $ = cheerio.load(html, {
-    xml: {
-      // This is necessary for Cheerio to use `htmlparser2` instead of `parse5`.
-      xmlMode: false,
-      recognizeSelfClosing: true,
-    },
-  });
-  return { html, $ };
+  const html = mustache.render(rawFile, data);
+  return markdown.processQuestion(html);
 }
 
 function checkData(data: Record<string, any>, origData: Record<string, any>, phase: Phase) {
@@ -562,7 +467,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   return null;
 }
 
-async function experimentalProcess<T>(
+async function processQuestionPhase<T>(
   phase: Phase,
   codeCaller: CodeCaller,
   data: T,
@@ -623,307 +528,6 @@ async function experimentalProcess<T>(
   };
 }
 
-function isDocumentFragmentNode(
-  node: parse5.DefaultTreeAdapterTypes.Node,
-): node is parse5.DefaultTreeAdapterTypes.DocumentFragment {
-  return node.nodeName === '#document-fragment';
-}
-
-async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
-  phase: Phase,
-  codeCaller: CodeCaller,
-  data: T,
-  context: QuestionProcessingContext,
-  html: string,
-) {
-  const origData = structuredClone(data);
-  const renderedElementNames: string[] = [];
-  const courseIssues: CourseIssueError[] = [];
-  let fileData = Buffer.from('');
-  const questionElements = new Set([
-    ...Object.keys(coreElementsCache),
-    ...Object.keys(context.course_elements),
-  ]);
-
-  const visitNode = async (
-    node:
-      | parse5.DefaultTreeAdapterTypes.DocumentFragment
-      | parse5.DefaultTreeAdapterTypes.ChildNode,
-  ) => {
-    if ('tagName' in node && questionElements.has(node.tagName)) {
-      const elementName = node.tagName;
-      const elementFile = getElementController(elementName, context);
-      if (phase === 'render' && !renderedElementNames.includes(elementName)) {
-        renderedElementNames.push(elementName);
-      }
-
-      // Populate any extensions used by this element.
-      const extensions = run(() => {
-        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-          return context.course_element_extensions[elementName];
-        }
-        return {};
-      });
-
-      // We need to wrap it in another node, since only child nodes
-      // are serialized
-      const serializedNode = parse5.serialize({
-        nodeName: '#document-fragment',
-        childNodes: [node],
-      });
-      let ret_val: any, consoleLog: string;
-      try {
-        ({ result: ret_val, output: consoleLog } = await elementFunction(
-          codeCaller,
-          phase,
-          elementName,
-          serializedNode,
-          { ...data, extensions },
-          context,
-        ));
-      } catch (e) {
-        // We'll catch this and add it to the course issues list
-        throw new CourseIssueError(`${elementFile}: Error calling ${phase}(): ${e.toString()}`, {
-          cause: e,
-          data: e.data,
-          fatal: true,
-        });
-      }
-
-      // Remove any element extensions since they're not used elsewhere.
-      delete ret_val.extensions;
-
-      if (typeof consoleLog === 'string' && consoleLog.length > 0) {
-        courseIssues.push(
-          new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
-            data: { outputBoth: consoleLog },
-            fatal: false,
-          }),
-        );
-      }
-      if (phase === 'render') {
-        if (typeof ret_val !== 'string') {
-          throw new CourseIssueError(
-            `${elementFile}: Error calling ${phase}(): return value is not a string`,
-            { data: ret_val, fatal: true },
-          );
-        }
-        node = parse5.parseFragment(ret_val);
-      } else if (phase === 'file') {
-        // Convert ret_val from base64 back to buffer (this always works,
-        // whether or not ret_val is valid base64)
-        const buf = Buffer.from(ret_val, 'base64');
-        // If the buffer has non-zero length...
-        if (buf.length > 0) {
-          if (fileData.length > 0) {
-            // If fileData already has non-zero length, throw an error
-            throw new CourseIssueError(
-              `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-              { fatal: true },
-            );
-          } else {
-            // If not, replace fileData with buffer
-            fileData = buf;
-          }
-        }
-      } else {
-        // the following line is safe because we can't be in multiple copies of this function simultaneously
-        data = ret_val;
-        const checkErr = checkData(data, origData, phase);
-        if (checkErr) {
-          throw new CourseIssueError(
-            `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-            { fatal: true },
-          );
-        }
-      }
-    }
-
-    if (!('childNodes' in node)) {
-      // This is a text node or comment node; there are no children to process.
-      return node;
-    }
-
-    const newChildren: parse5.DefaultTreeAdapterTypes.ChildNode[] = [];
-    for (const childNode of node.childNodes) {
-      const childRes = await visitNode(childNode);
-
-      // We can't rely on `nodeName` as a discriminant because for the `Element`
-      // type, it doesn't have a literal value:
-      // https://github.com/microsoft/TypeScript/issues/48500#issuecomment-1085063454
-      // We use a custom type guard instead.
-
-      if (isDocumentFragmentNode(childRes)) {
-        newChildren.push(...childRes.childNodes);
-      } else {
-        newChildren.push(childRes);
-      }
-    }
-
-    // the following line is safe because we can't be in multiple copies of this function simultaneously
-    node.childNodes = newChildren;
-
-    return node;
-  };
-
-  let questionHtml = '';
-  try {
-    const res = await visitNode(parse5.parseFragment(html));
-
-    // This assertion should always pass. If `visitNode` is passed a document
-    // fragment, it will always return a document fragment.
-    assert(isDocumentFragmentNode(res), 'Expected a document fragment');
-
-    questionHtml = parse5.serialize(res);
-  } catch (e) {
-    courseIssues.push(e);
-  }
-
-  return {
-    courseIssues,
-    data,
-    html: questionHtml,
-    fileData,
-    renderedElementNames,
-  };
-}
-
-async function legacyTraverseQuestionAndExecuteFunctions<T extends ExecutionData>(
-  phase: Phase,
-  codeCaller: CodeCaller,
-  data: T,
-  context: QuestionProcessingContext,
-  $: cheerio.CheerioAPI,
-) {
-  const origData = structuredClone(data);
-  const renderedElementNames: string[] = [];
-  const courseIssues: CourseIssueError[] = [];
-  let fileData = Buffer.from('');
-  const questionElements = new Set([
-    ...Object.keys(coreElementsCache),
-    ...Object.keys(context.course_elements),
-  ]).values();
-
-  try {
-    await async.eachSeries(questionElements, async (elementName) => {
-      await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !renderedElementNames.includes(elementName)) {
-          renderedElementNames.push(elementName);
-        }
-
-        const elementFile = getElementController(elementName, context);
-
-        // Populate any extensions used by this element.
-        const extensions = run(() => {
-          if (
-            Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)
-          ) {
-            return context.course_element_extensions[elementName];
-          }
-          return {};
-        });
-
-        const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        assert(elementHtml != null, 'Element did not have any HTML');
-
-        let result: any, output: string;
-        try {
-          ({ result, output } = await elementFunction(
-            codeCaller,
-            phase,
-            elementName,
-            elementHtml,
-            { ...data, extensions },
-            context,
-          ));
-        } catch (err) {
-          const courseIssue = new CourseIssueError(
-            `${elementFile}: Error calling ${phase}(): ${err.toString()}`,
-            { data: err.data, fatal: true },
-          );
-          courseIssues.push(courseIssue);
-
-          // We won't actually use this error, but we do still need to throw
-          // it to abort the current traversal.
-          throw courseIssue;
-        }
-
-        // Remove any element extensions since they're not used elsewhere.
-        delete result.extensions;
-
-        if (typeof output === 'string' && output.length > 0) {
-          courseIssues.push(
-            new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
-              data: { outputBoth: output },
-              fatal: false,
-            }),
-          );
-        }
-
-        if (phase === 'render') {
-          if (typeof result !== 'string') {
-            const courseIssue = new CourseIssueError(
-              `${elementFile}: Error calling ${phase}(): return value is not a string`,
-              { data: { result }, fatal: true },
-            );
-            courseIssues.push(courseIssue);
-
-            // As above, we just throw to abort the traversal.
-            throw courseIssue;
-          }
-
-          $(element).replaceWith(result);
-        } else if (phase === 'file') {
-          // Convert ret_val from base64 back to buffer (this always works,
-          // whether or not ret_val is valid base64)
-          const buf = Buffer.from(result, 'base64');
-
-          // If the buffer has non-zero length...
-          if (buf.length > 0) {
-            if (fileData.length > 0) {
-              // If fileData already has non-zero length, throw an error
-              const courseIssue = new CourseIssueError(
-                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-                { fatal: true },
-              );
-              courseIssues.push(courseIssue);
-
-              // As above, throw the error to abort the traversal.
-              throw courseIssue;
-            } else {
-              // If not, replace fileData with buffer
-              fileData = buf;
-            }
-          }
-        } else {
-          data = result;
-          const checkErr = checkData(data, origData, phase);
-          if (checkErr) {
-            const courseIssue = new CourseIssueError(
-              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-              { fatal: true },
-            );
-            courseIssues.push(courseIssue);
-
-            // As above, throw the error to abort the traversal.
-            throw courseIssue;
-          }
-        }
-      });
-    });
-  } catch {
-    // Black-hole any errors, they were (should have been) handled by course issues
-  }
-
-  return {
-    courseIssues,
-    data,
-    html: $.html(),
-    fileData,
-    renderedElementNames,
-  };
-}
-
 function getPartialScoreValues(val: unknown) {
   const obj = (typeof val === 'object' && val != null ? val : {}) as Record<string, unknown>;
   return {
@@ -954,9 +558,9 @@ async function processQuestionHtml<T extends ExecutionData>(
   }
 
   const htmlFilename = path.join(context.question_dir_host, 'question.html');
-  let html: string, $: cheerio.CheerioAPI;
+  let html: string;
   try {
-    ({ html, $ } = await execTemplate(htmlFilename, data));
+    html = await execTemplate(htmlFilename, data);
   } catch (err) {
     return {
       courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
@@ -973,15 +577,7 @@ async function processQuestionHtml<T extends ExecutionData>(
     html: processedHtml,
     fileData,
     renderedElementNames,
-  } = await run(async () => {
-    if (context.renderer === 'experimental') {
-      return await experimentalProcess(phase, codeCaller, data, context, html);
-    } else if (context.renderer === 'default') {
-      return await traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html);
-    } else {
-      return await legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $);
-    }
-  });
+  } = await processQuestionPhase(phase, codeCaller, data, context, html);
 
   if (phase === 'grade' || phase === 'test') {
     if (context.question.partial_credit) {
@@ -1253,7 +849,6 @@ export async function prepare(
 interface RenderPanelResult {
   courseIssues: CourseIssueError[];
   html: string;
-  renderer?: string;
   renderedElementNames?: string[];
   cacheHit?: boolean;
 }
@@ -1445,15 +1040,6 @@ export async function render(
     let allRenderedElementNames: string[] = [];
     const courseIssues: CourseIssueError[] = [];
     const context = await getContext(question, course);
-
-    // Hack: we need to propagate this back up to the original caller so
-    // they can expose the selected renderer to the client via a header, but
-    // parent functions don't actually return things. So we'll just stick it
-    // in the `locals` object that the parent will be able to read from.
-    //
-    // See the `setRendererHeader` function in `lib/question-render`
-    // for where this is actually used.
-    locals.question_renderer = context.renderer;
 
     return withCodeCaller(course, async (codeCaller) => {
       if (renderSelection.question) {
@@ -2034,20 +1620,6 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
     { type: 'elementExtensions' },
   ]);
 
-  // Select which rendering strategy we'll use. This is computed here so that
-  // in can factor into the cache key.
-  const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
-  const useExperimentalRenderer = !(await features.enabled('process-questions-in-server', {
-    institution_id: course.institution_id,
-    course_id: course.id,
-  }));
-
-  const renderer = useExperimentalRenderer
-    ? 'experimental'
-    : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
-
   // The `*Host` values here refer to the paths relative to PrairieLearn;
   // the other values refer to the paths as they will be seen by the worker
   // that actually executes the question.
@@ -2074,7 +1646,6 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
     question_dir_host: questionDirectoryHost,
     course_elements: elements,
     course_element_extensions: extensions,
-    renderer,
   };
 }
 

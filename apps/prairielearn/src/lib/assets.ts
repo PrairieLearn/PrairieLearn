@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import express from 'express';
+import express, { Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
 import { v4 as uuid } from 'uuid';
 
@@ -176,7 +176,7 @@ export async function close() {
  */
 export function applyMiddleware(app: express.Application) {
   const assetsPrefix = assertAssetsPrefix();
-  const router = express.Router();
+  const router = Router();
 
   // Compiled assets have a digest/hash embedded in their filenames, so they
   // don't require a separate cachebuster.

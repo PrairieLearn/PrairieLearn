@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -22,7 +22,7 @@ import {
   RequestCourse,
 } from './instructorRequestCourse.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
