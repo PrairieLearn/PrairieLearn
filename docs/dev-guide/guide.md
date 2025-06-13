@@ -240,9 +240,9 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
     ![Using Postgres VSCode](./postgres-vscode-select-1000.png)
 
-??? tip "Removing old schemas"
+??? tip "Cleaning out old schemas"
 
-    The following query will remove all schemas except public and the most recent one.
+    The following query will remove all schemas except public. You can then restart the server to recreate the sprocs.
 
     ```sql
     DO $$
@@ -250,32 +250,14 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
       r RECORD;
     BEGIN
       FOR r IN
-        WITH dated_schemas AS (
-          SELECT
-            nspname,
-            substring(nspname from '_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)') AS ts_str
-          FROM pg_namespace
-          WHERE nspname ~ '_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z'
-            AND nspname <> 'public'
-        ),
-        parsed_schemas AS (
-          SELECT
-            nspname,
-            to_timestamp(ts_str, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS ts
-          FROM dated_schemas
-          WHERE ts_str IS NOT NULL
-        ),
-        ranked_schemas AS (
-          SELECT nspname, ts,
-                RANK() OVER (ORDER BY ts DESC) AS rank
-          FROM parsed_schemas
-        )
-        SELECT nspname FROM ranked_schemas WHERE rank > 1
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname NOT IN ('public', 'information_schema', 'pg_catalog')
+          AND nspname NOT LIKE 'pg_toast%'
+          AND nspname NOT LIKE 'pg_temp_%'
       LOOP
-        -- One schema per DROP outside transaction scope
         EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
-        -- Commit after each drop to free up locks
-        COMMIT;
+        COMMIT;  -- avoid shared memory exhaustion
       END LOOP;
     END $$;
     ```
