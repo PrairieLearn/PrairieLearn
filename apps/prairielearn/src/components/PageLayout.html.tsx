@@ -16,12 +16,12 @@ import { SideNav } from './SideNav.html.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
-): HtmlSafeString | HtmlSafeString[] | undefined => {
+): HtmlSafeString | HtmlSafeString[] | undefined {
   if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
     return content;
   }
   return renderHtml(content);
-};
+}
 
 export function PageLayout({
   resLocals,
