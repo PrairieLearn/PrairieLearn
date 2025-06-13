@@ -1,8 +1,8 @@
 import { setTimeout as sleep } from 'timers/promises';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch, { FormData } from 'node-fetch';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 

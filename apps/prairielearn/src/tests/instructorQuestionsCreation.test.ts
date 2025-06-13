@@ -1,10 +1,9 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
@@ -28,7 +27,7 @@ const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 describe('Creating a question', () => {
-  before(async () => {
+  beforeAll(async () => {
     // Clone the course template for testing
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
@@ -53,9 +52,9 @@ describe('Creating a question', () => {
     await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('create a new empty question', async () => {
+  test.sequential('create a new empty question', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
@@ -87,7 +86,7 @@ describe('Creating a question', () => {
     );
   });
 
-  step('verify that the new empty question has the correct info', async () => {
+  test.sequential('verify that the new empty question has the correct info', async () => {
     const questionLiveInfoPath = path.join(
       questionsLiveDir,
       'test-question', // Verify that the qid was used as the question folder's name
@@ -100,7 +99,7 @@ describe('Creating a question', () => {
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  step('create a new template question', async () => {
+  test.sequential('create a new template question', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
@@ -133,7 +132,7 @@ describe('Creating a question', () => {
     );
   });
 
-  step('verify that the new template question has the correct info', async () => {
+  test.sequential('verify that the new template question has the correct info', async () => {
     const questionLivePath = path.join(questionsLiveDir, 'test-random-graph');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
@@ -178,7 +177,7 @@ describe('Creating a question', () => {
     assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
   });
 
-  step('create new question with duplicate qid, title', async () => {
+  test.sequential('create new question with duplicate qid, title', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
@@ -207,7 +206,7 @@ describe('Creating a question', () => {
     );
   });
 
-  step('verify that the title and qid had 2 appended to them', async () => {
+  test.sequential('verify that the title and qid had 2 appended to them', async () => {
     const questionLiveInfoPath = path.join(
       questionsLiveDir,
       'test-question_2', // Verify that the qid with 2 appended to it was used as the name of the question folder
@@ -219,7 +218,7 @@ describe('Creating a question', () => {
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  step('should not be able to create a question without a title or qid', async () => {
+  test.sequential('should not be able to create a question without a title or qid', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
@@ -242,31 +241,34 @@ describe('Creating a question', () => {
     assert.equal(createQuestionResponse.status, 400);
   });
 
-  step('should not be able to create a question without specifying start_from', async () => {
-    // Fetch the questions page for the course instance
-    const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
-    );
-    assert.equal(questionsResponse.status, 200);
+  test.sequential(
+    'should not be able to create a question without specifying start_from',
+    async () => {
+      // Fetch the questions page for the course instance
+      const questionsResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+      );
+      assert.equal(questionsResponse.status, 200);
 
-    // Create a new empty question without specifying start_from
-    const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          title: 'New Test Question',
-          qid: 'new-test-question',
-        }),
-      },
-    );
-    assert.equal(createQuestionResponse.status, 400);
-  });
+      // Create a new empty question without specifying start_from
+      const createQuestionResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'add_question',
+            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            title: 'New Test Question',
+            qid: 'new-test-question',
+          }),
+        },
+      );
+      assert.equal(createQuestionResponse.status, 400);
+    },
+  );
 
-  step(
+  test.sequential(
     'should not be able to create a question with qid not contained in the root directory',
     async () => {
       // Fetch the questions page for the course instance
@@ -295,7 +297,7 @@ describe('Creating a question', () => {
     },
   );
 
-  step(
+  test.sequential(
     'should not be able to create a question from a non-existent template question',
     async () => {
       // Fetch the questions page for the course instance
@@ -329,7 +331,7 @@ describe('Creating a question', () => {
     },
   );
 
-  step(
+  test.sequential(
     'should not be able to create a question with template_qid not contained in the root directory',
     async () => {
       // Fetch the questions page for the course instance

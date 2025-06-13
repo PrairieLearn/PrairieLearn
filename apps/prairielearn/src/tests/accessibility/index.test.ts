@@ -3,8 +3,8 @@ import axe from 'axe-core';
 import { HTMLRewriter } from 'html-rewriter-wasm';
 import { HtmlValidate, formatterFactory } from 'html-validate';
 import { JSDOM, VirtualConsole } from 'jsdom';
-import { test } from 'mocha';
 import fetch from 'node-fetch';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
@@ -320,6 +320,7 @@ const SKIP_ROUTES = [
   // These are only HTML fragments rendered by HTMX; we can't test them as full
   // HTML documents.
   /^\/pl\/navbar\/course/,
+  /^\/pl\/assessments_switcher\/course_instance/,
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
@@ -371,11 +372,12 @@ function shouldSkipPath(path) {
 describe('accessibility', () => {
   let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
-  before('set up testing server', async function () {
+
+  beforeAll(async function () {
     config.cronActive = false;
     // We use the test course since editing functionality is disabled in the
     // example course.
-    await helperServer.before(TEST_COURSE_PATH).call(this);
+    await helperServer.before(TEST_COURSE_PATH)();
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
@@ -437,11 +439,10 @@ describe('accessibility', () => {
       { sharing_name: 'test', course_id: courseId.rows[0].course_id },
     );
   });
-  after('shut down testing server', helperServer.after);
+
+  afterAll(helperServer.after);
 
   test('All pages pass accessibility checks', async function () {
-    this.timeout(240_000);
-
     const missingParamsEndpoints: Endpoint[] = [];
     const failingEndpoints: [Endpoint, string][] = [];
 
@@ -485,5 +486,5 @@ describe('accessibility', () => {
     if (errLines.length > 0) {
       throw new Error(errLines.join('\n'));
     }
-  });
+  }, 240_000);
 });

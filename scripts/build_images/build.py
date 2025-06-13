@@ -214,7 +214,7 @@ def build_image(
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
-        name_without_scope = image.split("/")[-1]
+        name_without_scope = image.rsplit("/", maxsplit=1)[-1]
         hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
         metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
         with open(os.path.join(metadata_dir, metadata_filename), "w") as f:

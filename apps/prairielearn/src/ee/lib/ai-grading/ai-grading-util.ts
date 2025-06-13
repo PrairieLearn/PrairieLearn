@@ -1,5 +1,5 @@
 import { type OpenAI } from 'openai';
-import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
+import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
 import {

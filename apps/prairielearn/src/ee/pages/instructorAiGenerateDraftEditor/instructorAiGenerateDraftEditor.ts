@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -8,7 +8,6 @@ import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/pos
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
@@ -19,7 +18,7 @@ import {
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
+import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
@@ -29,11 +28,11 @@ import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGen
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
 async function saveGeneratedQuestion(
-  res: express.Response,
+  res: Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
   title?: string,
@@ -201,9 +200,7 @@ router.get(
         newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
       },
     });
-    await setQuestionCopyTargets(res);
     await logPageView('instructorQuestionPreview', req, res);
-    setRendererHeader(res);
 
     res.send(
       InstructorAiGenerateDraftEditor({

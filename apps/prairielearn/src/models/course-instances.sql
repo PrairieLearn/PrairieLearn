@@ -6,6 +6,16 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
+-- BLOCK select_course_instance_by_short_name
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.course_id = $course_id
+  AND ci.short_name = $short_name
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
@@ -106,3 +116,13 @@ FROM
   course_instances AS ci
 WHERE
   ci.id = $course_instance_id;
+
+-- BLOCK select_course_instance_by_uuid
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.uuid = $uuid
+  AND ci.course_id = $course_id
+  AND ci.deleted_at IS NULL;

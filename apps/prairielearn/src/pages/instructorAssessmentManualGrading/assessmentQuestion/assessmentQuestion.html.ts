@@ -18,10 +18,12 @@ export function AssessmentQuestion({
   resLocals,
   courseStaff,
   aiGradingEnabled,
+  aiGradingMode,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
 }) {
   const {
     number_in_alternative_group,
@@ -74,6 +76,7 @@ export function AssessmentQuestion({
           aiGradingEnabled,
           courseStaff,
           csrfToken: __csrf_token,
+          aiGradingMode,
         },
         'instance-question-table-data',
       )}
@@ -101,12 +104,20 @@ export function AssessmentQuestion({
       </a>
       ${aiGradingEnabled
         ? html`
+            <form method="POST" id="toggle-ai-grading-mode">
+              <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
             <form method="POST" id="ai-grading">
               <input type="hidden" name="__action" value="ai_grade_assessment" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form method="POST" id="ai-grading-test">
-              <input type="hidden" name="__action" value="ai_grade_assessment_test" />
+            <form method="POST" id="ai-grading-graded">
+              <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="ai-grading-all">
+              <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
           `
@@ -122,7 +133,7 @@ export function AssessmentQuestion({
         </form>
       </div>
     `,
-    postContent: [GradingConflictModal()],
+    postContent: GradingConflictModal(),
   });
 }
 

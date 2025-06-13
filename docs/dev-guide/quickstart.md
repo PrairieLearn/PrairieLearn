@@ -66,7 +66,7 @@ The main JavaScript test suite can take on the order of 10+ minutes to run, so y
 ```sh
 make start-support
 cd apps/prairielearn
-yarn mocha src/tests/getHomepage.test.ts
+yarn vitest src/tests/getHomepage.test.ts
 ```
 
 ### Package tests

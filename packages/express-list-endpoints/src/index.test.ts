@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import express from 'express';
+import { assert, beforeAll, describe, it } from 'vitest';
 
 import listEndpoints, { type Endpoint } from '../src/index.js';
 
@@ -31,7 +31,7 @@ describe('listEndpoints', () => {
   describe('when called with non configured app', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       endpoints = listEndpoints(app);
@@ -46,7 +46,7 @@ describe('listEndpoints', () => {
   describe('when called over an app', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       app
@@ -81,7 +81,7 @@ describe('listEndpoints', () => {
   describe('when called over a router', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const router = express.Router();
 
       router
@@ -116,7 +116,7 @@ describe('listEndpoints', () => {
   describe('when called over an app with mounted routers', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const router = express.Router();
 
@@ -153,7 +153,7 @@ describe('listEndpoints', () => {
     describe('and some of the routers has the option `mergeParams`', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const app = express();
         const router = express.Router({ mergeParams: true });
 
@@ -174,7 +174,7 @@ describe('listEndpoints', () => {
       describe('and also has a sub-router on the router', () => {
         let endpoints: Endpoint[];
 
-        before(() => {
+        beforeAll(() => {
           const app = express();
           const router = express.Router({ mergeParams: true });
           const subRouter = express.Router();
@@ -202,7 +202,7 @@ describe('listEndpoints', () => {
     describe('contains underscores', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const router = express.Router();
 
         router.get('/some_route', (_req, res) => {
@@ -231,7 +231,7 @@ describe('listEndpoints', () => {
     describe('contains hyphens', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const router = express.Router();
 
         router.get('/some-route', (_req, res) => {
@@ -260,7 +260,7 @@ describe('listEndpoints', () => {
     describe('contains dots', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const router = express.Router();
 
         router.get('/some.route', (_req, res) => {
@@ -289,7 +289,7 @@ describe('listEndpoints', () => {
     describe('contains multiple different chars', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const router = express.Router();
 
         router.get('/s0m3_r.oute', (_req, res) => {
@@ -319,7 +319,7 @@ describe('listEndpoints', () => {
   describe('when called over a mounted router with only root path', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const router = express.Router();
 
@@ -343,7 +343,7 @@ describe('listEndpoints', () => {
   describe('when called over a multi-level base route', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const router = express.Router();
 
@@ -366,7 +366,7 @@ describe('listEndpoints', () => {
     describe('with params', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const app = express();
         const router = express.Router();
 
@@ -393,7 +393,7 @@ describe('listEndpoints', () => {
     describe('with params in middle of the pattern', () => {
       let endpoints: Endpoint[];
 
-      before(() => {
+      beforeAll(() => {
         const app = express();
         const router = express.Router();
 
@@ -416,7 +416,7 @@ describe('listEndpoints', () => {
   describe('when called over a route with params', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       app.get('/users/:id', (_req, res) => {
@@ -435,7 +435,7 @@ describe('listEndpoints', () => {
   describe('when called over a route with params in middle of the pattern', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       app.get('/users/:id/friends', (_req, res) => {
@@ -454,7 +454,7 @@ describe('listEndpoints', () => {
   describe('when called over a route with multiple methods with "/" path defined', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const router = express.Router();
 
       router
@@ -483,7 +483,7 @@ describe('listEndpoints', () => {
   describe('when called with middlewares', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const router = express.Router();
 
       const exampleMiddleware = () => {};
@@ -513,7 +513,7 @@ describe('listEndpoints', () => {
   describe('when called with an array of paths', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const router = express.Router();
 
@@ -542,7 +542,7 @@ describe('listEndpoints', () => {
   describe('when called with an app with a mounted sub-app', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const subApp = express();
 
@@ -573,7 +573,7 @@ describe('listEndpoints', () => {
   describe('when called with route params with regexp', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       app.get('/foo/:item_id(\\d+)/bar', (_req, res) => {
@@ -594,7 +594,7 @@ describe('listEndpoints', () => {
   describe('when called with a route with multiple params with regexp', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
 
       app.get('/foo/bar/:baz_id(\\d+)/:biz_id(\\d+)', (_req, res) => {
@@ -615,7 +615,7 @@ describe('listEndpoints', () => {
   describe('supports regexp validators for params in subapp', () => {
     let endpoints: Endpoint[];
 
-    before(() => {
+    beforeAll(() => {
       const app = express();
       const subApp = express.Router();
 

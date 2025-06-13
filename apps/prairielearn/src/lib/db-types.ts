@@ -104,6 +104,7 @@ export const AssessmentSchema = z.object({
   duration_stat_threshold_seconds: z.number().array(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
+  honor_code: z.string().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
@@ -200,6 +201,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
@@ -491,7 +493,7 @@ export const FileTransferSchema = z.object({
   id: IdSchema,
   storage_filename: z.string(),
   to_course_id: IdSchema,
-  transfer_type: z.enum(['CopyQuestion']),
+  transfer_type: z.enum(['CopyQuestion', 'CopyCourseInstance']),
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
@@ -547,6 +549,7 @@ export const GroupConfigSchema = z.object({
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
   name: z.string().nullable(),
+  student_authz_choose_name: z.boolean(),
   student_authz_create: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
   student_authz_join: z.boolean().nullable(),
@@ -985,6 +988,7 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
+  modified_at: DateFromISOString.nullable(),
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -1061,6 +1065,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
+  modified_at: DateFromISOString.nullable(),
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),

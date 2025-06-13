@@ -80,7 +80,7 @@ INSERT INTO
     raw_submitted_answer,
     params,
     true_answer,
-    date
+    date,
     -- TODO: remove once this column has a default
     modified_at
   )

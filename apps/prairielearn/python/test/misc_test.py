@@ -767,6 +767,40 @@ def test_get_boolean_attrib_invalid(html_str: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("html_str", "expected_result"),
+    [
+        ('<pl-thing checked="true"></pl-thing>', True),
+        ('<pl-thing checked="false"></pl-thing>', True),
+        ('<pl-thing checked="checked"></pl-thing>', True),
+        ('<pl-thing checked=""></pl-thing>', True),
+        ("<pl-thing checked></pl-thing>", True),
+        ("<pl-thing></pl-thing>", False),
+    ],
+)
+def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # noqa: FBT001
+    """Test that using HTML boolean attributes is only valid when reading as boolean with default False."""
+    element = lxml.html.fragment_fromstring(html_str)
+    result = pl.get_boolean_attrib(element, "checked", False)  # noqa: FBT003
+    assert result == expected_result
+    if not expected_result:
+        expected_result = None
+    result = pl.get_boolean_attrib(element, "checked")
+    assert result == expected_result
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_boolean_attrib(element, "checked", True)  # noqa: FBT003
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_string_attrib(element, "checked", "")
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_integer_attrib(element, "checked", 0)
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_float_attrib(element, "checked", 0)
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_color_attrib(element, "checked", "red1")
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_enum_attrib(element, "checked", DummyEnum)
+
+
+@pytest.mark.parametrize(
     ("html_str", "expected_result", "default"),
     [
         # Basic integer parsing

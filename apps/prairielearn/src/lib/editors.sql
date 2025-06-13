@@ -14,7 +14,8 @@ WHERE
 
 -- BLOCK select_assessments_with_course_instance
 SELECT
-  a.title
+  a.title,
+  a.tid AS assessment_directory
 FROM
   assessments AS a
 WHERE

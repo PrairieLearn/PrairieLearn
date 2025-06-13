@@ -1,10 +1,9 @@
 import * as path from 'path';
 import { promisify } from 'util';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import _ from 'lodash';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,9 +16,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-describe('Course element extensions', function () {
-  this.timeout(60000);
-
+describe('Course element extensions', { timeout: 60_000 }, function () {
   describe('Extensions can be loaded', function () {
     const extDir = path.resolve(EXAMPLE_COURSE_PATH, 'elementExtensions');
     const element = 'extendable-element';
@@ -80,8 +77,9 @@ describe('Course element extensions', function () {
   });
 
   describe('Extensions can insert client-side assets into the page', function () {
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+
+    afterAll(helperServer.after);
 
     const locals: Record<string, any> = {};
     locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -100,7 +98,7 @@ describe('Course element extensions', function () {
     const incImg =
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
-    step('find the example question in the database', async () => {
+    test.sequential('find the example question in the database', async () => {
       const results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {
         qid: testQid,
       });
@@ -108,7 +106,7 @@ describe('Course element extensions', function () {
 
       locals.question = results.rows[0];
     });
-    step('check the question page for extension css and js files', async () => {
+    test.sequential('check the question page for extension css and js files', async () => {
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
@@ -138,7 +136,7 @@ describe('Course element extensions', function () {
         incDynamicJs,
       );
     });
-    step('check the question page for a client-side image', async () => {
+    test.sequential('check the question page for a client-side image', async () => {
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);

@@ -97,6 +97,8 @@ SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
+SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
+SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -294,6 +296,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         tag, depends = get_graph_info(html_tags)
+        if SPEC_CHAR.intersection(tag):
+            raise ValueError(
+                f'<pl-answer tag="{tag}"> tag attribute may not contain special characters: "{SPEC_CHAR_STR}"'
+            )
+
         if is_correct:
             if tag in used_tags:
                 raise ValueError(

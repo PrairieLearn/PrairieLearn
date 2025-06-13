@@ -2,9 +2,9 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
@@ -40,8 +40,8 @@ export default tseslint.config([
 
     plugins: {
       'import-x': importX,
-      mocha,
       'no-floating-promise': noFloatingPromise,
+      vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       '@prairielearn': prairielearn,
     },
@@ -121,12 +121,18 @@ export default tseslint.config([
         },
       ],
 
-      // The recommended Mocha rules are too strict for us; we'll only enable
-      // these two rules.
-      'mocha/no-exclusive-tests': 'error',
-      'mocha/no-pending-tests': 'error',
-
       'no-floating-promise/no-floating-promise': 'error',
+
+      // Use the recommended rules for vitest
+      ...vitest.configs.recommended.rules,
+
+      // This gives a lot of false positives; we sometimes author tests that
+      // have the assertion in a helper function. We could refactor them in
+      // the future, but for now we'll disable this rule.
+      'vitest/expect-expect': ['off'],
+
+      // We violate this rule in a lot of places. We'll turn it off for now.
+      'vitest/no-identical-title': ['off'],
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
@@ -169,14 +175,6 @@ export default tseslint.config([
           message: 'module.exports should not be used in TypeScript files',
         },
       ],
-    },
-  },
-  {
-    files: ['**/*.test.{js,ts,mjs}'],
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-      },
     },
   },
   {

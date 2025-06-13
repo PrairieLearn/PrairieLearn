@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { isRenderableComment } from '../lib/comments.js';
 

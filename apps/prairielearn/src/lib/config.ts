@@ -10,7 +10,7 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-const DEV_MODE = process.env.NODE_ENV !== 'production';
+export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -571,6 +571,11 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
+  /**
+   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
+   */
+  costPerMillionPromptTokens: z.number().default(3.75),
+  costPerMillionCompletionTokens: z.number().default(15),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -614,6 +619,10 @@ export async function loadConfig(paths: string[]) {
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
