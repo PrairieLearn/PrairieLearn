@@ -22,6 +22,7 @@ PrairieLearn presently provides the following templated **input field** elements
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
   to obtain a file with a specific naming scheme.
+- [`pl-image-capture`](#pl-image-capture-element): Capture and submit images of work from a local camera or external device camera in a phone or tablet.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
@@ -380,6 +381,39 @@ The `pl-file-upload` element and the contents of the uploaded file(s) are only d
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
+
+---
+
+### `pl-image-capture` element
+
+Enables students to submit images to questions using their local camera or an external device, such as a mobile phone or tablet camera.
+
+#### Sample element
+
+![Screenshot of the pl-image-capture element](elements/pl-image-capture.png)
+
+```html title="question.html"
+<pl-image-capture file-name="solution.jpg" mobile-capture-enabled="true"></pl-image-capture>
+```
+
+#### Customizations
+
+| Attribute    | Type     | Default | description                                                                                                                                    |
+| ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name` | string | —       | 	The name under which the captured image will be saved (e.g. solution.jpg). This must end with `.jpg`, and be unique within a single question. |
+| `mobile-capture-enabled` | boolean | true       | When `true`, students can scan a QR code on a phone or tablet to a page where they can capture an image of their work. 
+
+#### Details
+
+The `pl-image-capture` element lets students capture 
+
+#### Example implementations
+
+- [demo/imageCapture]
+
+#### See also
+
+- [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
 
 ---
 
