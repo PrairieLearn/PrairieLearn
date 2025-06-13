@@ -1137,15 +1137,20 @@ export async function initExpress(): Promise<Express> {
       )
     ).default,
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1583,15 +1588,20 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1640,6 +1650,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+  // Also not a page, like above. This route is used to initiate the transfer of a public course instance
+  app.use(
+    '/pl/course/:course_id(\\d+)/copy_public_course_instance',
+    (
+      await import(
+        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
+      )
+    ).default,
   );
 
   // Global client files
