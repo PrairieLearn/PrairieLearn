@@ -211,6 +211,7 @@ export async function aiGradeTest({
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
+        submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
       });
