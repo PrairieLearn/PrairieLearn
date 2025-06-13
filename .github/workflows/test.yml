@@ -104,7 +104,7 @@ jobs:
           --name=test_container \
           prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-js-docker-smoke-tests"
+        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
