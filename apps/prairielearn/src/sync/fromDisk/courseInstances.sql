@@ -4,4 +4,4 @@ SELECT
 FROM
   institutions
 WHERE
-  short_name = ANY ($short_names::TEXT[]);
+  short_name = ANY ($short_names::text[]);

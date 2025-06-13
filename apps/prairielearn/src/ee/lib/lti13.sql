@@ -46,7 +46,7 @@ WITH
     SELECT
       *
     FROM
-      jsonb_populate_recordset(null::lti13_assessments, $lineitems_import::jsonb)
+      jsonb_populate_recordset(NULL::lti13_assessments, $lineitems_import::jsonb)
   ),
   updating AS (
     UPDATE lti13_assessments

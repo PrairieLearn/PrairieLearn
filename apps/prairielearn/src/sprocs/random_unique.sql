@@ -1,9 +1,9 @@
 CREATE FUNCTION
     random_unique(
-        lower INTEGER,
-        upper INTEGER, -- may expand range if needed, so true upper bound might be higher than this
-        exclude INTEGER[]
-    ) RETURNS TABLE(index INTEGER, number INTEGER) AS $$
+        lower integer,
+        upper integer, -- may expand range if needed, so true upper bound might be higher than this
+        exclude integer[]
+    ) RETURNS TABLE(index integer, number integer) AS $$
 DECLARE
     lower_bound INTEGER := lower;
     upper_bound INTEGER;
