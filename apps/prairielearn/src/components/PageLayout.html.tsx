@@ -5,7 +5,7 @@ import { HtmlSafeString, html } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact-html.js';
+import { renderHtml } from '../lib/preact.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
 import { HeadContents } from './HeadContents.html.js';
