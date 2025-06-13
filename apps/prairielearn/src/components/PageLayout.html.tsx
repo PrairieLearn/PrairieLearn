@@ -14,7 +14,7 @@ import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { SideNav } from './SideNav.html.js';
 
-const asHtmlSafe = (
+function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
 ): HtmlSafeString | HtmlSafeString[] | undefined => {
   if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
