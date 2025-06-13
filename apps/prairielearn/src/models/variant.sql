@@ -50,7 +50,7 @@ WITH
     WHERE
       iq.assessment_instance_id = $assessment_instance_id
       AND (
-        $instance_question_id::BIGINT IS NULL
+        $instance_question_id::bigint IS NULL
         OR iq.id = $instance_question_id
       )
       AND s.score IS NOT NULL
@@ -69,7 +69,7 @@ FROM
 WHERE
   iq.assessment_instance_id = $assessment_instance_id
   AND (
-    $instance_question_id::BIGINT IS NULL
+    $instance_question_id::bigint IS NULL
     OR iq.id = $instance_question_id
   )
   AND v.broken_at IS NULL

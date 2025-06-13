@@ -274,7 +274,7 @@ WITH
                     rgi.points
                   )
                 ),
-                '[]'::JSONB
+                '[]'::jsonb
               )
             )
           FROM
