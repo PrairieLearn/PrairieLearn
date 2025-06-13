@@ -174,6 +174,10 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database stored procedures (sprocs)
 
+!!! warning
+
+    We are migrating away from the use of [sprocs](https://www.geeksforgeeks.org/postgresql/postgresql-introduction-to-stored-procedures/). Prefer writing logic in TypeScript instead.
+
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
   ```js
@@ -233,7 +237,8 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
     Using the `ms-ossdata.vscode-pgsql` extension, you can visualize the schemas within VSCode.
 
     ![Setup Postgres VSCode](./postgres-vscode-setup.png)
-    ![Using Postgres VSCode](./postgres-vscode-tool.png)
+
+    ![Using Postgres VSCode](./postgres-vscode-select-1000.png)
 
 ??? tip "Removing old schemas"
 
@@ -335,7 +340,7 @@ WHERE
   const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
-- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. Locking can be performed with a query like:
+- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc.) should call a locking function when they start. Locking can be performed with a query like:
 
 ```sql
 SELECT
