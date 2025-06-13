@@ -253,7 +253,7 @@ export function compiledScriptModuleTag(sourceFile: string): HtmlSafeString {
 }
 
 export function compiledScriptModulePreloadTags(sourceFile: string): HtmlSafeString[] {
-  // Creates module preload tags for an ESM source file.
+  // Creates module preload tags for an ESM bundle.
   // Files not processed with chunking will not have preloads, as they are not split into chunks.
   const preloadPaths = compiledScriptPreloadPaths(sourceFile);
   return preloadPaths.map(
