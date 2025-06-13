@@ -59,24 +59,22 @@ export function renderHtmlDocument(content: VNode) {
  * This function is intended to be used within a non-interactive Preact component that will be rendered without hydration through `renderHtml`.
  *
  * @param content - A Preact VNode to render to HTML.
+ * @param nameOverride - An optional override for the component's name or displayName.
  * @returns A Preact VNode that can be used for client-side hydration.
  */
-export function hydrate<T>(content: VNode<T>, idOverride?: string): VNode {
+export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   const { type: Component, props } = content;
   if (typeof Component !== 'function') {
     throw new Error('hydrate expects a Preact component');
   }
 
-  if (!idOverride && !Component.displayName && !Component.name) {
+  if (!nameOverride && !Component.displayName && !Component.name) {
     throw new Error(
-      'Component does not have a name or displayName -- provide an id for the component.',
+      'Component does not have a name or displayName -- provide a nameOverride for the component.',
     );
   }
-  console.log(Component.name);
-  const randomId = Math.random().toString(36).slice(2, 10);
-  // If we have multiple fragments on the page, we need to ensure that each one has a unique ID
-  const id = `${idOverride || Component.name || Component.displayName}`;
-  const scriptPath = `split-bundles/react-fragments/${id}.ts`;
+  const componentName = `${nameOverride || Component.name || Component.displayName}`;
+  const scriptPath = `split-bundles/react-fragments/${componentName}.ts`;
   throw new Error('Waiting for PR #12157');
   // const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
   // return (
@@ -85,16 +83,16 @@ export function hydrate<T>(content: VNode<T>, idOverride?: string): VNode {
   //     {scriptPreloads.map((preloadPath) => (
   //       <link key={preloadPath} rel="modulepreload" href={preloadPath} />
   //     ))}
-  //     <div id={id} class="js-react-fragment">
+  //     <div data-component={id} class="js-react-fragment">
   //       <script
   //         type="application/json"
-  //         id={`${id}-${randomId}-props`}
+  //         data-component={`${id}-props`}
   //         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
   //         dangerouslySetInnerHTML={{
   //           __html: escapeJsonForHtml(props),
   //         }}
   //       />
-  //       <div id={`${id}-${randomId}-root`}>
+  //       <div data-component={`${id}-root`}>
   //         <Component {...props} />
   //       </div>
   //     </div>
@@ -113,7 +111,3 @@ export function hydrateHtml<T>(content: VNode<T>): HtmlSafeString {
   // Useful for adding Preact components to existing tagged-template pages.
   return renderHtml(hydrate(content));
 }
-
-const Foo = ({ name }: { name: string }) => <div>Hello, {name}!</div>;
-
-console.log(hydrate(<Foo name="Peter" />));
