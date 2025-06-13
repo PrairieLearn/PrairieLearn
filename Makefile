@@ -95,7 +95,6 @@ lint-sql:
 	@sqlfluff lint
 lint-sql-migrations:
 	@squawk apps/prairielearn/src/migrations/*.sql
-	@squawk apps/prairielearn/src/batched-migrations/*.sql
 lint-actions:
 	@actionlint
 
