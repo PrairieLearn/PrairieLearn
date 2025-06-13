@@ -342,10 +342,10 @@ function makeManifest(
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
-    // All dependencies for a given entry point that need to be
-    // preloaded. This includes all files that are imported by the entry point,
-    // as well as any files that are dynamically imported.
+    // Compute all the necessary preloads for each entrypoint. This includes
+    // any code-split chunks, as well as any files that are dynamically imported.
     const preloads = new Set<string>();
+
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
       if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
