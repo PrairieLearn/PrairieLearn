@@ -9,10 +9,10 @@ SELECT
   gi.name AS group_name,
   gi.uid_list,
   gi.user_name_list,
-  gi.user_roles_list as group_roles,
+  gi.user_roles_list AS group_roles,
   substring(
     u.uid
-    from
+    FROM
       '^[^@]+'
   ) AS username,
   ai.score_perc,

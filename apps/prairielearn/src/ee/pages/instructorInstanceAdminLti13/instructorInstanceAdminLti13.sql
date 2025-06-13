@@ -37,7 +37,7 @@ SELECT
   aset.abbreviation,
   aset.name,
   aset.color,
-  (aset.abbreviation || a.number) as label,
+  (aset.abbreviation || a.number) AS label,
   (
     LAG(
       CASE
@@ -102,7 +102,7 @@ ORDER BY
 -- BLOCK select_assessment_to_create
 SELECT
   a.*,
-  (aset.abbreviation || a.number) as label
+  (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -114,7 +114,7 @@ WHERE
 -- BLOCK select_assessments_to_create
 SELECT
   a.*,
-  (aset.abbreviation || a.number) as label
+  (aset.abbreviation || a.number) AS label
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id

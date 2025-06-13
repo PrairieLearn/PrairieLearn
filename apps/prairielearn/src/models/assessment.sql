@@ -67,9 +67,9 @@ SELECT
   aset.abbreviation,
   aset.name,
   aset.color,
-  (aset.abbreviation || a.number) as label,
-  to_jsonb(aset) as assessment_set,
-  to_jsonb(am) as assessment_module,
+  (aset.abbreviation || a.number) AS label,
+  to_jsonb(aset) AS assessment_set,
+  to_jsonb(am) AS assessment_module,
   (
     LAG(
       CASE
