@@ -176,7 +176,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 !!! warning
 
-    We are migrating away from the use of [sprocs](https://www.geeksforgeeks.org/postgresql/postgresql-introduction-to-stored-procedures/). Prefer writing logic in TypeScript instead.
+    We are migrating away from the use of [sprocs](https://neon.com/postgresql/postgresql-plpgsql/postgresql-create-procedure). Prefer writing logic in TypeScript instead.
 
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
