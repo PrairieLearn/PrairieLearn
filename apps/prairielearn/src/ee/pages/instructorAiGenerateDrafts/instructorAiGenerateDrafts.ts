@@ -8,6 +8,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
@@ -15,7 +16,6 @@ import {
   GenerationFailure,
   InstructorAIGenerateDrafts,
 } from './instructorAiGenerateDrafts.html.js';
-import { features } from '../../../lib/features/index.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
