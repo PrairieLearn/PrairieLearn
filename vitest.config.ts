@@ -1,5 +1,5 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification } from 'vitest/node';
+import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/node';
 
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
@@ -65,16 +65,32 @@ export const sharedConfig = defineConfig({
   },
 });
 
-export default mergeConfig(
-  sharedConfig,
-  defineConfig({
-    test: {
-      projects: ['packages/*', 'apps/prairielearn', 'apps/grader-host', 'apps/workspace-host'],
-      coverage: {
-        all: true,
-        reporter: ['html', 'text-summary', 'cobertura'],
-        include: ['{apps,packages}/*/src/**'],
+export default defineConfig(async ({ mode }) => {
+  // Resolve the Vitest configuration for PrairieLearn with the given mode.
+  // By default, the configuration is not resolved with the mode.
+  const { vitestConfig: prairielearnTestConfig } = await resolveConfig({
+    mode,
+    config: 'vitest.config.ts',
+    root: 'apps/prairielearn',
+  });
+  return mergeConfig(
+    sharedConfig,
+    defineConfig({
+      test: {
+        projects: [
+          'packages/*',
+          'apps/grader-host',
+          'apps/workspace-host',
+          {
+            test: prairielearnTestConfig,
+          },
+        ],
+        coverage: {
+          all: true,
+          reporter: ['html', 'text-summary', 'cobertura'],
+          include: ['{apps,packages}/*/src/**'],
+        },
       },
-    },
-  }),
-);
+    }),
+  );
+});
