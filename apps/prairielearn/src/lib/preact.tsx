@@ -13,7 +13,7 @@ import { renderPreactToHtmlForClientSide } from './preact-html.js';
  * @param content - A Preact VNode to render to HTML.
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
-function renderHtml(content: VNode): HtmlSafeString {
+export function renderHtml(content: VNode): HtmlSafeString {
   return renderPreactToHtmlForClientSide(content);
 }
 
