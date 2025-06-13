@@ -52,14 +52,18 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  if (!config.checkSharingOnSync) {
-    return true;
-  }
+  if (!config.checkSharingOnSync) return true;
+
   const institution = await selectInstitutionForCourse({ course_id: courseId });
   const sharingEnabled = await features.enabled('question-sharing', {
     course_id: courseId,
     institution_id: institution.id,
   });
+
+  // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
+  // already have validated that sharing attributes are not used, and we'll have emitted
+  // sync errors if they are.
+  if (!sharingEnabled) return true;
 
   const sharedQuestions = await selectSharedQuestions(courseId);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
