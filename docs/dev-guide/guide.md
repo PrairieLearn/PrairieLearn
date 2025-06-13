@@ -242,7 +242,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ??? tip "Cleaning out old schemas"
 
-    The following query will remove all schemas except public. You can then restart the server to recreate the sprocs.
+    The following query will remove all schemas except `public`. You can then restart the server to recreate the sprocs.
 
     ```sql
     DO $$
