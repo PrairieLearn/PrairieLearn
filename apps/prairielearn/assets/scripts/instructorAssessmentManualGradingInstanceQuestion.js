@@ -49,30 +49,31 @@ function resetRubricImportFormListeners() {
       '#import-rubric-settings-popover-form',
     );
 
-    if (!importRubricSettingsPopoverForm) {
-      ensureElementsExist({
-        importRubricSettingsPopoverForm,
-      });
-    }
+    ensureElementsExist({
+      importRubricSettingsPopoverForm,
+    });
 
     importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
       const fileUploadMaxBytesField = rubricSettingsForm.querySelector(
         'input[name="file_upload_max_bytes"]',
       );
 
-      if (!fileUploadMaxBytesField) {
-        ensureElementsExist({
-          fileUploadMaxBytesField,
-        });
-      }
+      ensureElementsExist({
+        fileUploadMaxBytesField,
+      });
 
       event.preventDefault();
 
       const formData = new FormData(event.target);
       const fileData = formData.get('file');
 
+      if (!fileData) {
+        alert('Please select a file to import.');
+        return;
+      }
+
       const fileUploadMaxBytes = parseInt(fileUploadMaxBytesField.value);
-      if (fileData && fileData.size > fileUploadMaxBytes) {
+      if (fileData.size > fileUploadMaxBytes) {
         alert(
           `File size exceeds the maximum limit of ${fileUploadMaxBytes} bytes. Please choose a smaller file.`,
         );
@@ -81,7 +82,6 @@ function resetRubricImportFormListeners() {
 
       // Read the rubric JSON file content
       const reader = new FileReader();
-      reader.readAsText(fileData);
 
       reader.onerror = () => {
         alert('Error reading file content.');
@@ -125,7 +125,7 @@ function resetRubricImportFormListeners() {
 
         if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
           // If the rubric does not use auto points, or if it replaces auto points,
-          // then the scale factor is based on max_points (the total points of the rubric)
+          // then the scale factor is based on max_points (the total point gs of the rubric)
           const maxPoints = parseFloat(rubricSettings.max_points) ?? 0;
 
           if (maxPoints > 0 && parsedData.max_points) {
@@ -144,12 +144,12 @@ function resetRubricImportFormListeners() {
 
         const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
         if (maxExtraPointsField) {
-          maxExtraPointsField.value = roundPoints(parsedData.max_extra_points * scaleFactor);
+          maxExtraPointsField.value = roundPoints((parsedData.max_extra_points || 0) * scaleFactor);
         }
 
         const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
         if (minPointsField) {
-          minPointsField.value = roundPoints(parsedData.min_points * scaleFactor);
+          minPointsField.value = roundPoints((parsedData.min_points || 0) * scaleFactor);
         }
 
         const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
@@ -194,6 +194,8 @@ function resetRubricImportFormListeners() {
         // Close the popover
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
       };
+
+      reader.readAsText(fileData);
     });
 
     importRubricButton.addEventListener(
