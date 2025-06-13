@@ -10,7 +10,7 @@ plr::source_and_eval_safe_with_hiding("/grade/student/student.R",
                                       "ag",
                                       "/grade/tests/ans.R")
 
-## response could be list or data.frame so enfore list
+## response could be list or data.frame so enforce list
 x <- as.list(x)
 object_classes <- c(class(x[["ii"]]),
                     class(x[["nn"]]),
