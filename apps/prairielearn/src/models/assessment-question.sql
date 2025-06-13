@@ -20,7 +20,7 @@ SELECT
   q.title,
   row_to_json(top) AS topic,
   q.id AS question_id,
-  admin_assessment_question_number (aq.id) as number,
+  admin_assessment_question_number (aq.id) AS number,
   tags_for_question (q.id) AS tags,
   ag.number AS alternative_group_number,
   ag.number_choose AS alternative_group_number_choose,
@@ -32,7 +32,7 @@ SELECT
   ) AS alternative_group_size,
   z.title AS zone_title,
   z.number AS zone_number,
-  z.number_choose as zone_number_choose,
+  z.number_choose AS zone_number_choose,
   (
     lag(z.id) OVER (
       PARTITION BY

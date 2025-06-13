@@ -7,7 +7,7 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work is TRUE;
+  AND a.group_work IS TRUE;
 
 -- BLOCK select_group_config
 SELECT
@@ -21,7 +21,7 @@ WHERE
 
 -- BLOCK select_student_user
 SELECT
-  count(*) as result
+  count(*) AS result
 FROM
   users AS u;
 

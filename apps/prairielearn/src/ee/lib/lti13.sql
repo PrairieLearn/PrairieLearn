@@ -80,7 +80,7 @@ SELECT
       count(*)
     FROM
       updating
-  ) as updated,
+  ) AS updated,
   (
     SELECT
       count(*)
