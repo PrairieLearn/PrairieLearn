@@ -1,6 +1,6 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -36,7 +36,7 @@ import {
 const debug = debugfn('prairielearn:instructorCourseAdminStaff');
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const router = express.Router();
+const router = Router();
 
 /**
  * The maximum number of UIDs that can be provided in a single request.

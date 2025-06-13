@@ -27,12 +27,12 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.15.29",
-    "@vitest/coverage-v8": "^3.2.1",
+    "@vitest/coverage-v8": "^3.2.2",
     "express": "^4.21.2",
     "get-port": "^7.1.0",
     "node-fetch": "^3.3.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.1"
+    "vitest": "^3.2.2"
   }
 }

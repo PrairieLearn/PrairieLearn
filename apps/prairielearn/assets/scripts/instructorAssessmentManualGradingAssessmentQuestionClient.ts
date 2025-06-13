@@ -376,7 +376,7 @@ onDocumentReady(() => {
         aiGradingEnabled
           ? {
               field: 'rubric_difference',
-              title: 'AI accuracy',
+              title: 'AI agreement',
               visible: aiGradingMode,
               filterControl: 'select',
               formatter: (value: boolean, row: InstanceQuestionRow) =>
