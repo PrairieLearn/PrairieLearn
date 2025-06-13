@@ -45,7 +45,6 @@ function ImportRubricSettingsPopover() {
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
-
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">

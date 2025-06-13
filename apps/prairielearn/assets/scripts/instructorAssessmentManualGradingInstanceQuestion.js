@@ -143,14 +143,27 @@ function resetRubricImportFormListeners() {
         }
 
         const maxExtraPointsField = rubricSettingsForm.querySelector('[name="max_extra_points"]');
-        if (maxExtraPointsField) {
-          maxExtraPointsField.value = roundPoints((parsedData.max_extra_points || 0) * scaleFactor);
-        }
-
         const minPointsField = rubricSettingsForm.querySelector('[name="min_points"]');
-        if (minPointsField) {
-          minPointsField.value = roundPoints((parsedData.min_points || 0) * scaleFactor);
-        }
+        const startingPointsOptions = rubricSettingsForm.querySelectorAll(
+          'input[name="starting_points"]',
+        );
+
+        ensureElementsExist({
+          maxExtraPointsField,
+          minPointsField,
+          startingPointsOptions,
+        });
+
+        maxExtraPointsField.value = roundPoints((parsedData.max_extra_points || 0) * scaleFactor);
+        minPointsField.value = roundPoints((parsedData.min_points || 0) * scaleFactor);
+
+        // If starting_points = 0, then the imported rubric uses positive grading.
+        const positiveGrading = parsedData.starting_points === 0;
+        startingPointsOptions.forEach((option) => {
+          // The option with value 0 corresponds to positive grading. It is checked
+          // when the imported rubric uses positive grading.
+          option.checked = option.value === '0' && positiveGrading;
+        });
 
         const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
           'input[name="replace_auto_points"]',
@@ -158,20 +171,6 @@ function resetRubricImportFormListeners() {
         if (replaceAutoPointsOptions) {
           replaceAutoPointsOptions.forEach((option) => {
             option.checked = option.value === parsedData.replace_auto_points.toString();
-          });
-        }
-
-        // If starting_points = 0, then the imported rubric uses positive grading.
-        const positiveGrading = parsedData.starting_points === 0;
-
-        const startingPointsOptions = rubricSettingsForm.querySelectorAll(
-          'input[name="starting_points"]',
-        );
-        if (startingPointsOptions) {
-          startingPointsOptions.forEach((option) => {
-            // The option with value 0 corresponds to positive grading. It is checked
-            // when the imported rubric uses positive grading.
-            option.checked = option.value === '0' && positiveGrading;
           });
         }
 
@@ -258,16 +257,16 @@ function resetRubricExportFormListeners() {
           always_show_to_students: value.always_show_to_students === 'true',
           description: value.description,
           explanation:
-            value.explanation ?? // Available if the long text field is enabled
+            value.explanation ??
             document
               .querySelector(`[data-input-name="rubric_item[${key}][explanation]"]`)
-              ?.getAttribute('data-current-value') ?? // Available if the long text field is closed
+              ?.getAttribute('data-current-value') ??
             '',
           grader_note:
-            value.grader_note ?? // Available if the long text field is enabled
+            value.grader_note ??
             document
               .querySelector(`[data-input-name="rubric_item[${key}][grader_note]"]`)
-              ?.getAttribute('data-current-value') ?? // Available if the long text field is closed
+              ?.getAttribute('data-current-value') ??
             '',
           order: parseInt(value.order),
           points: parseFloat(value.points),
@@ -818,7 +817,7 @@ function rowDragOver(event) {
 }
 
 /**
- * Add a rubric item row to the rubric settings modal.
+ * Create a new rubric item row with default values or based on a provided rubric item.
  *
  * @param {Object|null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
  */

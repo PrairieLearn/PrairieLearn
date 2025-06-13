@@ -220,7 +220,6 @@ router.post(
       // The order of the items in arrays is never important, so using Object.values is fine.
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
-
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
