@@ -228,6 +228,53 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
+??? tip "Schema visualization"
+
+    Using the `ms-ossdata.vscode-pgsql` extension, you can visualize the schemas within VSCode.
+
+    ![Setup Postgres VSCode](./postgres-vscode-setup.png)
+    ![Using Postgres VSCode](./postgres-vscode-tool.png)
+
+??? tip "Removing old schemas"
+
+    The following query will remove all schemas except public and the most recent one.
+
+    ```sql
+    DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        WITH dated_schemas AS (
+          SELECT
+            nspname,
+            substring(nspname from '_(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)') AS ts_str
+          FROM pg_namespace
+          WHERE nspname ~ '_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z'
+            AND nspname <> 'public'
+        ),
+        parsed_schemas AS (
+          SELECT
+            nspname,
+            to_timestamp(ts_str, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS ts
+          FROM dated_schemas
+          WHERE ts_str IS NOT NULL
+        ),
+        ranked_schemas AS (
+          SELECT nspname, ts,
+                RANK() OVER (ORDER BY ts DESC) AS rank
+          FROM parsed_schemas
+        )
+        SELECT nspname FROM ranked_schemas WHERE rank > 1
+      LOOP
+        -- One schema per DROP outside transaction scope
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        -- Commit after each drop to free up locks
+        COMMIT;
+      END LOOP;
+    END $$;
+    ```
+
 ## Database schema (full data)
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
