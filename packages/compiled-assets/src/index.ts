@@ -239,7 +239,7 @@ export function compiledStylesheetPath(sourceFile: string): string {
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
-  // Creates a script tag for a source file processed with IIFE.
+  // Creates a script tag for an IIFE bundle.
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
