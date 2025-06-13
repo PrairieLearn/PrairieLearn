@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { makePostgresTestUtils, queryAsync } from '@prairielearn/postgres';
 
@@ -60,11 +60,11 @@ describe('migrations', () => {
       database: 'prairielearn_migrations',
     });
 
-    before(async () => {
+    beforeAll(async () => {
       await postgresTestUtils.createDatabase();
     });
 
-    after(async () => {
+    afterAll(async () => {
       await postgresTestUtils.dropDatabase();
     });
 

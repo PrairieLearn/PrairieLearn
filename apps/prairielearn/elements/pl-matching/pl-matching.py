@@ -61,6 +61,7 @@ def get_select_options(
         return {
             "index": index,
             "value": opt,
+            "blank": index == -1,
             "selected": "selected" if index == selected_value else "",
         }
 
@@ -354,12 +355,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "name": form_name,
                 "display_score_badge": display_score_badge,
                 "correct": display_score_badge and student_answer == correct_answer,
+                "statement_id": pl.get_uuid(),
             }
             statement_set.append(statement_html)
 
         option_set = []
-        for option in display_options:
-            option_html = {"key": option["key"], "html": option["html"].strip()}
+        for index, option in enumerate(display_options, start=1):
+            option_html = {
+                "key": option["key"],
+                "counter": get_counter(index, counter_type),
+                "html": option["html"].strip(),
+            }
             option_set.append(option_html)
 
         html_params: dict[str, str | bool | float | list[Any]] = {
@@ -371,6 +377,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "no_counters": no_counters,
             "options_placement": options_placement.value,
             "editable": data["editable"],
+            "uuid": pl.get_uuid(),
         }
 
         if score is not None:

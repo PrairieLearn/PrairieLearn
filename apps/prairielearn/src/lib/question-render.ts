@@ -1,5 +1,4 @@
 import * as async from 'async';
-import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -402,10 +401,25 @@ export async function getAndRenderVariant(
     is_administrator: boolean;
     questionRenderContext?: QuestionRenderContext;
   },
-  options?: {
+  {
+    urlOverrides = {},
+    publicQuestionPreview = false,
+    issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
+  }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
-  },
+    /**
+     * Whether or not any recorded issues should have their extra data loaded.
+     * If not specified, the default is to load extra data if we're in dev mode
+     * or if the user has permission to view course data.
+     *
+     * This toggle is useful mainly for AI question generation, where we always
+     * want to load issue data so we can provided it as context to the model.
+     *
+     * The default conditions should match those in `components/QuestionContainer.html.ts`.
+     */
+    issuesLoadExtraData?: boolean;
+  } = {},
 ) {
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
@@ -430,7 +444,7 @@ export async function getAndRenderVariant(
         authn_user: locals.authn_user,
         user: locals.user,
         is_administrator: locals.is_administrator,
-        publicQuestionPreview: options?.publicQuestionPreview,
+        publicQuestionPreview,
       });
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
@@ -465,12 +479,11 @@ export async function getAndRenderVariant(
     assessment_question,
     group_config,
     group_role_permissions,
-    authz_data,
     authz_result,
   } = locals;
 
   const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
-  Object.assign(urls, options?.urlOverrides);
+  Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 
   const newLocals = buildLocals({
@@ -567,17 +580,13 @@ export async function getAndRenderVariant(
   resultLocals.submissionHtmls = htmls.submissionHtmls;
   resultLocals.answerHtml = htmls.answerHtml;
 
-  // Load issues last in case there are issues from rendering.
-  //
-  // We'll only load the data that will be needed for this specific page render.
-  // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
+  // Load issues last in case rendering produced any new ones.
   resultLocals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
       variant_id: variant.id,
-      load_course_data: loadExtraData,
-      load_system_data: loadExtraData,
+      load_course_data: issuesLoadExtraData,
+      load_system_data: issuesLoadExtraData,
     },
     IssueRenderDataSchema,
   );
@@ -848,15 +857,4 @@ export async function renderPanelsForSubmission({
     },
   ]);
   return panels;
-}
-
-/**
- * Expose the renderer in use to the client so that we can easily see
- * which renderer was used for a given request.
- */
-export function setRendererHeader(res: Response) {
-  const renderer = res.locals.question_renderer;
-  if (renderer) {
-    res.set('X-PrairieLearn-Question-Renderer', renderer);
-  }
 }

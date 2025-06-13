@@ -134,6 +134,14 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
           },
 
           {
+            activeSubPage: 'sharing',
+            urlSuffix: '/course_admin/sharing',
+            iconClasses: 'fas fa-share-nodes',
+            tabLabel: 'Sharing',
+            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
+          },
+
+          {
             activeSubPage: 'tags',
             urlSuffix: '/course_admin/tags',
             iconClasses: 'fas fa-hashtag',
@@ -145,14 +153,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/course_admin/topics',
             iconClasses: 'fas fa-quote-right',
             tabLabel: 'Topics',
-          },
-
-          {
-            activeSubPage: 'sharing',
-            urlSuffix: '/course_admin/sharing',
-            iconClasses: 'fas fa-share-nodes',
-            tabLabel: 'Sharing',
-            renderCondition: (resLocals) => resLocals.question_sharing_enabled,
           },
         ]
       : [
@@ -464,7 +464,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         urlSuffix: '/lti13',
         iconClasses: 'fa fa-school-flag',
         tabLabel: 'LTI 1.3',
-        renderCondition: (resLocals) => resLocals.lti13_enabled,
       },
     ],
     institution_admin: [

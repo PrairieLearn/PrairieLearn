@@ -5,20 +5,28 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type CourseInstance } from '../../lib/db-types.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
+  publicLink,
   infoCourseInstancePath,
+  availableTimezones,
   origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
+  publicLink: string;
   infoCourseInstancePath: string;
+  availableTimezones: Timezone[];
   origHash: string;
+  canEdit: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -28,7 +36,7 @@ export function InstructorInstanceAdminSettings({
       page: 'instance_admin',
       subPage: 'settings',
     },
-    headContent: [compiledScriptTag('instructorInstanceAdminSettingsClient.ts')],
+    headContent: compiledScriptTag('instructorInstanceAdminSettingsClient.ts'),
     content: html`
       ${CourseInstanceSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
@@ -40,6 +48,11 @@ export function InstructorInstanceAdminSettings({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
+      })}
+      ${QRCodeModal({
+        id: 'publicLinkModal',
+        title: 'Public Link QR Code',
+        content: publicLink,
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -64,10 +77,7 @@ export function InstructorInstanceAdminSettings({
                 pattern="[\\-A-Za-z0-9_\\/]+"
                 required
                 data-other-values="${shortNames.join(',')}"
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
                 Use only letters, numbers, dashes, and underscores, with no spaces. You may use
@@ -85,14 +95,81 @@ export function InstructorInstanceAdminSettings({
                 name="long_name"
                 value="${resLocals.course_instance.long_name}"
                 required
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course
-                  ? ''
-                  : 'disabled'}
+                ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
                 The long name of this course instance (e.g., 'Spring 2015').
               </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="display_timezone">Timezone</label>
+              <select
+                class="form-select"
+                id="display_timezone"
+                name="display_timezone"
+                ${canEdit ? '' : 'disabled'}
+              >
+                ${availableTimezones.map(
+                  (tz) => html`
+                    <option
+                      value="${tz.name}"
+                      ${tz.name === resLocals.course_instance.display_timezone ? 'selected' : ''}
+                    >
+                      ${formatTimezone(tz)}
+                    </option>
+                  `,
+                )}
+              </select>
+              <small class="form-text text-muted">
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you.
+              </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="group_assessments_by">Group assessments by</label>
+              <select
+                class="form-select"
+                id="group_assessments_by"
+                name="group_assessments_by"
+                ${canEdit ? '' : 'disabled'}
+              >
+                <option
+                  value="Set"
+                  ${resLocals.course_instance.assessments_group_by === 'Set' ? 'selected' : ''}
+                >
+                  Set
+                </option>
+                <option
+                  value="Module"
+                  ${resLocals.course_instance.assessments_group_by === 'Module' ? 'selected' : ''}
+                >
+                  Module
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Determines how assessments will be grouped on the student assessments page.
+              </small>
+            </div>
+            <div class="mb-3 form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="hide_in_enroll_page"
+                name="hide_in_enroll_page"
+                ${canEdit ? '' : 'disabled'}
+                ${resLocals.course_instance.hide_in_enroll_page ? 'checked' : ''}
+              />
+              <label class="form-check-label" for="hide_in_enroll_page">
+                Hide in enrollment page
+              </label>
+              <div class="small text-muted">
+                If enabled, hides the course instance in the enrollment page, so that only direct
+                links to the course can be used for enrollment.
+              </div>
             </div>
             <div class="mb-3">
               <label class="form-label" for="student_link">Student Link</label>
@@ -128,6 +205,8 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
+            <h2 class="h4">Sharing</h2>
+            ${CourseInstanceSharing({ courseInstance: resLocals.course_instance, publicLink })}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
@@ -249,6 +328,58 @@ function CopyCourseInstanceForm({
           <button type="submit" class="btn btn-danger">Delete</button>
         `,
       })}
+    </div>
+  `;
+}
+
+function CourseInstanceSharing({
+  courseInstance,
+  publicLink,
+}: {
+  courseInstance: CourseInstance;
+  publicLink: string;
+}) {
+  if (!courseInstance.share_source_publicly) {
+    return html`<p>This course instance is not being shared.</p>`;
+  }
+
+  return html`
+    <p>
+      <span class="badge color-green3 me-1">Public source</span>
+      This course instance's source is publicly shared.
+    </p>
+    <div class="mb-3">
+      <label for="publicLink">Public link</label>
+      <span class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          id="publicLink"
+          name="publicLink"
+          value="${publicLink}"
+          disabled
+        />
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary btn-copy"
+          data-clipboard-text="${publicLink}"
+          aria-label="Copy public link"
+        >
+          <i class="far fa-clipboard"></i>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Public Link QR Code"
+          data-bs-toggle="modal"
+          data-bs-target="#publicLinkModal"
+        >
+          <i class="fas fa-qrcode"></i>
+        </button>
+      </span>
+      <small class="form-text text-muted">
+        The link that other instructors can use to view this course instance.
+      </small>
     </div>
   `;
 }

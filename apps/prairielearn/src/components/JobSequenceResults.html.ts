@@ -1,9 +1,8 @@
-import { AnsiUp } from 'ansi_up';
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
+import { ansiToHtml } from '../lib/chalk.js';
 import type { Course } from '../lib/db-types.js';
 import type { JobSequenceWithTokens, JobWithToken } from '../lib/server-jobs.types.js';
 
@@ -24,7 +23,6 @@ export function JobSequenceResults({
   course: Course | undefined;
   jobSequence: JobSequenceWithTokens;
 }) {
-  const ansiup = new AnsiUp();
   const timeZone = course?.display_timezone || 'UTC';
 
   return html`
@@ -69,6 +67,19 @@ export function JobSequenceResults({
                       : ''}
                   `
                 : ''}
+              <div class="d-flex justify-content-end float-md-end">
+                <div class="form-check form-switch">
+                  <input
+                    type="checkbox"
+                    class="js-toggle-verbose form-check-input"
+                    id="toggle-verbose-${job.id}"
+                    data-target-id="output-${job.id}"
+                  />
+                  <label class="form-check-label" for="toggle-verbose-${job.id}">
+                    Show verbose messages
+                  </label>
+                </div>
+              </div>
               <p class="mb-1">
                 Started ${job.start_date ? `at ${formatDate(job.start_date, timeZone)}` : ''}
                 ${jobSequence.user_uid ? `by ${jobSequence.user_uid}` : ''}
@@ -99,9 +110,9 @@ export function JobSequenceResults({
               <pre
                 id="output-${job.id}"
                 class="text-white rounded p-3 mb-0 mt-3"
-                style="background-color: black;"
+                style="background-color: black; --verbose-display: none;"
               >
-${unsafeHtml(job.output ? ansiup.ansi_to_html(job.output) : '')}</pre
+${unsafeHtml(ansiToHtml(job.output))}</pre
               >
             </li>
           </div>

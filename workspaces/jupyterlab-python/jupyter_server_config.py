@@ -1,3 +1,8 @@
+"""Modifications to the default Jupyter Server configuration.
+
+<https://jupyter-server.readthedocs.io/en/latest/other/full-config.html#config-file-and-command-line-options>
+"""
+
 import os
 
 c = get_config()  # type: ignore # noqa: F821

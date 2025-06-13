@@ -27,6 +27,8 @@ jobs:
           branch: upgrade-containers-${{ steps.get-timestamp.outputs.timestamp }}
           title: 'Upgrade Docker containers'
           commit-message: 'Bump CACHEBUST value of containers'
+          committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           body: |
             This PR updates all Dockerfiles with a new `CACHEBUST` value to rebuild the images.
           labels: chore,dependencies,docker

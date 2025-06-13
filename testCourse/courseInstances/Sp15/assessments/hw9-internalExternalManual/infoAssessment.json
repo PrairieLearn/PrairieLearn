@@ -7,7 +7,7 @@
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
-      "comments": "Generic points, use default grading method",
+      "comment": "Generic points, use default grading method",
       "questions": [
         { "id": "internalGrade/addingNumbers", "points": 2, "maxPoints": 6 },
         { "id": "manualGrade/codeUpload", "points": 2, "maxPoints": 6 },
@@ -16,7 +16,7 @@
       ]
     },
     {
-      "comments": "Behavior based on separate points for manual and auto",
+      "comment": "Behavior based on separate points for manual and auto",
       "questions": [
         { "id": "internalGrade/addingNumbers2", "manualPoints": 2 },
         { "id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6 },

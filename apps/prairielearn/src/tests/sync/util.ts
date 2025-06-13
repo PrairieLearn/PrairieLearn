@@ -1,217 +1,33 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import type {
+  AssessmentJsonInput,
+  CommentJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  CourseOptionsJson,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
+} from '../../schemas/index.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
-interface CourseOptions {
-  useNewQuestionRenderer: boolean;
-  devModeFeatures: Record<string, boolean> | string[];
-}
-
-export interface Tag {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-export interface Topic {
-  name: string;
-  color: string;
-  description?: string;
-}
-
-interface SharingSet {
-  name: string;
-  description: string;
-}
-
-export interface AssessmentSet {
-  abbreviation: string;
-  name: string;
-  heading: string;
-  color: string;
-}
-
-interface Module {
-  name: string;
-  heading: string;
-}
-
-interface Course {
-  uuid: string;
-  name: string;
-  title: string;
-  timezone?: string;
-  options?: CourseOptions;
-  tags: Tag[];
-  topics: Topic[];
-  sharingSets?: SharingSet[];
-  assessmentSets: AssessmentSet[];
-  assessmentModules?: Module[];
-}
-
-interface CourseInstanceAllowAccess {
-  uids?: string[];
-  startDate?: string;
-  endDate?: string;
-  institution?: string;
-}
-
-interface CourseInstance {
-  uuid: string;
-  longName: string;
-  number?: number;
-  timezone?: string;
-  allowAccess?: CourseInstanceAllowAccess[];
-  groupAssessmentsBy?: 'Set' | 'Module';
-}
-
-export interface GroupRole {
-  name: string;
-  minimum?: number;
-  maximum?: number;
-  canAssignRoles?: boolean;
-}
-
-interface AssessmentAllowAccess {
-  mode?: 'Public' | 'Exam';
-  examUuid?: string;
-  uids?: string[];
-  credit?: number;
-  startDate?: string;
-  endDate?: string;
-  timeLimitMin?: number;
-  password?: string;
-  active?: boolean;
-}
-
-interface QuestionAlternative {
-  points?: number | number[];
-  autoPoints?: number | number[];
-  maxPoints?: number;
-  maxAutoPoints?: number;
-  manualPoints?: number;
-  id?: string;
-  forceMaxPoints?: boolean;
-  triesPerVariant?: number;
-  gradeRateMinutes?: number;
-}
-
-interface ZoneQuestion {
-  points?: number | number[];
-  autoPoints?: number | number[];
-  maxPoints?: number;
-  maxAutoPoints?: number;
-  manualPoints?: number;
-  id?: string;
-  forceMaxPoints?: boolean;
-  alternatives?: QuestionAlternative[];
-  numberChoose?: number;
-  triesPerVariant?: number;
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-interface Zone {
-  title?: string;
-  maxPoints?: number;
-  maxChoose?: number;
-  bestQuestions?: number;
-  questions?: ZoneQuestion[];
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-export interface Assessment {
-  uuid: string;
-  type: 'Homework' | 'Exam';
-  title: string;
-  set: string;
-  module?: string;
-  number: string;
-  groupRoles?: GroupRole[];
-  allowIssueReporting?: boolean;
-  allowRealTimeGrading?: boolean;
-  requireHonorCode?: boolean;
-  multipleInstance?: boolean;
-  shuffleQuestions?: boolean;
-  allowAccess?: AssessmentAllowAccess[];
-  text?: string;
-  maxPoints?: number;
-  autoClose?: boolean;
-  zones?: Zone[];
-  constantQuestionValue?: boolean;
-  groupWork?: boolean;
-  groupMaxSize?: number;
-  groupMinSize?: number;
-  studentGroupCreate?: boolean;
-  studentGroupJoin?: boolean;
-  studentGroupLeave?: boolean;
-  hasRoles?: boolean;
-  canSubmit?: string[];
-  canView?: string[];
-  gradeRateMinutes?: number;
-}
-
-interface QuestionExternalGradingOptions {
-  enabled?: boolean;
-  image: string;
-  entrypoint?: string | string[];
-  serverFilesCourse?: string[];
-  timeout?: number;
-  enableNetworking?: boolean;
-  environment?: Record<string, string | null>;
-}
-
-interface QuestionWorkspaceOptions {
-  image: string;
-  port: number;
-  home: string;
-  args?: string | string[];
-  gradedFiles?: string[];
-  rewriteUrl?: string;
-  enableNetworking?: boolean;
-  environment?: Record<string, string | null>;
-}
-
-export interface Question {
-  uuid: string;
-  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
-  title: string;
-  topic: string;
-  tags?: string[];
-  sharingSets?: string[];
-  sharePublicly?: boolean;
-  shareSourcePublicly?: boolean;
-  clientFiles?: string[];
-  clientTemplates?: string[];
-  template?: string;
-  gradingMethod?: 'Internal' | 'External' | 'Manual';
-  singleVariant?: boolean;
-  showCorrectAnswer?: boolean;
-  partialCredit?: boolean;
-  options?: Record<string, unknown>;
-  externalGradingOptions?: QuestionExternalGradingOptions;
-  workspaceOptions?: QuestionWorkspaceOptions;
-}
-
 export interface CourseInstanceData {
-  assessments: Record<string, Assessment>;
-  courseInstance: CourseInstance;
+  assessments: Record<string, AssessmentJsonInput>;
+  courseInstance: CourseInstanceJsonInput;
 }
 
 export interface CourseData {
-  course: Course;
-  questions: Record<string, Question>;
+  course: CourseJsonInput;
+  questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -288,7 +104,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course: Course = {
+const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -329,7 +145,7 @@ const course: Course = {
       color: 'gray2',
       description: 'Another test topic',
     },
-  ],
+  ] as TopicJsonInput[],
   tags: [
     {
       name: 'test',
@@ -341,10 +157,12 @@ const course: Course = {
       color: 'blue2',
       description: 'Another test tag',
     },
-  ],
-};
+  ] as TagJsonInput[],
+  options: undefined as CourseOptionsJson | undefined,
+  comment: undefined as CommentJsonInput | undefined,
+} satisfies CourseJsonInput;
 
-const questions: Record<string, Question> = {
+const questions: Record<string, QuestionJsonInput> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -432,7 +250,7 @@ const courseInstances: Record<string, CourseInstanceData> = {
 /**
  * @returns The base course data for syncing testing
  */
-export function getCourseData(): CourseData {
+export function getCourseData() {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   return structuredClone({

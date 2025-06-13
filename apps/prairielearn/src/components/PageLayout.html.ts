@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 
@@ -41,13 +41,13 @@ export function PageLayout({
     fullHeight?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlValue;
+  headContent?: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlValue;
+  preContent?: HtmlSafeString | HtmlSafeString[];
   /** The main content of the page within the main container. */
-  content: HtmlValue;
+  content: HtmlSafeString | HtmlSafeString[];
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlValue;
+  postContent?: HtmlSafeString | HtmlSafeString[];
 }) {
   const marginBottom = options.marginBottom ?? true;
 
@@ -104,8 +104,8 @@ export function PageLayout({
           ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
-          ${options.hxExt ? `hx-ext="${options.hxExt}"` : ''}
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           <div
             id="app-container"
@@ -126,7 +126,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav">
+                  <div class="app-side-nav bg-light border-right">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -138,12 +138,12 @@ export function PageLayout({
             <div class="${sideNavEnabled ? 'app-main' : ''}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
-                resLocals.assessments &&
+                resLocals.course_instance &&
                 AssessmentNavigation({
+                  courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,
-                  courseInstance: resLocals.course_instance,
                   assessment: resLocals.assessment,
-                  assessments: resLocals.assessments,
+                  assessmentSet: resLocals.assessment_set,
                 })}
                 ${showContextNavigation
                   ? ContextNavigation({

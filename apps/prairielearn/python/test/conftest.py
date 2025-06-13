@@ -20,5 +20,6 @@ def question_data() -> QuestionData:
         "extensions": {},
         "num_valid_submissions": 0,
         "manual_grading": False,
+        "ai_grading": False,
         "answers_names": {},
     }

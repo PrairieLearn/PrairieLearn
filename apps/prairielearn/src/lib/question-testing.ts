@@ -4,13 +4,13 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
   type Course,
   type CourseInstance,
-  GradingJobSchema,
   type Question,
   type Submission,
   SubmissionSchema,
@@ -109,28 +109,20 @@ async function createTestSubmission(
     client_fingerprint_id: null,
   });
 
-  const grading_job = await sqldb.callRow(
-    'grading_jobs_insert',
-    [submission_id, authn_user_id],
-    GradingJobSchema,
-  );
+  const grading_job = await insertGradingJob({ submission_id, authn_user_id });
 
-  await sqldb.callAsync('grading_jobs_update_after_grading', [
-    grading_job.id,
-    null, // received_time
-    null, // start_time
-    null, // finish_tim
-    {}, // submitted_answer
-    data.format_errors,
-    data.gradable,
-    hasFatalIssue,
-    data.params,
-    data.true_answer,
-    {}, // data.feedback
-    data.partial_scores,
-    data.score,
-    null, // v2_score
-  ]);
+  await updateGradingJobAfterGrading({
+    grading_job_id: grading_job.id,
+    submitted_answer: {},
+    format_errors: data.format_errors,
+    gradable: data.gradable,
+    broken: hasFatalIssue,
+    params: data.params,
+    true_answer: data.true_answer,
+    feedback: {},
+    partial_scores: data.partial_scores,
+    score: data.score,
+  });
 
   return submission_id;
 }

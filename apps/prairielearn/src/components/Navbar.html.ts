@@ -46,11 +46,18 @@ export function Navbar({
         `
       : ''}
 
-    <div class="container-fluid bg-primary">
-      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
-        Skip to main content
+    <nav
+      class="container-fluid bg-primary visually-hidden-focusable"
+      aria-label="Skip link and accessibility guide"
+    >
+      <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        class="d-inline-flex p-2 m-2 text-white"
+      >
+        Accessibility guide
       </a>
-    </div>
+    </nav>
 
     ${config.announcementHtml
       ? html`
@@ -228,6 +235,7 @@ function UserDropdownMenu({
           id="navbarDropdown"
           href="#"
           role="button"
+          data-bs-auto-close="outside"
           data-bs-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -554,12 +562,12 @@ function AuthnOverrides({
     <h6 class="dropdown-header">Effective user</h6>
 
     <form class="dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
+        aria-label="UID"
       />
       <button
         type="submit"

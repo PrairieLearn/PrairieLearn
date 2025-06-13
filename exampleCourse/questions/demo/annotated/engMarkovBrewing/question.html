@@ -28,7 +28,14 @@
     </p>
 
     <p> Your code snippet should define the following variables: </p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-external-grader-variables params-name="names_from_user">
+      <pl-variable name="hours" type="positive integer">
+        The number of hours needed to accomplish what is requested in the problem statement.
+      </pl-variable>
+      <pl-variable name="composition" type="1d array">
+        The composition of ingredients at 'hours'.
+      </pl-variable>
+    </pl-external-grader-variables>
     <pl-file-editor
         file_name="user_code.py"
         source-file-name="tests/initial_code.py"

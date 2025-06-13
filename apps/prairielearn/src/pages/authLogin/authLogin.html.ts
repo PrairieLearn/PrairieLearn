@@ -1,4 +1,5 @@
 import { type HtmlValue, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { assetPath } from '../../lib/assets.js';
@@ -249,11 +250,13 @@ export function AuthLogin({
 }
 
 export function AuthLoginUnsupportedProvider({
+  showUnsupportedMessage,
   supportedProviders,
   institutionId,
   service,
   resLocals,
 }: {
+  showUnsupportedMessage: boolean;
   supportedProviders: InstitutionSupportedProviders[];
   institutionId: string;
   service: string | null;
@@ -300,14 +303,38 @@ export function AuthLoginUnsupportedProvider({
     service,
     resLocals,
     children: html`
-      <div class="alert alert-danger text-center my-4" role="alert">
-        The authentication provider you tried to use is not supported by your institution.
-        ${supportsNonLti ? 'Please use a supported provider.' : ''}
-        ${!supportsNonLti && supportsLti
-          ? "You must start a session from your course's Learning Management System (LMS)."
-          : ''}
-        ${supportedProviders.length === 0 ? 'Contact your institution for more information.' : ''}
-      </div>
+      ${run(() => {
+        if (showUnsupportedMessage) {
+          return html`
+            <div class="alert alert-danger text-center my-4" role="alert">
+              The authentication provider you tried to use is not supported by your institution.
+              ${supportsNonLti ? 'Please use a supported provider.' : ''}
+              ${!supportsNonLti && supportsLti
+                ? "You must start a session from your course's Learning Management System (LMS)."
+                : ''}
+              ${supportedProviders.length === 0
+                ? 'Contact your institution for more information.'
+                : ''}
+            </div>
+          `;
+        }
+
+        if (supportedProviders.length === 0) {
+          return html`
+            <div class="alert alert-danger text-center my-4" role="alert">
+              No authentication providers found. Contact your institution for more information.
+            </div>
+          `;
+        }
+
+        if (!supportsNonLti && supportsLti) {
+          return html`
+            <div class="alert alert-danger text-center my-4" role="alert">
+              You must start a session from your course's Learning Management System (LMS).
+            </div>
+          `;
+        }
+      })}
       ${defaultProviderButton
         ? html`
             <small class="text-muted text-center d-block mb-2">Preferred provider</small>
@@ -345,7 +372,7 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
     <form method="POST">
       <div class="mb-3">
         <label class="form-label" for="dev_uid">UID</label>
-        <input type="text" class="form-control" id="dev_uid" name="uid" required />
+        <input type="email" class="form-control" id="dev_uid" name="uid" required />
       </div>
       <div class="mb-3">
         <label class="form-label" for="dev_name">Name</label>

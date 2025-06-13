@@ -19,7 +19,7 @@ from pygments.token import Token, _TokenType
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
-STYLE_DEFAULT = "friendly"
+STYLE_NAME_DEFAULT = "friendly"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
@@ -199,6 +199,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "highlight-lines-color",
         "copy-code-button",
         "style",
+        "style-name",
         "show-line-numbers",
         "normalize-whitespace",
     ]
@@ -212,11 +213,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
             )
 
-    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
+    # The `style` attribute is deprecated, but we still support it for backwards compatibility.
+    if pl.has_attrib(element, "style") and pl.has_attrib(element, "style-name"):
+        raise ValueError(
+            'Cannot use both "style" and "style-name" attributes at the same time.'
+        )
+    style_name = pl.get_string_attrib(
+        element,
+        "style-name",
+        pl.get_string_attrib(element, "style", STYLE_NAME_DEFAULT),
+    )
     allowed_styles = STYLE_MAP.keys()
-    if style not in allowed_styles:
+    if style_name not in allowed_styles:
         raise KeyError(
-            f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
+            f'Unknown style name: "{style_name}". Must be one of {", ".join(allowed_styles)}'
         )
 
     source_file_name = pl.get_string_attrib(
@@ -241,7 +251,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
-    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
+    style_name = pl.get_string_attrib(
+        element,
+        "style-name",
+        pl.get_string_attrib(element, "style", STYLE_NAME_DEFAULT),
+    )
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
@@ -301,7 +315,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
-    pygments_style = get_style_by_name(style)
+    pygments_style = get_style_by_name(style_name)
 
     background_color = pygments_style.background_color or "transparent"
     line_number_color = pygments_style.line_number_color

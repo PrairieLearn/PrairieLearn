@@ -1,11 +1,13 @@
 import base64
 import hashlib
+import json
 import os
 from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 
 class Counter(Enum):
@@ -19,6 +21,7 @@ class InputFormat(Enum):
     MARKDOWN = "markdown"
 
 
+FILE_NAME_DEFAULT = "answer.html"
 QUILL_THEME_DEFAULT = "snow"
 PLACEHOLDER_DEFAULT = "Your answer here"
 ALLOW_BLANK_DEFAULT = False
@@ -42,8 +45,9 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["file-name"]
+    required_attribs = []
     optional_attribs = [
+        "file-name",
         "quill-theme",
         "source-file-name",
         "directory",
@@ -60,10 +64,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     element_text = element_inner_html(element)
 
-    file_name = pl.get_string_attrib(element, "file-name")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
+        if not pl.has_attrib(element, "file-name"):
+            # This is a special-case of the uniqueness test with a special message for the default file name.
+            raise RuntimeError(
+                "There is more than one rich-text editor. File names must be provided and unique."
+            )
         raise RuntimeError(
             "There is more than one file editor with the same file name."
         )
@@ -80,8 +89,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "answer":
+        return ""
+
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, "file-name", "")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     answer_name = get_answer_name(file_name)
     quill_theme = pl.get_string_attrib(element, "quill-theme", QUILL_THEME_DEFAULT)
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
@@ -100,31 +112,57 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     element_text = element_inner_html(element)
 
+    submitted_files = data["submitted_answers"].get("_files", [])
+    submitted_file = next(
+        (f for f in submitted_files if f.get("name", None) == file_name), None
+    )
+
+    if data["ai_grading"]:
+        if data["panel"] != "submission" or not submitted_file:
+            return f'<div data-file-name="{file_name}"></div>'
+
+        contents = submitted_file.get("contents", "")
+        contents = base64.b64decode(contents).decode("utf-8")
+
+        # MathJax gets embedded as `span.ql-formula` elements. This is fine;
+        # we'll just remove all attributes to save on tokens.
+        html_doc = lxml.html.fragments_fromstring(contents)
+        for fragment in html_doc:
+            if isinstance(fragment, str):
+                continue
+
+            for span in fragment.xpath('.//span[@class="ql-formula"]'):
+                span.attrib.clear()
+
+        # Reconstruct the HTML content
+        contents = "".join(
+            str(lxml.html.tostring(fragment, encoding="unicode"))
+            if not isinstance(fragment, str)
+            else str(fragment)
+            for fragment in html_doc
+        )
+
+        return f'<div data-file-name="{file_name}">\n{contents}\n</div>'
+
     if data["panel"] == "question" or data["panel"] == "submission":
+        quill_options = {
+            "readOnly": data["panel"] == "submission" or not data["editable"],
+            "placeholder": placeholder,
+            "format": input_format.value,
+            "markdownShortcuts": markdown_shortcuts,
+            "counter": counter.value,
+            "modules": {"clipboard": {} if clipboard_enabled else {"enabled": False}},
+            "theme": quill_theme or None,
+        }
         html_params = {
             "name": answer_name,
             "file_name": file_name,
-            "quill_theme": quill_theme,
-            "placeholder": placeholder,
             "editor_uuid": uuid,
-            "question": data["panel"] == "question",
-            "submission": data["panel"] == "submission",
-            "read_only": (
-                "true"
-                if (data["panel"] == "submission" or not data["editable"])
-                else "false"
-            ),
-            "format": input_format.value,
-            "markdown_shortcuts": "true" if markdown_shortcuts else "false",
-            "counter": counter.value,
+            "quill_options_json": json.dumps(quill_options),
             "counter_enabled": counter != Counter.NONE,
             "clipboard_enabled": clipboard_enabled,
         }
 
-        submitted_files = data["submitted_answers"].get("_files", [])
-        submitted_file = next(
-            (f for f in submitted_files if f.get("name", None) == file_name), None
-        )
         if submitted_file:
             html_params["current_file_contents"] = submitted_file.get("contents")
             # If the mimetype is provided, override the input format
@@ -156,20 +194,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params["question"] = data["panel"] == "question"
         with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
-    elif data["panel"] == "answer":
-        html = ""
-    else:
-        raise ValueError("Invalid panel type: " + data["panel"])
-
-    return html
+    assert_never(data["panel"])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    file_name = pl.get_string_attrib(element, "file-name", "")
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist
@@ -181,7 +214,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
-    del data["submitted_answers"][answer_name]
+    data["submitted_answers"].pop(answer_name, None)
     # Mimetype is explicitly set to ensure that we can distinguish newer
     # submissions (stored as HTML) from submissions using the older version of
     # pl-rich-text-editor (potentially stored in Markdown)

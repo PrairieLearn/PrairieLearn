@@ -82,6 +82,11 @@ PROPS: dict[str, PropInfo] = {
         "present_phases": frozenset({"render"}),
         "edit_phases": frozenset(),
     },
+    "ai_grading": {
+        "type": "boolean",
+        "present_phases": frozenset({"render"}),
+        "edit_phases": frozenset(),
+    },
     "panel": {
         "type": "string",
         "present_phases": frozenset({"render"}),

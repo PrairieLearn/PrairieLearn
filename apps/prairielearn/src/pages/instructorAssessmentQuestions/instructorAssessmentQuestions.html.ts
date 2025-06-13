@@ -1,9 +1,11 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import {
+  AssessmentQuestionHeaders,
+  AssessmentQuestionNumber,
+} from '../../components/AssessmentQuestions.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -12,42 +14,9 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  AlternativeGroupSchema,
-  AssessmentQuestionSchema,
-  AssessmentsFormatForQuestionSchema,
-  QuestionSchema,
-  TagSchema,
-  TopicSchema,
-  ZoneSchema,
-} from '../../lib/db-types.js';
-
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
-  number: z.string().nullable(),
-  open_issue_count: z.coerce.number().nullable(),
-  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema,
-  qid: QuestionSchema.shape.qid,
-  start_new_zone: z.boolean().nullable(),
-  start_new_alternative_group: z.boolean().nullable(),
-  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
-  title: QuestionSchema.shape.title,
-  zone_best_questions: ZoneSchema.shape.best_questions,
-  zone_has_best_questions: z.boolean().nullable(),
-  zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: ZoneSchema.shape.max_points,
-  zone_number_choose: ZoneSchema.shape.number_choose,
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-});
-type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+import type { Course } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
+import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -59,7 +28,7 @@ export function InstructorAssessmentQuestions({
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    headContent: [compiledScriptTag('instructorAssessmentQuestionsClient.ts')],
+    headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -82,6 +51,7 @@ export function InstructorAssessmentQuestions({
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
         </div>
         ${AssessmentQuestionsTable({
+          course: resLocals.course,
           questions,
           assessmentType: resLocals.assessment.type,
           urlPrefix: resLocals.urlPrefix,
@@ -119,12 +89,14 @@ export function InstructorAssessmentQuestions({
 }
 
 function AssessmentQuestionsTable({
+  course,
   questions,
   urlPrefix,
   assessmentType,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
+  course: Course;
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
@@ -171,51 +143,11 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${question.start_new_zone
-                ? html`
-                    <tr>
-                      <th colspan="${nTableCols}">
-                        Zone ${question.zone_number}. ${question.zone_title}
-                        ${question.zone_number_choose == null
-                          ? '(Choose all questions)'
-                          : question.zone_number_choose === 1
-                            ? '(Choose 1 question)'
-                            : `(Choose ${question.zone_number_choose} questions)`}
-                        ${question.zone_has_max_points
-                          ? `(maximum ${question.zone_max_points} points)`
-                          : ''}
-                        ${question.zone_has_best_questions
-                          ? `(best ${question.zone_best_questions} questions)`
-                          : ''}
-                      </th>
-                    </tr>
-                  `
-                : ''}
-              ${question.start_new_alternative_group && question.alternative_group_size > 1
-                ? html`
-                    <tr>
-                      <td colspan="${nTableCols}">
-                        ${question.alternative_group_number}.
-                        ${question.alternative_group_number_choose == null
-                          ? 'Choose all questions from:'
-                          : question.alternative_group_number_choose === 1
-                            ? 'Choose 1 question from:'
-                            : `Choose ${question.alternative_group_number_choose} questions from:`}
-                      </td>
-                    </tr>
-                  `
-                : ''}
+              ${AssessmentQuestionHeaders(question, nTableCols)}
               <tr>
                 <td>
                   ${run(() => {
-                    const number =
-                      question.alternative_group_size === 1
-                        ? `${question.alternative_group_number}.`
-                        : html`
-                            <span class="ms-3">
-                              ${question.alternative_group_number}.${question.number_in_alternative_group}.
-                            </span>
-                          `;
+                    const number = AssessmentQuestionNumber(question);
                     const issueBadge = IssueBadge({
                       urlPrefix,
                       count: question.open_issue_count ?? 0,
@@ -244,7 +176,9 @@ function AssessmentQuestionsTable({
                           output: question.sync_warnings,
                         })
                       : ''}
-                  ${question.display_name}
+                  ${idsEqual(course.id, question.course_id)
+                    ? question.qid
+                    : `@${question.course_sharing_name}/${question.qid}`}
                 </td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>

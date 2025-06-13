@@ -377,7 +377,7 @@ async function recomputeInstanceQuestions(
  * @param adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
  * @returns The ID and points of the created rubric grading.
  */
-async function insertRubricGrading(
+export async function insertRubricGrading(
   rubric_id: string,
   max_points: number,
   max_manual_points: number,

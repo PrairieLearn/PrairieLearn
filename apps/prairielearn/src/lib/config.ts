@@ -10,6 +10,8 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
+const DEV_MODE = process.env.NODE_ENV !== 'production';
+
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
@@ -106,7 +108,7 @@ const ConfigSchema = z.object({
   sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
-    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+    .default(DEV_MODE ? 'lax' : 'none'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -325,7 +327,7 @@ const ConfigSchema = z.object({
   workspaceLogsS3Bucket: z
     .string()
     .nullable()
-    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
+    .default(DEV_MODE ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -477,7 +479,7 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
+  devMode: z.boolean().default(DEV_MODE),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -545,8 +547,10 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
-  openAiApiKey: z.string().nullable().default(null),
-  openAiOrganization: z.string().nullable().default(null),
+  aiGradingOpenAiApiKey: z.string().nullable().default(null),
+  aiGradingOpenAiOrganization: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
+  aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
@@ -567,6 +571,11 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
+  /**
+   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
+   */
+  costPerMillionPromptTokens: z.number().default(3.75),
+  costPerMillionCompletionTokens: z.number().default(15),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -597,7 +606,7 @@ export async function loadConfig(paths: string[]) {
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here
   // after the config has been completely loaded.
-  if (process.env.NODE_ENV === 'production') {
+  if (!DEV_MODE) {
     if (!config.cookieDomain) {
       throw new Error('cookieDomain must be set in production environments');
     }
@@ -610,6 +619,10 @@ export async function loadConfig(paths: string[]) {
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

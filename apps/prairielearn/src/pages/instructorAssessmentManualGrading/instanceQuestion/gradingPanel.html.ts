@@ -177,9 +177,8 @@ ${submission.feedback?.manual}</textarea
                       data-bs-toggle="dropdown"
                       aria-haspopup="true"
                       aria-expanded="false"
-                    >
-                      <span class="visually-hidden">Change assigned grader</span>
-                    </button>
+                      aria-label="Change assigned grader"
+                    ></button>
                     <div class="dropdown-menu dropdown-menu-end">
                       ${(graders || []).map(
                         (grader) => html`

@@ -460,7 +460,19 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
     body: html`
       <div class="mb-3">
         <label class="form-label" for="formName">Group Name</label>
-        <input type="text" class="form-control" id="formName" name="group_name" />
+        <input
+          type="text"
+          class="form-control"
+          id="formName"
+          name="group_name"
+          aria-describedby="addGroupNameHelp"
+          maxlength="30"
+          pattern="[0-9a-zA-Z]+"
+        />
+        <small id="addGroupNameHelp" class="form-text text-muted">
+          Keep blank to use a default name. If provided, the name must be at most 30 characters long
+          and may only contain letters and numbers.
+        </small>
       </div>
       <div class="mb-3">
         <label class="form-label" for="addGroupUids">UIDs</label>
@@ -471,6 +483,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
           name="uids"
           placeholder="student1@example.com, student2@example.com"
           aria-describedby="addGroupUidsHelp"
+          required
         />
         <small id="addGroupUidsHelp" class="form-text text-muted">
           Separate multiple UIDs with commas.

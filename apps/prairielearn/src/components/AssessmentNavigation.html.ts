@@ -1,9 +1,8 @@
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
-import type { Assessment, CourseInstance } from '../lib/db-types.js';
-import { idsEqual } from '../lib/id.js';
+import type { Assessment, AssessmentSet } from '../lib/db-types.js';
 
+import { Modal } from './Modal.html.js';
 import type { NavSubPage } from './Navbar.types.js';
 
 /**
@@ -11,53 +10,62 @@ import type { NavSubPage } from './Navbar.types.js';
  * course instance.
  */
 export function AssessmentNavigation({
+  courseInstanceId,
   subPage,
-  courseInstance,
   assessment,
-  assessments,
+  assessmentSet,
 }: {
+  courseInstanceId: string;
   subPage: NavSubPage;
-  courseInstance: CourseInstance;
   assessment: Assessment;
-  assessments: Assessment[];
+  assessmentSet: AssessmentSet;
 }) {
-  // Target subpage for the dropdown links to assessments.
-  const targetSubPage = run(() => {
-    if (!subPage) return '';
-    if (subPage === 'assessment_instance') return 'instances';
-    if (subPage === 'file_edit') return 'file_view';
-    return subPage;
-  });
-
   return html`
-    <div class="dropdown bg-light pt-2 px-3">
+    <div class="bg-light pt-2 px-3">
       <button
         type="button"
-        class="btn btn-ghost dropdown-toggle dropdown-menu-right d-flex justify-content-between align-items-center"
+        class="btn btn-ghost text-start"
         style="max-width: 100%;"
         aria-label="Change assessment"
         aria-haspopup="true"
         aria-expanded="false"
-        data-bs-toggle="dropdown"
-        data-bs-boundary="window"
+        hx-get="/pl/navbar/course_instance/${courseInstanceId}/assessment/${assessment.id}/switcher${subPage
+          ? `?subPage=${subPage}`
+          : ''}"
+        hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+        data-bs-toggle="modal"
+        data-bs-target="#assessmentNavigationModal"
+        hx-target="#assessmentNavigationModalContent"
       >
-        <span class="h6 mb-0 me-1 overflow-hidden text-truncate">${assessment.title}</span>
+        <span class="d-flex flex-row align-items-center gap-2 w-100">
+          <span class="badge color-${assessmentSet.color}">
+            ${assessmentSet.abbreviation}${assessment.number}
+          </span>
+          <span class="d-flex flex-column" style="min-width: 0;">
+            <span class="d-flex align-items-center gap-1 dropdown-toggle">
+              <span class="h6 mb-0 overflow-hidden text-truncate">${assessment.title}</span>
+            </span>
+            <span class="text-muted small overflow-hidden text-truncate">${assessment.tid}</span>
+          </span>
+        </span>
       </button>
-      <div class="dropdown-menu py-0 overflow-hidden">
-        <div style="max-height: 50vh" class="overflow-auto">
-          ${assessments.map((a) => {
-            return html`
-              <a
-                class="dropdown-item ${idsEqual(assessment.id, a.id) ? 'active' : ''}"
-                aria-current="${idsEqual(assessment.id, a.id) ? 'page' : ''}"
-                href="/pl/course_instance/${courseInstance.id}/instructor/assessment/${a.id}/${targetSubPage}"
-              >
-                ${a.title}
-              </a>
-            `;
-          })}
-        </div>
-      </div>
+      ${AssessmentNavigationModal()}
     </div>
   `;
+}
+
+function AssessmentNavigationModal() {
+  return Modal({
+    id: 'assessmentNavigationModal',
+    title: 'Select assessment',
+    body: html`
+      <div id="assessmentNavigationModalContent">
+        <div style="width: 100%;" class="d-flex justify-content-center align-items-center">
+          <div class="spinner-border spinner-border-sm" role="status">
+            <span class="visually-hidden">Loading assessments...</span>
+          </div>
+        </div>
+      </div>
+    `,
+  });
 }

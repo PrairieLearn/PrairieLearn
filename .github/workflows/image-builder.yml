@@ -9,6 +9,11 @@ on:
         description: 'The images to build'
         required: true
         type: string
+      cache_images:
+        description: 'The images to cache'
+        required: false
+        type: string
+        default: ''
 
 env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -19,6 +24,7 @@ env:
 
 jobs:
   build-images:
+    name: Build
     strategy:
       fail-fast: false
       matrix:
@@ -43,7 +49,9 @@ jobs:
         run: python3 scripts/build_images/build.py
         env:
           IMAGES: ${{ inputs.images }}
+          CACHE_ONLY: ${{ inputs.cache_images }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
 
@@ -56,6 +64,7 @@ jobs:
           overwrite: true
 
   combine-images:
+    name: Combine
     needs: [build-images]
 
     runs-on: ubuntu-24.04

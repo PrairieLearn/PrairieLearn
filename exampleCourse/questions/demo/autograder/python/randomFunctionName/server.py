@@ -37,7 +37,6 @@ def generate(data):
     # Pick the function name
     function_name = random.choice(FUN_CHOICES)
 
-    data["params"]["names_for_user"] = []
     data["params"]["names_from_user"] = [
         {
             "name": function_name,

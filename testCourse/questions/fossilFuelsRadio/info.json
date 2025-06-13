@@ -6,7 +6,7 @@
   "clientFiles": ["client.js", "power-station.jpg"],
   "type": "MultipleChoice",
   "options": {
-    "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?<img src=\"<% print(questionFile(\"power-station.jpg\")) %>\" width=\"400px\" class=\"img-responsive center-block\" />",
+    "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?<img src=\"<% print(questionFile(\"power-station.jpg\")) %>\" width=\"400\" class=\"img-responsive center-block\" />",
     "correctAnswers": ["Cheap", "High energy density", "Provide energy on demand"],
     "incorrectAnswers": [
       "Non-polluting",

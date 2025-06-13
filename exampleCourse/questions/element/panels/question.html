@@ -6,19 +6,19 @@
     <li><b>Answer panel:</b> shows the correct answer or other feedback to the student once they can no longer attempt the question. There is at most one answer panel.</li>
   </ol>
 
-  <p>By default, the contents of <tt>question.html</tt> is shown in all three panels. Elements used in <tt>question.html</tt> are aware of which panel they are in. For example, the <tt>&lt;pl-multiple-choice&gt;</tt> element will let the student choose an option in the question panel, show the student the option they chose in the submission panel, and display the correct option in the answer panel.</p>
+  <p>By default, the contents of <code>question.html</code> is shown in all three panels. Elements used in <code>question.html</code> are aware of which panel they are in. For example, the <code>&lt;pl-multiple-choice&gt;</code> element will let the student choose an option in the question panel, show the student the option they chose in the submission panel, and display the correct option in the answer panel.</p>
 
   <h5>Elements to control panel display</h5>
 
   <p>There are four elements that can be used to control whether text is shown in each panel:</p>
   <ul>
-      <li><b><tt>&lt;pl-question-panel&gt;</tt></b> only displays its contents in the question panel. This should be used for the question prompt.</li>
-      <li><b><tt>&lt;pl-submission-panel&gt;</tt></b> only displays its contents in the submission panel. This could be used to give specific feedback on a particular student submission.</li>
-      <li><b><tt>&lt;pl-answer-panel&gt;</tt></b> only displays its contents in the answer panel. This could be used to give information about the correct answer.</li>
-      <li><b><tt>&lt;pl-hide-in-panel&gt;</tt></b> has attributes that allow content to be hidden in one or more panels.</li>
+      <li><b><code>&lt;pl-question-panel&gt;</code></b> only displays its contents in the question panel. This should be used for the question prompt.</li>
+      <li><b><code>&lt;pl-submission-panel&gt;</code></b> only displays its contents in the submission panel. This could be used to give specific feedback on a particular student submission.</li>
+      <li><b><code>&lt;pl-answer-panel&gt;</code></b> only displays its contents in the answer panel. This could be used to give information about the correct answer.</li>
+      <li><b><code>&lt;pl-hide-in-panel&gt;</code></b> has attributes that allow content to be hidden in one or more panels.</li>
   </ul>
 
-  <p>In normal usage, we put the question prompt in a <tt>&lt;pl-question-panel&gt;</tt> element and all inputs requesting student input outside of this element.</p>
+  <p>In normal usage, we put the question prompt in a <code>&lt;pl-question-panel&gt;</code> element and all inputs requesting student input outside of this element.</p>
 
   <h5>Example HTML</h5>
 

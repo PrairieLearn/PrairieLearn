@@ -10,7 +10,6 @@ import sympy
 
 def test_evaluate() -> None:
     """Test evaluate in the case of custom functions"""
-
     z = sympy.Symbol("z")
     f = sympy.Function("f")
     custom_function = sympy.Function("custom_function")
@@ -176,7 +175,6 @@ class TestSympy:
         Check for no issues in the case where complex is not
         allowed and variable is named "I".
         """
-
         a_sub = "2I"
         var = sympy.symbols("I")
         ref_expr = 2 * var

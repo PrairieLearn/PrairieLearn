@@ -5,7 +5,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -13,6 +13,7 @@ export function InstructorAssessmentSettings({
   assessmentGHLink,
   tids,
   studentLink,
+  publicLink,
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
@@ -23,6 +24,7 @@ export function InstructorAssessmentSettings({
   assessmentGHLink: string | null;
   tids: string[];
   studentLink: string;
+  publicLink: string;
   infoAssessmentPath: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
@@ -49,6 +51,11 @@ export function InstructorAssessmentSettings({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
+      })}
+      ${QRCodeModal({
+        id: 'publicLinkModal',
+        title: 'Public Link QR Code',
+        content: publicLink,
       })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -159,8 +166,13 @@ export function InstructorAssessmentSettings({
               </small>
             </div>
             <div class="mb-3">
-              <label for="text">Text</label>
-              <textarea class="form-control" id="text" name="text" ${canEdit ? '' : 'disabled'}>
+              <label class="form-label" for="text">Text</label>
+              <textarea
+                class="form-control js-textarea-autosize"
+                id="text"
+                name="text"
+                ${canEdit ? '' : 'disabled'}
+              >
 ${resLocals.assessment.text}</textarea
               >
               <small class="form-text text-muted">
@@ -259,6 +271,31 @@ ${resLocals.assessment.text}</textarea
                   </div>
                 `
               : ''}
+            ${resLocals.assessment.type === 'Exam'
+              ? html`
+                  <div
+                    class="mb-3"
+                    id="honor_code_group"
+                    ${resLocals.assessment.require_honor_code ? '' : 'hidden'}
+                  >
+                    <label class="form-label" for="honor_code">Custom honor code</label>
+                    <textarea
+                      class="form-control js-textarea-autosize"
+                      id="honor_code"
+                      name="honor_code"
+                      ${canEdit ? '' : 'disabled'}
+                    >
+${resLocals.assessment.honor_code}</textarea
+                    >
+                    <small class="form-text text-muted">
+                      Custom honor code text that will be shown to students before starting the
+                      exam. While this field cannot accept HTML, you can use Markdown formatting.
+                      The user's name can be included with Mustache templating:
+                      <code>{{user_name}}</code>. To use the default honor code, leave this blank.
+                    </small>
+                  </div>
+                `
+              : ''}
             <div class="mb-3">
               <label class="form-label" for="studentLink">Student Link</label>
               <span class="input-group">
@@ -292,6 +329,8 @@ ${resLocals.assessment.text}</textarea
                 The link that students will use to access this assessment.
               </small>
             </div>
+            <h2 class="h4">Sharing</h2>
+            ${AssessmentSharing({ assessment: resLocals.assessment, publicLink })}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
@@ -380,4 +419,56 @@ ${resLocals.assessment.text}</textarea
       </div>
     `,
   });
+}
+
+function AssessmentSharing({
+  assessment,
+  publicLink,
+}: {
+  assessment: Assessment;
+  publicLink: string;
+}) {
+  if (!assessment.share_source_publicly) {
+    return html`<p>This assessment is not being shared.</p>`;
+  }
+
+  return html`
+    <p>
+      <span class="badge color-green3 me-1">Public source</span>
+      This assessment's source is publicly shared.
+    </p>
+    <div class="mb-3">
+      <label for="publicLink">Public link</label>
+      <span class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          id="publicLink"
+          name="publicLink"
+          value="${publicLink}"
+          disabled
+        />
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary btn-copy"
+          data-clipboard-text="${publicLink}"
+          aria-label="Copy public link"
+        >
+          <i class="far fa-clipboard"></i>
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          aria-label="Public Link QR Code"
+          data-bs-toggle="modal"
+          data-bs-target="#publicLinkModal"
+        >
+          <i class="fas fa-qrcode"></i>
+        </button>
+      </span>
+      <small class="form-text text-muted">
+        The link that other instructors can use to view this assessment.
+      </small>
+    </div>
+  `;
 }

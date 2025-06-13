@@ -1,8 +1,6 @@
-import { AnsiUp } from 'ansi_up';
-
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 
-const ansiUp = new AnsiUp();
+import { ansiToHtml } from '../lib/chalk.js';
 
 export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
   const title = type === 'error' ? 'Sync Errors' : 'Sync Warnings';
@@ -13,7 +11,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
     class="text-white rounded p-3 mb-0"
     style="background-color: black;"
   >
-${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
+${unsafeHtml(ansiToHtml(output))}</pre
   >`;
 
   return html`

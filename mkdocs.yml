@@ -88,7 +88,7 @@ plugins:
             - graders/python/python_autograder
             - apps/prairielearn/python
           options:
-            show_root_heading: true
+            show_root_heading: false
             summary:
               attributes: false
               modules: true
@@ -113,7 +113,7 @@ plugins:
             show_root_toc_entry: true
             heading_level: 2
             group_by_category: false # e.g. 'classes', 'functions'
-            members_order: source # source, alphabetical
+            members_order: alphabetical # source, alphabetical
 
           inventories:
             - url: https://numpy.org/doc/stable/objects.inv
@@ -209,7 +209,11 @@ nav:
       - 'Course configuration': 'course/index.md'
       - 'Course instance configuration': 'courseInstance.md'
       - 'Assessment configuration': 'assessment/index.md'
-      - 'Question configuration': 'question.md'
+      - 'Question configuration':
+          - 'question/index.md'
+          - '<code>question.html</code>': 'question/template.md'
+          - '<code>server.py</code>': 'question/server.md'
+          - 'Accessibility': 'question/accessibility.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'
       - 'Access control': 'accessControl/index.md'
@@ -219,13 +223,25 @@ nav:
       - 'Regrading assessments': 'regrading.md'
       - 'Element for drawing': 'pl-drawing/index.md'
       - 'External grading': 'externalGrading.md'
-      - 'Python autograder': 'python-grader/index.md'
+      - 'Python autograder':
+          - 'python-grader/index.md'
+          - 'API reference': python-grader/reference-docs.md
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
-      - 'Python Reference': 'python-reference/'
+      - 'Python API reference':
+          - python-reference/index.md
+          - 'Colors': python-reference/prairielearn/colors.md
+          - 'Conversion': python-reference/prairielearn/conversion_utils.md
+          - 'HTML': python-reference/prairielearn/html_utils.md
+          - 'Element extensions': python-reference/prairielearn/extension_utils.md
+          - 'Grading': python-reference/prairielearn/grading_utils.md
+          - 'Questions': python-reference/prairielearn/question_utils.md
+          - 'Numerical precision': python-reference/prairielearn/to_precision.md
+          - 'Other': python-reference/prairielearn/misc_utils.md
+          - 'SymPy': python-reference/prairielearn/sympy_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question sharing': 'questionSharing.md'
+      - 'Content sharing': 'contentSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
@@ -238,12 +254,13 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element': schemas/infoElementCore.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
-  - Developer Guide:
-      - developer-guide/index.md
-      - 'Developer guide': 'dev-guide/index.md'
-      - 'Running in Docker with local source': 'installingLocal.md'
-      - 'Running natively': 'installingNative.md'
-      - 'Server configuration': 'configJson.md'
+  - 'Developer Guide':
+      - dev-guide/index.md
+      - 'Running in Docker': dev-guide/installingLocal.md
+      - dev-guide/installingNative.md
+      - 'Quickstart': dev-guide/quickstart.md
+      - dev-guide/guide.md
+      - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'
@@ -267,7 +284,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/reference-docs.md
   schemas/adminQuery.md
   schemas/infoNewsItem.md
   schemas/questionOptionsCalculation.md
@@ -282,6 +298,10 @@ validation:
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
+
+watch:
+  - apps/prairielearn/python
+
 hooks:
-  - docs/scripts/d2-svg-file.py
+  - docs/scripts/d2_svg_file.py
   - docs/scripts/jsonschema_details_fix.py

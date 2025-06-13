@@ -11,7 +11,6 @@ def generate(data):
     data["params"]["option3"] = "a = " + str(2 * a + 1)
     data["params"]["option4"] = "a = " + str(4 * a)
 
-    data["params"]["names_for_user"] = []
     data["params"]["names_from_user"] = [
         {
             "name": "return_number",

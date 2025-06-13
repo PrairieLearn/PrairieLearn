@@ -1,5 +1,6 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
+import type { AssessmentQuestion, RubricGradingItem } from '../../../lib/db-types.js';
 import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
 
 export function RubricInputSection({
@@ -28,56 +29,12 @@ export function RubricInputSection({
         margin-bottom: 0;
       }
     </style>
-    ${rubric_data.rubric_items?.map(
-      (item) => html`
-        <div>
-          <label class="js-selectable-rubric-item-label w-100">
-            <input
-              type="checkbox"
-              name="rubric_item_selected_manual"
-              class="js-selectable-rubric-item"
-              value="${item.id}"
-              ${rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : ''}
-              ${disable ? 'disabled' : ''}
-              data-rubric-item-points="${item.points}"
-              data-key-binding="${item.key_binding}"
-            />
-            <span class="badge text-bg-info">${item.key_binding}</span>
-            <span class="float-end text-${item.points >= 0 ? 'success' : 'danger'}">
-              <strong>
-                <span class="js-manual-grading-points" data-testid="rubric-item-points">
-                  [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
-                </span>
-                ${resLocals.assessment_question.max_points
-                  ? html`
-                      <span class="js-manual-grading-percentage">
-                        [${(item.points >= 0 ? '+' : '') +
-                        Math.round(
-                          (item.points * 10000) /
-                            (resLocals.assessment_question.max_manual_points ||
-                              resLocals.assessment_question.max_points),
-                        ) /
-                          100}%]
-                      </span>
-                    `
-                  : ''}
-              </strong>
-            </span>
-            <span>
-              <div class="d-inline-block" data-testid="rubric-item-description">
-                ${unsafeHtml(item.description_rendered ?? '')}
-              </div>
-              <div class="small text-muted" data-testid="rubric-item-explanation">
-                ${unsafeHtml(item.explanation_rendered ?? '')}
-              </div>
-              <div class="small text-muted" data-testid="rubric-item-grader-note">
-                ${unsafeHtml(item.grader_note_rendered ?? '')}
-              </div>
-            </span>
-          </label>
-        </div>
-      `,
-    )}
+    ${RubricItems({
+      rubric_items: rubric_data.rubric_items,
+      rubric_grading_items: rubric_grading?.rubric_items,
+      assessment_question: resLocals.assessment_question,
+      disable,
+    })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
@@ -134,6 +91,87 @@ export function RubricInputSection({
             : ''}
         </label>
       </div>
+    </div>
+  `;
+}
+
+function RubricItems({
+  rubric_items,
+  rubric_grading_items,
+  assessment_question,
+  disable,
+}: {
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined;
+  rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
+  assessment_question: AssessmentQuestion;
+  disable: boolean;
+}) {
+  return rubric_items?.map((item) =>
+    RubricItem({
+      item,
+      item_grading: rubric_grading_items?.[item.id],
+      assessment_question,
+      disable,
+    }),
+  );
+}
+
+function RubricItem({
+  item,
+  item_grading,
+  assessment_question,
+  disable,
+}: {
+  item: RubricData['rubric_items'][0];
+  item_grading: RubricGradingItem | undefined | null;
+  assessment_question: AssessmentQuestion;
+  disable: boolean;
+}) {
+  return html`
+    <div>
+      <label class="js-selectable-rubric-item-label w-100">
+        <input
+          type="checkbox"
+          name="rubric_item_selected_manual"
+          class="js-selectable-rubric-item"
+          value="${item.id}"
+          ${item_grading?.score ? 'checked' : ''}
+          ${disable ? 'disabled' : ''}
+          data-rubric-item-points="${item.points}"
+          data-key-binding="${item.key_binding}"
+        />
+        <span class="badge text-bg-info">${item.key_binding}</span>
+        <span class="float-end text-${item.points >= 0 ? 'success' : 'danger'}">
+          <strong>
+            <span class="js-manual-grading-points" data-testid="rubric-item-points">
+              [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
+            </span>
+            ${assessment_question.max_points
+              ? html`
+                  <span class="js-manual-grading-percentage">
+                    [${(item.points >= 0 ? '+' : '') +
+                    Math.round(
+                      (item.points * 10000) /
+                        (assessment_question.max_manual_points || assessment_question.max_points),
+                    ) /
+                      100}%]
+                  </span>
+                `
+              : ''}
+          </strong>
+        </span>
+        <span>
+          <div class="d-inline-block" data-testid="rubric-item-description">
+            ${unsafeHtml(item.description_rendered ?? '')}
+          </div>
+          <div class="small text-muted" data-testid="rubric-item-explanation">
+            ${unsafeHtml(item.explanation_rendered ?? '')}
+          </div>
+          <div class="small text-muted" data-testid="rubric-item-grader-note">
+            ${unsafeHtml(item.grader_note_rendered ?? '')}
+          </div>
+        </span>
+      </label>
     </div>
   `;
 }

@@ -15,6 +15,7 @@ export const InstructorCourseSchema = z.object({
     z.object({
       id: CourseInstanceSchema.shape.id,
       long_name: CourseInstanceSchema.shape.long_name,
+      expired: z.boolean(),
     }),
   ),
 });
@@ -199,17 +200,20 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                       </a>`
                     : `${course.short_name}: ${course.title}`}
                 </td>
-                <td>
-                  ${course.course_instances.map(
-                    (course_instance) => html`
-                      <a
-                        class="btn btn-outline-primary btn-sm my-1"
-                        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
-                      >
-                        ${course_instance.long_name}
-                      </a>
-                    `,
-                  )}
+                <td class="js-course-instance-list">
+                  ${CourseInstanceList({
+                    course_instances: course.course_instances.filter((ci) => !ci.expired),
+                  })}
+                  ${course.course_instances.some((ci) => ci.expired)
+                    ? html`
+                        <details>
+                          <summary class="text-muted small">Older instances</summary>
+                          ${CourseInstanceList({
+                            course_instances: course.course_instances.filter((ci) => ci.expired),
+                          })}
+                        </details>
+                      `
+                    : ''}
                 </td>
               </tr>
             `,
@@ -218,6 +222,23 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
       </table>
     </div>
   `;
+}
+
+function CourseInstanceList({
+  course_instances,
+}: {
+  course_instances: InstructorCourse['course_instances'];
+}) {
+  return course_instances.map(
+    (course_instance) => html`
+      <a
+        class="btn btn-outline-primary btn-sm my-1"
+        href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
+      >
+        ${course_instance.long_name}
+      </a>
+    `,
+  );
 }
 
 function StudentCoursesCard({
