@@ -276,6 +276,7 @@ export async function loadFullCourse(
     coursePath,
     assessmentSetsInUse,
     tagsInUse,
+    sharingEnabled,
   });
 
   return {
@@ -497,11 +498,13 @@ export async function loadCourseInfo({
   coursePath,
   assessmentSetsInUse,
   tagsInUse,
+  sharingEnabled,
 }: {
   courseId: string | null;
   coursePath: string;
   assessmentSetsInUse: Set<string>;
   tagsInUse: Set<string>;
+  sharingEnabled: boolean;
 }): Promise<InfoFile<CourseJson>> {
   const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
     coursePath,
@@ -521,6 +524,13 @@ export async function loadCourseInfo({
   // Reassign to a non-null type.
   const loadedData = maybeNullLoadedData;
   const info = maybeNullLoadedData.data;
+
+  if (config.checkSharingOnSync && !sharingEnabled && info.sharingSets) {
+    infofile.addError(
+      loadedData,
+      '"sharingSets" cannot be used because sharing is not enabled for this course.',
+    );
+  }
 
   /**
    * Used to retrieve fields such as "assessmentSets" and "topics".
