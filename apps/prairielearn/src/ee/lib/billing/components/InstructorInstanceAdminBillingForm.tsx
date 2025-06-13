@@ -3,11 +3,17 @@ import { useState } from '@prairielearn/preact-cjs/hooks';
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
 interface InstructorInstanceAdminBillingInput {
+  // The current state
   initialRequiredPlans: PlanName[];
+  // The desired state
   desiredRequiredPlans: PlanName[];
+  // Grants for the institution
   institutionPlanGrants: PlanName[];
+  // Grants for the course instance
   courseInstancePlanGrants: PlanName[];
+  // Current count of students enrolled in the course instance
   enrollmentCount: number;
+  // Maximum students that can be enrolled in the course instance
   enrollmentLimit: number;
   editable: boolean;
 }
@@ -36,43 +42,47 @@ interface AlertProps {
   color: 'success' | 'warning' | 'danger';
 }
 
-export function instructorInstanceAdminBillingState(
-  input: InstructorInstanceAdminBillingInput,
-): InstructorInstanceAdminBillingState {
-  const studentBillingInitialEnabled = input.initialRequiredPlans.includes('basic');
-  const studentBillingEnabled = input.desiredRequiredPlans.includes('basic');
-  const computeEnabledByInstitution = planGrantsMatchPlanFeatures(input.institutionPlanGrants, [
+export function instructorInstanceAdminBillingState({
+  initialRequiredPlans,
+  desiredRequiredPlans,
+  institutionPlanGrants,
+  courseInstancePlanGrants,
+  editable,
+  enrollmentCount,
+  enrollmentLimit,
+}: InstructorInstanceAdminBillingInput): InstructorInstanceAdminBillingState {
+  const studentBillingInitialEnabled = initialRequiredPlans.includes('basic');
+  const studentBillingEnabled = desiredRequiredPlans.includes('basic');
+  const computeEnabledByInstitution = planGrantsMatchPlanFeatures(institutionPlanGrants, [
     'compute',
   ]);
-  const computeEnabledByCourseInstance = planGrantsMatchPlanFeatures(
-    input.courseInstancePlanGrants,
-    ['compute'],
-  );
+  const computeEnabledByCourseInstance = planGrantsMatchPlanFeatures(courseInstancePlanGrants, [
+    'compute',
+  ]);
   const computeEnabled =
     (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) ||
-    input.desiredRequiredPlans.includes('compute');
+    desiredRequiredPlans.includes('compute');
 
-  let studentBillingCanChange = input.editable;
+  let studentBillingCanChange = editable;
   const studentBillingDidChange =
-    input.initialRequiredPlans.includes('basic') !== input.desiredRequiredPlans.includes('basic');
+    initialRequiredPlans.includes('basic') !== desiredRequiredPlans.includes('basic');
   let studentBillingAlert: AlertProps | null = null;
-  if (studentBillingInitialEnabled && input.enrollmentCount > input.enrollmentLimit) {
+  if (studentBillingInitialEnabled && enrollmentCount > enrollmentLimit) {
     studentBillingCanChange = false;
-    const inflectedCountVerb = input.enrollmentCount === 1 ? 'is' : 'are';
-    const inflectedCountNoun = input.enrollmentCount === 1 ? 'enrollment' : 'enrollments';
+    const inflectedCountVerb = enrollmentCount === 1 ? 'is' : 'are';
+    const inflectedCountNoun = enrollmentCount === 1 ? 'enrollment' : 'enrollments';
     studentBillingAlert = {
       message: [
-        `There ${inflectedCountVerb} ${input.enrollmentCount} ${inflectedCountNoun} in this course, which exceeds the limit of ${input.enrollmentLimit}.`,
+        `There ${inflectedCountVerb} ${enrollmentCount} ${inflectedCountNoun} in this course, which exceeds the limit of ${enrollmentLimit}.`,
         'To disable student billing, first remove excess enrollments.',
       ].join(' '),
       color: 'warning',
     };
   }
 
-  let computeCanChange = input.editable;
+  let computeCanChange = editable;
   const computeDidChange =
-    input.initialRequiredPlans.includes('compute') !==
-    input.desiredRequiredPlans.includes('compute');
+    initialRequiredPlans.includes('compute') !== desiredRequiredPlans.includes('compute');
   let computeAlert: AlertProps | null = null;
   if (!studentBillingEnabled && (computeEnabledByInstitution || computeEnabledByCourseInstance)) {
     computeCanChange = false;
@@ -95,22 +105,21 @@ export function instructorInstanceAdminBillingState(
   };
 }
 
-export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdminBillingFormProps) {
-  const {
-    enrollmentCount,
-    enrollmentLimit,
-    enrollmentLimitSource,
-    externalGradingQuestionCount,
-    workspaceQuestionCount,
-    editable,
-    csrfToken,
-  } = props;
-
-  const [basicPlanEnabled, setBasicPlanEnabled] = useState(
-    props.initialRequiredPlans.includes('basic'),
-  );
+export function InstructorInstanceAdminBillingForm({
+  enrollmentCount,
+  enrollmentLimit,
+  enrollmentLimitSource,
+  externalGradingQuestionCount,
+  workspaceQuestionCount,
+  editable,
+  csrfToken,
+  initialRequiredPlans,
+  institutionPlanGrants,
+  courseInstancePlanGrants,
+}: InstructorInstanceAdminBillingFormProps) {
+  const [basicPlanEnabled, setBasicPlanEnabled] = useState(initialRequiredPlans.includes('basic'));
   const [computePlanEnabled, setComputePlanEnabled] = useState(
-    props.initialRequiredPlans.includes('compute'),
+    initialRequiredPlans.includes('compute'),
   );
 
   const requiredPlans: PlanName[] = [];
@@ -125,8 +134,13 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
     computeCanChange,
     computeAlert,
   } = instructorInstanceAdminBillingState({
-    ...props,
+    initialRequiredPlans,
     desiredRequiredPlans: requiredPlans,
+    institutionPlanGrants,
+    courseInstancePlanGrants,
+    editable,
+    enrollmentCount,
+    enrollmentLimit,
   });
 
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
