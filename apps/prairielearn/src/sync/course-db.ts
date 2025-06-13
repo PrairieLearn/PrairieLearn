@@ -939,6 +939,10 @@ async function validateQuestion({
   const errors: string[] = [];
 
   if (config.checkSharingOnSync && !sharingEnabled) {
+    if (question.sharingSets) {
+      errors.push('"sharingSets" cannot be used because sharing is not enabled for this course');
+    }
+
     if (question.sharePublicly) {
       errors.push('"sharePublicly" cannot be used because sharing is not enabled for this course');
     }
