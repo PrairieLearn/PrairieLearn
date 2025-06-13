@@ -18,6 +18,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
+import type { WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
@@ -44,15 +45,6 @@ export interface AiGradingGeneralStats {
     disagreement_count: number;
   }[];
 }
-
-export interface AIGradingStats {
-  last_human_grader: string | null;
-  ai_grading_status: 'Graded' | 'LatestRubric' | 'OutdatedRubric' | 'None';
-  point_difference: number | null;
-  rubric_difference: (RubricItem & { false_positive: boolean })[] | null;
-}
-
-export type WithAIGradingStats<T> = T & AIGradingStats;
 
 /**
  * Fills in missing columns for manual grading assessment question page.

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   AssessmentQuestionSchema,
   InstanceQuestionSchema,
