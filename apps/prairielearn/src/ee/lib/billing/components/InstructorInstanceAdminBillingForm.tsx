@@ -3,18 +3,25 @@ import { useState } from '@prairielearn/preact-cjs/hooks';
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
 interface InstructorInstanceAdminBillingInput {
-  // The current state
+  /** The current state */
   initialRequiredPlans: PlanName[];
-  // The desired state
+
+  /** The desired state */
   desiredRequiredPlans: PlanName[];
-  // Grants for the institution
+
+  /** Grants for the institution */
   institutionPlanGrants: PlanName[];
-  // Grants for the course instance
+
+  /** Grants for the course instance */
   courseInstancePlanGrants: PlanName[];
-  // Current count of students enrolled in the course instance
+
+  /** Current count of students enrolled in the course instance */
   enrollmentCount: number;
-  // Maximum students that can be enrolled in the course instance
+
+  /** Maximum students that can be enrolled in the course instance */
   enrollmentLimit: number;
+
+  /** Whether the fields are editable by the user */
   editable: boolean;
 }
 
