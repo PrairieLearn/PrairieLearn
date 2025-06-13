@@ -160,6 +160,7 @@
     "pg": "^8.16.0",
     "popper.js": "^1.16.1",
     "preact": "^10.26.8",
+    "preact-render-to-string": "^6.5.13",
     "prettier": "3.5.3",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.14.0",
