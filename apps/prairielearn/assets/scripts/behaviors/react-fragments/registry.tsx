@@ -14,7 +14,9 @@ export class ReactFragmentsRegistry {
       throw new Error(`React fragment with id ${id} already resolved`);
     }
 
-    this.fragments[id] = { ...deferredPromise(), resolved: true };
+    if (!this.fragments[id]) {
+      this.fragments[id] = { ...deferredPromise(), resolved: false };
+    }
     this.fragments[id].resolve(component);
     this.fragments[id].resolved = true;
   }
