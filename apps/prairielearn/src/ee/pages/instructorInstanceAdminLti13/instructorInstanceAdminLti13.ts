@@ -52,9 +52,7 @@ router.get(
 
     const instances = await queryRows(
       sql.select_combined_lti13_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      { course_instance_id: res.locals.course_instance.id },
       Lti13CombinedInstanceSchema,
     );
 
@@ -62,9 +60,7 @@ router.get(
       // See if we have configurations per institution
       const lti13_instances = await queryRows(
         sql.select_lti13_instances,
-        {
-          institution_id: res.locals.institution.id,
-        },
+        { institution_id: res.locals.institution.id },
         Lti13InstanceSchema,
       );
 
@@ -118,9 +114,7 @@ router.get(
 
     const lineitems = await queryRows(
       sql.select_lti13_assessments,
-      {
-        lti13_course_instance_id: instance.lti13_course_instance.id,
-      },
+      { lti13_course_instance_id: instance.lti13_course_instance.id },
       Lti13AssessmentsSchema,
     );
 
