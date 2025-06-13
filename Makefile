@@ -50,11 +50,9 @@ start-s3rver:
 test: test-js test-python
 test-js: start-support
 	@yarn test
-test-js-exclude-docker-smoke-tests: start-support
-	@yarn workspace @prairielearn/prairielearn run test:exclude-docker-smoke-tests
-test-js-docker-smoke-tests: start-support
+test-prairielearn-js-docker-smoke-tests: start-support
 	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
-test-js-dist: start-support build
+test-prairielearn-js-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
 	@python3 -m pytest

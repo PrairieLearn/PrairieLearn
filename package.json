@@ -23,8 +23,6 @@
     "start": "yarn workspace @prairielearn/prairielearn start",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
     "test": "vitest run --coverage",
-    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests --project @prairielearn/prairielearn",
-    "test:exclude-docker-smoke-tests": "vitest run --coverage --mode=exclude-docker-smoke-tests",
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
