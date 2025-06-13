@@ -131,7 +131,7 @@ if (check) {
       process.exit(1);
     }
   }
-  // docs/assets/config.json
+  // docs/assets/config-*.schema.json
   for (const [filePath, schema] of Object.entries(configSchemas)) {
     try {
       const file = orderedStringify(JSON.parse(fs.readFileSync(filePath, 'utf8')));
