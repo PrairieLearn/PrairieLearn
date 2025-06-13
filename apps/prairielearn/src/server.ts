@@ -1137,15 +1137,20 @@ export async function initExpress(): Promise<Express> {
       )
     ).default,
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1583,15 +1588,20 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
