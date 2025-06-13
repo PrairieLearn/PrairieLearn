@@ -104,12 +104,14 @@ async function assertVariantAccess({
   submissionId,
   workspaceUrl,
   expectedAccess,
+  workspaceExpectedAccess = true,
 }: {
   questionBasePath: string;
   variantId: string;
   submissionId: string;
   workspaceUrl: string;
   expectedAccess: boolean;
+  workspaceExpectedAccess?: boolean;
 }) {
   // Remove trailing slash if present.
   questionBasePath = questionBasePath.replace(/\/$/, '');
@@ -154,7 +156,7 @@ async function assertVariantAccess({
 
   // Test access to the variant's workspace.
   const workspaceRes = await fetchCheerio(siteUrl + workspaceUrl);
-  assert.equal(workspaceRes.status, expectedAccess ? 200 : 403);
+  assert.equal(workspaceRes.status, expectedAccess && workspaceExpectedAccess ? 200 : 403);
 }
 
 describe('Variant access', () => {
@@ -312,6 +314,18 @@ describe('Variant access', () => {
     });
   });
 
+  test.sequential('public preview allows access to workspaces', async () => {
+    await withUser(PUBLIC_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/public/course/1/question/${question.id}`,
+        variantId: publicVariantId,
+        workspaceUrl: publicVariantWorkspaceUrl,
+        submissionId: publicVariantSubmissionId,
+        expectedAccess: true,
+      });
+    });
+  });
+
   test.sequential('public preview does not show variant for different user', async () => {
     await withUser(PUBLIC_USER, async () => {
       await assertVariantAccess({
@@ -358,6 +372,7 @@ describe('Variant access', () => {
         // TODO: Once we make the necessary changes, this should 403. We'll have to
         // update the name of this test too.
         expectedAccess: true,
+        workspaceExpectedAccess: false, // workspace access correctly 403s
       });
     });
   });
