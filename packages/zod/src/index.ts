@@ -1,5 +1,5 @@
 import parsePostgresInterval from 'postgres-interval';
-import { z } from 'zod';
+import { type ZodTypeAny, z } from 'zod';
 
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
@@ -9,15 +9,36 @@ const INTERVAL_MS_PER_MONTH = 30 * INTERVAL_MS_PER_DAY;
 const INTERVAL_MS_PER_YEAR = 365.25 * INTERVAL_MS_PER_DAY;
 
 /**
+ * A schema type on which `.optional()` cannot be called.
+ */
+type NoOptional<S extends ZodTypeAny> = S & {
+  optional: never;
+};
+
+/**
+ * Wrap any Zod schema so that calling `.optional()` is illegal in TypeScript.
+ * Runtime behavior is untouched.
+ */
+function required<S extends ZodTypeAny>(schema: S): NoOptional<S> {
+  return schema as unknown as NoOptional<S>;
+}
+
+/**
  * A Zod schema for a boolean from a single checkbox input in the body
  * parameters from a form. This will return a boolean with a value of `true` if
  * the checkbox is checked (the input is present) and `false` if it is not
  * checked.
+ *
+ * Note that this will not behave sensibly if `.optional()` is called on the schema,
+ * as it will turn a missing checkbox into `undefined` instead of `false`. We use
+ * some TypeScript magic to ensure that `.optional()` cannot be called on this schema.
  */
-export const BooleanFromCheckboxSchema = z
-  .string()
-  .optional()
-  .transform((s) => !!s);
+export const BooleanFromCheckboxSchema = required(
+  z
+    .string()
+    .optional()
+    .transform((s) => !!s),
+);
 
 /**
  * A Zod schema for a PostgreSQL ID.

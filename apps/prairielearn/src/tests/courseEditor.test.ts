@@ -12,6 +12,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -326,6 +328,27 @@ const publicCopyTestData: EditData[] = [
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
     ]),
   },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
@@ -362,9 +385,19 @@ describe('test course editor', { timeout: 20_000 }, function () {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
+      await features.enable('question-sharing');
+      config.checkSharingOnSync = true;
+    });
+
+    afterAll(() => {
+      config.checkSharingOnSync = false;
     });
 
     beforeAll(createSharedCourse);
+
+    beforeAll(async () => {
+      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
+    });
 
     describe('verify edits', async function () {
       publicCopyTestData.forEach((element) => {
@@ -417,35 +450,36 @@ async function getFiles(options): Promise<Set<string>> {
 // information about the current page to persist to the next test
 let currentUrl: string;
 let currentPage$: cheerio.CheerioAPI;
-function testEdit(params) {
+function testEdit(params: EditData) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
+      const url = params.url;
       it('should load successfully', async () => {
-        const res = await fetch(params.url);
+        const res = await fetch(url);
 
         assert.isOk(res.ok);
         currentPage$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
+      let maybeToken: string | undefined;
       if (params.button) {
-        let elemList = currentPage$(params.button);
-        assert.lengthOf(elemList, 1);
-
-        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
-        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        __csrf_token = elemList[0].attribs.value;
-        assert.isString(__csrf_token);
+        let elem = currentPage$(params.button);
+        assert.lengthOf(elem, 1);
+        const formContent = elem.attr('data-bs-content');
+        assert.ok(formContent);
+        const $ = cheerio.load(formContent);
+        elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       } else {
-        const elemList = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        __csrf_token = elemList[0].attribs.value;
-        assert.isString(__csrf_token);
+        const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       }
+      assert.ok(maybeToken);
+      __csrf_token = maybeToken;
     });
   });
 
@@ -455,20 +489,21 @@ function testEdit(params) {
         // to handle the difference between POSTing to the same URL as the page you are
         // on vs. POSTing to a different URL
         if (!params.action) {
-          const elemList = currentPage$(params.formSelector);
-          assert.lengthOf(elemList, 1);
-          return `${siteUrl}${elemList[0].attribs['action']}`;
+          const elem = currentPage$(params.formSelector);
+          assert.lengthOf(elem, 1);
+          return `${siteUrl}${elem.attr('action')}`;
         } else {
           return params.url || currentUrl;
         }
       });
+      const urlParams: Record<string, string> = {
+        __csrf_token,
+        ...(params.action ? { __action: params.action } : {}),
+        ...(params?.data ?? {}),
+      };
       const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: params.action,
-          __csrf_token,
-          ...(params?.data ?? {}),
-        }),
+        body: new URLSearchParams(urlParams),
       });
       assert.isOk(res.ok);
       currentUrl = res.url;
@@ -508,8 +543,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
+      const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
@@ -572,10 +608,11 @@ async function createSharedCourse() {
       ],
     },
   ];
-
-  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
+    sharingCourseData.courseInstances['Fa19'].assessments['test'];
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

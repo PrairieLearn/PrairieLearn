@@ -86,6 +86,12 @@ This will be rendered as:
 <p>If m is 5, what is 5 * 3?</p>
 ```
 
+### Data available to Mustache templates
+
+When the student first views a question variant, `parse` and `grade` have not run yet, so values set in `data` by those functions won't be available to the template. Each `server.py` function has restrictions on how the `data` object can be modified, which are documented in the [`server.py` function table](./server.md#serverpy-functions). For example, in the `generate` phase, you can only modify `data["params"]` and `data["correct_answers"]`.
+
+See the [question lifecycle diagram](./server.md#question-lifecycle) for detailed information on when the `server.py` functions are called. Note that any modifications to the `data` object in later phases like `parse` or `grade` will be persisted and used for any subsequent renderings of the question. For example, if the `grade` function alters `data["params"]` after a student submission, the updated `data["params"]` will be used when the question is rendered again.
+
 ### Advanced rendering
 
 You can use the following syntax to conditionally render a piece of HTML:
@@ -106,7 +112,9 @@ You can use this syntax to render over an array of strings (the `.` represents t
 
 !!! info "HTML rendering"
 
-    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
+    By default, Mustache escapes special characters when using double braces (`{{params.x}}`). This ensures that any content that may contain characters used by HTML (such as quotes or `<` characters) is displayed or interpreted in its original context.
+
+    You can use triple-braces (e.g. `{{{params.html}}}`) to substitute raw HTML without escaping. This should only be used for content that is defined by the instructor. If you want to render student-provided HTML, you can use the [`<pl-xss-safe>` element](../elements.md#pl-xss-safe-element).
 
 ### Hiding staff comments in `question.html`
 

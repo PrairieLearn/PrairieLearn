@@ -152,7 +152,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
+          group_name: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -165,7 +165,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: 'secondgroup',
+          group_name: 'secondgroup',
         }),
       });
       assert.equal(response.status, 200);
@@ -354,14 +354,12 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group', async () => {
-      locals.group_name = 'groupBBCCDD';
+    it('should be able to create a group without a name', async () => {
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -536,7 +534,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative1,
+          group_name: locals.group_name_alternative1,
         }),
       });
       assert.equal(response.status, 200);
@@ -587,7 +585,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative2,
+          group_name: locals.group_name_alternative2,
         }),
       });
       assert.equal(response.status, 200);

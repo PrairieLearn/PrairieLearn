@@ -4,7 +4,6 @@ const featureNames = [
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
   // Should only be applied to courses/institutions.
-  'process-questions-in-server',
   'question-sharing',
   'consume-public-questions',
   'ai-grading',
@@ -13,8 +12,6 @@ const featureNames = [
   'ai-question-generation-course-toggle',
   // Can be applied to any context.
   'ai-question-generation',
-  // Should only be applied to institutions.
-  'lti13',
   // Should only be applied globally.
   'enhanced-navigation-user-toggle',
   // Can be applied to any context.

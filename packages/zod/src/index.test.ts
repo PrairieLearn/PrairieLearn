@@ -3,10 +3,30 @@ import { assert, describe, it } from 'vitest';
 
 import {
   ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
   IdSchema,
   IntegerFromStringOrEmptySchema,
   IntervalSchema,
 } from './index.js';
+
+describe('BooleanFromCheckboxSchema', () => {
+  it('parses a checked checkbox', () => {
+    const result = BooleanFromCheckboxSchema.parse('on');
+    assert.isTrue(result);
+  });
+  it('parses an unchecked checkbox', () => {
+    const result = BooleanFromCheckboxSchema.parse(undefined);
+    assert.isFalse(result);
+  });
+  it('parses a checkbox with an empty string', () => {
+    const result = BooleanFromCheckboxSchema.parse('');
+    assert.isFalse(result);
+  });
+  it('parses a checkbox with a non-empty string', () => {
+    const result = BooleanFromCheckboxSchema.parse('checked');
+    assert.isTrue(result);
+  });
+});
 
 describe('IdSchema', () => {
   it('parses a valid id', () => {

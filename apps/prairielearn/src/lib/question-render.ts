@@ -1,5 +1,4 @@
 import * as async from 'async';
-import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -864,15 +863,4 @@ export async function renderPanelsForSubmission({
     },
   ]);
   return panels;
-}
-
-/**
- * Expose the renderer in use to the client so that we can easily see
- * which renderer was used for a given request.
- */
-export function setRendererHeader(res: Response) {
-  const renderer = res.locals.question_renderer;
-  if (renderer) {
-    res.set('X-PrairieLearn-Question-Renderer', renderer);
-  }
 }

@@ -2,7 +2,7 @@ ansi2html==1.9.2
 automata-lib==9.0.0
 chevron==0.14.0
 coloraide==4.6
-Faker==37.1.0
+Faker==37.3.0
 lxml==5.4.0
 matplotlib==3.10.1
 networkx==3.4.2
@@ -14,9 +14,9 @@ pandas==2.2.3
 Pillow==11.2.1
 Pint==0.24.4
 psutil==7.0.0
-PuLP==3.1.1
+PuLP==3.2.1
 pyarrow==20.0.0
-pycryptodome==3.22.0
+pycryptodome==3.23.0
 pygments-ansi-color==0.3.0
 Pygments==2.19.1
 pygraphviz==1.14
@@ -27,7 +27,7 @@ pytest-github-actions-annotate-failures==0.3.0
 pytest==8.3.5
 recommonmark==0.7.1
 regex==2024.11.6
-ruff==0.11.7
+ruff==0.11.12
 schemdraw==0.20
 scikit-learn==1.6.1
 scipy==1.15.2

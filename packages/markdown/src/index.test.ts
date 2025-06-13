@@ -5,7 +5,7 @@ import * as markdown from './index.js';
 async function testMarkdown(
   original: string,
   expected: string,
-  options: { inline?: boolean } = {},
+  options: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
 ) {
   const actual = await markdown.markdownToHtml(original, options);
   assert.equal(actual.toString().trim(), expected);
@@ -132,5 +132,30 @@ describe('Markdown processing', () => {
     const question = 'testing<iframe src="javascript:alert(\'delta\')"></iframe>';
     const expected = '<p>testing</p>';
     await testMarkdown(question, expected);
+  });
+
+  it('sanitizes inline HTML tags if allowHtml is false', async () => {
+    const question = 'testing <em>html</em>';
+    const expected = '<p>testing html</p>';
+    await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('sanitizes an HTML block if allowHtml is false', async () => {
+    const question =
+      '_Before_ the block\n\n<div>HTML block to be sanitized</div>\n\n**After** the block';
+    const expected = '<p><em>Before</em> the block</p>\n<p><strong>After</strong> the block</p>';
+    await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('renders markdown correctly if allowHtml is false', async () => {
+    const question = '# testing';
+    const expected = '<h1>testing</h1>';
+    await testMarkdown(question, expected, { allowHtml: false });
+  });
+
+  it('does not treat math delimiters as math if interpretMath is false', async () => {
+    const question = '$a _b=c_ d$';
+    const expected = '<p>$a <em>b=c</em> d$</p>';
+    await testMarkdown(question, expected, { interpretMath: false });
   });
 });

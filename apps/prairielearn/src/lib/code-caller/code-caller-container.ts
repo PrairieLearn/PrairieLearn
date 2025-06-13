@@ -437,6 +437,7 @@ export class CodeCallerContainer implements CodeCaller {
       stdin: true,
       stdout: true,
       stderr: true,
+      hijack: true,
     });
     this.stdinStream = new MemoryStream();
     this.stdoutStream = new MemoryStream();
