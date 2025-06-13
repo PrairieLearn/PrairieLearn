@@ -10,7 +10,7 @@ export class ReactFragmentsRegistry {
   private fragments: Record<string, AugmentedDeferredPromise<ComponentType<any>>> = {};
 
   setReactFragment(id: string, component: ComponentType<any>) {
-    if (this.fragments[id] && this.fragments[id].resolved) {
+    if (this.fragments[id]?.resolved) {
       throw new Error(`React fragment with id ${id} already resolved`);
     }
 
