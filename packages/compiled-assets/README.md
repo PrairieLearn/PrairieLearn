@@ -29,7 +29,7 @@ assets
         └── shared-code.ts
 ```
 
-All of these assets will be processed with CJS for compatibility reasons. You can place additional assets in in the `assets/scripts/esm-bundles/` directory, which will be processed as ESM files with code splitting. This is useful for libraries that can be loaded asynchronously, like Preact components.
+These assets will be output as an [IIFE](https://developer.mozilla.org/en-US/docs/Glossary/IIFE) for compatibility reasons. You can place additional assets in the `assets/scripts/esm-bundles/` directory, which will be output as ESM [module](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#applying_the_module_to_your_html) files with code splitting. This is useful for libraries that can be loaded asynchronously, like Preact components.
 
 ```text
 assets
