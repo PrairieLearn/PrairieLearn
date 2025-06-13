@@ -10,7 +10,7 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-const DEV_MODE = process.env.NODE_ENV !== 'production';
+export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
