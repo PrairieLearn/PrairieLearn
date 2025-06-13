@@ -1,5 +1,7 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "maxConcurrentJobs": {
       "type": "number",
@@ -293,6 +295,7 @@
         },
         {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "rejectUnauthorized": {
               "type": "boolean",
@@ -307,8 +310,7 @@
             "cert": {
               "type": ["string", "null"]
             }
-          },
-          "additionalProperties": false
+          }
         }
       ],
       "default": false
@@ -770,9 +772,13 @@
     },
     "shibLinkColors": {
       "type": "object",
+      "additionalProperties": false,
+      "required": ["normal", "hover", "active", "focus"],
       "properties": {
         "normal": {
           "type": "object",
+          "additionalProperties": false,
+          "required": ["background", "border", "text"],
           "properties": {
             "background": {
               "type": "string"
@@ -783,12 +789,12 @@
             "text": {
               "type": "string"
             }
-          },
-          "required": ["background", "border", "text"],
-          "additionalProperties": false
+          }
         },
         "hover": {
           "type": "object",
+          "additionalProperties": false,
+          "required": ["background", "border", "text"],
           "properties": {
             "background": {
               "type": "string"
@@ -799,12 +805,12 @@
             "text": {
               "type": "string"
             }
-          },
-          "required": ["background", "border", "text"],
-          "additionalProperties": false
+          }
         },
         "active": {
           "type": "object",
+          "additionalProperties": false,
+          "required": ["background", "border", "text"],
           "properties": {
             "background": {
               "type": "string"
@@ -815,23 +821,19 @@
             "text": {
               "type": "string"
             }
-          },
-          "required": ["background", "border", "text"],
-          "additionalProperties": false
+          }
         },
         "focus": {
           "type": "object",
+          "additionalProperties": false,
+          "required": ["shadow"],
           "properties": {
             "shadow": {
               "type": "string"
             }
-          },
-          "required": ["shadow"],
-          "additionalProperties": false
+          }
         }
       },
-      "required": ["normal", "hover", "active", "focus"],
-      "additionalProperties": false,
       "default": {
         "normal": {
           "background": "#E84A27",
@@ -913,6 +915,8 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
+        "required": ["platform"],
         "properties": {
           "platform": {
             "type": "string"
@@ -923,9 +927,7 @@
           },
           "issuer_params": {},
           "custom_fields": {}
-        },
-        "required": ["platform"],
-        "additionalProperties": false
+        }
       },
       "default": []
     },
@@ -1198,6 +1200,8 @@
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "iv"],
         "properties": {
           "key": {
             "type": "string",
@@ -1209,9 +1213,7 @@
             "minLength": 12,
             "maxLength": 12
           }
-        },
-        "required": ["key", "iv"],
-        "additionalProperties": false
+        }
       },
       "default": []
     },
@@ -1339,7 +1341,5 @@
       "type": "number",
       "default": 15
     }
-  },
-  "additionalProperties": false,
-  "$schema": "http://json-schema.org/draft-07/schema#"
+  }
 }
