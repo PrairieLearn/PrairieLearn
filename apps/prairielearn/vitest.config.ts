@@ -27,7 +27,8 @@ export default defineConfig(({ mode }) => {
 
   // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
   // We control this via the `mode` argument passed to the Vitest CLI
-  // We do this instead of defining separate projects as we want this toggle available in the root project config and this config, and projects aren't inherited by the root config.
+  // We do this instead of defining separate projects as we want this toggle available in
+  // the root project config and this config, and projects aren't inherited by the root config.
   if (mode === 'docker-smoke-tests') {
     if (isRunningOnDist) throw new Error('Cannot run docker-smoke-tests tests on dist files.');
     include = dockerSmokeTests;
