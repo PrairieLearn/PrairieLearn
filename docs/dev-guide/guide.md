@@ -234,7 +234,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ??? tip "Schema and data exploration"
 
-    Using the `ms-ossdata.vscode-pgsql` extension, you can visualize the schemas within VSCode.
+    The [`ms-ossdata.vscode-pgsql` VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) can help you explore the database schema and data in your editor.
 
     ![Setup Postgres VSCode](./postgres-vscode-setup.png)
 
