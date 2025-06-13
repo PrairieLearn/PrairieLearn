@@ -56,5 +56,23 @@
   "[json]": {
     "files.insertFinalNewline": true
   },
-  "vitest.maximumConfigs": 100
+  "vitest.maximumConfigs": 100,
+  "pgsql.connections": [
+    {
+      "id": "0552C9AC-2187-4ABD-AD41-5BB7BF9AB2D3",
+      "groupId": "5EB63031-3805-46AA-BAF7-82144242117F",
+      "authenticationType": "SqlLogin",
+      "connectTimeout": 15,
+      "applicationName": "vscode-pgsql",
+      "clientEncoding": "utf8",
+      "sslmode": "prefer",
+      "user": "postgres",
+      "password": "",
+      "database": "postgres",
+      "server": "127.0.0.1",
+      "profileName": "PrairieLearn",
+      "expiresOn": 0,
+      "emptyPasswordInput": true
+    }
+  ]
 }
