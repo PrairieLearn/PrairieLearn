@@ -9,7 +9,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { aiGrade } from '../../../ee/lib/ai-grading.js';
+import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
