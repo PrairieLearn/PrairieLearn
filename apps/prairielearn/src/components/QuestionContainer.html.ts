@@ -90,7 +90,7 @@ export function QuestionContainer({
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
-                <div class="card-body answer-body">
+                <div class="card-body overflow-x-auto answer-body">
                   ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
@@ -745,7 +745,7 @@ function QuestionPanel({
           </div>
         </div>
       </div>
-      <div class="card-body question-body">
+      <div class="card-body overflow-x-auto question-body">
         ${questionRenderContext === 'ai_grading'
           ? AiGradingHtmlPreview(questionHtml)
           : unsafeHtml(questionHtml)}

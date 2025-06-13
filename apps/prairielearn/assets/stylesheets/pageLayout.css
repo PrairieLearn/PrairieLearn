@@ -24,11 +24,6 @@ body:has(div.app-container) {
     'side-nav content' 1fr / 300px 1fr;
 }
 
-/* Ensure that users can scroll horizontally within questions that go beyond the viewport width */
-.app-container.side-nav-enabled .question-body {
-  overflow-x: auto;
-}
-
 /* Styles when the side nav is enabled and collapsed */
 .app-container.side-nav-enabled.collapsed {
   grid-template:
