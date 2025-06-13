@@ -288,7 +288,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database schema modification
 
-See the [migrations page](./migrations/README.md).
+See the [migrations documentation](./migrations/README.md).
 
 ## Database access
 
