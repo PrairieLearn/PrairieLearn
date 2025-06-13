@@ -232,7 +232,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
-??? tip "Schema visualization"
+??? tip "Schema and data exploration"
 
     Using the `ms-ossdata.vscode-pgsql` extension, you can visualize the schemas within VSCode.
 
