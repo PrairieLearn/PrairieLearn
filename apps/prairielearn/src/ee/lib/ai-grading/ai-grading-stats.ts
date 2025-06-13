@@ -15,7 +15,6 @@ import {
 import {
   pearsonCorrelation,
   rootMeanSquaredError,
-  rubricItemAccuracy,
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
@@ -33,14 +32,16 @@ const GradingJobInfoSchema = z.object({
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
 export interface AiGradingGeneralStats {
+  submission_point_count: number;
+  submission_rubric_count: number;
   rmse: number | null;
   r: number | null;
-  rubric_accuracy: {
+  rubric_stats: {
     // Keeping all information for a rubric item
     // if we want to implement rubric modification here
     rubric_item: RubricItem;
     selection_percentage: number;
-    accuracy_percentage: number;
+    disagreement_count: number;
   }[];
 }
 
@@ -160,6 +161,8 @@ export async function calculateAiGradingStats(
   }
 
   const stats: AiGradingGeneralStats = {
+    submission_point_count: testPointResults.length,
+    submission_rubric_count: testRubricResults.length,
     rmse: testPointResults.length
       ? rootMeanSquaredError(
           testPointResults.map((item) => item.reference_points),
@@ -172,15 +175,15 @@ export async function calculateAiGradingStats(
           testPointResults.map((item) => item.ai_points),
         )
       : 0,
-    rubric_accuracy: [],
+    rubric_stats: [],
   };
   for (const rubric_item of rubric_items) {
-    const accuracy = rubricItemAccuracy(testRubricResults, rubric_item);
+    const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
     const selection = rubricSelectionPercentage(testRubricResults, rubric_item);
-    stats.rubric_accuracy.push({
+    stats.rubric_stats.push({
       rubric_item,
       selection_percentage: selection * 100,
-      accuracy_percentage: accuracy * 100,
+      disagreement_count,
     });
   }
   return stats;
@@ -207,6 +210,25 @@ async function selectGradingJobsInfo<T extends { id: string }>(
 
 function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boolean {
   return items.some((item) => item.id === itemToCheck.id);
+}
+
+export function rubricItemDisagreementCount(
+  testRubricResults: {
+    reference_items: Set<string>;
+    ai_items: Set<string>;
+  }[],
+  item: RubricItem,
+): number {
+  let disagreement = 0;
+  testRubricResults.forEach((test) => {
+    if (
+      (test.ai_items.has(item.description) && !test.reference_items.has(item.description)) ||
+      (!test.ai_items.has(item.description) && test.reference_items.has(item.description))
+    ) {
+      disagreement++;
+    }
+  });
+  return disagreement;
 }
 
 function rubricSelectionPercentage(

@@ -127,16 +127,17 @@ export function AssessmentQuestion({
         </div>
         ${aiGradingStats
           ? html`<div class="card border-info m-2">
-              <div class="card-header bg-info text-white">AI grading accuracy statistics</div>
               <ul class="list-group list-group-flush">
                 <li class="list-group-item">
                   <div class="row">
+                    <div class="col">
+                      Submission count: ${aiGradingStats.submission_point_count}
+                    </div>
                     <div class="col">Manual points: ${assessment_question.max_manual_points}</div>
                     <div class="col">Root mean squared error: ${aiGradingStats.rmse}</div>
-                    <div class="col">Pearson's r: ${aiGradingStats.r}</div>
                   </div>
                 </li>
-                ${aiGradingStats.rubric_accuracy.length
+                ${aiGradingStats.rubric_stats.length
                   ? html`<li class="list-group-item">
                       <div class="table-responsive">
                         <table
@@ -146,16 +147,30 @@ export function AssessmentQuestion({
                           <thead>
                             <tr>
                               <td>Rubric item</td>
-                              <td>Accuracy percentage</td>
+                              <td>Agreement</td>
                               <td>Selection percentage</td>
                             </tr>
                           </thead>
                           <tbody>
-                            ${aiGradingStats.rubric_accuracy.map(
+                            ${aiGradingStats.rubric_stats.map(
                               (item) =>
                                 html`<tr>
                                 <td>${item.rubric_item.description}</td>
-                                <td>${item.accuracy_percentage}%</td>
+                                <td>${
+                                  item.disagreement_count
+                                    ? html`<i class="bi bi-x-square-fill" style="color: red;"></i>
+                                        ${aiGradingStats.submission_rubric_count -
+                                        item.disagreement_count}/${aiGradingStats.submission_rubric_count}
+                                        (${1 -
+                                        Math.round(
+                                          (100 * item.disagreement_count) /
+                                            aiGradingStats.submission_rubric_count,
+                                        )}%)`
+                                    : html`<i
+                                        class="bi bi-check-square-fill"
+                                        style="color: green;"
+                                      ></i>`
+                                }</td>
                                 <td>${item.selection_percentage}%</td>
                               </tr></li>`,
                             )}
