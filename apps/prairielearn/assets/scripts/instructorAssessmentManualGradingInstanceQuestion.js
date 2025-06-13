@@ -862,7 +862,7 @@ function addRubricItemRow(rubricItem = null) {
     rubricItemGraderNote.dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
     if (rubricItem) {
       rubricItemGraderNote.setAttribute('data-current-value', rubricItem.grader_note ?? '');
-      if (rubricItem?.grader_note) {
+      if (rubricItem.grader_note) {
         const label = document.createElement('label');
         label.setAttribute('for', `rubric-item-grader-note-button-${next_id}`);
         label.setAttribute('style', 'white-space: pre-wrap;');
