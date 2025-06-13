@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -27,7 +27,7 @@ import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -86,8 +86,12 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_course_instance') {
+      const courseInstancesPath = path.join(res.locals.course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
         locals: res.locals as any,
+        from_course: res.locals.course,
+        from_path: path.join(courseInstancesPath, res.locals.course_instance.short_name),
+        course_instance: res.locals.course_instance,
       });
 
       const serverJob = await editor.prepareServerJob();

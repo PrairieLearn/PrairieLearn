@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -8,6 +8,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
@@ -16,7 +17,7 @@ import {
   InstructorAIGenerateDrafts,
 } from './instructorAiGenerateDrafts.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -30,6 +31,15 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
     throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
   }
 }
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
+      throw new error.HttpStatusError(403, 'Feature not enabled');
+    }
+    next();
+  }),
+);
 
 router.get(
   '/',

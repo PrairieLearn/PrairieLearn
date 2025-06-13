@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
@@ -49,7 +49,7 @@ import {
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
@@ -310,6 +310,10 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course_short_name: res.locals.course.short_name,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {

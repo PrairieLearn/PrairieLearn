@@ -37,7 +37,12 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
     }
   }
 
-  const questions = await loadQuestions(EXAMPLE_COURSE_PATH);
+  const questions = await loadQuestions({
+    coursePath: EXAMPLE_COURSE_PATH,
+    // We don't actually care about sharing settings here, but we do use shared
+    // questions in the example course, so we'll flag sharing as enabled.
+    sharingEnabled: true,
+  });
 
   const templateQuestions: { qid: string; title: string }[] = [];
 
