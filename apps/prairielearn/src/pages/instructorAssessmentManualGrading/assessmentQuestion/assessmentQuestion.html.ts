@@ -163,13 +163,7 @@ export function AssessmentQuestion({
                                 <td>${
                                   item.disagreement_count
                                     ? html`<i class="bi bi-x-square-fill" style="color: red;"></i>
-                                        ${aiGradingStats.submission_rubric_count -
-                                        item.disagreement_count}/${aiGradingStats.submission_rubric_count}
-                                        (${1 -
-                                        Math.round(
-                                          (100 * item.disagreement_count) /
-                                            aiGradingStats.submission_rubric_count,
-                                        )}%)`
+                                        ${item.disagreement_count}/${aiGradingStats.submission_rubric_count}`
                                     : html`<i
                                         class="bi bi-check-square-fill"
                                         style="color: green;"
