@@ -337,7 +337,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         data: { raw_submitted_answer },
       } = await questionModule.test(variant, question, course, 'correct');
 
-      const { courseIssues: parseIssues, data: parseData } = await questionModule.parse(
+      const parseResult = await questionModule.parse(
         {
           submitted_answer: raw_submitted_answer,
           raw_submitted_answer,
@@ -347,18 +347,25 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         question,
         course,
       );
+      // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via parse+render, add more checks.
+
+      const { courseIssues: parseIssues, data: parseData } = parseResult;
 
       assert.isEmpty(parseIssues, 'Parse should not produce any issues');
 
       assert.isEmpty(parseData.format_errors ?? {}, 'Parse should not have any formatting errors');
 
       // 5. Grade
-      const { courseIssues: gradeIssues, data: gradeData } = await questionModule.grade(
+      const gradeResult = await questionModule.grade(
         parseData as unknown as Submission,
         variant,
         question,
         course,
       );
+
+      // TODO: If we notice rendering/accessibility bugs that aren't caught since they happen from a state reachable via grade+render, add more checks.
+
+      const { courseIssues: gradeIssues, data: gradeData } = gradeResult;
 
       assert.isEmpty(gradeIssues, 'Grade should not produce any issues');
       assert.isEmpty(gradeData.format_errors ?? {}, 'Grade should not have any formatting errors');
