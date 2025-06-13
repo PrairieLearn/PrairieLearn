@@ -34,8 +34,8 @@ All of these assets will be processed with CJS for compatibility reasons. You ca
 ```text
 assets
 └── scripts
-    ├── esm-bundles
-    │   └── baz.tsx
+    └── esm-bundles
+        └── baz.tsx
 ```
 
 The import tree of all files will be analyzed, and any dependencies will be marked as preloads.
