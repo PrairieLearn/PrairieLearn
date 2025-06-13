@@ -855,7 +855,7 @@ function addRubricItemRow(rubricItem = null) {
   }
 
   rubricItemPoints.name = `rubric_item[new${next_id}][points]`;
-  rubricItemPoints.value = rubricItem?.points ?? points;
+  rubricItemPoints.value = `${rubricItem?.points ?? points}`;
 
   rubricItemDescription.name = `rubric_item[new${next_id}][description]`;
   if (rubricItem) {
