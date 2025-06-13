@@ -139,11 +139,11 @@ jobs:
         run: make lint-markdown
       - name: Check for warnings in documentation
         run: make build-docs
-        # Ran after the docs build, so we can lint the generated HTML.
       - name: Run the HTML linter
+        # Run after the docs build, so we can lint the generated HTML.
         run: make lint-html
-        # Run last, as it's slow
       - name: Run the SQL query linter
+        # Run last, as it's slow
         run: make lint-sql
       - name: Run the SQL migrations linter
         run: make lint-sql-migrations
