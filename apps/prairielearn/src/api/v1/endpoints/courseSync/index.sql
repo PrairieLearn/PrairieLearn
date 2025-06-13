@@ -2,7 +2,11 @@
 WITH
   object_data AS (
     SELECT
-      *
+      job_sequence_id,
+      start_date,
+      finish_date,
+      status,
+      output
     FROM
       jobs
     WHERE
@@ -11,13 +15,6 @@ WITH
       AND type = 'sync'
   )
 SELECT
-  COALESCE(
-    jsonb_agg(
-      to_jsonb(object_data)
-      ORDER BY
-        job_sequence_id
-    ),
-    '[]'::jsonb
-  ) AS item
+  to_jsonb(object_data) AS item
 FROM
   object_data;
