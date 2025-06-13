@@ -3,8 +3,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 onDocumentReady(() => {
   document.querySelectorAll<HTMLInputElement>('input[name=cr-role]').forEach((radio) =>
     radio.addEventListener('change', () => {
-      const role = document.querySelector<HTMLInputElement>('input[name=cr-role]:checked')?.value;
-
+      const role = radio.value;
       document
         .querySelectorAll<HTMLButtonElement>('.question-form button[type=submit]')
         .forEach((button) => (button.disabled = role !== 'instructor'));
