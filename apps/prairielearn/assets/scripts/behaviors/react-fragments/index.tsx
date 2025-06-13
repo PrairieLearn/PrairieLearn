@@ -27,12 +27,12 @@ onDocumentReady(() => {
       // If you forget to register a component with `registerReactFragment`, this is going to hang.
       const Component = await registry.getReactFragment(componentName);
 
-      const dataElement = el.querySelector(`script#${componentName}-props`);
+      const dataElement = el.querySelector('script[data-component-props]');
       if (!dataElement) throw new Error('No data element found');
       if (!dataElement.textContent) throw new Error('Data element has no content');
       const data = JSON.parse(dataElement.textContent);
 
-      const rootElement = el.querySelector(`div#${componentName}-root`);
+      const rootElement = el.querySelector('div[data-component-root]');
       if (!rootElement) throw new Error('No root element found');
       hydrate(<Component {...data} />, rootElement);
     },
