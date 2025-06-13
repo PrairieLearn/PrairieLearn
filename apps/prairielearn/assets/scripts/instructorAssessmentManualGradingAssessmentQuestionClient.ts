@@ -337,9 +337,11 @@ onDocumentReady(() => {
             value
               ? row.is_ai_graded
                 ? html`
-                    <span class="badge text-bg-secondary js-custom-search-ai-grading"
-                      >${generateAiGraderName()}</span
+                    <span
+                      class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
                     >
+                      ${generateAiGraderName()}
+                    </span>
                   `.toString()
                 : row.last_grader_name
               : '&mdash;',
@@ -350,17 +352,26 @@ onDocumentReady(() => {
               title: 'Graded by',
               visible: aiGradingMode,
               filterControl: 'select',
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                html`${row.ai_grading_status !== 'None'
-                  ? html`<span
-                      class="badge text-bg-secondary ${row.ai_grading_status === 'Graded' ||
-                      row.ai_grading_status === 'LatestRubric'
-                        ? 'js-custom-search-ai-grading-latest-rubric'
-                        : 'js-custom-search-ai-grading-nonlatest-rubric'}"
-                      >${generateAiGraderName(row.ai_grading_status)}</span
-                    >`
-                  : ''}
-                ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}`.toString(),
+              formatter: (value: boolean, row: InstanceQuestionRow) => {
+                const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
+
+                return html`
+                  ${row.ai_grading_status !== 'None'
+                    ? html`
+                        <span
+                          class="badge rounded-pill text-bg-light border ${row.ai_grading_status ===
+                            'Graded' || row.ai_grading_status === 'LatestRubric'
+                            ? 'js-custom-search-ai-grading-latest-rubric'
+                            : 'js-custom-search-ai-grading-nonlatest-rubric'}"
+                        >
+                          ${generateAiGraderName(row.ai_grading_status)}
+                        </span>
+                      `
+                    : ''}
+                  ${showPlus ? ' + ' : ''}
+                  ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}
+                `.toString();
+              },
               filterData: 'func:gradersList',
               filterCustomSearch: (text: string, value: string) => {
                 if (text === generateAiGraderName('LatestRubric').toLowerCase()) {
