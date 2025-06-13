@@ -913,7 +913,7 @@ function addRubricItemRow(rubricItem = null) {
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
  *
- * @param {Object} elements - An object of elements, with keys of element names and values of elements.
+ * @param {Object} elements - An object of elements, with keys as element names and values as the elements themselves.
  */
 function ensureElementsExist(elements) {
   for (const elementName in elements) {
