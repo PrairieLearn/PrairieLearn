@@ -1,7 +1,8 @@
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
-import { type HtmlSafeString } from '@prairielearn/html';
+import { AugmentedError } from '@prairielearn/error';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import { Fragment, type VNode } from '@prairielearn/preact-cjs';
 
 import { renderPreactToHtmlForClientSide } from './preact-html.js';
@@ -69,10 +70,29 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   }
   const componentName = `${nameOverride || Component.name || Component.displayName}`;
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
+  let compiledScriptSrc = '';
+  try {
+    compiledScriptSrc = compiledScriptPath(scriptPath);
+  } catch (error) {
+    throw new AugmentedError(`Could not find script for component "${componentName}".`, {
+      info: html`<div>
+        Make sure you create a script at <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in the registry:
+        <pre>
+        <code>
+import { ${componentName} } from // ...
+import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+
+registerReactFragment(${componentName});
+        </code>
+        <pre>
+      </div> `,
+      cause: error,
+    });
+  }
   const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
   return (
     <Fragment>
-      <script type="module" src={compiledScriptPath(scriptPath)} />
+      <script type="module" src={compiledScriptSrc} />
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}

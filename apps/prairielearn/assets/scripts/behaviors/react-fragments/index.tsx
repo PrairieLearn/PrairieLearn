@@ -7,7 +7,12 @@ import { ReactFragmentsRegistry } from './registry.js';
 
 const registry = new ReactFragmentsRegistry();
 
-export function registerReactFragment(id: string, component: ComponentType<any>) {
+export function registerReactFragment(component: ComponentType<any>, componentName?: string) {
+  // Each React component that will be hydrated on the page must be registered.
+  const id = componentName || component.name || component.displayName;
+  if (!id) {
+    throw new Error('React fragment must have a name or displayName or componentName');
+  }
   registry.setReactFragment(id, component);
 }
 
@@ -19,6 +24,7 @@ onDocumentReady(() => {
         throw new Error('js-react-fragment element must have a data-component attribute');
       }
 
+      // If you forget to register a component with `registerReactFragment`, this is going to hang.
       const Component = await registry.getReactFragment(componentName);
 
       const dataElement = el.querySelector(`script#${componentName}-props`);
@@ -28,7 +34,6 @@ onDocumentReady(() => {
 
       const rootElement = el.querySelector(`div#${componentName}-root`);
       if (!rootElement) throw new Error('No root element found');
-
       hydrate(<Component {...data} />, rootElement);
     },
   });
