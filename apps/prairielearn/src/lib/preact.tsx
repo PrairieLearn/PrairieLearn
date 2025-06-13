@@ -1,14 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath } from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
-import {
-  type Attributes,
-  type ComponentType,
-  Fragment,
-  type VNode,
-} from '@prairielearn/preact-cjs';
+import { Fragment, type VNode } from '@prairielearn/preact-cjs';
 
 import { renderPreactToHtmlForClientSide } from './preact-html.js';
 
@@ -75,29 +69,28 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   }
   const componentName = `${nameOverride || Component.name || Component.displayName}`;
   const scriptPath = `split-bundles/react-fragments/${componentName}.ts`;
-  throw new Error('Waiting for PR #12157');
-  // const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
-  // return (
-  //   <Fragment>
-  //     <script type="module" src={compiledScriptPath(scriptPath)} />
-  //     {scriptPreloads.map((preloadPath) => (
-  //       <link key={preloadPath} rel="modulepreload" href={preloadPath} />
-  //     ))}
-  //     <div data-component={componentName} class="js-react-fragment">
-  //       <script
-  //         type="application/json"
-  //         data-component={`${componentName}-props`}
-  //         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-  //         dangerouslySetInnerHTML={{
-  //           __html: escapeJsonForHtml(props),
-  //         }}
-  //       />
-  //       <div data-component={`${componentName}-root`}>
-  //         <Component {...props} />
-  //       </div>
-  //     </div>
-  //   </Fragment>
-  // );
+  const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
+  return (
+    <Fragment>
+      <script type="module" src={compiledScriptPath(scriptPath)} />
+      {scriptPreloads.map((preloadPath) => (
+        <link key={preloadPath} rel="modulepreload" href={preloadPath} />
+      ))}
+      <div data-component={componentName} class="js-react-fragment">
+        <script
+          type="application/json"
+          data-component={`${componentName}-props`}
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+          dangerouslySetInnerHTML={{
+            __html: escapeJsonForHtml(props),
+          }}
+        />
+        <div data-component={`${componentName}-root`}>
+          <Component {...props} />
+        </div>
+      </div>
+    </Fragment>
+  );
 }
 
 /**
