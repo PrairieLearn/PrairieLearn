@@ -238,7 +238,7 @@ export function SubmissionPanel({
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
-          <div class="card-body submission-body">
+          <div class="card-body overflow-x-auto submission-body">
             ${submissionHtml == null
               ? html`
                   <div class="spinner-border" role="status">
