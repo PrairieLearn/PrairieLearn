@@ -1,4 +1,4 @@
-name: CI
+name: Test
 
 on:
   push:
@@ -25,6 +25,7 @@ env:
 
 jobs:
   test-prairielearn:
+    name: Docker
     runs-on: ubuntu-latest
 
     env:
@@ -120,7 +121,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
 
-  test-prairielearn-local:
+  test-prairielearn-native:
+    name: Native
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -204,139 +206,3 @@ jobs:
 
       - name: Test JavaScript code
         run: make test-js
-
-  native-checks-js:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # We need accurate timestamps to avoid prettier cache invalidation.
-          # We'll use `git restore-mtime`, which requires the full history.
-          fetch-depth: 0
-
-      - name: Install OS packages
-        run: sudo apt-get install -y git-restore-mtime
-
-      - name: Install additional dependencies
-        run: |-
-          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'yarn'
-      - name: Preinstall node-gyp headers
-        run: yarn dlx node-gyp install
-      - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
-
-      - name: Set up Turborepo cache
-        uses: actions/cache@v4
-        with:
-          path: .turbo/cache
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-turbo-
-
-      - name: Build all code
-        run: make build
-      - name: Set up Prettier and ESLint cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules/.cache/prettier/.prettier-cache
-            .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
-
-      - name: Run the JavaScript linter
-        # Use git-restore-mtime due to a bug in prettier's content cache (https://github.com/prettier/prettier/issues/17278)
-        run: |
-          git restore-mtime
-          make lint-js-cached
-      - name: Run the links linter
-        run: make lint-links
-
-      - name: Check dependency structure
-        run: make check-dependencies
-      - name: Check that JSON schema is up-to-date
-        run: make check-jsonschema
-      # The rest of our code is typechecked in the `build` Makefile target, which
-      # is run above.
-      - name: Run the TypeScript typechecker for contrib
-        run: make typecheck-contrib
-      - name: Run the TypeScript typechecker for scripts
-        run: make typecheck-scripts
-      - name: Run the GitHub Actions linter
-        run: make lint-actions
-      # This step runs at the end, since it is common for it to fail in
-      # dependabot PRs, but we still want all other tests above to run
-      # in those cases.
-      - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
-
-  native-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
-
-      - name: Install additional dependencies
-        run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
-          sudo apt-get install -y shellcheck
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: 'images/plbase/python-requirements.txt'
-      - name: Install Python dependencies
-        env:
-          UV_SYSTEM_PYTHON: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Set up Yarn
-        # We only install the dependencies in the root workspace to avoid
-        # installing dependencies that won't be used.
-        run: yarn workspaces focus prairielearn
-      - name: Run the d2 diagram linter
-        run: make lint-d2
-      - name: Run the Python typechecker
-        run: make typecheck-python
-      - name: Run the Python linter
-        run: make lint-python
-      - name: Run the Python tests
-        run: make test-python
-        timeout-minutes: 5
-      - name: Run the Dockerfile linter
-        run: make lint-docker
-      - name: Run the Shellcheck linter
-        run: make lint-shell
-      - name: Run the Markdown linter
-        run: make lint-markdown
-      - name: Run the SQL query linter
-        run: make lint-sql
-      - name: Run the SQL migrations linter
-        run: make lint-sql-migrations
-      - name: Check for warnings in documentation
-        run: make build-docs
-      # Ran after the docs build, so we can lint the generated HTML.
-      - name: Run the HTML linter
-        run: make lint-html
-      - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: apps/prairielearn/python
-          flags: python

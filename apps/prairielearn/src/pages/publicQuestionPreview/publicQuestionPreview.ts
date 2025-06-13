@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 
-import { setQuestionCopyTargets } from '../../lib/copy-content.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema, UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
@@ -104,8 +104,14 @@ router.get(
       publicQuestionPreview: true,
     });
     await logPageView('publicQuestionPreview', req, res);
-    await setQuestionCopyTargets(res);
-    res.send(PublicQuestionPreview({ resLocals: res.locals }));
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
+    res.send(PublicQuestionPreview({ resLocals: res.locals, questionCopyTargets }));
   }),
 );
 

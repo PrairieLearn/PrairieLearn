@@ -38,7 +38,7 @@ export function InstructorCourseInstanceBilling({
       page: 'instance_admin',
       subPage: 'billing',
     },
-    headContent: [compiledScriptTag('instructorInstanceAdminBillingClient.ts')],
+    headContent: compiledScriptTag('instructorInstanceAdminBillingClient.ts'),
     content: html`
       ${!editable
         ? html`
