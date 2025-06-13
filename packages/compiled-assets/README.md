@@ -38,7 +38,7 @@ assets
         └── baz.tsx
 ```
 
-The import tree of all files will be analyzed, and any dependencies will be marked as preloads.
+The import tree of all files will be analyzed, and any code-split chunks or dynamically-imported files will be marked as preloads.
 
 ### Application integration
 
@@ -65,7 +65,7 @@ const app = express();
 app.use('/build/', assets.handler());
 ```
 
-To include a bundle on your page, you can use the `compiledScriptTag` or `compiledScriptPath` functions. The name of the bundle passed to this function is the filename of your bundle within the `scripts` directory. You can use `compiledScriptPreloadTags` to get a list of tags that should be preloaded in the `<head>` of your HTML document, or `compiledScriptPreloadPaths` to get the paths.
+To include a bundle on your page, you can use the `compiledScriptTag` or `compiledScriptPath` functions. The name of the bundle passed to this function is the filename of your bundle within the `scripts` directory.
 
 If your file is located in the `esm-bundles` folder (and processed with ESM + code splitting), you can use the `compiledScriptModuleTag` function. You can use `compiledScriptModulePreloadTags` to get a list of tags that should be preloaded in the `<head>` of your HTML document.
 
@@ -73,7 +73,6 @@ If your file is located in the `esm-bundles` folder (and processed with ESM + co
 import { html } from '@prairielearn/html';
 import {
   compiledScriptTag,
-  compiledScriptPreloadTags,
   compiledScriptPath,
   compiledScriptModuleTag,
   compiledScriptModulePreloadTags,
@@ -84,7 +83,6 @@ router.get(() => {
     <html>
       <head>
         ${compiledScriptTag('foo.ts')}
-        ${compiledScriptPreloadTags('bar.ts')}
         <script src="${compiledScriptPath('bar.ts')}"></script>
 
         ${compiledScriptModuleTag('baz.tsx')}

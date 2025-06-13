@@ -239,7 +239,7 @@ export function compiledStylesheetPath(sourceFile: string): string {
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
-  // Creates a script tag for a CJS source file.
+  // Creates a IIFE script tag for a source file.
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
@@ -254,16 +254,11 @@ export function compiledScriptModuleTag(sourceFile: string): HtmlSafeString {
 
 export function compiledScriptModulePreloadTags(sourceFile: string): HtmlSafeString[] {
   // Creates module preload tags for an ESM source file.
+  // Files not processed with chunking will not have preloads, as they are not split into chunks.
   const preloadPaths = compiledScriptPreloadPaths(sourceFile);
   return preloadPaths.map(
     (preloadPath) => html`<link rel="modulepreload" href="${preloadPath}" />`,
   );
-}
-
-export function compiledScriptPreloadTags(sourceFile: string): HtmlSafeString[] {
-  // Creates preload tags for a CJS source file.
-  const preloadPaths = compiledScriptPreloadPaths(sourceFile);
-  return preloadPaths.map((preloadPath) => html`<link rel="preload" href="${preloadPath}" />`);
 }
 
 export function compiledScriptPreloadPaths(sourceFile: string): string[] {
@@ -309,7 +304,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
   const scriptBundleFiles = await globby(
     path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
   );
-  const chunkBuildResult = await esbuild.build({
+  const esmBundleBuildResult = await esbuild.build({
     entryPoints: scriptBundleFiles,
     target: 'es2017',
     format: 'esm',
@@ -325,8 +320,8 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
 
   // Merge the resulting metafiles.
   const metafile: Metafile = {
-    inputs: { ...buildResult.metafile.inputs, ...chunkBuildResult.metafile.inputs },
-    outputs: { ...buildResult.metafile.outputs, ...chunkBuildResult.metafile.outputs },
+    inputs: { ...buildResult.metafile.inputs, ...esmBundleBuildResult.metafile.inputs },
+    outputs: { ...buildResult.metafile.outputs, ...esmBundleBuildResult.metafile.outputs },
   };
 
   return metafile;
