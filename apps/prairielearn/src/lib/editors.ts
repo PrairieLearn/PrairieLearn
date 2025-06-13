@@ -38,6 +38,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
+import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
@@ -906,18 +907,28 @@ export class AssessmentAddEditor extends Editor {
 
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
+  private from_course: Course;
+  private from_path: string;
+  private is_transfer: boolean;
 
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions<{ course_instance: CourseInstance }>) {
-    const { course_instance } = params.locals;
-
+  constructor(
+    params: BaseEditorOptions & {
+      from_course: Course;
+      from_path: string;
+      course_instance: any;
+    },
+  ) {
+    const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
     super({
       ...params,
-      description: `Copy course instance ${course_instance.short_name}`,
+      description: `Copy course instance ${params.course_instance.short_name}${is_transfer ? ` from ${params.from_course.short_name}` : ''}`,
     });
-
-    this.course_instance = course_instance;
+    this.course_instance = params.course_instance;
+    this.from_course = params.from_course;
+    this.from_path = params.from_path;
+    this.is_transfer = is_transfer;
 
     this.uuid = uuidv4();
   }
@@ -941,35 +952,102 @@ export class CourseInstanceCopyEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForCopy(
-      this.course_instance.short_name,
-      oldNamesShort,
-      this.course_instance.long_name,
-      oldNamesLong,
-    );
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    let shortName = this.course_instance.short_name;
+    let longName = this.course_instance.long_name;
+    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+      const names = this.getNamesForCopy(
+        this.course_instance.short_name,
+        oldNamesShort,
+        this.course_instance.long_name,
+        oldNamesLong,
+      );
+      shortName = names.shortName;
+      longName = names.longName;
+    }
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
-    const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const toPath = courseInstancePath;
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    debug(`Copy course instance\n from ${this.from_path}\n to ${toPath}`);
+    await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
+    if (this.is_transfer) {
+      if (!this.from_course.sharing_name) {
+        throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
+      }
+
+      // Clear access rules to avoid leaking student PII or unexpectedly
+      // making the copied course instance available to users.
+      infoJson['allowAccess'] = [];
+
+      // Update the infoAssessment.json files to include the course sharing name for each question
+      // It's OK that we are writing these directly to disk because when copying to another course
+      // we are working from a temporary folder
+      await updateInfoAssessmentFilesForTargetCourse(
+        this.course_instance.id,
+        courseInstancePath,
+        this.from_course.sharing_name,
+      );
+    }
+
     debug('Write infoCourseInstance.json with new longName and uuid');
-    infoJson.longName = names.longName;
+    infoJson.longName = longName;
     infoJson.uuid = this.uuid;
+
+    // We do not want to preserve sharing settings when copying a course instance
+    delete infoJson['shareSourcePublicly'];
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `copy course instance ${this.course_instance.short_name} to ${short_name}`,
+      commitMessage: `copy course instance ${this.course_instance.short_name}${this.is_transfer ? ` (from ${this.from_course.short_name})` : ''} to ${shortName}`,
     };
+  }
+}
+
+async function updateInfoAssessmentFilesForTargetCourse(
+  courseInstanceId: string,
+  courseInstancePath: string,
+  fromCourseSharingName: string,
+) {
+  const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
+    course_instance_id: courseInstanceId,
+  });
+  const assessments = result.rows;
+  for (const assessment of assessments) {
+    const infoPath = path.join(
+      courseInstancePath,
+      'assessments',
+      assessment.assessment_directory,
+      'infoAssessment.json',
+    );
+
+    const infoJson = await fs.readJson(infoPath);
+
+    // We do not want to preserve certain settings when copying an assessment to another course
+    delete infoJson['shareSourcePublicly'];
+    infoJson['allowAccess'] = [];
+
+    // Rewrite the question IDs to include the course sharing name
+    for (const zone of infoJson.zones) {
+      for (const question of zone.questions) {
+        if (question.id && question.id[0] !== '@') {
+          question.id = `@${fromCourseSharingName}/${question.id}`;
+        } else if (question.alternatives) {
+          for (const alternative of question.alternatives) {
+            if (alternative.id && alternative.id[0] !== '@') {
+              alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
+            }
+          }
+        }
+      }
+    }
+    await fs.writeJson(infoPath, infoJson, { spaces: 4 });
   }
 }
 

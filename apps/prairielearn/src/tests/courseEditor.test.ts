@@ -12,6 +12,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -326,6 +328,27 @@ const publicCopyTestData: EditData[] = [
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
     ]),
   },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
@@ -362,9 +385,19 @@ describe('test course editor', { timeout: 20_000 }, function () {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
+      await features.enable('question-sharing');
+      config.checkSharingOnSync = true;
+    });
+
+    afterAll(() => {
+      config.checkSharingOnSync = false;
     });
 
     beforeAll(createSharedCourse);
+
+    beforeAll(async () => {
+      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
+    });
 
     describe('verify edits', async function () {
       publicCopyTestData.forEach((element) => {
@@ -575,10 +608,11 @@ async function createSharedCourse() {
       ],
     },
   ];
-
-  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
+    sharingCourseData.courseInstances['Fa19'].assessments['test'];
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
