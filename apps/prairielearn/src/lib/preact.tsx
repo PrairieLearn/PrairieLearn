@@ -5,18 +5,7 @@ import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { Fragment, type VNode } from '@prairielearn/preact-cjs';
 
-import { renderPreactToHtmlForClientSide } from './preact-html.js';
-
-/**
- * Render a non-interactive Preact component that is embedded within a tagged template literal.
- * This function is intended to be used within a tagged template literal, e.g. html`...`.
- *
- * @param content - A Preact VNode to render to HTML.
- * @returns An `HtmlSafeString` containing the rendered HTML.
- */
-export function renderHtml(content: VNode): HtmlSafeString {
-  return renderPreactToHtmlForClientSide(content);
-}
+import { renderHtml } from './preact-html.js';
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {
@@ -99,13 +88,13 @@ registerReactFragment(${componentName});
       <div data-component={componentName} class="js-react-fragment">
         <script
           type="application/json"
-          data-component={`${componentName}-props`}
+          data-component-props
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component={`${componentName}-root`}>
+        <div data-component-root>
           <Component {...props} />
         </div>
       </div>

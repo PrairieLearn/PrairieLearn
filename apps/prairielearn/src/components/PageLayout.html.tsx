@@ -5,7 +5,7 @@ import { HtmlSafeString, html } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
 import { HeadContents } from './HeadContents.html.js';
@@ -14,14 +14,14 @@ import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { SideNav } from './SideNav.html.js';
 
-const asHtmlSafe = (
+function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
-): HtmlSafeString | HtmlSafeString[] | undefined => {
+): HtmlSafeString | HtmlSafeString[] | undefined {
   if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
     return content;
   }
   return renderHtml(content);
-};
+}
 
 export function PageLayout({
   resLocals,
