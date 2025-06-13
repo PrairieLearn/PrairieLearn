@@ -83,16 +83,16 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   //     {scriptPreloads.map((preloadPath) => (
   //       <link key={preloadPath} rel="modulepreload" href={preloadPath} />
   //     ))}
-  //     <div data-component={id} class="js-react-fragment">
+  //     <div data-component={componentName} class="js-react-fragment">
   //       <script
   //         type="application/json"
-  //         data-component={`${id}-props`}
+  //         data-component={`${componentName}-props`}
   //         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
   //         dangerouslySetInnerHTML={{
   //           __html: escapeJsonForHtml(props),
   //         }}
   //       />
-  //       <div data-component={`${id}-root`}>
+  //       <div data-component={`${componentName}-root`}>
   //         <Component {...props} />
   //       </div>
   //     </div>
