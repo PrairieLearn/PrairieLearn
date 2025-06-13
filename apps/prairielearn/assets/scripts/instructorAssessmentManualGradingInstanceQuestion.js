@@ -843,7 +843,7 @@ function addRubricItemRow(rubricItem = null) {
     rubricItemExplanation.dataset.inputName = `rubric_item[new${next_id}][explanation]`;
     if (rubricItem) {
       rubricItemExplanation.setAttribute('data-current-value', rubricItem.explanation ?? '');
-      if (rubricItem?.explanation) {
+      if (rubricItem.explanation) {
         const label = document.createElement('label');
         label.setAttribute('for', `rubric-item-explanation-button-${next_id}`);
         label.setAttribute('style', 'white-space: pre-wrap;');
