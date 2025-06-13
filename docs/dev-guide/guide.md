@@ -301,7 +301,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database schema modification
 
-See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
+See the [migrations page](./migrations/README.md).
 
 ## Database access
 
