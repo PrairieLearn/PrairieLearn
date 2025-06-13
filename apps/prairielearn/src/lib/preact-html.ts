@@ -3,8 +3,6 @@ import { render } from 'preact-render-to-string/jsx';
 import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
-import { DEV_MODE } from './config.js';
-
 // This function must live outside of `preact.tsx` so that it can be imported
 // on the client. `preact.tsx` imports `@prairielearn/compiled-assets`, which
 // cannot be bundled for the browser.
@@ -18,5 +16,5 @@ import { DEV_MODE } from './config.js';
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
 export function renderPreactToHtmlForClientSide(vnode: VNode): HtmlSafeString {
-  return unsafeHtml(render(vnode, {}, { pretty: DEV_MODE, jsx: false }));
+  return unsafeHtml(render(vnode, {}, { pretty: false, jsx: false }));
 }

@@ -90,7 +90,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     const splitSourceGlob = path.join(
       options.sourceDirectory,
       'scripts',
-      'split-bundles',
+      'esm-bundles',
       '**',
       '*.{js,ts,jsx,tsx}',
     );
@@ -159,7 +159,7 @@ export function handler() {
   // and watching our assets.
   return function (req: IncomingMessage, res: ServerResponse) {
     const isSplitBundle =
-      req.url?.startsWith('/scripts/split-bundles') ||
+      req.url?.startsWith('/scripts/esm-bundles') ||
       // Chunked assets must be served by the split server.
       req.url?.startsWith('/chunk-');
 
