@@ -5,18 +5,7 @@ import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { Fragment, type VNode } from '@prairielearn/preact-cjs';
 
-import { renderPreactToHtmlForClientSide } from './preact-html.js';
-
-/**
- * Render a non-interactive Preact component that is embedded within a tagged template literal.
- * This function is intended to be used within a tagged template literal, e.g. html`...`.
- *
- * @param content - A Preact VNode to render to HTML.
- * @returns An `HtmlSafeString` containing the rendered HTML.
- */
-export function renderHtml(content: VNode): HtmlSafeString {
-  return renderPreactToHtmlForClientSide(content);
-}
+import { renderHtml } from './preact-html';
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {

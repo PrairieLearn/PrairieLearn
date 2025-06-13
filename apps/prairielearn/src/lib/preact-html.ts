@@ -8,13 +8,12 @@ import type { VNode } from '@prairielearn/preact-cjs';
 // cannot be bundled for the browser.
 
 /**
- * This function should only be called as a aid for migration from client-side code to Preact.
- * It allows authoring a piece of client-side code as Preact.
- * Server-side rendering (e.g. pages/foo.html.tsx) should use `renderHtml` instead.
+ * Render a non-interactive Preact component that is embedded within a tagged template literal.
+ * This function is intended to be used within a tagged template literal, e.g. html`...`.
  *
  * @param vnode - A Preact VNode to render to HTML.
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
-export function renderPreactToHtmlForClientSide(vnode: VNode): HtmlSafeString {
+export function renderHtml(vnode: VNode): HtmlSafeString {
   return unsafeHtml(render(vnode, {}, { pretty: false, jsx: false }));
 }
