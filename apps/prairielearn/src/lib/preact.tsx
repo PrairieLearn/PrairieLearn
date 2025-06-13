@@ -88,13 +88,13 @@ registerReactFragment(${componentName});
       <div data-component={componentName} class="js-react-fragment">
         <script
           type="application/json"
-          data-component={`${componentName}-props`}
+          data-component-props
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component={`${componentName}-root`}>
+        <div data-component-root>
           <Component {...props} />
         </div>
       </div>
