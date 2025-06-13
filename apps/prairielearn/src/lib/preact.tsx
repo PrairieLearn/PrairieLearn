@@ -68,7 +68,7 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     );
   }
   const componentName = `${nameOverride || Component.name || Component.displayName}`;
-  const scriptPath = `split-bundles/react-fragments/${componentName}.ts`;
+  const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
   const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
   return (
     <Fragment>
