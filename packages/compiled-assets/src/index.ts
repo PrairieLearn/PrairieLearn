@@ -248,7 +248,7 @@ export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
 }
 
 export function compiledScriptModuleTag(sourceFile: string): HtmlSafeString {
-  // Creates a module script tag for an ESM source file.
+  // Creates a module script tag for an ESM bundle.
   return html`<script type="module" src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
