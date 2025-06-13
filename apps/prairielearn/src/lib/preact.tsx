@@ -75,7 +75,7 @@ export function hydrate<T>(content: VNode<T>, idOverride?: string): VNode {
   console.log(Component.name);
   const randomId = Math.random().toString(36).slice(2, 10);
   // If we have multiple fragments on the page, we need to ensure that each one has a unique ID
-  const id = `${idOverride || Component.name || Component.displayName}-${randomId}`;
+  const id = `${idOverride || Component.name || Component.displayName}`;
   const scriptPath = `split-bundles/react-fragments/${id}.ts`;
   throw new Error('Waiting for PR #12157');
   // const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
@@ -88,13 +88,13 @@ export function hydrate<T>(content: VNode<T>, idOverride?: string): VNode {
   //     <div id={id} class="js-react-fragment">
   //       <script
   //         type="application/json"
-  //         id={`${id}-props`}
+  //         id={`${id}-${randomId}-props`}
   //         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
   //         dangerouslySetInnerHTML={{
   //           __html: escapeJsonForHtml(props),
   //         }}
   //       />
-  //       <div id={`${id}-root`}>
+  //       <div id={`${id}-${randomId}-root`}>
   //         <Component {...props} />
   //       </div>
   //     </div>
