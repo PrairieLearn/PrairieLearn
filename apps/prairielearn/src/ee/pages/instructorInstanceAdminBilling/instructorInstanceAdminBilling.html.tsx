@@ -1,7 +1,7 @@
 import { Fragment } from '@prairielearn/preact-cjs';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
-import { renderForClientHydration } from '../../../lib/preact.js';
+import { hydrate } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
@@ -46,22 +46,20 @@ export function InstructorCourseInstanceBilling({
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex">Billing</div>
           <div class="card-body">
-            {renderForClientHydration(
-              'InstructorInstanceAdminBillingForm',
-              InstructorInstanceAdminBillingForm,
-              {
-                initialRequiredPlans: requiredPlans,
-                desiredRequiredPlans: requiredPlans,
-                institutionPlanGrants,
-                courseInstancePlanGrants,
-                enrollmentCount,
-                enrollmentLimit,
-                enrollmentLimitSource,
-                externalGradingQuestionCount,
-                workspaceQuestionCount,
-                editable,
-                csrfToken: resLocals.__csrf_token,
-              },
+            {hydrate(
+              <InstructorInstanceAdminBillingForm
+                initialRequiredPlans={requiredPlans}
+                desiredRequiredPlans={requiredPlans}
+                institutionPlanGrants={institutionPlanGrants}
+                courseInstancePlanGrants={courseInstancePlanGrants}
+                enrollmentCount={enrollmentCount}
+                enrollmentLimit={enrollmentLimit}
+                enrollmentLimitSource={enrollmentLimitSource}
+                externalGradingQuestionCount={externalGradingQuestionCount}
+                workspaceQuestionCount={workspaceQuestionCount}
+                editable={editable}
+                csrfToken={resLocals.__csrf_token}
+              />,
             )}
           </div>
         </div>
