@@ -84,11 +84,7 @@ export async function checkSharingConfigurationValid(
     logger,
   );
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
-  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(
-    sharingEnabled,
-    courseData,
-    logger,
-  );
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
   const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
