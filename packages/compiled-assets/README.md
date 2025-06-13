@@ -75,7 +75,6 @@ import {
   compiledScriptTag,
   compiledScriptPath,
   compiledScriptModuleTag,
-  compiledScriptModulePreloadTags,
 } from '@prairielearn/compiled-assets';
 
 router.get(() => {
@@ -86,7 +85,6 @@ router.get(() => {
         <script src="${compiledScriptPath('bar.ts')}"></script>
 
         ${compiledScriptModuleTag('baz.tsx')}
-        ${compiledScriptModulePreloadTags('baz.tsx')}
       </head>
       </body>
         Hello, world.
