@@ -207,9 +207,7 @@ export function checkInvalidSharedAssessments(
             continue;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharePublicly) {
-            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
-            // not copy the questions into the destination course
+          if (!infoJson?.data?.sharePublicly && !infoJson?.data?.shareSourcePublicly) {
             invalidSharedAssessments.add(tid);
           }
         }
