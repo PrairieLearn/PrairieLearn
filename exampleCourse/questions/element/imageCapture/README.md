@@ -1,0 +1,1 @@
+This question demonstrates the ability of `<pl-image-capture>` to let students submit captured images from their webcam or external device, such as a phone or tablet. It also shows what `<pl-image-capture>` looks like when mobile capture is disabled.
