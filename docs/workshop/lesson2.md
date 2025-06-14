@@ -4,7 +4,7 @@
 
 ## Quick overview
 
-Let's take a look at some of the features available when customizing your assessments. You can find more information about assessment configuration [here](../assessment/index.md).
+Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [assessment documentation](../assessment/index.md).
 
 The beginning of the `infoAssessment.json` usually looks like this:
 
@@ -61,7 +61,7 @@ Option to randomly select questions that will appear in the Assessment, out of a
 
 ### Assessment `allowAccess`
 
-There are many options to help customizing when and who should have access to your assessment. Take a look at the section [Access Control](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn more. Here I will briefly describe the option `mode`
+There are many options to customize when and who should have access to your assessment. Take a look at the section [Access Control](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn more. Here I will briefly describe the option `mode`
 
 There are two available options:
 
@@ -129,10 +129,10 @@ Before you start creating your assessments, make sure you have at least 4 questi
 
 ### Configuration 4: Synchronous exam using PrairieTest
 
-When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
+When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to schedule and deliver PrairieLearn exams, you need to use the following configuration:
 
 - Start from `Configuration 2`
-- Remove `startDate` and `endDate` from `allowAccess`. Instead use:
+- Remove `startDate` and `endDate` from `allowAccess`. Instead, use:
 
   ```json title="infoAssessment.json"
   {

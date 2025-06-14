@@ -6,7 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionSchema } from '../../../lib/db-types.js';
-import { getAvailableTimezones } from '../../../lib/timezones.js';
+import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 import {
@@ -27,7 +27,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
-    const availableTimezones = await getAvailableTimezones();
+    const availableTimezones = await getCanonicalTimezones([institution.display_timezone]);
     const statistics = await queryRow(
       sql.select_institution_statistics,
       { institution_id: req.params.institution_id },

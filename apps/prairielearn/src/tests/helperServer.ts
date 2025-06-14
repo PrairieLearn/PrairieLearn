@@ -1,8 +1,8 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { assert } from 'chai';
 import debugfn from 'debug';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 
 import { cache } from '@prairielearn/cache';
 import * as opentelemetry from '@prairielearn/opentelemetry';
@@ -15,7 +15,6 @@ import { config } from '../lib/config.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
-import * as localCache from '../lib/local-cache.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as serverJobs from '../lib/server-jobs.js';
 import * as socketServer from '../lib/socket-server.js';
@@ -29,8 +28,8 @@ const debug = debugfn('prairielearn:helperServer');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 config.startServer = false;
-// Pick a unique port based on the Mocha worker ID.
-config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
+// Pick a unique port based on the Vitest worker ID.
+config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0', 10)).toString();
 
 export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
@@ -40,8 +39,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await opentelemetry.init({ openTelemetryEnabled: false });
 
       debug('before(): initializing DB');
-      // pass "this" explicitly to enable this.timeout() calls
-      await helperDb.before.call(this);
+      await helperDb.before();
 
       debug('before(): create tmp dir for config.filesRoot');
       const tmpDir = await tmp.dir({ unsafeCleanup: true });
@@ -68,7 +66,9 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       load.initEstimator('python', 1);
 
       debug('before(): initialize code callers');
-      await codeCaller.init();
+      await codeCaller.init({ lazyWorkers: true });
+
+      debug('before(): initialize assets');
       await assets.init();
 
       debug('before(): start server');
@@ -111,12 +111,6 @@ export async function after(): Promise<void> {
     debug('after(): stop server');
     await server.stopServer();
 
-    debug('after(): close socket server');
-    await socketServer.close();
-
-    debug('after(): close load estimators');
-    load.close();
-
     debug('after(): stop cron');
     await cron.stop();
 
@@ -126,11 +120,17 @@ export async function after(): Promise<void> {
     debug('after(): close cache');
     await cache.close();
 
-    debug('after(): close local cache');
-    localCache.close();
+    // This should come after anything that will emit socket events, namely
+    // server jobs and cron. We want to try to ensure that nothing is still
+    // emitting events when we close the socket server.
+    debug('after(): close socket server');
+    await socketServer.close();
+
+    debug('after(): close load estimators');
+    load.close();
 
     debug('after(): finish DB');
-    await helperDb.after.call(this);
+    await helperDb.after();
   } finally {
     debug('after(): complete');
   }
@@ -138,7 +138,6 @@ export async function after(): Promise<void> {
 
 export async function waitForJobSequence(job_sequence_id) {
   let job_sequence;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
       job_sequence_id,

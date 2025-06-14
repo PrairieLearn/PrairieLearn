@@ -4,7 +4,7 @@ Central to PrairieLearn is the ability to securely execute arbitrary code. There
 
 - **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](elements.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
 - [**Externally-graded questions**](externalGrading.md): This is code submitted by a student and graded for them by course code. This code can take longer to execute and is queued to be executed on a distributed set of machines.
-- [**Workspaces**](workspaces/index.md): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
+- [**Workspaces**](workspaces/index.md): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours, and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
 
 The [external grading docs](externalGrading.md) and [workspace docs](workspaces/index.md) describe those execution modes in more detail. This document is primarily concerned with describing how question and element code is executed.
 
@@ -20,7 +20,7 @@ A single PrairieLearn server may be serving potentially hundreds or thousands of
 
 ## Execution modes
 
-PrairieLearn must execute in two main environments: locally on the computers of people developing course content, and in a production environment. The primary differences between these two environments are a) ease of setup and b) whether or not PrairieLearn is running in a Docker container.
+PrairieLearn must execute in two main environments: locally on the computers of people developing course content, and in a production environment. The primary differences between these two environments are (a) ease of setup and (b) whether PrairieLearn is running in a Docker container.
 
 For local development, PrairieLearn must be easy to set up; it should not require complex infrastructure or commands to run. For this use case, PrairieLearn is distributed as a single Docker container that can be run without any external dependencies. In production environments, we can shoulder some additional complexity in order to gained improved security and reliability.
 

@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -583,11 +583,10 @@ const partialCreditTests = [
   ],
 ];
 
-describe('Exam assessment', function () {
-  this.timeout(60000);
+describe('Exam assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let elemList;
 
@@ -942,7 +941,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('26. save incorrect answer to question fossilFuelsRadio', function () {
@@ -1039,7 +1038,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('30. load question fossilFuelsRadio page and save data for later submission', function () {
@@ -1082,7 +1081,7 @@ describe('Exam assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 400);
   });
 
   describe('33. regrading', function () {
@@ -1763,12 +1762,10 @@ describe('Exam assessment', function () {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.after.call(this);
+          await helperServer.after();
         });
         it('should start up', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before()();
         });
       });
 
@@ -1826,7 +1823,7 @@ describe('Exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
@@ -1835,7 +1832,7 @@ describe('Exam assessment', function () {
                 locals.__csrf_token = locals.question.questionSavedCsrfToken;
               });
             });
-            helperQuestion.postInstanceQuestionAndFail(locals);
+            helperQuestion.postInstanceQuestionAndFail(locals, 400);
           } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
           } else if (questionTest.action === 'save' || questionTest.action === 'grade') {

@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRows, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentModuleSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';

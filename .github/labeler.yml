@@ -1,0 +1,36 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - 'mkdocs.yml'
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/Dockerfile'
+          - 'docker-compose.yml'
+element:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/prairielearn/elements/**'
+python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'apps/prairielearn/python/**'
+          - 'apps/prairielearn/elements/**/*.py'
+          - 'images/plbase/python-requirements.txt'
+          - 'pyproject.toml'
+          - 'docs/requirements.txt'
+
+tooling:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'Makefile'
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+autograder-python:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'graders/python/**'

@@ -1,9 +1,9 @@
 import { createInterface } from 'node:readline';
 
 import {
+  type CodeCallerError,
   CodeCallerNative,
   type ErrorData,
-  type CodeCallerError,
 } from './lib/code-caller/code-caller-native.js';
 import { type CallType } from './lib/code-caller/code-caller-shared.js';
 import { FunctionMissingError } from './lib/code-caller/index.js';
@@ -121,6 +121,9 @@ async function prepareCodeCaller() {
     pythonVenvSearchPaths: [],
   });
 }
+
+process.once('SIGINT', () => process.exit(0));
+process.once('SIGTERM', () => process.exit(0));
 
 (async () => {
   let codeCaller = await prepareCodeCaller();

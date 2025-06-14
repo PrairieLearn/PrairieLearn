@@ -291,6 +291,7 @@ WITH
       ai.number AS assessment_instance_number,
       q.id AS question_id,
       q.qid AS question_name,
+      top.name AS question_topic,
       (
         SELECT
           COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
@@ -373,6 +374,7 @@ WITH
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN questions AS q ON (q.id = aq.question_id)
+      JOIN topics AS top ON (top.id = q.topic_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)

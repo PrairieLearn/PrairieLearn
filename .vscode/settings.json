@@ -16,7 +16,6 @@
       "source.organizeImports": "explicit"
     }
   },
-
   "[javascript][typescript][javascriptreact][typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
@@ -24,8 +23,7 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-
-  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown]": {
+  "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
@@ -54,5 +52,9 @@
   ],
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "[json]": {
+    "files.insertFinalNewline": true
+  },
+  "vitest.maximumConfigs": 100
 }

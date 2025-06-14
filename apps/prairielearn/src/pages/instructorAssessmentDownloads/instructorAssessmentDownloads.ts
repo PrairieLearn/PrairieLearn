@@ -1,7 +1,7 @@
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
-import * as express from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -27,11 +27,11 @@ import { getGroupConfig } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
-  InstructorAssessmentDownloads,
   type Filenames,
+  InstructorAssessmentDownloads,
 } from './instructorAssessmentDownloads.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type Columns = [string, string][];
@@ -230,7 +230,7 @@ interface ArchiveFile {
 }
 
 async function pipeCursorToArchive<T>(
-  res: express.Response,
+  res: Response,
   cursor: sqldb.CursorIterator<T>,
   extractFiles: (row: T) => ArchiveFile[] | null,
 ) {

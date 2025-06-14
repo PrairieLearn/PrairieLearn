@@ -1,5 +1,5 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
+import { queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
 export default makeBatchedMigration({
   async getParameters() {

@@ -58,7 +58,7 @@ An external grading job goes through various phases and the times when these pha
 
 External grading configuration is done on a per-question basis. All configuration is done via the `externalGradingOptions` object in a question's `info.json`. The options you can configure are as follows:
 
-- `enabled`: Whether or not external grading is enabled for the question. If not present, external grading will be disabled by default. This can be used as a kill switch if things start breaking.
+- `enabled`: Whether external grading is enabled for the question. If not present, external grading will be disabled by default. This can be used as a kill switch if things start breaking.
 
 - `image`: The Docker image that should be used for the question. This can be any image specification that is understood by the `docker pull` command. This property is required.
 
@@ -73,6 +73,8 @@ External grading configuration is done on a per-question basis. All configuratio
 - `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 
 - `environment`: Environment variables to set inside the grading container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). This property is optional.
+
+See the [`externalGradingOptions` schema for `infoQuestion.json`](./schemas/infoQuestion.md/#properties/externalGradingOptions) for more information about these fields.
 
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
@@ -94,13 +96,13 @@ This config file specifies the following things:
 - The `prairielearn/grader-python` image will be used
 - The files/directories under `serverFilesCourse/python_autograder` will be copied into your image while grading
 - The script `/grade/serverFilesCourse/python_autograder/run.sh` will be executed when your container starts up
-- If grading takes longer that 5 seconds, the container will be killed
+- If grading takes longer than 5 seconds, the container will be killed
 
 ### Special directories
 
 There are several ways that you can load files from PrairieLearn into your container if you don't want to build the files directly into your image.
 
-As specified above, you can specify files or directories in `serverFilesCourse` that should be copied into your container. A common use case for this is if you want to share a single grading framework between many different questions.
+As specified above, you can specify files or directories in `serverFilesCourse` that should be copied into your container. A common use case for this is if you want to share a single grading framework between different questions.
 
 You can also put a `tests` directory into your question's directory; these could be question-specific tests that run on your grading framework above. You could also put standalone tests here if you don't feel the need to share any test code between questions.
 
@@ -175,7 +177,7 @@ The following is an example of a well-structured course layout:
 
 Your grading process must write its results to `/grade/results/results.json`. If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating point number in the range [0.0, 1.0]. If the submission is not gradable (see below) then the `score` field is unneeded.
 
-As long as this field is present you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1MB, so you must ensure any extensive use of data takes this limit into account.
+As long as this field is present you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1 MB, so you must ensure any extensive use of data takes this limit into account.
 
 The boolean `gradable` can be added to the results object and set to `false` to indicate that the input was invalid or formatted incorrectly, for example if it has a syntax error that prevented compilation. If `"gradable": false` is set then the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question. The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
 
@@ -230,14 +232,14 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
 }
 ```
 
-Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1MB listed above. Each element of the array is expected to be either an object containing the following keys:
+Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1 MB listed above. Each element of the array is expected to be either an object containing the following keys:
 
 - `url`: The source of the image, typically formatted as standard HTML base64 image like `"data:[mimetype];base64,[contents]"`;
 - `label`: An optional label for the image (defaults to "Figure").
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
 
-A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`, and relevant documentation [here](python-grader/index.md).
+A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`. See the [grader documentation](python-grader/index.md) for more details.
 
 ## Writing questions
 
@@ -264,6 +266,6 @@ For a working example of this, see [the implementation of `pl-file-upload`](http
 
 ## Running locally for development
 
-In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](installing.md#support-for-external-graders-and-workspaces).
+In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](installing.md#support-for-external-graders-and-workspaces).
 
 When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs`. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.

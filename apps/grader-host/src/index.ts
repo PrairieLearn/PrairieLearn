@@ -123,7 +123,6 @@ async.series(
       const sqs = new SQSClient(makeAwsClientConfig());
 
       async function worker() {
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           if (!healthCheck.isHealthy() || processTerminating) return;
 

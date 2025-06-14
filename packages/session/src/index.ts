@@ -1,16 +1,16 @@
 import cookie from 'cookie';
 import signature from 'cookie-signature';
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import onHeaders from 'on-headers';
 
 import { beforeEnd } from './before-end.js';
-import { type CookieSecure, shouldSecureCookie, getSessionIdFromCookie } from './cookie.js';
+import { type CookieSecure, getSessionIdFromCookie, shouldSecureCookie } from './cookie.js';
 import {
   type Session,
   generateSessionId,
-  loadSession,
   hashSession,
+  loadSession,
   truncateExpirationDate,
 } from './session.js';
 import { type SessionStore } from './store.js';

@@ -2,8 +2,8 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { html, joinHtml, type HtmlSafeString } from '@prairielearn/html';
-import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
+import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
@@ -11,9 +11,9 @@ import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
+  Lti13CourseNavigationDone,
   Lti13CourseNavigationInstructor,
   Lti13CourseNavigationNotReady,
-  Lti13CourseNavigationDone,
 } from './lti13CourseNavigation.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);

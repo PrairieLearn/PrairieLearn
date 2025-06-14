@@ -29,10 +29,10 @@ import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
 import { parseDockerLogs } from './lib/docker.js';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as socketServer from './lib/socket-server.js';
 
 interface WorkspaceServerSettings {
@@ -804,12 +804,6 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   } catch (err) {
     throw Error('Could not access workspace files.', { cause: err });
   }
-
-  debug(`Creating directory ${workspaceJobPath}`);
-  await fs.mkdir(workspaceJobPath, { recursive: true }).catch((err) => {
-    // Ignore the directory if it already exists. Otherwise, rethrow the error.
-    if (err && err.code !== 'EEXIST') throw err;
-  });
 
   await fs.chown(
     workspaceJobPath,

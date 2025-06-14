@@ -1,0 +1,17 @@
+{
+  "uuid": "83de8735-614a-4a13-8349-90115cb6cee3",
+  "type": "Homework",
+  "title": "Homework to demonstrate assessment sharing",
+  "set": "Homework",
+  "number": "12",
+  "allowAccess": [{ "credit": 100 }],
+  "shareSourcePublicly": true,
+  "zones": [
+    {
+      "questions": [
+        { "id": "orderBlocks", "points": 2, "maxPoints": 6 },
+        { "id": "partialCredit1", "points": 2, "maxPoints": 6 }
+      ]
+    }
+  ]
+}

@@ -1,20 +1,22 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import mustache from 'mustache';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { markdownToHtml } from '@prairielearn/markdown';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
 import {
-  joinGroup,
+  GroupOperationError,
+  canUserAssignGroupRoles,
   createGroup,
   getGroupConfig,
   getGroupId,
   getGroupInfo,
-  updateGroupRoles,
+  joinGroup,
   leaveGroup,
-  GroupOperationError,
-  canUserAssignGroupRoles,
+  updateGroupRoles,
 } from '../../lib/groups.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -66,22 +68,34 @@ router.get(
     if (!res.locals.assessment.group_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.authz_data.date,
+        date: res.locals.authz_data.date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
       return;
     }
 
+    let customHonorCode = '';
+    if (
+      res.locals.assessment.type === 'Exam' &&
+      res.locals.assessment.require_honor_code &&
+      res.locals.assessment.honor_code
+    ) {
+      customHonorCode = await markdownToHtml(
+        mustache.render(res.locals.assessment.honor_code, {
+          user_name: res.locals.user.name,
+        }),
+        { allowHtml: false, interpretMath: false },
+      );
+    }
     if (!res.locals.assessment.group_work) {
-      res.send(StudentAssessment({ resLocals: res.locals }));
+      res.send(StudentAssessment({ resLocals: res.locals, customHonorCode }));
       return;
     }
 
@@ -97,8 +111,15 @@ router.get(
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
+
     res.send(
-      StudentAssessment({ resLocals: res.locals, groupConfig, groupInfo, userCanAssignRoles }),
+      StudentAssessment({
+        resLocals: res.locals,
+        groupConfig,
+        groupInfo,
+        userCanAssignRoles,
+        customHonorCode,
+      }),
     );
   }),
 );
@@ -140,18 +161,21 @@ router.post(
       const time_limit_min =
         res.locals.assessment.type === 'Exam' ? res.locals.authz_result.time_limit_min : null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
-      const assessment_instance_id = await makeAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.assessment.group_work,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.mode,
+      const assessment_instance_id = await makeAssessmentInstance({
+        assessment: res.locals.assessment,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        mode: res.locals.authz_data.mode,
         time_limit_min,
-        res.locals.req_date,
+        date: res.locals.req_date,
         client_fingerprint_id,
-      );
+      });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
     } else if (req.body.__action === 'join_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_join) {
+        throw new HttpStatusError(403, 'You are not authorized to join a group.');
+      }
       await joinGroup(
         req.body.join_code,
         res.locals.assessment.id,
@@ -166,8 +190,12 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_create) {
+        throw new HttpStatusError(403, 'You are not authorized to create a group.');
+      }
       await createGroup(
-        req.body.groupName,
+        groupConfig.student_authz_choose_name ? req.body.group_name : null,
         res.locals.assessment.id,
         [res.locals.user.uid],
         res.locals.authn_user.user_id,
@@ -195,6 +223,10 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_leave) {
+        throw new HttpStatusError(403, 'You are not authorized to leave your group.');
+      }
       await leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,

@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
-
-import { features } from '../../lib/features/index.js';
 import authnMiddleware from '../../middlewares/authn.js';
 import csrfToken from '../../middlewares/csrfToken.js';
 import lti13Auth from '../auth/lti13/lti13Auth.js';
@@ -14,22 +11,6 @@ import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNav
 import lti13Jwks from '../pages/lti13Jwks/lti13Jwks.js';
 
 const router = Router({ mergeParams: true });
-
-router.use(
-  '/:lti13_instance_id/',
-  asyncHandler(async (req, res, next) => {
-    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-    if (
-      await features.enabled('lti13', {
-        institution_id: lti13_instance.institution_id,
-      })
-    ) {
-      next();
-    } else {
-      throw new error.HttpStatusError(403, 'Access denied. LTI 1.3 feature not enabled');
-    }
-  }),
-);
 
 router.use('/:lti13_instance_id/config', lti13Config);
 router.use('/:lti13_instance_id/jwks', lti13Jwks);

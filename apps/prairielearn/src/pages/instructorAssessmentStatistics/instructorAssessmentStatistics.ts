@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
@@ -12,12 +12,12 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   AssessmentScoreHistogramByDateSchema,
   DurationStatSchema,
+  type Filenames,
   InstructorAssessmentStatistics,
   UserScoreSchema,
-  type Filenames,
 } from './instructorAssessmentStatistics.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function getFilenames(locals: Record<string, any>): Filenames {

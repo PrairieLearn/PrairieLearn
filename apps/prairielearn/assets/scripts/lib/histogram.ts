@@ -1,4 +1,4 @@
-import { scaleLinear, axisBottom, axisLeft, select } from 'd3';
+import { axisBottom, axisLeft, scaleLinear, select } from 'd3';
 
 export function histogram(
   selector: HTMLElement,

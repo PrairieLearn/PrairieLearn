@@ -1,11 +1,11 @@
-import { flash, type FlashMessageType } from '@prairielearn/flash';
-import { html, type HtmlValue, unsafeHtml } from '@prairielearn/html';
+import { type FlashMessageType, flash } from '@prairielearn/flash';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
 import { IssueBadge } from './IssueBadge.html.js';
-import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
+import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
 
@@ -46,11 +46,18 @@ export function Navbar({
         `
       : ''}
 
-    <div class="container-fluid bg-primary">
-      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
-        Skip to main content
+    <nav
+      class="container-fluid bg-primary visually-hidden-focusable"
+      aria-label="Skip link and accessibility guide"
+    >
+      <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        class="d-inline-flex p-2 m-2 text-white"
+      >
+        Accessibility guide
       </a>
-    </div>
+    </nav>
 
     ${config.announcementHtml
       ? html`
@@ -228,6 +235,7 @@ function UserDropdownMenu({
           id="navbarDropdown"
           href="#"
           role="button"
+          data-bs-auto-close="outside"
           data-bs-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -262,7 +270,7 @@ function UserDropdownMenu({
                 <div class="dropdown-divider"></div>
               `
             : ''}
-          ${!authz_data || authz_data?.mode !== 'Exam'
+          ${!authz_data || authz_data?.mode === 'Public'
             ? html`
                 <a class="dropdown-item" href="${config.urlPrefix}/request_course">
                   Course Requests
@@ -329,6 +337,7 @@ function FlashMessages() {
 function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   const {
     viewType,
+    course,
     course_instance,
     authz_data,
     assessment,
@@ -336,6 +345,12 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     assessment_instance,
     urlPrefix,
   } = resLocals;
+
+  // If we're working with an example course, only allow changing the effective
+  // user if the user is an administrator.
+  if (course?.example_course && !authz_data?.is_administrator) {
+    return '';
+  }
 
   // Only show "View type" menu(s) if the following two things are true:
   // - The authn user was given access to a course instance (so, both viewType and authz_data also exist).
@@ -509,7 +524,14 @@ function AuthnOverrides({
   resLocals: Record<string, any>;
   navbarType: NavbarType;
 }) {
-  const { authz_data, urlPrefix, course_instance, course } = resLocals;
+  const { authz_data, urlPrefix, course, course_instance } = resLocals;
+
+  // If we're working with an example course, only allow changing the effective
+  // user if the user is an administrator.
+  if (course?.example_course && !config.devMode && !authz_data?.is_administrator) {
+    return '';
+  }
+
   if (
     !authz_data?.authn_has_course_permission_preview &&
     !authz_data?.authn_has_course_instance_permission_view
@@ -540,12 +562,12 @@ function AuthnOverrides({
     <h6 class="dropdown-header">Effective user</h6>
 
     <form class="dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
+        aria-label="UID"
       />
       <button
         type="submit"

@@ -1,8 +1,10 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
+import { CommentPopover } from '../../components/CommentPopover.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 export function InstructorInstanceAdminAccess({
@@ -13,6 +15,9 @@ export function InstructorInstanceAdminAccess({
   accessRules: CourseInstanceAccessRule[];
 }) {
   const { authz_data, course_instance } = resLocals;
+  const showComments = accessRules.some((access_rule) =>
+    isRenderableComment(access_rule.json_comment),
+  );
 
   return PageLayout({
     resLocals,
@@ -41,6 +46,9 @@ export function InstructorInstanceAdminAccess({
           <table class="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
+                ${showComments
+                  ? html`<th style="width: 1%"><span class="visually-hidden">Comments</span></th>`
+                  : ''}
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
@@ -53,6 +61,7 @@ export function InstructorInstanceAdminAccess({
                   accessRule,
                   timeZone: course_instance.display_timezone,
                   hasCourseInstancePermissionView: authz_data.has_course_instance_permission_view,
+                  showComments,
                 }),
               )}
             </tbody>
@@ -67,13 +76,16 @@ function AccessRuleRow({
   accessRule,
   timeZone,
   hasCourseInstancePermissionView,
+  showComments,
 }: {
   accessRule: CourseInstanceAccessRule;
   timeZone: string;
   hasCourseInstancePermissionView: boolean;
+  showComments: boolean;
 }) {
   return html`
     <tr>
+      ${showComments ? html`<td>${CommentPopover(accessRule.json_comment)}</td>` : ''}
       <td>
         ${accessRule.uids == null
           ? html`&mdash;`

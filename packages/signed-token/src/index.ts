@@ -41,7 +41,7 @@ export function getCheckedSignedTokenData(
   debug(`getCheckedSignedTokenData(): token = ${token}`);
   debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
   debug(`getCheckedSignedTokenData(): options = ${JSON.stringify(options)}`);
-  if (!_.isString(token)) {
+  if (typeof token !== 'string') {
     debug('getCheckedSignedTokenData(): FAIL - token is not string');
     return null;
   }

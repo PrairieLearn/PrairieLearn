@@ -115,3 +115,6 @@ coverage.xml
 
 ## v8 crash reports
 isolate-*-v8.log
+
+## ESLint cache
+.eslintcache

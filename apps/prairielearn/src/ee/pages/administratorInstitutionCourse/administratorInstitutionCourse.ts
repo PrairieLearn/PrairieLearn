@@ -10,8 +10,8 @@ import { insertAuditLog } from '../../../models/audit-log.js';
 import { getInstitution } from '../../lib/institution.js';
 
 import {
-  CourseInstanceRowSchema,
   AdministratorInstitutionCourse,
+  CourseInstanceRowSchema,
 } from './administratorInstitutionCourse.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);

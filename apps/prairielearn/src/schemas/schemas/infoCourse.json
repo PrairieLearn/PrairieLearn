@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -24,9 +24,8 @@
       "type": "string"
     },
     "timezone": {
-      "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
-      "type": "string",
-      "default": "America/Chicago"
+      "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred.",
+      "type": "string"
     },
     "options": {
       "description": "Options for this course.",
@@ -35,28 +34,28 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+          "$ref": "#/definitions/CommentJsonSchema"
         },
         "useNewQuestionRenderer": {
-          "description": "Feature flag to enable the new question renderer.",
+          "description": "[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.",
           "type": "boolean",
-          "default": false
+          "deprecated": true
         },
         "devModeFeatures": {
           "description": "Feature flags to enable/disable in development mode.",
           "anyOf": [
-            {
-              "type": "object",
-              "additionalProperties": {
-                "type": "boolean"
-              }
-            },
             {
               "description": "Legacy format; use an object instead.",
               "type": "array",
               "items": {
                 "description": "A single feature flag.",
                 "type": "string"
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
               }
             }
           ]
@@ -73,7 +72,7 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "abbreviation": {
             "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
@@ -88,7 +87,7 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           }
         }
       }
@@ -116,24 +115,20 @@
       "description": "Question topics (visible to students).",
       "type": "array",
       "items": {
-        "description": "A single assessment set description.",
+        "description": "A single topic, can represent a unit of learning (e.g. 'vectors').",
         "type": "object",
         "required": ["name", "color"],
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
-          },
-          "shortName": {
-            "description": "Short name (preferably 2 to 7 characters).",
-            "type": "string"
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the topic.",
@@ -152,7 +147,7 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "shortName": {
             "description": "Short name (preferably 2 to 7 characters).",
@@ -163,7 +158,7 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/color"
+            "$ref": "#/definitions/ColorJsonSchema"
           },
           "description": {
             "description": "Description of the tag.",
@@ -193,8 +188,9 @@
     }
   },
   "definitions": {
-    "color": {
+    "ColorJsonSchema": {
       "description": "A color name.",
+      "type": "string",
       "enum": [
         "red1",
         "red2",
@@ -226,6 +222,22 @@
         "gray1",
         "gray2",
         "gray3"
+      ]
+    },
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
       ]
     }
   }

@@ -1,6 +1,6 @@
 import { type Socket, io } from 'socket.io-client';
 
-import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -10,6 +10,7 @@ import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
+import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -32,23 +33,7 @@ onDocumentReady(() => {
   });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-  if (copyQuestionForm) {
-    const courseSelect = copyQuestionForm.querySelector<HTMLSelectElement>(
-      'select[name="to_course_id"]',
-    );
-    courseSelect?.addEventListener('change', () => {
-      const option = courseSelect.selectedOptions[0];
-
-      if (option) {
-        copyQuestionForm.action = option?.dataset.copyUrl ?? '';
-        copyQuestionForm
-          .querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]')
-          .forEach((input) => {
-            input.value = option?.dataset.csrfToken ?? '';
-          });
-      }
-    });
-  }
+  copyContentModal(copyQuestionForm);
 });
 
 function externalGradingLiveUpdate() {
@@ -118,9 +103,9 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
 }
 
 function fetchResults(submissionId: string) {
-  $('#submissionInfoModal-' + submissionId).modal('hide');
+  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
 
-  const submissionPanel = document.getElementById('submission-' + submissionId);
+  const submissionPanel = document.getElementById(`submission-${submissionId}`);
   if (!submissionPanel) return;
 
   const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
@@ -189,18 +174,20 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       // must be executed. Typical vanilla JS alternatives don't support
       // this kind of script.
       $(answerContainer).html(msg.answerPanel);
-      mathjaxTypeset();
+      mathjaxTypeset([answerContainer]);
       answerContainer.closest('.grading-block')?.classList.remove('d-none');
     }
   }
 
   if (msg.submissionPanel) {
+    const submissionPanelSelector = `#submission-${submissionId}`;
     // Using jQuery here because msg.submissionPanel may contain scripts
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
-    $('#submission-' + submissionId).replaceWith(msg.submissionPanel);
-    mathjaxTypeset();
+    $(submissionPanelSelector).replaceWith(msg.submissionPanel);
+    mathjaxTypeset([document.querySelector(submissionPanelSelector) as HTMLElement]);
   }
+
   if (msg.questionScorePanel) {
     const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
 
@@ -212,12 +199,14 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
+
   if (msg.assessmentScorePanel) {
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
     if (assessmentScorePanel) {
       assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
     }
   }
+
   if (msg.questionPanelFooter) {
     const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
 
@@ -229,12 +218,14 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
+
   if (msg.questionNavNextButton) {
     const questionNavNextButton = document.getElementById('question-nav-next');
     if (questionNavNextButton) {
       questionNavNextButton.outerHTML = msg.questionNavNextButton;
     }
   }
+
   setupDynamicObjects();
 }
 

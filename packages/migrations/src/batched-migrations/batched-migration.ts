@@ -3,9 +3,9 @@ import { z } from 'zod';
 import {
   loadSqlEquiv,
   queryAsync,
+  queryOptionalRow,
   queryRow,
   queryRows,
-  queryOptionalRow,
 } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.filename);

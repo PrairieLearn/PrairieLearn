@@ -1,4 +1,5 @@
 FROM ubuntu:24.04
+ARG CACHEBUST=2025-05-15-14-16-41
 
 ENV DEBIAN_FRONTEND noninteractive
 COPY pre-install.sh /pre-install.sh
@@ -17,4 +18,4 @@ RUN /bin/bash /post-install.sh
 USER 1001
 ENV PL_USER prairielearner
 
-CMD /pl-gosu-helper.sh /start-vnc.sh
+CMD ["/pl-gosu-helper.sh", "/start-vnc.sh" ]

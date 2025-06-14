@@ -10,7 +10,7 @@ import { contains } from '@prairielearn/path-utils';
 
 import { getRuntimeDirectoryForCourse } from './chunks.js';
 import { type Config } from './config.js';
-import type { GradingJob, Submission, Variant, Question, Course } from './db-types.js';
+import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 
 export interface Grader {
   handleGradingRequest(
@@ -128,7 +128,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   // which Postgres doesn't like
   const dataStr = Buffer.isBuffer(rawData)
     ? rawData.toString('utf-8')
-    : _.isObject(rawData)
+    : typeof rawData === 'object'
       ? JSON.stringify(rawData)
       : rawData;
 
@@ -141,12 +141,12 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   }
 
   function replaceNull(d: any) {
-    if (_.isString(d)) {
+    if (typeof d === 'string') {
       // replace NULL with unicode replacement character
       return d.replace(/\0/g, '\ufffd');
-    } else if (_.isArray(d)) {
-      return _.map(d, (x) => replaceNull(x));
-    } else if (_.isObject(d)) {
+    } else if (Array.isArray(d)) {
+      return d.map((x) => replaceNull(x));
+    } else if (d != null && typeof d === 'object') {
       return _.mapValues(d, (x) => replaceNull(x));
     } else {
       return d;

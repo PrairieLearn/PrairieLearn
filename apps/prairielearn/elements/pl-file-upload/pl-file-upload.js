@@ -1,5 +1,3 @@
-/* eslint-env browser,jquery */
-
 (() => {
   function escapePath(path) {
     return path
@@ -137,11 +135,6 @@
         this.renderFileList();
 
         if (!isFromDownload) {
-          // Show the preview for the newly-uploaded file
-          const container = this.element.find(`li[data-file="${name}"]`);
-          container.find('.file-preview').addClass('show');
-          container.find('.file-preview-button').removeClass('collapsed');
-
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
           // disabled because we don't want students to see the prompt if they
@@ -261,8 +254,10 @@
               '"></div>',
           );
 
-          var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
-          $preview.append($error);
+          var $previewNotAvailable = $(
+            '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
+          );
+          $preview.append($previewNotAvailable);
 
           var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
@@ -290,6 +285,7 @@
                 URL.revokeObjectURL(url);
               });
               $preview.append($objectPreview);
+              this.expandPreviewForFile(fileName);
             } else {
               var fileContents = this.b64DecodeUnicode(fileData);
               if (!this.isBinary(fileContents)) {
@@ -298,18 +294,18 @@
                 $preview.find('code').text('Binary file not previewed.');
               }
               $codePreview.removeClass('d-none');
+              this.expandPreviewForFile(fileName);
             }
           } catch {
             const url = this.b64ToBlobUrl(fileData);
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');
+                this.expandPreviewForFile(fileName);
                 URL.revokeObjectURL(url);
               })
               .on('error', () => {
-                $error
-                  .text('Content preview is not available for this type of file.')
-                  .removeClass('d-none');
+                $previewNotAvailable.removeClass('d-none');
                 URL.revokeObjectURL(url);
               })
               .attr('src', url);
@@ -335,6 +331,12 @@
       );
       $alert.append(message);
       this.element.find('.messages').append($alert);
+    }
+
+    expandPreviewForFile(name) {
+      const container = this.element.find(`li[data-file="${name}"]`);
+      container.find('.file-preview').addClass('show');
+      container.find('.file-preview-button').removeClass('collapsed');
     }
 
     /**

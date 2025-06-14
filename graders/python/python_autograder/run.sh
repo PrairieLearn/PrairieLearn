@@ -8,8 +8,8 @@
 AG_DIR='/python_autograder'
 
 if [[ ! -d /grade ]]; then
-  echo "ERROR: /grade not found! Mounting may have failed."
-  exit 1
+    echo "ERROR: /grade not found! Mounting may have failed."
+    exit 1
 fi
 
 # the parent directory containing everything about this grading job
@@ -62,7 +62,7 @@ echo "[run] starting autograder"
 
 # randomly generate the name of the results file, so that someone can't guess and write to it
 # write it to a file that is then deleted, so that it can't get picked up by the student
-SECRET_NAME=$MERGE_DIR/`uuidgen`
+SECRET_NAME=$MERGE_DIR/$(uuidgen)
 echo -n "$SECRET_NAME" > $FILENAMES_DIR/output-fname.txt
 chmod +r $FILENAMES_DIR/output-fname.txt
 
@@ -75,13 +75,12 @@ rm -f $OUT_DIR/results.json
 
 # copy the results file from secret if it exists
 if [ -f "$SECRET_NAME" ]; then
-  mv "$SECRET_NAME" $OUT_DIR/results.json
+    mv "$SECRET_NAME" $OUT_DIR/results.json
 fi
 
 # if that didn't work, then print a last-ditch message
-if [ ! -s $OUT_DIR/results.json ]
-then
-  echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
+if [ ! -s $OUT_DIR/results.json ]; then
+    echo '{"succeeded": false, "score": 0.0, "message": "Your code could not be processed by the autograder. Please contact course staff and have them check the logs for this submission."}' > $OUT_DIR/results.json
 fi
 
 echo "[run] autograder completed"

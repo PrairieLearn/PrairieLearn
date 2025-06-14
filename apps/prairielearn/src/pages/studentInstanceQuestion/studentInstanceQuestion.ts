@@ -1,22 +1,18 @@
-import { Router, type Request, type Response } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import { gradeAssessmentInstance, canDeleteAssessmentInstance } from '../../lib/assessment.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { uploadFile, deleteFile } from '../../lib/file-store.js';
+import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
@@ -24,10 +20,7 @@ import { logPageView } from '../../middlewares/logPageView.js';
 import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
-import {
-  validateVariantAgainstQuestion,
-  selectVariantsByInstanceQuestion,
-} from '../../models/variant.js';
+import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
@@ -39,27 +32,6 @@ router.use(selectAndAuthzInstanceQuestion);
 router.use(studentAssessmentAccess);
 router.use(clientFingerprint);
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
-
-/**
- * Get a validated variant ID from a request, or throw an exception.
- *
- * This function assumes req.body.__variant_id has been sent by the client, but
- * it is currently untrusted. We check that it is a valid variant_id and
- * belongs to the authorized res.locals.instance_question_id and return it if
- * everything is ok. If anything is invalid or unauthorized, we throw an
- * exception.
- *
- * @returns The validated variant ID
- */
-async function getValidVariantId(req: Request, res: Response): Promise<string> {
-  return (
-    await validateVariantAgainstQuestion(
-      req.body.__variant_id,
-      res.locals.question.id,
-      res.locals.instance_question.id,
-    )
-  ).id;
-}
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
@@ -74,6 +46,19 @@ async function processFileUpload(req: Request, res: Response) {
   if (!req.file) {
     throw new HttpStatusError(400, 'No file uploaded');
   }
+
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
+
   await uploadFile({
     display_filename: req.file.originalname,
     contents: req.file.buffer,
@@ -84,7 +69,8 @@ async function processFileUpload(req: Request, res: Response) {
     user_id: res.locals.user.user_id,
     authn_user_id: res.locals.authn_user.user_id,
   });
-  return await getValidVariantId(req, res);
+
+  return variant.id;
 }
 
 async function processTextUpload(req: Request, res: Response) {
@@ -97,6 +83,19 @@ async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
+
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
+
   await uploadFile({
     display_filename: req.body.filename,
     contents: Buffer.from(req.body.contents),
@@ -107,7 +106,8 @@ async function processTextUpload(req: Request, res: Response) {
     user_id: res.locals.user.user_id,
     authn_user_id: res.locals.authn_user.user_id,
   });
-  return await getValidVariantId(req, res);
+
+  return variant.id;
 }
 
 async function processDeleteFile(req: Request, res: Response) {
@@ -120,6 +120,18 @@ async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
+
+  const variant = await selectAndAuthzVariant({
+    unsafe_variant_id: req.body.__variant_id,
+    variant_course: res.locals.course,
+    question_id: res.locals.question.id,
+    course_instance_id: res.locals.course_instance.id,
+    instance_question_id: res.locals.instance_question.id,
+    authz_data: res.locals.authz_data,
+    authn_user: res.locals.authn_user,
+    user: res.locals.user,
+    is_administrator: res.locals.is_administrator,
+  });
 
   // Check the requested file belongs to the current instance question
   const validFiles =
@@ -135,7 +147,7 @@ async function processDeleteFile(req: Request, res: Response) {
 
   await deleteFile(file.id, res.locals.authn_user.user_id);
 
-  return await getValidVariantId(req, res);
+  return variant.id;
 }
 
 async function validateAndProcessSubmission(req: Request, res: Response) {
@@ -154,7 +166,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
       'Your current group role does not give you permission to submit to this question.',
     );
   }
-  return await processSubmission(req, res, true);
+  return await processSubmission(req, res, { studentSubmission: true });
 }
 
 router.post(
@@ -238,13 +250,25 @@ router.post(
 );
 
 router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
+  '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   asyncHandler(async (req, res) => {
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.unsafe_variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      course_instance_id: res.locals.course_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+    });
+
     const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
+      unsafe_submission_id: req.params.unsafe_submission_id,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
-      variant_id: req.params.variant_id,
+      variant,
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
@@ -295,7 +319,13 @@ router.get(
     await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
-    await setQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
 
     res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
@@ -321,7 +351,6 @@ router.get(
         );
       }
     }
-    setRendererHeader(res);
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
@@ -334,6 +363,7 @@ router.get(
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,
+        questionCopyTargets,
       }),
     );
   }),

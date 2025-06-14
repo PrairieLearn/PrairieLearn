@@ -377,7 +377,7 @@ async function recomputeInstanceQuestions(
  * @param adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
  * @returns The ID and points of the created rubric grading.
  */
-async function insertRubricGrading(
+export async function insertRubricGrading(
   rubric_id: string,
   max_points: number,
   max_manual_points: number,
@@ -469,6 +469,7 @@ export async function updateInstanceQuestionScore(
   check_modified_at: string | null,
   score: InstanceQuestionScoreInput,
   authn_user_id: string,
+  is_ai_graded = false,
 ): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
@@ -614,6 +615,7 @@ export async function updateInstanceQuestionScore(
         {
           submission_id: current_submission.submission_id,
           authn_user_id,
+          grading_method: is_ai_graded ? 'AI' : 'Manual',
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
           score: new_score_perc == null ? null : new_score_perc / 100,
           auto_points: new_auto_points,
@@ -633,6 +635,7 @@ export async function updateInstanceQuestionScore(
           manual_rubric_grading_id,
           score: new_auto_score_perc == null ? null : new_auto_score_perc / 100,
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
+          is_ai_graded,
         });
       }
     }
@@ -651,6 +654,7 @@ export async function updateInstanceQuestionScore(
         max_points: current_submission.max_points,
         max_manual_points: current_submission.max_manual_points,
         max_auto_points: current_submission.max_auto_points,
+        is_ai_graded,
       });
 
       await sqldb.callAsync('assessment_instances_grade', [

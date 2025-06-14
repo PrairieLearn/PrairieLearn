@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -14,20 +16,19 @@ import {
 
 import {
   AssessmentSchema,
-  Lti13CourseInstanceSchema,
   Lti13AssessmentsSchema,
+  Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  syncLineitems,
-  getLineitems,
-  unlinkAssessment,
-  queryAndLinkLineitem,
-  createAndLinkLineitem,
-  validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
+  createAndLinkLineitem,
+  getLineitems,
+  queryAndLinkLineitem,
+  syncLineitems,
+  unlinkAssessment,
   updateLti13Scores,
 } from '../../lib/lti13.js';
 
@@ -39,15 +40,6 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-router.use(
-  asyncHandler(async (req, res, next) => {
-    if (!(await validateLti13CourseInstance(res.locals))) {
-      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
-    }
-    next();
-  }),
-);
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
@@ -83,7 +75,12 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      res.send(LineitemsInputs(await getLineitems(instance)));
+      try {
+        res.end(LineitemsInputs(await getLineitems(instance)));
+      } catch (error) {
+        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.error('LineitemsInputs error', error);
+      }
       return;
     }
 
@@ -290,7 +287,6 @@ router.post(
         await queryAsync(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
-        job.info('Done.');
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {

@@ -1,7 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -11,11 +10,10 @@ const locals: Record<string, any> = {};
 
 const assessmentPoints = 5;
 
-describe('API', function () {
-  this.timeout(60000);
+describe('API', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   helperExam.startExam(locals);
 
@@ -118,7 +116,7 @@ describe('API', function () {
   });
 
   describe('API endpoints', function () {
-    step('GET to API for assessments fails without token', async function () {
+    test.sequential('GET to API for assessments fails without token', async function () {
       locals.apiUrl = locals.baseUrl + '/api/v1';
       locals.apiCourseInstanceUrl = locals.apiUrl + '/course_instances/1';
       locals.apiAssessmentsUrl = locals.apiCourseInstanceUrl + '/assessments';
@@ -126,7 +124,7 @@ describe('API', function () {
       assert.equal(res.status, 401);
     });
 
-    step('GET to API for assessments fails with an incorrect token', async function () {
+    test.sequential('GET to API for assessments fails with an incorrect token', async function () {
       const res = await fetch(locals.apiAssessmentsUrl, {
         headers: {
           'Private-Token': '12345678-1234-1234-1234-1234567890ab',
@@ -135,25 +133,28 @@ describe('API', function () {
       assert.equal(res.status, 401);
     });
 
-    step('GET to API for assessments succeeds with the correct token', async function () {
-      const res = await fetch(locals.apiAssessmentsUrl, {
-        headers: {
-          'Private-Token': locals.api_token,
-        },
-      });
-      assert.equal(res.status, 200);
+    test.sequential(
+      'GET to API for assessments succeeds with the correct token',
+      async function () {
+        const res = await fetch(locals.apiAssessmentsUrl, {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
+        const json = (await res.json()) as any;
 
-      const assessment = json.find((o) => o.assessment_name === 'exam1-automaticTestSuite');
-      assert.exists(assessment);
-      assert.equal(assessment.assessment_label, 'E1');
+        const assessment = json.find((o) => o.assessment_name === 'exam1-automaticTestSuite');
+        assert.exists(assessment);
+        assert.equal(assessment.assessment_label, 'E1');
 
-      // Persist the assessment ID for later requests
-      locals.assessment_id = assessment.assessment_id;
-    });
+        // Persist the assessment ID for later requests
+        locals.assessment_id = assessment.assessment_id;
+      },
+    );
 
-    step('GET to API for single assesment succeeds', async function () {
+    test.sequential('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
 
@@ -170,7 +171,7 @@ describe('API', function () {
       assert.equal(json.assessment_label, 'E1');
     });
 
-    step('GET to API for assessment instances succeeds', async function () {
+    test.sequential('GET to API for assessment instances succeeds', async function () {
       locals.apiAssessmentInstancesUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_instances`;
 
@@ -191,7 +192,7 @@ describe('API', function () {
       locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
     });
 
-    step('GET to API for a single assessment instance succeeds', async function () {
+    test.sequential('GET to API for a single assessment instance succeeds', async function () {
       locals.apiAssessmentInstanceUrl =
         locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}`;
 
@@ -211,7 +212,7 @@ describe('API', function () {
       assert.equal(json.max_points, helperExam.assessmentMaxPoints);
     });
 
-    step('GET to API for assessment submissions succeeds', async function () {
+    test.sequential('GET to API for assessment submissions succeeds', async function () {
       locals.apiSubmissionsUrl =
         locals.apiCourseInstanceUrl +
         `/assessment_instances/${locals.assessment_instance_id}/submissions`;
@@ -231,7 +232,7 @@ describe('API', function () {
       locals.submission_id = json[0].submission_id;
     });
 
-    step('GET to API for single submission succeeds', async function () {
+    test.sequential('GET to API for single submission succeeds', async function () {
       locals.apiSubmissionUrl =
         locals.apiCourseInstanceUrl + `/submissions/${locals.submission_id}`;
 
@@ -249,7 +250,7 @@ describe('API', function () {
       assert.equal(json.instance_question_points, assessmentPoints);
     });
 
-    step('GET to API for gradebook', async function () {
+    test.sequential('GET to API for gradebook', async function () {
       locals.apiGradebookUrl = locals.apiCourseInstanceUrl + '/gradebook';
       const res = await fetch(locals.apiGradebookUrl, {
         headers: {
@@ -267,7 +268,7 @@ describe('API', function () {
       assert.equal(assessment.max_points, helperExam.assessmentMaxPoints);
     });
 
-    step('GET to API for assessment instance questions succeeds', async function () {
+    test.sequential('GET to API for assessment instance questions succeeds', async function () {
       locals.apiInstanceQuestionUrl =
         locals.apiCourseInstanceUrl +
         `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
@@ -282,7 +283,7 @@ describe('API', function () {
       assert.lengthOf(json, 7);
     });
 
-    step('GET to API for assessment access rules succeeds', async function () {
+    test.sequential('GET to API for assessment access rules succeeds', async function () {
       locals.apiAssessmentAccessRulesUrl =
         locals.apiCourseInstanceUrl +
         `/assessments/${locals.assessment_id}/assessment_access_rules`;
@@ -298,7 +299,7 @@ describe('API', function () {
       assert.lengthOf(json, 1);
     });
 
-    step('GET to API for course instance access rules succeeds', async function () {
+    test.sequential('GET to API for course instance access rules succeeds', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
         locals.apiCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
@@ -312,7 +313,7 @@ describe('API', function () {
       assert.lengthOf(json, 1);
     });
 
-    step('GET to API for course instance info succeeds', async function () {
+    test.sequential('GET to API for course instance info succeeds', async function () {
       const res = await fetch(locals.apiCourseInstanceUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -323,6 +324,16 @@ describe('API', function () {
       const json = (await res.json()) as any;
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
+    });
+
+    test.sequential('GET to API for course instance info fails in exam mode', async () => {
+      const res = await fetch(locals.apiCourseInstanceUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+          Cookie: 'pl_test_mode=Exam',
+        },
+      });
+      assert.equal(res.status, 403);
     });
   });
 });

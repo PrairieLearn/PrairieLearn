@@ -1,11 +1,15 @@
-FROM node:22-bookworm
+FROM node:24-bookworm
+ARG CACHEBUST=2025-05-15-14-16-41
 
-RUN apt-get update && apt-get upgrade -y
-RUN apt-get install -y emacs-nox vim tmux
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends emacs-nox vim tmux \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 COPY src /xterm
 
 WORKDIR /xterm
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile && yarn cache clean
 
 RUN useradd -m student
 ENTRYPOINT ["node", "server.js", "-w", "/home/student"]

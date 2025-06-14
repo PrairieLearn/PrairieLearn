@@ -1,6 +1,5 @@
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -15,7 +14,7 @@ export async function selectAndAuthzAssessmentInstance(req: Request, res: Respon
     req_date: res.locals.req_date,
   });
   if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
-  _.assign(res.locals, result.rows[0]);
+  Object.assign(res.locals, result.rows[0]);
 }
 
 export default asyncHandler(async (req, res, next) => {

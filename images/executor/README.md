@@ -34,28 +34,32 @@ docker run --rm -it -e DEBUG='*' prairielearn/executor:latest
 
 Once the container is running, paste the following and hit `Enter`:
 
-```
+<!-- prettier-ignore -->
+```json
 {"type":"core-element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"prepare","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"params":{},"correct_answers":{}}]}
 ```
 
 You should see the following printed to the console:
 
-```
+<!-- prettier-ignore -->
+```json
 {"data":{"params":{"ans":[{"key":"a","html":"correct"}]},"correct_answers":{"ans":[{"key":"a","html":"correct"}]}},"output":"","functionMissing":false}
 ```
 
 Now, try to render the element:
 
-```
+<!-- prettier-ignore -->
+```json
 {"type":"core-element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"render","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"params":{"ans":[{"key":"a","html":"correct"}]},"correct_answers":{"ans":[{"key":"a","html":"correct"}]},"submitted_answers":{},"format_errors":{},"partial_scores":{},"score":0,"feedback":{},"variant_seed":3121211659,"raw_submitted_answers":{},"editable":true,"panel":"question"}]}
 ```
 
 You should see the following printed to the console:
 
-```
+<!-- prettier-ignore -->
+```json
 {"data":"<script>\n    $(function(){\n        $('#pl-checkbox-19afb311-20b9-4505-b5ad-764166b6394f [data-bs-toggle=\"popover\"]').popover({\n            sanitize: false,\n            container: 'body',\n            template: '<div class=\"popover pl-checkbox-popover\" role=\"tooltip\"><div class=\"arrow\"></div><h3 class=\"popover-header\"></h3><div class=\"popover-body\"></div></div>',\n        });\n    });\n</script>\n\n\n<div class=\"d-block\">\n\n    <div class=\"form-check d-flex align-items-center py-1\">\n        <input class=\"form-check-input mt-0\" type=\"checkbox\"\n               name=\"ans\" value=\"a\" \n                id=\"ans-a\">\n\n        <label class=\"form-check-label d-flex align-items-center\" for=\"ans-a\">\n            <div class=\"pl-checkbox-key-label\">(a)</div>\n            <div class=\"mx-1\">correct</div>\n        </label>\n            \n    </div>\n    \n<span class=\"form-inline\">\n    <span id=\"pl-checkbox-19afb311-20b9-4505-b5ad-764166b6394f\" class=\"input-group pl-checkbox\">\n        <span> <small class=\"form-text text-muted\">Select all possible options that apply.</small> </span>\n        <a role=\"button\" class=\"btn btn-light btn-sm\" data-bs-toggle=\"popover\" data-bs-html=\"true\" title=\"Checkbox\" data-bs-content=\"You must select at least one option. You will receive a score of 100% if you select all options that are true and no options that are false. Otherwise, you will receive a score of 0%.\" data-bs-placement=\"auto\" data-bs-trigger=\"focus\" tabindex=\"0\">\n            <i class=\"fa fa-question-circle\" aria-hidden=\"true\"></i>\n        </a>\n    </span>\n</span>\n\n\n\n\n\n\n</div>","output":"","functionMissing":false}
 ```
 
-# Debugging
+## Debugging
 
 If you're using a Mac or Windows machine and you see workers exiting shortly after starting up, you might be running out of resources in the Docker VM. Workers use ~200MB of memory each, the memory limit on the Docker VM is 2GB by default, and PrairieLearn defaults to using one worker per CPU, so for machines with 10+ cores, you can easily exhaust the memory in the VM. Try reducing the number of workers via `"workersCount"` in `config.json`, or try increasing the memory limit of Docker.

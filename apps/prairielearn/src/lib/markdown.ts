@@ -1,4 +1,4 @@
-import type { Root as MdastRoot, Code, Html } from 'mdast';
+import type { Code, Html, Root as MdastRoot } from 'mdast';
 import { visit } from 'unist-util-visit';
 
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';

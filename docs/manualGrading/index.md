@@ -20,7 +20,7 @@ For questions that require manual grading, the question can be set up for manual
 
 Questions set to use only manual grading (i.e., with manual points but no auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored.
 
-It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question.md#question-infojson) in the question, like this:
+It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](../question/index.md#metadata-infojson) in the question, like this:
 
 ```json title="info.json"
 {
@@ -29,7 +29,7 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 }
 ```
 
-Any [elements](../elements.md) can be used in the [`question.html`](../question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
+Any [elements](../elements.md) can be used in the [`question.html`](../question/index.md#html-questionhtml) to write manually graded questions. All student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 
@@ -88,6 +88,15 @@ _WARNING_: note that some elements such as drawings or matrix elements may rely 
 The user interface for manual grading is built to encourage a workflow where all submissions for each individual question are graded together, instead of grading one full assessment instance at a time. This allows graders to focus on the specific issues associated to one question at a time, and provide more consistent grading across all assessments. Individual student submissions are tagged for manual grading if they have manual points assigned to them, or can be manually tagged by course staff. Once a submission is graded, the interface advances to the next submission for the same question.
 
 After students have completed their assessments, open the "Manual Grading" tab. This page will list all questions in this assessment, as well as the number of submissions that require grading. For questions that have at least one submission tagged for grading, the "Grade next submission" button will be shown, which will jump directly to one of the submissions that need to be graded. Alternatively, clicking on the question's title will open a list of all student answers for that question.
+
+!!! info "Order of student submissions"
+
+    The order in which student submissions are listed for a question is purposely not based on any deterministic information about the student or the submission data. Rather, submissions are listed in a stable pseudo-random order (i.e., the same order is used if the page is reloaded). Similarly, when a grader submits a grade or skips a submission, the next submission to be graded is based on the same order. Different questions on the same assessment will list the same set of students in a different order.
+
+    The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or group. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
+
+    - Wang, Zhihan (Helen) and Pei, Jiaxin and Li, Jun, [*30 Million Canvas Grading Records Reveal Widespread Sequential Bias and System-Induced Surname Initial Disparity*](https://ssrn.com/abstract=4603146) (2023).
+    - Goldbach, C., Sickmann, J., & Pitz, T. [*Sequential decision bias – evidence from grading exams*](https://doi.org/10.1080/00036846.2021.1976390). Applied Economics (2021), 54(32), 3727–3739.
 
 The list of student submissions for a question gives course staff the ability to tag individual student answers (or all answers for the question) to specific graders. This can be done by selecting the submissions to be tagged, then selecting the "Tag for grading" button and choosing the grader responsible for those submissions. Only staff members with [Editor permission for the course instance](../course/index.md#student-data-access-roles) are listed for tagging.
 

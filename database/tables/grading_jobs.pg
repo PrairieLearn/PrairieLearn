@@ -39,4 +39,5 @@ foreign-key constraints
     grading_jobs_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    ai_grading_jobs: FOREIGN KEY (grading_job_id) REFERENCES grading_jobs(id) ON UPDATE CASCADE ON DELETE CASCADE
     question_score_logs: FOREIGN KEY (grading_job_id) REFERENCES grading_jobs(id) ON UPDATE CASCADE ON DELETE CASCADE

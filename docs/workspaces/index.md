@@ -2,14 +2,6 @@
 
 Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code and JupyterLab. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
-## Supported browsers
-
-- [x] Chrome is supported
-- [x] Firefox is supported
-- [x] Safari is supported
-- [x] Edge Chromium (version >= 79) is supported
-- [ ] Edge Legacy (version < 79) is untested
-
 ## Directory structure
 
 ```text
@@ -31,7 +23,7 @@ questions
 `-- my_autograded_workspace   # for an externally graded workspace question
     +-- info.json             # metadata for my_autograded_workspace
     +-- question.html         # HTML template for my_autograded_workspace
-    +-- server.py             # secret server-side code for my_ungraded_workspace (optional)
+    +-- server.py             # secret server-side code for my_autograded_workspace (optional)
     |
     +-- clientFilesQuestion   # files accessible to the client web browser (optional)
     |   `-- fig1.png
@@ -63,7 +55,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
     - `?` matches any single character except path separators.
     - `[seq]` matches any character in `seq`.
-  - `args` (optional, default none): command line arguments to pass to the Docker image. May be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
+  - `args` (optional, default none): command line arguments to pass to the Docker image. It may be a string (e.g., `"--auth none"`) or an array of strings (e.g., `["--auth", "none"]`).
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
   - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
@@ -158,9 +150,9 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 ## Creating files in the workspace home directory
 
-Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
+Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question/index.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using Mustache-based template files or using [the `server.py` file in the question directory](../question/index.md#custom-generation-and-grading-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include Mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
 
 ```txt
 # ...
@@ -222,7 +214,7 @@ By default, `contents` is expected to be a string in UTF-8 format. To provide bi
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
-- Dynamic content from `_workspace_files` has highest precedence;
+- Dynamic content from `_workspace_files` has the highest precedence;
 
 - Files in the `workspaceTemplate/` directory are considered next;
 
@@ -237,6 +229,7 @@ PrairieLearn provides and maintains the following workspace images:
 - [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
 - [`prairielearn/workspace-vscode-base`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-base/): Basic VS Code without any additions (used to build the C/C++ and Python workspaces below)
 - [`prairielearn/workspace-vscode-cpp`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-cpp/): VS Code with C/C++ (using `gcc` and `g++`)
+- [`prairielearn/workspace-vscode-java`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-java/): VS Code with Java
 - [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.12
 - [`prairielearn/workspace-xtermjs`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
@@ -248,17 +241,17 @@ If you're using your own editor, you must ensure that it frequently autosaves an
 
 ## Running locally (on Docker)
 
-In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](../installing.md#support-for-external-graders-and-workspaces).
+In order to run workspaces in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](../installing.md#support-for-external-graders-and-workspaces).
 
 ## Developing with workspaces (in Docker)
 
-For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
+For development, run the Docker container as described in [Installing with local source code](../dev-guide/installingLocal.md) but also add the workspace-specific arguments described above to the Docker command line. Inside the container, run:
 
 ```sh
 make dev-all
 ```
 
-Alternatively, you can run `make dev-workspace-host` and `make dev` independently. For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/contrib/start_workspace_tmux.sh` that you might find useful.
+Alternatively, you can run `make dev-workspace-host` and `make dev` independently.
 
 ## Permissions in production
 
@@ -293,7 +286,7 @@ A variety of issues can prevent a workspace from loading, including antivirus so
 - **Try another browser**: Some browser extensions may interfere with workspace loading. If you have another browser installed, try loading the workspace in that browser. Also consider trying a private/incognito window, which will disable most extensions.
 - **Check the browser developer tools console tab**: Open the browser's developer tools and navigate to the "Console" tab. This may contain error messages that can help diagnose the issue.
   - On Chrome or Edge, you can open the developer tools by opening the three-dots menu in the top right corner, selecting "More tools", and then "Developer tools".
-  - On Safari, you have to turn on the developer tools first. In the menu bar, click "Safari" -> "Settings" -> "Advanced" and check "Show features for web developers". You can then open the developer tools by selecting "Develop" -> "Show Web Inspector".
+  - On Safari, you have to turn on the developer tools first. In the menu bar, click "Safari" ⇾ "Settings" ⇾ "Advanced" and check "Show features for web developers". You can then open the developer tools by selecting "Develop" ⇾ "Show Web Inspector".
   - On Firefox, you can open the developer tools by opening the Firefox menu in the top right corner, selecting "More tools", and then "Web Developer Tools".
 - **Check the browser developer tools network tab**: Using the steps above, open the developer tools and navigate to the "Network" tab. This tab will show all network requests made by the browser, including those made by the workspace. Look for requests that are taking a long time or failing. You may need to reload the page to see all requests. If you want to provide the PrairieLearn team with more information, you can save the network log to a HAR file and send it. _Note: The HAR file may contain sensitive information, so be careful when sharing it. Only share it with individuals that you trust._
   - On Chrome or Edge, click the downward-facing arrow on the Network tab menu bar (it has a tooltip with the text "Export HAR..." when you hover over it) and save the HAR file.

@@ -7,13 +7,13 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
+import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   type Course,
   DateFromISOString,
-  GradingJobSchema,
   IdSchema,
   IntervalSchema,
   type Question,
@@ -206,6 +206,15 @@ export async function saveSubmission(
         // if we have workspace files, encode them into _files
         if (zipPath != null) {
           const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+
+          // Up until this point, `raw_submitted_answer` was just a reference to
+          // the `submitted_answer` object. If we naively wrote to
+          // `submitted_answer._files`, we'd end up storing the files twice in
+          // the database. To avoid this, we'll create a deep copy of
+          // `raw_submitted_answer` to ensure that we don't end up with
+          // duplicate file entries.
+          submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
+
           if (!('_files' in submission.submitted_answer)) {
             submission.submitted_answer['_files'] = [];
           }
@@ -349,11 +358,7 @@ export async function gradeVariant(
     if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }
 
-  const grading_job = await sqldb.callRow(
-    'grading_jobs_insert',
-    [submission.id, authn_user_id],
-    GradingJobSchema,
-  );
+  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -396,29 +401,22 @@ export async function gradeVariant(
       courseData,
     );
 
-    const grading_job_post_update = await sqldb.callRow(
-      'grading_jobs_update_after_grading',
-      [
-        grading_job.id,
-        // `received_time` and `start_time` were already set when the
-        // grading job was inserted, so they'll remain unchanged.
-        // `finish_time` will be set to `now()` by this sproc.
-        null, // received_time
-        null, // start_time
-        null, // finish_time
-        data.submitted_answer,
-        data.format_errors,
-        !!data.gradable && !hasFatalIssue, // gradable
-        hasFatalIssue, // broken
-        data.params,
-        data.true_answer,
-        data.feedback,
-        data.partial_scores,
-        data.score,
-        data.v2_score,
-      ],
-      GradingJobSchema,
-    );
+    const grading_job_post_update = await updateGradingJobAfterGrading({
+      grading_job_id: grading_job.id,
+      // `received_time` and `start_time` were already set when the
+      // grading job was inserted, so they'll remain unchanged.
+      // `finish_time` will be set to `now()` by this function.
+      submitted_answer: data.submitted_answer,
+      format_errors: data.format_errors,
+      gradable: !!data.gradable && !hasFatalIssue,
+      broken: hasFatalIssue,
+      params: data.params,
+      true_answer: data.true_answer,
+      feedback: data.feedback,
+      partial_scores: data.partial_scores,
+      score: data.score,
+      v2_score: data.v2_score,
+    });
 
     // If the submission was marked invalid during grading the grading
     // job will be marked ungradable and we should bail here to prevent

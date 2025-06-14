@@ -1,6 +1,7 @@
 import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { TopicSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -12,6 +13,7 @@ interface DesiredTopic {
   name: string;
   color: string;
   description?: string | null;
+  comment?: CommentJson;
 }
 
 export async function sync(courseId: string, courseData: CourseData) {
@@ -50,8 +52,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     makeImplicitEntity: (name) => ({
       name,
       color: 'gray1',
-      description:
-        'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
+      description: name,
     }),
     comparisonProperties: ['color', 'description'],
     isInfoCourseValid,
@@ -64,7 +65,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         await queryAsync(sql.insert_topics, {
           course_id: courseId,
           topics: topicsToCreate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }
@@ -73,7 +74,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         await queryAsync(sql.update_topics, {
           course_id: courseId,
           topics: topicsToUpdate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }

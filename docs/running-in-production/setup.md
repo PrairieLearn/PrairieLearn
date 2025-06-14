@@ -10,7 +10,7 @@ PrairieLearn can also be run in production mode in a Docker container [using Doc
 
 ## Getting started
 
-Follow the steps to [install PrairieLearn natively](../installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
+Follow the steps to [install PrairieLearn natively](../dev-guide/installingNative.md), including installing dependencies. You can then run `NODE_ENV=production make start` and access PrairieLearn from port `3000`.
 
 ### Configuration
 
@@ -40,7 +40,7 @@ Read more in the [authentication documentation](./authentication.md).
 
 ### Admin User
 
-You will need to be an [Admin User](./admin-user.md) to setup PrairieLearn.
+You will need to be an [Admin User](./admin-user.md) to set up PrairieLearn.
 
 ## Productionalizing
 
@@ -58,4 +58,4 @@ Zero-downtime deploys are possible (we do them on [prairielearn.com](https://www
 
 ## Support
 
-Due to the custom nature of self-hosted installations and the difficulty associated with operating complex software in production, we do not offer any specific recommendations or guidance around deploying, operating, or scaling self-hosted installations. Over at [prairielearn.com](https://www.prairielearn.com/), we do what works best for the thousands of instructors and students who are using our hosting offering, and we'd love to work with you there once your self-hosted install becomes a burden instead of a joy.
+Due to the custom nature of self-hosted installations and the difficulty associated with operating complex software in production, we do not offer any specific recommendations or guidance around deploying, operating, or scaling self-hosted installations. Over at [prairielearn.com](https://www.prairielearn.com/), we do what works best for the thousands of instructors and students who are using our hosting offering, and we'd love to work with you there once your self-hosted installation becomes a burden instead of a joy.

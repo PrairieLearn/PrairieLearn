@@ -1,13 +1,18 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
@@ -45,7 +50,7 @@ A question may also have a \`server.py\` file that can randomly generate unique 
 
 Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
 
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters.
+If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
 
 If the question does not use random parameters, \`server.py\` can be omitted.
 
@@ -83,8 +88,12 @@ async function checkRender(
     course,
     user,
     authn_user: user, // We don't have a separate authn user in this case.
+    is_administrator: false,
   };
-  await getAndRenderVariant(null, null, locals);
+  await getAndRenderVariant(null, null, locals, {
+    // Needed so that we can read the error output below.
+    issuesLoadExtraData: true,
+  });
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
@@ -101,7 +110,6 @@ async function checkRender(
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
- * @param promptUserInput The user's indication of how to create student input boxes.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
@@ -109,7 +117,6 @@ async function checkRender(
 export async function makeContext(
   client: OpenAI,
   prompt: string,
-  promptUserInput: string | undefined,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
@@ -128,36 +135,28 @@ export async function makeContext(
         )
       : [];
 
-  const numElements = Math.max(5 - mandatoryElements.length, 0);
+  // The number of additional elements and documentation document chunks to include after accounting for all mandatory elements.
+  const numAdditionalDocs = Math.max(5 - mandatoryElements.length, 0);
 
   const docs = await queryRows(
     sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: numElements },
+    { embedding: vectorToString(embedding), limit: numAdditionalDocs },
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  // If a prompt specifies how user input is handled, try to find documentation for those types of input
-  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
-  if (promptUserInput !== undefined) {
-    const embeddingUserInput = await createEmbedding(
-      client,
-      promptUserInput,
-      openAiUserFromAuthn(authnUserId),
-    );
-
-    const elementDoc = await queryRow(
-      sql.select_nearby_documents_from_file,
-      {
-        embedding: vectorToString(embeddingUserInput),
-        doc_path: 'docs/elements.md',
-        limit: 1,
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
-    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
-      // Override the last (least relevant) doc.
-      docs[numElements - 1] = elementDoc;
-    }
+  // Ensure that documentation for at least one element is always included.
+  const elementDoc = await queryRow(
+    sql.select_nearby_documents_from_file,
+    {
+      embedding: vectorToString(embedding),
+      doc_path: 'docs/elements.md',
+      limit: 1,
+    },
+    QuestionGenerationContextEmbeddingSchema,
+  );
+  if (numAdditionalDocs > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+    // Override the last (least relevant) doc.
+    docs[numAdditionalDocs - 1] = elementDoc;
   }
 
   return docs
@@ -209,9 +208,7 @@ function extractFromCompletion(
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
- * @param promptGeneral The prompt for how to generate a question.
- * @param promptUserInput The prompt for how to take user input.
- * @param promptGrading The prompt for how to grade user input.
+ * @param prompt The prompt for how to generate a question.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
@@ -220,18 +217,14 @@ export async function generateQuestion({
   client,
   courseId,
   authnUserId,
-  promptGeneral,
-  promptUserInput,
-  promptGrading,
+  prompt,
   userId,
   hasCoursePermissionEdit,
 }: {
   client: OpenAI;
   courseId: string;
   authnUserId: string;
-  promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
+  prompt: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
 }): Promise<{
@@ -244,6 +237,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of tokens in the prompt provided to the LLM.
+   */
+  promptTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -253,15 +254,9 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    const userPrompt = `${promptGeneral}
-    
-    You should provide the following input methods for students to answer: ${promptUserInput}
-    
-    To calculate the right answer, you should: ${promptGrading}`;
+    job.info(`Prompt: "${prompt}"`);
 
-    job.info(`prompt is ${userPrompt}`);
-
-    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
+    const context = await makeContext(client, prompt, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -278,7 +273,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: prompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -324,21 +319,36 @@ Keep in mind you are not just generating an example; you are generating an actua
       creator_id: authnUserId,
     });
 
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
-      question_id: saveResults.question_id,
-      prompting_user_id: authnUserId,
-      prompt_type: 'initial',
-      user_prompt: userPrompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: serverJob.jobSequenceId,
-    });
+    const ai_question_generation_prompt_id = await queryRow(
+      sql.insert_ai_question_generation_prompt,
+      {
+        question_id: saveResults.question_id,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: prompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+        job_sequence_id: serverJob.jobSequenceId,
+      },
+      IdSchema,
+    );
+
     job.data['questionId'] = saveResults.question_id;
     job.data['questionQid'] = saveResults.question_qid;
+
+    job.data['promptTokens'] = completion.usage?.prompt_tokens;
+    job.data['completionTokens'] = completion.usage?.completion_tokens;
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId: ai_question_generation_prompt_id,
+      authnUserId,
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
+    });
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -357,7 +367,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        originalPrompt: userPrompt,
+        originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
@@ -379,6 +389,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 
@@ -454,7 +466,7 @@ async function regenInternal({
     tags = Array.from(traverseForTagNames(ast));
   }
 
-  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
+  const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
   const sysPrompt = `
 ${promptPreamble(context)}
@@ -513,19 +525,23 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
-    question_id: questionId,
-    prompting_user_id: authnUserId,
-    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-    user_prompt: revisionPrompt,
-    system_prompt: sysPrompt,
-    response: completion.choices[0].message.content,
-    html,
-    python,
-    errors,
-    completion,
-    job_sequence_id: jobSequenceId,
-  });
+  const ai_question_generation_prompt_id = await queryRow(
+    sql.insert_ai_question_generation_prompt,
+    {
+      question_id: questionId,
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html,
+      python,
+      errors,
+      completion,
+      job_sequence_id: jobSequenceId,
+    },
+    IdSchema,
+  );
 
   const files: Record<string, string> = {};
   if (results?.html) {
@@ -551,6 +567,16 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
     return;
   }
+
+  job.data['promptTokens'] = completion.usage?.prompt_tokens;
+  job.data['completionTokens'] = completion.usage?.completion_tokens;
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId: ai_question_generation_prompt_id,
+    authnUserId,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+  });
 
   job.data.html = html;
   job.data.python = python;
@@ -608,6 +634,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  promptTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -643,5 +671,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }

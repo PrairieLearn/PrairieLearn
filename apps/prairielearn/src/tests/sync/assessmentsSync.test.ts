@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -19,7 +19,13 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import type {
+  AssessmentJsonInput,
+  AssessmentSetJsonInput,
+  GroupRoleJsonInput,
+} from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -31,8 +37,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-): util.Assessment {
-  const assessmentSet = courseData.course.assessmentSets[0].name;
+): AssessmentJsonInput {
+  const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
     uuid: uuidv4(),
     type,
@@ -47,20 +53,20 @@ function makeAssessment(
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): util.AssessmentSet {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJsonInput;
 }
 
-function getGroupRoles(): util.GroupRole[] {
+function getGroupRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ];
+  ] satisfies GroupRoleJsonInput[];
 }
 
 function getPermission(permissions, groupRole, assessmentQuestion) {
@@ -96,10 +102,11 @@ async function findSyncedUndeletedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of assessments in subfolders', async () => {
     const courseData = util.getCourseData();
@@ -400,7 +407,6 @@ describe('Assessment syncing', () => {
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-
     const syncedData = await getSyncedAssessmentData('hwwithmanual1');
     assert.lengthOf(syncedData.zones, 1);
     assert.lengthOf(syncedData.alternative_groups, 2);
@@ -1783,7 +1789,7 @@ describe('Assessment syncing', () => {
       title: 'test zone',
       questions: [
         {
-          id: 'i do not exist',
+          id: 'i do not exist ',
           points: [1, 2, 3],
         },
       ],
@@ -1793,15 +1799,17 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions do not exist in this course: i do not exist/,
+      /The following questions do not exist in this course: "i do not exist "/,
     );
   });
 
-  describe('Test validating shared quesitons on sync', () => {
-    before('Temporarily enable validation of shared questions', () => {
+  describe('Test validating shared questions on sync', () => {
+    beforeAll(() => {
+      // Temporarily enable validation of shared questions
       config.checkSharingOnSync = true;
     });
-    after('Disable again for other tests', () => {
+    afterAll(() => {
+      // Disable again for other tests
       config.checkSharingOnSync = false;
     });
 
@@ -1849,7 +1857,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_errors,
-      /The following questions are used more than once: test/,
+      /The following questions are used more than once: "test"/,
     );
   });
 
@@ -2064,7 +2072,7 @@ describe('Assessment syncing', () => {
   it('creates entry in database in the case of a missing UUID', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     await util.writeAndSyncCourseData(courseData);
@@ -2080,7 +2088,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     const oldUuid = assessment.uuid;
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing UUID.
     delete assessment.uuid;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['missinguuid'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
@@ -2160,7 +2168,7 @@ describe('Assessment syncing', () => {
     // now change the UUID of the assessment, add an error and re-sync
     const newAssessment = { ...originalAssessment };
     newAssessment.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
-    // @ts-expect-error -- intentionally breaking the assessment
+    // @ts-expect-error -- Breaking assessment by removing title.
     delete newAssessment.title;
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['repeatedAssessment'] =
       newAssessment;
@@ -2298,20 +2306,19 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('fail');
     assert.isOk(syncedData.assessment.sync_errors);
-    console.log(syncedData.assessment.sync_errors);
     assert.match(
       syncedData.assessment?.sync_errors,
-      /The following questions are marked as draft and therefore cannot be used in assessments: __drafts__\/draft_1/,
+      /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
     );
   });
 
   describe('exam UUID validation', () => {
     let originalCheckAccessRulesExamUuid: boolean;
-    before(() => {
+    beforeAll(() => {
       originalCheckAccessRulesExamUuid = config.checkAccessRulesExamUuid;
       config.checkAccessRulesExamUuid = true;
     });
-    after(() => {
+    afterAll(() => {
       config.checkAccessRulesExamUuid = originalCheckAccessRulesExamUuid;
     });
 
@@ -2384,5 +2391,451 @@ describe('Assessment syncing', () => {
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.isNotOk(syncedAssessment?.sync_warnings);
     });
+  });
+  it('syncs JSON data for grade rate minutes correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.gradeRateMinutes = 1;
+    assessment.zones?.push({
+      title: 'zone 1',
+      gradeRateMinutes: 2,
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          gradeRateMinutes: 3,
+        },
+        {
+          points: 1,
+          gradeRateMinutes: 4,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              gradeRateMinutes: 5,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.json_grade_rate_minutes, 1);
+    assert.equal(syncedData.zones[0].json_grade_rate_minutes, 2);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.grade_rate_minutes, 3);
+    assert.equal(firstAssessmentQuestion?.json_grade_rate_minutes, 3);
+
+    const alternativeGroup = syncedData.alternative_groups.find((ag) => ag.number === 2);
+    assert.equal(alternativeGroup?.json_grade_rate_minutes, 4);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.equal(secondAssessmentQuestion?.grade_rate_minutes, 5);
+    assert.equal(secondAssessmentQuestion?.json_grade_rate_minutes, 5);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(thirdAssessmentQuestion?.grade_rate_minutes, 4);
+    assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
+  });
+
+  it('syncs JSON data for group role permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.groupWork = true;
+    assessment.groupRoles = [
+      {
+        name: 'Manager',
+        minimum: 1,
+        maximum: 1,
+        canAssignRoles: true,
+      },
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Reflector',
+        minimum: 1,
+        maximum: 1,
+      },
+      {
+        name: 'Contributor',
+      },
+    ];
+    assessment.canView = ['Manager'];
+    assessment.canSubmit = ['Recorder'];
+    assessment.zones?.push({
+      title: 'zone 1',
+      canView: ['Manager', 'Recorder', 'Contributor'],
+      canSubmit: ['Recorder', 'Contributor'],
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          canView: ['Contributor'],
+          canSubmit: ['Contributor'],
+        },
+        {
+          points: 1,
+          canView: ['Manager'],
+          canSubmit: ['Recorder'],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.deepEqual(syncedData.assessment.json_can_view, ['Manager']);
+    assert.deepEqual(syncedData.assessment.json_can_submit, ['Recorder']);
+    assert.deepEqual(syncedData.zones[0].json_can_view, ['Manager', 'Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.zones[0].json_can_submit, ['Recorder', 'Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_view, ['Contributor']);
+    assert.deepEqual(syncedData.alternative_groups[0].json_can_submit, ['Contributor']);
+    assert.equal(syncedData.alternative_groups[0].json_has_alternatives, false);
+    assert.equal(syncedData.alternative_groups[1].json_has_alternatives, true);
+  });
+
+  it('syncs advanceScorePerc correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.advanceScorePerc = 50;
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 1,
+          },
+        ],
+      },
+      {
+        title: 'zone 2',
+        advanceScorePerc: 60,
+        questions: [
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 1,
+            advanceScorePerc: 70,
+          },
+          {
+            advanceScorePerc: 80,
+            alternatives: [
+              {
+                id: util.MANUAL_GRADING_QUESTION_ID,
+                points: 1,
+              },
+              {
+                id: util.WORKSPACE_QUESTION_ID,
+                points: 1,
+                advanceScorePerc: 90,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.equal(syncedData.assessment.advance_score_perc, 50);
+    assert.equal(syncedData.zones[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[0].effective_advance_score_perc, 50);
+    assert.equal(syncedData.zones[1].advance_score_perc, 60);
+    assert.equal(syncedData.assessment_questions[1].advance_score_perc, 70);
+    assert.equal(syncedData.assessment_questions[1].effective_advance_score_perc, 70);
+    assert.equal(syncedData.alternative_groups[2].advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[2].advance_score_perc, null);
+    assert.equal(syncedData.assessment_questions[2].effective_advance_score_perc, 80);
+    assert.equal(syncedData.assessment_questions[3].advance_score_perc, 90);
+    assert.equal(syncedData.assessment_questions[3].effective_advance_score_perc, 90);
+  });
+
+  it('syncs string comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = 'assessment comment';
+    assessment.allowAccess = [
+      {
+        comment: 'access rule',
+      },
+    ];
+    assessment.zones?.push({
+      title: 'zone 1',
+      comment: 'zone comment',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          comment: 'question comment',
+        },
+        {
+          points: 1,
+          comment: 'alternative group comment',
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              comment: 'alternative question comment',
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.equal(syncedData.assessment.json_comment, 'assessment comment');
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.equal(rulesForAssessmentWithString[0].json_comment, 'access rule');
+
+    assert.equal(syncedData.zones[0].json_comment, 'zone comment');
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.equal(firstAssessmentQuestion?.json_comment, 'question comment');
+    assert.equal(syncedData.alternative_groups[1].json_comment, 'alternative group comment');
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.equal(alternativeQuestion?.json_comment, 'alternative question comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = ['assessment comment 1', 'assessment comment 2'];
+    assessment.allowAccess = [
+      {
+        comment: ['access rule comment 1', 'access rule comment 2'],
+      },
+    ];
+    assessment.zones?.push({
+      title: 'zone 1',
+      comment: ['zone comment 1', 'zone comment 2'],
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          comment: ['question comment 1', 'question comment 2'],
+        },
+        {
+          points: 1,
+          comment: ['alternative group comment 1', 'alternative group comment 2'],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              comment: ['alternative question comment 1', 'alternative question comment 2'],
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.deepEqual(syncedData.assessment.json_comment, [
+      'assessment comment 1',
+      'assessment comment 2',
+    ]);
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.deepEqual(rulesForAssessmentWithString[0].json_comment, [
+      'access rule comment 1',
+      'access rule comment 2',
+    ]);
+
+    assert.deepEqual(syncedData.zones[0].json_comment, ['zone comment 1', 'zone comment 2']);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.deepEqual(firstAssessmentQuestion?.json_comment, [
+      'question comment 1',
+      'question comment 2',
+    ]);
+    assert.deepEqual(syncedData.alternative_groups[1].json_comment, [
+      'alternative group comment 1',
+      'alternative group comment 2',
+    ]);
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.deepEqual(alternativeQuestion?.json_comment, [
+      'alternative question comment 1',
+      'alternative question comment 2',
+    ]);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.comment = {
+      comment: 'assessment comment',
+      comment2: 'assessment comment 2',
+    };
+    assessment.allowAccess = [
+      {
+        comment: {
+          comment: 'access rule comment',
+          comment2: 'access rule comment 2',
+        },
+      },
+    ];
+    assessment.zones?.push({
+      title: 'zone 1',
+      comment: {
+        comment: 'zone comment',
+        comment2: 'zone comment 2',
+      },
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 1,
+          comment: {
+            comment: 'question comment',
+            comment2: 'question comment 2',
+          },
+        },
+        {
+          points: 1,
+          comment: {
+            comment: 'alternative group comment',
+            comment2: 'alternative group comment 2',
+          },
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              comment: {
+                comment: 'alternative question comment',
+                comment2: 'alternative question comment 2',
+              },
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testHomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('testHomework');
+    assert.deepEqual(syncedData.assessment.json_comment, {
+      comment: 'assessment comment',
+      comment2: 'assessment comment 2',
+    });
+
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessmentWithString = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedData.assessment.id),
+    );
+    assert.lengthOf(rulesForAssessmentWithString, 1);
+    assert.deepEqual(rulesForAssessmentWithString[0].json_comment, {
+      comment: 'access rule comment',
+      comment2: 'access rule comment 2',
+    });
+
+    assert.deepEqual(syncedData.zones[0].json_comment, {
+      comment: 'zone comment',
+      comment2: 'zone comment 2',
+    });
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID,
+    );
+    assert.deepEqual(firstAssessmentQuestion?.json_comment, {
+      comment: 'question comment',
+      comment2: 'question comment 2',
+    });
+    assert.deepEqual(syncedData.alternative_groups[1].json_comment, {
+      comment: 'alternative group comment',
+      comment2: 'alternative group comment 2',
+    });
+    const alternativeQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+    );
+    assert.deepEqual(alternativeQuestion?.json_comment, {
+      comment: 'alternative question comment',
+      comment2: 'alternative question comment 2',
+    });
+  });
+
+  it('records a warning for UIDs containing commas or spaces', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess = [
+      {
+        startDate: '2024-01-01T00:00:00',
+        endDate: '3024-01-31T00:00:00',
+        uids: ['foo@example.com,bar@example.com', 'biz@example.com baz@example.com'],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === 'testAssessment');
+    assert.isOk(syncedAssessment);
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected whitespace: "biz@example.com baz@example.com"/,
+    );
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
+    );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === util.ASSESSMENT_ID);
+    assert.isOk(syncedAssessment);
+    assert.match(syncedAssessment?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

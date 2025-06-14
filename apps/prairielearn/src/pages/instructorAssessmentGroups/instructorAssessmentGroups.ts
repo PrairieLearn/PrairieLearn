@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { GroupConfigSchema } from '../../lib/db-types.js';
-import { uploadInstanceGroups, randomGroups } from '../../lib/group-update.js';
+import { randomGroups, uploadInstanceGroups } from '../../lib/group-update.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -20,11 +20,11 @@ import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { parseUidsString } from '../../lib/user.js';
 
 import {
-  InstructorAssessmentGroups,
   GroupUsersRowSchema,
+  InstructorAssessmentGroups,
 } from './instructorAssessmentGroups.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**

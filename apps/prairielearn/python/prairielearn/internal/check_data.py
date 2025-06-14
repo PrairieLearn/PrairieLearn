@@ -82,6 +82,11 @@ PROPS: dict[str, PropInfo] = {
         "present_phases": frozenset({"render"}),
         "edit_phases": frozenset(),
     },
+    "ai_grading": {
+        "type": "boolean",
+        "present_phases": frozenset({"render"}),
+        "edit_phases": frozenset(),
+    },
     "panel": {
         "type": "string",
         "present_phases": frozenset({"render"}),
@@ -142,7 +147,7 @@ def check_prop(
         raise ValueError(f'Expected data["{prop}"] to be an integer')
     if value_type == "string" and not isinstance(new_value, str):
         raise ValueError(f'Expected data["{prop}"] to be a string')
-    if value_type == "number" and not isinstance(new_value, int | float):
+    if value_type == "number" and not isinstance(new_value, (int, float)):
         raise ValueError(f'Expected data["{prop}"] to be a number')
     if value_type == "boolean" and not isinstance(new_value, bool):
         raise ValueError(f'Expected data["{prop}"] to be a boolean')

@@ -3,16 +3,20 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { formatTimezone, type Timezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,
+  aiQuestionGenerationEnabled,
+  aiQuestionGenerationCourseToggleEnabled,
   coursePathExists,
   courseInfoExists,
   availableTimezones,
   origHash,
 }: {
   resLocals: Record<string, any>;
+  aiQuestionGenerationEnabled: boolean;
+  aiQuestionGenerationCourseToggleEnabled: boolean;
   coursePathExists: boolean;
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
@@ -26,7 +30,7 @@ export function InstructorCourseAdminSettings({
       page: 'course_admin',
       subPage: 'settings',
     },
-    headContent: [compiledScriptTag('instructorCourseAdminSettingsClient.ts')],
+    headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
     content: html`
       ${CourseSyncErrorsAndWarnings({
         authz_data: resLocals.authz_data,
@@ -114,8 +118,12 @@ export function InstructorCourseAdminSettings({
                 )}
               </select>
               <small class="form-text text-muted">
-                The allowable timezones are from the tz database. It's best to use a city-based
-                timezone that has the same times as you.
+                The allowable timezones are from the
+                <a
+                  href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
+                  target="_blank"
+                  >tz database</a
+                >. It's best to use a city-based timezone that has the same times as you.
               </small>
             </div>
             <div class="mb-3">
@@ -183,6 +191,32 @@ export function InstructorCourseAdminSettings({
                 Show the getting started checklist
               </label>
             </div>
+            ${aiQuestionGenerationCourseToggleEnabled
+              ? html`
+                  <div class="form-check mb-3">
+                    <input
+                      type="checkbox"
+                      class="form-check-input"
+                      name="ai_question_generation"
+                      value="1"
+                      id="ai_question_generation_toggle"
+                      ${aiQuestionGenerationEnabled ? 'checked' : ''}
+                    />
+                    <label
+                      class="form-check-label d-flex align-items-center"
+                      for="ai_question_generation_toggle"
+                    >
+                      Enable AI question generation
+                      <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
+                        Beta
+                      </span>
+                    </label>
+                    <div class="small text-muted">
+                      Generate questions with natural language using AI.
+                    </div>
+                  </div>
+                `
+              : ''}
             ${EditActions({
               coursePathExists,
               courseInfoExists,

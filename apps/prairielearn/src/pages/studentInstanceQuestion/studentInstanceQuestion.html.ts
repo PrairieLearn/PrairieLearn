@@ -2,8 +2,8 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import {
-  RegenerateInstanceModal,
   RegenerateInstanceAlert,
+  RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -14,6 +14,7 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
 
@@ -22,11 +23,13 @@ export function StudentInstanceQuestion({
   userCanDeleteAssessmentInstance,
   assignedGrader,
   lastGrader,
+  questionCopyTargets,
 }: {
   resLocals: Record<string, any>;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
@@ -100,7 +103,7 @@ export function StudentInstanceQuestion({
                       </div>
                     </div>
                   `
-                : QuestionContainer({ resLocals, questionContext })}
+                : QuestionContainer({ resLocals, questionContext, questionCopyTargets })}
             </div>
 
             <div class="col-lg-3 col-sm-12">

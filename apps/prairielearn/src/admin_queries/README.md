@@ -2,7 +2,8 @@
 
 Each query must have the following files:
 
-- A JSON file in the [`adminQuery` JSON Schema](../schemas/schemas/adminQuery.json).
+- A JSON file conforming to the [`adminQuery` Zod Schema](../schemas/adminQuery.ts) ([`adminQuery` documentation](https://prairielearn.readthedocs.io/en/latest/schemas/adminQuery/)).
+
 - A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
 - Optionally, a SQL file with one or more queries used in the query.
 

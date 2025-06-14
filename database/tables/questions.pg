@@ -14,13 +14,15 @@ columns
     external_grading_timeout: integer
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
     id: bigint not null default nextval('questions_id_seq'::regclass)
+    json_comment: jsonb
+    json_external_grading_comment: jsonb
+    json_workspace_comment: jsonb
     number: integer
     options: jsonb
     partial_credit: boolean default true
     qid: text
     share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false
-    shared_publicly: boolean not null default false
     show_correct_answer: boolean default true
     single_variant: boolean default false
     sync_errors: text
@@ -44,7 +46,7 @@ indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
     questions_course_id_number_nondeleted_key: UNIQUE USING btree (course_id, uuid) WHERE deleted_at IS NULL
     questions_course_id_uuid_key: UNIQUE USING btree (course_id, uuid)
-    questions_course_id_shared_publicly_idx: USING btree (course_id, shared_publicly)
+    questions_course_id_publicly_shared_idx: USING btree (course_id) WHERE deleted_at IS NULL AND (share_publicly = true OR share_source_publicly = true)
     questions_template_directory_idx: USING btree (template_directory)
     questions_topic_id_idx: USING btree (topic_id)
 

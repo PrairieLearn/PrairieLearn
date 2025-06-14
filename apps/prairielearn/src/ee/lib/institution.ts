@@ -2,12 +2,12 @@ import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielea
 
 import { config } from '../../lib/config.js';
 import {
-  AuthnProviderSchema,
-  InstitutionSchema,
-  SamlProviderSchema,
   type AuthnProvider,
+  AuthnProviderSchema,
   type Institution,
+  InstitutionSchema,
   type SamlProvider,
+  SamlProviderSchema,
 } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

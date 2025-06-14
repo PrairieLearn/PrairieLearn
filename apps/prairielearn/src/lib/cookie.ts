@@ -1,4 +1,4 @@
-import type { Request, Response, CookieOptions } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 
 import { config } from './config.js';
 

@@ -20,7 +20,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click the button `Add course instance`.
 
-- click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name, for example, `Fa24`.
+- click the button `Change CIID` to change the course instance ID name. We typically recommend using a short version of the course instance name, for example, `Fa24`.
 
 - click the `Edit` button next to `infoCourseInstance.json`.
 
@@ -93,7 +93,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 ### Change the content of the question
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
+To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question/index.md#html-questionhtml).
 
 - go to the `Files` tab.
 
@@ -143,7 +143,7 @@ Note that this question does not use any server side code, and for that reason, 
 
 ### Change the content of the question
 
-We will add randomization to the previous question, using the file [server.py](question.md#question-serverpy)
+We will add randomization to the previous question, using the file [server.py](question/index.md#custom-generation-and-grading-serverpy)
 
 - go to the `Files` tab.
 
@@ -237,7 +237,7 @@ Before you create an assessment, make sure you are in the desired course instanc
   }
   ```
 
-- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
+- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (e.g. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
 
 - change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
 
@@ -288,6 +288,6 @@ Learn more:
 
 - [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
-- [Different ways to setup an assessment](assessment/index.md)
+- [Different ways to set up an assessment](assessment/index.md)
 
 - [Detailed list of PrairieLearn elements](elements.md)

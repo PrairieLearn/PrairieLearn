@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { html, joinHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
@@ -88,7 +88,7 @@ export function InstructorIssues({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledStylesheetTag('instructorIssues.css')],
+    headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
       ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
       ${authz_data.has_course_permission_edit
@@ -276,7 +276,7 @@ function IssueRow({
                   </button>
                 `}
         </div>
-        <p class="mb-0">${getFormattedMessage(issue)}</p>
+        <p class="mb-0" style="white-space: pre-wrap;">${getFormattedMessage(issue)}</p>
         <small class="text-muted me-2">
           #${issue.id} reported
           ${issue.date
@@ -319,9 +319,8 @@ function IssueRow({
 
 function getFormattedMessage(issue: Issue) {
   if (!issue.student_message) return html`&mdash;`;
-
-  const message = joinHtml(issue.student_message.split(/\r?\n|\r/), html`<br />`);
-  return issue.manually_reported ? html`"${message}"` : message;
+  if (issue.manually_reported) return `"${issue.student_message}"`;
+  return issue.student_message;
 }
 
 function CloseMatchingIssuesModal({
@@ -390,6 +389,19 @@ function FilterHelpModal() {
           <tr>
             <td><code>is:automatically-reported</code></td>
             <td>Shows all issues that were automatically reported by PrairieLearn</td>
+          </tr>
+          <tr>
+            <td>
+              <code>assessment:<em>AID</em></code>
+            </td>
+            <td>
+              Shows all issues with an assessment ID like <code>AID</code>; supports
+              <code>*</code> as a wildcard. For example,
+              <code>assessment:exam/instantFeedback</code> shows all issues associated with the
+              assessment <code>exam/instantFeedback</code>, and <code>assessment:exam/*</code> shows
+              all issues associated with any assessment that starts with <code>exam/</code>, such as
+              <code>exam/instantFeedback</code> and <code>exam/manualGrading</code>.
+            </td>
           </tr>
           <tr>
             <td>

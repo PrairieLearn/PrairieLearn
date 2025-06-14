@@ -7,8 +7,8 @@ set -ex
 # given CHECK_PATH. If so, it sets the given ENV_VAR to "true".
 
 if [ "$#" -ne 2 ]; then
-    echo "USAGE: $0 check_path env_var" >& 2
-    echo "Example: $0 images/plbase plbase_modified" >& 2
+    echo "USAGE: $0 check_path env_var" >&2
+    echo "Example: $0 images/plbase plbase_modified" >&2
     exit 1
 fi
 
@@ -20,9 +20,9 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 # If this script is being run *on* the master branch, then we want to diff
 # with the previous commit on master. Otherwise, we diff with master itself.
 if [[ "$BRANCH" == "master" ]]; then
-  DIFF_SOURCE="HEAD^1"
+    DIFF_SOURCE="HEAD^1"
 else
-  DIFF_SOURCE="remotes/origin/master"
+    DIFF_SOURCE="remotes/origin/master"
 fi
 
 if git diff --exit-code $DIFF_SOURCE..HEAD -- ${CHECK_PATH}; then

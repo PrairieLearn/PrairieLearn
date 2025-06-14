@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import { sanitizeObject, recursivelyTruncateStrings } from './index.js';
+import { recursivelyTruncateStrings, sanitizeObject } from './index.js';
 
 describe('sanitizeObject', () => {
   it('sanitizes an empty object', () => {

@@ -4,18 +4,15 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema, UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
+import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { PublicQuestionPreview } from './publicQuestionPreview.html.js';
 
@@ -37,7 +34,7 @@ async function setLocals(req, res) {
   }
 
   if (
-    !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
+    !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
@@ -49,7 +46,7 @@ router.post(
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      const variant_id = await processSubmission(req, res);
+      const variant_id = await processSubmission(req, res, { publicQuestionPreview: true });
       res.redirect(
         `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
@@ -63,14 +60,26 @@ router.post(
 );
 
 router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
+  '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
+
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.unsafe_variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+      publicQuestionPreview: true,
+    });
+
     const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
+      unsafe_submission_id: req.params.unsafe_submission_id,
       question: res.locals.question,
       instance_question: null,
-      variant_id: req.params.variant_id,
+      variant,
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'public',
@@ -91,11 +100,18 @@ router.get(
     await setLocals(req, res);
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals as any, {
+      publicQuestionPreview: true,
+    });
     await logPageView('publicQuestionPreview', req, res);
-    await setQuestionCopyTargets(res);
-    setRendererHeader(res);
-    res.send(PublicQuestionPreview({ resLocals: res.locals }));
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
+    res.send(PublicQuestionPreview({ resLocals: res.locals, questionCopyTargets }));
   }),
 );
 

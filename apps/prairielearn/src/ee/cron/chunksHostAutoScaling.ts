@@ -1,6 +1,5 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch, type Dimension } from '@aws-sdk/client-cloudwatch';
-import _ from 'lodash';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
@@ -100,9 +99,12 @@ export async function run() {
     (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE,
   );
 
-  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric?.Values) ?? 0;
-  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric?.Values) ?? 0;
-  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric?.Values) ?? 0;
+  const maxPageViewsPerSecond = Math.max(...(pageViewsPerSecondMetric?.Values ?? []), 0);
+  const maxActiveWorkersPerSecond = Math.max(...(activeWorkersPerSecondMetric?.Values ?? []), 0);
+  const maxLoadBalancerRequestsPerMinute = Math.max(
+    ...(loadBalancerRequestsPerMinuteMetric?.Values ?? []),
+    0,
+  );
 
   const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
   const desiredInstancesByActiveWorkers =

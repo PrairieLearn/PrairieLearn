@@ -1,6 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -20,7 +20,7 @@ import {
   InstructorAssessmentQuestionStatistics,
 } from './instructorAssessmentQuestionStatistics.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function makeStatsCsvFilename(locals) {
@@ -92,6 +92,8 @@ router.get(
           'Question number',
           'QID',
           'Question title',
+          'Question topic',
+          'Question tags',
           ...Object.values(STAT_DESCRIPTIONS).map((d) => d.non_html_title),
         ],
         transform(record) {
@@ -102,6 +104,8 @@ router.get(
             record.assessment_question_number,
             record.qid,
             record.question_title,
+            record.topic.name,
+            record.question_tags,
             record.mean_question_score,
             record.median_question_score,
             record.question_score_variance,

@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import qs from 'qs';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
+import { selectAndAuthzVariant } from '../../../models/variant.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
@@ -22,7 +23,7 @@ import {
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
@@ -40,7 +41,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
   if (variant_with_submission_id == null) {
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
-  resLocals.manualGradingInterface = true;
+  resLocals.questionRenderContext = 'manual_grading';
   await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
 
   let conflict_grading_job: GradingJobData | null = null;
@@ -88,25 +89,35 @@ router.get(
 );
 
 router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
+  '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   asyncHandler(async (req, res) => {
+    const variant = await selectAndAuthzVariant({
+      unsafe_variant_id: req.params.unsafe_variant_id,
+      variant_course: res.locals.course,
+      question_id: res.locals.question.id,
+      course_instance_id: res.locals.course_instance.id,
+      instance_question_id: res.locals.instance_question.id,
+      authz_data: res.locals.authz_data,
+      authn_user: res.locals.authn_user,
+      user: res.locals.user,
+      is_administrator: res.locals.is_administrator,
+    });
+
     const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
+      unsafe_submission_id: req.params.unsafe_submission_id,
       question: res.locals.question,
       instance_question: res.locals.instance_question,
-      variant_id: req.params.variant_id,
+      variant,
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
+      questionRenderContext: 'manual_grading',
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
       // Group role permissions are not used in this context.
       groupRolePermissions: null,
-      localsOverrides: {
-        manualGradingInterface: true,
-      },
     });
     res.json(panels);
   }),

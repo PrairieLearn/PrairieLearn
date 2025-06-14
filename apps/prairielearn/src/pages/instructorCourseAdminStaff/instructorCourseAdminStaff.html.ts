@@ -702,9 +702,9 @@ function AccessLevelsTable() {
     >
       <thead>
         <tr>
-          <th scope="col">Role</th>
-          <th class="text-center" scope="col">Course content access</th>
-          <th class="text-center" scope="col">Student data access</th>
+          <th>Role</th>
+          <th class="text-center">Course content access</th>
+          <th class="text-center">Student data access</th>
         </tr>
       </thead>
       <tbody>

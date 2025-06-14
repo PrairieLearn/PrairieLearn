@@ -1,5 +1,35 @@
 # @prairielearn/opentelemetry
 
+## 2.1.15
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
+## 2.1.14
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+
+## 2.1.13
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+
+## 2.1.12
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+
+## 2.1.11
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+
 ## 2.1.10
 
 ### Patch Changes

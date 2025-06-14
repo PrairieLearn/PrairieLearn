@@ -3,9 +3,9 @@
 import yargs from 'yargs';
 
 import {
+  diffDatabaseAndDirectory,
   diffDatabases,
   diffDirectories,
-  diffDatabaseAndDirectory,
   diffDirectoryAndDatabase,
 } from '../diff.js';
 

@@ -1,11 +1,12 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -45,178 +46,144 @@ const assessmentMaxPoints = 108;
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
 //     score: value to submit, will be the percentage score for the submission
-//     action: 'save', 'grade', 'store', 'save-stored-fail', 'grade-stored-fail'
 //     sub_points: additional points awarded for this submission (NOT total points for the question)
 //     open: true or false
 const partialCreditTests = [
   [
     // answer every question correctly
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 4 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 6 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 },
+    { qid: 'partialCredit2', score: 100, sub_points: 4 },
+    { qid: 'partialCredit3', score: 100, sub_points: 6 },
+    { qid: 'partialCredit1', score: 100, sub_points: 3 },
+    { qid: 'partialCredit2', score: 100, sub_points: 1 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
   ],
   [
     // mix 100% and 0% submissions
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 3 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 5 },
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 3 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 },
+    { qid: 'partialCredit2', score: 100, sub_points: 3 },
+    { qid: 'partialCredit3', score: 100, sub_points: 5 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit2', score: 0, sub_points: 0 },
+    { qid: 'partialCredit3', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
   ],
   [
     // test partial credit on question without retries
-    { qid: 'partialCredit1', action: 'grade', score: 15, sub_points: 0.15 },
-    { qid: 'partialCredit1', action: 'grade', score: 11, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 34,
-      sub_points: 0.34 - 0.15,
-    },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 99,
-      sub_points: 0.99 - 0.34,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 87, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.99,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0.85 },
-    { qid: 'partialCredit1', action: 'grade', score: 85, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 84, sub_points: 0 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.85,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 2 }, // doubled, previous was new variant
-    { qid: 'partialCredit1', action: 'grade', score: 0, sub_points: 0 },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 1 },
-    { qid: 'partialCredit1', action: 'grade', score: 53, sub_points: 0.53 },
-    {
-      qid: 'partialCredit1',
-      action: 'grade',
-      score: 100,
-      sub_points: 1 - 0.53,
-    },
-    { qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit1', score: 15, sub_points: 0.15 },
+    { qid: 'partialCredit1', score: 11, sub_points: 0 },
+    { qid: 'partialCredit1', score: 34, sub_points: 0.34 - 0.15 },
+    { qid: 'partialCredit1', score: 99, sub_points: 0.99 - 0.34 },
+    { qid: 'partialCredit1', score: 87, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.99 },
+    { qid: 'partialCredit1', score: 85, sub_points: 0.85 },
+    { qid: 'partialCredit1', score: 85, sub_points: 0 },
+    { qid: 'partialCredit1', score: 84, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.85 },
+    { qid: 'partialCredit1', score: 100, sub_points: 2 }, // doubled, previous was new variant
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit1', score: 53, sub_points: 0.53 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 - 0.53 },
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
   ],
   /* FIXME: temporarily disabled, re-enable after current_value update change
     [
         // test partial credit on question with retries
-        {qid: 'partialCredit2', action: 'grade',             score: 71,  sub_points: 2*0.71},
-        {qid: 'partialCredit2', action: 'grade',             score: 56,  sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade',             score: 78,  sub_points: 2*(0.78-0.71)},
-        {qid: 'partialCredit2', action: 'grade',             score: 94,  sub_points: 2*(0.94-0.78)},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2*(1-0.94)},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2},  // not doubled, previous was old variant
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 3},  // doubled, previous was new variant
-        {qid: 'partialCredit2', action: 'grade',             score: 82,  sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 0},
+        {qid: 'partialCredit2', score: 71, sub_points: 2*0.71},
+        {qid: 'partialCredit2', score: 56, sub_points: 0},
+        {qid: 'partialCredit2', score: 78, sub_points: 2*(0.78-0.71)},
+        {qid: 'partialCredit2', score: 94, sub_points: 2*(0.94-0.78)},
+        {qid: 'partialCredit2', score: 100, sub_points: 2*(1-0.94)},
+        {qid: 'partialCredit2', score: 100, sub_points: 2}, // not doubled, previous was old variant
+        {qid: 'partialCredit2', score: 100, sub_points: 3}, // doubled, previous was new variant
+        {qid: 'partialCredit2', score: 82, sub_points: 0},
+        {qid: 'partialCredit2', score: 100, sub_points: 0},
     ],
     */
   [
     // FIXME: temporarily enabled, remove after current_value update change
 
     // test partial credit on question with retries
-    { qid: 'partialCredit2', action: 'grade', score: 71, sub_points: 2 * 0.71 },
-    { qid: 'partialCredit2', action: 'grade', score: 56, sub_points: 0 },
+    { qid: 'partialCredit2', score: 71, sub_points: 2 * 0.71 },
+    { qid: 'partialCredit2', score: 56, sub_points: 0 },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 78,
       sub_points: 2 * (0.78 - 0.71),
     },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 94,
       sub_points: 2 * (0.94 - 0.78),
     },
     {
       qid: 'partialCredit2',
-      action: 'grade',
       score: 100,
       sub_points: 2 * (1 - 0.94),
     },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 4 }, // doubled, although previous was old variant
-    { qid: 'partialCredit2', action: 'grade', score: 82, sub_points: 1 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
-    { qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 4 }, // doubled, although previous was old variant
+    { qid: 'partialCredit2', score: 82, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
+    { qid: 'partialCredit2', score: 100, sub_points: 0 },
   ],
   [
     // test partial credit on v2 questions
     {
       qid: 'partialCredit4_v2',
-      action: 'grade',
       score: 34,
       submission_score: 0,
       sub_points: 0,
     },
     {
       qid: 'partialCredit4_v2',
-      action: 'grade',
       score: 68,
       submission_score: 100,
       sub_points: 4,
     },
     {
       qid: 'partialCredit5_v2_partial',
-      action: 'grade',
       score: 27,
       sub_points: 5 * 0.27,
     },
     {
       qid: 'partialCredit5_v2_partial',
-      action: 'grade',
       score: 56,
       sub_points: 5 * (0.56 - 0.27),
     },
   ],
 ];
 
-describe('Homework assessment', function () {
-  this.timeout(60000);
+describe('Homework assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let page, elemList;
 
@@ -253,8 +220,11 @@ describe('Homework assessment', function () {
 
     describe('the database', function () {
       it('should contain HW1', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_hw1, []);
-        locals.assessment_id = result.rows[0].id;
+        const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: 'hw1-automaticTestSuite',
+        });
+        locals.assessment_id = assessmentId;
       });
     });
 
@@ -752,7 +722,7 @@ describe('Homework assessment', function () {
         locals.__csrf_token = locals.questionSavedCsrfToken;
       });
     });
-    helperQuestion.postInstanceQuestionAndFail(locals);
+    helperQuestion.postInstanceQuestionAndFail(locals, 403);
   });
 
   describe('submit correct answer to question addNumbers', function () {
@@ -1285,29 +1255,23 @@ describe('Homework assessment', function () {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.after.call(this);
+          await helperServer.after();
         });
         it('should start up', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before()();
         });
       });
 
       startAssessment();
 
       partialCreditTest.forEach(function (questionTest, iQuestionTest) {
-        describe(`${questionTest.action} answer number #${iQuestionTest + 1} for question ${
+        describe(`grade answer number #${iQuestionTest + 1} for question ${
           questionTest.qid
         } with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
-              if (questionTest.action === 'check-closed') {
-                locals.shouldHaveButtons = [];
-              } else {
-                locals.shouldHaveButtons = ['grade', 'save'];
-              }
-              locals.postAction = questionTest.action;
+              locals.shouldHaveButtons = ['grade', 'save'];
+              locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
               locals.question.points += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
@@ -1316,9 +1280,8 @@ describe('Homework assessment', function () {
                   ? questionTest.score
                   : questionTest.submission_score;
               locals.expectedResult = {
-                submission_score: questionTest.action === 'save' ? null : submission_score / 100,
-                submission_correct:
-                  questionTest.action === 'save' ? null : submission_score === 100,
+                submission_score: submission_score / 100,
+                submission_correct: submission_score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
@@ -1334,42 +1297,10 @@ describe('Homework assessment', function () {
               };
             });
           });
-          if (questionTest.action === 'store') {
-            helperQuestion.getInstanceQuestion(locals);
-            describe('saving submission data', function () {
-              it('should succeed', function () {
-                locals.question.savedVariant = structuredClone(locals.variant);
-                locals.question.questionSavedCsrfToken = locals.__csrf_token;
-              });
-            });
-          } else if (questionTest.action === 'save-stored-fail') {
-            describe('restoring submission data', function () {
-              it('should succeed', function () {
-                locals.postAction = 'save';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
-              });
-            });
-            helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action === 'grade-stored-fail') {
-            describe('restoring submission data', function () {
-              it('should succeed', function () {
-                locals.postAction = 'grade';
-                locals.variant = structuredClone(locals.question.savedVariant);
-                locals.__csrf_token = locals.question.questionSavedCsrfToken;
-              });
-            });
-            helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action === 'check-closed') {
-            helperQuestion.getInstanceQuestion(locals);
-          } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
-            helperQuestion.getInstanceQuestion(locals);
-            helperQuestion.postInstanceQuestion(locals);
-            helperQuestion.checkQuestionScore(locals);
-            helperQuestion.checkAssessmentScore(locals);
-          } else {
-            throw Error('unknown action: ' + questionTest.action);
-          }
+          helperQuestion.getInstanceQuestion(locals);
+          helperQuestion.postInstanceQuestion(locals);
+          helperQuestion.checkQuestionScore(locals);
+          helperQuestion.checkAssessmentScore(locals);
         });
       });
     });

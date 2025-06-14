@@ -1,8 +1,9 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, unsafeHtml, escapeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
@@ -13,11 +14,12 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
 
 // Only shows this many recent submissions by default
@@ -26,15 +28,21 @@ const MAX_TOP_RECENTS = 3;
 export function QuestionContainer({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter = true,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  questionCopyTargets = null,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const {
     question,
@@ -65,23 +73,40 @@ export function QuestionContainer({
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
-              ${QuestionPanel({ resLocals, questionContext, showFooter, manualGradingPreviewUrl })}
+              ${QuestionPanel({
+                resLocals,
+                questionContext,
+                questionRenderContext,
+                showFooter,
+                manualGradingPreviewUrl,
+                aiGradingPreviewUrl,
+                questionCopyTargets,
+              })}
             </form>
           `
         : QuestionPanel({ resLocals, showFooter, questionContext })}
-
-      <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">
-          <h2>Correct answer</h2>
-        </div>
-        <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
-      </div>
-
+      ${
+        // The correct answer isn't used when performing AI grading, so we hide
+        // it here to avoid confusion.
+        questionRenderContext !== 'ai_grading'
+          ? html`
+              <div class="card mb-3 grading-block${showTrueAnswer ? '' : ' d-none'}">
+                <div class="card-header bg-secondary text-white">
+                  <h2>Correct answer</h2>
+                </div>
+                <div class="card-body overflow-x-auto answer-body">
+                  ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
+                </div>
+              </div>
+            `
+          : ''
+      }
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
               resLocals,
               questionContext,
+              questionRenderContext,
               submissions: submissions.slice(0, MAX_TOP_RECENTS),
               submissionHtmls,
               submissionCount: submissions.length,
@@ -107,6 +132,7 @@ export function QuestionContainer({
                     ${SubmissionList({
                       resLocals,
                       questionContext,
+                      questionRenderContext,
                       submissions: submissions.slice(MAX_TOP_RECENTS),
                       submissionHtmls: submissionHtmls.slice(MAX_TOP_RECENTS),
                       submissionCount: submissions.length,
@@ -118,7 +144,7 @@ export function QuestionContainer({
           `
         : ''}
     </div>
-    ${CopyQuestionModal({ resLocals })}
+    ${CopyQuestionModal({ resLocals, questionCopyTargets })}
   `;
 }
 
@@ -182,7 +208,7 @@ export function IssuePanel({
                 </tr>
                 <tr>
                   <th>Student message:</th>
-                  <td>${issue.student_message}</td>
+                  <td style="white-space: pre-wrap;">${issue.student_message}</td>
                 </tr>
                 <tr>
                   <th>Instructor message:</th>
@@ -193,7 +219,7 @@ export function IssuePanel({
               ? html`
                   <tr>
                     <th>Student message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                   <tr>
                     <th>Instructor message:</th>
@@ -203,7 +229,7 @@ export function IssuePanel({
               : html`
                   <tr>
                     <th>Message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                 `}
           <tr>
@@ -638,21 +664,27 @@ function AvailablePointsNotes({
 function QuestionPanel({
   resLocals,
   questionContext,
+  questionRenderContext,
   showFooter,
   manualGradingPreviewUrl,
+  aiGradingPreviewUrl,
+  questionCopyTargets,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
+  aiGradingPreviewUrl?: string;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
-  const { question, questionHtml, question_copy_targets, course, instance_question_info } =
-    resLocals;
-  // Show even when question_copy_targets is empty.
+  const { question, questionHtml, course, instance_question_info } = resLocals;
+  // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
+
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
-    question_copy_targets != null &&
+    questionCopyTargets != null &&
     (course.template_course || (question.share_source_publicly && questionContext === 'public')) &&
     questionContext !== 'manual_grading';
 
@@ -682,7 +714,7 @@ function QuestionPanel({
                   </button>
                 `
               : ''}
-            ${manualGradingPreviewUrl
+            ${manualGradingPreviewUrl || aiGradingPreviewUrl
               ? html`
                   <div class="btn-group">
                     <button
@@ -694,11 +726,24 @@ function QuestionPanel({
                       View&hellip;
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="${manualGradingPreviewUrl}">
-                          Manual grading view
-                        </a>
-                      </li>
+                      ${manualGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${manualGradingPreviewUrl}">
+                                Manual grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
+                      ${aiGradingPreviewUrl
+                        ? html`
+                            <li>
+                              <a class="dropdown-item" href="${aiGradingPreviewUrl}">
+                                AI grading view
+                              </a>
+                            </li>
+                          `
+                        : ''}
                     </ul>
                   </div>
                 `
@@ -706,7 +751,11 @@ function QuestionPanel({
           </div>
         </div>
       </div>
-      <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
+      <div class="card-body overflow-x-auto question-body">
+        ${questionRenderContext === 'ai_grading'
+          ? AiGradingHtmlPreview(questionHtml)
+          : unsafeHtml(questionHtml)}
+      </div>
       ${showFooter
         ? QuestionFooter({
             // TODO: propagate more precise types upwards.
@@ -721,6 +770,7 @@ function QuestionPanel({
 function SubmissionList({
   resLocals,
   questionContext,
+  questionRenderContext,
   submissions,
   submissionHtmls,
   submissionCount,
@@ -728,6 +778,7 @@ function SubmissionList({
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
   submissionHtmls: string[];
   submissionCount: number;
@@ -736,6 +787,7 @@ function SubmissionList({
   return submissions.map((submission, idx) =>
     SubmissionPanel({
       questionContext,
+      questionRenderContext,
       question: resLocals.question,
       assessment_question: resLocals.assessment_question,
       instance_question: resLocals.instance_question,
@@ -751,16 +803,22 @@ function SubmissionList({
   );
 }
 
-function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
-  const { question_copy_targets, question, course } = resLocals;
-  if (question_copy_targets == null) return '';
+function CopyQuestionModal({
+  questionCopyTargets,
+  resLocals,
+}: {
+  questionCopyTargets: CopyTarget[] | null;
+  resLocals: Record<string, any>;
+}) {
+  const { question, course } = resLocals;
+  if (questionCopyTargets == null) return '';
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
-    formAction: question_copy_targets[0]?.copy_url ?? '',
+    formAction: questionCopyTargets[0]?.copy_url ?? '',
     formClass: 'js-copy-question-form',
     body:
-      question_copy_targets.length === 0
+      questionCopyTargets.length === 0
         ? html`
             <p>
               You can't copy this question because you don't have editor permissions in any courses.
@@ -774,7 +832,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               Select one of your courses to copy this question.
             </p>
             <select class="form-select" name="to_course_id" required>
-              ${question_copy_targets.map(
+              ${questionCopyTargets.map(
                 (course, index) => html`
                   <option
                     value="${course.id}"
@@ -792,12 +850,12 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       <input
         type="hidden"
         name="__csrf_token"
-        value="${question_copy_targets[0]?.__csrf_token ?? ''}"
+        value="${questionCopyTargets[0]?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${question_copy_targets?.length > 0
+      ${questionCopyTargets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
               Copy question

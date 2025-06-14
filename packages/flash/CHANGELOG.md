@@ -1,5 +1,57 @@
 # @prairielearn/flash
 
+## 2.0.18
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 2.0.17
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
+## 2.0.16
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
+## 2.0.15
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
+## 2.0.14
+
+### Patch Changes
+
+- 03f1008: Upgrade all JavaScript dependencies
+- Updated dependencies [03f1008]
+  - @prairielearn/html@4.0.12
+
+## 2.0.13
+
+### Patch Changes
+
+- 984dc62: Upgrade all JavaScript dependencies
+- Updated dependencies [984dc62]
+  - @prairielearn/html@4.0.11
+
+## 2.0.12
+
+### Patch Changes
+
+- cbd4c6c: Fix memory leak caused by holding reference to HTTP request
+
 ## 2.0.11
 
 ### Patch Changes

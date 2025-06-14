@@ -6,7 +6,6 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
@@ -15,11 +14,11 @@ import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
 import {
-  FunctionMissingError,
-  type CodeCaller,
-  type PrepareForCourseOptions,
-  type CodeCallerResult,
   type CallType,
+  type CodeCaller,
+  type CodeCallerResult,
+  FunctionMissingError,
+  type PrepareForCourseOptions,
 } from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
@@ -451,6 +450,14 @@ export class CodeCallerNative implements CodeCaller {
   _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
+
+    // Eagerly destroy all streams. While this typically happens automatically,
+    // we've observed situations where the streams are sometimes not closed,
+    // which can leak memory and keep the process alive longer than expected.
+    for (const stream of this.child?.stdio ?? []) {
+      stream.destroy();
+    }
+
     if (this.state === WAITING) {
       this._logError(
         'CodeCallerNative child process exited while in state = WAITING, code = ' +
@@ -649,7 +656,7 @@ export class CodeCallerNative implements CodeCaller {
 
   _checkState(allowedStates?: CodeCallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
-      const allowedStatesList = '[' + _.map(allowedStates, String).join(',') + ']';
+      const allowedStatesList = '[' + allowedStates.map(String).join(',') + ']';
       return this._logError(
         'Expected CodeCallerNative states ' +
           allowedStatesList +

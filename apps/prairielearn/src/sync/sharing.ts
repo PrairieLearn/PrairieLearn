@@ -12,7 +12,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface SharedQuestion {
   id: string;
   qid: string;
-  shared_publicly: boolean;
+  share_publicly: boolean;
 }
 
 export async function selectSharedQuestions(courseId: string): Promise<SharedQuestion[]> {
@@ -22,7 +22,7 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
     z.object({
       id: IdSchema,
       qid: z.string(),
-      shared_publicly: z.boolean(),
+      share_publicly: z.boolean(),
     }),
   );
 }
@@ -55,7 +55,7 @@ export function checkInvalidPublicSharingRemovals(
 ): boolean {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
-    if (!question.shared_publicly) {
+    if (!question.share_publicly) {
       return;
     }
 
@@ -187,6 +187,70 @@ export async function checkInvalidSharingSetRemovals(
   }
 
   return existInvalidSharingSetRemovals;
+}
+
+export function checkInvalidSharedAssessments(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedAssessments = new Set<string>();
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        continue;
+      }
+      for (const zone of assessment?.data?.zones ?? []) {
+        for (const question of zone.questions ?? []) {
+          if (!question.id) {
+            continue;
+          }
+          const infoJson = courseData.questions[question.id];
+          if (!infoJson?.data?.sharePublicly) {
+            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
+            // not copy the questions into the destination course
+            invalidSharedAssessments.add(tid);
+          }
+        }
+      }
+    }
+  }
+
+  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
+  if (existInvalidSharedAssessment) {
+    logger.error(
+      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
+    );
+  }
+  return existInvalidSharedAssessment;
+}
+
+export function checkInvalidSharedCourseInstances(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedCourseInstances = new Set<string>();
+
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
+
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        invalidSharedCourseInstances.add(courseInstance.courseInstance.data?.longName);
+      }
+    }
+  }
+
+  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
+  if (existInvalidSharedCourseInstance) {
+    logger.error(
+      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
+    );
+  }
+  return existInvalidSharedCourseInstance;
 }
 
 export function checkInvalidDraftQuestionSharing(

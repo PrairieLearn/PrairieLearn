@@ -49,11 +49,7 @@ This file specifies basic information about the course instance:
 }
 ```
 
-??? note "Format specification for `infoCourseInstance.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
-    ```
+See the [reference for `infoCourseInstance.json`](./schemas/infoCourseInstance.md) for more information about what can be added to this file.
 
 ## Access controls
 
@@ -124,7 +120,7 @@ Note that _this is not a security setting_. Students may still enroll in the cou
 
 ## Assessment page organization
 
-Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
+Instructors can group assessments by course modules (topics, sections, or chapters in a course) or by assessment sets (homeworks, quizzes, exams, and so on). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
 
 ```json title="infoCourseInstance.json"
 {
@@ -180,7 +176,7 @@ It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"
 
 LTI supports the concept of "deep linking", such that an assignment link inside the originating LMS can be followed directly into a specific assessment in PrairieLearn. For score reporting back to the LMS, PrairieLearn requires this linking. If a student follows an LTI link from the LMS that has not been configured yet in PrairieLearn, they will receive an error message.
 
-The first time an instructor (in the LMS context) follows a newly created LTI PrairieLearn link, they will be delivered to the **Admin / LTI** page. The LTI link targets section of the page will be populated with the new link information, and the PL course instance's assessments will be listed as a drop down. These can also be edited at any time from the **Admin / LTI** page.
+The first time an instructor (in the LMS context) follows a newly created LTI PrairieLearn link, they will be delivered to the **Admin / LTI** page. The LTI link targets section of the page will be populated with the new link information, and the PL course instance's assessments will be listed as a dropdown. These can also be edited at any time from the **Admin / LTI** page.
 
 A course can use the same LTI credential to create multiple links to PrairieLearn, but each link must be configured in PL to an assessment. Multiple links can be created to the same assessment.
 
@@ -188,6 +184,6 @@ A course can use the same LTI credential to create multiple links to PrairieLear
 
 If the LTI link inside the LMS was configured to connect to the LMS gradebook then PrairieLearn scores will also be shown and updated in the LMS. This requires the student to have followed the link from the LMS into PrairieLearn when working on the assessment. LTI does not give PrairieLearn a way to update a score in the LMS gradebook for anything other than a linked assignment. i.e. PrairieLearn can't push other scores into the LMS; the request must originate from the LMS.
 
-Scores are still shown to students and instructors in the normal places in PrairieLearn. The LTI outcomes functionality adds an additional reporting back to the originating LMS.
+Scores are still shown to students and instructors in the normal places in PrairieLearn. The LTI outcomes functionality adds additional reporting back to the originating LMS.
 
-Once the student's assessment instance is linked back to an LMS gradebook entry, any scoring activity on PrairieLearn will be reported back to the LMS. That includes students clicking grade, external grading systems reporting back to PrairieLearn, or instructors manually adjusting grades inside PrairieLearn. These grade updates can happen asynchronously and independently from the student interacting with PrairieLearn.
+Once the student's assessment instance is linked back to an LMS gradebook entry, any scoring activity on PrairieLearn will be reported back to the LMS. That includes students clicking grade, external grading systems reporting back to PrairieLearn, or instructors manually adjusting grades inside PrairieLearn. These grade updates can happen asynchronously and independently of the student interacting with PrairieLearn.

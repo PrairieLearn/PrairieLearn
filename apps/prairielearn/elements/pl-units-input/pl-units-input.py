@@ -25,6 +25,7 @@ GRADING_MODE_DEFAULT = GradingMode.WITH_UNITS
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
+ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
@@ -64,6 +65,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "correct-answer",
         "custom-format",
         "label",
+        "aria-label",
         "suffix",
         "display",
         "allow-blank",
@@ -139,9 +141,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
 
-        if (correct_answer_parsed is not None) and (
-            not correct_answer_parsed.check(parsed_atol.dimensionality)
-        ):
+        if not correct_answer_parsed.check(parsed_atol.dimensionality):
             raise ValueError(
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
@@ -159,6 +159,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
+    aria_label = pl.get_string_attrib(element, "aria-label", ARIA_LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -226,6 +227,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "question": True,
             "name": name,
             "label": label,
+            "aria_label": aria_label,
             "suffix": suffix,
             "editable": editable,
             "info": info,
@@ -434,13 +436,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    result = data["test_type"]
 
-    a_tru = data["correct_answers"][name]
+    a_tru = None
+    if result in ["correct", "incorrect"]:
+        if name not in data["correct_answers"]:
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+
+        a_tru = data["correct_answers"][name]
+
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
     ureg = pl.get_unit_registry()
-    result = data["test_type"]
     if result == "correct":
         if grading_mode is GradingMode.ONLY_UNITS:
             data["raw_submitted_answers"][name] = str(ureg.Quantity(a_tru).units)

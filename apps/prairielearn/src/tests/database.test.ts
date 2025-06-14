@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 
 import _ from 'lodash';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
@@ -16,14 +17,12 @@ class DatabaseError extends Error {
   }
 }
 
-describe('database', function () {
-  this.timeout(20000);
+describe('database', { timeout: 20_000 }, function () {
+  beforeAll(helperDb.beforeOnlyCreate);
 
-  before('set up testing database', helperDb.beforeOnlyCreate);
-  after('tear down testing database', helperDb.after);
+  afterAll(helperDb.after);
 
-  it('should match the database described in /database', async function () {
-    this.timeout(20000);
+  it('should match the database described in /database', { timeout: 20_000 }, async function () {
     const options = {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
@@ -52,11 +51,8 @@ describe('database', function () {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
 
-    const tableHasDeletedAtColumn = (table) =>
-      _.some(data.tables[table].columns, { name: 'deleted_at' });
-    const [softDeleteTables, hardDeleteTables] = _.partition(
-      _.keys(data.tables),
-      tableHasDeletedAtColumn,
+    const [softDeleteTables, hardDeleteTables] = _.partition(Object.keys(data.tables), (table) =>
+      data.tables[table].columns.some((column) => column.name === 'deleted_at'),
     );
 
     for (const table of softDeleteTables) {
@@ -68,7 +64,7 @@ describe('database', function () {
           throw new Error(`Failed to match foreign key for ${table}: ${constraint.def}`);
         }
         const [, keyName, otherTable, deleteAction] = match;
-        if (deleteAction === 'CASCADE' && _.includes(hardDeleteTables, otherTable)) {
+        if (deleteAction === 'CASCADE' && hardDeleteTables.includes(otherTable)) {
           throw new Error(
             `Soft-delete table "${table}" has ON DELETE CASCADE foreign key "${keyName}" to hard-delete table "${otherTable}"`,
           );

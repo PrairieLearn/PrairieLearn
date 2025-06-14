@@ -1,93 +1,85 @@
 [tool.ruff]
-include = [
-    "**/*.py",
-]
+include = ["**/*.py"]
 
 extend-exclude = [
-    # These files are intentionally not parseable as Python.
-    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
-    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
-    # Files related to the Python autograder will often intentionally appear
-    # broken in isolation. We'll exclude these files from linting.
-    "exampleCourse/questions/**/tests/initial_code.py",
-    "exampleCourse/questions/**/tests/trailing_code.py",
+  # These files are intentionally not parseable as Python.
+  "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
+  "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
+  # Files related to the Python autograder will often intentionally appear
+  # broken in isolation. We'll exclude these files from linting.
+  "exampleCourse/questions/**/tests/initial_code.py",
+  "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
 preview = true
 [tool.ruff.lint]
-select = [
-    "ALL"
-]
+select = ["ALL"]
 
 ignore = [
-    # These rules provide little value to us
-    "BLE", # flake8-blind-except
-    "COM", # flake8-commas
-    "CPY001", # missing-copyright-notice 
-    "C901", # mccabe (complexity checks)
-    "ERA", # eradicate (code in comments)
-    "EM", # flake8-errmsg
-    "EXE", # flake8-executable
-    "E501", # line-too-long
-    "FIX", # flake8-fixme
-    "INP001", # implicit-namespace-package
-    "S", # flake8-bandit (security rules)
-    "SLF001", # private-member-access 
-    "T201", # flake8-print
-    "T100", # flake8-debugger
-    "TD", # flake8-todos
-    "PGH003", # blanket-type-ignore
-    "PLE2513", # invalid-character-esc
-    "PTH", # flake8-use-pathlib
+  # These rules provide little value to us
+  "BLE",     # flake8-blind-except
+  "COM",     # flake8-commas
+  "CPY001",  # missing-copyright-notice 
+  "C901",    # mccabe (complexity checks)
+  "ERA",     # eradicate (code in comments)
+  "EM",      # flake8-errmsg
+  "EXE",     # flake8-executable
+  "E501",    # line-too-long
+  "FIX",     # flake8-fixme
+  "INP001",  # implicit-namespace-package
+  "S",       # flake8-bandit (security rules)
+  "SLF001",  # private-member-access 
+  "T201",    # flake8-print
+  "T100",    # flake8-debugger
+  "TD",      # flake8-todos
+  "PGH003",  # blanket-type-ignore
+  "PLE2513", # invalid-character-esc
+  "PTH",     # flake8-use-pathlib
 
-    # These rules were discussed and disabled
-    "ANN401", # any-type
-    "D203", # incorrect-blank-line-before-class
-    "D212", # multi-line-summary-first-line
-    "D205", # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
-    "D400", # missing-trailing-period
-    "D415", # missing-terminal-punctuation
-    "DOC201", # docstring-missing-returns
-    "DOC402", # docstring-missing-yields
-    "DOC501", # docstring-missing-exception
-    "FURB101", # read-whole-file
-    "FURB103", # write-whole-file
-    "FURB118", # reimplemented-operator (confusing)
-    "FURB140", # reimplemented-starmap (confusing)
-    "ISC003", # explicit-string-concatenation
-    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
-    "PD901", # pandas-df-variable-name (we use `df` in many places)
-    "PLC0415", # import-outside-top-level
-    "PLC1901", # compare-to-empty-string
-    "PLC2701", # import-private-name
-    "PLR1702", # too-many-nested-blocks
-    "PLR0911", # too-many-return-statements
-    "PLR0912", # too-many-branches
-    "PLR0913", # too-many-arguments
-    "PLR0914", # too-many-locals
-    "PLR0915", # too-many-statements
-    "PLR0916", # too-many-boolean-expressions
-    "PLR0917", # too-many-positional-arguments
-    "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
-    "PLR2004", # magic-value-comparison
-    "PLR6301", # no-self-use
-    "PLW1514", # unspecified-encoding
-    "RET503", # implicit-return
-    "RET504", # unnecessary-assign
-    "RET505", # superfluous-else-return
-    "SIM108", # if-else-block-instead-of-if-exp
-    "TC006", # runtime-cast-value
-    "TRY300", # try-consider-else (returns in try blocks)
-    "TRY301", # raise-within-try
-    "TRY003", # raise-vanilla-args (long messages in raise statements)
+  # These rules were discussed and disabled
+  "ANN401",  # any-type
+  "D107",    # undocumented-public-init
+  "D203",    # incorrect-blank-line-before-class
+  "D212",    # multi-line-summary-first-line
+  "D205",    # missing-blank-line-after-summary (we use a multi-line description instead of summaries sometimes)
+  "D400",    # missing-trailing-period
+  "D415",    # missing-terminal-punctuation
+  "DOC402",  # docstring-missing-yields
+  "FURB101", # read-whole-file
+  "FURB103", # write-whole-file
+  "FURB118", # reimplemented-operator (confusing)
+  "FURB140", # reimplemented-starmap (confusing)
+  "ISC003",  # explicit-string-concatenation
+  "NPY002",  # numpy-legacy-random (we use `np.random.*` in many places)
+  "PD901",   # pandas-df-variable-name (we use `df` in many places)
+  "PLC0415", # import-outside-top-level
+  "PLC1901", # compare-to-empty-string
+  "PLC2701", # import-private-name
+  "PLR1702", # too-many-nested-blocks
+  "PLR0911", # too-many-return-statements
+  "PLR0912", # too-many-branches
+  "PLR0913", # too-many-arguments
+  "PLR0914", # too-many-locals
+  "PLR0915", # too-many-statements
+  "PLR0916", # too-many-boolean-expressions
+  "PLR0917", # too-many-positional-arguments
+  "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
+  "PLR2004", # magic-value-comparison
+  "PLR6301", # no-self-use
+  "PLW1514", # unspecified-encoding
+  "RET503",  # implicit-return
+  "RET504",  # unnecessary-assign
+  "RET505",  # superfluous-else-return
+  "SIM108",  # if-else-block-instead-of-if-exp
+  "TC006",   # runtime-cast-value
+  "TRY300",  # try-consider-else (returns in try blocks)
+  "TRY301",  # raise-within-try
+  "TRY003",  # raise-vanilla-args (long messages in raise statements)
 
-    # These rules need to be enabled
-    "D100", # undocumented-public-module
-    "D101", # undocumented-public-class
-    "D102", # undocumented-public-method
-    "D103", # undocumented-public-function
-    "D104", # undocumented-public-package
-    "D107", # undocumented-public-init
+  # These rules need to be enabled
+  # TODO: D103,D104 (https://github.com/astral-sh/ruff/issues/12434)
+  "D101", # undocumented-public-class
+  "D102", # undocumented-public-method
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -114,14 +106,17 @@ convention = "google"
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 "apps/prairielearn/elements/**/*.py" = [
-    # Ignore uppercase function parameters (e.g. G for a graph)
-    "N803",
-    # Allow boolean trap pattern in method signatures
-    "FBT001", "FBT002", "FBT003",
-    # ignore unused parameters in functions
-    "ARG",
-    # ignore docstring linting on functions (has no public API)
-    "D103"
+  # Ignore uppercase function parameters (e.g. G for a graph)
+  "N803",
+  # Allow boolean trap pattern in method signatures
+  "FBT001",
+  "FBT002",
+  "FBT003",
+  # ignore unused parameters in functions
+  "ARG",
+  # ignore docstring linting on functions (has no public API)
+  "D",
+  "DOC201",
 ]
 "apps/prairielearn/python/**/*.py" = ["N803"]
 # Do not require self in method params
@@ -129,63 +124,66 @@ convention = "google"
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
 
 "graders/**/*.py" = [
-    # Boolean default positional argument
-    "FBT002",
-    "D",
-    # Avoid future changes to graders
-    "C419", "PYI061", "RUF036"
+  # Boolean default positional argument
+  "FBT002",
+  # Avoid future changes to graders
+  "C419",
+  "PYI061",
+  "RUF036",
+  # Strict annotation linting
+  "D",
+  "DOC",
 ]
 
 # Directories we don't want strict annotation linting or docstring linting on
 # For example, code with no public API, elements with known issues, or course content.
-"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D"]
-"apps/prairielearn/python/zygote.py" = ["D"]
-"docs/hooks/*.py" = ["D"]
-"apps/prairielearn/src/tests/**/*.py" = ["D", "ANN"]
-"apps/prairielearn/python/prairielearn/to_precision.py" = ["D"]
-"contrib/api_download.py" = ["ANN", "D"]
-"contrib/assess-convert.py" = ["ANN", "D"]
-"contrib/generate_submissions.py" = ["ANN", "D"]
-"contrib/generate_text.py" = ["ANN", "D"]
-"contrib/generate_uuids.py" = ["ANN", "D"]
-"contrib/reassign_questions_to_subdirs.py" = ["ANN", "D"]
-"contrib/question_converters/lon-capa/**/*.py" = ["ANN", "D"]
-"contrib/question_converters/randexam/**/*.py" = ["ANN", "D"]
-"contrib/question_converters/smart-physics/**/*.py" = ["ANN", "D"]
-"testCourse/**/*.py" = ["ANN", "D"]
-"exampleCourse/**/*.py" = ["ANN", "D"]
+"apps/prairielearn/python/zygote.py" = ["D100", "D101", "D103", "DOC201"]
+"apps/prairielearn/python/prairielearn/internal/**/*.py" = ["D100", "D103", "DOC201"]
+"docs/**/*.py" = ["D100", "DOC201"]
+"apps/prairielearn/src/tests/**/*.py" = ["ANN", "D100", "D103", "DOC201"]
+"contrib/**/*.py" = ["ANN", "D", "DOC201"]
+"scripts/**/*.py" = ["D100", "DOC"]
+"testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
+"exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
-"apps/prairielearn/python/test/**/*.py" = ["D", "ANN"]
+"apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
 "workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
 
+[tool.ruff.lint.pydoclint]
+# Skip docstrings which fit on a single line.
+ignore-one-line-docstrings = true
+
 [tool.ruff.format]
 exclude = [
-    "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
-    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
+  "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
+  "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
 [tool.pyright]
 typeCheckingMode = "strict"
 include = [
-    "./apps/prairielearn/elements",
-    "./apps/prairielearn/python",
-    "./contrib/question_converters/canvas",
-    "./graders",
+  "./apps/prairielearn/elements",
+  "./apps/prairielearn/python",
+  "./exampleCourse/questions/**/server.py",
+  "./contrib/question_converters/canvas",
+  "./graders",
+  "./scripts",
 ]
 exclude = [
-    "./apps/prairielearn/elements/pl-drawing", # requires refactor
-    "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-    "./apps/prairielearn/elements/pl-threejs", # deprecated
+  "./apps/prairielearn/elements/pl-drawing",            # requires refactor
+  "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
+  "./apps/prairielearn/elements/pl-threejs",            # deprecated
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 executionEnvironments = [
-    # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
-    { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none" },
-    { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none" },
+  # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
+  { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none" },
+  { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none" },
+  { root = "./exampleCourse/questions", pythonVersion = "3.10", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
 ]
 reportUnnecessaryTypeIgnoreComment = "error"
 # These rules would require significant changes
@@ -203,11 +201,10 @@ reportOperatorIssue = "information"
 reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
-pythonpath = [
-    "apps/prairielearn/python"
-]
+pythonpath = ["apps/prairielearn/python"]
 addopts = "--cov=apps"
 testpaths = [
-    "apps/prairielearn/elements",
-    "apps/prairielearn/python/test",
+  "apps/prairielearn/elements",
+  "apps/prairielearn/python/test",
+  "graders/python/python_autograder/tests",
 ]

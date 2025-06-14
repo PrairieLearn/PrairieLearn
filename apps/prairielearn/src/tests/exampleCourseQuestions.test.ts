@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import fg from 'fast-glob';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -75,34 +76,13 @@ describe('Auto-test questions in exampleCourse', () => {
     }
   });
 
-  describe('Auto-test questions in exampleCourse', function () {
-    this.timeout(60000);
+  describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
+    afterAll(helperServer.after);
 
     [...qidsExampleCourse, ...templateQuestionQids].forEach((qid) =>
       helperQuestion.autoTestQuestion(locals, qid),
     );
-  });
-
-  describe('Auto-test questions in exampleCourse with process-questions-in-worker enabled', function () {
-    this.timeout(60000);
-
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
-    after('shut down testing server', helperServer.after);
-
-    const originalProcessQuestionsInWorker = config.features['process-questions-in-worker'];
-    before('enable process-questions-in-worker', () => {
-      config.features['process-questions-in-worker'] = true;
-    });
-    after('restore process-questions-in-worker', () => {
-      config.features['process-questions-in-worker'] = originalProcessQuestionsInWorker;
-    });
-
-    // Only test the first 10 questions so that this test doesn't take too long.
-    [...qidsExampleCourse, ...templateQuestionQids]
-      .slice(0, 10)
-      .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
   });
 });

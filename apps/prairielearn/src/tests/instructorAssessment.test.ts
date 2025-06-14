@@ -1,6 +1,5 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -11,11 +10,10 @@ const locals: Record<string, any> = {};
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
 
-describe('Instructor assessment editing', function () {
-  this.timeout(20000);
+describe('Instructor assessment editing', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let page, elemList;
 
@@ -154,7 +152,7 @@ describe('Instructor assessment editing', function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = _.filter(locals.pageData, (row) => row.uid === 'dev@example.com');
+      elemList = locals.pageData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(elemList, 1);
       locals.instructorAssessmentInstanceUrl =
         locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
@@ -460,10 +458,7 @@ describe('Instructor assessment editing', function () {
       locals.gradebookData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain a row for the dev user', function () {
-      locals.gradebookDataRow = _.filter(
-        locals.gradebookData,
-        (row) => row.uid === 'dev@example.com',
-      );
+      locals.gradebookDataRow = locals.gradebookData.filter((row) => row.uid === 'dev@example.com');
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
     it('should contain the correct score and assessment instance ID in the dev user row', function () {

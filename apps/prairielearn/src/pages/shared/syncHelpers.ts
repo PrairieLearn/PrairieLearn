@@ -13,7 +13,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 import { pullAndUpdateCourse } from '../../lib/course.js';
-import { createServerJob, type ServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 const docker = new Docker();
 

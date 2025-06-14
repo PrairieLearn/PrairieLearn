@@ -1,18 +1,18 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import {
-  queryAsync,
-  queryValidatedOneRow,
   loadSqlEquiv,
-  queryValidatedRows,
+  queryAsync,
   queryOneRowAsync,
+  queryValidatedOneRow,
+  queryValidatedRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import type { User } from '../lib/db-types.js';
-import { QuestionSchema, GroupRoleSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, QuestionSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -48,7 +48,7 @@ async function generateThreeStudentUsers() {
  * Creates a new group in the given assessment as the user with the given CSRF token
  */
 async function createGroup(
-  groupName: string,
+  group_name: string,
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
@@ -57,7 +57,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName,
+      group_name,
     }),
   });
   assert.isOk(res.ok);
@@ -277,21 +277,19 @@ async function prepareGroup() {
 }
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
-  describe('valid group role configuration tests', function () {
-    this.timeout(20000);
+  describe('valid group role configuration tests', { timeout: 20_000 }, function () {
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    afterAll(helperServer.after);
+
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('enforces correct permissions during valid group role configuration', async function () {
@@ -428,21 +426,19 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     });
   });
 
-  describe('invalid role configuration tests', function () {
-    this.timeout(20000);
+  describe('invalid role configuration tests', { timeout: 20_000 }, function () {
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    afterAll(helperServer.after);
+
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('shows correct errors during invalid group role configuration', async function () {

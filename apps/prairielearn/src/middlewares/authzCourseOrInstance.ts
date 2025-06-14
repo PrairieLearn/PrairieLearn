@@ -1,4 +1,4 @@
-import { parseISO, isValid } from 'date-fns';
+import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -70,6 +70,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // Now that we know the user has access, parse the authz data
   res.locals.course = result.rows[0].course;
   res.locals.institution = result.rows[0].institution;
+
+  // The side nav is expanded by default.
+  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
 
   const permissions_course = result.rows[0].permissions_course;
   res.locals.authz_data = {
@@ -166,6 +169,22 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   if (overrides.length === 0) {
     debug('no requested overrides');
     return;
+  }
+
+  // If this is an example course, only allow overrides if the user is an administrator.
+  if (res.locals.course.example_course && !res.locals.is_administrator) {
+    clearOverrideCookies(res, overrides);
+
+    throw new AugmentedError('Access denied', {
+      status: 403,
+      info: html`
+        <p>
+          You are not allowed to request an effective user in the example course unless you are an
+          administrator or you are running PrairieLearn in development mode. All requested changes
+          to the effective user have been removed.
+        </p>
+      `,
+    });
   }
 
   // Cannot request a user data override without instructor permissions

@@ -1,4 +1,4 @@
-## PrairieLearn Autograding Images
+# PrairieLearn Autograding Images
 
 Within this directory are a set of docker containers for automatically grading student code.
 These docker containers may be modified as needed on a per-course basis.
@@ -7,7 +7,7 @@ Full details on how externally graded questions are created can be found
 in the [Externally Graded Question](https://prairielearn.readthedocs.io/en/latest/externalGrading/)
 documentation.
 
-### Obtaining the Image
+## Obtaining the Image
 
 To locally develop with one of the PrairieLearn autograding docker images, please use:
 

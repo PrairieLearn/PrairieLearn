@@ -103,7 +103,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
         )
     # Support pprint for complex data types
-    elif isinstance(var_out, dict | list):
+    elif isinstance(var_out, (dict, list)):
         var_string = pprint.pformat(
             var_out,
             indent=indent,

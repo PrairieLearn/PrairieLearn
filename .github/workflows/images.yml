@@ -4,221 +4,97 @@ on:
   push:
     branches:
       - 'master'
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
+  pull_request:
+  merge_group:
+
+concurrency:
+  # Ensure that we only run one concurrent job for Pull Requests. This ensures
+  # that someone can't kill our throughput by pushing a bunch of commits to a
+  # single branch in rapid succession.
+  #
+  # However, for master builds, we allow maximum concurrency. This is achieved
+  # because `github.head_ref` isn't defined there, and `github.run_id` is
+  # globally unique in this repo.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
-  docker:
+  build-workspace-images:
+    name: Workspaces
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: workspaces
+      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
+    secrets: inherit
+
+  build-grader-images:
+    name: Graders
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: graders
+      images: prairielearn/grader-c,prairielearn/grader-java,prairielearn/grader-python,prairielearn/grader-r
+      cache_images: prairielearn/grader-c,prairielearn/grader-python
+    secrets: inherit
+
+  build-core-images:
+    name: Core
+    uses: ./.github/workflows/image-builder.yml
+    with:
+      group: core
+      images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
+      cache_images: prairielearn/prairielearn
+    secrets: inherit
+
+  report-image-sizes:
     runs-on: ubuntu-latest
+    needs:
+      - build-workspace-images
+      - build-grader-images
+      - build-core-images
+    if: ${{ github.event_name == 'pull_request' && always() }}
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4 # https://github.com/marketplace/actions/checkout
-        with:
-          fetch-depth: 0
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3 # https://github.com/marketplace/actions/docker-setup-buildx
-      - name: Login to DockerHub
-        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: actions/checkout@v4
 
-      ######################################################################################################
-      # plbase
-      - name: Check whether images/plbase was modified
-        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
-      - name: Build and push prairielearn/plbase
-        if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          context: images/plbase
-          # We don't build `priarielearn/prairielearn` itself for ARM, so we'll skip
-          # building the base image for `linux/arm64` as well. This results in
-          # significantly faster overall builds.
-          platforms: linux/amd64
-          push: true
-          no-cache: true
-          tags: prairielearn/plbase:latest,prairielearn/plbase:${{ github.sha }}
+          node-version: '22'
 
-      ######################################################################################################
-      # prairielearn
-      - name: Build and push prairielearn/prairielearn
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: .
-          # QEMU is *extremely* slow on GitHub Actions, taking over 2 hours to
-          # build the `priarielearn/prairielearn` image for the `linux/arm64`
-          # platform. We will avoid building an ARM image for now. If GitHub
-          # ever offers ARM hosted runners, we can consider building ARM images.
-          platforms: linux/amd64
-          push: true
-          no-cache: true
-          tags: prairielearn/prairielearn:latest,prairielearn/prairielearn:${{ github.sha }}
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
 
-      ######################################################################################################
-      # grader-c
-      - name: Check whether graders/c was modified
-        run: scripts/check_path_modified.sh graders/c graders_c_modified
-      - name: Build and push prairielearn/grader-c
-        if: ${{ env.graders_c_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/c
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-c:latest,prairielearn/grader-c:${{ github.sha }}
+      - name: Install Node dependencies
+        run: yarn workspaces focus @prairielearn/actions-report-image-sizes
 
-      ######################################################################################################
-      # grader-java
-      - name: Check whether graders/java was modified
-        run: scripts/check_path_modified.sh graders/java graders_java_modified
-      - name: Build and push prairielearn/grader-java
-        if: ${{ env.graders_java_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/java
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-java:latest,prairielearn/grader-java:${{ github.sha }}
+      - name: Build
+        run: yarn build
+        working-directory: packages/actions-report-image-sizes
 
-      ######################################################################################################
-      # grader-python
-      - name: Check whether graders/python was modified
-        run: scripts/check_path_modified.sh graders/python graders_python_modified
-      - name: Build and push prairielearn/grader-python
-        if: ${{ env.graders_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Report image sizes
+        uses: ./packages/actions-report-image-sizes
         with:
-          context: graders/python
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-python:latest,prairielearn/grader-python:${{ github.sha }}
-
-      ######################################################################################################
-      # grader-r
-      - name: Check whether graders/r was modified
-        run: scripts/check_path_modified.sh graders/r graders_r_modified
-      - name: Build and push prairielearn/grader-r
-        if: ${{ env.graders_r_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: graders/r
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/grader-r:latest,prairielearn/grader-r:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-desktop
-      - name: Check whether workspaces/desktop was modified
-        run: scripts/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
-      - name: Build and push prairielearn/workspace-desktop
-        if: ${{ env.workspaces_desktop_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/desktop
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-desktop:latest,prairielearn/workspace-desktop:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-jupyterlab
-      - name: Check whether workspaces/jupyterlab was modified
-        run: scripts/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
-      - name: Build and push prairielearn/workspace-jupyterlab
-        if: ${{ env.workspaces_jupyterlab_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/jupyterlab
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-jupyterlab:latest,prairielearn/workspace-jupyterlab:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-jupyterlab-python
-      - name: Check whether workspaces/jupyterlab-python was modified
-        run: scripts/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
-      - name: Build and push prairielearn/workspace-jupyterlab-python
-        if: ${{ env.workspaces_jupyterlab_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/jupyterlab-python
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-jupyterlab-python:latest,prairielearn/workspace-jupyterlab-python:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-rstudio
-      - name: Check whether workspaces/rstudio was modified
-        run: scripts/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
-      - name: Build and push prairielearn/workspace-rstudio
-        if: ${{ env.workspaces_rstudio_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/rstudio
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-rstudio:latest,prairielearn/workspace-rstudio:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-xtermjs
-      - name: Check whether workspaces/xtermjs was modified
-        run: scripts/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
-      - name: Build and push prairielearn/workspace-xtermjs
-        if: ${{ env.workspaces_xtermjs_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/xtermjs
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-xtermjs:latest,prairielearn/workspace-xtermjs:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-vscode-base
-      - name: Check whether workspaces/vscode-base was modified
-        run: scripts/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
-      - name: Build and push prairielearn/vscode-base
-        if: ${{ env.workspaces_vscode_base_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/vscode-base
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-vscode-base:latest,prairielearn/workspace-vscode-base:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-vscode-python
-      - name: Check whether workspaces/vscode-python was modified
-        run: scripts/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
-      - name: Build and push prairielearn/vscode-python
-        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/vscode-python
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-vscode-python:latest,prairielearn/workspace-vscode-python:${{ github.sha }}
-
-      ######################################################################################################
-      # workspace-vscode-cpp
-      - name: Check whether workspaces/vscode-cpp was modified
-        run: scripts/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
-      - name: Build and push prairielearn/vscode-cpp
-        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: workspaces/vscode-cpp
-          platforms: linux/amd64,linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/workspace-vscode-cpp:latest,prairielearn/workspace-vscode-cpp:${{ github.sha }}
+          title: All images
+          sha: ${{ env.COMMIT_SHA }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          images: |
+            prairielearn/workspace-desktop
+            prairielearn/workspace-jupyterlab-python
+            prairielearn/workspace-rstudio
+            prairielearn/workspace-vscode-base
+            prairielearn/workspace-vscode-cpp
+            prairielearn/workspace-vscode-java
+            prairielearn/workspace-vscode-python
+            prairielearn/workspace-xtermjs
+            prairielearn/grader-c
+            prairielearn/grader-java
+            prairielearn/grader-python
+            prairielearn/grader-r
+            prairielearn/plbase
+            prairielearn/prairielearn
+            prairielearn/executor

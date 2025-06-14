@@ -1,17 +1,14 @@
 import { type Meter } from '@opentelemetry/api';
 import {
-  InMemoryMetricExporter,
   AggregationTemporality,
+  type Histogram,
+  InMemoryMetricExporter,
   MeterProvider,
   PeriodicExportingMetricReader,
-  type Histogram,
 } from '@opentelemetry/sdk-metrics';
-import { use as chaiUse, assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import { instrumentedWithMetrics } from './metrics.js';
-
-chaiUse(chaiAsPromised);
 
 async function waitForMetricsExport(exporter: InMemoryMetricExporter) {
   while (exporter.getMetrics().length === 0) {
@@ -61,12 +58,11 @@ describe('instrumentedWithMetrics', () => {
   });
 
   it('records an error count', async () => {
-    await assert.isRejected(
+    await expect(
       instrumentedWithMetrics(meter, 'test', async () => {
         throw new Error('error for test');
       }),
-      'error for test',
-    );
+    ).rejects.toThrow('error for test');
 
     await waitForMetricsExport(exporter);
     const exportedMetrics = exporter.getMetrics();

@@ -4,7 +4,7 @@ This page documents the basic steps to use Docker Compose to run PrairieLearn. I
 
 ## Getting started
 
-Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
+Follow the steps to [install PrairieLearn with local source code](../dev-guide/installingLocal.md). Then run this command in the root folder:
 
 ```sh
 docker compose -f docker-compose-production.yml up
@@ -43,7 +43,7 @@ Read more in the [authentication documentation](./authentication.md).
 
   which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
 
-  ```console
+  ```output
   CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
   e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
   ```
@@ -54,7 +54,7 @@ Read more in the [authentication documentation](./authentication.md).
   docker exec -it CONTAINER_NAME /bin/bash
   ```
 
-Then follow along at [Admin User](./admin-user.md) to setup PrairieLearn.
+Then follow along at [Admin User](./admin-user.md) to set up PrairieLearn.
 
 ## Adding SSH Keys
 
@@ -82,7 +82,7 @@ Next to add the SSH key on GitHub go to [SSH keys](https://github.com/settings/s
 
 ## Adding courses
 
-Adding courses is done through a GitHub repository. It is recommended to setup an organization under one user to which you can add all courses.
+Adding courses is done through a GitHub repository. It is recommended to set up an organization under one user to which you can add all courses.
 
 To make sure the courses remain if the Docker container goes down
 we must bind mount the folder in which courses are stored to the host machine, in `docker-compose-production.yml` under `volumes` add
@@ -100,7 +100,7 @@ For example:
 To clone the course into PrairieLearn:
 
 - Go to the course GitHub repository you wish to put on PrairieLearn, click `code` and then `SSH`.
-- Copy the SSH URL and paste it under the `Repository` section. Go back to the homepage and you should see the course there.
+- Copy the SSH URL and paste it under the `Repository` section. Go back to the homepage, and you should see the course there.
 - Click on the course, then `Sync`.
 - Click on `Pull from remote git repository` which will then clone all the files into the specified directory.
 

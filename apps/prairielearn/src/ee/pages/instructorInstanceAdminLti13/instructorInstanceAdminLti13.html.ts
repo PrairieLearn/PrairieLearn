@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
@@ -9,15 +9,8 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   type Lti13Assessments,
-  type Lti13CourseInstance,
-  type Lti13Instance,
 } from '../../../lib/db-types.js';
-import { type Lineitems } from '../../lib/lti13.js';
-
-interface Lti13FullInstance {
-  lti13_course_instance: Lti13CourseInstance;
-  lti13_instance: Lti13Instance;
-}
+import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -36,8 +29,8 @@ export function InstructorInstanceAdminLti13({
   lineitems,
 }: {
   resLocals: Record<string, any>;
-  instance: Lti13FullInstance;
-  instances: Lti13FullInstance[];
+  instance: Lti13CombinedInstance;
+  instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
   lineitems: Lti13Assessments[];
 }): string {
@@ -341,9 +334,8 @@ function LinkedAssessments({
                               class="btn btn-info dropdown-toggle dropdown-toggle-split"
                               data-bs-toggle="dropdown"
                               aria-expanded="false"
-                            >
-                              <span class="visually-hidden">Toggle Dropdown</span>
-                            </button>
+                              aria-label="Toggle dropdown"
+                            ></button>
                             <ul class="dropdown-menu">
                               <li>
                                 <button

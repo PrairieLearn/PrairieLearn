@@ -1,4 +1,4 @@
-import { definePlugin, Rule, type DOMReadyEvent, type RuleDocumentation } from 'html-validate';
+import { type DOMReadyEvent, Rule, type RuleDocumentation, definePlugin } from 'html-validate';
 
 const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'data-animation',

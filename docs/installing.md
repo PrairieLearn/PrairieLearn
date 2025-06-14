@@ -58,67 +58,46 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on Apple silicon and other ARM64 hardware
-
-If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
-
-```console
-no matching manifest for linux/arm64/v8 in the manifest list entries
-```
-
-To fix this, add `--platform linux/amd64` before the image in any `docker run` commands. For example:
-
-```sh
-docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
-```
-
-When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
-
-If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
-
 ### Support for external graders and workspaces
 
-In production, PrairieLearn runs external grading jobs and workspaces on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs and workspaces locally with a few workarounds.
+There are a few extra steps needed to run PrairieLearn locally with support for external graders and workspaces.
 
-- Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
-- Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
-- Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
-
-#### Preparation
-
-In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
-
-- We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run "sibling" containers.
-- We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
-
-To run PrairieLearn locally with external grader and workspace support, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the docker launch command. This directory only needs to be created once. If you are running Windows, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
+First, create an empty directory to use to share job data between containers. This directory can live anywhere, but needs to be created first and referenced in the Docker launch command. This directory only needs to be created once. If you are running Windows, the directory should be created inside the WSL 2 instance. You can create this directory using a command like:
 
 ```bash
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-#### Running Docker with the extended features
-
 Now, we can run PrairieLearn with additional options to allow the external grading or workspaces features. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
-    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
-    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
-    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
-    prairielearn/prairielearn
+  -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
+  -v "$HOME/pl_ag_jobs:/jobs" `# Map the jobs directory into /jobs` \
+  -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
+  -v /var/run/docker.sock:/var/run/docker.sock `# Mount Docker into container so it can spawn others` \
+  --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
+  prairielearn/prairielearn
 ```
+
+??? question "Why is this necessary?"
+
+    In production, PrairieLearn runs external grading jobs and workspaces on a distributed system that can efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs and workspaces locally. To do this, it needs extra Docker command line arguments to provide two key capabilities:
+
+    - PrairieLearn needs a way of starting up Docker containers on the host machine from within another Docker container. This is achieved by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows it to run "sibling" containers.
+    - PrairieLearn needs to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to either `/grade` in the grading container or the home directory in the workspace container. This is achieved by mounting a directory on the host machine to `/jobs` in the PrairieLearn container, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
+
+### Development
+
+If you want to contribute improvements or features to PrairieLearn, you will need to start up PrairieLearn differently. See the [local installation](./dev-guide/installingLocal.md) documentation for more details.
 
 #### Troubleshooting the --add-host option and network timeouts
 
-If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [`moby/moby` PR 29376](https://github.com/moby/moby/pull/29376), [`docker/docs` issue 8663](https://github.com/docker/docs/issues/8663).
 
 If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 
-## Upgrading your Docker's version of PrairieLearn
+## Upgrading your PrairieLearn Docker image
 
 To obtain the latest version of PrairieLearn at any time, make sure PrairieLearn is not running (Ctrl-C it if needed) and then run:
 
@@ -142,6 +121,6 @@ docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairie
 
 !!! tip
 
-    The command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
+    The command above uses the `--pull=always` option, which will update the local version of the image every time the Docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).

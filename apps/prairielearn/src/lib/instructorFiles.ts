@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import * as error from '@prairielearn/error';
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
 export interface InstructorFilePaths {

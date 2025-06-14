@@ -22,11 +22,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-??? note "Format specification for assessment `infoAssessment.json`"
-
-    ```json
-    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
-    ```
+See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
 ## Assessment naming
 
@@ -129,7 +125,7 @@ Auto-grading points are set using the `autoPoints` value, which must be a single
 
 If a student answers a question incorrectly, a new question variant is generated with new random numbers and the student can try again. There is no penalty for incorrect answers and students can try as many times as they like. Also see the `triesPerVariant` option in [Limiting the number of attempts for each question](#limiting-the-number-of-attempts-for-each-question).
 
-To encourage students to solve the same question correctly more than once (to emphasize mastery), a question can have `maxAutoPoints` set to a value that is more than `autoPoints`. In this case a student can get credit for multiple correct solutions, each for a different randomized variant, until reaching `maxAutoPoints`. For example, if we have `"autoPoints": 3` and `"maxAutoPoints": 9` then the student could solve three different variants of the question correctly and receive 3 points for each of them. After this the student can continue to solve the question for practice but they will not receive any more points for it. If `maxAutoPoints` is not specified then the question acts as if `maxAutoPoints` is equal to `autoPoints`. The use of `maxAutoPoints` means that the question has a total value of `maxAutoPoints` points, so in the previous example this is effectively a 9-point question (from `maxAutoPoints`) even though `autoPoints` is set to 3. To receive full points for the question the student will have to answer it correctly more than once.
+To encourage students to solve the same question correctly more than once (to emphasize mastery), a question can have `maxAutoPoints` set to a value that is more than `autoPoints`. In this case a student can get credit for multiple correct solutions, each for a different randomized variant, until reaching `maxAutoPoints`. For example, if we have `"autoPoints": 3` and `"maxAutoPoints": 9` then the student could solve three different variants of the question correctly and receive 3 points for each of them. After this the student can continue to solve the question for practice, but they will not receive any more points for it. If `maxAutoPoints` is not specified then the question acts as if `maxAutoPoints` is equal to `autoPoints`. The use of `maxAutoPoints` means that the question has a total value of `maxAutoPoints` points, so in the previous example this is effectively a 9-point question (from `maxAutoPoints`) even though `autoPoints` is set to 3. To receive full points for the question the student will have to answer it correctly more than once.
 
 By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if `autoPoints` is 3 and `maxAutoPoints` is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct — for a total of 3+6+9=18 points earned; and so on. If any answer is incorrect or partially correct, the value earned for a new correctly-solved variant is reset to 3 points. To disable this behavior and keep the question value at a constant value of 3, set `"constantQuestionValue": true` in the assessment settings, like this:
 
@@ -190,24 +186,24 @@ For each graded answer submission made by a student, the scoring algorithm is as
 
 1. If the `submission percentage score` is more than `best current score`, add `(submission percentage score - best current score) / 100 * question value` to `question points`, capping `question points` at `maxAutoPoints`.
 2. If the `submission percentage score` is 100%, then reset `best current score` to zero. Otherwise, if the `submission percentage score` is more than `best current score`, then set `best current score` to `submission percentage score`.
-3. If the `submission percentage score` is 100% and `constantQuestionValue` is not set to true, then increase `question value` by `autoPoints`. Otherwise set `question value` to `autoPoints`.
+3. If the `submission percentage score` is 100% and `constantQuestionValue` is not set to true, then increase `question value` by `autoPoints`. Otherwise, set `question value` to `autoPoints`.
 
 As an example, suppose a student makes nine submissions of varying degrees of correctness to a question. Assume the question has `autoPoints` set to 4 and `maxAutoPoints` set to 16. The student's submissions are as follows:
 
-| Submission number | Submission perc. score | Best current score | Question value | Question points | Comment                                                                                                                                         |
-| ----------------- | ---------------------- | ------------------ | -------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Init              | -                      | 0                  | 4              | 0               | Initial values                                                                                                                                  |
-| 1                 | 50%                    | 50%                | 4              | 2               | (50% - 0%) \* 4 = 2 points awarded                                                                                                              |
-| 2                 | 80%                    | 80%                | 4              | 3.2             | (80% - 50%) \* 4 = 1.2 points awarded                                                                                                           |
-| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded or deducted                                                                                       |
-| 4                 | 100%                   | 0%                 | 8              | 4               | (100% - 80%) \* 4 = 0.8 points awarded, `best current score` reset to 0%, `question value` increased to 8                                       |
-| 5                 | 50%                    | 50%                | 4              | 8               | (50% - 0%) \* 8 = 4 points awarded, `question value` reset to 4                                                                                 |
-| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded or deducted                                                                                       |
-| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded or deducted                                                                                               |
-| 8                 | 100%                   | 0%                 | 8              | 10              | (100% - 90%) \* 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8                                       |
-| 9                 | 100%                   | 0%                 | 12             | 16              | 100% \* 8 = 8 points awarded but points are capped by `maxAutoPoints` of 16, `best current score` reset to 0%, `question value` increased to 12 |
+| Submission number | Submission perc. score | Best current score | Question value | Question points | Comment                                                                                                                                          |
+| ----------------- | ---------------------- | ------------------ | -------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Init              | -                      | 0                  | 4              | 0               | Initial values                                                                                                                                   |
+| 1                 | 50%                    | 50%                | 4              | 2               | (50% - 0%) \* 4 = 2 points awarded                                                                                                               |
+| 2                 | 80%                    | 80%                | 4              | 3.2             | (80% - 50%) \* 4 = 1.2 points awarded                                                                                                            |
+| 3                 | 20%                    | 80%                | 4              | 3.2             | No improvement in score, so no points awarded or deducted                                                                                        |
+| 4                 | 100%                   | 0%                 | 8              | 4               | (100% - 80%) \* 4 = 0.8 points awarded, `best current score` reset to 0%, `question value` increased to 8                                        |
+| 5                 | 50%                    | 50%                | 4              | 8               | (50% - 0%) \* 8 = 4 points awarded, `question value` reset to 4                                                                                  |
+| 6                 | 0%                     | 50%                | 4              | 8               | No improvement in score, so no points awarded or deducted                                                                                        |
+| 7                 | 90%                    | 90%                | 4              | 9.6             | (90% - 50%) \* 4 = 1.6 points awarded or deducted                                                                                                |
+| 8                 | 100%                   | 0%                 | 8              | 10              | (100% - 90%) \* 4 = 0.4 points awarded, `best current score` reset to 0%, `question value` increased to 8                                        |
+| 9                 | 100%                   | 0%                 | 12             | 16              | 100% \* 8 = 8 points awarded, but points are capped by `maxAutoPoints` of 16, `best current score` reset to 0%, `question value` increased to 12 |
 
-After the nine submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice but they cannot earn any more points for it.
+After the nine submissions above the student has achieved maximum points for the question. They can continue to answer the question for additional practice, but they cannot earn any more points for it.
 
 ## Question scoring details for `Exam` assessments
 
@@ -282,7 +278,7 @@ The choice of using `maxBonusPoints` or a `credit` value above 100 is based on i
 
 ## Multiple-instance versus single-instance assessments
 
-By default all assessments are _single instance_, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
+By default, all assessments are _single instance_, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
 
 For practice exams it is often desirable to make a _multiple instance_ assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly. This setting may be used in cases where students are expected to get multiple attempts for the same assessments, either for no credit (i.e., for practice only), or where credit applies to the attempt with the highest overall score.
 
@@ -298,19 +294,21 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
+  "studentGroupChooseName": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+| Attribute                | Type    | Default | Description                                                                                                |
+| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
+| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
+| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
+| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
+| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
@@ -346,7 +344,7 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
-Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with each other outside of PrairieLearn. They are also able to leave their group to join a different one.
+Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with each other outside PrairieLearn. They are also able to leave their group to join a different one.
 
 ### Enabling custom group roles
 
@@ -358,7 +356,7 @@ By default, students working in a collaborative group assessments can view and s
 
 Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join groups after assessments have started.
 
-To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
+To opt in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
 ```json title="infoAssessment.json"
 {
@@ -415,7 +413,7 @@ The schema for permissions is defined as follows:
 
 Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no role** can view or submit that part of the assessment, respectively. If either attribute is not set, it means that **every role** has the permission associated to the attribute, i.e., any student with any role can view or submit that part of the assessment.
 
-Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
+Permissions defined at a higher level are propagated down the assessment hierarchy (assessment ⇾ zone ⇾ question), but permissions defined at lower levels will override those from the higher level. For example:
 
 ```json title="infoAssessment.json"
 {
@@ -529,11 +527,11 @@ The `advanceScorePerc` attribute is intended to be used in [group work](#enablin
 
 ## Auto-closing Exam assessments
 
-By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
+By default, Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicitly close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
 
 ## Issue reporting
 
-To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file, or set it to `false` to disallow reporting. This option defaults to `true`.
+To allow students to report issues with questions (incorrect answers, unclear wording, etc.), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file, or set it to `false` to disallow reporting. This option defaults to `true`.
 
 When issue reporting is allowed, students see a button labeled "Report an error in this question" and they can submit a short text form.
 
@@ -567,7 +565,7 @@ See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for deta
 
 By default, students can attach files to assessments as personal notes, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
 
-The purpose of this is to allow students to take extra notes during exams, for later review. For example, if a student has a Matlab script that they used to solve a question, they could attach it to that question so they can review it later.
+The purpose of this is to allow students to take extra notes during exams, for later review. For example, if a student has a Matlab script that they used to solve a question, they could attach it to that question, so they can review it later.
 
 Although we do not recommend this for regular exams, personal notes can be disabled by setting `"allowPersonalNotes": false` as a top-level option in the `infoAssessment.json` file. Note that this setting does not delete notes that were uploaded before the option is set, but prevents any access or modifications to them.
 
@@ -615,7 +613,7 @@ For assessments with type "Exam", each student will only be presented with a sin
 
 For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
 
-- the question is set to [`"singleVariant": true` in the question configuration file](../question.md#the-singlevariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
+- the question is set to [`"singleVariant": true` in the question configuration file](../question/index.md#non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
@@ -635,7 +633,7 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 ## Limiting the rate at which answers can be graded
 
-Practice is important in learning and there should be room for mistakes and learning from them. Immediate feedback can help as it can give feedback despite the limited human resources. However, to prevent mindless trial-and-error problem solving, controlling resubmissions can be an effective tool ([Ihantola et. al., Review of Recent Systems for Automatic Assessment of Programming Assignments](https://dl.acm.org/doi/pdf/10.1145/1930464.1930480)).
+Practice is important in learning and there should be room for mistakes and learning from them. Immediate feedback can help as it can give feedback despite the limited human resources. However, to prevent mindless trial-and-error problem-solving, controlling resubmissions can be an effective tool ([Ihantola et al., Review of Recent Systems for Automatic Assessment of Programming Assignments](https://dl.acm.org/doi/pdf/10.1145/1930464.1930480)).
 
 One way to limit the amount of feedback provided to students is to limit the rate at which graded submissions are allowed. This can be done by using the `gradeRateMinutes` setting. If set, this value indicates how long a student needs to wait after grading a question to resubmit a new answer to the same question for grading. Students are still able to save a submission, but are not able to grade until either the waiting time has elapsed, or when they close the assessment. By default, this value is set to 0, which means that there is no limit.
 
@@ -666,6 +664,16 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
 
 ## Linking to assessments
 

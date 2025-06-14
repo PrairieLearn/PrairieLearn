@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -7,17 +7,17 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   checkBelongs,
-  gradeAssessmentInstance,
-  gradeAllAssessmentInstances,
   deleteAllAssessmentInstancesForAssessment,
   deleteAssessmentInstance,
+  gradeAllAssessmentInstances,
+  gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
 
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(

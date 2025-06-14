@@ -1,6 +1,5 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -9,7 +8,7 @@ import { getCourseOwners } from '../../lib/course.js';
 
 import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -24,7 +23,7 @@ router.get(
     const result = await sqldb.queryAsync(sql.lti_data, {
       course_instance_id: res.locals.course_instance.id,
     });
-    _.assign(res.locals, result.rows[0]);
+    Object.assign(res.locals, result.rows[0]);
 
     res.send(InstructorInstanceAdminLti({ resLocals: res.locals }));
   }),

@@ -1,6 +1,6 @@
 # Java Autograder
 
-This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) documentation.
 
 ## Overview
 
@@ -123,13 +123,13 @@ void addition(TestReporter reporter) {
 }
 ```
 
-The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be executed with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
+The autograder will give a question points based on if a test passed or failed based on the default Java behavior. Note that [Java's built-in assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be executed with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
 
 ### Dynamic, parameterized and repeated tests
 
 JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests) and [test factories](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dynamic-tests).
 
-While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different than other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
+While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different from other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
 
 To avoid these issues, if a particular test class includes any dynamic test (i.e., tests using annotations like `@ParameterizedTest`, `@RepeatedTest` or `@TestFactory`), instructors are encouraged to define the maximum number of expected points as a class annotation, as demonstrated below. Classes that only use regular method tests (i.e., tests using annotations like `@Test`) are not required to use such a tag, as the total number of points can be easily retrieved from the static tests themselves at the start of the testing process.
 
@@ -148,7 +148,7 @@ public class ExampleJUnit5Test {
 
 ### Changing compilation options
 
-By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
+By default, the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
 
 ```json title="info.json"
 {
@@ -165,7 +165,7 @@ The example above disables the `static` warning (use of static fields applied to
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
-- `-source 10` to compile using the Java 10 language version.
+- `--release 11` to compile using the Java 11 language version.
 
 Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java' documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 

@@ -1,7 +1,6 @@
 import path from 'node:path';
 
-import { use as chaiUse, assert } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import * as namedLocks from '@prairielearn/named-locks';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
@@ -11,14 +10,12 @@ import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
 import { selectAllBatchedMigrations } from './batched-migration.js';
 import { BatchedMigrationsRunner } from './batched-migrations-runner.js';
 
-chaiUse(chaiAsPromised);
-
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
 });
 
 describe('BatchedMigrationsRunner', () => {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
       throw err;
@@ -30,7 +27,7 @@ describe('BatchedMigrationsRunner', () => {
     await postgresTestUtils.resetDatabase();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await namedLocks.close();
     await postgresTestUtils.dropDatabase();
   });
@@ -99,13 +96,11 @@ describe('BatchedMigrationsRunner', () => {
 
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');
 
-    await assert.isRejected(
+    await expect(
       runner.finalizeBatchedMigration('20230406184107_failing_migration', {
         logProgress: false,
       }),
-      "but it is 'failed'",
-    );
-
+    ).rejects.toThrow("but it is 'failed'");
     const migrations = await selectAllBatchedMigrations('test');
     assert.lengthOf(migrations, 1);
     assert.equal(migrations[0].timestamp, '20230406184107');

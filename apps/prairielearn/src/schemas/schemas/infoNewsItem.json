@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -26,6 +26,24 @@
     "visible_to_students": {
       "description": "Whether the news item should be shown to students.",
       "type": "boolean"
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

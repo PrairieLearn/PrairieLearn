@@ -1,22 +1,22 @@
 import * as crypto from 'crypto';
 
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { InstitutionSchema, EnumModeSchema, UserSchema } from '../../lib/db-types.js';
+import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
+import { ipToMode } from '../../lib/exam-mode.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -51,11 +51,11 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
 
-    const { mode } = await sqldb.callRow(
-      'ip_to_mode',
-      [req.ip, res.locals.req_date, authn_user.user_id],
-      z.object({ mode: EnumModeSchema }),
-    );
+    const { mode } = await ipToMode({
+      ip: req.ip,
+      date: res.locals.req_date,
+      authn_user_id: authn_user.user_id,
+    });
 
     const showEnhancedNavigationToggle = await features.enabled('enhanced-navigation-user-toggle', {
       user_id: authn_user.user_id,
@@ -98,11 +98,11 @@ router.post(
       flash('success', 'Features updated successfully.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_generate') {
-      const { mode } = await sqldb.callRow(
-        'ip_to_mode',
-        [req.ip, res.locals.req_date, res.locals.authn_user.user_id],
-        z.object({ mode: EnumModeSchema }),
-      );
+      const { mode } = await ipToMode({
+        ip: req.ip,
+        date: res.locals.req_date,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
       }

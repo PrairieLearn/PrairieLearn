@@ -1,11 +1,12 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -23,10 +24,11 @@ function makeCourseInstance(): util.CourseInstanceData {
 }
 
 describe('Course instance syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of course instances in subfolders', async () => {
     const courseData = util.getCourseData();
@@ -404,5 +406,118 @@ describe('Course instance syncing', () => {
     );
     assert.isNull(newCourseInstanceRow2?.deleted_at);
     assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+  });
+
+  it('syncs string comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment =
+      'course instance comment';
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: 'course instance access rule comment',
+      },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
+  });
+
+  it('syncs array comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = [
+      'course instance comment',
+      'course instance comment 2',
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: ['course instance access rule comment', 'course instance access rule comment 2'],
+      },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.deepEqual(syncedCourseInstances[0].json_comment, [
+      'course instance comment',
+      'course instance comment 2',
+    ]);
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.deepEqual(syncedAccessRules[0].json_comment, [
+      'course instance access rule comment',
+      'course instance access rule comment 2',
+    ]);
+  });
+
+  it('syncs object comments correctly', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.comment = {
+      comment: 'course instance comment',
+      comment2: 'course instance comment 2',
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        comment: {
+          comment: 'course instance access rule comment',
+          comment2: 'course instance access rule comment 2',
+        },
+      },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    assert.deepEqual(syncedCourseInstances[0].json_comment, {
+      comment: 'course instance comment',
+      comment2: 'course instance comment 2',
+    });
+    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    assert.deepEqual(syncedAccessRules[0].json_comment, {
+      comment: 'course instance access rule comment',
+      comment2: 'course instance access rule comment 2',
+    });
+  });
+
+  it('records a warning for UIDs containing commas or spaces', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        startDate: '2024-01-01T00:00:00',
+        endDate: '3024-01-31T00:00:00',
+        uids: ['foo@example.com,bar@example.com', 'biz@example.com baz@example.com'],
+      },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(
+      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
+    );
+    assert.isOk(syncedCourseInstance);
+    assert.match(
+      syncedCourseInstance?.sync_warnings,
+      /The following access rule UIDs contain unexpected whitespace: "biz@example.com baz@example.com"/,
+    );
+    assert.match(
+      syncedCourseInstance?.sync_warnings,
+      /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
+    );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(
+      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
+    );
+    assert.isOk(syncedCourseInstance);
+    assert.match(syncedCourseInstance?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

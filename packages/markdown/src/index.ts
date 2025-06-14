@@ -1,6 +1,6 @@
-import type { Root as HastRoot, Element } from 'hast';
+import type { Element, Root as HastRoot } from 'hast';
 import type { Root as MdastRoot, Text } from 'mdast';
-import type { Math, InlineMath } from 'mdast-util-math';
+import type { InlineMath, Math } from 'mdast-util-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import rehypeStringify from 'rehype-stringify';
@@ -8,7 +8,14 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkParse from 'remark-parse';
 import remark2rehype from 'remark-rehype';
-import { type TransformCallback, type Transformer, type Processor, unified } from 'unified';
+import {
+  type Plugin,
+  type PluginTuple,
+  type Processor,
+  type TransformCallback,
+  type Transformer,
+  unified,
+} from 'unified';
 import type { Node } from 'unist';
 import { visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
@@ -64,35 +71,71 @@ export function createProcessor({
   mdastVisitors,
   hastVisitors,
   sanitize = true,
+  allowHtml = true,
+  interpretMath = true,
 }: {
   mdastVisitors?: ((ast: MdastRoot) => undefined)[];
   hastVisitors?: ((ast: HastRoot) => undefined)[];
+  /**
+   * If allowHtml is false, this will remove the tags themselves for inline HTML but will remove the full block for block HTML.
+   * See https://spec.commonmark.org/0.31.2/#raw-html for more details on inline vs block HTML in Markdown.
+   * For example, if the input is `<h1>Block HTML</h1>` the entire block will be removed. If the input is `<em>Inline HTML</em>`,
+   * the `<em>` tags will be removed the output will be just the text content without any HTML tags (`Inline HTML`).
+   */
   sanitize?: boolean;
+  allowHtml?: boolean;
+  interpretMath?: boolean;
 } = {}) {
-  const htmlConversion = (mdastVisitors ?? [])
-    .reduce<Processor<MdastRoot, MdastRoot, MdastRoot | undefined>>(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      unified().use(remarkParse).use(remarkMath),
-    )
-    .use(makeHandler(visitMathBlock))
-    .use(remarkGfm)
-    .use(remark2rehype, { allowDangerousHtml: true })
-    .use(rehypeRaw);
-  return (hastVisitors ?? [])
-    .reduce(
-      (processor, visitor) => processor.use(makeHandler(visitor)),
-      sanitize ? htmlConversion.use(rehypeSanitize) : htmlConversion,
-    )
-    .use(rehypeStringify);
+  const plugins: (Plugin<any, any, any> | PluginTuple<any, any, any>)[] = [
+    remarkParse,
+    ...(interpretMath ? [remarkMath] : []),
+    ...(mdastVisitors ?? []).map((visitor) => makeHandler(visitor)),
+    ...(interpretMath ? [makeHandler(visitMathBlock)] : []),
+    remarkGfm,
+    [remark2rehype, { allowDangerousHtml: allowHtml }],
+    ...(!allowHtml ? [] : [rehypeRaw]),
+    ...(sanitize ? [rehypeSanitize] : []),
+    ...(hastVisitors ?? []).map((visitor) => makeHandler(visitor)),
+    rehypeStringify,
+  ];
+
+  return plugins.reduce((processor: Processor, plugin) => {
+    if (Array.isArray(plugin)) return processor.use(...plugin);
+    return processor.use(plugin);
+  }, unified());
 }
 
-const defaultProcessor = createProcessor();
-const inlineProcessor = createProcessor({ hastVisitors: [visitCheckSingleParagraph] });
+const processorCache = new Map<string, Processor>();
+function getProcessor(options: {
+  inline: boolean;
+  allowHtml: boolean;
+  interpretMath: boolean;
+}): Processor {
+  const key = `${options.inline}:${options.allowHtml}:${options.interpretMath}`;
+  let processor = processorCache.get(key);
+  if (!processor) {
+    processor = createProcessor({
+      hastVisitors: options.inline ? [visitCheckSingleParagraph] : [],
+      allowHtml: options.allowHtml,
+      interpretMath: options.interpretMath,
+    });
+    processorCache.set(key, processor);
+  }
+  return processor;
+}
 
 /**
  * Converts markdown to HTML. If `inline` is true, and the result fits a single
  * paragraph, the content is returned inline without the paragraph tag.
  */
-export async function markdownToHtml(original: string, { inline }: { inline?: boolean } = {}) {
-  return (await (inline ? inlineProcessor : defaultProcessor).process(original)).value.toString();
+export async function markdownToHtml(
+  original: string,
+  {
+    inline = false,
+    allowHtml = true,
+    interpretMath = true,
+  }: { inline?: boolean; allowHtml?: boolean; interpretMath?: boolean } = {},
+) {
+  const processor = getProcessor({ inline, allowHtml, interpretMath });
+  return (await processor.process(original)).value.toString();
 }

@@ -8,18 +8,389 @@ WHERE
   ai.id = $assessment_instance_id
   AND a.id = $assessment_id;
 
--- BLOCK select_assessment_info
+-- BLOCK insert_assessment_instance
+WITH
+  latest_assessment_instance AS (
+    SELECT
+      ai.*
+    FROM
+      assessment_instances AS ai
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND (
+        CASE
+          WHEN $group_id::BIGINT IS NOT NULL THEN ai.group_id = $group_id
+          ELSE ai.user_id = $user_id
+        END
+      )
+    ORDER BY
+      ai.number DESC
+    LIMIT
+      1
+  ),
+  inserted_assessment_instance AS (
+    INSERT INTO
+      assessment_instances (
+        auth_user_id,
+        assessment_id,
+        user_id,
+        group_id,
+        mode,
+        auto_close,
+        date_limit,
+        number,
+        include_in_statistics,
+        last_client_fingerprint_id
+      )
+    SELECT
+      $authn_user_id,
+      $assessment_id,
+      CASE
+        WHEN $group_id::BIGINT IS NULL THEN $user_id
+      END,
+      $group_id,
+      $mode,
+      a.auto_close
+      AND a.type = 'Exam',
+      CASE
+        WHEN $time_limit_min::INTEGER IS NOT NULL THEN $date::TIMESTAMPTZ + make_interval(mins => $time_limit_min)
+      END,
+      COALESCE(lai.number, 0) + 1,
+      NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
+      $client_fingerprint_id
+    FROM
+      assessments AS a
+      -- Only retrieve the latest assessment instance if the assessment allows
+      -- multiple instances, otherwise trigger a conflict on number.
+      LEFT JOIN latest_assessment_instance AS lai ON a.multiple_instance
+    WHERE
+      a.id = $assessment_id
+    ON CONFLICT DO NOTHING
+    RETURNING
+      *
+  ),
+  inserted_assessment_state_log AS (
+    INSERT INTO
+      assessment_state_logs (
+        open,
+        assessment_instance_id,
+        date_limit,
+        auth_user_id,
+        client_fingerprint_id
+      )
+    SELECT
+      ai.open,
+      ai.id,
+      ai.date_limit,
+      $authn_user_id,
+      $client_fingerprint_id
+    FROM
+      inserted_assessment_instance AS ai
+  ),
+  -- Use separate CTEs for last_access because Postgres does not support
+  -- multiple ON CONFLICT clauses in a single INSERT statement. Only one of
+  -- these CTEs will actually insert a row.
+  inserted_last_access_group AS (
+    INSERT INTO
+      last_accesses (group_id, last_access)
+    SELECT
+      $group_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NOT NULL
+    ON CONFLICT (group_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  ),
+  inserted_last_access_non_group AS (
+    INSERT INTO
+      last_accesses (user_id, last_access)
+    SELECT
+      $user_id,
+      current_timestamp
+    WHERE
+      $group_id::BIGINT IS NULL
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+      last_access = EXCLUDED.last_access
+  )
 SELECT
-  assessment_label (a, aset),
-  ci.id AS course_instance_id,
-  c.id AS course_id
+  id AS assessment_instance_id,
+  TRUE AS created
 FROM
-  assessments AS a
-  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  inserted_assessment_instance
+UNION ALL
+-- If the assessment instance was not inserted because of a conflict on number, return the existing assessment instance.
+SELECT
+  id AS assessment_instance_id,
+  FALSE AS created
+FROM
+  latest_assessment_instance
 WHERE
-  a.id = $assessment_id;
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      inserted_assessment_instance
+  );
+
+-- BLOCK insert_instance_questions
+WITH
+  -- First assign two random orderings to the list of questions, one for
+  -- alternative_group question selection and one for zone question
+  -- selection, plus a fixed ordering based on the existing question
+  -- number (if any).
+  randomized_assessment_questions AS (
+    SELECT
+      aq.*,
+      CASE
+        WHEN iq.id IS NOT NULL THEN 1
+        ELSE 2
+      END AS existing_order,
+      random() AS ag_rand, -- for alternative_group selection
+      random() AS z_rand -- for zone selection
+    FROM
+      assessment_questions AS aq
+      LEFT JOIN ( -- existing questions if they exist
+        SELECT
+          *
+        FROM
+          instance_questions
+        WHERE
+          assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
+      ) AS iq ON (iq.assessment_question_id = aq.id)
+    WHERE
+      aq.assessment_id = $assessment_id
+      AND aq.deleted_at IS NULL
+  ),
+  -- Next choose subsets of each alternative_group with the correct
+  -- number of questions, or all of them if number_choose isn't
+  -- specified for that alternative_group.
+  --
+  -- To do this, we start by sorting the questions within each
+  -- alternative_group by the ag_rand value.
+  ag_numbered_assessment_questions AS (
+    SELECT
+      aq.*,
+      (
+        row_number() OVER (
+          PARTITION BY
+            aq.alternative_group_id
+          ORDER BY
+            aq.existing_order,
+            aq.ag_rand,
+            aq.id
+        )
+      ) AS ag_row_number
+    FROM
+      randomized_assessment_questions AS aq
+  ),
+  -- Now we actually choose the questions in each alternative_group.
+  ag_chosen_assessment_questions AS (
+    SELECT
+      aq.*
+    FROM
+      ag_numbered_assessment_questions AS aq
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+    WHERE
+      (ag.number_choose IS NULL)
+      OR (ag_row_number <= ag.number_choose)
+  ),
+  -- Next we choose subsets of questions in each zone (or all of them
+  -- if number_choose isn't specified for the zone).
+  --
+  -- We start by sorting the questions within each zone, similarly to
+  -- what we did above for each alternative_group. A key difference
+  -- is that we first sort by the ag_row_number and then by z_rand.
+  -- This means that all the questions with ag_row_number = 1 will be
+  -- used up first, then all the ones with ag_row_number = 2, etc.
+  -- This has the effect of spreading out our choices among the
+  -- different alternative_groups in the zone as much as possible.
+  z_numbered_assessment_questions AS (
+    SELECT
+      aq.*,
+      (
+        row_number() OVER (
+          PARTITION BY
+            z.id
+          ORDER BY
+            aq.ag_row_number,
+            aq.existing_order,
+            aq.z_rand,
+            aq.id
+        )
+      ) AS z_row_number
+    FROM
+      ag_chosen_assessment_questions AS aq
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
+  ),
+  -- Now we actually select the questions within the zone.
+  z_chosen_assessment_questions AS (
+    SELECT
+      aq.*
+    FROM
+      z_numbered_assessment_questions AS aq
+      JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+      JOIN zones AS z ON (z.id = ag.zone_id)
+      JOIN questions AS q ON (q.id = aq.question_id)
+    WHERE
+      (
+        z.number_choose IS NULL
+        OR z_row_number <= z.number_choose
+      )
+      AND q.deleted_at IS NULL
+  ),
+  inserted_instance_questions AS (
+    INSERT INTO
+      instance_questions AS iq (
+        authn_user_id,
+        assessment_instance_id,
+        assessment_question_id,
+        current_value,
+        points_list,
+        points_list_original,
+        auto_points,
+        manual_points
+      )
+    SELECT
+      $authn_user_id,
+      $assessment_instance_id,
+      aq.id,
+      coalesce(aq.init_points, aq.points_list[1], 0),
+      aq.points_list,
+      aq.points_list,
+      0,
+      0 -- These points are updated manually because their default value is set to NULL for migration purposes
+    FROM
+      z_chosen_assessment_questions AS aq
+    ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING
+    RETURNING
+      iq.*
+  ),
+  inserted_audit_logs AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        user_id,
+        group_id,
+        table_name,
+        row_id,
+        action,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      ci.course_id,
+      ai.user_id,
+      ai.group_id,
+      'instance_questions',
+      iq.id,
+      'insert',
+      to_jsonb(iq.*)
+    FROM
+      inserted_instance_questions AS iq
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  )
+SELECT
+  iq.id
+FROM
+  inserted_instance_questions AS iq;
+
+-- BLOCK update_assessment_instance_max_points
+WITH
+  zones_total_max_points AS (
+    SELECT
+      SUM(max_points) AS total_max_points
+    FROM
+      assessment_instances_points ($assessment_instance_id)
+  ),
+  new_max_points AS (
+    SELECT
+      ai.max_points AS old_max_points,
+      ai.max_bonus_points AS old_max_bonus_points,
+      COALESCE(
+        a.max_points,
+        GREATEST(
+          ztmp.total_max_points - COALESCE(a.max_bonus_points, 0),
+          0
+        )
+      ) AS new_max_points,
+      COALESCE(a.max_bonus_points, 0) AS new_max_bonus_points
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      LEFT JOIN zones_total_max_points ztmp ON TRUE
+    WHERE
+      ai.id = $assessment_instance_id
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances AS ai
+    SET
+      max_points = nmp.new_max_points,
+      max_bonus_points = nmp.new_max_bonus_points,
+      modified_at = now()
+    FROM
+      new_max_points AS nmp
+    WHERE
+      ai.id = $assessment_instance_id
+      AND (
+        nmp.new_max_points IS DISTINCT FROM ai.max_points
+        OR nmp.new_max_bonus_points IS DISTINCT FROM ai.max_bonus_points
+      )
+    RETURNING
+      ai.*,
+      nmp.old_max_points,
+      nmp.old_max_bonus_points
+  ),
+  inserted_audit_logs AS (
+    INSERT INTO
+      audit_logs (
+        authn_user_id,
+        course_id,
+        user_id,
+        group_id,
+        table_name,
+        column_name,
+        row_id,
+        action,
+        old_state,
+        new_state
+      )
+    SELECT
+      $authn_user_id,
+      ci.course_id,
+      ai.user_id,
+      ai.group_id,
+      'assessment_instances',
+      'max_points',
+      ai.id,
+      'update',
+      jsonb_build_object(
+        'max_points',
+        ai.old_max_points,
+        'max_bonus_points',
+        ai.old_max_bonus_points
+      ),
+      jsonb_build_object(
+        'max_points',
+        ai.max_points,
+        'max_bonus_points',
+        ai.max_bonus_points
+      )
+    FROM
+      updated_assessment_instance AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  )
+SELECT
+  max_points,
+  max_bonus_points
+FROM
+  updated_assessment_instance;
 
 -- BLOCK select_instances_to_grade
 SELECT
@@ -640,7 +1011,10 @@ WITH
     (
       SELECT
         3.7 AS event_order,
-        'Manual grading results'::TEXT AS event_name,
+        CASE
+          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::TEXT
+          ELSE 'AI grading results'::TEXT
+        END AS event_name,
         'blue2'::TEXT AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
@@ -704,7 +1078,7 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
-        AND gj.grading_method = 'Manual'
+        AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
     UNION
@@ -1391,3 +1765,13 @@ FROM
   deleted_assessment_instances AS ai
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);
+
+-- BLOCK select_assessment_instance_last_submission_date
+SELECT
+  max(s.date)
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id;

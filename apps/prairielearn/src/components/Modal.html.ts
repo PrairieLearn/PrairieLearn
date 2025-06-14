@@ -1,4 +1,4 @@
-import { html, type HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
 interface ModalProps {
   body?: HtmlSafeString | string;

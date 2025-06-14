@@ -8,6 +8,7 @@
     {
       "questions": [
         { "id": "demo/workspace/vscode-cpp", "points": 1, "maxPoints": 5 },
+        { "id": "demo/workspace/vscode-java", "points": 1, "maxPoints": 5 },
         { "id": "demo/workspace/vscode-python", "points": 1, "maxPoints": 5 },
         { "id": "demo/workspace/jupyterlab", "points": 1, "maxPoints": 5 },
         { "id": "demo/workspace/xtermjs", "points": 1, "maxPoints": 5 },

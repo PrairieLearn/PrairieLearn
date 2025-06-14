@@ -4,21 +4,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
+  type GroupConfig,
+  GroupConfigSchema,
+  GroupRoleSchema,
   GroupSchema,
+  type GroupUserRole,
   IdSchema,
   type User,
   UserSchema,
-  GroupConfigSchema,
-  type GroupConfig,
-  GroupRoleSchema,
-  type GroupUserRole,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -220,7 +220,7 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectCourseInstanceById(course_instance_id);
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
     if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
@@ -340,20 +340,22 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  group_name: string,
+  group_name: string | null,
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
 ): Promise<void> {
-  if (group_name.length > 30) {
-    throw new GroupOperationError(
-      'The group name is too long. Use at most 30 alphanumerical characters.',
-    );
-  }
-  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
-    throw new GroupOperationError(
-      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
-    );
+  if (group_name) {
+    if (group_name.length > 30) {
+      throw new GroupOperationError(
+        'The group name is too long. Use at most 30 alphanumerical characters.',
+      );
+    }
+    if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+      throw new GroupOperationError(
+        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -390,7 +392,13 @@ export async function createGroup(
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      if (group_name) {
+        throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      } else {
+        throw new GroupOperationError(
+          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+        );
+      }
     }
     throw err;
   }

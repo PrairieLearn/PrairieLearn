@@ -1,0 +1,104 @@
+on:
+  workflow_call:
+    inputs:
+      group:
+        description: 'A name for the group of images to build'
+        required: true
+        type: string
+      images:
+        description: 'The images to build'
+        required: true
+        type: string
+      cache_images:
+        description: 'The images to cache'
+        required: false
+        type: string
+        default: ''
+
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  # Secrets aren't accessible for PRs coming from forks, and we also can't
+  # check secrets in an `if` conditional, so we check for the presence of
+  # the secret here and use this value in conditionals below.
+  CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
+jobs:
+  build-images:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # We need the whole history so we can diff against `master` to determine
+          # what images need to be built.
+          fetch-depth: 0
+      - name: Login to DockerHub
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build images
+        run: python3 scripts/build_images/build.py
+        env:
+          IMAGES: ${{ inputs.images }}
+          CACHE_ONLY: ${{ inputs.cache_images }}
+          PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
+          METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
+          ONLY_CHANGED: true
+
+      - name: Upload metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
+          retention-days: 1
+          overwrite: true
+
+  combine-images:
+    name: Combine
+    needs: [build-images]
+
+    runs-on: ubuntu-24.04
+
+    env:
+      # Secrets aren't accessible for PRs coming from forks, and we also can't
+      # check secrets in an `if` conditional, so we check for the presence of
+      # the secret here and use this value in conditionals below.
+      CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to DockerHub
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+        uses: docker/login-action@v3 # https://github.com/marketplace/actions/docker-login
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create directory for metadata
+        run: mkdir -p ${{ runner.temp }}/image-metadata-${{ inputs.group}}
+
+      - name: Download metadata
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
+          merge-multiple: true
+
+      - name: Combine images
+        if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+        run: python3 scripts/build_images/combine.py
+        env:
+          METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
+          # On master, add the `latest` tag as well.
+          TAGS: ${{ github.ref == 'refs/heads/master' && format('latest,{0}', env.COMMIT_SHA) || env.COMMIT_SHA }}

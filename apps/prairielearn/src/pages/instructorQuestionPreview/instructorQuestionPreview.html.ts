@@ -1,22 +1,30 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { type CopyTarget } from '../../lib/copy-content.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
   manualGradingPreviewEnabled,
   manualGradingPreviewUrl,
+  aiGradingPreviewEnabled,
+  aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  questionCopyTargets,
   resLocals,
 }: {
   normalPreviewUrl: string;
   manualGradingPreviewEnabled: boolean;
   manualGradingPreviewUrl: string;
+  aiGradingPreviewEnabled: boolean;
+  aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
+  questionCopyTargets: CopyTarget[] | null;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -68,16 +76,32 @@ export function InstructorQuestionPreview({
             </div>
           `
         : ''}
+      ${aiGradingPreviewEnabled
+        ? html`
+            <div class="alert alert-primary">
+              You are viewing this question as it will appear to the AI grader.
+              <a href="${normalPreviewUrl}" class="alert-link">Return to the normal view</a> when
+              you are done.
+            </div>
+          `
+        : ''}
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           ${QuestionContainer({
             resLocals,
-            showFooter: manualGradingPreviewEnabled ? false : undefined,
+            showFooter: manualGradingPreviewEnabled || aiGradingPreviewEnabled ? false : undefined,
             questionContext: 'instructor',
+            questionRenderContext: run(() => {
+              if (manualGradingPreviewEnabled) return 'manual_grading';
+              if (aiGradingPreviewEnabled) return 'ai_grading';
+              return undefined;
+            }),
             manualGradingPreviewUrl: manualGradingPreviewEnabled
               ? undefined
               : manualGradingPreviewUrl,
+            aiGradingPreviewUrl: aiGradingPreviewEnabled ? undefined : aiGradingPreviewUrl,
             renderSubmissionSearchParams,
+            questionCopyTargets,
           })}
         </div>
 

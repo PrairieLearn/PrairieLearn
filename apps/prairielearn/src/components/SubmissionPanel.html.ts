@@ -7,18 +7,20 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
-  GradingJobSchema,
-  SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
+  type RubricGradingItem,
+  SubmissionSchema,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
-import type { QuestionContext } from './QuestionContainer.types.js';
+import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
   feedback: true,
@@ -47,6 +49,7 @@ export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
 
 export function SubmissionPanel({
   questionContext,
+  questionRenderContext,
   question,
   assessment_question,
   instance_question,
@@ -61,6 +64,7 @@ export function SubmissionPanel({
   renderSubmissionSearchParams,
 }: {
   questionContext: QuestionContext;
+  questionRenderContext?: QuestionRenderContext;
   question: Question;
   assessment_question?: AssessmentQuestion | null;
   instance_question?: InstanceQuestion | null;
@@ -135,46 +139,12 @@ export function SubmissionPanel({
                               item.always_show_to_students ||
                               submission.rubric_grading?.rubric_items?.[item.id]?.score,
                           )
-                          .map(
-                            (item) => html`
-                              <div>
-                                <label class="w-100" data-testid="rubric-item-container-${item.id}">
-                                  <input
-                                    type="checkbox"
-                                    disabled
-                                    ${submission.rubric_grading?.rubric_items?.[item.id]?.score
-                                      ? 'checked'
-                                      : ''}
-                                  />
-                                  <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-                                    <strong data-testid="rubric-item-points">
-                                      [${(item.points >= 0 ? '+' : '') + item.points}]
-                                    </strong>
-                                  </span>
-                                  <span
-                                    class="d-inline-block"
-                                    data-testid="rubric-item-description"
-                                  >
-                                    ${unsafeHtml(item.description_rendered ?? '')}
-                                  </span>
-                                  ${item.explanation
-                                    ? html`
-                                        <button
-                                          type="button"
-                                          class="btn btn-xs btn-ghost"
-                                          data-bs-toggle="popover"
-                                          data-bs-content="${item.explanation_rendered}"
-                                          data-bs-html="true"
-                                          data-testid="rubric-item-explanation"
-                                        >
-                                          <i class="fas fa-circle-info"></i>
-                                          <span class="visually-hidden">Details</span>
-                                        </button>
-                                      `
-                                    : ''}
-                                </label>
-                              </div>
-                            `,
+                          .map((item) =>
+                            RubricItem({
+                              item,
+                              item_grading:
+                                submission.rubric_grading?.rubric_items?.[item.id] ?? null,
+                            }),
                           )}
                         ${submission.rubric_grading?.adjust_points
                           ? html`
@@ -219,7 +189,7 @@ export function SubmissionPanel({
               </span>
             </div>
             <span class="small">
-              ${!submission.user_uid
+              ${!submission.user_uid || questionContext === 'manual_grading'
                 ? `Submitted at ${submission.formatted_date} `
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
@@ -268,23 +238,20 @@ export function SubmissionPanel({
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
-          <div class="card-body submission-body">
+          <div class="card-body overflow-x-auto submission-body">
             ${submissionHtml == null
               ? html`
                   <div class="spinner-border" role="status">
                     <span class="visually-hidden">Loading...</span>
                   </div>
                 `
-              : unsafeHtml(submissionHtml)}
+              : questionRenderContext === 'ai_grading'
+                ? AiGradingHtmlPreview(submissionHtml)
+                : unsafeHtml(submissionHtml)}
           </div>
         </div>
 
-        ${SubmissionInfoModal({
-          urlPrefix,
-          submission,
-          question,
-          course_instance_id,
-        })}
+        ${SubmissionInfoModal({ submission, course_id: question.course_id, course_instance_id })}
       </div>
     </div>
   `;
@@ -422,114 +389,146 @@ function SubmissionStatusBadge({
 }
 
 function SubmissionInfoModal({
-  urlPrefix,
   submission,
-  question,
+  course_id,
   course_instance_id,
 }: {
-  urlPrefix: string;
   submission: SubmissionForRender;
-  question: Question;
+  course_id: string;
   course_instance_id?: string | null;
 }) {
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
+  const gradingJobUrl =
+    course_instance_id == null
+      ? `${config.urlPrefix}/course/${course_id}/grading_job/${submission.grading_job?.id}`
+      : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
+          submission.grading_job?.id
+        }`;
   return Modal({
     id: `submissionInfoModal-${submission.id}`,
     title: 'Submission info',
-    body: !gradingJobStats
-      ? html`<p>This submission has not been graded.</p>`
-      : html`
-          <table
-            class="table table-sm table-borderless two-column-description mb-0"
-            aria-label="Submission info"
-          >
-            <tbody>
-              <tr>
-                <th>Submission time</th>
-                <td>${submission.formatted_date}</td>
-              </tr>
-              ${question.grading_method === 'External'
-                ? html`
-                    <tr>
-                      <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
-                      <td>${gradingJobStats.submitDuration}</td>
-                    </tr>
-                    <tr>
-                      <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
-                      <td>${gradingJobStats.queueDuration}</td>
-                    </tr>
-                    <tr>
-                      <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
-                      <td>${gradingJobStats.prepareDuration}</td>
-                    </tr>
-                    <tr>
-                      <th><span class="text-success me-2">&bull;</span>Run duration</th>
-                      <td>${gradingJobStats.runDuration}</td>
-                    </tr>
-                    <tr>
-                      <th><span class="text-danger me-2">&bull;</span>Report duration</th>
-                      <td>${gradingJobStats.reportDuration}</td>
-                    </tr>
-                    <tr>
-                      <th>Total duration</th>
-                      <td>${gradingJobStats.totalDuration}</td>
-                    </tr>
-                  `
-                : ''}
-            </tbody>
-          </table>
-          ${question.grading_method === 'External'
+    body: html`
+      <table
+        class="table table-sm table-borderless two-column-description mb-0"
+        aria-label="Submission info"
+      >
+        <tbody>
+          <tr>
+            <th>Submission time</th>
+            <td>${submission.formatted_date}</td>
+          </tr>
+          ${submission.user_uid
             ? html`
-                <div class="d-flex mt-2 mb-2">
-                  <span
-                    style="display: inline-block; width: ${gradingJobStats
-                      .phases[0]}%; height: 10px;"
-                    class="bg-dark m-0"
-                  ></span>
-                  <span
-                    style="display: inline-block; width: ${gradingJobStats
-                      .phases[1]}%; height: 10px;"
-                    class="bg-warning m-0"
-                  ></span>
-                  <span
-                    style="display: inline-block; width: ${gradingJobStats
-                      .phases[2]}%; height: 10px;"
-                    class="bg-primary m-0"
-                  ></span>
-                  <span
-                    style="display: inline-block; width: ${gradingJobStats
-                      .phases[3]}%; height: 10px;"
-                    class="bg-success m-0"
-                  ></span>
-                  <span
-                    style="display: inline-block; width: ${gradingJobStats
-                      .phases[4]}%; height: 10px;"
-                    class="bg-danger m-0"
-                  ></span>
-                </div>
-                ${course_instance_id != null
-                  ? html`
-                      <a
-                        class="btn btn-primary mt-2"
-                        href="${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${submission
-                          .grading_job?.id}"
-                        >View grading job ${submission.grading_job?.id}</a
-                      >
-                    `
-                  : html`
-                      <a
-                        class="btn btn-primary mt-2"
-                        href="${urlPrefix}/grading_job/${submission.grading_job?.id}"
-                        >View grading job ${submission.grading_job?.id}</a
-                      >
-                    `}
+                <tr>
+                  <th>Submitted by</th>
+                  <td>${submission.user_uid}</td>
+                </tr>
               `
             : ''}
-        `,
+          ${gradingJobStats?.grading_method === 'External'
+            ? html`
+                <tr>
+                  <th><span class="text-dark me-2">&bull;</span>Submit duration</th>
+                  <td>${gradingJobStats.submitDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-warning me-2">&bull;</span>Queue duration</th>
+                  <td>${gradingJobStats.queueDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-primary me-2">&bull;</span>Prepare duration</th>
+                  <td>${gradingJobStats.prepareDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-success me-2">&bull;</span>Run duration</th>
+                  <td>${gradingJobStats.runDuration}</td>
+                </tr>
+                <tr>
+                  <th><span class="text-danger me-2">&bull;</span>Report duration</th>
+                  <td>${gradingJobStats.reportDuration}</td>
+                </tr>
+                <tr>
+                  <th>Total duration</th>
+                  <td>${gradingJobStats.totalDuration}</td>
+                </tr>
+              `
+            : ''}
+        </tbody>
+      </table>
+      ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
+      ${gradingJobStats?.grading_method === 'External'
+        ? html`
+            <div class="d-flex mt-2 mb-2">
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[0]}%; height: 10px;"
+                class="bg-dark m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[1]}%; height: 10px;"
+                class="bg-warning m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[2]}%; height: 10px;"
+                class="bg-primary m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[3]}%; height: 10px;"
+                class="bg-success m-0"
+              ></span>
+              <span
+                style="display: inline-block; width: ${gradingJobStats.phases[4]}%; height: 10px;"
+                class="bg-danger m-0"
+              ></span>
+            </div>
+            <a class="btn btn-primary mt-2" href="${gradingJobUrl}">
+              View grading job ${submission.grading_job?.id}
+            </a>
+          `
+        : ''}
+    `,
     footer: html`
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     `,
   });
+}
+
+function RubricItem({
+  item,
+  item_grading,
+}: {
+  item: RubricData['rubric_items'][0];
+  item_grading: RubricGradingItem | undefined | null;
+}) {
+  return html`
+    <div>
+      <label class="w-100" data-testid="rubric-item-container-${item.id}">
+        <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
+        <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
+          <strong data-testid="rubric-item-points">
+            [${(item.points >= 0 ? '+' : '') + item.points}]
+          </strong>
+        </span>
+        <span class="d-inline-block" data-testid="rubric-item-description">
+          ${unsafeHtml(item.description_rendered ?? '')}
+        </span>
+        ${item.explanation
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs btn-ghost"
+                data-bs-toggle="popover"
+                data-bs-content="${item.explanation_rendered}"
+                data-bs-html="true"
+                data-testid="rubric-item-explanation"
+                aria-label="Details"
+              >
+                <i class="fas fa-circle-info"></i>
+              </button>
+            `
+          : ''}
+      </label>
+    </div>
+  `;
 }
 
 function buildGradingJobStats(job: GradingJob | null) {
@@ -554,6 +553,7 @@ function buildGradingJobStats(job: GradingJob | null) {
 
   return {
     ...stats,
+    grading_method: job.grading_method,
     phases: durations.map(
       // Round down to avoid width being greater than 100% with floating point errors
       (duration) => Math.floor(((duration ?? 0) * 1000) / totalDuration) / 10,

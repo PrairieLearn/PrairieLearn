@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getRuntimeDirectoryForCourse, ensureChunksForCourseAsync } from '../../lib/chunks.js';
+import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
@@ -25,7 +25,7 @@ export default function (options = { publicEndpoint: false }) {
         res.locals.question = await selectQuestionById(req.params.question_id);
 
         if (
-          !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
+          !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
           throw new HttpStatusError(404, 'Not Found');

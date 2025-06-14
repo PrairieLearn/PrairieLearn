@@ -1,6 +1,6 @@
 # `@prairielearn/run`
 
-A small utility for emulating expression-oriented programming, Inspired by https://maxgreenwald.me/blog/do-more-with-run.
+A small utility for emulating expression-oriented programming, inspired by <https://maxgreenwald.me/blog/do-more-with-run>.
 
 ## Usage
 
@@ -38,6 +38,6 @@ While the nested ternary is more concise in this example, it's more difficult to
 
 ## Why?
 
-Max Greenwald has a great blog post that explains the rationale for this pattern: https://maxgreenwald.me/blog/do-more-with-run
+Max Greenwald has a great blog post that explains the rationale for this pattern: <https://maxgreenwald.me/blog/do-more-with-run>
 
 Why is this one-liner a package? Mostly so the documentation and rationale can be kept in one place.

@@ -59,12 +59,14 @@ SELECT
   s.graded_at,
   s.grading_requested_at,
   s.id,
+  s.is_ai_graded,
   s.mode,
   s.override_score,
   s.score,
   s.v2_score,
   s.variant_id,
   s.manual_rubric_grading_id,
+  s.modified_at,
   to_jsonb(gj) AS grading_job,
   format_date_full_compact (
     s.date,
@@ -139,7 +141,7 @@ WITH
           JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
           JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         WHERE
-          s.id = $submission_id
+          s.id = $unsafe_submission_id
       )
     WINDOW
       w AS (
@@ -153,7 +155,7 @@ WITH
     FROM
       grading_jobs AS gj
     WHERE
-      gj.submission_id = $submission_id
+      gj.submission_id = $unsafe_submission_id
       AND grading_method != 'Manual'
     ORDER BY
       gj.date DESC,
@@ -164,7 +166,6 @@ WITH
 SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
-  to_jsonb(v) AS variant,
   qo.question_number,
   jsonb_build_object(
     'id',
@@ -223,48 +224,13 @@ FROM
     AND gc.deleted_at IS NULL
   )
 WHERE
-  s.id = $submission_id
+  s.id = $unsafe_submission_id
   AND q.id = $question_id
   AND (
     $instance_question_id::BIGINT IS NULL
     OR iq.id = $instance_question_id::BIGINT
   )
   AND v.id = $variant_id;
-
--- BLOCK select_variant_for_render
-SELECT
-  v.*,
-  format_date_full_compact (
-    v.date,
-    COALESCE(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
-  to_jsonb(a.*) AS assessment,
-  jsonb_set(
-    to_jsonb(ai.*),
-    '{formatted_date}',
-    to_jsonb(
-      format_date_full_compact (
-        ai.date,
-        COALESCE(ci.display_timezone, c.display_timezone)
-      )
-    )
-  ) AS assessment_instance,
-  to_jsonb(iq.*) AS instance_question
-FROM
-  variants as v
-  LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-  LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = v.course_id)
-WHERE
-  v.id = $variant_id
-  AND v.question_id = $question_id
-  -- instance_question_id is null for question preview, so allow any variant of the question
-  AND (
-    $instance_question_id::bigint IS NULL
-    OR v.instance_question_id = $instance_question_id
-  );
 
 -- BLOCK select_is_shared
 SELECT
@@ -283,5 +249,5 @@ SELECT
       questions
     WHERE
       id = $question_id
-      AND shared_publicly
+      AND share_publicly
   );

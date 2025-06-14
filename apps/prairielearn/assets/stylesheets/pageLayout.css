@@ -7,18 +7,36 @@ body:has(div.app-container) {
   overflow-y: unset !important;
 }
 
+/* Styles when the side nav is hidden */
 .app-container {
+  display: block;
+}
+
+/* Styles when the side nav is enabled and expanded */
+.app-container.side-nav-enabled {
   display: grid;
   position: relative;
   height: 100%;
   width: 100vw;
+  transition: 300ms;
   grid-template:
     'top-nav top-nav' auto
     'side-nav content' 1fr / 300px 1fr;
 }
 
-.app-container.no-sidebar {
-  display: block;
+/* Styles when the side nav is enabled and collapsed */
+.app-container.side-nav-enabled.collapsed {
+  grid-template:
+    'top-nav top-nav' auto
+    'side-nav content' 1fr / 50px 1fr;
+}
+
+.app-container.side-nav-enabled.collapsed #course-dropdown {
+  display: none;
+}
+
+.app-container.side-nav-enabled.collapsed #course-instance-dropdown {
+  display: none;
 }
 
 .app-top-nav {
@@ -27,12 +45,15 @@ body:has(div.app-container) {
 
 .app-side-nav {
   grid-area: side-nav;
-  padding: 0.75rem;
+  padding: 0.5rem;
+  padding-top: 0.3rem;
   overflow-y: auto;
+  transition: 300ms;
+}
 
-  /* This color is --bs-primary-bg-subtle from Bootstrap 5.3 */
-  /* TODO: Use the native CSS variable when we upgrade to 5.3 */
-  background-color: #cfe2ff;
+.app-container.side-nav-enabled.collapsed .app-side-nav {
+  padding: 0.5rem 0;
+  padding-top: 0.3rem;
 }
 
 .app-main {
@@ -46,15 +67,15 @@ body:has(div.app-container) {
   overflow-y: auto;
 }
 
-.side-nav {
-  display: flex;
-  flex-direction: column;
-}
-
 .side-nav-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.app-container.side-nav-enabled.collapsed .side-nav-group {
+  margin-bottom: 0;
 }
 
 .side-nav-link {
@@ -67,11 +88,16 @@ body:has(div.app-container) {
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   position: relative;
+  white-space: nowrap;
+}
+
+.app-container.side-nav-enabled.collapsed .side-nav-link {
+  padding: 0.75rem;
 }
 
 .side-nav-link:hover,
 .side-nav-link-active {
-  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
 }
 
 .side-nav-link-active {
@@ -84,16 +110,126 @@ body:has(div.app-container) {
   height: 100%;
   width: 4px;
   position: absolute;
-  left: -0.75rem;
-  background-color: var(--bs-primary);
+  left: -0.5rem;
+  background-color: var(--bs-secondary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
 
-.side-nav-section-header {
+/* Hide side nav link text when the side nav is collapsed */
+.app-container.side-nav-enabled.collapsed .side-nav-link .side-nav-link-text {
+  display: none;
+}
+
+/* Center the icons when the side nav is collapsed */
+.app-container.side-nav-enabled.collapsed .side-nav-link {
+  justify-content: center;
+}
+
+.side-nav-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   text-transform: uppercase;
-  font-size: 0.8rem;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
+  padding-bottom: 0.3rem;
   margin-bottom: 0.5rem;
+  white-space: nowrap;
+  transition: border-bottom 300ms ease-in-out;
+}
+
+/* Center the side nav toggle button when the side nav is collapsed */
+.app-container.side-nav-enabled.collapsed .side-nav-header {
+  justify-content: center;
+}
+
+.app-container.side-nav-enabled .side-nav-header .header-text {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.app-container.side-nav-enabled.collapsed .side-nav-header {
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Hide the header text when the side nav is collapsed */
+.app-container.side-nav-enabled.collapsed .side-nav-header .header-text {
+  display: none;
+}
+
+.side-nav-link .suffix {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+}
+
+/* When the side nav is collapsed, hide side nav link suffixes
+  (e.g. for the getting started side nav link, hide the getting started progess circle) */
+.app-container.side-nav-enabled.collapsed .side-nav-link .suffix {
+  display: none;
+}
+
+/* When the side nav is collapsed, hide the expanded icon */
+.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.expanded {
+  display: none;
+}
+
+/* When the side nav is expanded, hide the collapsed icon */
+.side-nav-toggler-icon.collapsed {
+  display: none;
+}
+
+/* When the side nav is collapsed, show the collapsed icon */
+.app-container.side-nav-enabled.collapsed .side-nav-toggler-icon.collapsed {
+  display: block;
+}
+
+#side-nav-toggler {
+  background-color: transparent;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+#side-nav-toggler:hover {
+  background-color: rgba(var(--bs-secondary-rgb), 0.1);
+}
+
+.app-container.side-nav-enabled.collapsed #side-nav-toggler {
+  padding: 0.5rem 1rem;
+}
+
+#assessment-switcher-container .assessment-row {
+  display: grid;
+  /* Use minmax(0, 1fr) to prevent content overflow */
+  grid-template-columns: 75px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+#assessment-switcher-container .assessment-row:not(.selected):is(:hover, :focus-within) {
+  background-color: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+@media (max-width: 768px) {
+  #assessment-switcher-container .assessment-row {
+    /* The title takes up the entire first row. The label and TID take up the second row. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #assessment-switcher-container .assessment-row .title {
+    grid-column: 1/-1;
+    grid-row: 1;
+  }
+
+  #assessment-switcher-container .assessment-row .label {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  #assessment-switcher-container .assessment-row div:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }

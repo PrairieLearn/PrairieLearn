@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -15,11 +15,13 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { AssessmentModuleSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import {
   AssessmentCopyEditor,
-  AssessmentRenameEditor,
   AssessmentDeleteEditor,
+  AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
+  propertyValueWithDefault,
 } from '../../lib/editors.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -27,7 +29,7 @@ import { getCanonicalHost } from '../../lib/url.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -53,6 +55,10 @@ router.get(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
+    const publicLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
+      host,
+    ).href;
     const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
@@ -73,6 +79,17 @@ router.get(
       ).toString();
     }
 
+    let assessmentGHLink: string | null = null;
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
+      assessmentGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
+    } else if (res.locals.course.repository) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        assessmentGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
+      }
+    }
+
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
@@ -80,8 +97,10 @@ router.get(
       InstructorAssessmentSettings({
         resLocals: res.locals,
         origHash,
+        assessmentGHLink,
         tids,
         studentLink,
+        publicLink,
         infoAssessmentPath,
         assessmentSets,
         assessmentModules,
@@ -159,6 +178,41 @@ router.post(
       if (assessmentInfo.module != null || req.body.module !== 'Default') {
         assessmentInfo.module = req.body.module;
       }
+      const normalizedText = req.body.text?.replace(/\r\n/g, '\n');
+      assessmentInfo.text = propertyValueWithDefault(assessmentInfo.text, normalizedText, '');
+      assessmentInfo.allowIssueReporting = propertyValueWithDefault(
+        assessmentInfo.allowIssueReporting,
+        req.body.allow_issue_reporting === 'on',
+        true,
+      );
+      assessmentInfo.allowPersonalNotes = propertyValueWithDefault(
+        assessmentInfo.allowPersonalNotes,
+        req.body.allow_personal_notes === 'on',
+        true,
+      );
+      if (res.locals.assessment.type === 'Exam') {
+        assessmentInfo.multipleInstance = propertyValueWithDefault(
+          assessmentInfo.multipleInstance,
+          req.body.multiple_instance === 'on',
+          false,
+        );
+        assessmentInfo.autoClose = propertyValueWithDefault(
+          assessmentInfo.autoClose,
+          req.body.auto_close === 'on',
+          true,
+        );
+        assessmentInfo.requireHonorCode = propertyValueWithDefault(
+          assessmentInfo.requireHonorCode,
+          req.body.require_honor_code === 'on',
+          true,
+        );
+        assessmentInfo.honorCode = propertyValueWithDefault(
+          assessmentInfo.honorCode,
+          req.body.honor_code?.replace(/\r\n/g, '\n').trim(),
+          '',
+        );
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const tid_new = run(() => {

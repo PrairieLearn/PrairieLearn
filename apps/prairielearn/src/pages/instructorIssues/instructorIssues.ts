@@ -39,6 +39,8 @@ function parseRawQuery(str: string) {
     filter_query_text: null as string | null,
     filter_users: null as string[] | null,
     filter_not_users: null as string[] | null,
+    filter_assessments: null as string[] | null,
+    filter_not_assessments: null as string[] | null,
   };
 
   const queryText = parsedQuery.getAllText();
@@ -80,6 +82,15 @@ function parseRawQuery(str: string) {
         } else {
           filters.filter_not_users = filters.filter_not_users || [];
           filters.filter_not_users.push(formatForLikeClause(option.value));
+        }
+        break;
+      case 'assessment':
+        if (!option.negated) {
+          filters.filter_assessments = filters.filter_assessments || [];
+          filters.filter_assessments.push(formatForLikeClause(option.value));
+        } else {
+          filters.filter_not_assessments = filters.filter_not_assessments || [];
+          filters.filter_not_assessments.push(formatForLikeClause(option.value));
         }
         break;
     }

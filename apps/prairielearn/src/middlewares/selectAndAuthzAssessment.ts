@@ -1,5 +1,4 @@
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import { loadSqlEquiv, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
 
@@ -18,6 +17,6 @@ export default asyncHandler(async (req, res, next) => {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  _.assign(res.locals, result.rows[0]);
+  Object.assign(res.locals, result.rows[0]);
   next();
 });

@@ -4,6 +4,10 @@
   font-size: inherit;
 }
 
+.pl-rich-text-editor-container .ql-tooltip {
+  z-index: 1;
+}
+
 .pl-rich-text-editor-container:focus-within {
   outline: 0.2rem solid rgb(0 123 255 / 25%);
   box-shadow: unset;

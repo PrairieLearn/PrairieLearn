@@ -1,8 +1,8 @@
-## smartPhysics Conversion Tool
+# smartPhysics conversion tool
 
-This converts multiple choice questions from smart.physics XML format to
+This converts multiple choice questions from `smart.physics` XML format to
 the PrairieLearn directory question structure. Each question will automatically
-be given assigned a UUID.
+be given a UUID.
 
 Command line usage:
 
@@ -10,10 +10,10 @@ Command line usage:
 smartphysics-to-pl.py [xml file] [PrairieLearn question name]
 ```
 
-**Notes:** The question may require some cleanup.
-Known problems include '{' characters in LaTeX formulas (which
-get replaced indiscriminantly), and images, which are just ignored.
+**Note:** The question may require some cleanup.
 
-If you want to convert free-answer questions (ex. homeworks),
-the main difference would be to change
-write_question().
+Known problems include '`{`' characters in LaTeX formulas (which
+get replaced indiscriminately), and images, which are just ignored.
+
+If you want to convert free-answer questions (e.g. homework questions),
+the main difference would be to change `write_question()`.

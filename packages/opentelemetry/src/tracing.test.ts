@@ -1,15 +1,15 @@
 import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
 import { tracing } from '@opentelemetry/sdk-node';
-import { assert } from 'chai';
+import { afterEach, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { context, init, instrumented, trace, SpanStatusCode } from './index.js';
+import { SpanStatusCode, context, init, instrumented, trace } from './index.js';
 
 describe('instrumented', () => {
   let contextManager: AsyncHooksContextManager;
   const exporter = new tracing.InMemorySpanExporter();
   const spanProcessor = new tracing.SimpleSpanProcessor(exporter);
 
-  before(async () => {
+  beforeAll(async () => {
     await init({
       openTelemetryEnabled: true,
       openTelemetryExporter: exporter,

@@ -7,7 +7,7 @@ echo 'Starting PrairieLearn...'
 cd /PrairieLearn
 make -s start-support
 
-if [ -S /var/run/docker.sock ] ; then 
+if [ -S /var/run/docker.sock ]; then
     SUFFIX="-all"
 else
     echo "Running PrairieLearn without support for external graders and workspaces." 1>&2

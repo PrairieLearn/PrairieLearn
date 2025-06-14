@@ -12,29 +12,7 @@ import { setCookie } from '../lib/cookie.js';
 
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
-export default asyncHandler(async (req, res, next) => {
-  // This POST request is handled in the middleware instead of in the individual
-  // pages because it may be received from the page served directly by the
-  // middleware. Since the other pages where this action is possible are served
-  // by the middleware as well, they are not needed there.
-  if (req.method === 'POST' && req.body.__action === 'regenerate_instance') {
-    if (!canDeleteAssessmentInstance(res.locals)) {
-      throw new HttpStatusError(
-        403,
-        'You do not have permission to delete this assessment instance.',
-      );
-    }
-    await deleteAssessmentInstance(
-      res.locals.assessment.id,
-      res.locals.assessment_instance.id,
-      res.locals.authn_user.user_id,
-    );
-
-    flash('success', 'Your previous assessment instance was deleted.');
-    res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
-    return;
-  }
-
+export function checkStudentAssessmentAccess(req: Request, res: Response): boolean {
   const showClosedAssessment = res.locals.authz_result?.show_closed_assessment ?? true;
   const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
   const assessmentActive = res.locals.authz_result?.active ?? true;
@@ -65,7 +43,7 @@ export default asyncHandler(async (req, res, next) => {
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
       }),
     );
-    return;
+    return false;
   }
 
   // Password protect the assessment. Note that this only handles the general
@@ -73,6 +51,38 @@ export default asyncHandler(async (req, res, next) => {
   // the intricacies of creating a new assessment instance. We handle those
   // cases on the `studentAssessment` page.
   if (res.locals?.assessment_instance?.open && !checkPasswordOrRedirect(req, res)) {
+    return false;
+  }
+
+  return true;
+}
+
+export default asyncHandler(async (req, res, next) => {
+  // This POST request is handled in the middleware instead of in the individual
+  // pages because it may be received from the page served directly by the
+  // middleware. Since the other pages where this action is possible are served
+  // by the middleware as well, they are not needed there.
+  if (req.method === 'POST' && req.body.__action === 'regenerate_instance') {
+    if (!canDeleteAssessmentInstance(res.locals)) {
+      throw new HttpStatusError(
+        403,
+        'You do not have permission to delete this assessment instance.',
+      );
+    }
+    await deleteAssessmentInstance(
+      res.locals.assessment.id,
+      res.locals.assessment_instance.id,
+      res.locals.authn_user.user_id,
+    );
+
+    flash('success', 'Your previous assessment instance was deleted.');
+    res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
+    return;
+  }
+
+  const hasAccess = checkStudentAssessmentAccess(req, res);
+  if (!hasAccess) {
+    // We've already sent a response (either a 403, or a redirect to enter a password).
     return;
   }
 

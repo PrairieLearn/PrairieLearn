@@ -6,10 +6,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
-  queryRows,
   queryAsync,
-  runInTransactionAsync,
   queryOptionalRow,
+  queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';

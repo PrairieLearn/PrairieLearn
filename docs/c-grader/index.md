@@ -1,6 +1,6 @@
 # C/C++ Autograder
 
-This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, view the [external grading](../externalGrading.md) documentation.
 
 ## Setting up
 
@@ -240,7 +240,7 @@ self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
               must_match_all_outputs="all")
 ```
 
-Some times a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
+Sometimes a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
 
 ```python
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
@@ -275,13 +275,13 @@ For both `exp_output` and `reject_output`, regular expressions may be used, by p
 self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
 ```
 
-To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will timeout after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
+To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will time out after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
 
 ```python
 self.test_run("./slowprogram", exp_output="COMPLETED", timeout=10)
 ```
 
-To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10 KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
 
 ```python
 self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)
@@ -391,7 +391,7 @@ If you need more fine-tuned control over when and where these memory access prob
   ck_assert_msg(!__asan_region_is_poisoned(new_node, sizeof(struct node)), "Node was not allocated with appropriate size");
 ```
 
-It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer, by setting the environment variable `ASAN_OPTIONS` when calling `run_check_suite`. For example, to disable the memory leak check, you may use:
+It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behavior of AddressSanitizer, by setting the environment variable `ASAN_OPTIONS` when calling `run_check_suite`. For example, to disable the memory leak check, you may use:
 
 ```python
 self.run_check_suite("./main", env={"ASAN_OPTIONS": "detect_leaks=0"})
@@ -454,7 +454,7 @@ self.add_test_result("I am lazy, everyone gets 70%",
                      points=70, max_points=100)
 ```
 
-This method also allows you to add one or more images to the result. Images must follow the format described in the [external grading](../externalGrading.md) page.
+This method also allows you to add one or more images to the result. Images must follow the format described in the [external grading](../externalGrading.md) documentation.
 
 ```python
 self.add_test_result("Generated image", points=matched_pixels,

@@ -2,10 +2,14 @@
   "recommendations": [
     "Tobermory.es6-string-html",
     "charliermarsh.ruff",
+    "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
+    "ms-ossdata.vscode-pgsql",
     "ms-python.python",
     "ms-python.vscode-pylance",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "vitest.explorer"
   ]
 }

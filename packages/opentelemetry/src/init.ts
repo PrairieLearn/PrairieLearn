@@ -7,37 +7,37 @@ import { OTLPTraceExporter as OTLPTraceExporterHttp } from '@opentelemetry/expor
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import {
-  detectResourcesSync,
-  processDetector,
-  envDetector,
   Resource,
+  detectResourcesSync,
+  envDetector,
+  processDetector,
 } from '@opentelemetry/resources';
 import {
-  PeriodicExportingMetricReader,
-  MeterProvider,
-  type PushMetricExporter,
-  ConsoleMetricExporter,
   AggregationTemporality,
+  ConsoleMetricExporter,
+  MeterProvider,
+  PeriodicExportingMetricReader,
+  type PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import {
-  type SpanExporter,
-  type ReadableSpan,
-  type SpanProcessor,
-  SimpleSpanProcessor,
-  BatchSpanProcessor,
-  ParentBasedSampler,
-  TraceIdRatioBasedSampler,
-  AlwaysOnSampler,
   AlwaysOffSampler,
-  type Sampler,
+  AlwaysOnSampler,
+  BatchSpanProcessor,
   ConsoleSpanExporter,
+  ParentBasedSampler,
+  type ReadableSpan,
+  type Sampler,
+  SimpleSpanProcessor,
+  type SpanExporter,
+  type SpanProcessor,
+  TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';

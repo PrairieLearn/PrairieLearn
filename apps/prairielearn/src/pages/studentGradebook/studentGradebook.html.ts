@@ -6,10 +6,10 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
+  AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AssessmentAccessRuleSchema,
 } from '../../lib/db-types.js';
 
 export const StudentGradebookRowSchema = z.object({
@@ -22,14 +22,16 @@ export const StudentGradebookRowSchema = z.object({
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   start_new_set: z.boolean(),
 });
-type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;
+export type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;
 
 export function StudentGradebook({
   resLocals,
   rows,
+  csvFilename,
 }: {
   resLocals: Record<string, any>;
   rows: StudentGradebookRow[];
+  csvFilename: string;
 }) {
   return html`
     <!doctype html>
@@ -41,8 +43,16 @@ export function StudentGradebook({
         ${Navbar({ resLocals, navPage: 'gradebook', navSubPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>Gradebook</h1>
+              <a
+                href="/pl/course_instance/${resLocals.course_instance.id}/gradebook/${csvFilename}"
+                class="btn btn-light btn-sm ms-auto"
+                aria-label="Download gradebook CSV"
+              >
+                <i class="fas fa-download" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Download</span>
+              </a>
             </div>
 
             <table class="table table-sm table-hover" aria-label="Gradebook">

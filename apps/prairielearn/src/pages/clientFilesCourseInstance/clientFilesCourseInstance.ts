@@ -6,9 +6,9 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 
 import {
-  getRuntimeDirectoryForCourse,
   type Chunk,
   ensureChunksForCourseAsync,
+  getRuntimeDirectoryForCourse,
 } from '../../lib/chunks.js';
 
 const router = Router();

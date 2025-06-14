@@ -1,10 +1,10 @@
 import { S3 } from '@aws-sdk/client-s3';
 import {
-  SQSClient,
+  DeleteMessageCommand,
   GetQueueUrlCommand,
   ReceiveMessageCommand,
-  DeleteMessageCommand,
   type ReceiveMessageResult,
+  SQSClient,
 } from '@aws-sdk/client-sqs';
 
 import * as error from '@prairielearn/error';
@@ -12,7 +12,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
+import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
 import { IdSchema } from './db-types.js';
 import { deferredPromise } from './deferred.js';
@@ -35,7 +35,6 @@ export async function init() {
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
   (async () => {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       // Spin until we can get at least one message from the queue.
       let messages: ReceiveMessageResult['Messages'];

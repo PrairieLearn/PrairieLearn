@@ -1,4 +1,4 @@
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
@@ -11,7 +11,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
-import { type Question, type AiQuestionGenerationPrompt } from '../../../lib/db-types.js';
+import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
@@ -42,6 +42,7 @@ export function InstructorAiGenerateDraftEditor({
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">
         <div class="app-container">

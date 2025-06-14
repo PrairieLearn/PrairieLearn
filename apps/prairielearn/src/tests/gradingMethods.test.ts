@@ -1,13 +1,13 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { io } from 'socket.io-client';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
-import { setUser, parseInstanceQuestionId, saveOrGrade, type User } from './helperClient.js';
+import { type User, parseInstanceQuestionId, saveOrGrade, setUser } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -86,9 +86,7 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
-describe('Grading method(s)', function () {
-  this.timeout(80000);
-
+describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body;
   let iqUrl;
   let gradeRes;
@@ -96,10 +94,11 @@ describe('Grading method(s)', function () {
   let questionsPage;
   let $questionsPage;
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before());
 
-  after('reset default user', () => setUser(defaultUser));
+  afterAll(helperServer.after);
+
+  afterAll(() => setUser(defaultUser));
 
   describe('`gradingMethod` configuration', () => {
     describe('"Internal"', () => {

@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
-import { html, type HtmlValue } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
-import { formatTimezone, type Timezone } from '../../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export const InstitutionStatisticsSchema = z.object({

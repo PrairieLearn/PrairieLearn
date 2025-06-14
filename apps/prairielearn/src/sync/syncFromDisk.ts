@@ -2,10 +2,12 @@ import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { chalk, chalkDim } from '../lib/chalk.js';
+import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
@@ -19,13 +21,15 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
-  selectSharedQuestions,
-  getInvalidRenames,
-  checkInvalidSharingSetRemovals,
-  checkInvalidPublicSharingRemovals,
-  checkInvalidSharingSetDeletions,
-  checkInvalidSharingSetAdditions,
   checkInvalidDraftQuestionSharing,
+  checkInvalidPublicSharingRemovals,
+  checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
+  checkInvalidSharingSetAdditions,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetRemovals,
+  getInvalidRenames,
+  selectSharedQuestions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -48,9 +52,18 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  if (!config.checkSharingOnSync) {
-    return true;
-  }
+  if (!config.checkSharingOnSync) return true;
+
+  const institution = await selectInstitutionForCourse({ course_id: courseId });
+  const sharingEnabled = await features.enabled('question-sharing', {
+    course_id: courseId,
+    institution_id: institution.id,
+  });
+
+  // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
+  // already have validated that sharing attributes are not used, and we'll have emitted
+  // sync errors if they are.
+  if (!sharingEnabled) return true;
 
   const sharedQuestions = await selectSharedQuestions(courseId);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
@@ -70,6 +83,8 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
   const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
@@ -78,6 +93,8 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
+    !existInvalidSharedAssessment &&
+    !existInvalidSharedCourseInstance &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
@@ -192,7 +209,7 @@ export async function syncDiskToSql(
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
-  logger.verbose(chalkDim(`Trying lock ${lockName}`));
+  logger.verbose(`Trying lock ${lockName}`);
   const result = await namedLocks.doWithLock(
     lockName,
     {
@@ -203,12 +220,12 @@ export async function syncDiskToSql(
       },
     },
     async () => {
-      logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+      logger.verbose(`Acquired lock ${lockName}`);
       return await syncDiskToSqlWithLock(course_id, courseDir, logger);
     },
   );
 
-  logger.verbose(chalkDim(`Released lock ${lockName}`));
+  logger.verbose(`Released lock ${lockName}`);
   return result;
 }
 

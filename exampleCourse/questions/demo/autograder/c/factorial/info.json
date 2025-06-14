@@ -1,0 +1,13 @@
+{
+  "uuid": "c3b02ed9-3a2e-462a-9d18-f1b21cab65d1",
+  "title": "Recursive implementation of factorial",
+  "topic": "C",
+  "singleVariant": true,
+  "tags": ["jgfoster", "code", "c", "check"],
+  "type": "v3",
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-c"
+  }
+}

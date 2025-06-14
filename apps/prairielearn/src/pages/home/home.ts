@@ -54,9 +54,7 @@ router.get(
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
-      {
-        user_id: res.locals.authn_user.user_id,
-      },
+      { user_id: res.locals.authn_user.user_id },
       InstitutionSchema,
     );
 

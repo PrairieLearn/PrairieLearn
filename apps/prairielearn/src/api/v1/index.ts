@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -18,12 +18,28 @@ const authzHasCourseInstanceView = asyncHandler(async (req, res, next) => {
   next();
 });
 
+/**
+ * We'll forbid API access to the example course unless the user is a global
+ * administrator.
+ */
+function assertNotExampleCourse(req: Request, res: Response, next: NextFunction) {
+  if (res.locals.course.example_course && !res.locals.is_administrator) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
+  next();
+}
+
 // Pretty-print all JSON responses.
 router.use((await import('./prettyPrintJson.js')).default);
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id(\\d+)', [
   (await import('../../middlewares/authzCourseOrInstance.js')).default,
+  assertNotExampleCourse,
+  // A student who is course staff in another course could use the API to
+  // infiltrate data into a secure exam. We'll forbid API access entirely
+  // while in exam mode.
+  (await import('../../middlewares/forbidAccessInExamMode.js')).default,
   // Asserts that the user has either course preview or course instance student
   // data access. If a route provides access to student data, you should also
   // include the `authzHasCourseInstanceView` middleware to ensure that access

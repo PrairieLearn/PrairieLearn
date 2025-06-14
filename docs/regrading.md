@@ -2,7 +2,7 @@
 
 Despite all our best efforts, sometimes we put a broken question onto an exam. The recommended procedure for dealing with this situation is:
 
-1. If the error is detected when just a small number of students have taken the exam, either correct the question, remove it from the exam, or replace it with a new question. Either regrade the broken question with maximum points (see below) or adjust the scores of affected students by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
+1. If the error is detected when just a few students have taken the exam, either correct the question, remove it from the exam, or replace it with a new question. Either regrade the broken question with maximum points (see below) or adjust the scores of affected students by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
 
 2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
 

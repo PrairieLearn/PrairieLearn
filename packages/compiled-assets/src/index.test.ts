@@ -1,20 +1,20 @@
 import path from 'path';
 
-import { assert } from 'chai';
 import express from 'express';
 import fs from 'fs-extra';
 import getPort from 'get-port';
 import fetch from 'node-fetch';
 import tmp from 'tmp-promise';
+import { afterEach, assert, describe, it } from 'vitest';
 
 import {
-  init,
-  close,
-  handler,
+  type CompiledAssetsOptions,
   build,
+  close,
   compiledScriptPath,
   compiledStylesheetPath,
-  type CompiledAssetsOptions,
+  handler,
+  init,
 } from './index.js';
 
 async function testProject(options: CompiledAssetsOptions) {
