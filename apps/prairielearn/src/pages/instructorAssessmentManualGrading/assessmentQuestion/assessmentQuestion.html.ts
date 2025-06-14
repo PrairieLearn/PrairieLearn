@@ -130,16 +130,13 @@ export function AssessmentQuestion({
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
         </div>
         ${aiGradingStats
-          ? html`<div class="card border-info m-2">
+          ? html`<div class="card border-secondary m-2">
               ${aiGradingStats.rubric_stats.length
                 ? html`
-                    <div class="table-responsive w-50">
-                      <table
-                        class="table table-sm table-striped mt-2"
-                        aria-label="AI grading rubric item stats"
-                      >
+                    <div class="table-responsive w-50 m-2">
+                      <table class="table table-sm mt-2" aria-label="AI grading rubric item stats">
                         <thead>
-                          <tr>
+                          <tr class="table-light fw-bold">
                             <td>Rubric item</td>
                             <td>AI disagreements</td>
                           </tr>
