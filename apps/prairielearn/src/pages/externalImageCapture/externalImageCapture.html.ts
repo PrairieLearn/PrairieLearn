@@ -28,6 +28,7 @@ export function ExternalImageCapture({
         hx-swap="none"
         enctype="multipart/form-data"
         data-variant-id="${variantId}"
+        data-variant-token="${resLocals.variantToken}"
         data-file-name="${fileName}"
       >
         <div id="external-image-capture-loading-container" class="d-none align-items-center gap-2">

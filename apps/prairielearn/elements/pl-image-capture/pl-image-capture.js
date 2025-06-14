@@ -214,11 +214,13 @@
      */
     listenForExternalImageCapture() {
       const socket = io('/external-image-capture');
+      const questionContainer = document.querySelector('.question-container');
 
       socket.emit(
         'joinExternalImageCapture',
         {
           variant_id: this.variant_id,
+          variant_token: questionContainer.dataset.variantToken,
           file_name: this.file_name,
         },
         (msg) => {
@@ -239,6 +241,7 @@
           'externalImageCaptureAck',
           {
             variant_id: this.variant_id,
+            variant_token: questionContainer.dataset.variantToken,
             file_name: this.file_name,
           },
           (ackMsg) => {

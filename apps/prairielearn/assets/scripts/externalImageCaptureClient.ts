@@ -137,6 +137,7 @@ onDocumentReady(() => {
     }
     const variant_id = externalImageCaptureForm.dataset.variantId;
     const file_name = externalImageCaptureForm.dataset.fileName;
+    const variant_token = externalImageCaptureForm.dataset.variantToken;
 
     const socket = io('/external-image-capture');
 
@@ -144,6 +145,7 @@ onDocumentReady(() => {
       'joinExternalImageCapture',
       {
         variant_id,
+        variant_token,
         file_name,
       },
       (msg: StatusMessageWithFileContent) => {
