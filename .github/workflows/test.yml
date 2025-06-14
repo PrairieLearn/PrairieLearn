@@ -124,6 +124,10 @@ jobs:
   test-prairielearn-native:
     name: Native
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v4
 
@@ -162,7 +166,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -205,7 +209,42 @@ jobs:
           git config --global safe.directory '*'
 
       - name: Test JavaScript code
-        run: make test-js
+        run: |
+          make start-support
+          yarn test --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+  merge-test-reports:
+    if: ${{ !cancelled() }}
+    needs: [test-prairielearn-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Set up Yarn
+        # We only install the dependencies in the root workspace to avoid
+        # installing dependencies that won't be used.
+        run: yarn workspaces focus prairielearn
+      - name: Download blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .vitest-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge reports
+        run: yarn vitest --merge-reports
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
