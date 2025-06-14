@@ -130,10 +130,10 @@ export function AssessmentQuestion({
           <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
         </div>
         ${aiGradingStats
-          ? html`<div class="card border-info m-2 p-2">
+          ? html`<div class="card border-info m-2">
               ${aiGradingStats.rubric_stats.length
                 ? html`
-                    <div class="table-responsive">
+                    <div class="table-responsive w-50">
                       <table
                         class="table table-sm table-striped mt-2"
                         aria-label="AI grading rubric item stats"
@@ -142,7 +142,6 @@ export function AssessmentQuestion({
                           <tr>
                             <td>Rubric item</td>
                             <td>AI disagreements</td>
-                            <td>Used count</td>
                           </tr>
                         </thead>
                         <tbody>
@@ -150,8 +149,8 @@ export function AssessmentQuestion({
                             (item) =>
                               html`<tr>
                                 <td>${item.rubric_item.description}</td>
-                                <td>${
-                                  item.disagreement_count
+                                <td>
+                                  ${item.disagreement_count
                                     ? html`<i class="bi bi-x-square-fill" style="color: red;"></i>
                                         ${item.disagreement_count}<small class="text-muted"
                                           >/${aiGradingStats.submission_rubric_count}</small
@@ -159,22 +158,25 @@ export function AssessmentQuestion({
                                     : html`<i
                                         class="bi bi-check-square-fill"
                                         style="color: green;"
-                                      ></i>`
-                                }</td>
-                                <td>${item.selection_count}</td>
-                              </tr></li>`,
+                                      ></i>`}
+                                </td>
+                              </tr>`,
                           )}
                         </tbody>
                       </table>
                     </div>
                   `
-                : html`<div class="row">
-                    <div class="col">
-                      Submission count: ${aiGradingStats.submission_point_count}
+                : html`
+                    <div class="m-2">
+                      <div>Submission count: ${aiGradingStats.submission_point_count}</div>
+                      <div>
+                        Average AI error: ${aiGradingStats.mean_error}<small class="text-muted"
+                          >/${assessment_question.max_manual_points}</small
+                        >
+                        points
+                      </div>
                     </div>
-                    <div class="col">Manual points: ${assessment_question.max_manual_points}</div>
-                    <div class="col">Average AI error: ${aiGradingStats.mean_error}</div>
-                  </div>`}
+                  `}
             </div>`
           : ''}
         <form name="grading-form" method="POST">
