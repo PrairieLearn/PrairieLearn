@@ -35,3 +35,23 @@ To mount a directory on your computer so that it is accessible in the container,
 ```
 
 Then, the path will be accessible at `/myCourse` (note the beginning slash).
+
+## Setting up external image capture locally
+
+The [`pl-image-capture`](../elements.md#pl-number-input-element) element lets users capture images of submitted work through an external device, such as a mobile device or tablet, or a local camera.
+
+To use external capture locally, you must set `serverCanonicalHost` in `config.json` to your local IPv4 address.
+
+How to retrieve your local IPv4 address:
+
+- macOS: In Terminal, run `ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'`.
+- Linux: In your terminal, run `ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`.
+- Windows: In Command Prompt, run `ipconfig | findstr /C:"IPv4"` and copy the first address that appears.
+
+Then, copy and paste your IPv4 address into `config.json`. For example:
+
+```json title="config.json"
+{
+  "serverCanonicalHost": "192.168.1.60" // Replace with your IP address
+}
+```
