@@ -159,18 +159,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][file_name] = (
             f"data:image/jpeg;base64,{b64_payload}"
         )
-
-        # data["submitted_answers"] = {}
-        # data["submitted_answers"][file_name] = f"data:image/jpeg;base64,{b64_payload}"
-
-        # pl.add_submitted_file(data, file_name, b64_payload)
     elif result == "invalid":
         data["raw_submitted_answers"][file_name] = ""
 
-        data["submitted_answers"] = {}
-        data["submitted_answers"][file_name] = ""
+        if not data["format_errors"]:
+            data["format_errors"] = {}
 
-        if not data["format_errors"]["_files"]:
+        if "_files" not in data["format_errors"]:
             data["format_errors"]["_files"] = []
 
         data["format_errors"]["_files"].append(
