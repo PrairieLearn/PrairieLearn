@@ -268,38 +268,6 @@ export function pearsonCorrelation(x: number[], y: number[]): number {
   return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
 }
 
-export function rootMeanSquaredError(actual: number[], predicted: number[]): number {
-  if (actual.length !== predicted.length || actual.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = actual.length;
-  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
-  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
-
-  return Math.round(Math.sqrt(meanSquaredError) * 100) / 100;
-}
-
-export function rubricItemAccuracy(
-  testRubricResults: {
-    reference_items: Set<string>;
-    ai_items: Set<string>;
-  }[],
-  item: RubricItem,
-): number {
-  let match = 0;
-  testRubricResults.forEach((test) => {
-    if (
-      (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
-      (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
-    ) {
-      match++;
-    }
-  });
-  const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
-  return accuracy;
-}
-
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
 ): Promise<InstanceQuestion[]> {

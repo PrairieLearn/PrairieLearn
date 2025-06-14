@@ -14,7 +14,6 @@ import {
 
 import {
   pearsonCorrelation,
-  rootMeanSquaredError,
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
@@ -35,13 +34,13 @@ type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 export interface AiGradingGeneralStats {
   submission_point_count: number;
   submission_rubric_count: number;
-  rmse: number | null;
+  mean_error: number | null;
   r: number | null;
   rubric_stats: {
     // Keeping all information for a rubric item
     // if we want to implement rubric modification here
     rubric_item: RubricItem;
-    selection_percentage: number;
+    selection_count: number;
     disagreement_count: number;
   }[];
 }
@@ -155,8 +154,8 @@ export async function calculateAiGradingStats(
   const stats: AiGradingGeneralStats = {
     submission_point_count: testPointResults.length,
     submission_rubric_count: testRubricResults.length,
-    rmse: testPointResults.length
-      ? rootMeanSquaredError(
+    mean_error: testPointResults.length
+      ? meanError(
           testPointResults.map((item) => item.reference_points),
           testPointResults.map((item) => item.ai_points),
         )
@@ -171,10 +170,10 @@ export async function calculateAiGradingStats(
   };
   for (const rubric_item of rubric_items) {
     const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
-    const selection = rubricSelectionPercentage(testRubricResults, rubric_item);
+    const selection_count = rubricSelectionCount(testRubricResults, rubric_item);
     stats.rubric_stats.push({
       rubric_item,
-      selection_percentage: selection * 100,
+      selection_count,
       disagreement_count,
     });
   }
@@ -223,7 +222,19 @@ export function rubricItemDisagreementCount(
   return disagreement;
 }
 
-function rubricSelectionPercentage(
+export function meanError(actual: number[], predicted: number[]): number {
+  if (actual.length !== predicted.length || actual.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = actual.length;
+  const errors = actual.map((a, i) => Math.abs(a - predicted[i]));
+  const meanError = errors.reduce((acc, val) => acc + val, 0) / n;
+
+  return Math.round(meanError * 100) / 100;
+}
+
+function rubricSelectionCount(
   testRubricResults: {
     reference_items: Set<string>;
     ai_items: Set<string>;
@@ -236,6 +247,5 @@ function rubricSelectionPercentage(
       selected++;
     }
   });
-  const selection = Math.round((selected / testRubricResults.length) * 100) / 100;
-  return selection;
+  return selected;
 }
