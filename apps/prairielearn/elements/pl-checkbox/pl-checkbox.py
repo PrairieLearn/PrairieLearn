@@ -451,46 +451,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "</small>"
                 )
 
-            # # TODO move this into the mustache template
-            # if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
-            #     gradingtext = (
-            #         "You must select"
-            #         + insert_text
-            #         + " You will receive a score of <code>100% * (t - f) / n</code>, "
-            #         + "where <code>t</code> is the number of true options that you select, <code>f</code> "
-            #         + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
-            #         + "At minimum, you will receive a score of 0%."
-            #     )
-            # elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
-            #     gradingtext = (
-            #         "You must select"
-            #         + insert_text
-            #         + " You will receive a score of <code>100% * (t + f) / "
-            #         + str(len(display_answers))
-            #         + "</code>, "
-            #         + "where <code>t</code> is the number of true options that you select and <code>f</code> "
-            #         + "is the number of false options that you do not select."
-            #     )
-            # elif partial_credit_mode is PartialCreditType.COVERAGE:
-            #     gradingtext = (
-            #         "You must select"
-            #         + insert_text
-            #         + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
-            #         + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
-            #         + "and <code>n</code> is the total number of options you select."
-            #     )
-
-            # elif partial_credit_mode is PartialCreditType.NONE:
-            #     gradingtext = (
-            #         "You must select"
-            #         + insert_text
-            #         + " You will receive a score of 100% "
-            #         + "if you select all options that are true and no options that are false. "
-            #         + "Otherwise, you will receive a score of 0%."
-            #     )
-            # else:
-            #     assert_never(partial_credit_mode)
-
             info_params[partial_credit_mode.value] = True
             info_params["insert_text"] = insert_text
             info_params["num_display_answers"] = len(display_answers)
@@ -767,9 +727,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["format_errors"][name] = "You must select at least one option."
     else:
         assert_never(result)
-
-
-# TODO remove default here
 
 
 def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
