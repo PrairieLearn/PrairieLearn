@@ -13,6 +13,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from PIL import Image
+from typing_extensions import assert_never
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
 
@@ -135,3 +136,45 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     pl.add_submitted_file(data, file_name, b64_payload)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    result = data["test_type"]
+
+    file_name = pl.get_string_attrib(
+        lxml.html.fragment_fromstring(element_html), "file-name"
+    )
+
+    if result in ["correct", "incorrect"]:
+        # Create a 1x1 white RGB image to simulate a valid JPEG image.
+        img = Image.new("RGB", (1, 1), color="white")
+        img.putpixel((0, 0), (255, 255, 255))
+
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG")
+        jpeg_bytes = buffer.getvalue()
+
+        b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
+
+        data["raw_submitted_answers"][file_name] = (
+            f"data:image/jpeg;base64,{b64_payload}"
+        )
+
+        # data["submitted_answers"] = {}
+        # data["submitted_answers"][file_name] = f"data:image/jpeg;base64,{b64_payload}"
+
+        # pl.add_submitted_file(data, file_name, b64_payload)
+    elif result == "invalid":
+        data["raw_submitted_answers"][file_name] = ""
+
+        data["submitted_answers"] = {}
+        data["submitted_answers"][file_name] = ""
+
+        if not data["format_errors"]["_files"]:
+            data["format_errors"]["_files"] = []
+
+        data["format_errors"]["_files"].append(
+            f"No image was submitted for {file_name}."
+        )
+    else:
+        assert_never(result)
