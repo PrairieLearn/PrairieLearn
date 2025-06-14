@@ -12,7 +12,7 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-const ConfigSchema = z.object({
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
