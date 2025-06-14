@@ -50,7 +50,10 @@ router.use(
 
     // Used for "auth" to connect to the external image capture socket.
     // ID is coerced to a string so that it matches what we get back from the client.
-    res.locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
+    res.locals.variantToken = generateSignedToken(
+      { variantId: variant.id.toString() },
+      config.secretKey,
+    );
 
     next();
   }),
