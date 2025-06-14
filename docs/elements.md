@@ -398,14 +398,14 @@ Enables students to submit images to questions using their local camera or an ex
 
 #### Customizations
 
-| Attribute    | Type     | Default | description                                                                                                                                    |
-| ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name` | string | —       | 	The name under which the captured image will be saved (e.g. solution.jpg). This must end with `.jpg`, and be unique within a single question. |
-| `mobile-capture-enabled` | boolean | true       | When `true`, students can scan a QR code on a phone or tablet to a page where they can capture an image of their work. 
+| Attribute                | Type    | Default | description                                                                                                                                   |
+| ------------------------ | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`              | string  | —       | The name under which the captured image will be saved (e.g. solution.jpg). This must end with `.jpg`, and be unique within a single question. |
+| `mobile-capture-enabled` | boolean | true    | When `true`, students can scan a QR code on a phone or tablet to a page where they can capture an image of their work.                        |
 
 #### Details
 
-The `pl-image-capture` element lets students capture 
+The `pl-image-capture` element lets students capture
 
 #### Example implementations
 
