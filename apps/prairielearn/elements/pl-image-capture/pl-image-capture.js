@@ -18,9 +18,6 @@
       if (!options.variant_id) {
         throw new Error('Variant ID is required in image capture options');
       }
-      if (options.editable && !options.external_image_capture_url) {
-        throw new Error('External image capture URL is required in image capture options');
-      }
       if (options.mobile_capture_enabled === undefined || options.mobile_capture_enabled === null) {
         throw new Error('Mobile capture enabled option is required in image capture options');
       }
@@ -196,6 +193,10 @@
     }
 
     generateQrCode() {
+      if (!this.external_image_capture_url) {
+        return;
+      }
+
       const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
 
       if (!qrCode) {

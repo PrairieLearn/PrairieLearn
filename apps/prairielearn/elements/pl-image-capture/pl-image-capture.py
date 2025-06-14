@@ -13,7 +13,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from PIL import Image
-from typing_extensions import assert_never
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
 
@@ -56,23 +55,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
+    external_image_capture_url = data["options"].get("external_image_capture_url")
+
+    if external_image_capture_url:
+        external_image_capture_url = f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
+    else:
+        external_image_capture_url = None
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
+        "external_image_capture_available": external_image_capture_url is not None,
     }
-
-    external_image_capture_url = data["options"].get("external_image_capture_url")
-    if not external_image_capture_url:
-        pl.add_files_format_error(
-            data,
-            "external_image_capture_url was not generated for the image capture question.",
-        )
-
-    external_image_capture_url = (
-        f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
-    )
 
     image_capture_options = {
         "file_name": file_name,
@@ -171,5 +167,3 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["format_errors"]["_files"].append(
             f"No image was submitted for {file_name}."
         )
-    else:
-        assert_never(result)
