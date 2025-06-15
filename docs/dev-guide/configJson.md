@@ -42,16 +42,20 @@ The [`pl-image-capture`](../elements.md#pl-number-input-element) element lets us
 
 To use external capture locally, you must set `serverCanonicalHost` in `config.json` to your local IPv4 address.
 
-How to retrieve your local IPv4 address:
+To retrieve your local IPv4 address, if you're on
 
-- macOS: In Terminal, run `ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'`.
-- Linux: In your terminal, run `ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`.
-- Windows: In Command Prompt, run `ipconfig | findstr /C:"IPv4"` and copy the first address that appears.
+- macOS: in Terminal, run `ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'`
 
-Then, copy and paste your IPv4 address into `config.json`. For example:
+- Linux: in your terminal, run `ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p'`
+
+- Windows: in Command Prompt, run `ipconfig | findstr /C:"IPv4"`
+
+Copy the first address you see, and paste it into the `serverCanonicalHost` property of your `config.json` file.
+
+For example, if your IPv4 is `192.168.1.60`, your file should read:
 
 ```json title="config.json"
 {
-  "serverCanonicalHost": "192.168.1.60" // Replace with your IP address
+  "serverCanonicalHost": "192.168.1.60"
 }
 ```
