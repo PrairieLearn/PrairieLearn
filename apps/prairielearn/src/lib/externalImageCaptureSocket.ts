@@ -23,31 +23,33 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    if (!checkVariantToken(msg.variant_token, msg.variant_id)) {
+    msg = msg as StatusMessage;
+
+    if (!validateMessageContent(msg)) {
       return callback(null);
     }
 
     socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
-    socket.on('externalImageCaptureAck', ({ variant_id, variant_token, file_name }, callback) => {
-      namespace.to(`variant-${variant_id}-file-${file_name}`).emit('externalImageCaptureAck', {
-        variant_id,
-        variant_token,
-        file_name,
-      } satisfies StatusMessage);
+    socket.on('externalImageCaptureAck', (msg, callback) => {
+      if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
+        return callback(null);
+      }
 
-      callback({
-        variant_id,
-        variant_token,
-        file_name,
-      } satisfies StatusMessage);
+      msg = msg as StatusMessage;
+
+      if (!validateMessageContent(msg)) {
+        return callback(null);
+      }
+
+      namespace
+        .to(`variant-${msg.variant_id}-file-${msg.file_name}`)
+        .emit('externalImageCaptureAck', msg);
+
+      callback(msg);
     });
 
-    callback({
-      variant_id: msg.variant_id,
-      variant_token: msg.variant_token,
-      file_name: msg.file_name,
-    } satisfies StatusMessage);
+    callback(msg);
   });
 }
 
@@ -84,4 +86,43 @@ export async function emitExternalImageCapture({
     file_name,
     file_content,
   } satisfies StatusMessageWithFileContent);
+}
+
+/**
+ * Ensures that the message variant token, file name, and variant ID are valid.
+ * Prevents cross-site scripting and directory traversal attacks.
+ *
+ * @param msg - The message to validate.
+ *
+ * @returns true if the message is valid, false otherwise.
+ */
+function validateMessageContent({ variant_id, variant_token, file_name }: StatusMessage): boolean {
+  if (!checkVariantToken(variant_token, variant_id)) {
+    logger.error('Invalid variant_token provided for external image capture');
+    Sentry.captureException(new Error('Invalid variant_token provided for external image capture'));
+    return false;
+  }
+
+  // file_name must be a valid file name with no directory traversal: it must not contain
+  // any path separators (e.g., / or \) and must have an extension.
+  if (!file_name.match(/^(?!.*[\\/])[^\\/]+\.[^\\/]+$/)) {
+    logger.error('Invalid file_name provided for external image capture');
+    Sentry.captureException(new Error('Invalid file_name provided for external image capture'));
+    return false;
+  }
+
+  // variant_id must be a positive integer.
+  if (!variant_id.match(/^\d+$/)) {
+    logger.error('Invalid variant_id provided for external image capture');
+    Sentry.captureException(new Error('Invalid variant_id provided for external image capture'));
+    return false;
+  }
+
+  if (!variant_id.match(/^\d+$/)) {
+    logger.error('Invalid variant_id provided for external image capture');
+    Sentry.captureException(new Error('Invalid variant_id provided for external image capture'));
+    return false;
+  }
+
+  return true;
 }
