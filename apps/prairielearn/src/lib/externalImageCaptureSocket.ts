@@ -118,11 +118,5 @@ function validateMessageContent({ variant_id, variant_token, file_name }: Status
     return false;
   }
 
-  if (!variant_id.match(/^\d+$/)) {
-    logger.error('Invalid variant_id provided for external image capture');
-    Sentry.captureException(new Error('Invalid variant_id provided for external image capture'));
-    return false;
-  }
-
   return true;
 }
