@@ -69,7 +69,7 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
 /**
  * Emits an external image capture event for the specified variant and file.
  */
-export async function emitExternalImageCapture({
+export function emitExternalImageCapture({
   variant_id,
   variant_token,
   file_name,

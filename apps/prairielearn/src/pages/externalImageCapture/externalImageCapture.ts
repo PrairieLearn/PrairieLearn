@@ -7,7 +7,6 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { config } from '../../lib/config.js';
 import { emitExternalImageCapture } from '../../lib/externalImageCaptureSocket.js';
 import { selectCourseById } from '../../models/course.js';
-import { selectQuestionById } from '../../models/question.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { ExternalImageCapture } from './externalImageCapture.html.js';
@@ -17,20 +16,10 @@ const router = Router({ mergeParams: true });
 router.use(
   '/',
   asyncHandler(async (req, res, next) => {
-    let course = res.locals.course;
-    if (!course) {
-      course = await selectCourseById(req.params.course_id);
-    }
-
-    let question = res.locals.question;
-    if (!question) {
-      question = await selectQuestionById(req.params.question_id);
-    }
-
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
-      variant_course: course,
-      question_id: question.id,
+      variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
+      question_id: req.params.question_id,
       course_instance_id: res.locals?.course_instance?.id,
       instance_question_id: res.locals.instance_question?.id,
       authz_data: res.locals.authz_data,

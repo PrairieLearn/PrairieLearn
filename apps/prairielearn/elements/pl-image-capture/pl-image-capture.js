@@ -216,6 +216,10 @@
       const socket = io('/external-image-capture');
       const questionContainer = document.querySelector('.question-container');
 
+      if (!questionContainer) {
+        throw new Error('Question container not found. Could not obtain the variant token.');
+      }
+
       socket.emit(
         'joinExternalImageCapture',
         {

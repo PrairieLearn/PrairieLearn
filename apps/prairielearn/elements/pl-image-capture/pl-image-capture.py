@@ -56,11 +56,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     external_image_capture_url = data["options"].get("external_image_capture_url")
-
-    if external_image_capture_url:
-        external_image_capture_url = f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
-    else:
-        external_image_capture_url = None
+    external_image_capture_url = (
+        f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
+        if external_image_capture_url
+        else None
+    )
 
     html_params = {
         "uuid": pl.get_uuid(),
