@@ -16,7 +16,7 @@ export function CourseSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarnings({
+  return SyncErrorsAndWarningsHtml({
     authz_data,
     exampleCourse: course.example_course,
     syncErrors: course.sync_errors,
@@ -37,7 +37,7 @@ export function QuestionSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarningsHtml({
+  return SyncErrorsAndWarnings({
     authz_data,
     exampleCourse: course.example_course,
     syncErrors: question.sync_errors,

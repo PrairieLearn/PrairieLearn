@@ -15,6 +15,7 @@ import {
   QuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -56,12 +57,14 @@ export function InstructorQuestionStatistics({
     },
     headContent: compiledScriptTag('instructorQuestionStatisticsClient.ts'),
     content: html`
-      ${QuestionSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        question: resLocals.question,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        QuestionSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          question: resLocals.question,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

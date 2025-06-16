@@ -296,12 +296,14 @@ export function FileBrowser({
               urlPrefix,
             })
           : navPage === 'question' || navPage === 'public_question'
-            ? QuestionSyncErrorsAndWarnings({
-                authz_data,
-                question: resLocals.question,
-                course,
-                urlPrefix,
-              })
+            ? renderHtml(
+                QuestionSyncErrorsAndWarnings({
+                  authz_data,
+                  question: resLocals.question,
+                  course,
+                  urlPrefix,
+                }),
+              )
             : '';
   const pageTitle =
     navPage === 'course_admin'

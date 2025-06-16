@@ -7,6 +7,7 @@ import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
@@ -58,12 +59,14 @@ export function InstructorQuestionPreview({
     `,
     preContent: html`
       <div class="container-fluid">
-        ${QuestionSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          question: resLocals.question,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        })}
+        ${renderHtml(
+          QuestionSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            question: resLocals.question,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          }),
+        )}
       </div>
     `,
     content: html`

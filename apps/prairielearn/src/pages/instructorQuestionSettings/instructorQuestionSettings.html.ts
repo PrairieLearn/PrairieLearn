@@ -21,6 +21,7 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -112,12 +113,14 @@ export function InstructorQuestionSettings({
       />
     `,
     content: html`
-      ${QuestionSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        question: resLocals.question,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        QuestionSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          question: resLocals.question,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Question Settings</h1>
