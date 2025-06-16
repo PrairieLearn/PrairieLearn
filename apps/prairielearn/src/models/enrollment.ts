@@ -3,6 +3,7 @@ import {
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -117,4 +118,16 @@ export async function generateAndEnrollUsers({
     }
     return users;
   });
+}
+
+export async function getEnrollmentsForCourseInstance({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}): Promise<Enrollment[]> {
+  return await queryRows(
+    sql.select_course_instance_enrollment,
+    { course_instance_id },
+    EnrollmentSchema,
+  );
 }
