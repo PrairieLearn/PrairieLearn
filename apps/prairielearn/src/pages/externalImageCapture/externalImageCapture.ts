@@ -2,8 +2,11 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { config } from '../../lib/config.js';
 import { emitExternalImageCapture } from '../../lib/externalImageCaptureSocket.js';
+import { selectCourseById } from '../../models/course.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
 import { ExternalImageCapture } from './externalImageCapture.html.js';
@@ -15,8 +18,8 @@ router.use(
   asyncHandler(async (req, res, next) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
-      variant_course: res.locals.course,
-      question_id: res.locals.question.id,
+      variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
+      question_id: res.locals.question?.id ?? req.params.question_id,
       course_instance_id: res.locals?.course_instance?.id,
       instance_question_id: res.locals.instance_question?.id,
       authz_data: res.locals.authz_data,
@@ -33,6 +36,13 @@ router.use(
     if (!variant.open) {
       throw new HttpStatusError(403, 'This variant is not open');
     }
+
+    // Used for "auth" to connect to the external image capture socket.
+    // ID is coerced to a string so that it matches what we get back from the client.
+    res.locals.variantToken = generateSignedToken(
+      { variantId: variant.id.toString() },
+      config.secretKey,
+    );
 
     next();
   }),
@@ -76,6 +86,7 @@ router.post(
     // Emit a socket event to notify the client that the image has been captured.
     await emitExternalImageCapture({
       variant_id: variantId,
+      variant_token: res.locals.variantToken,
       file_name: fileName,
       file_content: req.file.buffer.toString('base64'),
     });

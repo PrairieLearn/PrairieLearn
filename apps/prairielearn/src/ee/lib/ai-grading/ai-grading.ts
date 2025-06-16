@@ -5,12 +5,7 @@ import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import {
@@ -23,6 +18,7 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import {
@@ -33,21 +29,23 @@ import {
   generateSubmissionEmbedding,
   insertAiGradingJob,
   parseAiRubricItems,
-  pearsonCorrelation,
-  rootMeanSquaredError,
-  rubricItemAccuracy,
   selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
   selectRubricForGrading,
-  selectRubricGradingItems,
 } from './ai-grading-util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function aiGradeTest({
+/**
+ * Grade instance questions using AI.
+ * The related grading jobs and rubric gradings will be generated,
+ * but the instance question scores will only be updated
+ * for instance questions that require manual grading
+ */
+export async function aiGrade({
   course,
   course_instance_id,
   question,
@@ -55,6 +53,8 @@ export async function aiGradeTest({
   urlPrefix,
   authn_user_id,
   user_id,
+  mode,
+  instance_question_ids,
 }: {
   question: Question;
   course: Course;
@@ -63,6 +63,12 @@ export async function aiGradeTest({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
+  mode: 'ungraded' | 'human_graded' | 'all' | 'selected';
+  /**
+   * Limit grading to the specified instance questions.
+   * Only use when mode is 'selected'.
+   */
+  instance_question_ids?: string[];
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -81,21 +87,23 @@ export async function aiGradeTest({
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
     userId: user_id,
-    type: 'ai_grading_test',
-    description: 'Test accuracy for AI grading',
+    type: 'ai_grading',
+    description: 'Perform AI grading',
   });
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
-      job.fail('The tested question has no manual grading');
+      job.fail('The assessment question has no manual grading');
     }
-    const instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
     );
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
-    for (const instance_question of instance_questions) {
+    for (const instance_question of all_instance_questions) {
+      // Only checking for instance questions that can be used as RAG data.
+      // They should be graded last by a human.
       if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
         continue;
       }
@@ -114,58 +122,33 @@ export async function aiGradeTest({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
-    let number_to_test = 0;
-    for (const instance_question of instance_questions) {
-      if (
-        !instance_question.requires_manual_grading &&
-        instance_question.status !== 'unanswered' &&
-        !instance_question.is_ai_graded
-      ) {
-        number_to_test++;
+    const instance_questions = all_instance_questions.filter((instance_question) => {
+      if (mode === 'human_graded') {
+        // Things that have been graded by a human
+        return (
+          !instance_question.requires_manual_grading &&
+          instance_question.status !== 'unanswered' &&
+          !instance_question.is_ai_graded
+        );
+      } else if (mode === 'ungraded') {
+        // Things that require grading
+        return instance_question.requires_manual_grading;
+      } else if (mode === 'all') {
+        // Everything
+        return true;
+      } else if (mode === 'selected') {
+        // Things that have been selected by checkbox
+        return instance_question_ids?.includes(instance_question.id);
+      } else {
+        assertNever(mode);
       }
-    }
-    job.info(`Found ${number_to_test} submissions to test!`);
-
-    const rubric_items = await selectRubricForGrading(assessment_question.id);
-    const rubric_id = rubric_items.length ? rubric_items[0].rubric_id : null;
+    });
+    job.info(`Found ${instance_questions.length} submissions to grade!`);
 
     let error_count = 0;
-    const testRubricResults: {
-      reference_items: Set<string>;
-      ai_items: Set<string>;
-    }[] = [];
-    const testScoreResults: {
-      reference_score: number;
-      ai_score: number;
-    }[] = [];
-
-    // Test each instance question
+    // Grade each instance question
     for (const instance_question of instance_questions) {
-      if (
-        instance_question.status === 'unanswered' ||
-        instance_question.requires_manual_grading ||
-        instance_question.is_ai_graded
-      ) {
-        // Only test on instance questions that have been submitted and graded by a human
-        continue;
-      }
-
-      job.info(`\nInstance question ${instance_question.id}`);
-
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
-
-      const grading_rubric_id = await queryOptionalRow(
-        sql.select_rubric_id_from_grading,
-        { manual_rubric_grading_id: submission.manual_rubric_grading_id },
-        IdSchema,
-      );
-
-      if (rubric_id !== grading_rubric_id) {
-        job.info(
-          'Rubric used for this submission does not match the current rubric in use. Skipping test.',
-        );
-        continue;
-      }
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
@@ -207,6 +190,13 @@ export async function aiGradeTest({
         embedding: submission_embedding.embedding,
         limit: 5,
       });
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
+      for (const example of example_submissions) {
+        gradedExampleInfo += `\n- ${example.instance_question_id}`;
+      }
+      job.info(gradedExampleInfo);
+
+      const rubric_items = await selectRubricForGrading(assessment_question.id);
 
       const { messages } = await generatePrompt({
         questionPrompt,
@@ -216,15 +206,7 @@ export async function aiGradeTest({
         rubric_items,
       });
 
-      if (rubric_id) {
-        const rubric_grading_items = await selectRubricGradingItems(
-          submission.manual_rubric_grading_id,
-        );
-        const referenceRubricDescriptions = new Set<string>();
-        rubric_grading_items.forEach((item) => {
-          referenceRubricDescriptions.add(item.description);
-        });
-
+      if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
         for (const item of rubric_items) {
@@ -256,51 +238,76 @@ export async function aiGradeTest({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            testRubricResults.push({
-              reference_items: referenceRubricDescriptions,
-              ai_items: appliedRubricDescription,
-            });
+            if (instance_question.requires_manual_grading) {
+              // Requires grading: update instance question score
+              const manual_rubric_data = {
+                rubric_id: rubric_items[0].rubric_id,
+                applied_rubric_items: appliedRubricItems,
+              };
+              await runInTransactionAsync(async () => {
+                const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                  assessment_question.assessment_id,
+                  instance_question.id,
+                  submission.id,
+                  null, // check_modified_at
+                  {
+                    // TODO: consider asking for and recording freeform feedback.
+                    manual_rubric_data,
+                    feedback: { manual: '' },
+                  },
+                  user_id,
+                  true, // is_ai_graded
+                );
+                assert(grading_job_id);
 
-            await runInTransactionAsync(async () => {
-              assert(assessment_question.max_manual_points);
-              const manual_rubric_grading = await manualGrading.insertRubricGrading(
-                rubric_id,
-                assessment_question.max_points ?? 0,
-                assessment_question.max_manual_points,
-                appliedRubricItems,
-                0,
-              );
-              const score =
-                manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-              const grading_job_id = await queryRow(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score,
-                  auto_points: 0,
-                  manual_points: manual_rubric_grading.computed_points,
-                  manual_rubric_grading_id: manual_rubric_grading.id,
-                  feedback: null,
-                },
-                IdSchema,
-              );
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: messages,
-                completion,
-                course_id: course.id,
-                course_instance_id,
+                await insertAiGradingJob({
+                  grading_job_id,
+                  job_sequence_id: serverJob.jobSequenceId,
+                  prompt: messages,
+                  completion,
+                  course_id: course.id,
+                  course_instance_id,
+                });
               });
-            });
-
-            job.info('Reference rubric items:');
-            for (const item of referenceRubricDescriptions) {
-              job.info(`- ${item}`);
+            } else {
+              // Does not require grading: only create grading job and rubric grading
+              await runInTransactionAsync(async () => {
+                assert(assessment_question.max_manual_points);
+                const manual_rubric_grading = await manualGrading.insertRubricGrading(
+                  rubric_items[0].rubric_id,
+                  assessment_question.max_points ?? 0,
+                  assessment_question.max_manual_points,
+                  appliedRubricItems,
+                  0,
+                );
+                const score =
+                  manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+                const grading_job_id = await queryRow(
+                  sql.insert_grading_job,
+                  {
+                    submission_id: submission.id,
+                    authn_user_id: user_id,
+                    grading_method: 'AI',
+                    correct: null,
+                    score,
+                    auto_points: 0,
+                    manual_points: manual_rubric_grading.computed_points,
+                    manual_rubric_grading_id: manual_rubric_grading.id,
+                    feedback: null,
+                  },
+                  IdSchema,
+                );
+                await insertAiGradingJob({
+                  grading_job_id,
+                  job_sequence_id: serverJob.jobSequenceId,
+                  prompt: messages,
+                  completion,
+                  course_id: course.id,
+                  course_instance_id,
+                });
+              });
             }
+
             job.info('AI rubric items:');
             for (const item of appliedRubricDescription) {
               job.info(`- ${item}`);
@@ -316,7 +323,6 @@ export async function aiGradeTest({
           error_count++;
         }
       } else {
-        const score_perc = instance_question.score_perc ?? 0;
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -332,39 +338,64 @@ export async function aiGradeTest({
           job.info(`Raw response:\n${response.content}`);
           if (response.parsed) {
             const score = response.parsed.score;
-            testScoreResults.push({
-              reference_score: score_perc,
-              ai_score: score,
-            });
 
-            await runInTransactionAsync(async () => {
-              assert(assessment_question.max_manual_points);
-              const grading_job_id = await queryRow(
-                sql.insert_grading_job,
-                {
-                  submission_id: submission.id,
-                  authn_user_id: user_id,
-                  grading_method: 'AI',
-                  correct: null,
-                  score: score / 100,
-                  auto_points: 0,
-                  manual_points: (score * assessment_question.max_manual_points) / 100,
-                  manual_rubric_grading_id: null,
-                  feedback: null,
-                },
-                IdSchema,
-              );
-              await insertAiGradingJob({
-                grading_job_id,
-                job_sequence_id: serverJob.jobSequenceId,
-                prompt: messages,
-                completion,
-                course_id: course.id,
-                course_instance_id,
+            if (instance_question.requires_manual_grading) {
+              // Requires grading: update instance question score
+              const feedback = response.parsed.feedback;
+              await runInTransactionAsync(async () => {
+                const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+                  assessment_question.assessment_id,
+                  instance_question.id,
+                  submission.id,
+                  null, // check_modified_at
+                  {
+                    manual_score_perc: score,
+                    feedback: { manual: feedback },
+                  },
+                  user_id,
+                  true, // is_ai_graded
+                );
+                assert(grading_job_id);
+
+                await insertAiGradingJob({
+                  grading_job_id,
+                  job_sequence_id: serverJob.jobSequenceId,
+                  prompt: messages,
+                  completion,
+                  course_id: course.id,
+                  course_instance_id,
+                });
               });
-            });
+            } else {
+              // Does not require grading: only create grading job and rubric grading
+              await runInTransactionAsync(async () => {
+                assert(assessment_question.max_manual_points);
+                const grading_job_id = await queryRow(
+                  sql.insert_grading_job,
+                  {
+                    submission_id: submission.id,
+                    authn_user_id: user_id,
+                    grading_method: 'AI',
+                    correct: null,
+                    score: score / 100,
+                    auto_points: 0,
+                    manual_points: (score * assessment_question.max_manual_points) / 100,
+                    manual_rubric_grading_id: null,
+                    feedback: null,
+                  },
+                  IdSchema,
+                );
+                await insertAiGradingJob({
+                  grading_job_id,
+                  job_sequence_id: serverJob.jobSequenceId,
+                  prompt: messages,
+                  completion,
+                  course_id: course.id,
+                  course_instance_id,
+                });
+              });
+            }
 
-            job.info(`Reference score: ${score_perc}`);
             job.info(`AI score: ${response.parsed.score}`);
           } else if (response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
@@ -382,27 +413,6 @@ export async function aiGradeTest({
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
-    } else {
-      job.info('\n----------------Test results----------------');
-      if (rubric_id) {
-        job.info(`Test size: ${testRubricResults.length}`);
-        rubric_items.forEach((item) => {
-          const accuracyPerc = rubricItemAccuracy(testRubricResults, item) * 100;
-          job.info(`Rubric item: ${item.description}, accuracy: ${accuracyPerc}%`);
-        });
-      } else {
-        job.info(`Test size: ${testScoreResults.length}`);
-        const rmse = rootMeanSquaredError(
-          testScoreResults.map((item) => item.reference_score),
-          testScoreResults.map((item) => item.ai_score),
-        );
-        job.info(`RMSE: ${rmse}`);
-        const r = pearsonCorrelation(
-          testScoreResults.map((item) => item.reference_score),
-          testScoreResults.map((item) => item.ai_score),
-        );
-        job.info(`Pearson's r: ${r}`);
-      }
     }
   });
   return serverJob.jobSequenceId;

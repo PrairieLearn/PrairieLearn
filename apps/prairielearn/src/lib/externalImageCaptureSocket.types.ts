@@ -1,5 +1,6 @@
 export interface StatusMessage {
   variant_id: string;
+  variant_token: string;
   file_name: string;
 }
 

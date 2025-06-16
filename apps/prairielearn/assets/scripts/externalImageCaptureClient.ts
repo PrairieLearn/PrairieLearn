@@ -2,10 +2,7 @@ import { io } from 'socket.io-client';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import type {
-  StatusMessage,
-  StatusMessageWithFileContent,
-} from '../../src/lib/externalImageCaptureSocket.types.js';
+import type { StatusMessage } from '../../src/lib/externalImageCaptureSocket.types.js';
 
 const MAX_IMAGE_SIDE_LENGTH = 1000;
 
@@ -50,10 +47,10 @@ onDocumentReady(() => {
     const externalImageCaptureFailedContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-failed-container',
     );
-    const tryAgainButtonSpan = document.querySelector<HTMLButtonElement>('#try-again-button span');
     const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
     const uploadButtonSpan = document.querySelector<HTMLButtonElement>('#upload-button span');
 
+    // Button that opens the user's camera, allowing them to capture an image.
     const cameraInputLabel = document.querySelector<HTMLLabelElement>('label[for="camera-input"]');
 
     if (
@@ -63,7 +60,6 @@ onDocumentReady(() => {
       !externalImageCaptureSuccessContainer ||
       !externalImageCaptureFailedContainer ||
       !tryAgainButton ||
-      !tryAgainButtonSpan ||
       !uploadButtonSpan ||
       !uploadButton ||
       !cameraInputLabel ||
@@ -91,6 +87,7 @@ onDocumentReady(() => {
     if (state === 'success') {
       externalImageCaptureSuccessContainer.classList.remove('d-none');
       externalImageCaptureFormContainer.classList.remove('d-none');
+
       formItems.classList.add('d-none');
       uploadButton.classList.add('d-none');
     } else {
@@ -135,8 +132,10 @@ onDocumentReady(() => {
     if (!externalImageCaptureForm) {
       throw new Error('External image capture form not found in the document');
     }
+
     const variant_id = externalImageCaptureForm.dataset.variantId;
     const file_name = externalImageCaptureForm.dataset.fileName;
+    const variant_token = externalImageCaptureForm.dataset.variantToken;
 
     const socket = io('/external-image-capture');
 
@@ -144,9 +143,10 @@ onDocumentReady(() => {
       'joinExternalImageCapture',
       {
         variant_id,
+        variant_token,
         file_name,
       },
-      (msg: StatusMessageWithFileContent) => {
+      (msg: StatusMessage) => {
         if (!msg) {
           changeState('failed');
           throw new Error('Failed to join external image capture room');

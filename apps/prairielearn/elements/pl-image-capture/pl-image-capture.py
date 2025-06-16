@@ -55,23 +55,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
+    external_image_capture_url = data["options"].get("external_image_capture_url")
+    external_image_capture_url = (
+        f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
+        if external_image_capture_url
+        else None
+    )
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
+        "external_image_capture_available": external_image_capture_url is not None,
     }
-
-    external_image_capture_url = data["options"].get("external_image_capture_url")
-    if not external_image_capture_url:
-        pl.add_files_format_error(
-            data,
-            "external_image_capture_url was not generated for the image capture question.",
-        )
-
-    external_image_capture_url = (
-        f"{external_image_capture_url}?file_name={urllib.parse.quote_plus(file_name)}"
-    )
 
     image_capture_options = {
         "file_name": file_name,
@@ -135,3 +132,39 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     pl.add_submitted_file(data, file_name, b64_payload)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    result = data["test_type"]
+
+    file_name = pl.get_string_attrib(
+        lxml.html.fragment_fromstring(element_html), "file-name"
+    )
+
+    if result in ["correct", "incorrect"]:
+        # Create a 1x1 white RGB image to simulate a valid JPEG image.
+        img = Image.new("RGB", (1, 1), color="white")
+        img.putpixel((0, 0), (255, 255, 255))
+
+        buffer = BytesIO()
+        img.save(buffer, format="JPEG")
+        jpeg_bytes = buffer.getvalue()
+
+        b64_payload = base64.b64encode(jpeg_bytes).decode("utf-8")
+
+        data["raw_submitted_answers"][file_name] = (
+            f"data:image/jpeg;base64,{b64_payload}"
+        )
+
+    elif result == "invalid":
+        data["raw_submitted_answers"][file_name] = ""
+
+        if not data["format_errors"]:
+            data["format_errors"] = {}
+
+        if "_files" not in data["format_errors"]:
+            data["format_errors"]["_files"] = []
+
+        data["format_errors"]["_files"].append(
+            f"No image was submitted for {file_name}."
+        )

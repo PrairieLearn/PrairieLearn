@@ -174,6 +174,10 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database stored procedures (sprocs)
 
+!!! warning
+
+    We are migrating away from the use of [sprocs](https://neon.com/postgresql/postgresql-plpgsql/postgresql-create-procedure). Prefer writing logic in TypeScript instead.
+
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
   ```js
@@ -228,6 +232,36 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
+??? tip "Schema and data exploration"
+
+    The [`ms-ossdata.vscode-pgsql` VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) can help you explore the database schema and data in your editor.
+
+    ![Setup Postgres VSCode](./postgres-vscode-setup.png)
+
+    ![Using Postgres VSCode](./postgres-vscode-select-1000.png)
+
+??? tip "Cleaning out old schemas"
+
+    The following query will remove all schemas except `public`. You can then restart the server to recreate the sprocs.
+
+    ```sql
+    DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname NOT IN ('public', 'information_schema', 'pg_catalog')
+          AND nspname NOT LIKE 'pg_toast%'
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;
+    ```
+
 ## Database schema (full data)
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
@@ -254,7 +288,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database schema modification
 
-See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
+See the [migrations documentation](./migrations/README.md).
 
 ## Database access
 
@@ -288,7 +322,7 @@ WHERE
   const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
-- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. Locking can be performed with a query like:
+- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc.) should call a locking function when they start. Locking can be performed with a query like:
 
 ```sql
 SELECT

@@ -293,6 +293,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/externalImageCapture/variant/:variant_id',
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id',
+  '/pl/public/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
 
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',

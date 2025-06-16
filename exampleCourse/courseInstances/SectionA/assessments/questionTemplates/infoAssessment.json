@@ -20,8 +20,7 @@
         { "id": "demo/matrixAlgebra", "points": 2, "maxPoints": 10 },
         { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
         { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 },
-        { "id": "template/imageCaptureMobileCaptureEnabled", "points": 1, "maxPoints": 1 },
-        { "id": "template/imageCaptureMobileCaptureDisabled", "points": 1, "maxPoints": 1 }
+        { "id": "template/image-capture/static", "points": 1, "maxPoints": 1 }
       ]
     },
     {
@@ -38,8 +37,7 @@
         { "id": "demo/addHTMLtable", "points": 2, "maxPoints": 4 },
         { "id": "demo/insertEmbeddedVideo", "points": 2, "maxPoints": 4 },
         { "id": "element/markdown", "points": 2, "maxPoints": 10 },
-        { "id": "demo/survey", "points": 1, "maxPoints": 1 },
-        { "id": "demo/imageCapture", "points": 1, "maxPoints": 1 }
+        { "id": "demo/survey", "points": 1, "maxPoints": 1 }
       ]
     },
     {
