@@ -5,14 +5,14 @@ import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/nod
 // are slowest. However, this depends on cached data from previous runs, which
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
-const SLOW_TESTS = [
-  'src/tests/exampleCourseQuestions.test.ts',
-  'src/tests/fileEditor.test.ts',
-  'src/tests/homework.test.ts',
-  'src/tests/exam.test.ts',
-  'src/tests/accessibility/index.test.ts',
-  'src/tests/cron.test.ts',
-];
+const SLOW_TESTS_SHARDS = {
+  1: ['src/tests/exampleCourseQuestions.test.ts'],
+  2: ['src/tests/fileEditor.test.ts'],
+  3: ['src/tests/homework.test.ts'],
+  4: ['src/tests/exam.test.ts', 'src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts'],
+};
+
+const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 
 class CustomSequencer extends BaseSequencer {
   async sort(files: TestSpecification[]) {
@@ -36,7 +36,27 @@ class CustomSequencer extends BaseSequencer {
   }
 
   async shard(files: TestSpecification[]) {
-    return super.shard(files);
+    const { config } = this.ctx;
+
+    const otherTests = files.filter((file) => {
+      return !(
+        file.project.config.root.includes('apps/prairielearn') &&
+        SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
+      );
+    });
+    const originalShardTests = await super.shard(otherTests);
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const { index } = config.shard!;
+    const slowShardTests = SLOW_TESTS_SHARDS[index];
+    const additionalShardTests = files.filter((file) => {
+      return (
+        file.project.config.root.includes('apps/prairielearn') &&
+        slowShardTests.some((slowTest) => file.moduleId.includes(slowTest))
+      );
+    });
+
+    return [...originalShardTests, ...additionalShardTests];
   }
 }
 
