@@ -1158,11 +1158,11 @@
     },
     "costPerMillionPromptTokens": {
       "type": "number",
-      "default": 3.75
+      "default": 2.5
     },
     "costPerMillionCompletionTokens": {
       "type": "number",
-      "default": 15
+      "default": 10
     }
   }
 }
