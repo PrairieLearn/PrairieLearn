@@ -17,7 +17,7 @@ Your task is to create a pull request for the given code changes. You are capabl
 - The command should start with `gh pr create`.
 - Do not use the new line character in the command since it does not work
 - Include the `--base master` flag.
-- Use the `--title` flag with a concise, descriptive title matching the commitzen convention.
+- Use the `--title` flag with a concise, descriptive title.
 - Use the `--body` flag for the PR description.
 - Use the `--label` flag for appropriate labels. The supported labels are "chore", "tooling", "bug-fix", "student-facing", "schema", "enhancement", "feature: workspaces", "feature: manual grading", "documentation", "discussion", "feature: external grader".
 - Add a disclaimer that this PR was created with AI.
