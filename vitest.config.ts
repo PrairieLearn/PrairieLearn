@@ -1,3 +1,7 @@
+import crypto from 'node:crypto';
+
+import { resolve } from 'pathe';
+import { slash } from 'vite-node/utils';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/node';
 
@@ -7,10 +11,17 @@ import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/nod
 // use a custom sequencer to always run them first.
 const SLOW_TESTS_SHARDS = {
   1: ['src/tests/exampleCourseQuestions.test.ts'],
-  2: ['src/tests/fileEditor.test.ts'],
-  3: ['src/tests/homework.test.ts'],
-  4: ['src/tests/exam.test.ts', 'src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts'],
-  5: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
+  2: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
+  3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts', 'src/tests/exam.test.ts'],
+  4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts'],
+};
+
+const NUM_SLICES = 7;
+const SHARD_SLICES = {
+  1: { start: 0, end: 1 },
+  2: { start: 1, end: 2 },
+  3: { start: 2, end: 4 },
+  4: { start: 4, end: 6 },
 };
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
@@ -39,16 +50,34 @@ class CustomSequencer extends BaseSequencer {
   async shard(files: TestSpecification[]) {
     const { config } = this.ctx;
 
-    const otherTests = files.filter((file) => {
-      return !(
-        file.project.config.root.includes('apps/prairielearn') &&
-        SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
-      );
-    });
-    const originalShardTests = await super.shard(otherTests);
-
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const { index } = config.shard!;
+
+    const sliceSize = Math.ceil(files.length / NUM_SLICES);
+    const { start, end }: { start: number; end: number } = SHARD_SLICES[index];
+    const shardStart = sliceSize * start;
+    const shardEnd = sliceSize * end;
+
+    // Implementation: https://github.com/vitest-dev/vitest/blob/cecc4e/packages/vitest/src/node/sequencers/BaseSequencer.ts#L16-L33
+    const originalShardTests = files
+      .filter((file) => {
+        return !(
+          file.project.config.root.includes('apps/prairielearn') &&
+          SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
+        );
+      })
+      .map((spec) => {
+        const fullPath = resolve(slash(config.root), slash(spec.moduleId));
+        const specPath = fullPath?.slice(config.root.length);
+        return {
+          spec,
+          hash: crypto.hash('sha1', specPath, 'hex'),
+        };
+      })
+      .sort((a, b) => (a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0))
+      .slice(shardStart, shardEnd)
+      .map(({ spec }) => spec);
+
     const slowShardTests = SLOW_TESTS_SHARDS[index];
     const additionalShardTests = files.filter((file) => {
       return (
