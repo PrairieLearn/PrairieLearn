@@ -31,7 +31,7 @@ Your task is to create a pull request for the given code changes. You are capabl
 - Wrap the entire command in a code block for easy copy-pasting, using the following format:
 
 ```bash
-gh pr create --base master --draft --label "enhancement" --label "chore" --title "Concise title" --body "$(echo "This PR description was written with AI.\n\n## Summary\n\nYour summary here\n\n## Changes\n\n- Change 1\n- Change 2 with escaped \`backticks\`\n- Change 3\n\n## Additional Notes\n\nAny optional additional notes here")"
+gh pr create --base master --draft --label "documentation" --label "tooling" --title "Add Cursor IDE configuration and documentation" --body "$(echo "This PR description was written with AI.\n\n## Summary\n\nThis PR adds configuration and documentation files for the Cursor IDE integration, including a comprehensive PR creation guide and PrairieLearn-specific coding standards.\n\n## Changes\n\n- Added \`.cursor/prompts/create-pr.md\` - A detailed guide for creating PRs using the GitHub CLI\n- Added \`.cursor/rules/prairielearn-overview.mdc\` - Documentation covering:\n  - Tech stack overview (TypeScript, Bootstrap 5, PostgreSQL 16, Express, Preact)\n  - Interactive Preact page guidelines\n  - File structure and naming conventions\n  - SQL and TypeScript integration best practices\n\n## Additional Notes\n\nThese changes will help maintain consistency in PR creation and provide clear documentation for developers using the Cursor IDE with PrairieLearn.")"
 ```
 
 - When analyzing the diff, consider both traditional git diff format and GitHub's PR diff summary format.
