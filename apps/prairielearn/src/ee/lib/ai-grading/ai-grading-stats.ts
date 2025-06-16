@@ -218,7 +218,7 @@ export function meanError(actual: number[], predicted: number[]): number {
 
   const n = actual.length;
   const errors = actual.map((a, i) => Math.abs(a - predicted[i]));
-  const meanError = errors.reduce((acc, val) => acc + val, 0) / n;
+  const mean = errors.reduce((acc, val) => acc + val, 0) / n;
 
-  return Math.round(meanError * 100) / 100;
+  return Math.round(mean * 100) / 100;
 }
