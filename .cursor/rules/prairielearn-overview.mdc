@@ -1,0 +1,26 @@
+---
+description: 
+globs: apps/prairielearn/**/*.ts,apps/prairielearn/**/*.tsx,apps/prairielearn/**/*.sql
+alwaysApply: false
+---
+# Tech stack
+
+- TypeScript, Bootstrap 5, PostgreSQL 16, Express, Preact
+
+# Interactive Preact Pages
+
+- When writing interactive Preact pages, include a snippet in `assets/scripts/esm-bundles/react-fragments/ComponentName.ts` that calls `registerReactFragment`.
+
+# File Structure and Naming
+
+- All database tables must have corresponding Zod types in `src/lib/db-types.ts`.
+- When listing DB columns in `database/` and `db-types`, always use snake_case, keep the same names as the DB columns, and sort columns in alphabetical order.
+- Each `.ts` file that interacts with SQL must have a same-named `.sql` file alongside it. The `.sql` file contains query blocks, each introduced by `-- BLOCK <block_name>`.
+
+# SQL and TypeScript Integration
+
+- Use `loadSqlEquiv(import.meta.url)` in TypeScript files to load and parse the adjacent `.sql` file.
+- Use `queryRow`, `queryRows`, and `runInTransactionAsync` from `@prairielearn/postgres` to execute SQL queries.
+- Prefer using the models in `src/models/*.ts` instead of writing new SQL code
+- Always validate data from the database using the appropriate Zod codec from `src/lib/db-types.ts`.
+- When the database schema changes, update `src/components/AuditEventsTable.html.ts` to reflect the changes.
