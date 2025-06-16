@@ -15,6 +15,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
+import { renderHtml } from '../lib/preact-html.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import { PageLayout } from './PageLayout.html.js';
@@ -342,7 +343,7 @@ export function FileBrowser({
       </style>
     `,
     content: html`
-      ${syncErrorsAndWarnings}
+      ${syncErrorsAndWarnings?.toString()}
       <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

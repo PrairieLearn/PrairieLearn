@@ -6,6 +6,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
@@ -31,12 +32,14 @@ export function InstructorInstanceAdminAccess({
       fullWidth: true,
     },
     content: html`
-      ${CourseInstanceSyncErrorsAndWarnings({
-        authz_data,
-        courseInstance: course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseInstanceSyncErrorsAndWarnings({
+          authz_data,
+          courseInstance: course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${course_instance.long_name} course instance access rules</h1>

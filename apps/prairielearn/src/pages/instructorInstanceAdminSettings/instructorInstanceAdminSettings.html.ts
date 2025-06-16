@@ -6,6 +6,7 @@ import { QRCodeModal } from '../../components/QRCodeModal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseInstance } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -38,12 +39,14 @@ export function InstructorInstanceAdminSettings({
     },
     headContent: compiledScriptTag('instructorInstanceAdminSettingsClient.ts'),
     content: html`
-      ${CourseInstanceSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseInstanceSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${QRCodeModal({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
