@@ -1,5 +1,5 @@
 ---
-description: 
+description: Core development guidelines and technical standards for PrairieLearn, covering tech stack, Preact components, database conventions, and SQL/TypeScript integration patterns.
 globs: apps/prairielearn/**/*.ts,apps/prairielearn/**/*.tsx,apps/prairielearn/**/*.sql
 alwaysApply: false
 ---
