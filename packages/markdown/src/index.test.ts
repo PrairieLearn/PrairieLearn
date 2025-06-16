@@ -104,16 +104,15 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected, { inline: true });
   });
 
-  it.skip('keeps p tag if content has more than one paragraph', async () => {
-    const question = 'test with **bold** and *italic* words\n\nand a new paragraph';
-    const expected =
-      '<p>test with <strong>bold</strong> and <em>italic</em> words</p>\n<p>and a new paragraph</p>';
+  it('ignores paragraphs in inline parsing', async () => {
+    const question = 'test with **bold** and *italic* words\n\nand a new line';
+    const expected = 'test with <strong>bold</strong> and <em>italic</em> words\n\nand a new line';
     await testMarkdown(question, expected, { inline: true });
   });
 
-  it.skip('keeps external tag if it is not a paragraph', async () => {
-    const question = '* single item';
-    const expected = '<ul>\n<li>single item</li>\n</ul>';
+  it('ignores other block constructs in inline parsing', async () => {
+    const question = '* single _item_';
+    const expected = '* single <em>item</em>';
     await testMarkdown(question, expected, { inline: true });
   });
 
