@@ -5,6 +5,7 @@ import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarni
 import { TagBadge } from '../../components/TagBadge.html.js';
 import { TagDescription } from '../../components/TagDescription.html.js';
 import { type Tag } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminTags({
   resLocals,
@@ -25,11 +26,13 @@ export function InstructorCourseAdminTags({
       fullWidth: true,
     },
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Tags</h1>

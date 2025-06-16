@@ -5,6 +5,7 @@ import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const SharingSetRowSchema = z.object({
   name: z.string(),
@@ -142,11 +143,13 @@ export function InstructorCourseAdminSharing({
       fullWidth: true,
     },
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>

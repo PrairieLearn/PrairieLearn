@@ -16,14 +16,16 @@ export function CourseSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarningsHtml({
-    authz_data,
-    exampleCourse: course.example_course,
-    syncErrors: course.sync_errors,
-    syncWarnings: course.sync_warnings,
-    fileEditUrl: `${urlPrefix}/course_admin/file_edit/infoCourse.json`,
-    context: 'course',
-  });
+  return (
+    <SyncErrorsAndWarnings
+      authz_data={authz_data}
+      exampleCourse={course.example_course}
+      syncErrors={course.sync_errors}
+      syncWarnings={course.sync_warnings}
+      fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
+      context={'course'}
+    />
+  );
 }
 
 export function QuestionSyncErrorsAndWarnings({
@@ -37,14 +39,16 @@ export function QuestionSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarnings({
-    authz_data,
-    exampleCourse: course.example_course,
-    syncErrors: question.sync_errors,
-    syncWarnings: question.sync_warnings,
-    fileEditUrl: `${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`,
-    context: 'question',
-  });
+  return (
+    <SyncErrorsAndWarnings
+      authz_data={authz_data}
+      exampleCourse={course.example_course}
+      syncErrors={question.sync_errors}
+      syncWarnings={question.sync_warnings}
+      fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
+      context={'question'}
+    />
+  );
 }
 
 export function CourseInstanceSyncErrorsAndWarnings({
@@ -58,14 +62,16 @@ export function CourseInstanceSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarnings({
-    authz_data,
-    exampleCourse: course.example_course,
-    syncErrors: courseInstance.sync_errors,
-    syncWarnings: courseInstance.sync_warnings,
-    fileEditUrl: `${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`,
-    context: 'course instance',
-  });
+  return (
+    <SyncErrorsAndWarnings
+      authz_data={authz_data}
+      exampleCourse={course.example_course}
+      syncErrors={courseInstance.sync_errors}
+      syncWarnings={courseInstance.sync_warnings}
+      fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
+      context={'course instance'}
+    />
+  );
 }
 
 export function AssessmentSyncErrorsAndWarnings({

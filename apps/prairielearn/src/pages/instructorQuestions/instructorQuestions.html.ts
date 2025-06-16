@@ -4,6 +4,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstance } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -34,11 +35,13 @@ export const QuestionsPage = ({
     },
     headContent: QuestionsTableHead(),
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${QuestionsTable({
         questions,
         templateQuestions,

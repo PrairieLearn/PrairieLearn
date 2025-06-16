@@ -5,6 +5,7 @@ import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarni
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { TopicDescription } from '../../components/TopicDescription.html.js';
 import { type Topic } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminTopics({
   resLocals,
@@ -25,11 +26,13 @@ export function InstructorCourseAdminTopics({
       fullWidth: true,
     },
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Topics</h1>

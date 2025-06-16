@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({
@@ -32,11 +33,13 @@ export function InstructorCourseAdminSettings({
     },
     headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
 
       <div class="card  mb-4">
         <div class="card-header bg-primary text-white d-flex">

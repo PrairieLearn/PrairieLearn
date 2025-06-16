@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminGettingStarted({
   tasks,
@@ -20,11 +21,13 @@ export function InstructorCourseAdminGettingStarted({
       subPage: 'getting_started',
     },
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Getting started checklist</h1>

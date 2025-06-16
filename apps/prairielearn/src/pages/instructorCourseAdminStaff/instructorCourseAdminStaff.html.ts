@@ -12,6 +12,7 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
@@ -74,11 +75,13 @@ export function InstructorCourseAdminStaff({
       </style>
     `,
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
           <h1 class="me-2">Staff</h1>

@@ -4,6 +4,7 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type AssessmentSet } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminSets({
   resLocals,
@@ -24,11 +25,13 @@ export function InstructorCourseAdminSets({
       fullWidth: true,
     },
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Assessment sets</h1>

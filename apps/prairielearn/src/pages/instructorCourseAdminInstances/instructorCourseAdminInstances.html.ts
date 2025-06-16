@@ -9,6 +9,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -53,11 +54,13 @@ export function InstructorCourseAdminInstances({
     },
     headContent: compiledScriptTag('instructorCourseAdminInstancesClient.ts'),
     content: html`
-      ${CourseSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        CourseSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${CreateCourseInstanceModal({
         courseShortName: resLocals.course.short_name,
         csrfToken: resLocals.__csrf_token,

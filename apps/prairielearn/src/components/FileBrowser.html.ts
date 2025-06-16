@@ -277,7 +277,7 @@ export function FileBrowser({
   const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
   const syncErrorsAndWarnings =
     navPage === 'course_admin'
-      ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
+      ? renderHtml(CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix }))
       : navPage === 'instance_admin'
         ? renderHtml(
             CourseInstanceSyncErrorsAndWarnings({

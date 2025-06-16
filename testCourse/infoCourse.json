@@ -4,7 +4,7 @@
   "title": "Test Course",
   "assessmentSets": [],
   "assessmentModules": [
-    { "name": "Module1", "heading": "Module 1" },
+    { "name": "Module1", "heading": "Module 1"},
     { "name": "Module2", "heading": "Module 2" },
     { "name": "Module3", "heading": "Module 3" },
     { "name": "Module4", "heading": "Module 4" },

@@ -21,6 +21,7 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const PAGE_SIZE = 100;
 
@@ -90,7 +91,7 @@ export function InstructorIssues({
     },
     headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
-      ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
+      ${renderHtml(CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix }))}
       ${authz_data.has_course_permission_edit
         ? CloseMatchingIssuesModal({
             openFilteredIssuesCount,
