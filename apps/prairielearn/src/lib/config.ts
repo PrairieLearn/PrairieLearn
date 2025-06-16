@@ -21,8 +21,8 @@ export const STANDARD_COURSE_DIRS = [
   '/course6',
   '/course7',
   '/course8',
-  '/course9'
-]
+  '/course9',
+];
 
 export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -59,12 +59,7 @@ export const ConfigSchema = z.object({
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
-    .default(
-      [
-      ...STANDARD_COURSE_DIRS,
-      EXAMPLE_COURSE_PATH,
-      TEST_COURSE_PATH,
-    ]),
+    .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
