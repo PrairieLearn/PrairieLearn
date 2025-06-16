@@ -76,9 +76,7 @@
         "/course6",
         "/course7",
         "/course8",
-        "/course9",
-        "/home/retep/repos/PrairieLearn/exampleCourse",
-        "/home/retep/repos/PrairieLearn/testCourse"
+        "/course9"
       ]
     },
     "courseRepoDefaultBranch": {

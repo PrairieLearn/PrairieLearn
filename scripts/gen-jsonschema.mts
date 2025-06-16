@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
-import { ConfigSchema as PrairieLearnConfigSchema } from '../apps/prairielearn/src/lib/config.js';
+import { STANDARD_COURSE_DIRS, ConfigSchema as EnvSpecificPrairieLearnConfigSchema } from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 // determine if we are checking or writing
@@ -90,6 +90,15 @@ const orderedStringify = (schema) => {
 
 console.log(check ? 'Checking schemas...' : 'Writing schemas...');
 const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/schemas/schemas');
+
+// The original config schema has defaults that depend on the environment.
+// We remove those from the JSON Schema so we can accurately check if it has has changed.
+const PrairieLearnConfigSchema = z.object({
+  ...EnvSpecificPrairieLearnConfigSchema.shape,
+  courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(
+    STANDARD_COURSE_DIRS
+  )
+})
 
 const UnifiedConfigJsonSchema = zodToJsonSchema(
   z.object({
