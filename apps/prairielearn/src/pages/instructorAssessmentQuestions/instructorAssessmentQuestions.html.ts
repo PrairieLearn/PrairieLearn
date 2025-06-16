@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -21,14 +22,16 @@ import type { AssessmentQuestionRow } from '../../models/assessment-question.js'
 export function InstructorAssessmentQuestions({
   resLocals,
   questions,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
+  origHash: string;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
-    headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+    headContent: compiledScriptTag('instructorAssessmentQuestionsClient.tsx'),
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -45,19 +48,26 @@ export function InstructorAssessmentQuestions({
         course: resLocals.course,
         urlPrefix: resLocals.urlPrefix,
       })}
-
+      ${EncodedData(questions, 'assessment-questions-data')}
+      <div class="js-edit-modal modal fade"></div>
+      <form method="POST" id="zonesForm">
+        <input type="hidden" name="__action" value="edit_assessment_questions" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input type="hidden" name="__orig_hash" value="${origHash}" />
+        <input class="js-zones-input" type="hidden" name="zones" value="" />
+      </form>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
         </div>
-        ${AssessmentQuestionsTable({
-          course: resLocals.course,
-          questions,
-          assessmentType: resLocals.assessment.type,
-          urlPrefix: resLocals.urlPrefix,
-          hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
-          hasCourseInstancePermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-        })}
+        <div
+          class="table-responsive js-assessment-questions-table"
+          data-assessment-type="${resLocals.assessment.type}"
+          data-url-prefix="${resLocals.urlPrefix}"
+          data-has-course-permission-preview="${resLocals.authz_data.has_course_permission_preview}"
+          data-has-course-instance-permission-edit="${resLocals.authz_data
+            .has_course_instance_permission_edit}"
+        ></div>
       </div>
     `,
     postContent: html`
