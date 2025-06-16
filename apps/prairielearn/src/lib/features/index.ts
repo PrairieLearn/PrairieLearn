@@ -4,7 +4,6 @@ const featureNames = [
   'course-instance-billing',
   'enforce-plan-grants-for-questions',
   // Should only be applied to courses/institutions.
-  'process-questions-in-server',
   'question-sharing',
   'consume-public-questions',
   'ai-grading',

@@ -49,9 +49,9 @@ start-s3rver:
 
 test: test-js test-python
 test-js: start-support
-	@yarn turbo run test
-test-js-dist: start-support
-	@yarn turbo run test:dist
+	@yarn test
+test-js-dist: start-support build
+	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
@@ -64,7 +64,7 @@ check-dependencies:
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
 update-jsonschema:
-	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json"
+	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
