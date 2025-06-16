@@ -16,7 +16,7 @@ import type { VNode } from '@prairielearn/preact-cjs';
  */
 export function renderHtml(vnode: VNode | null): HtmlSafeString {
   if (vnode === null) {
-    return new HtmlSafeString([], []);
+    return new HtmlSafeString([''], []);
   }
   return unsafeHtml(render(vnode, {}, { pretty: false, jsx: false }));
 }

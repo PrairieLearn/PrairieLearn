@@ -146,7 +146,7 @@ function SyncErrorsAndWarnings({
           {exampleCourse ? (
             ''
           ) : (
-            <a class="btn btn-primary" href="{fileEditUrl}">
+            <a class="btn btn-primary" href={fileEditUrl}>
               <i class="fa fa-edit"></i>
               <span class="d-none d-sm-inline">Edit {infoFileName} to fix this error</span>
             </a>

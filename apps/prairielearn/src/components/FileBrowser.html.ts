@@ -347,7 +347,7 @@ export function FileBrowser({
       </style>
     `,
     content: html`
-      ${syncErrorsAndWarnings?.toString()}
+      ${syncErrorsAndWarnings}
       <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
