@@ -53,6 +53,8 @@ class CustomSequencer extends BaseSequencer {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const { index } = config.shard!;
 
+    // Some shards run slower tests, so other shards should take more 'slices'
+    // so that the runtimes of each shard are approximately balanced.
     const sliceSize = Math.ceil(files.length / NUM_SLICES);
     const { start, end }: { start: number; end: number } = SHARD_SLICES[index];
     const shardStart = sliceSize * start;
@@ -61,6 +63,7 @@ class CustomSequencer extends BaseSequencer {
     // Implementation: https://github.com/vitest-dev/vitest/blob/cecc4e/packages/vitest/src/node/sequencers/BaseSequencer.ts#L16-L33
     const originalShardTests = files
       .filter((file) => {
+        // Filter out the slow tests, as they are handled separately
         return !(
           file.project.config.root.includes('apps/prairielearn') &&
           SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest))
@@ -78,16 +81,17 @@ class CustomSequencer extends BaseSequencer {
       .slice(shardStart, shardEnd)
       .map(({ spec }) => spec);
 
-    const slowShardTests = SLOW_TESTS_SHARDS[index];
-    const additionalShardTests = files.filter((file) => {
+    // Manually assign the slow tests to different shards to avoid multiple
+    // slow tests being placed on the same shard
+    const slowShardFiles = SLOW_TESTS_SHARDS[index];
+    const slowShardTests = files.filter((file) => {
       return (
         file.project.config.root.includes('apps/prairielearn') &&
-        slowShardTests.some((slowTest) => file.moduleId.includes(slowTest))
+        slowShardFiles.some((slowTest) => file.moduleId.includes(slowTest))
       );
     });
 
-    const shardTests = [...originalShardTests, ...additionalShardTests];
-    console.log({ shardTests, index });
+    const shardTests = [...originalShardTests, ...slowShardTests];
     return shardTests;
   }
 }
