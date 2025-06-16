@@ -160,7 +160,7 @@ describe('course database', () => {
         const question2 = getAlternativeQuestion();
         await writeQuestion(dir, 'question1', getQuestion());
         await writeQuestion(dir, 'question2', getAlternativeQuestion());
-        const result = await courseDb.loadQuestions(dir);
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.equal(Object.keys(result).length, 2);
         assert.isFalse(infofile.hasErrors(result['question1']));
         assert.isFalse(infofile.hasWarnings(result['question1']));
@@ -176,7 +176,7 @@ describe('course database', () => {
         await writeQuestion(dir, 'question1', getQuestion());
         await writeQuestion(dir, 'question2', getQuestion());
         await writeQuestion(dir, 'question3', getAlternativeQuestion());
-        const result = await courseDb.loadQuestions(dir);
+        const result = await courseDb.loadQuestions({ coursePath: dir, sharingEnabled: false });
         assert.equal(Object.keys(result).length, 3);
         assert.match(
           infofile.stringifyWarnings(result['question1']),

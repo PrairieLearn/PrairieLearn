@@ -25,6 +25,7 @@ import type {
   GroupRoleJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -2819,5 +2820,22 @@ describe('Assessment syncing', () => {
       syncedAssessment?.sync_warnings,
       /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
     );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === util.ASSESSMENT_ID);
+    assert.isOk(syncedAssessment);
+    assert.match(syncedAssessment?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });
