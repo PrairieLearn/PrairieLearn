@@ -20,6 +20,7 @@ Your task is to create a pull request for the given code changes. You are capabl
 - Use the `--title` flag with a concise, descriptive title.
 - Use the `--body` flag for the PR description.
 - Use the `--label` flag for appropriate labels. The supported labels are "chore", "tooling", "bug-fix", "student-facing", "schema", "enhancement", "feature: workspaces", "feature: manual grading", "documentation", "discussion", "feature: external grader".
+- Mark the PR with draft with the `--draft` flag.
 - Add a disclaimer that this PR was created with AI.
 - Output only the git commit command in a single `bash` code block.
 - Include the following sections in the body:
@@ -30,21 +31,7 @@ Your task is to create a pull request for the given code changes. You are capabl
 - Wrap the entire command in a code block for easy copy-pasting, using the following format:
 
 ```bash
-gh pr create --base master --label "enhancement" --label "chore" --title "Concise title" --body "This PR description was written with AI.
-
-## Summary
-
-Your summary here
-
-## Changes
-
-- Change 1
-- Change 2 with escaped \`backticks\`
-- Change 3
-
-## Additional Notes
-
-Any optional additional notes here"
+gh pr create --base master --draft --label "enhancement" --label "chore" --title "Concise title" --body "$(echo "This PR description was written with AI.\n\n## Summary\n\nYour summary here\n\n## Changes\n\n- Change 1\n- Change 2 with escaped \`backticks\`\n- Change 3\n\n## Additional Notes\n\nAny optional additional notes here")"
 ```
 
 - When analyzing the diff, consider both traditional git diff format and GitHub's PR diff summary format.
