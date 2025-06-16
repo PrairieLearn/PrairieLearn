@@ -8,7 +8,10 @@ import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
-import { STANDARD_COURSE_DIRS, ConfigSchema as EnvSpecificPrairieLearnConfigSchema } from '../apps/prairielearn/src/lib/config.js';
+import {
+  ConfigSchema as EnvSpecificPrairieLearnConfigSchema,
+  STANDARD_COURSE_DIRS,
+} from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
 // determine if we are checking or writing
@@ -95,10 +98,8 @@ const schemaDir = path.resolve(import.meta.dirname, '../apps/prairielearn/src/sc
 // We remove those from the JSON Schema so we can accurately check if it has has changed.
 const PrairieLearnConfigSchema = z.object({
   ...EnvSpecificPrairieLearnConfigSchema.shape,
-  courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(
-    STANDARD_COURSE_DIRS
-  )
-})
+  courseDirs: EnvSpecificPrairieLearnConfigSchema.shape.courseDirs.default(STANDARD_COURSE_DIRS),
+});
 
 const UnifiedConfigJsonSchema = zodToJsonSchema(
   z.object({
@@ -120,9 +121,6 @@ const configSchemas = {
   [path.resolve(import.meta.dirname, '../docs/assets/config-grader-host.schema.json')]:
     zodToJsonSchema(GraderHostConfigSchema),
 };
-
-console.log(configSchemas);
-console.log(schemaDir);
 
 if (check) {
   for (const [name, schema] of Object.entries(ajvSchemas)) {
