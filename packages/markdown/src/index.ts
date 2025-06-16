@@ -53,8 +53,13 @@ export async function createMarkedInstance({
   return marked;
 }
 
-const markedInstanceCache = new Map<string, Marked>();
-async function getMarkedInstance(options: {
+const markedInstanceCache = new Map<string, Promise<Marked>>();
+/**
+ * Returns a cached instance of Marked with the specified options. Does not
+ * handle extensions, callers that rely on extensions should perform their own
+ * caching.
+ */
+function getMarkedInstance(options: {
   sanitize: boolean;
   allowHtml: boolean;
   interpretMath: boolean;
@@ -62,11 +67,15 @@ async function getMarkedInstance(options: {
   const key = `${options.sanitize}:${options.allowHtml}:${options.interpretMath}`;
   let marked = markedInstanceCache.get(key);
   if (!marked) {
-    marked = await createMarkedInstance({
+    marked = createMarkedInstance({
       sanitize: options.sanitize,
       allowHtml: options.allowHtml,
       interpretMath: options.interpretMath,
     });
+    // Cache the promise so that subsequent calls with the same options return
+    // the same instance. This ensures that we don't enter race conditions where
+    // multiple calls to getMarkedInstance with the same options create multiple
+    // instances of Marked if they are called before the first one resolves.
     markedInstanceCache.set(key, marked);
   }
   return marked;
