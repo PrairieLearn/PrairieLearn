@@ -10,6 +10,7 @@ const SLOW_TESTS_SHARDS = {
   2: ['src/tests/fileEditor.test.ts'],
   3: ['src/tests/homework.test.ts'],
   4: ['src/tests/exam.test.ts', 'src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts'],
+  5: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
 };
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
@@ -56,7 +57,9 @@ class CustomSequencer extends BaseSequencer {
       );
     });
 
-    return [...originalShardTests, ...additionalShardTests];
+    const shardTests = [...originalShardTests, ...additionalShardTests];
+    console.log({ shardTests, index });
+    return shardTests;
   }
 }
 
