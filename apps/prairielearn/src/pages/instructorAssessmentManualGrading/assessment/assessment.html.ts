@@ -9,6 +9,7 @@ import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsA
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { renderHtml } from '../../../lib/preact-html.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -61,13 +62,15 @@ export function ManualGradingAssessment({
         : ''}
     `,
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${AssessmentOpenInstancesAlert({
         numOpenInstances: num_open_instances,
         assessmentId: resLocals.assessment.id,

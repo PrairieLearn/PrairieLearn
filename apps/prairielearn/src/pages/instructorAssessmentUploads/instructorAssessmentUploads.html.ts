@@ -8,6 +8,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -35,13 +36,15 @@ export function InstructorAssessmentUploads({
       fullWidth: true,
     },
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}

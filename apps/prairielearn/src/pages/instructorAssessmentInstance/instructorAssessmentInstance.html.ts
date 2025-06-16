@@ -19,6 +19,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -114,13 +115,15 @@ export function InstructorAssessmentInstance({
         csrfToken: resLocals.__csrf_token,
         groupWork: resLocals.assessment.group_work,
       })}
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>

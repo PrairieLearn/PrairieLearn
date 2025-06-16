@@ -16,6 +16,7 @@ import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { Course } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
@@ -38,13 +39,15 @@ export function InstructorAssessmentQuestions({
       fullWidth: true,
     },
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

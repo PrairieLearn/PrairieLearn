@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -53,13 +54,15 @@ export function InstructorAssessmentGroups({
         )}"></script>
     `,
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       ${!groupConfigInfo
         ? html`
             <div class="card mb-4">

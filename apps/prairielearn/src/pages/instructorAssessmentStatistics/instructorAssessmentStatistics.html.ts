@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -72,13 +73,15 @@ export function InstructorAssessmentStatistics({
     },
     headContent: compiledScriptTag('instructorAssessmentStatisticsClient.ts'),
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data: resLocals.authz_data,
-        assessment: resLocals.assessment,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix: resLocals.urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data: resLocals.authz_data,
+          assessment: resLocals.assessment,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix: resLocals.urlPrefix,
+        }),
+      )}
       <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${assessment.number} Statistics
       </h1>

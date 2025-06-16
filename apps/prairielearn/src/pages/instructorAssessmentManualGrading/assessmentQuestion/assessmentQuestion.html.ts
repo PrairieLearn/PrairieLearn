@@ -11,6 +11,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
+import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
@@ -82,13 +83,15 @@ export function AssessmentQuestion({
       )}
     `,
     content: html`
-      ${AssessmentSyncErrorsAndWarnings({
-        authz_data,
-        assessment,
-        courseInstance: course_instance,
-        course,
-        urlPrefix,
-      })}
+      ${renderHtml(
+        AssessmentSyncErrorsAndWarnings({
+          authz_data,
+          assessment,
+          courseInstance: course_instance,
+          course,
+          urlPrefix,
+        }),
+      )}
       ${AssessmentOpenInstancesAlert({
         numOpenInstances: num_open_instances,
         assessmentId: assessment.id,

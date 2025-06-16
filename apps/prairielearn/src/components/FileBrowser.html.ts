@@ -288,13 +288,15 @@ export function FileBrowser({
             }),
           )
         : navPage === 'assessment'
-          ? AssessmentSyncErrorsAndWarnings({
-              authz_data,
-              assessment: resLocals.assessment,
-              courseInstance: resLocals.course_instance,
-              course,
-              urlPrefix,
-            })
+          ? renderHtml(
+              AssessmentSyncErrorsAndWarnings({
+                authz_data,
+                assessment: resLocals.assessment,
+                courseInstance: resLocals.course_instance,
+                course,
+                urlPrefix,
+              }),
+            )
           : navPage === 'question' || navPage === 'public_question'
             ? renderHtml(
                 QuestionSyncErrorsAndWarnings({

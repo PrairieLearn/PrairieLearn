@@ -87,42 +87,15 @@ export function AssessmentSyncErrorsAndWarnings({
   course: Course;
   urlPrefix: string;
 }) {
-  return SyncErrorsAndWarningsHtml({
-    authz_data,
-    exampleCourse: course.example_course,
-    syncErrors: assessment.sync_errors,
-    syncWarnings: assessment.sync_warnings,
-    fileEditUrl: `${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`,
-    context: 'assessment',
-  });
-}
-
-interface SyncErrorsAndWarningsProps {
-  authz_data: { has_course_instance_permission_edit: boolean };
-  exampleCourse: boolean;
-  syncErrors: string | null;
-  syncWarnings: string | null;
-  fileEditUrl: string;
-  context: 'course' | 'question' | 'course instance' | 'assessment';
-}
-
-function SyncErrorsAndWarningsHtml({
-  authz_data,
-  exampleCourse,
-  syncErrors,
-  syncWarnings,
-  fileEditUrl,
-  context,
-}: SyncErrorsAndWarningsProps) {
-  return renderHtml(
+  return (
     <SyncErrorsAndWarnings
       authz_data={authz_data}
-      exampleCourse={exampleCourse}
-      syncErrors={syncErrors}
-      syncWarnings={syncWarnings}
-      fileEditUrl={fileEditUrl}
-      context={context}
-    />,
+      exampleCourse={course.example_course}
+      syncErrors={assessment.sync_errors}
+      syncWarnings={assessment.sync_warnings}
+      fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
+      context={'assessment'}
+    />
   );
 }
 
@@ -133,7 +106,14 @@ function SyncErrorsAndWarnings({
   syncWarnings,
   fileEditUrl,
   context,
-}: SyncErrorsAndWarningsProps) {
+}: {
+  authz_data: { has_course_instance_permission_edit: boolean };
+  exampleCourse: boolean;
+  syncErrors: string | null;
+  syncWarnings: string | null;
+  fileEditUrl: string;
+  context: 'course' | 'question' | 'course instance' | 'assessment';
+}) {
   if (!authz_data.has_course_instance_permission_edit) {
     return null;
   }
