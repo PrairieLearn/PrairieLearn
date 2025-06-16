@@ -13,7 +13,6 @@ import {
 } from '../../../lib/db-types.js';
 
 import {
-  pearsonCorrelation,
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
@@ -35,7 +34,6 @@ export interface AiGradingGeneralStats {
   submission_point_count: number;
   submission_rubric_count: number;
   mean_error: number | null;
-  r: number | null;
   rubric_stats: {
     // Keeping all information for a rubric item
     // if we want to implement rubric modification here
@@ -159,13 +157,7 @@ export async function calculateAiGradingStats(
           testPointResults.map((item) => item.reference_points),
           testPointResults.map((item) => item.ai_points),
         )
-      : 0,
-    r: testPointResults.length
-      ? pearsonCorrelation(
-          testPointResults.map((item) => item.reference_points),
-          testPointResults.map((item) => item.ai_points),
-        )
-      : 0,
+      : null,
     rubric_stats: [],
   };
   for (const rubric_item of rubric_items) {

@@ -249,26 +249,6 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-// TODO: Once we really make sure this isn't needed anywhere I will remove this,
-// or if we do need it I will move this to ai-grading-stats
-export function pearsonCorrelation(x: number[], y: number[]): number {
-  if (x.length !== y.length || x.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = x.length;
-  const sumX = x.reduce((acc, val) => acc + val, 0);
-  const sumY = y.reduce((acc, val) => acc + val, 0);
-  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
-  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
-  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
-
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
-
-  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
-}
-
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
 ): Promise<InstanceQuestion[]> {

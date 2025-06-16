@@ -167,7 +167,8 @@ export function AssessmentQuestion({
                     <div class="m-2">
                       <div>Submission count: ${aiGradingStats.submission_point_count}</div>
                       <div>
-                        Average AI error: ${aiGradingStats.mean_error}<small class="text-muted"
+                        Average AI error: ${aiGradingStats.mean_error ?? '&mdash;'}<small
+                          class="text-muted"
                           >/${assessment_question.max_manual_points}</small
                         >
                         points
