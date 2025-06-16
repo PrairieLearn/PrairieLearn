@@ -65,9 +65,9 @@ function getMarkedInstance(options: {
   interpretMath: boolean;
 }): Promise<Marked> {
   const key = `${options.sanitize}:${options.allowHtml}:${options.interpretMath}`;
-  let marked = markedInstanceCache.get(key);
-  if (!marked) {
-    marked = createMarkedInstance({
+  let markedPromise = markedInstanceCache.get(key);
+  if (!markedPromise) {
+    markedPromise = createMarkedInstance({
       sanitize: options.sanitize,
       allowHtml: options.allowHtml,
       interpretMath: options.interpretMath,
@@ -76,9 +76,9 @@ function getMarkedInstance(options: {
     // the same instance. This ensures that we don't enter race conditions where
     // multiple calls to getMarkedInstance with the same options create multiple
     // instances of Marked if they are called before the first one resolves.
-    markedInstanceCache.set(key, marked);
+    markedInstanceCache.set(key, markedPromise);
   }
-  return marked;
+  return markedPromise;
 }
 
 /**
