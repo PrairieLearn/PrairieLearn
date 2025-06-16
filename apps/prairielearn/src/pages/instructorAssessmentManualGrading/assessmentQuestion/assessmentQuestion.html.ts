@@ -32,7 +32,6 @@ export function AssessmentQuestion({
     number_in_alternative_group,
     urlPrefix,
     assessment,
-    assessment_set,
     question,
     __csrf_token,
     authz_data,
