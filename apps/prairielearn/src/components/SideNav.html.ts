@@ -124,6 +124,14 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
+      activeSubPages: ['students'],
+      urlSuffix: '/instance_admin/students',
+      iconClasses: 'fas fa-users-line fa-fw',
+      tabLabel: 'Students',
+      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+    },
+    {
+      activePages: ['instance_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/instance_admin/file_view',
       iconClasses: 'fa fa-edit fa-fw',
@@ -254,7 +262,7 @@ function CourseInstanceNav({
   subPage: NavSubPage;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
-
+  console.log(courseInstanceSideNavPageTabs);
   return html`
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>

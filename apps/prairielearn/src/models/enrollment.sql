@@ -13,3 +13,12 @@ FROM
 WHERE
   user_id = $user_id
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_course_instance_enrollment
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  user_id = $user_id
+  AND course_instance_id = $course_instance_id;
