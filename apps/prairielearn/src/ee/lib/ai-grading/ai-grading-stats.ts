@@ -143,8 +143,8 @@ export async function calculateAiGradingStats(
     }
     if (manualGradingJob?.rubric_items != null && aiGradingJob?.rubric_items != null) {
       testRubricResults.push({
-        reference_items: new Set(manualGradingJob.rubric_items.map((item) => item.description)),
-        ai_items: new Set(aiGradingJob.rubric_items.map((item) => item.description)),
+        reference_items: new Set(manualGradingJob.rubric_items.map((item) => item.id)),
+        ai_items: new Set(aiGradingJob.rubric_items.map((item) => item.id)),
       });
     }
   }
@@ -205,8 +205,8 @@ export function rubricItemDisagreementCount(
   let disagreement = 0;
   testRubricResults.forEach((test) => {
     if (
-      (test.ai_items.has(item.description) && !test.reference_items.has(item.description)) ||
-      (!test.ai_items.has(item.description) && test.reference_items.has(item.description))
+      (test.ai_items.has(item.id) && !test.reference_items.has(item.id)) ||
+      (!test.ai_items.has(item.id) && test.reference_items.has(item.id))
     ) {
       disagreement++;
     }
@@ -235,7 +235,7 @@ function rubricSelectionCount(
 ): number {
   let selected = 0;
   testRubricResults.forEach((test) => {
-    if (test.reference_items.has(item.description)) {
+    if (test.reference_items.has(item.id)) {
       selected++;
     }
   });
