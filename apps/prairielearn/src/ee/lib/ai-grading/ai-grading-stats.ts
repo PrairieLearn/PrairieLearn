@@ -38,7 +38,6 @@ export interface AiGradingGeneralStats {
     // Keeping all information for a rubric item
     // if we want to implement rubric modification here
     rubric_item: RubricItem;
-    selection_count: number;
     disagreement_count: number;
   }[];
 }
@@ -162,10 +161,8 @@ export async function calculateAiGradingStats(
   };
   for (const rubric_item of rubric_items) {
     const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
-    const selection_count = rubricSelectionCount(testRubricResults, rubric_item);
     stats.rubric_stats.push({
       rubric_item,
-      selection_count,
       disagreement_count,
     });
   }
@@ -224,20 +221,4 @@ export function meanError(actual: number[], predicted: number[]): number {
   const meanError = errors.reduce((acc, val) => acc + val, 0) / n;
 
   return Math.round(meanError * 100) / 100;
-}
-
-function rubricSelectionCount(
-  testRubricResults: {
-    reference_items: Set<string>;
-    ai_items: Set<string>;
-  }[],
-  item: RubricItem,
-): number {
-  let selected = 0;
-  testRubricResults.forEach((test) => {
-    if (test.reference_items.has(item.id)) {
-      selected++;
-    }
-  });
-  return selected;
 }
