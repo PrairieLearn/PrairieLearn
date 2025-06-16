@@ -5,17 +5,6 @@ import React, { useEffect, useState } from 'preact/hooks';
 import { decodeData, onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
 import { SyncProblemButton } from '../../src/components/SyncProblemButton.html.js';
-// import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
-// import {
-//   AssessmentQuestionHeaders,
-//   AssessmentQuestionNumber,
-// } from '../../src/components/AssessmentQuestions.html.js';
-// import { IssueBadge } from '../../src/components/IssueBadge.html.js';
-// import { TagBadgeList } from '../../src/components/TagBadge.html.js';
-// import { TopicBadge } from '../../src/components/TopicBadge.html.js';
-// import type { Course } from '../../src/lib/db-types.js';
-// import { idsEqual } from '../../src/lib/id.js';
-
 import {
   type AssessmentAlternativeQuestion,
   type AssessmentQuestionRow,
@@ -134,7 +123,7 @@ onDocumentReady(() => {
     }) => {
       return (
         <tr>
-          <td class="align-content-center">
+          <td>
             {hasCoursePermissionPreview ? (
               <>
                 <a href={`${urlPrefix}/question/${question.question_id}/`}>
@@ -168,7 +157,7 @@ onDocumentReady(() => {
               </>
             )}
           </td>
-          <td class="align-content-center">
+          <td>
             {question.sync_errors
               ? SyncProblemButton({
                   type: 'error',
