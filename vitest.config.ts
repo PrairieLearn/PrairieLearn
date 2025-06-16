@@ -10,10 +10,10 @@ import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/nod
 // isn't available in CI. So, we manually specify the slowest tests here and
 // use a custom sequencer to always run them first.
 const SLOW_TESTS_SHARDS = {
-  1: ['src/tests/exampleCourseQuestions.test.ts'],
-  2: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
-  3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts', 'src/tests/exam.test.ts'],
-  4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts'],
+  1: ['src/tests/exampleCourseQuestionsComplete.test.ts'],
+  2: ['src/tests/exampleCourseQuestions.test.ts'],
+  3: ['src/tests/homework.test.ts', 'src/tests/fileEditor.test.ts'],
+  4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts', 'src/tests/exam.test.ts'],
 };
 
 const NUM_SLICES = 7;
@@ -21,7 +21,7 @@ const SHARD_SLICES = {
   1: { start: 0, end: 1 },
   2: { start: 1, end: 2 },
   3: { start: 2, end: 4 },
-  4: { start: 4, end: 6 },
+  4: { start: 4, end: NUM_SLICES },
 };
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
