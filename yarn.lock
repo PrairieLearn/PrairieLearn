@@ -4028,6 +4028,7 @@ __metadata:
     pg: "npm:^8.16.0"
     popper.js: "npm:^1.16.1"
     preact: "npm:^10.26.8"
+    preact-render-to-string: "npm:^6.5.13"
     prettier: "npm:3.5.3"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.0"
@@ -7527,21 +7528,21 @@ __metadata:
   linkType: hard
 
 "brace-expansion@npm:^1.1.7":
-  version: 1.1.11
-  resolution: "brace-expansion@npm:1.1.11"
+  version: 1.1.12
+  resolution: "brace-expansion@npm:1.1.12"
   dependencies:
     balanced-match: "npm:^1.0.0"
     concat-map: "npm:0.0.1"
-  checksum: 10c0/695a56cd058096a7cb71fb09d9d6a7070113c7be516699ed361317aca2ec169f618e28b8af352e02ab4233fb54eb0168460a40dc320bab0034b36ab59aaad668
+  checksum: 10c0/975fecac2bb7758c062c20d0b3b6288c7cc895219ee25f0a64a9de662dbac981ff0b6e89909c3897c1f84fa353113a721923afdec5f8b2350255b097f12b1f73
   languageName: node
   linkType: hard
 
 "brace-expansion@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "brace-expansion@npm:2.0.1"
+  version: 2.0.2
+  resolution: "brace-expansion@npm:2.0.2"
   dependencies:
     balanced-match: "npm:^1.0.0"
-  checksum: 10c0/b358f2fe060e2d7a87aa015979ecea07f3c37d4018f8d6deb5bd4c229ad3a0384fe6029bb76cd8be63c81e516ee52d1a0673edbe2023d53a5191732ae3c3e49f
+  checksum: 10c0/6d117a4c793488af86b83172deb6af143e94c17bc53b0b3cec259733923b4ca84679d506ac261f4ba3c7ed37c46018e2ff442f9ce453af8643ecd64f4a54e6cf
   languageName: node
   linkType: hard
 
@@ -14493,6 +14494,15 @@ __metadata:
   peerDependencies:
     preact: "*"
   checksum: 10c0/e139fb6d0bbfa4131f5ab07ab8175fd1633fb4dc3d68a045499b38bf30428131e7a7ebdf86778f9a2981b6f315083eb2d698302e74351ac1a48cebc3baa0bb35
+  languageName: node
+  linkType: hard
+
+"preact-render-to-string@npm:^6.5.13":
+  version: 6.5.13
+  resolution: "preact-render-to-string@npm:6.5.13"
+  peerDependencies:
+    preact: ">=10"
+  checksum: 10c0/10c6c424af03066b832cb3f2c44372dd64180e9e2a6038cccb758e06337b13b3dd399bf26697afff07d7c5b253fd6bc194524d726ec36d930e36ea2defbb60f7
   languageName: node
   linkType: hard
 

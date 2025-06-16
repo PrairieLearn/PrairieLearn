@@ -1,9 +1,11 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { type HtmlValue, html } from '@prairielearn/html';
+import { HtmlSafeString, html } from '@prairielearn/html';
+import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.html.js';
 import { HeadContents } from './HeadContents.html.js';
@@ -11,6 +13,15 @@ import { Navbar } from './Navbar.html.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 import { SideNav } from './SideNav.html.js';
+
+function asHtmlSafe(
+  content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
+): HtmlSafeString | HtmlSafeString[] | undefined {
+  if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
+    return content;
+  }
+  return renderHtml(content);
+}
 
 export function PageLayout({
   resLocals,
@@ -41,15 +52,20 @@ export function PageLayout({
     fullHeight?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlValue;
+  headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlValue;
+  preContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
   /** The main content of the page within the main container. */
-  content: HtmlValue;
+  content: HtmlSafeString | HtmlSafeString[] | VNode<any>;
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlValue;
+  postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
   const marginBottom = options.marginBottom ?? true;
+
+  const headContentString = asHtmlSafe(headContent);
+  const preContentString = asHtmlSafe(preContent);
+  const contentString = asHtmlSafe(content);
+  const postContentString = asHtmlSafe(postContent);
 
   if (resLocals.has_enhanced_navigation) {
     // The side navbar is only available if the user is in a page within a course or course instance.
@@ -100,7 +116,7 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${compiledStylesheetTag('pageLayout.css')} ${headContent}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
           ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
@@ -152,7 +168,7 @@ export function PageLayout({
                       navSubPage: navContext.subPage,
                     })
                   : ''}
-                ${preContent}
+                ${preContentString}
                 <main
                   id="content"
                   class="${clsx(
@@ -163,9 +179,9 @@ export function PageLayout({
                     sideNavEnabled && 'px-3',
                   )}"
                 >
-                  ${content}
+                  ${contentString}
                 </main>
-                ${postContent}
+                ${postContentString}
               </div>
             </div>
           </div>
@@ -182,7 +198,7 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${headContent}
+          ${headContentString}
         </head>
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
@@ -194,7 +210,7 @@ export function PageLayout({
             navSubPage: navContext.subPage,
             navbarType: navContext.type,
           })}
-          ${preContent}
+          ${preContentString}
           <main
             id="content"
             class="
@@ -203,9 +219,9 @@ export function PageLayout({
             ${options.fullHeight ? 'flex-grow-1' : ''}
           "
           >
-            ${content}
+            ${contentString}
           </main>
-          ${postContent}
+          ${postContentString}
         </body>
       </html>
     `.toString();

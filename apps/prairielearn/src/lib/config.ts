@@ -10,9 +10,21 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-const DEV_MODE = process.env.NODE_ENV !== 'production';
+export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-const ConfigSchema = z.object({
+export const STANDARD_COURSE_DIRS = [
+  '/course',
+  '/course2',
+  '/course3',
+  '/course4',
+  '/course5',
+  '/course6',
+  '/course7',
+  '/course8',
+  '/course9',
+];
+
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -47,19 +59,7 @@ const ConfigSchema = z.object({
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
-    .default([
-      '/course',
-      '/course2',
-      '/course3',
-      '/course4',
-      '/course5',
-      '/course6',
-      '/course7',
-      '/course8',
-      '/course9',
-      EXAMPLE_COURSE_PATH,
-      TEST_COURSE_PATH,
-    ]),
+    .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
