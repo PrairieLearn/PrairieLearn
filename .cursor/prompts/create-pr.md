@@ -30,7 +30,21 @@ Your task is to create a pull request for the given code changes. You are capabl
 - Wrap the entire command in a code block for easy copy-pasting, using the following format:
 
 ```bash
-gh pr create --base master --label "enhancement" --label "chore" --title "commitzen style title" --body "## Summary\n\nYour summary here\n\n## Changes\n\n- Change 1\n- Change 2 with escaped \`backticks\`\n- Change 3\n\n## Additional Notes\n\nAny optional additional notes here"
+gh pr create --base master --label "enhancement" --label "chore" --title "Concise title" --body "This PR description was written with AI.
+
+## Summary
+
+Your summary here
+
+## Changes
+
+- Change 1
+- Change 2 with escaped \`backticks\`
+- Change 3
+
+## Additional Notes
+
+Any optional additional notes here"
 ```
 
 - When analyzing the diff, consider both traditional git diff format and GitHub's PR diff summary format.
