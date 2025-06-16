@@ -278,12 +278,14 @@ export function FileBrowser({
     navPage === 'course_admin'
       ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
       : navPage === 'instance_admin'
-        ? CourseInstanceSyncErrorsAndWarnings({
-            authz_data,
-            courseInstance: resLocals.course_instance,
-            course,
-            urlPrefix,
-          })
+        ? renderHtml(
+            CourseInstanceSyncErrorsAndWarnings({
+              authz_data,
+              courseInstance: resLocals.course_instance,
+              course,
+              urlPrefix,
+            }),
+          )
         : navPage === 'assessment'
           ? AssessmentSyncErrorsAndWarnings({
               authz_data,

@@ -5,6 +5,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<string, any> }) {
   const {
@@ -42,7 +43,9 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
       </script>
     `,
     content: html`
-      ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
+      ${renderHtml(
+        CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix }),
+      )}
       ${!authz_data.has_course_permission_edit
         ? html`
             <div class="card mb-4">

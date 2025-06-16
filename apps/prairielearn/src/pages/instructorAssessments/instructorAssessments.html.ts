@@ -13,6 +13,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -55,12 +56,14 @@ export function InstructorAssessments({
       )}
     `,
     content: html`
-      ${CourseInstanceSyncErrorsAndWarnings({
-        authz_data,
-        courseInstance: resLocals.course_instance,
-        course,
-        urlPrefix,
-      })}
+      ${renderHtml(
+        CourseInstanceSyncErrorsAndWarnings({
+          authz_data,
+          courseInstance: resLocals.course_instance,
+          course,
+          urlPrefix,
+        }),
+      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>

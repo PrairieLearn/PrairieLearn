@@ -10,6 +10,7 @@ import {
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
 import { type User } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 import {
   type CourseAssessmentRow,
@@ -69,12 +70,14 @@ export function InstructorGradebook({
       )}
     `,
     content: html`
-      ${CourseInstanceSyncErrorsAndWarnings({
-        authz_data,
-        courseInstance: resLocals.course_instance,
-        course: resLocals.course,
-        urlPrefix,
-      })}
+      ${renderHtml(
+        CourseInstanceSyncErrorsAndWarnings({
+          authz_data,
+          courseInstance: resLocals.course_instance,
+          course: resLocals.course,
+          urlPrefix,
+        }),
+      )}
       ${!authz_data.has_course_instance_permission_view
         ? StudentDataViewMissing({
             courseOwners,
