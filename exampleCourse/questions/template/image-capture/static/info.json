@@ -3,7 +3,5 @@
   "title": "Template pl-image-capture: Capture image from webcam or external device",
   "topic": "Template",
   "type": "v3",
-  "tags": ["miguelaenlle"],
-  "singleVariant": true,
-  "gradingMethod": "Manual"
+  "tags": ["miguelaenlle"]
 }

@@ -155,6 +155,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][file_name] = (
             f"data:image/jpeg;base64,{b64_payload}"
         )
+
     elif result == "invalid":
         data["raw_submitted_answers"][file_name] = ""
 

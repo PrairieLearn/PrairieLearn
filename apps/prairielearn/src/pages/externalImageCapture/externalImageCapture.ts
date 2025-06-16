@@ -19,7 +19,7 @@ router.use(
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
       variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
-      question_id: req.params.question_id,
+      question_id: res.locals.question?.id ?? req.params.question_id,
       course_instance_id: res.locals?.course_instance?.id,
       instance_question_id: res.locals.instance_question?.id,
       authz_data: res.locals.authz_data,
