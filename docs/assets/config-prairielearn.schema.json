@@ -103,6 +103,10 @@
       "type": ["string", "null"],
       "default": "redis://localhost:6379/"
     },
+    "nonVolatileRedisUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "logFilename": {
       "type": "string",
       "default": "server.log"
@@ -673,6 +677,11 @@
       "enum": ["none", "redis", "memory"],
       "default": "none"
     },
+    "nonVolatileCacheType": {
+      "type": "string",
+      "enum": ["none", "redis", "memory"],
+      "default": "none"
+    },
     "cacheKeyPrefix": {
       "type": "string",
       "default": "prairielearn-cache:"
@@ -1085,6 +1094,10 @@
     "aiQuestionGenerationOpenAiOrganization": {
       "type": ["string", "null"],
       "default": null
+    },
+    "aiQuestionGenerationRateLimitDollars": {
+      "type": "number",
+      "default": 1
     },
     "requireTermsAcceptance": {
       "type": "boolean",
