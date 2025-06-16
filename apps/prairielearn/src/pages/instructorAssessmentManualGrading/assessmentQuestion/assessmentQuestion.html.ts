@@ -98,13 +98,17 @@ export function AssessmentQuestion({
         urlPrefix,
       })}
 
-      <a
-        class="btn btn-primary mb-2"
-        href="${urlPrefix}/assessment/${assessment.id}/manual_grading"
-      >
-        <i class="fas fa-arrow-left"></i>
-        Back to ${assessment_set.name} ${assessment.number} Overview
-      </a>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading">Manual grading</a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Question ${number_in_alternative_group}. ${question.title}
+          </li>
+        </ol>
+      </nav>
+
       ${aiGradingEnabled
         ? html`
             <form method="POST" id="toggle-ai-grading-mode">
@@ -125,16 +129,13 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
-        </div>
-        ${aiGradingStats
-          ? html`<div class="card border-secondary m-2">
+      ${aiGradingStats
+        ? html`
+            <div class="card overflow-hidden mb-3">
               ${aiGradingStats.rubric_stats.length
                 ? html`
-                    <div class="table-responsive w-50 m-2">
-                      <table class="table table-sm mt-2" aria-label="AI grading rubric item stats">
+                    <div class="table-responsive">
+                      <table class="table table-sm" aria-label="AI grading rubric item stats">
                         <thead>
                           <tr class="table-light fw-bold">
                             <td>Rubric item</td>
@@ -175,8 +176,14 @@ export function AssessmentQuestion({
                       </div>
                     </div>
                   `}
-            </div>`
-          : ''}
+            </div>
+          `
+        : ''}
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Student instance questions</h1>
+        </div>
         <form name="grading-form" method="POST">
           <input type="hidden" name="__action" value="batch_action" />
           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
