@@ -1,11 +1,25 @@
+import { type z } from 'zod';
+
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
-import { type Lti13Assessments } from '../../../lib/db-types.js';
-import type { AssessmentRow } from '../../../models/assessment.js';
-import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
+import { type Lti13Assessments, Lti13AssessmentsSchema } from '../../../lib/db-types.js';
+import { type AssessmentRow, AssessmentRowSchema } from '../../../models/assessment.js';
+import { LineitemSchema, type Lti13CombinedInstance } from '../../lib/lti13.js';
+
+export const LineItemsRowSchema = LineitemSchema.extend({
+  assessment: AssessmentRowSchema.optional(),
+  lti13_assessment: Lti13AssessmentsSchema.optional(),
+});
+export type LineItemsRow = z.infer<typeof LineItemsRowSchema>;
+
+export const AssessmentLti13AssessmentRowSchema = AssessmentRowSchema.extend({
+  lti13_assessment: Lti13AssessmentsSchema.optional(),
+});
+export type AssessmentLti13AssessmentRowSchema = z.infer<typeof AssessmentLti13AssessmentRowSchema>;
 
 export function InstructorInstanceAdminLti13({
   resLocals,
@@ -13,14 +27,12 @@ export function InstructorInstanceAdminLti13({
   instances,
   assessments,
   assessmentsGroupBy,
-  lti13AssessmentsByAssessmentId,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
-  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -97,7 +109,6 @@ export function InstructorInstanceAdminLti13({
                     lms_name,
                     assessments,
                     assessmentsGroupBy,
-                    lti13AssessmentsByAssessmentId,
                   })
                 : html`
                     <p>
@@ -135,13 +146,11 @@ function LinkedAssessments({
   lms_name,
   assessments,
   assessmentsGroupBy,
-  lti13AssessmentsByAssessmentId,
 }: {
   resLocals: Record<string, any>;
   lms_name: string;
-  assessments: AssessmentRow[];
+  assessments: AssessmentLti13AssessmentRowSchema[];
   assessmentsGroupBy: 'Set' | 'Module';
-  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
 
@@ -175,8 +184,7 @@ function LinkedAssessments({
                             assessmentsGroupBy === 'Set'
                               ? row.assessment_set.heading
                               : row.assessment_module.heading
-                          } ${assessmentsGroupBy} Bulk Actions
-                            `,
+                          } ${assessmentsGroupBy} Bulk Actions`,
                           body: html`<p>
                               These bulk actions work collectively on every assessment in the group
                               where the action makes sense.
@@ -245,14 +253,25 @@ function LinkedAssessments({
                 : ''}
               <tr id="row-${row.id}">
                 <td class="align-middle" style="width: 1%">
+                  ${AssessmentBadge({
+                    assessment: {
+                      assessment_id: row.id,
+                      color: row.assessment_set.color,
+                      label: row.label,
+                    },
+                    urlPrefix,
+                    hideLink: true,
+                  })}
+                </td>
+                <td class="align-middle">
                   ${AssessmentLink({
                     assessment: row,
                     urlPrefix,
-                    spacerHtml: html`</td><td class="align-middle">`,
                   })}
                 </td>
                 <td>
                   ${Modal({
+                    size: 'modal-xl',
                     body: html`
                       <p>Which ${lms_name} assignment should we link?</p>
                       <form method="POST">
@@ -303,7 +322,7 @@ function LinkedAssessments({
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
-                    ${row.id in lti13AssessmentsByAssessmentId
+                    ${row.lti13_assessment
                       ? html`
                           <div class="btn-group">
                             <button class="btn btn-info" name="__action" value="send_grades">
@@ -342,11 +361,11 @@ function LinkedAssessments({
                   </form>
                 </td>
                 <td class="align-middle">
-                  ${row.id in lti13AssessmentsByAssessmentId
-                    ? LineItem(
-                        lti13AssessmentsByAssessmentId[row.id],
-                        resLocals.course_instance.display_timezone,
-                      )
+                  ${row.lti13_assessment
+                    ? LineItem({
+                        item: row.lti13_assessment,
+                        timezone: resLocals.course_instance.display_timezone,
+                      })
                     : ''}
                 </td>
               </tr>
@@ -358,7 +377,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem(item: Lti13Assessments, timezone: string) {
+function LineItem({ item, timezone }: { item: Lti13Assessments; timezone: string }) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>
@@ -369,13 +388,9 @@ function LineItem(item: Lti13Assessments, timezone: string) {
 
 export function LineitemsInputs({
   lineitems,
-  assessmentsById,
-  lti13AssessmentsByLineItemIdUrl,
   urlPrefix,
 }: {
-  lineitems: Lineitems;
-  assessmentsById: Record<string, AssessmentRow>;
-  lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments>;
+  lineitems: LineItemsRow[];
   urlPrefix: string;
 }): string {
   const disclaimer = html`
@@ -401,7 +416,7 @@ export function LineitemsInputs({
     <table class="table w-auto">
       <tr>
         <th>Assignment</th>
-        <th>Linked PrairieLearn assessment</th>
+        <th colspan="2">Linked PrairieLearn assessment</th>
       </tr>
       ${lineitems.map(
         (lineitem) => html`
@@ -420,13 +435,24 @@ export function LineitemsInputs({
                 </label>
               </div>
             </td>
-            <td>
-              ${lineitem.id in lti13AssessmentsByLineItemIdUrl
-                ? AssessmentLink({
-                    assessment:
-                      assessmentsById[lti13AssessmentsByLineItemIdUrl[lineitem.id].assessment_id],
+            <td style="width: 1%">
+              ${lineitem.assessment
+                ? AssessmentBadge({
+                    assessment: {
+                      assessment_id: lineitem.assessment.id,
+                      color: lineitem.assessment.assessment_set.color,
+                      label: lineitem.assessment.label,
+                    },
                     urlPrefix,
-                    spacerHtml: html``,
+                    hideLink: true,
+                  })
+                : ''}
+            </td>
+            <td>
+              ${lineitem.assessment
+                ? AssessmentLink({
+                    assessment: lineitem.assessment,
+                    urlPrefix,
                   })
                 : ''}
             </td>
@@ -442,17 +468,11 @@ export function LineitemsInputs({
 function AssessmentLink({
   assessment,
   urlPrefix,
-  spacerHtml,
 }: {
   assessment: AssessmentRow;
   urlPrefix: string;
-  spacerHtml: HtmlSafeString | undefined;
 }) {
   return html`
-    <a href="${urlPrefix}/assessment/${assessment.id}/"
-      ><span class="badge color-${assessment.assessment_set.color}">${assessment.label}</span></a
-    >
-    ${spacerHtml}
     <a href="${urlPrefix}/assessment/${assessment.id}/"
       >${assessment.title}
       ${assessment.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}</a

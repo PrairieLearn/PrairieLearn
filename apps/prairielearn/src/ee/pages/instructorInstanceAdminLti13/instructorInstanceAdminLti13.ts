@@ -25,7 +25,6 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { type AssessmentRow, selectAssessments } from '../../../models/assessment.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  type Lineitems,
   Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
   getLineitems,
@@ -36,7 +35,9 @@ import {
 } from '../../lib/lti13.js';
 
 import {
+  type AssessmentLti13AssessmentRowSchema,
   InstructorInstanceAdminLti13,
+  type LineItemsRow,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
 
@@ -76,7 +77,7 @@ router.get(
       throw error.make(404, 'LTI 1.3 instance not found.');
     }
 
-    const assessments = await selectAssessments({
+    const assessments: AssessmentLti13AssessmentRowSchema[] = await selectAssessments({
       course_instance_id: res.locals.course_instance.id,
     });
 
@@ -88,36 +89,43 @@ router.get(
       Lti13AssessmentsSchema,
     );
 
+    const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
     const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
-    for (const a of lti13_assessments) {
-      lti13AssessmentsByAssessmentId[a.assessment_id] = a;
+    for (const la of lti13_assessments) {
+      lti13AssessmentsByAssessmentId[la.assessment_id] = la;
+      lti13AssessmentsByLineItemIdUrl[la.lineitem_id_url] = la;
+    }
+
+    const assessmentsById: Record<string, AssessmentRow> = {};
+    for (const a of assessments) {
+      a.lti13_assessment = lti13AssessmentsByAssessmentId[a.id] ?? undefined;
+      assessmentsById[a.id] = a;
     }
 
     if ('lineitems' in req.query) {
-      const assessmentsById: Record<string, AssessmentRow> = {};
-      for (const a of assessments) {
-        assessmentsById[a.id] = a;
-      }
-
-      let lineitems: Lineitems;
+      let lineItemRows: LineItemsRow[];
 
       try {
-        lineitems = await getLineitems(instance);
+        lineItemRows = await getLineitems(instance);
       } catch (error) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
         logger.error('LineitemsInputs error', error);
         return;
       }
 
-      const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
-      for (const a of lti13_assessments) {
-        lti13AssessmentsByLineItemIdUrl[a.lineitem_id_url] = a;
+      for (const item of lineItemRows) {
+        item.lti13_assessment = lti13AssessmentsByLineItemIdUrl[item.id] ?? undefined;
+        if (item.lti13_assessment) {
+          item.assessment = assessmentsById[item.lti13_assessment?.assessment_id];
+        } else {
+          item.assessment = undefined;
+        }
       }
 
-      lineitems.sort((a, b) => {
+      lineItemRows.sort((a, b) => {
         // First sort by assessment_id, puts unlinked first and ordered by ID
-        const a_assessmentId = lti13AssessmentsByLineItemIdUrl[a.id]?.assessment_id ?? '';
-        const b_assessmentId = lti13AssessmentsByLineItemIdUrl[b.id]?.assessment_id ?? '';
+        const a_assessmentId = a.assessment?.id ?? '';
+        const b_assessmentId = b.assessment?.id ?? '';
 
         const byAssessmentId = a_assessmentId.localeCompare(b_assessmentId);
         if (byAssessmentId !== 0) return byAssessmentId;
@@ -128,9 +136,7 @@ router.get(
 
       res.send(
         LineitemsInputs({
-          lineitems,
-          assessmentsById,
-          lti13AssessmentsByLineItemIdUrl,
+          lineitems: lineItemRows,
           urlPrefix: res.locals.urlPrefix,
         }),
       );
@@ -144,7 +150,6 @@ router.get(
         instances,
         assessments,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
-        lti13AssessmentsByAssessmentId,
       }),
     );
   }),
