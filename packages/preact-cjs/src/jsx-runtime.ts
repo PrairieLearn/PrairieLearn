@@ -6,5 +6,5 @@ export {
   jsxTemplate,
   jsxAttr,
   jsxEscape,
-  JSX
+  JSX,
 } from 'original-preact/jsx-runtime';

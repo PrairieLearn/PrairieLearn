@@ -5,7 +5,6 @@ import {
   type CourseInstance,
   type Question,
 } from '../lib/db-types.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 export function CourseSyncErrorsAndWarnings({
   authz_data,
