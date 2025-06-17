@@ -123,7 +123,7 @@ router.post(
         )
       ) {
         console.log(req.body);
-        res.redirect(req.originalUrl);
+        res.send({});
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
