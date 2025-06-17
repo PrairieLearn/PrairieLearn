@@ -364,7 +364,7 @@ async function recomputeInstanceQuestions(
         null, // check_modified_at,
         { manual_rubric_data: instance_question },
         authn_user_id,
-        instance_question.is_ai_graded, // is_ai_graded
+        instance_question.is_ai_graded,
       );
     });
   });
