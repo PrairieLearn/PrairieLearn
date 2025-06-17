@@ -78,12 +78,28 @@ function getMarkedInstance(options: {
     // instances of Marked if they are called before the first one resolves.
     markedInstanceCache.set(key, markedPromise);
   }
-  return markedPromise;
+  return markedPromise.catch((err) => {
+    // If the promise fails, remove it from the cache so that the next call
+    // will try to create a new instance.
+    markedInstanceCache.delete(key);
+    throw err;
+  });
 }
 
 /**
- * Converts markdown to HTML. If `inline` is true, and the result fits a single
- * paragraph, the content is returned inline without the paragraph tag.
+ * Converts markdown to HTML.
+ *
+ * @param original The markdown string to convert.
+ * @param options Options for the conversion.
+ * @param options.sanitize If true, sanitizes the HTML output to prevent XSS
+ * attacks.
+ * @param options.inline If true, parses the markdown as inline content,
+ * otherwise as block content.
+ * @param options.allowHtml If true, allows HTML tags in the markdown. If false,
+ * HTML tags will be removed from the output.
+ * @param options.interpretMath If true, prepares and escapes LaTeX strings to
+ * be parsed by MathJax (assumes MathJax is available client-side).
+ * @returns The HTML string resulting from the conversion.
  */
 export async function markdownToHtml(
   original: string,
