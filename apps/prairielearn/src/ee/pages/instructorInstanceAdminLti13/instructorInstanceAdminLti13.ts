@@ -115,11 +115,7 @@ router.get(
 
       for (const item of lineItemRows) {
         item.lti13_assessment = lti13AssessmentsByLineItemIdUrl[item.id] ?? undefined;
-        if (item.lti13_assessment) {
-          item.assessment = assessmentsById[item.lti13_assessment?.assessment_id];
-        } else {
-          item.assessment = undefined;
-        }
+        item.assessment = assessmentsById[item.lti13_assessment?.assessment_id] ?? undefined;
       }
 
       lineItemRows.sort((a, b) => {
