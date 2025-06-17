@@ -76,7 +76,6 @@ export function AssessmentQuestion({
           groupWork: assessment.group_work,
           maxAutoPoints: assessment_question.max_auto_points,
           aiGradingEnabled,
-          courseStaff,
           csrfToken: __csrf_token,
           aiGradingMode,
         },
@@ -197,16 +196,116 @@ export function AssessmentQuestion({
           `
         : ''}
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>Student instance questions</h1>
-        </div>
-        <form name="grading-form" method="POST">
+      <form name="grading-form" method="POST">
+        <div class="card mb-4">
+          <div
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+          >
+            <h1>Student instance questions</h1>
+            <div class="d-flex flex-row gap-2">
+              <div class="dropdown">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
+                  data-bs-toggle="dropdown"
+                  name="status"
+                  disabled
+                >
+                  <i class="fas fa-tags"></i> Tag for grading
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                  <div class="dropdown-header">Assign for grading</div>
+                  ${courseStaff?.map(
+                    (grader) => html`
+                      <button
+                        class="dropdown-item"
+                        type="submit"
+                        name="batch_action_data"
+                        value="${JSON.stringify({
+                          requires_manual_grading: true,
+                          assigned_grader: grader.user_id,
+                        })}"
+                      >
+                        <i class="fas fa-user-tag"></i>
+                        Assign to: ${grader.name || ''} (${grader.uid})
+                      </button>
+                    `,
+                  )}
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action_data"
+                    value="${JSON.stringify({ assigned_grader: null })}"
+                  >
+                    <i class="fas fa-user-slash"></i>
+                    Remove grader assignment
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action_data"
+                    value="${JSON.stringify({ requires_manual_grading: true })}"
+                  >
+                    <i class="fas fa-tag"></i>
+                    Tag as required grading
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action_data"
+                    value="${JSON.stringify({ requires_manual_grading: false })}"
+                  >
+                    <i class="fas fa-check-square"></i>
+                    Tag as graded
+                  </button>
+                </div>
+              </div>
+
+              <div class="dropdown">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  name="ai-grading"
+                >
+                  <i class="bi bi-stars" aria-hidden="true"></i> AI grading
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                  <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
+                    Grade all ungraded
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    type="button"
+                    onclick="$('#ai-grading-graded').submit();"
+                  >
+                    Grade all human-graded
+                  </button>
+                  <button
+                    class="dropdown-item grading-tag-button"
+                    type="submit"
+                    name="batch_action"
+                    value="ai_grade_assessment_selected"
+                  >
+                    Grade selected
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    type="button"
+                    onclick="$('#ai-grading-all').submit();"
+                  >
+                    Grade all
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <input type="hidden" name="__action" value="batch_action" />
           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>
-        </form>
-      </div>
+        </div>
+      </form>
     `,
     postContent: GradingConflictModal(),
   });

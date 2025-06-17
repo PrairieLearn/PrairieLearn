@@ -3,7 +3,6 @@ import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRowWithAIGradingStats,
@@ -29,7 +28,6 @@ onDocumentReady(() => {
     maxAutoPoints,
     aiGradingEnabled,
     aiGradingMode,
-    courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
@@ -99,23 +97,14 @@ onDocumentReady(() => {
       'refresh',
       'autoRefresh',
       'showStudentInfo',
-      'status',
-      'toggleAiGradingMode',
-      'aiGrade',
+      // TODO: figure out what's going on here.
+      'stupid-placeholder-because-columns-shows-twice-without-it',
     ],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      aiGrade: {
-        render: aiGradingEnabled,
-        attributes: {
-          id: 'js-ai-grade-button',
-          title: 'AI grading',
-        },
-        html: aiGradingDropdown(),
-      },
       showStudentInfo: {
         text: 'Show student info',
         icon: 'fa-eye',
@@ -131,12 +120,6 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
-      },
-      status: {
-        text: 'Tag for grading',
-        icon: 'fa-tags',
-        render: hasCourseInstancePermissionEdit,
-        html: () => gradingTagDropdown(courseStaff),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -513,103 +496,6 @@ function updatePointsPopoverHandlers(this: Element) {
     form.removeEventListener('submit', pointsFormEventListener);
     form.addEventListener('submit', pointsFormEventListener);
   });
-}
-
-function aiGradingDropdown() {
-  return html`
-    <div class="dropdown btn-group">
-      <button
-        type="button"
-        class="btn btn-secondary dropdown-toggle"
-        data-bs-toggle="dropdown"
-        name="ai-grading"
-      >
-        <i class="fa fa-pen" aria-hidden="true"></i> AI grading
-      </button>
-      <div class="dropdown-menu dropdown-menu-end">
-        <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
-          Grade all ungraded
-        </button>
-        <button class="dropdown-item" type="button" onclick="$('#ai-grading-graded').submit();">
-          Grade all human-graded
-        </button>
-        <button
-          class="dropdown-item grading-tag-button"
-          type="submit"
-          name="batch_action"
-          value="ai_grade_assessment_selected"
-        >
-          Grade selected
-        </button>
-        <button class="dropdown-item" type="button" onclick="$('#ai-grading-all').submit();">
-          Grade all
-        </button>
-      </div>
-    </div>
-  `.toString();
-}
-
-function gradingTagDropdown(courseStaff: User[]) {
-  return html`
-    <div class="dropdown btn-group">
-      <button
-        type="button"
-        class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-bs-toggle="dropdown"
-        name="status"
-        disabled
-      >
-        <i class="fas fa-tags"></i> Tag for grading
-      </button>
-      <div class="dropdown-menu dropdown-menu-end">
-        <div class="dropdown-header">Assign for grading</div>
-        ${courseStaff?.map(
-          (grader) => html`
-            <button
-              class="dropdown-item"
-              type="submit"
-              name="batch_action_data"
-              value="${JSON.stringify({
-                requires_manual_grading: true,
-                assigned_grader: grader.user_id,
-              })}"
-            >
-              <i class="fas fa-user-tag"></i>
-              Assign to: ${grader.name || ''} (${grader.uid})
-            </button>
-          `,
-        )}
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ assigned_grader: null })}"
-        >
-          <i class="fas fa-user-slash"></i>
-          Remove grader assignment
-        </button>
-        <div class="dropdown-divider"></div>
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ requires_manual_grading: true })}"
-        >
-          <i class="fas fa-tag"></i>
-          Tag as required grading
-        </button>
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ requires_manual_grading: false })}"
-        >
-          <i class="fas fa-check-square"></i>
-          Tag as graded
-        </button>
-      </div>
-    </div>
-  `.toString();
 }
 
 function updateGradingTagButton() {
