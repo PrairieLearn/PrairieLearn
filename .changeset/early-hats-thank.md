@@ -1,5 +1,5 @@
 ---
-'@prairielearn/preact-cjs': minor
+'@prairielearn/preact-cjs': patch
 ---
 
-Explicit re-export for hooks and JSX to fix ESM compatibility
+Use explicit re-exports for `preact/hooks`, `preact/jsx-runtime`, and `preact/compat` to fix ESM compatibility
