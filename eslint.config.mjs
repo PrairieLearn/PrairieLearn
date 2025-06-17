@@ -186,6 +186,12 @@ export default tseslint.config([
       },
     },
   },
+  {
+    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
   globalIgnores([
     '.venv/*',
     '.yarn/*',
