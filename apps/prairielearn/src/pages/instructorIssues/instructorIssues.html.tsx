@@ -91,7 +91,13 @@ export function InstructorIssues({
     },
     headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
-      ${renderHtml(CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix }))}
+      ${renderHtml(
+        <CourseSyncErrorsAndWarnings
+          authz_data={authz_data}
+          course={course}
+          urlPrefix={urlPrefix}
+        />,
+      )}
       ${authz_data.has_course_permission_edit
         ? CloseMatchingIssuesModal({
             openFilteredIssuesCount,

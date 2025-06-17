@@ -36,11 +36,11 @@ export const QuestionsPage = ({
     headContent: QuestionsTableHead(),
     content: html`
       ${renderHtml(
-        CourseSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <CourseSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       ${QuestionsTable({
         questions,

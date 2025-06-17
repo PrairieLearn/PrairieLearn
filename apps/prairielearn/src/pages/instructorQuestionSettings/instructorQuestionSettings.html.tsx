@@ -114,12 +114,12 @@ export function InstructorQuestionSettings({
     `,
     content: html`
       ${renderHtml(
-        QuestionSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          question: resLocals.question,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <QuestionSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          question={resLocals.question}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">

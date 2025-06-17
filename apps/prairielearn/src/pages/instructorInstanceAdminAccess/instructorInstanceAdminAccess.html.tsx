@@ -33,12 +33,12 @@ export function InstructorInstanceAdminAccess({
     },
     content: html`
       ${renderHtml(
-        CourseInstanceSyncErrorsAndWarnings({
-          authz_data,
-          courseInstance: course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <CourseInstanceSyncErrorsAndWarnings
+          authz_data={authz_data}
+          courseInstance={course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

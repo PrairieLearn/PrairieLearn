@@ -42,13 +42,13 @@ export function InstructorAssessmentSettings({
     headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
     content: html`
       ${renderHtml(
-        AssessmentSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          assessment: resLocals.assessment,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <AssessmentSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          assessment={resLocals.assessment}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       ${QRCodeModal({
         id: 'studentLinkModal',

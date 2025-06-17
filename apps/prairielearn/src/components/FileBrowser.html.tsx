@@ -277,34 +277,40 @@ export function FileBrowser({
   const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
   const syncErrorsAndWarnings =
     navPage === 'course_admin'
-      ? renderHtml(CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix }))
+      ? renderHtml(
+          <CourseSyncErrorsAndWarnings
+            authz_data={authz_data}
+            course={course}
+            urlPrefix={urlPrefix}
+          />,
+        )
       : navPage === 'instance_admin'
         ? renderHtml(
-            CourseInstanceSyncErrorsAndWarnings({
-              authz_data,
-              courseInstance: resLocals.course_instance,
-              course,
-              urlPrefix,
-            }),
+            <CourseInstanceSyncErrorsAndWarnings
+              authz_data={authz_data}
+              courseInstance={resLocals.course_instance}
+              course={course}
+              urlPrefix={urlPrefix}
+            />,
           )
         : navPage === 'assessment'
           ? renderHtml(
-              AssessmentSyncErrorsAndWarnings({
-                authz_data,
-                assessment: resLocals.assessment,
-                courseInstance: resLocals.course_instance,
-                course,
-                urlPrefix,
-              }),
+              <AssessmentSyncErrorsAndWarnings
+                authz_data={authz_data}
+                assessment={resLocals.assessment}
+                courseInstance={resLocals.course_instance}
+                course={course}
+                urlPrefix={urlPrefix}
+              />,
             )
           : navPage === 'question' || navPage === 'public_question'
             ? renderHtml(
-                QuestionSyncErrorsAndWarnings({
-                  authz_data,
-                  question: resLocals.question,
-                  course,
-                  urlPrefix,
-                }),
+                <QuestionSyncErrorsAndWarnings
+                  authz_data={authz_data}
+                  question={resLocals.question}
+                  course={course}
+                  urlPrefix={urlPrefix}
+                />,
               )
             : '';
   const pageTitle =

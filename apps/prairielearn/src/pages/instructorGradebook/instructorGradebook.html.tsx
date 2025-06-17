@@ -71,12 +71,12 @@ export function InstructorGradebook({
     `,
     content: html`
       ${renderHtml(
-        CourseInstanceSyncErrorsAndWarnings({
-          authz_data,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix,
-        }),
+        <CourseInstanceSyncErrorsAndWarnings
+          authz_data={authz_data}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={urlPrefix}
+        />,
       )}
       ${!authz_data.has_course_instance_permission_view
         ? StudentDataViewMissing({
