@@ -3,5 +3,6 @@
   "title": "Multiple choice: Fixed correct answer",
   "topic": "Template",
   "type": "v3",
-  "shareSourcePublicly": true
+  "shareSourcePublicly": true,
+  "singleVariant": true
 }
