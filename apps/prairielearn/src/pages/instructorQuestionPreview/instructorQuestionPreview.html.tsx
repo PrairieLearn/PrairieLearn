@@ -60,12 +60,12 @@ export function InstructorQuestionPreview({
     preContent: html`
       <div class="container-fluid">
         ${renderHtml(
-          QuestionSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            question: resLocals.question,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          }),
+          <QuestionSyncErrorsAndWarnings
+            authz_data={resLocals.authz_data}
+            question={resLocals.question}
+            course={resLocals.course}
+            urlPrefix={resLocals.urlPrefix}
+          />,
         )}
       </div>
     `,

@@ -40,12 +40,12 @@ export function InstructorInstanceAdminSettings({
     headContent: compiledScriptTag('instructorInstanceAdminSettingsClient.ts'),
     content: html`
       ${renderHtml(
-        CourseInstanceSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <CourseInstanceSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       ${QRCodeModal({
         id: 'studentLinkModal',
