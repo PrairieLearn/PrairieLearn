@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from 'preact/compat';
 
 import { type StudentRow } from './instructorStudents.types.js';
 
@@ -36,36 +36,9 @@ export function StudentsTable({ students }: StudentsTableProps) {
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
       }),
-      columnHelper.accessor('user_name', {
-        header: 'Name',
-        cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-      }),
       columnHelper.accessor('email', {
         header: 'Email',
         cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-      }),
-      columnHelper.accessor('role', {
-        header: () => (
-          <span>
-            Role{' '}
-            <button
-              type="button"
-              className="btn btn-link btn-sm p-0 ms-1"
-              data-bs-toggle="modal"
-              data-bs-target="#role-help"
-            >
-              <i className="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
-          </span>
-        ),
-        cell: (info) => {
-          const role = info.getValue();
-          const badgeClass =
-            role === 'Staff' ? 'bg-warning' : role === 'Student' ? 'bg-success' : 'bg-secondary';
-          return <span className={`badge ${badgeClass}`}>{role}</span>;
-        },
         enableSorting: true,
       }),
       columnHelper.accessor('created_at', {

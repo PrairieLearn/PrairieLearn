@@ -80,13 +80,12 @@ router.get(
 
       const stringifier = stringifyStream({
         header: true,
-        columns: ['UID', 'UIN', 'Name', 'Email', 'Role', 'Enrolled At'],
+        columns: ['UID', 'UIN', 'Name', 'Email', 'Enrolled At'],
         transform: (record: StudentRow) => [
           record.uid,
           record.uin,
-          record.user_name,
+          record.name,
           record.email,
-          record.role,
           record.created_at,
         ],
       });
