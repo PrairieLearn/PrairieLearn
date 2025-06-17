@@ -66,7 +66,7 @@ check-dependencies:
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
 update-jsonschema:
-	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json"
+	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell

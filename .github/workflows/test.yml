@@ -111,16 +111,6 @@ jobs:
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
 
-      # Since tests run in the context of the container, we need to copy all
-      # the coverage reports out of the container and into the host filesystem.
-      - name: Copy coverage reports to the host
-        run: ./scripts/copy_docker_coverage_reports.sh test_container
-      - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: javascript
-
   test-prairielearn-native:
     name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
