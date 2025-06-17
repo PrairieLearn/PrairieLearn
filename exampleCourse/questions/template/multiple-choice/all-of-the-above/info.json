@@ -3,5 +3,6 @@
   "title": "Multiple choice: All of the Above",
   "topic": "Template",
   "type": "v3",
-  "shareSourcePublicly": true
+  "shareSourcePublicly": true,
+  "singleVariant": true
 }
