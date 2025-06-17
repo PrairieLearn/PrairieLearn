@@ -9,25 +9,22 @@
   },
   "main": "dist/index.js",
   "exports": {
-    ".": "./dist/index.js",
-    "./compat": "./dist/compat.js",
-    "./hooks": "./dist/hooks.js",
-    "./jsx-dev-runtime": "./dist/jsx-dev-runtime.js",
-    "./jsx-runtime": "./dist/jsx-runtime.js"
+    ".": "./src/index.js",
+    "./compat": "./src/compat.js",
+    "./hooks": "./src/hooks.js",
+    "./jsx-dev-runtime": "./src/jsx-runtime.js",
+    "./jsx-runtime": "./src/jsx-runtime.js"
   },
   "scripts": {
-    "build": "tsc && rm -rf dist && mv dist-tmp dist",
-    "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage"
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "original-preact": "npm:preact@^10.26.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@vitest/coverage-v8": "^3.2.2",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.2"
+    "typescript": "^5.8.3"
   },
   "sideEffects": false
 }
