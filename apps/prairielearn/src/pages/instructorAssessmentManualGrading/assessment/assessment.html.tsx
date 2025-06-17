@@ -63,13 +63,13 @@ export function ManualGradingAssessment({
     `,
     content: html`
       ${renderHtml(
-        AssessmentSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          assessment: resLocals.assessment,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <AssessmentSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          assessment={resLocals.assessment}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       ${AssessmentOpenInstancesAlert({
         numOpenInstances: num_open_instances,

@@ -58,12 +58,12 @@ export function InstructorQuestionStatistics({
     headContent: compiledScriptTag('instructorQuestionStatisticsClient.ts'),
     content: html`
       ${renderHtml(
-        QuestionSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          question: resLocals.question,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <QuestionSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          question={resLocals.question}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
 
       <div class="card mb-4">

@@ -34,11 +34,11 @@ export function InstructorCourseAdminSettings({
     headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
     content: html`
       ${renderHtml(
-        CourseSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <CourseSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
 
       <div class="card  mb-4">
