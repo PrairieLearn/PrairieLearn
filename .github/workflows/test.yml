@@ -122,7 +122,7 @@ jobs:
           flags: javascript
 
   test-prairielearn-native:
-    name: Native
+    name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
     env:
       SHARDED_TESTS: true
