@@ -116,7 +116,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     !!! bug
 
-        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use a system Python version.
+        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
 
 - Clone the latest code:
 
