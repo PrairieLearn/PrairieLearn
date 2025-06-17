@@ -134,6 +134,7 @@
     "marked": "^15.0.12",
     "mathjax": "^3.2.2",
     "memorystream": "^0.3.1",
+    "mermaid": "^11.6.0",
     "mersenne": "0.0.4",
     "mime": "^4.0.7",
     "morphdom": "^2.7.5",

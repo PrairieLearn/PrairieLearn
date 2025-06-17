@@ -1,0 +1,25 @@
+<pl-question-panel>
+  <p>
+      This question demonstrates the use of <code>pl-file-editor</code> with a custom preview defined in an element extension. The previewer uses the <a href="https://mermaid.js.org/" target="_blank">Mermaid</a> syntax to create diagrams.
+  </p>
+
+  {{! Sample from https://mermaid.js.org/intro/#sequence-diagram }}
+  <pl-file-editor file-name="diagram.mermaid" ace-mode="ace/mode/text" preview="mermaid">
+sequenceDiagram
+    participant Alice
+    participant Bob
+    Alice->>John: Hello John, how are you?
+    loop HealthCheck
+        John->>John: Fight against hypochondria
+    end
+    Note right of John: Rational thoughts <br/>prevail!
+    John-->>Alice: Great!
+    John->>Bob: How about you?
+    Bob-->>John: Jolly good!
+</pl-file-editor>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
