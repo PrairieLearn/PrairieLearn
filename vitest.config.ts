@@ -111,6 +111,7 @@ export const sharedConfig = defineConfig({
     reporters: process.env.GITHUB_ACTIONS
       ? [
           'default',
+          ...(process.env.SHARDED_TESTS ? ['blob'] : []),
           [
             'github-actions',
             {
