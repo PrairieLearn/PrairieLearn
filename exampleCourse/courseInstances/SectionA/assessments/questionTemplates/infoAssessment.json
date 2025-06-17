@@ -14,7 +14,6 @@
         { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2 },
         { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 },
-        { "id": "template/multiple-choice/none-of-the-above", "points": 1 },
         { "id": "demo/multiAnswerMC", "points": 2, "maxPoints": 10 },
         { "id": "template/integer-input/random", "points": 1, "maxPoints": 2 },
         { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
