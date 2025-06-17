@@ -87,6 +87,7 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   rubric_settings_changed: z.boolean(),
   applied_rubric_items: RubricGradingItemSchema.array().nullable(),
   rubric_items_changed: z.boolean(),
+  is_ai_graded: z.boolean(),
 });
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
@@ -363,6 +364,7 @@ async function recomputeInstanceQuestions(
         null, // check_modified_at,
         { manual_rubric_data: instance_question },
         authn_user_id,
+        instance_question.is_ai_graded,
       );
     });
   });
@@ -460,6 +462,7 @@ type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchem
  * @param check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
  * @param score - The score values to be used for update.
  * @param authn_user_id - The user_id of the logged in user.
+ * @param is_ai_graded - Whether the score update is the result of AI grading or manual grading
  * @returns The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
 export async function updateInstanceQuestionScore(
