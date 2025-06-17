@@ -20,14 +20,25 @@ router.post(
 router.get(
   '/:job_sequence_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryAsync(sql.select_job, {
-      course_id: req.params.course_id,
-      job_sequence_id: req.params.job_sequence_id,
-    });
+    const result = await sqldb.queryOptionalRow(
+      sql.select_job,
+      {
+        course_id: req.params.course_id,
+        job_sequence_id: req.params.job_sequence_id,
+      },
+      JobSchema.pick({
+        job_sequence_id: true,
+        start_date: true,
+        finish_date: true,
+        status: true,
+        output: true,
+      }),
+    );
 
-    if (result.rowCount == null || result.rowCount === 0) {
+    if (!result) {
       throw new error.HttpStatusError(404, 'Job sequence not found');
     }
+
     res.status(200).json(result.rows[0].item);
   }),
 );
