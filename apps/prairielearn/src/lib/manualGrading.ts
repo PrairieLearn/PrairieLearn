@@ -87,7 +87,7 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   rubric_settings_changed: z.boolean(),
   applied_rubric_items: RubricGradingItemSchema.array().nullable(),
   rubric_items_changed: z.boolean(),
-  is_ai_graded: z.boolean(),
+  is_ai_graded: z.boolean().default(false),
 });
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
