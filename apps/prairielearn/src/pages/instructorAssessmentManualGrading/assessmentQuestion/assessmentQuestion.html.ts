@@ -122,16 +122,56 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
-        </div>
-        <form name="grading-form" method="POST">
+      <form name="grading-form" method="POST">
+        <div class="card mb-4">
+          <div
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+          >
+            <h1>${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}</h1>
+            <div class="d-flex flex-row gap-2">
+              <div class="dropdown">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                >
+                  Actions
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                  <div class="dropdown-header">Delete gradings</div>
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action"
+                    value="delete_human_gradings"
+                  >
+                    Delete human gradings
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action"
+                    value="delete_ai_gradings"
+                  >
+                    Delete AI gradings
+                  </button>
+                  <button
+                    class="dropdown-item"
+                    type="submit"
+                    name="batch_action"
+                    value="delete_all_gradings"
+                  >
+                    Delete all gradings
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <input type="hidden" name="__action" value="batch_action" />
           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>
-        </form>
-      </div>
+        </div>
+      </form>
     `,
     postContent: GradingConflictModal(),
   });

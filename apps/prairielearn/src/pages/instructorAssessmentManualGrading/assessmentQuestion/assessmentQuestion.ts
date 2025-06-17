@@ -94,6 +94,7 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+    console.log(req.body);
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -116,6 +117,13 @@ router.post(
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      } else if (
+        ['delete_human_gradings', 'delete_ai_gradings', 'delete_all_gradings'].includes(
+          req.body.batch_action,
+        )
+      ) {
+        console.log(req.body);
+        res.redirect(req.originalUrl);
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
