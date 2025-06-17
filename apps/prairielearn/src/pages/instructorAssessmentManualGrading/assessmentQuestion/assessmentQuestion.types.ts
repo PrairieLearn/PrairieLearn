@@ -1,11 +1,7 @@
 import { z } from 'zod';
 
 import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/types.js';
-import {
-  AssessmentQuestionSchema,
-  InstanceQuestionSchema,
-  type User,
-} from '../../../lib/db-types.js';
+import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
