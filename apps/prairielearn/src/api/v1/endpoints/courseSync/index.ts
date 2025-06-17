@@ -28,7 +28,7 @@ router.get(
     if (result.rowCount == null || result.rowCount === 0) {
       throw new error.HttpStatusError(404, 'Job sequence not found');
     }
-    res.status(200).send(result.rows[0].item);
+    res.status(200).json(result.rows[0].item);
   }),
 );
 
