@@ -1,4 +1,4 @@
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -21,7 +21,7 @@ export default async function ({
   count: string;
   course_instance_id: string;
 }): Promise<AdministratorQueryResult> {
-  const course_instance = await selectCourseInstanceById(course_instance_id);
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (!course_instance) {
     return { rows: [], columns };
   }

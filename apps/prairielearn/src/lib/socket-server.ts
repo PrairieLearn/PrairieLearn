@@ -4,6 +4,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import debugfn from 'debug';
 import { Redis } from 'ioredis';
 import { Server } from 'socket.io';
+import { Adapter } from 'socket.io-adapter';
 
 import { logger } from '@prairielearn/logger';
 
@@ -73,10 +74,27 @@ export async function close() {
   //
   // Note the use of `io.local`, which prevents the server from attempting to
   // broadcast the disconnect to other servers via Redis.
+  //
+  // Note that we pass `true` to `disconnectSockets()`. This should ensure that
+  // clients try to reconnect, and that will be routed to a different server.
   io.local.disconnectSockets(true);
-  await Promise.all([...io._nsps.values()].map((nsp) => nsp.adapter.close()));
+
+  // Collect all namespace adapters. We do this before replacing the adapter
+  // because we can't get references to the original adapters after that.
+  const adapters = [...io._nsps.values()].map((nsp) => nsp.adapter);
+
+  // Replace the adapter with an in-memory adapter to prevent further broadcasts
+  // in case anything is still producing events.
+  io.adapter(Adapter);
+
+  // Close the adapters. This will remove the pub/sub subscriptions to ensure we
+  // don't receive any more messages from Redis.
+  await Promise.all(adapters.map((adapter) => adapter.close()));
+
+  // Close any remaining client connections.
   io.engine.close();
 
+  // Shut down the Redis clients.
   await pub?.quit();
   await sub?.quit();
 }

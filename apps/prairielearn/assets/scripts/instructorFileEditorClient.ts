@@ -92,7 +92,7 @@ class InstructorFileEditor {
 
     if (aceMode === 'ace/mode/json') {
       this.editor.getSession().setTabSize(2);
-      $('#js-json-reformat-error').toast({ delay: 5000 });
+      window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error', { delay: 5000 });
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
         ?.addEventListener('click', () => this.reformatJSONFile());
@@ -176,7 +176,7 @@ class InstructorFileEditor {
       this.editor.focus();
     } catch (err) {
       console.error(err);
-      $('#js-json-reformat-error').toast('show');
+      window.bootstrap.Toast.getOrCreateInstance('#js-json-reformat-error').show();
     }
   }
 }
@@ -218,7 +218,7 @@ onDocumentReady(() => {
         .forEach((element) => element.remove());
 
       // Show div that contains "Show help" and "Save and sync" buttons
-      $('#buttons').collapse('show');
+      window.bootstrap.Collapse.getOrCreateInstance('#buttons').show();
 
       draftEditor?.takeOver();
     });
@@ -226,27 +226,27 @@ onDocumentReady(() => {
   const showDetail = document.getElementById('job-sequence-results');
   const showDetailButton = document.getElementById('job-sequence-results-button');
   if (showDetail && showDetailButton) {
-    $(showDetail)
-      .on('hide.bs.collapse', () => {
-        showDetailButton.textContent = 'Show detail';
-      })
-      .on('show.bs.collapse', () => {
-        showDetailButton.textContent = 'Hide detail';
-      });
+    showDetail.addEventListener('hide.bs.collapse', () => {
+      showDetailButton.textContent = 'Show detail';
+      showDetailButton.ariaExpanded = 'false';
+    });
+    showDetail.addEventListener('show.bs.collapse', () => {
+      showDetailButton.textContent = 'Hide detail';
+      showDetailButton.ariaExpanded = 'true';
+    });
   }
 
   const helpBox = document.getElementById('help');
   const helpButton = document.getElementById('help-button');
   const helpButtonLabel = document.getElementById('help-button-label');
   if (helpBox && helpButton && helpButtonLabel) {
-    $(helpBox)
-      .on('hide.bs.collapse', () => {
-        helpButtonLabel.textContent = 'Show help';
-        helpButton.ariaExpanded = 'false';
-      })
-      .on('show.bs.collapse', () => {
-        helpButtonLabel.textContent = 'Hide help';
-        helpButton.ariaExpanded = 'true';
-      });
+    helpBox.addEventListener('hide.bs.collapse', () => {
+      helpButtonLabel.textContent = 'Show help';
+      helpButton.ariaExpanded = 'false';
+    });
+    helpBox.addEventListener('show.bs.collapse', () => {
+      helpButtonLabel.textContent = 'Hide help';
+      helpButton.ariaExpanded = 'true';
+    });
   }
 });
