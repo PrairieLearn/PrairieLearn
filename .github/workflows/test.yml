@@ -114,8 +114,6 @@ jobs:
   test-prairielearn-native:
     name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
-    env:
-      SHARDED_TESTS: true
     strategy:
       matrix:
         shardIndex: [1, 2, 3, 4]
@@ -204,6 +202,8 @@ jobs:
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          SHARDED_TESTS: true
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
