@@ -16,6 +16,11 @@ const SLOW_TESTS_SHARDS = {
   4: ['src/tests/accessibility/index.test.ts', 'src/tests/cron.test.ts', 'src/tests/exam.test.ts'],
 };
 
+const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
+
+// Each shard will get a certain slice of the tests outside of SLOW_TESTS.
+// This is a rough heuristic to try to balance the runtime of each shard.
+// For example, shard 3 will get 2/7 of these other tests.
 const NUM_SLICES = 7;
 const SHARD_SLICES = {
   1: { start: 0, end: 1 },
@@ -23,8 +28,6 @@ const SHARD_SLICES = {
   3: { start: 2, end: 4 },
   4: { start: 4, end: NUM_SLICES },
 };
-
-const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 
 class CustomSequencer extends BaseSequencer {
   async sort(files: TestSpecification[]) {
@@ -51,7 +54,10 @@ class CustomSequencer extends BaseSequencer {
     const { config } = this.ctx;
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const { index } = config.shard!;
+    const { index, count } = config.shard!;
+    if (count !== 4) {
+      throw new Error('Expected 4 shards');
+    }
 
     // Some shards run slower tests, so other shards should take more 'slices'
     // so that the runtimes of each shard are approximately balanced.
