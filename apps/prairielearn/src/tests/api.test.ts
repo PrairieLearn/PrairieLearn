@@ -364,6 +364,7 @@ describe('API', { timeout: 60_000 }, function () {
 
       const json = (await res.json()) as any;
       assert.exists(json.job_sequence_id);
+      assert.equal(json.job_sequence_id, locals.course_sync_job_sequence_id);
       assert.exists(json.status);
       assert.exists(json.start_date);
       assert.exists(json.finish_date);
