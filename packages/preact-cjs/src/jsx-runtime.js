@@ -1,16 +1,12 @@
 const jsxRuntime = require('original-preact/jsx-runtime');
 
-module.exports = {
-  // @ts-expect-error -- TODO describe
-  Fragment: jsxRuntime.Fragment,
-  jsx: jsxRuntime.jsx,
-  jsxs: jsxRuntime.jsxs,
-  jsxDEV: jsxRuntime.jsxDEV,
-  jsxTemplate: jsxRuntime.jsxTemplate,
-  jsxAttr: jsxRuntime.jsxAttr,
-  jsxEscape: jsxRuntime.jsxEscape,
-  // @ts-expect-error -- TODO describe
-  JSX: jsxRuntime.JSX,
-};
-
+// @ts-expect-error -- This is missing from the types definitions somehow.
 module.exports.Fragment = jsxRuntime.Fragment;
+module.exports.jsx = jsxRuntime.jsx;
+module.exports.jsxs = jsxRuntime.jsxs;
+module.exports.jsxDEV = jsxRuntime.jsxDEV;
+module.exports.jsxTemplate = jsxRuntime.jsxTemplate;
+module.exports.jsxAttr = jsxRuntime.jsxAttr;
+module.exports.jsxEscape = jsxRuntime.jsxEscape;
+// @ts-expect-error -- This is missing from the types definitions somehow.
+module.exports.JSX = jsxRuntime.JSX;
