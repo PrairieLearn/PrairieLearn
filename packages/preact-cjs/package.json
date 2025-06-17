@@ -7,7 +7,6 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/preact-cjs"
   },
-  "main": "dist/index.js",
   "exports": {
     ".": "./src/index.js",
     "./compat": "./src/compat.js",

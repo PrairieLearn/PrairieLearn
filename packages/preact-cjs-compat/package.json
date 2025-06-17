@@ -7,7 +7,6 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/preact-cjs-compat"
   },
-  "main": "dist/index.js",
   "exports": {
     ".": "./src/index.js",
     "./jsx-dev-runtime": "./src/jsx-dev-runtime.js",
