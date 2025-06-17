@@ -149,6 +149,7 @@ export default defineConfig(async ({ mode }) => {
           },
         ],
         coverage: {
+          provider: 'v8',
           all: true,
           reporter: ['html', 'text-summary', 'cobertura'],
           include: ['{apps,packages}/*/src/**'],

@@ -237,10 +237,9 @@ jobs:
           merge-multiple: true
 
       - name: Merge reports
-        run: yarn vitest --merge-reports
+        run: yarn vitest --watch=false --merge-reports --coverage
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
-          files: coverage/cobertuca-coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
