@@ -112,8 +112,12 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form method="POST" id="ai-grading-test">
-              <input type="hidden" name="__action" value="ai_grade_assessment_test" />
+            <form method="POST" id="ai-grading-graded">
+              <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="ai-grading-all">
+              <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
           `
@@ -129,7 +133,7 @@ export function AssessmentQuestion({
         </form>
       </div>
     `,
-    postContent: [GradingConflictModal()],
+    postContent: GradingConflictModal(),
   });
 }
 

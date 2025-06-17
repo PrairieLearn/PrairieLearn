@@ -88,7 +88,7 @@ export function InstructorIssues({
     options: {
       fullWidth: true,
     },
-    headContent: [compiledStylesheetTag('instructorIssues.css')],
+    headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
       ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
       ${authz_data.has_course_permission_edit
