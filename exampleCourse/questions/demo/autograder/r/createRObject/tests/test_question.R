@@ -60,7 +60,7 @@ if (runs) {
 ## @title Does 'x' contain the names we expect?
 ## @score 1
 
-if (runs && havex) {
+if (runs) {
     ## check for names of 'x'
     objnames <- names(answer$x)
     ## to debug (see console)
@@ -76,7 +76,7 @@ if (runs && havex) {
 ## @title Does 'x' contain the types we expect?
 ## @score 1
 
-if (runs && havex) {
+if (runs) {
     ## response could be list or data.frame so enfore list
     x <- as.list(answer$x)
     object_classes <- c(class(x[["ii"]]),
@@ -95,7 +95,7 @@ if (runs && havex) {
 ## @title Do we find 'x' to be as expected?
 ## @score 2
 
-if (runs && havex) {
+if (runs) {
     ## to debug (see console)
     ##print(str(x))
 
