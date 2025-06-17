@@ -96,24 +96,42 @@ export function AssessmentQuestion({
         assessmentId: assessment.id,
         urlPrefix,
       })}
-
-      <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item">
-            <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading">Manual grading</a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page">
-            Question ${number_in_alternative_group}. ${question.title}
-          </li>
-        </ol>
-      </nav>
-
       ${aiGradingEnabled
         ? html`
-            <form method="POST" id="toggle-ai-grading-mode">
-              <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
+            <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+              <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                  <li class="breadcrumb-item">
+                    <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading"
+                      >Manual grading</a
+                    >
+                  </li>
+                  <li class="breadcrumb-item active" aria-current="page">
+                    Question ${number_in_alternative_group}. ${question.title}
+                  </li>
+                </ol>
+              </nav>
+
+              <form method="POST" class="card px-3 py-2 mb-0">
+                <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
+                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <div class="form-check form-switch mb-0">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="switchCheckDefault"
+                    ${aiGradingMode ? 'checked' : ''}
+                    onchange="setTimeout(() => this.form.submit(), 150)"
+                  />
+                  <label class="form-check-label" for="switchCheckDefault">
+                    <i class="bi bi-stars"></i>
+                    AI grading mode
+                  </label>
+                </div>
+              </form>
+            </div>
+
             <form method="POST" id="ai-grading">
               <input type="hidden" name="__action" value="ai_grade_assessment" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />

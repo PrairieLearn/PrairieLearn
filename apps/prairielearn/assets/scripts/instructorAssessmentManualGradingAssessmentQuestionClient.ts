@@ -138,20 +138,6 @@ onDocumentReady(() => {
         render: hasCourseInstancePermissionEdit,
         html: () => gradingTagDropdown(courseStaff),
       },
-      toggleAiGradingMode: {
-        render: aiGradingEnabled,
-        html: html`<button
-          class="btn btn-secondary ${aiGradingMode ? 'active' : ''}"
-          name="toggleAiGradingMode"
-          type="button"
-          title="${aiGradingMode ? 'Disable' : 'Enable'} AI grading mode"
-        >
-          <i class="bi bi-stars" aria-hidden="true"></i> AI grading mode
-        </button>`.toString(),
-        event: () => {
-          $('#toggle-ai-grading-mode').trigger('submit');
-        },
-      },
     },
     onUncheck: updateGradingTagButton,
     onUncheckAll: updateGradingTagButton,
