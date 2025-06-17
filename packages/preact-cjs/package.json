@@ -8,15 +8,14 @@
     "directory": "packages/preact-cjs"
   },
   "exports": {
-    ".": "./src/index.js",
-    "./compat": "./src/compat.js",
-    "./hooks": "./src/hooks.js",
-    "./jsx-dev-runtime": "./src/jsx-runtime.js",
-    "./jsx-runtime": "./src/jsx-runtime.js"
+    ".": "./dist/index.js",
+    "./compat": "./dist/compat.js",
+    "./hooks": "./dist/hooks.js",
+    "./jsx-dev-runtime": "./dist/jsx-runtime.js",
+    "./jsx-runtime": "./dist/jsx-runtime.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsc && rm -rf dist && cp -r src dist"
   },
   "dependencies": {
     "original-preact": "npm:preact@^10.26.8"
