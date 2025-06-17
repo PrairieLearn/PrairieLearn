@@ -15,7 +15,10 @@
     code = DOMPurify.sanitize(code);
     const shadowRoot = element.attachShadow({ mode: 'open' });
     shadowRoot.innerHTML = code;
-    await MathJax.typesetPromise([element]);
+    // MathJax styles need to be applied to the shadow DOM
+    const mjxStyles = document.getElementById('MJX-SVG-styles');
+    shadowRoot.appendChild(mjxStyles.cloneNode(true));
+    await MathJax.typesetPromise(shadowRoot.children);
   });
 </script>
 <div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>

@@ -124,7 +124,10 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise([preview]);
+      // MathJax styles need to be applied to the shadow DOM
+      const mjxStyles = document.getElementById('MJX-SVG-styles');
+      shadowRoot.appendChild(mjxStyles.cloneNode(true));
+      MathJax.typesetPromise(shadowRoot.children);
     }
   }
 };
