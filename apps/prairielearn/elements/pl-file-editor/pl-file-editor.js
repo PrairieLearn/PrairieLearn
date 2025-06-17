@@ -125,8 +125,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\]')
     ) {
       // MathJax styles need to be applied to the shadow DOM
-      const mjxStyles = document.getElementById('MJX-SVG-styles');
-      shadowRoot.appendChild(mjxStyles.cloneNode(true));
+      const mjxStyles = document.getElementById('MJX-SVG-styles')?.cloneNode(true);
+      if (mjxStyles) {
+        mjxStyles.id = null; // Remove the id to avoid conflicts
+        shadowRoot.appendChild(mjxStyles);
+      }
       MathJax.typesetPromise(shadowRoot.children);
     }
   }
