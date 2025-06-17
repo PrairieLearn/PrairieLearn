@@ -1,5 +1,5 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
+import { html, joinHtml } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
@@ -361,27 +361,40 @@ onDocumentReady(() => {
               title: 'AI agreement',
               visible: aiGradingMode,
               filterControl: 'select',
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.point_difference === null // missing grade from human and/or AI
-                  ? '&mdash;'
-                  : html`${row.rubric_difference === null // not graded by rubric from human and/or AI
-                      ? !row.point_difference
-                        ? html`<i class="bi bi-check-square-fill" style="color: green;"></i>`
-                        : html`<span style="color:red;">${row.point_difference}</span>`
-                      : !row.rubric_difference.length
-                        ? html`<i class="bi bi-check-square-fill" style="color: green;"></i>`
-                        : row.rubric_difference.map(
-                            (item) =>
-                              html`<div>
-                                ${item.false_positive
-                                  ? html`<i class="bi bi-plus-square-fill" style="color: red;"></i>`
-                                  : html`<i
-                                      class="bi bi-dash-square-fill"
-                                      style="color: red;"
-                                    ></i>`}
-                                <span>${item.description}</span>
-                              </div>`,
-                          )}`.toString(),
+              formatter: (value: boolean, row: InstanceQuestionRow) => {
+                if (row.point_difference === null) {
+                  // missing grade from human and/or AI
+                  return html`&mdash;`.toString();
+                }
+
+                if (row.rubric_difference === null) {
+                  if (!row.point_difference) {
+                    return html`<i class="bi bi-check-square-fill text-success"></i>`.toString();
+                  } else {
+                    const prefix = row.point_difference < 0 ? '' : '+';
+                    return html`<span class="text-danger">
+                      <i class="bi bi-x-square-fill"></i>
+                      ${prefix}${formatPoints(row.point_difference)}
+                    </span>`.toString();
+                  }
+                }
+
+                if (row.rubric_difference.length === 0) {
+                  return html`<i class="bi bi-check-square-fill text-success"></i>`.toString();
+                }
+
+                return joinHtml(
+                  row.rubric_difference.map(
+                    (item) =>
+                      html`<div>
+                        ${item.false_positive
+                          ? html`<i class="bi bi-plus-square-fill text-danger"></i>`
+                          : html`<i class="bi bi-dash-square-fill text-success"></i>`}
+                        <span>${item.description}</span>
+                      </div>`,
+                  ),
+                ).toString();
+              },
               filterData: 'func:rubricItemsList',
               filterCustomSearch: (text: string, value: string) =>
                 value.toLowerCase().includes(html`<span>${text}</span>`.toString()),

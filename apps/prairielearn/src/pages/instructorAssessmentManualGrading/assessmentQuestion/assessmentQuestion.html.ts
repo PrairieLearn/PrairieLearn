@@ -101,9 +101,9 @@ export function AssessmentQuestion({
               <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0">
                   <li class="breadcrumb-item">
-                    <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading"
-                      >Manual grading</a
-                    >
+                    <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading">
+                      Manual grading
+                    </a>
                   </li>
                   <li class="breadcrumb-item active" aria-current="page">
                     Question ${number_in_alternative_group}. ${question.title}
@@ -155,7 +155,7 @@ export function AssessmentQuestion({
                         <thead>
                           <tr class="table-light fw-bold">
                             <td>Rubric item</td>
-                            <td>AI disagreements</td>
+                            <td>AI agreement</td>
                           </tr>
                         </thead>
                         <tbody>
@@ -165,14 +165,14 @@ export function AssessmentQuestion({
                                 <td>${item.rubric_item.description}</td>
                                 <td>
                                   ${item.disagreement_count
-                                    ? html`<i class="bi bi-x-square-fill" style="color: red;"></i>
-                                        ${item.disagreement_count}<small class="text-muted"
-                                          >/${aiGradingStats.submission_rubric_count}</small
-                                        >`
-                                    : html`<i
-                                        class="bi bi-check-square-fill"
-                                        style="color: green;"
-                                      ></i>`}
+                                    ? html`
+                                        <i class="bi bi-x-square-fill text-danger"></i>
+                                        <span class="text-muted">
+                                          (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
+                                          disagree)
+                                        </span>
+                                      `
+                                    : html`<i class="bi bi-check-square-fill text-success"></i>`}
                                 </td>
                               </tr>`,
                           )}
@@ -186,10 +186,8 @@ export function AssessmentQuestion({
                     <div class="card-body">
                       <div>Submission count: ${aiGradingStats.submission_point_count}</div>
                       <div>
-                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}<small
-                          class="text-muted"
-                          >/${assessment_question.max_manual_points}</small
-                        >
+                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
+                        <small class="text-muted">/${assessment_question.max_manual_points}</small>
                         points
                       </div>
                     </div>
