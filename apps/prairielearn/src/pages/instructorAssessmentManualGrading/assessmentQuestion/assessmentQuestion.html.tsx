@@ -84,13 +84,13 @@ export function AssessmentQuestion({
     `,
     content: html`
       ${renderHtml(
-        AssessmentSyncErrorsAndWarnings({
-          authz_data,
-          assessment,
-          courseInstance: course_instance,
-          course,
-          urlPrefix,
-        }),
+        <AssessmentSyncErrorsAndWarnings
+          authz_data={authz_data}
+          assessment={assessment}
+          courseInstance={course_instance}
+          course={course}
+          urlPrefix={urlPrefix}
+        />,
       )}
       ${AssessmentOpenInstancesAlert({
         numOpenInstances: num_open_instances,

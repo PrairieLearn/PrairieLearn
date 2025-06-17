@@ -116,13 +116,13 @@ export function InstructorAssessmentInstance({
         groupWork: resLocals.assessment.group_work,
       })}
       ${renderHtml(
-        AssessmentSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          assessment: resLocals.assessment,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <AssessmentSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          assessment={resLocals.assessment}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

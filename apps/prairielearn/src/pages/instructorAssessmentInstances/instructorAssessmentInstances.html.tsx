@@ -38,13 +38,13 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     `,
     content: html`
       ${renderHtml(
-        AssessmentSyncErrorsAndWarnings({
-          authz_data: resLocals.authz_data,
-          assessment: resLocals.assessment,
-          courseInstance: resLocals.course_instance,
-          course: resLocals.course,
-          urlPrefix: resLocals.urlPrefix,
-        }),
+        <AssessmentSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          assessment={resLocals.assessment}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
+        />,
       )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`

@@ -57,12 +57,12 @@ export function InstructorAssessments({
     `,
     content: html`
       ${renderHtml(
-        CourseInstanceSyncErrorsAndWarnings({
-          authz_data,
-          courseInstance: resLocals.course_instance,
-          course,
-          urlPrefix,
-        }),
+        <CourseInstanceSyncErrorsAndWarnings
+          authz_data={authz_data}
+          courseInstance={resLocals.course_instance}
+          course={course}
+          urlPrefix={urlPrefix}
+        />,
       )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
