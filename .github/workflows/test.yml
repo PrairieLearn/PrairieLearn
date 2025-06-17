@@ -221,6 +221,7 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
   merge-test-reports:
     if: ${{ !cancelled() }}
     needs: [test-prairielearn-native]
