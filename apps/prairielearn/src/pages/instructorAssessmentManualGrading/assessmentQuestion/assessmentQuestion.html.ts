@@ -147,9 +147,9 @@ export function AssessmentQuestion({
         : ''}
       ${aiGradingStats
         ? html`
-            <div class="card overflow-hidden mb-3">
-              ${aiGradingStats.rubric_stats.length
-                ? html`
+            ${aiGradingStats.rubric_stats.length
+              ? html`
+                  <div class="card overflow-hidden mb-3">
                     <div class="table-responsive">
                       <table class="table table-sm" aria-label="AI grading rubric item stats">
                         <thead>
@@ -179,20 +179,22 @@ export function AssessmentQuestion({
                         </tbody>
                       </table>
                     </div>
-                  `
-                : html`
-                    <div class="m-2">
+                  </div>
+                `
+              : html`
+                  <div class="card mb-3">
+                    <div class="card-body">
                       <div>Submission count: ${aiGradingStats.submission_point_count}</div>
                       <div>
-                        Average AI error: ${aiGradingStats.mean_error ?? '&mdash;'}<small
+                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}<small
                           class="text-muted"
                           >/${assessment_question.max_manual_points}</small
                         >
                         points
                       </div>
                     </div>
-                  `}
-            </div>
+                  </div>
+                `}
           `
         : ''}
 
