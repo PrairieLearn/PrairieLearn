@@ -111,6 +111,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     : '';
 
   const preview = this.element.find('.preview')[0];
+  /** @type ShadowRoot */
   const shadowRoot = preview.shadowRoot || preview.attachShadow({ mode: 'open' });
   if (html_contents.trim().length === 0) {
     shadowRoot.innerHTML = default_preview_text;
@@ -125,10 +126,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\]')
     ) {
       // MathJax styles need to be applied to the shadow DOM
-      const mjxStyles = document.getElementById('MJX-SVG-styles')?.cloneNode(true);
+      const mjxStyles = document.getElementById('MJX-SVG-styles');
       if (mjxStyles) {
-        mjxStyles.id = null; // Remove the id to avoid conflicts
-        shadowRoot.appendChild(mjxStyles);
+        const style = new CSSStyleSheet();
+        style.replaceSync(mjxStyles.textContent);
+        shadowRoot.adoptedStyleSheets.push(style);
       }
       MathJax.typesetPromise(shadowRoot.children);
     }
