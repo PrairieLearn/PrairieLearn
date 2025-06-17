@@ -1,8 +1,8 @@
 <script>
   $(async function() {
-    const element = $('#xss-{{uuid}}');
-    const language = element.attr("data-language");
-    let code = element.attr("data-code");
+    const element = document.getElementById('xss-{{uuid}}');
+    const language = element.dataset.language;
+    let code = element.dataset.code;
     // Uses the same JS library as the pl-file-editor for markdown
     // conversion and xss filter for compatibility and to avoid
     // confusion
@@ -12,9 +12,10 @@
       (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
       code = marked.parse(code);
     }
-    code = DOMPurify.sanitize(code, {SANITIZE_NAMED_PROPS: true});
-    element.html(code);
-    await MathJax.typesetPromise([element.get(0)]);
+    code = DOMPurify.sanitize(code);
+    const shadowRoot = element.attachShadow({ mode: 'open' });
+    shadowRoot.innerHTML = code;
+    await MathJax.typesetPromise([element]);
   });
 </script>
 <div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>
