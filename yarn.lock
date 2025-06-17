@@ -4093,8 +4093,10 @@ __metadata:
   resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@vitest/coverage-v8": "npm:^3.2.2"
     original-preact: "npm:preact@^10.26.8"
     typescript: "npm:^5.8.3"
+    vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
 

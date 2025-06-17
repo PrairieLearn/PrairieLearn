@@ -17,14 +17,17 @@
   },
   "scripts": {
     "build": "tsc && rm -rf dist && mv dist-tmp dist",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "original-preact": "npm:preact@^10.26.8"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.8.3"
+    "@vitest/coverage-v8": "^3.2.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2"
   },
   "sideEffects": false
 }
