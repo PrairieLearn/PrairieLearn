@@ -1,6 +1,7 @@
 const jsxRuntime = require('original-preact/jsx-runtime');
 
-// @ts-expect-error -- This is missing from the types definitions somehow.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- The below error only occurs in CI.
+// @ts-ignore -- This is missing from the types definitions somehow.
 module.exports.Fragment = jsxRuntime.Fragment;
 module.exports.jsx = jsxRuntime.jsx;
 module.exports.jsxs = jsxRuntime.jsxs;
