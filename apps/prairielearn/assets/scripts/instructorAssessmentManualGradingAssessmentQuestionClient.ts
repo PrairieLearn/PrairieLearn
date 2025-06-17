@@ -361,7 +361,7 @@ onDocumentReady(() => {
               title: 'AI agreement',
               visible: aiGradingMode,
               filterControl: 'select',
-              formatter: (value: boolean, row: InstanceQuestionRow) => {
+              formatter: (_value: unknown, row: InstanceQuestionRow) => {
                 if (row.point_difference === null) {
                   // missing grade from human and/or AI
                   return html`&mdash;`.toString();
