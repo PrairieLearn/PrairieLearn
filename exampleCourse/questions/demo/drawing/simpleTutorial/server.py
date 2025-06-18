@@ -28,7 +28,7 @@ def generate(data):
 
     xA = 40
     xD = 260
-    xB = random.randint(xA + 20, xD / 2)
+    xB = random.randint(xA + 20, xD // 2)
     xC = random.randint(xB + 30, xD - 20)
     y = 160
     w = xC - xB
