@@ -356,6 +356,10 @@
       "type": "string",
       "default": "/data1/courses"
     },
+    "nonVolatileRedisUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "logFilename": {
       "type": "string",
       "default": "server.log"
@@ -897,6 +901,11 @@
       ],
       "default": null
     },
+    "nonVolatileCacheType": {
+      "type": "string",
+      "enum": ["none", "redis", "memory"],
+      "default": "none"
+    },
     "questionRenderCacheTtlSec": {
       "type": "number",
       "default": 3600
@@ -1274,6 +1283,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiQuestionGenerationRateLimitDollars": {
+      "type": "number",
+      "default": 1
+    },
     "requireTermsAcceptance": {
       "type": "boolean",
       "default": false
@@ -1333,11 +1346,11 @@
     },
     "costPerMillionPromptTokens": {
       "type": "number",
-      "default": 3.75
+      "default": 2.5
     },
     "costPerMillionCompletionTokens": {
       "type": "number",
-      "default": 15
+      "default": 10
     }
   }
 }

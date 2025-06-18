@@ -415,6 +415,8 @@ In manual grading mode, staff can view submitted images in the submission panel 
 
 By default, the `mobile-capture-enabled` setting is `true`. We strongly recommend keeping mobile capture enabled for most questions to allow students to capture high-quality images easily.
 
+Using mobile device capture in a local development environment requires additional setup. To use this feature locally, see the [Setting up external image capture locally](./dev-guide/configJson.md#setting-up-external-image-capture-locally) section of the server configuration guide.
+
 #### Example implementations
 
 - [element/imageCapture]
