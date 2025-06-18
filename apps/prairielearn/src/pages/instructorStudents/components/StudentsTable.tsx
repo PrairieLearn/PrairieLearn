@@ -12,7 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'preact/compat';
 
-import type { StudentRow } from '../instructorStudents.html.js';
+import type { StudentRow } from '../instructorStudents.types.js';
 
 export interface InstructorStudentsData {
   urlPrefix: string;
