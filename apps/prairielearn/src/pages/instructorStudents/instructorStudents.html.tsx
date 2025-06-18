@@ -18,9 +18,9 @@ export interface ResLocals {
 
 interface InstructorStudentsContentProps {
   resLocals: ResLocals;
-  courseOwners?: User[];
+  courseOwners: User[];
   csvFilename: string;
-  students?: StudentRow[];
+  students: StudentRow[];
 }
 
 export const InstructorStudents = ({

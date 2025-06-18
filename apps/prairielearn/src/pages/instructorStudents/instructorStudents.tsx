@@ -25,23 +25,22 @@ function buildCsvFilename(locals: Record<string, any>) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    console.log('req.locals', res.locals);
     const csvFilename = buildCsvFilename(res.locals);
 
     const resLocals = res.locals as ResLocals;
-    if (!resLocals.authz_data.has_course_instance_permission_view) {
-      // Similar to gradebook, show permission instructions instead of forbidding access
-      const courseOwners = await getCourseOwners(resLocals.course.id);
-      res.status(403).send(InstructorStudents({ resLocals, courseOwners, csvFilename }));
-      return;
-    }
+    const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
+    const status = hasPermission ? 200 : 403;
+    const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
+    const students = hasPermission
+      ? await queryRows(
+          sql.select_students,
+          { course_instance_id: resLocals.course_instance.id },
+          StudentRowSchema,
+        )
+      : [];
 
-    const students = await queryRows(
-      sql.select_students,
-      { course_instance_id: resLocals.course_instance.id },
-      StudentRowSchema,
-    );
-
-    res.send(
+    res.status(status).send(
       PageLayout({
         resLocals,
         pageTitle: 'Students',
@@ -58,6 +57,7 @@ router.get(
             resLocals={resLocals}
             csvFilename={csvFilename}
             students={students}
+            courseOwners={courseOwners}
           />,
         ),
       }),
