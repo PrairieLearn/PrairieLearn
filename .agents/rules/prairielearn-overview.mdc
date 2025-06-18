@@ -7,20 +7,70 @@ alwaysApply: false
 
 - TypeScript, Bootstrap 5, PostgreSQL 16, Express, Preact
 
-# Interactive Preact Pages
+# Tagged Template conventions
 
-- When writing interactive Preact pages, include a snippet in `assets/scripts/esm-bundles/react-fragments/ComponentName.ts` that calls `registerReactFragment`.
 
-# File Structure and Naming
+Typescript and Preact conventions
+
+- Import from `preact/compat` for all imports. For example,
+
+```
+import { useState, useMemo } from 'preact/compat'
+```
+
+- When writing interactive Preact pages, include a snippet in `assets/scripts/esm-bundles/react-fragments/ComponentName.ts` that calls `registerReactFragment`. For example,
+
+```
+
+### Linting
+
+- `make lint-js-cached` to lint JS code
+- `make build` to ensure Typescript code builds
+
+### Organizational conventions
 
 - All database tables must have corresponding Zod types in `src/lib/db-types.ts`.
 - When listing DB columns in `database/` and `db-types`, always use snake_case, keep the same names as the DB columns, and sort columns in alphabetical order.
-- Each `.ts` file that interacts with SQL must have a same-named `.sql` file alongside it. The `.sql` file contains query blocks, each introduced by `-- BLOCK <block_name>`.
 
-# SQL and TypeScript Integration
+### SQL Queries via @prairielearn/postgres
 
+- To keep SQL definitions and TypeScript logic cleanly separated yet colocated, each `*.ts` file has a same‐named `*.sql` alongside it.
 - Use `loadSqlEquiv(import.meta.url)` in TypeScript files to load and parse the adjacent `.sql` file.
+- `loadSqlEquiv` reads the SQL file, splits it on the `-- BLOCK` markers, and returns an object whose keys are the block names. 
 - Use `queryRow`, `queryRows`, and `runInTransactionAsync` from `@prairielearn/postgres` to execute SQL queries.
 - Prefer using the models in `src/models/*.ts` instead of writing new SQL code
 - Always validate data from the database using the appropriate Zod codec from `src/lib/db-types.ts`.
 - When the database schema changes, update `src/components/AuditEventsTable.html.ts` to reflect the changes.
+
+#### Example
+
+In `accommodations.ts`:
+
+```ts
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+
+// this will locate and parse "<same‑base‑name>.sql" next to the current file
+const sql = loadSqlEquiv(import.meta.url);
+```
+
+In `accommodations.sql`:
+
+```sql
+-- BLOCK select_accommodation_by_id
+SELECT …;
+-- BLOCK insert_accommodation
+INSERT … RETURNING …;
+```
+
+then in `accommodations.ts` you can write:
+
+```ts
+const row = await queryRow(
+  sql.select_accommodation_by_id,
+  { accommodation_id: id },
+  AccommodationCodec,
+);
+const inserted = await runInTransactionAsync(async () =>
+  queryRow(sql.insert_accommodation, { center_id, name, description }, AccommodationCodec),
+);
+```
