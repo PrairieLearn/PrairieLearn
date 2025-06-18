@@ -16,7 +16,28 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const resLocals = res.locals as ResLocals;
+    const {
+      authz_data: {
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_course_permission_own,
+      },
+      course_instance,
+      course,
+      urlPrefix,
+    } = res.locals;
+
+    const resLocals: ResLocals = {
+      authz_data: {
+        has_course_instance_permission_view,
+        has_course_instance_permission_edit,
+        has_course_permission_own,
+      },
+      course_instance,
+      course,
+      urlPrefix,
+    };
+
     const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
     const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
     const search = req.query.search as string;
