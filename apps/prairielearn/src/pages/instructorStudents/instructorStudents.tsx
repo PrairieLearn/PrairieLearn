@@ -12,8 +12,12 @@ import { getCourseOwners } from '../../lib/course.js';
 import { hydrate } from '../../lib/preact.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { type StudentRow, StudentRowSchema } from './components/StudentsTable.js';
-import { InstructorStudents, type ResLocals } from './instructorStudents.html.js';
+import {
+  InstructorStudents,
+  type ResLocals,
+  type StudentRow,
+  StudentRowSchema,
+} from './instructorStudents.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);

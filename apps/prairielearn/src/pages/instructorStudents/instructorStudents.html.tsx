@@ -1,9 +1,25 @@
+import z from 'zod';
+
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { type Course, type CourseInstance, type User } from '../../lib/db-types.js';
+import {
+  type Course,
+  type CourseInstance,
+  EnrollmentSchema,
+  type User,
+  UserSchema,
+} from '../../lib/db-types.js';
 
 import { StudentDataViewMissing } from './components/StudentDataViewMissing.js';
 import { StudentsTable } from './components/StudentsTable.js';
-import { type StudentRow } from './components/StudentsTable.js';
+
+export const StudentRowSchema = z.object({
+  uid: UserSchema.shape.uid,
+  name: UserSchema.shape.name,
+  email: UserSchema.shape.email,
+  course_instance_id: EnrollmentSchema.shape.course_instance_id,
+  created_at: EnrollmentSchema.shape.created_at,
+});
+export type StudentRow = z.infer<typeof StudentRowSchema>;
 
 export interface ResLocals {
   authz_data: {
