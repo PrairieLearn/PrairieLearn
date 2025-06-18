@@ -1,8 +1,12 @@
+import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// eslint-disable-next-line import-x/order
 import {
   type ColumnDef,
   type ColumnFiltersState,
   type SortDirection,
   type SortingState,
+  type Table,
   createColumnHelper,
   flexRender,
   getCoreRowModel,
@@ -10,6 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+
 import { useEffect, useMemo, useState } from 'preact/compat';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -24,24 +29,64 @@ import { type StudentRow } from './instructorStudents.types.js';
 const columnHelper = createColumnHelper<StudentRow>();
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
-  console.log('sortMethod', sortMethod);
   if (sortMethod === 'asc') {
-    return <i className="bi bi-sort-up"></i>;
+    return <FontAwesomeIcon icon={faSortUp} className="fa-fw" />;
   } else if (sortMethod === 'desc') {
-    return <i className="bi bi-sort-down"></i>;
+    return <FontAwesomeIcon icon={faSortDown} className="fa-fw" />;
   } else {
-    return <i className="bi bi-arrows-expand opacity-75 text-muted"></i>;
+    return <FontAwesomeIcon icon={faSort} className="fa-fw opacity-75 text-muted" />;
   }
 }
 
-// function StudentsTableBody({ table }: { table: Table<StudentRow> }) {
-//   return (
-
-//   );
-// }
+function StudentsTableBody({ table }: { table: Table<StudentRow> }) {
+  return (
+    <div className="table-responsive">
+      <table className="table table-striped table-hover border">
+        <thead>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th
+                  key={header.id}
+                  className="text-nowrap"
+                  style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                  {header.column.getCanSort() && (
+                    <span className="ms-1">
+                      <SortIcon sortMethod={header.column.getIsSorted()} />
+                    </span>
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {table.getRowModel().rows.length === 0 && (
+        <div className="d-flex flex-column align-items-center text-muted py-4">
+          <i className="fa fa-search fa-2x mb-2"></i>
+          <p>No students found matching your search criteria.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Download functions (reuse from above)
-function downloadStudentsCSV(students: StudentRow[]) {
+function downloadStudentsCSV(students: StudentRow[], { filename }: { filename: string }): void {
   const headers = ['UID', 'Name', 'Email', 'Enrolled At'];
   const rows = students.map((student) => [
     student.uid,
@@ -66,20 +111,20 @@ function downloadStudentsCSV(students: StudentRow[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'students.csv';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-function downloadStudentsJSON(students: StudentRow[]) {
+function downloadStudentsJSON(students: StudentRow[], { filename }: { filename: string }): void {
   const jsonContent = JSON.stringify(students, null, 2);
   const blob = new Blob([jsonContent], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'students.json';
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -175,29 +220,11 @@ function StudentsCard({
       <div className="card-header bg-primary text-white">
         <div className="d-flex justify-content-between align-items-center">
           <div>Students</div>
-          <div>
-            <button
-              type="button"
-              className="btn btn-light btn-sm"
-              onClick={() => downloadStudentsCSV(students)}
-            >
-              <i className="px-2 fa fa-download" aria-hidden="true"></i>
-              Download CSV
-            </button>
-            <button
-              type="button"
-              className="btn btn-light btn-sm ms-2"
-              onClick={() => downloadStudentsJSON(students)}
-            >
-              <i className="px-2 fa fa-download" aria-hidden="true"></i>
-              Download JSON
-            </button>
-          </div>
         </div>
       </div>
       <div className="card-body">
         <div className="mb-3">
-          <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-end align-items-md-center">
+          <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
             <div className="col-12 col-md-4">
               <input
                 type="text"
@@ -213,56 +240,74 @@ function StudentsCard({
                 }}
               />
             </div>
-            <div className="text-muted mt-2 mt-md-0">
-              Showing {table.getRowModel().rows.length} of {students.length} students
+            <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center">
+              <div className="text-muted mt-2 mt-md-0 me-md-2">
+                Showing {table.getRowModel().rows.length} of {students.length} students
+              </div>
+              <div className="btn-group">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary btn-sm dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i className="px-2 fa fa-download" aria-hidden="true"></i>
+                  Download
+                </button>
+                <ul className="dropdown-menu">
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      type="button"
+                      onClick={() => downloadStudentsCSV(students, { filename: 'students.csv' })}
+                    >
+                      Download All as CSV
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      type="button"
+                      onClick={() => downloadStudentsJSON(students, { filename: 'students.csv' })}
+                    >
+                      <i class="bi bi-filetype-json"></i> Download All as JSON
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      type="button"
+                      onClick={() =>
+                        downloadStudentsCSV(
+                          table.getFilteredRowModel().rows.map((row) => row.original),
+                          { filename: 'students-current-view.csv' },
+                        )
+                      }
+                    >
+                      <i class="bi bi-filetype-csv"></i> Download Current View as CSV
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item"
+                      type="button"
+                      onClick={() =>
+                        downloadStudentsJSON(
+                          table.getFilteredRowModel().rows.map((row) => row.original),
+                          { filename: 'students-current-view.json' },
+                        )
+                      }
+                    >
+                      <i class="bi bi-filetype-json"></i> Download Current View as JSON
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="table-responsive">
-          <table className="table table-striped table-hover border">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="text-nowrap"
-                      style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
-                        <span className="ms-1">
-                          <SortIcon sortMethod={header.column.getIsSorted()} />
-                        </span>
-                      )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {table.getRowModel().rows.length === 0 && (
-            <div className="d-flex flex-column align-items-center text-muted py-4">
-              <i className="fa fa-search fa-2x mb-2"></i>
-              <p>No students found matching your search criteria.</p>
-            </div>
-          )}
-        </div>
+        <StudentsTableBody table={table} />
       </div>
     </div>
   );
