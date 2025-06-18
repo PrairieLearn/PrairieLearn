@@ -12,7 +12,7 @@ columns
     group_id: bigint
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
-    modified_at: timestamp with time zone
+    modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     num_tries: integer not null default 0
     number: integer
     open: boolean default true
