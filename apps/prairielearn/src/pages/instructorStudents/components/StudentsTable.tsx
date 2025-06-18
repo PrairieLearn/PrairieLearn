@@ -36,15 +36,11 @@ interface StudentsTableProps {
 const columnHelper = createColumnHelper<StudentRow>();
 
 function SortIcon({ isSorted }: { isSorted: false | SortDirection }) {
-  // console.log('isSorted', isSorted);
   if (isSorted === 'asc') {
-    console.log('asc');
     return <i className="bi bi-sort-up"></i>;
   } else if (isSorted === 'desc') {
-    console.log('desc');
     return <i className="bi bi-sort-down"></i>;
   } else {
-    // console.log('text-muted');
     return <i className="bi bi-arrows-expand text-muted"></i>;
   }
 }

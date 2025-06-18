@@ -3,7 +3,6 @@ import {
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
-  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
