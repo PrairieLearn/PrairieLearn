@@ -7,11 +7,13 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { hydrate } from '../../lib/preact.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { type StudentRow, StudentRowSchema } from './components/StudentsTable.js';
-import { InstructorStudents } from './instructorStudents.html.js';
+import { InstructorStudents, type ResLocals } from './instructorStudents.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -25,27 +27,39 @@ router.get(
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const resLocals = res.locals as ResLocals;
+    if (!resLocals.authz_data.has_course_instance_permission_view) {
       // Similar to gradebook, show permission instructions instead of forbidding access
-      const courseOwners = await getCourseOwners(res.locals.course.id);
-      res
-        .status(403)
-        .send(InstructorStudents({ resLocals: res.locals, courseOwners, csvFilename }));
+      const courseOwners = await getCourseOwners(resLocals.course.id);
+      res.status(403).send(InstructorStudents({ resLocals, courseOwners, csvFilename }));
       return;
     }
 
     const students = await queryRows(
       sql.select_students,
-      { course_instance_id: res.locals.course_instance.id },
+      { course_instance_id: resLocals.course_instance.id },
       StudentRowSchema,
     );
 
     res.send(
-      InstructorStudents({
-        resLocals: res.locals,
-        courseOwners: [], // Not needed in this context
-        csvFilename,
-        students,
+      PageLayout({
+        resLocals,
+        pageTitle: 'Students',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'students',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: hydrate(
+          <InstructorStudents
+            resLocals={resLocals}
+            csvFilename={csvFilename}
+            students={students}
+          />,
+        ),
       }),
     );
   }),

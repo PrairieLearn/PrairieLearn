@@ -46,8 +46,8 @@ export function StudentsTable({ students }: StudentsTableProps) {
         cell: (info) => info.getValue(),
         enableSorting: true,
       }),
-      columnHelper.accessor('uin', {
-        header: 'UIN',
+      columnHelper.accessor('name', {
+        header: 'Name',
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
       }),
@@ -98,7 +98,12 @@ export function StudentsTable({ students }: StudentsTableProps) {
               className="form-control"
               placeholder="Search by UID, name, email..."
               value={globalFilter}
-              onChange={(e) => setGlobalFilter((e.target as HTMLInputElement).value)}
+              onInput={(e) => {
+                if (!(e.target instanceof HTMLInputElement)) {
+                  return;
+                }
+                setGlobalFilter(e.target.value);
+              }}
             />
           </div>
           <div className="col-md-6 d-flex align-items-end">
