@@ -122,8 +122,9 @@ isolate-*-v8.log
 
 ## Agent files
 ### Cursor
-# Cursor doesn't support environment variables for auth in the MCP server config
+# Cursor doesn't support environment variables/oauth for auth in the MCP server config
 .cursor/mcp.json
 # We prefer to use hard links to files in .cursor/
 .cursor/rules
 .cursor/prompts
+.cursorignore
