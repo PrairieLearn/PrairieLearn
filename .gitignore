@@ -104,6 +104,9 @@ apps/*/coverage
 packages/*/coverage
 coverage.xml
 
+## Vitest
+.vitest-reports
+
 ## TypeScript cache
 *.tsbuildinfo
 
