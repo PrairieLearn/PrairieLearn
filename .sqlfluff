@@ -53,3 +53,6 @@ offset = 'offset'
 embedding = 'embedding'
 enabled_authn_provider_ids = []
 limit = 1000
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper
