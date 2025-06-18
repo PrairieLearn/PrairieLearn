@@ -50,7 +50,9 @@ start-s3rver:
 test: test-js test-python
 test-js: start-support
 	@yarn test
-test-js-dist: start-support build
+test-prairielearn-docker-smoke-tests: start-support
+	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
+test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
 	@python3 -m pytest
@@ -125,7 +127,7 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 prepare-docs-venv:
 	@if uv --version >/dev/null 2>&1; then \
-		uv venv /tmp/pldocs/venv; \
+		uv venv --python-preference only-system /tmp/pldocs/venv; \
 		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
 	else \
 		python3 -m venv /tmp/pldocs/venv; \

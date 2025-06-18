@@ -95,7 +95,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.10
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -114,6 +114,10 @@ Most of these prerequisites can be installed using the package manager of your O
     corepack enable
     ```
 
+    !!! bug
+
+        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
+
 - Clone the latest code:
 
   ```sh
@@ -126,7 +130,7 @@ Most of these prerequisites can be installed using the package manager of your O
   === "uv"
 
         ```sh
-        uv venv --python 3.10 --seed
+        uv venv --python-preference only-system --python 3.10 --seed
         source .venv/bin/activate
         ```
 
