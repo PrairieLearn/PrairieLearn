@@ -12,8 +12,8 @@ onDocumentReady(() => {
 
   const initialEnhancedNavState = enhancedNavToggle.checked;
 
-  // If the user had enhanced navigation enabled on page load then unchecks the toggle
-  // then the feedback element becomes visible.
+  // If the user had enhanced navigation enabled on page load then unchecks the toggle,
+  // the feedback element becomes visible.
   if (initialEnhancedNavState) {
     enhancedNavToggle.addEventListener('change', (event) => {
       const newState = (event.target as HTMLInputElement).checked;
