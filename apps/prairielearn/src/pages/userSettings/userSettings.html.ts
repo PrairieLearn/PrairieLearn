@@ -114,7 +114,7 @@ export function UserSettings({
                         </span>
                       </label>
                       <div class="small text-muted">
-                        Try the new navigation experience for instructors that makes accessing your
+                        Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
                       </div>
                     </div>
