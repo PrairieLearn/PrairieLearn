@@ -10,8 +10,8 @@ import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 import { getCourseOwners } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
+import { type StudentRow, StudentRowSchema } from './components/StudentsTable.js';
 import { InstructorStudents } from './instructorStudents.html.js';
-import { type StudentRow, StudentRowSchema } from './instructorStudents.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -66,6 +66,12 @@ router.get(
   }),
 );
 
+/**
+ * Download a CSV file of student data.
+ *
+ * @param req.params.filename - The filename of the CSV file to download.
+ * @returns A CSV file of student data.
+ */
 router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
