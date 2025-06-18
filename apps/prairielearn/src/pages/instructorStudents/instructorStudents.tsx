@@ -25,7 +25,6 @@ function buildCsvFilename(locals: Record<string, any>) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log('req.locals', res.locals);
     const csvFilename = buildCsvFilename(res.locals);
 
     const resLocals = res.locals as ResLocals;
