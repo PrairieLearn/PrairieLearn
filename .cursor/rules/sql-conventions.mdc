@@ -1,0 +1,58 @@
+---
+description: SQL Conventions
+globs: **/*.sql
+alwaysApply: false
+---
+# SQL Conventions
+
+## File Organization
+- Each `.ts` file should have a corresponding `.sql` file in the same directory
+- Use Yesql pattern with `-- BLOCK` comments to name queries
+- Uppercase SQL keywords: `SELECT`, `FROM`, `WHERE`, etc.
+
+## Naming Conventions
+- Tables: plural names (e.g., `assessments`, `questions`)
+- Primary keys: always named `id`
+- Foreign keys: singular table name + `_id` (e.g., `assessment_id`)
+- Variables: use `snake_case` matching SQL names
+- Table aliases: first letters of words (e.g., `ai` for `assessment_instances`)
+
+## Database Schema Conventions
+- Tables have plural names (e.g. `assessments`) and always have a primary key called `id`
+- Foreign keys pointing to a table are non-plural, like `assessment_id`
+- Table aliases use first letters of words (e.g. `ai` for `assessment_instances`)
+- Exceptions: `aset` for `assessment_sets`, `top` for `topics`, `tag` for `tags`
+- Never delete student data from the database
+- Use soft deletion with `deleted_at` column for course configuration tables
+- Always include `WHERE deleted_at IS NULL` for soft-deletable tables
+
+## Query Patterns
+- Use CTEs (`WITH` queries) for complex queries
+- Use named parameters with `$parameter_name`
+- Always include `WHERE deleted_at IS NULL` for soft-deletable tables
+- Use explicit row locking for student data modifications:
+  ```sql
+  SELECT * FROM assessment_instances
+  WHERE id = $assessment_instance_id
+  FOR NO KEY UPDATE;
+  ```
+
+## Example Structure
+```sql
+-- BLOCK select_questions_by_course
+SELECT
+  *
+FROM
+  questions
+WHERE
+  course_id = $course_id
+  AND deleted_at IS NULL;
+
+-- BLOCK insert_user
+INSERT INTO
+  users (uid)
+VALUES
+  ($uid)
+RETURNING
+  *;
+```

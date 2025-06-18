@@ -1,0 +1,47 @@
+---
+description: Testing Practices
+globs:
+alwaysApply: false
+---
+# Testing Practices
+
+## Test Organization
+- Unit tests: `filename.test.ts` next to the file being tested
+- Integration tests: `apps/prairielearn/src/tests/`
+- Tests run by GitHub Actions on every push
+
+## Integration Tests
+- Start with blank database
+- Run server to initialize database
+- Load `testCourse`
+- Emulate client web browser interactions
+- Debug by recreating errors locally
+- Use `PL_KEEP_TEST_DB` to inspect test database state
+
+## Unit Tests
+- Focus on testing business logic and utilities
+- Mock external dependencies
+- Place next to the file being tested
+- Use Vitest for testing
+
+## Test Database Management
+- Test databases: `pltest_1`, `pltest_2`, etc.
+- Set `PL_KEEP_TEST_DB` to preserve database after testing
+- Database gets overwritten on new test run
+
+## Example Test Structure
+```typescript
+import { describe, it, expect } from 'vitest';
+import { queryRow } from '@prairielearn/postgres';
+
+describe('Question Tests', () => {
+  it('should load question by ID', async () => {
+    const question = await queryRow(
+      sql.select_question,
+      { question_id: 45 },
+      QuestionSchema
+    );
+    expect(question).toBeDefined();
+  });
+});
+```

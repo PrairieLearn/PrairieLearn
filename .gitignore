@@ -18,6 +18,7 @@ docker-compose.override.yml
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+!.vscode/mcp.json
 
 ### tmux
 .tmux.conf
@@ -118,3 +119,7 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
+
+## Agent files
+# Cursor doesn't support environment variables for auth in the MCP server config as of 2025-06-17
+.cursor/mcp.json

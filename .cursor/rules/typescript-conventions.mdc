@@ -1,0 +1,74 @@
+---
+description: TypeScript Conventions
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+# TypeScript Conventions
+
+## Code Style
+- Use `async`/`await` for asynchronous operations
+- Use `===` operator (never `==` except for ID comparisons with `idsEqual()`)
+- Use explicit typing for all variables and function parameters
+- Use tagged template literals with `@prairielearn/html` for HTML generation
+
+## Import Patterns
+```typescript
+import { queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv } from '@prairielearn/postgres';
+import debugfn from 'debug';
+
+const debug = debugfn('prairielearn:my-file');
+const sql = loadSqlEquiv(import.meta.url);
+```
+
+## Error Handling
+- Use `HttpStatusError` for HTTP errors
+- Log errors with Winston logger:
+```typescript
+import { logger } from '@prairielearn/logger';
+
+logger.info('This is an info message');
+logger.error('This is an error message');
+```
+
+## Database Access
+- Use `queryRow` for single-row queries (errors if not exactly one result)
+- Use `queryRows` for multiple-row queries
+- Always use prepared statements with named parameters
+- Example:
+```typescript
+const question = await queryRow(
+  sql.select_question,
+  { question_id: 45 },
+  QuestionSchema
+);
+
+const questions = await queryRows(
+  sql.select_questions_by_course,
+  { course_id: 45 },
+  QuestionSchema
+);
+```
+
+## Component Structure
+- Place components in `apps/prairielearn/src/components/`
+- Accept typed props objects instead of using `res.locals`
+- Use Bootstrap 5 classes for styling
+- Minimize custom CSS
+- Example:
+```typescript
+interface ComponentProps {
+  title: string;
+  content: string;
+  __csrf_token: string;
+}
+
+export function MyComponent(props: ComponentProps) {
+  return html`
+    <div class="card">
+      <div class="card-header">${props.title}</div>
+      <div class="card-body">${props.content}</div>
+    </div>
+  `;
+}
+```
