@@ -100,13 +100,13 @@ router.get(
 
       const stringifier = stringifyStream({
         header: true,
-        columns: ['UID', 'UIN', 'Name', 'Email', 'Enrolled At'],
+        columns: ['UID', 'Name', 'Email', 'Enrolled At'],
         transform: (record: StudentRow) => [
           record.uid,
-          record.uin,
           record.name,
           record.email,
-          record.created_at,
+          // ISO 8601 (yyyy-mm-dd hh:mm:ss) for Excel compatibility
+          record.created_at ? new Date(record.created_at).toISOString().replace('T', ' ') : '',
         ],
       });
 
