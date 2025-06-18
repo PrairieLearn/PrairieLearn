@@ -10,8 +10,8 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useEffect, useMemo, useState } from 'preact/compat';
-import { FixedSizeList as List, type ListChildComponentProps } from 'react-window';
+import { createContext, forwardRef, useContext, useEffect, useMemo, useState } from 'preact/compat';
+import { FixedSizeList as List } from 'react-window';
 
 import type { StudentRow } from '../instructorStudents.types.js';
 
@@ -37,83 +37,27 @@ function SortIcon({ isSorted }: { isSorted: false | SortDirection }) {
   }
 }
 
-function StudentsTableHeader({ table }: { table: Table<StudentRow> }) {
-  // Compute gridTemplateColumns: all but last column use px, last uses 1fr
-  const headers = table.getHeaderGroups()[0].headers;
-  const gridTemplateColumns = headers
-    .map((header, i) =>
-      i === headers.length - 1
-        ? `minmax(${header.column.columnDef.minSize}px, 1fr)`
-        : `${header.getSize()}px`,
-    )
-    .join(' ');
-  const columnSizingInfo = table.getState().columnSizingInfo;
-  console.log(columnSizingInfo);
-  return (
-    <div style={{ position: 'relative' }}>
-      <div
-        className="d-grid bg-light fw-bold border-bottom"
-        style={{ gridTemplateColumns }}
-        role="row"
-      >
-        {headers.map((header, i) => (
-          <div
-            key={header.id}
-            className={`text-nowrap px-2 py-2 position-relative ${
-              i !== headers.length - 1 ? 'border-end' : ''
-            }`}
-            style={{
-              cursor: header.column.getCanSort() ? 'pointer' : 'default',
-              userSelect: 'none',
-              width:
-                i === headers.length - 1
-                  ? '1fr'
-                  : header.getSize
-                    ? `${header.getSize()}px`
-                    : undefined,
-            }}
-            onClick={header.column.getToggleSortingHandler()}
-            role="columnheader"
-          >
-            {header.isPlaceholder
-              ? null
-              : flexRender(header.column.columnDef.header, header.getContext())}
-            {header.column.getCanSort() && (
-              <span className="ms-1">
-                <SortIcon isSorted={header.column.getIsSorted()} />
-              </span>
-            )}
-            {header.column.getCanResize() && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: -4,
-                  top: 0,
-                  width: 8,
-                  height: '100%',
-                  cursor: 'col-resize',
-                  zIndex: 2,
-                  userSelect: 'none',
-                }}
-                onMouseDown={header.getResizeHandler()}
-                onTouchStart={header.getResizeHandler()}
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// StickyListContext and helpers for sticky header row
+const StickyListContext = createContext<any>(null);
+StickyListContext.displayName = 'StickyListContext';
 
-interface VirtualizedRowProps extends ListChildComponentProps {
+const ItemWrapper = ({ data, index, style }: any) => {
+  const { ItemRenderer, stickyIndices } = data;
+  if (stickyIndices && stickyIndices.includes(index)) {
+    return null;
+  }
+  return <ItemRenderer index={index} style={style} />;
+};
+
+function StickyHeaderRow({
+  style,
+  table,
+  rowHeight,
+}: {
+  style: any;
   table: Table<StudentRow>;
-  height: number;
-}
-function VirtualizedRow({ index, style, table, height }: VirtualizedRowProps) {
-  const row = table.getRowModel().rows[index];
-  // Compute gridTemplateColumns: all but last column use px, last uses 1fr
+  rowHeight: number;
+}) {
   const headers = table.getHeaderGroups()[0].headers;
   const gridTemplateColumns = headers
     .map((header, i) =>
@@ -124,14 +68,122 @@ function VirtualizedRow({ index, style, table, height }: VirtualizedRowProps) {
     .join(' ');
   return (
     <div
-      className="d-grid border-bottom align-items-center"
+      className="d-grid bg-light fw-bold"
+      style={{
+        ...style,
+        gridTemplateColumns,
+        position: 'sticky',
+        top: 0,
+        zIndex: 2,
+        height: rowHeight,
+        background: 'white',
+      }}
+      role="row"
+    >
+      {headers.map((header, i) => (
+        <div
+          key={header.id}
+          className={`text-nowrap px-2 py-2 position-relative bg-light border-bottom ${i !== headers.length - 1 ? 'border-end' : ''}`}
+          style={{
+            cursor: header.column.getCanSort() ? 'pointer' : 'default',
+            userSelect: 'none',
+            width:
+              i === headers.length - 1
+                ? '1fr'
+                : header.getSize
+                  ? `${header.getSize()}px`
+                  : undefined,
+          }}
+          onClick={header.column.getToggleSortingHandler()}
+          role="columnheader"
+        >
+          {header.isPlaceholder
+            ? null
+            : flexRender(header.column.columnDef.header, header.getContext())}
+          {header.column.getCanSort() && (
+            <span className="ms-1">
+              <SortIcon isSorted={header.column.getIsSorted()} />
+            </span>
+          )}
+          {i < headers.length - 1 && header.column.getCanResize() && (
+            <div
+              style={{
+                position: 'absolute',
+                right: -4,
+                top: 0,
+                width: 8,
+                height: '100%',
+                cursor: 'col-resize',
+                zIndex: 2,
+                userSelect: 'none',
+              }}
+              onMouseDown={header.getResizeHandler()}
+              onTouchStart={header.getResizeHandler()}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const innerElementType = forwardRef(({ children, ...rest }: any, ref) => {
+  const { stickyIndices, headerStyle, table, rowHeight } = useContext(StickyListContext);
+  return (
+    <div ref={ref} {...rest}>
+      {stickyIndices.map((index: number) => (
+        <StickyHeaderRow key={index} style={headerStyle} table={table} rowHeight={rowHeight} />
+      ))}
+      {children}
+    </div>
+  );
+});
+
+// I don't quite understand this code, TODO: comment this
+const StickyList = ({ children, stickyIndices, headerStyle, table, rowHeight, ...rest }: any) => (
+  <StickyListContext.Provider
+    // eslint-disable-next-line @eslint-react/no-unstable-context-value
+    value={{ ItemRenderer: children, stickyIndices, headerStyle, table, rowHeight }}
+  >
+    <List
+      itemData={{ ItemRenderer: children, stickyIndices }}
+      innerElementType={innerElementType}
+      {...rest}
+    >
+      {ItemWrapper}
+    </List>
+  </StickyListContext.Provider>
+);
+
+interface VirtualizedRowProps {
+  index: number;
+  style: any;
+  table: Table<StudentRow>;
+  height: number;
+}
+
+function VirtualizedRow({ index, style, table, height }: VirtualizedRowProps) {
+  if (index === 0) return null; // header is rendered by StickyHeaderRow
+  const row = table.getRowModel().rows[index - 1];
+  const headers = table.getHeaderGroups()[0].headers;
+  const gridTemplateColumns = headers
+    .map((header, i) =>
+      i === headers.length - 1
+        ? `minmax(${header.column.columnDef.minSize}px, 1fr)`
+        : `${header.getSize()}px`,
+    )
+    .join(' ');
+  return (
+    <div
+      className="d-grid align-items-center"
       style={{ ...style, gridTemplateColumns, height }}
       role="row"
       key={row.id}
     >
       {row.getVisibleCells().map((cell: any, i: number) => (
         <div
-          className={`px-2 py-2 overflow-auto text-nowrap h-100 d-flex align-items-center flex-row ${
+          className={`px-2 py-2 overflow-auto text-nowrap h-100 d-flex align-items-center flex-row border-bottom ${
             i !== headers.length - 1 ? 'border-end' : ''
           }`}
           role="cell"
@@ -219,6 +271,15 @@ export function StudentsTable({ students }: StudentsTableProps) {
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
+  const headers = table.getHeaderGroups()[0].headers;
+  const gridTemplateColumns = headers
+    .map((header, i) =>
+      i === headers.length - 1
+        ? `minmax(${header.column.columnDef.minSize}px, 1fr)`
+        : `${header.getSize()}px`,
+    )
+    .join(' ');
+
   return (
     <div>
       <div className="mb-3">
@@ -245,21 +306,18 @@ export function StudentsTable({ students }: StudentsTableProps) {
       </div>
 
       <div className="border" style={{ maxHeight: listHeight + 60 }}>
-        <StudentsTableHeader table={table} />
-        <div style={{ height: listHeight, overflow: 'auto' }} role="rowgroup">
-          <List
-            height={listHeight}
-            itemCount={table.getRowModel().rows.length}
-            itemSize={rowHeight}
-            width={'100%'}
-          >
-            {
-              ((props: ListChildComponentProps) => (
-                <VirtualizedRow {...props} table={table} height={rowHeight} />
-              )) as any
-            }
-          </List>
-        </div>
+        <StickyList
+          height={listHeight}
+          itemCount={table.getRowModel().rows.length + 1}
+          itemSize={rowHeight}
+          width={'100%'}
+          stickyIndices={[0]}
+          headerStyle={{ gridTemplateColumns, height: rowHeight }}
+          table={table}
+          rowHeight={rowHeight}
+        >
+          {(props: any) => <VirtualizedRow {...props} table={table} height={rowHeight} />}
+        </StickyList>
       </div>
 
       {table.getRowModel().rows.length === 0 && (
