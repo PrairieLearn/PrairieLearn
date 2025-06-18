@@ -1,5 +1,1 @@
-exampleCourse
-testCourse
-apps/prairielearn/src/news_items
-apps/prairielearn/src/migrations
-# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+.agentignore
