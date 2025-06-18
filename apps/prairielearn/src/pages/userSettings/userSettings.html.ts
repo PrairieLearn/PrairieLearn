@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -48,6 +49,7 @@ export function UserSettings({
       page: 'user_settings',
       type: 'plain',
     },
+    headContent: html` ${compiledScriptTag('userSettingsClient.ts')} `,
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
@@ -91,7 +93,7 @@ export function UserSettings({
                 <div class="card-header bg-primary text-white d-flex align-items-center">
                   <h2>Feature preview</h2>
                 </div>
-                <ul class="list-group list-group-flush">
+                <ul class="list-group list-group-flush border-bottom-0">
                   <li class="list-group-item d-flex align-items-center">
                     <div class="form-check">
                       <input
@@ -112,12 +114,27 @@ export function UserSettings({
                         </span>
                       </label>
                       <div class="small text-muted">
-                        Try a new navigation experience for instructors that makes accessing your
+                        Try the new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
                       </div>
                     </div>
                   </li>
                 </ul>
+                <div id="enhanced_navigation_feedback" class="p-3 d-none border-top">
+                  <p class="my-0">We’d love your feedback!</p>
+                  <p class="my-0 small text-muted">
+                    If you have any feedback on the enhanced navigation experience, it would be
+                    helpful for us to improve.
+                  </p>
+                  <a
+                    class="btn btn-sm btn-info mt-3 text-white"
+                    href="https://github.com/PrairieLearn/PrairieLearn/discussions/11550#discussion-8073325"
+                    target="_blank"
+                  >
+                    Share feedback
+                  </a>
+                </div>
+
                 <div class="card-footer">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
