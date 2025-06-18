@@ -86,8 +86,8 @@ jobs:
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
 
-  check-other:
-    name: Other
+  check-python:
+    name: Python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,11 +95,6 @@ jobs:
       - name: Install OS packages
         run: sudo apt-get install -y graphviz libgraphviz-dev
 
-      - name: Install additional dependencies
-        run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
-          sudo apt-get install -y shellcheck
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -122,8 +117,6 @@ jobs:
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
-      - name: Run the d2 diagram linter
-        run: make lint-d2
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -131,10 +124,6 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
-      - name: Run the Dockerfile linter
-        run: make lint-docker
-      - name: Run the Shellcheck linter
-        run: make lint-shell
       - name: Run the Markdown linter
         run: make lint-markdown
       - name: Check for warnings in documentation
@@ -142,14 +131,43 @@ jobs:
       - name: Run the HTML linter
         # Run after the docs build, so we can lint the generated HTML.
         run: make lint-html
-      - name: Run the SQL query linter
-        # Run last, as it's slow
-        run: make lint-sql
-      - name: Run the SQL migrations linter
-        run: make lint-sql-migrations
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+
+  check-other:
+    name: Other
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
+          sudo apt-get install -y shellcheck
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'images/plbase/python-requirements.txt'
+      - name: Install Python dependencies
+        env:
+          UV_SYSTEM_PYTHON: 1
+        run: uv pip install -r images/plbase/python-requirements.txt
+      - name: Run the d2 diagram linter
+        run: make lint-d2
+      - name: Run the Dockerfile linter
+        run: make lint-docker
+      - name: Run the Shellcheck linter
+        run: make lint-shell
+      - name: Run the SQL query linter
+        run: make lint-sql
+      - name: Run the SQL migrations linter
+        run: make lint-sql-migrations
