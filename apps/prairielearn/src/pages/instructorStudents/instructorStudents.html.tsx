@@ -261,7 +261,7 @@ function StudentsCard({
                       type="button"
                       onClick={() => downloadStudentsCSV(students, { filename: 'students.csv' })}
                     >
-                      Download All as CSV
+                      <i class="bi bi-filetype-csv"></i> All Students
                     </button>
                   </li>
                   <li>
@@ -270,7 +270,7 @@ function StudentsCard({
                       type="button"
                       onClick={() => downloadStudentsJSON(students, { filename: 'students.csv' })}
                     >
-                      <i class="bi bi-filetype-json"></i> Download All as JSON
+                      <i class="bi bi-filetype-json"></i> All Students
                     </button>
                   </li>
                   <li>
@@ -284,7 +284,7 @@ function StudentsCard({
                         )
                       }
                     >
-                      <i class="bi bi-filetype-csv"></i> Download Current View as CSV
+                      <i class="bi bi-filetype-csv"></i> Filtered Students
                     </button>
                   </li>
                   <li>
@@ -298,7 +298,7 @@ function StudentsCard({
                         )
                       }
                     >
-                      <i class="bi bi-filetype-json"></i> Download Current View as JSON
+                      <i class="bi bi-filetype-json"></i> Filtered Students
                     </button>
                   </li>
                 </ul>
