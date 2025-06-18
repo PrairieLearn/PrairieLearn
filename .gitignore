@@ -121,5 +121,9 @@ isolate-*-v8.log
 .eslintcache
 
 ## Agent files
-# Cursor doesn't support environment variables for auth in the MCP server config as of 2025-06-17
+### Cursor
+# Cursor doesn't support environment variables for auth in the MCP server config
 .cursor/mcp.json
+# We prefer to use hard links to files in .cursor/
+.cursor/rules
+.cursor/prompts
