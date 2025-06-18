@@ -19,7 +19,7 @@ WITH
       users_get_displayed_role (u.user_id, ci.id) AS role,
       substring(
         u.uid
-        from
+        FROM
           '^[^@]+'
       ) AS username,
       ai.score_perc,

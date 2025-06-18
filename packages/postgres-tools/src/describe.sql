@@ -22,7 +22,7 @@ SELECT
   (
     SELECT
       substring(
-        pg_catalog.pg_get_expr (d.adbin, d.adrelid) for 128
+        pg_catalog.pg_get_expr (d.adbin, d.adrelid) FOR 128
       )
     FROM
       pg_catalog.pg_attrdef d
@@ -71,7 +71,7 @@ ORDER BY
 SELECT
   conname AS name,
   conrelid::pg_catalog.regclass AS table,
-  pg_catalog.pg_get_constraintdef (c.oid, true) as condef
+  pg_catalog.pg_get_constraintdef (c.oid, true) AS condef
 FROM
   pg_catalog.pg_constraint c
 WHERE
@@ -83,7 +83,7 @@ ORDER BY
 -- BLOCK get_foreign_key_constraints_for_table
 SELECT
   conname AS name,
-  pg_catalog.pg_get_constraintdef (r.oid, true) as def
+  pg_catalog.pg_get_constraintdef (r.oid, true) AS def
 FROM
   pg_catalog.pg_constraint r
 WHERE
@@ -95,7 +95,7 @@ ORDER BY
 -- BLOCK get_check_constraints_for_table
 SELECT
   conname AS name,
-  pg_catalog.pg_get_constraintdef (r.oid, true) as def
+  pg_catalog.pg_get_constraintdef (r.oid, true) AS def
 FROM
   pg_catalog.pg_constraint r
 WHERE

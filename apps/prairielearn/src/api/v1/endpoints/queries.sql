@@ -229,8 +229,8 @@ FROM
 WITH
   object_data AS (
     SELECT
-      z.number as zone_number,
-      z.title as zone_title,
+      z.number AS zone_number,
+      z.title AS zone_title,
       q.id AS question_id,
       q.qid AS question_name,
       iq.id AS instance_question_id,

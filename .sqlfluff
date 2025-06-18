@@ -10,7 +10,7 @@ exclude_rules = layout.indent,
     layout.select_targets,
     layout.long_lines,
     layout.spacing,
-    capitalisation.keywords,
+    # capitalisation.keywords,
     layout.cte_newline, 
     structure.join_condition_order, 
     aliasing.unique.column, 
@@ -53,3 +53,6 @@ offset = 'offset'
 embedding = 'embedding'
 enabled_authn_provider_ids = []
 limit = 1000
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper

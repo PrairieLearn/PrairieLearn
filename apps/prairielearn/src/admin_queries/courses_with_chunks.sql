@@ -3,7 +3,7 @@ SELECT
   c.title,
   c.id
 FROM
-  pl_courses as c
+  pl_courses AS c
 WHERE
   EXISTS (
     SELECT
