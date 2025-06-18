@@ -28,13 +28,13 @@ interface StudentsTableProps {
 
 const columnHelper = createColumnHelper<StudentRow>();
 
-function SortIcon({ isSorted }: { isSorted: false | SortDirection }) {
-  if (isSorted === 'asc') {
+function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
+  if (sortMethod === 'asc') {
     return <i className="bi bi-sort-up"></i>;
-  } else if (isSorted === 'desc') {
+  } else if (sortMethod === 'desc') {
     return <i className="bi bi-sort-down"></i>;
   } else {
-    return <i className="bi bi-arrows-expand text-muted"></i>;
+    return <i className="bi bi-arrows-expand opacity-75 text-muted"></i>;
   }
 }
 
@@ -89,10 +89,10 @@ export function StudentsTable({ students }: StudentsTableProps) {
   });
 
   return (
-    <div>
+    <>
       <div className="mb-3">
-        <div className="d-flex flex-row justify-content-between align-items-center">
-          <div className="col-md-4">
+        <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-end align-items-md-center">
+          <div className="col-12 col-md-4">
             <input
               type="text"
               id="search-input"
@@ -107,14 +107,14 @@ export function StudentsTable({ students }: StudentsTableProps) {
               }}
             />
           </div>
-          <div className="text-muted">
+          <div className="text-muted mt-2 mt-md-0">
             Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
         </div>
       </div>
 
       <div className="table-responsive">
-        <table className="table table-striped table-hover">
+        <table className="table table-striped table-hover border">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -130,7 +130,7 @@ export function StudentsTable({ students }: StudentsTableProps) {
                       : flexRender(header.column.columnDef.header, header.getContext())}
                     {header.column.getCanSort() && (
                       <span className="ms-1">
-                        <SortIcon isSorted={header.column.getIsSorted()} />
+                        <SortIcon sortMethod={header.column.getIsSorted() || null} />
                       </span>
                     )}
                   </th>
@@ -151,11 +151,11 @@ export function StudentsTable({ students }: StudentsTableProps) {
       </div>
 
       {table.getRowModel().rows.length === 0 && (
-        <div className="text-center text-muted py-4">
+        <div className="d-flex flex-column align-items-center text-muted py-4">
           <i className="fa fa-search fa-2x mb-2"></i>
           <p>No students found matching your search criteria.</p>
         </div>
       )}
-    </div>
+    </>
   );
 }

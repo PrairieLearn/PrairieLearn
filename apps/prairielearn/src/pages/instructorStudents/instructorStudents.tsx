@@ -30,7 +30,6 @@ router.get(
 
     const resLocals = res.locals as ResLocals;
     const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
-    const status = hasPermission ? 200 : 403;
     const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
     const students = hasPermission
       ? await queryRows(
@@ -40,7 +39,7 @@ router.get(
         )
       : [];
 
-    res.status(status).send(
+    res.status(hasPermission ? 200 : 403).send(
       PageLayout({
         resLocals,
         pageTitle: 'Students',
@@ -93,28 +92,30 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    if (req.params.filename === buildCsvFilename(res.locals)) {
-      const studentsCursor = await queryCursor(sql.select_students, {
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      const stringifier = stringifyStream({
-        header: true,
-        columns: ['UID', 'Name', 'Email', 'Enrolled At'],
-        transform: (record: StudentRow) => [
-          record.uid,
-          record.name,
-          record.email,
-          // ISO 8601 (yyyy-mm-dd hh:mm:ss) for Excel compatibility
-          record.created_at ? new Date(record.created_at).toISOString().replace('T', ' ') : '',
-        ],
-      });
-
-      res.attachment(req.params.filename);
-      await pipeline(studentsCursor.stream(100), stringifier, res);
-    } else {
+    if (req.params.filename !== buildCsvFilename(res.locals)) {
       throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
+
+    const studentsCursor = await queryCursor(sql.select_students, {
+      course_instance_id: res.locals.course_instance.id,
+    });
+
+    const stringifier = stringifyStream({
+      header: true,
+      columns: ['UID', 'Name', 'Email', 'Enrolled At'],
+      transform: (record: StudentRow) => [
+        record.uid,
+        record.name,
+        record.email,
+        // ISO 8601 (yyyy-mm-dd hh:mm:ss) for Excel compatibility
+        record.created_at
+          ? new Date(record.created_at).toISOString().replace('T', ' ').split('.')[0]
+          : '',
+      ],
+    });
+
+    res.attachment(req.params.filename);
+    await pipeline(studentsCursor.stream(100), stringifier, res);
   }),
 );
 

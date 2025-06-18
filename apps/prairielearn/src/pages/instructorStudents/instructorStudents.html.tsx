@@ -61,7 +61,7 @@ export const InstructorStudents = ({
                   href={`${urlPrefix}/instance_admin/students/${csvFilename}`}
                   className="btn btn-light btn-sm"
                 >
-                  <i className="fa fa-download" aria-hidden="true"></i>
+                  <i className="px-2 fa fa-download" aria-hidden="true"></i>
                   Download CSV
                 </a>
               </div>
