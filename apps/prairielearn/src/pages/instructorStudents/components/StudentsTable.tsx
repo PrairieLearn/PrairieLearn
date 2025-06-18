@@ -42,7 +42,9 @@ function StudentsTableHeader({ table }: { table: Table<StudentRow> }) {
   const headers = table.getHeaderGroups()[0].headers;
   const gridTemplateColumns = headers
     .map((header, i) =>
-      i === headers.length - 1 ? '1fr' : header.getSize ? `${header.getSize()}px` : '1fr',
+      i === headers.length - 1
+        ? `minmax(${header.column.columnDef.minSize}px, 1fr)`
+        : `${header.getSize()}px`,
     )
     .join(' ');
   const columnSizingInfo = table.getState().columnSizingInfo;
@@ -115,7 +117,9 @@ function VirtualizedRow({ index, style, table, height }: VirtualizedRowProps) {
   const headers = table.getHeaderGroups()[0].headers;
   const gridTemplateColumns = headers
     .map((header, i) =>
-      i === headers.length - 1 ? '1fr' : header.getSize ? `${header.getSize()}px` : '1fr',
+      i === headers.length - 1
+        ? `minmax(${header.column.columnDef.minSize}px, 1fr)`
+        : `${header.getSize()}px`,
     )
     .join(' ');
   return (
@@ -151,33 +155,33 @@ export function StudentsTable({ students }: StudentsTableProps) {
         accessorKey: 'uid',
         header: 'UID',
         enableSorting: true,
-        size: 200,
-        minSize: 100,
+        size: 300,
+        minSize: 150,
         maxSize: 600,
       },
       {
         accessorKey: 'name',
         header: 'Name',
         enableSorting: true,
-        size: 200,
-        minSize: 100,
+        size: 300,
+        minSize: 150,
         maxSize: 600,
       },
       {
         accessorKey: 'email',
         header: 'Email',
         enableSorting: true,
-        size: 250,
+        size: 300,
         minSize: 150,
-        maxSize: 800,
+        maxSize: 600,
       },
       {
         accessorKey: 'created_at',
         header: 'Enrolled At',
         enableSorting: true,
-        size: 220,
-        minSize: 120,
-        maxSize: 400,
+        size: 200, // uses a fraction of the available space
+        minSize: 150,
+        maxSize: 600,
         enableResizing: false,
       },
     ],
