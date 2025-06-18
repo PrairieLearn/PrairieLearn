@@ -56,7 +56,7 @@ export const InstructorStudents = ({
         <div className="card mb-4">
           <div className="card-header bg-primary text-white">
             <div className="d-flex justify-content-between align-items-center">
-              <h1>Students</h1>
+              <div>Students</div>
               <div>
                 <a
                   href={`${urlPrefix}/instance_admin/students/${csvFilename}`}

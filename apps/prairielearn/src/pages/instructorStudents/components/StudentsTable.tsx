@@ -1,6 +1,7 @@
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type SortDirection,
   type SortingState,
   createColumnHelper,
   flexRender,
@@ -33,6 +34,20 @@ interface StudentsTableProps {
 }
 
 const columnHelper = createColumnHelper<StudentRow>();
+
+function SortIcon({ isSorted }: { isSorted: false | SortDirection }) {
+  // console.log('isSorted', isSorted);
+  if (isSorted === 'asc') {
+    console.log('asc');
+    return <i className="fa fa-sort-up"></i>;
+  } else if (isSorted === 'desc') {
+    console.log('desc');
+    return <i className="fa fa-sort-down"></i>;
+  } else {
+    // console.log('text-muted');
+    return <i className="fa fa-sort text-muted"></i>;
+  }
+}
 
 export function StudentsTable({ students }: StudentsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -87,11 +102,8 @@ export function StudentsTable({ students }: StudentsTableProps) {
   return (
     <div>
       <div className="mb-3">
-        <div className="row">
-          <div className="col-md-6">
-            <label htmlFor="search-input" className="form-label">
-              Search students:
-            </label>
+        <div className="d-flex flex-row justify-content-between align-items-center">
+          <div className="col-md-4">
             <input
               type="text"
               id="search-input"
@@ -106,22 +118,21 @@ export function StudentsTable({ students }: StudentsTableProps) {
               }}
             />
           </div>
-          <div className="col-md-6 d-flex align-items-end">
-            <div className="text-muted">
-              Showing {table.getRowModel().rows.length} of {students.length} students
-            </div>
+          <div className="text-muted">
+            Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
         </div>
       </div>
 
       <div className="table-responsive">
         <table className="table table-striped table-hover">
-          <thead className="table-dark">
+          <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
+                    className="text-nowrap"
                     style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -130,13 +141,7 @@ export function StudentsTable({ students }: StudentsTableProps) {
                       : flexRender(header.column.columnDef.header, header.getContext())}
                     {header.column.getCanSort() && (
                       <span className="ms-1">
-                        {header.column.getIsSorted() === 'asc' ? (
-                          <i className="fa fa-sort-up"></i>
-                        ) : header.column.getIsSorted() === 'desc' ? (
-                          <i className="fa fa-sort-down"></i>
-                        ) : (
-                          <i className="fa fa-sort text-muted"></i>
-                        )}
+                        <SortIcon isSorted={header.column.getIsSorted()} />
                       </span>
                     )}
                   </th>
