@@ -13,12 +13,12 @@ alwaysApply: false
 - Use `dangerouslySetInnerHTML` to embed legacy tagged-template code within Preact VNodes. Prefer converting legacy tagged-template code over doing this.
 - Import from `preact/compat` instead of `react`. For example,
 
-```
+```ts
 import { useState, useMemo } from 'preact/compat'
 ```
 - When writing interactive Preact pages, include a snippet in `assets/scripts/esm-bundles/react-fragments/ComponentName.ts` that calls `registerReactFragment`. For example,
 
-```
+```ts
 import { InstructorInstanceAdminBillingForm } from '../../../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
@@ -27,7 +27,7 @@ registerReactFragment(InstructorInstanceAdminBillingForm);
 
 ## Example
 
-```
+```tsx
 export function InstructorCourseInstanceBilling({
   // ...props...
 }) {

@@ -1,6 +1,6 @@
 ---
 description: SQL Conventions
-globs: **/*.sql
+globs: **/*.sql,**/*.ts,**/*.tsx
 alwaysApply: false
 ---
 # SQL Conventions
@@ -9,6 +9,68 @@ alwaysApply: false
 - Each `.ts` file should have a corresponding `.sql` file in the same directory
 - Use Yesql pattern with `-- BLOCK` comments to name queries
 - Uppercase SQL keywords: `SELECT`, `FROM`, `WHERE`, etc.
+
+## SQL Queries via @prairielearn/postgres
+
+- To keep SQL definitions and TypeScript logic cleanly separated yet colocated, each `*.ts` file has a same-named `*.sql` alongside it.
+- Use `loadSqlEquiv(import.meta.url)` in TypeScript files to load and parse the adjacent `.sql` file.
+- `loadSqlEquiv` reads the SQL file, splits it on the `-- BLOCK` markers, and returns an object whose keys are the block names. 
+- Use `queryRow`, `queryRows`, and `runInTransactionAsync` from `@prairielearn/postgres` to execute SQL queries.
+- Prefer using the models in `src/models/*.ts` instead of writing new SQL code
+- Always validate data from the database using the appropriate Zod codec from `src/lib/db-types.ts`.
+- When the database schema changes, update `src/components/AuditEventsTable.html.ts` to reflect the changes.
+
+## Database Access
+- Use `queryRow` for single-row queries (errors if not exactly one result)
+- Use `queryRows` for multiple-row queries
+- Always use prepared statements with named parameters
+- Example:
+```typescript
+const question = await queryRow(
+  sql.select_question,
+  { question_id: 45 },
+  QuestionSchema
+);
+
+const questions = await queryRows(
+  sql.select_questions_by_course,
+  { course_id: 45 },
+  QuestionSchema
+);
+```
+
+#### Example
+
+In `accommodations.ts`:
+
+```ts
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+
+// this will locate and parse "<same‑base‑name>.sql" next to the current file
+const sql = loadSqlEquiv(import.meta.url);
+```
+
+In `accommodations.sql`:
+
+```sql
+-- BLOCK select_accommodation_by_id
+SELECT …;
+-- BLOCK insert_accommodation
+INSERT … RETURNING …;
+```
+
+then in `accommodations.ts` you can write:
+
+```ts
+const row = await queryRow(
+  sql.select_accommodation_by_id,
+  { accommodation_id: id },
+  AccommodationCodec,
+);
+const inserted = await runInTransactionAsync(async () =>
+  queryRow(sql.insert_accommodation, { center_id, name, description }, AccommodationCodec),
+);
+```
 
 ## Naming Conventions
 - Tables: plural names (e.g., `assessments`, `questions`)
