@@ -1,7 +1,6 @@
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type Course, type CourseInstance, type User } from '../../lib/db-types.js';
 
-import { RoleDescriptionModal } from './components/RoleDescriptionModal.js';
 import { StudentDataViewMissing } from './components/StudentDataViewMissing.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './components/StudentsTable.js';
@@ -71,7 +70,6 @@ export const InstructorStudents = ({
           <div className="card-body">
             <StudentsTable students={students ?? []} />
           </div>
-          <RoleDescriptionModal />
         </div>
       )}
     </>

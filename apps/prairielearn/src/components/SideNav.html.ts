@@ -262,7 +262,6 @@ function CourseInstanceNav({
   subPage: NavSubPage;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
-  console.log(courseInstanceSideNavPageTabs);
   return html`
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
