@@ -3,6 +3,7 @@ columns
     auto_points: double precision
     correct: boolean
     date: timestamp with time zone default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
     feedback: jsonb
     gradable: boolean
     graded_at: timestamp with time zone

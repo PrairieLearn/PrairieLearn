@@ -89,6 +89,7 @@ FROM
       grading_jobs
     WHERE
       submission_id = s.id
+      -- TODO: exclude AI grading jobs here too?
       AND grading_method != 'Manual'
     ORDER BY
       date DESC,
@@ -156,6 +157,7 @@ WITH
       grading_jobs AS gj
     WHERE
       gj.submission_id = $unsafe_submission_id
+      -- TODO: exclude AI grading jobs here too?
       AND grading_method != 'Manual'
     ORDER BY
       gj.date DESC,

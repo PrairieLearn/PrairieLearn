@@ -1078,6 +1078,7 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
+        -- TODO: we want to show logs for grading job soft-deletions too.
         AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
