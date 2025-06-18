@@ -63,8 +63,6 @@ if (runs) {
 if (runs) {
     ## check for names of 'x'
     objnames <- names(answer$x)
-    ## to debug (see console)
-    ##print(objnames)
     expect_true("ii" %in% objnames &&
                 "nn" %in% objnames &&
                 "cc" %in% objnames)
@@ -82,10 +80,6 @@ if (runs) {
     object_classes <- c(class(x[["ii"]]),
                         class(x[["nn"]]),
                         class(x[["cc"]]))
-
-    ## to debug (see console)
-    ##print(object_classes)
-
     expect_equal_with_diff(object_classes, c("integer", "numeric", "character"))
 } else {
     expect_true(runs)
@@ -96,9 +90,6 @@ if (runs) {
 ## @score 2
 
 if (runs) {
-    ## to debug (see console)
-    ##print(str(x))
-
     ## we are being cute and support a list and a data.frame, but test only for the latter
     x <- as.data.frame(answer$x)
 
