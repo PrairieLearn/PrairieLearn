@@ -1,6 +1,6 @@
 -- BLOCK select_students
 WITH
-  course_users AS (
+  course_instance_users AS (
     SELECT
       u.*,
       e.*
@@ -13,6 +13,6 @@ WITH
 SELECT
   ciu.*
 FROM
-  course_instance_users AS cu
+  course_instance_users AS ciu
 ORDER BY
-  cu.created_at;
+  ciu.created_at;
