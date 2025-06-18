@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/preact-cjs-compat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "commonjs",
   "repository": {
     "type": "git",
