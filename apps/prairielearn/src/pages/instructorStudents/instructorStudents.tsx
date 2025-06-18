@@ -19,6 +19,9 @@ router.get(
     const resLocals = res.locals as ResLocals;
     const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
     const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
+    const search = req.query.search as string;
+    const sortBy = req.query.sortBy as string;
+    const sortOrder = req.query.sortOrder as string;
 
     const students = hasPermission
       ? await queryRows(
@@ -47,6 +50,8 @@ router.get(
             resLocals={resLocals}
             students={students}
             courseOwners={courseOwners}
+            initialGlobalFilterValue={search ?? ''}
+            initialSortingValue={sortBy ? [{ id: sortBy, desc: sortOrder === 'desc' }] : []}
           />,
         ),
       }),

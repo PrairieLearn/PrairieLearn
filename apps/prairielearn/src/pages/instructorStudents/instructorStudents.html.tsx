@@ -86,38 +86,15 @@ function downloadStudentsJSON(students: StudentRow[]) {
   URL.revokeObjectURL(url);
 }
 
-function StudentsCard({ students }: { students: StudentRow[] }) {
-  // Table logic (from StudentsTable)
-  let initialGlobalFilterValue = '';
-  let initialSortingValue: SortingState = [];
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    initialGlobalFilterValue = params.get('search') || '';
-    const sortBy = params.get('sortBy');
-    const sortOrder = params.get('sortOrder');
-    if (sortBy && sortOrder && (sortOrder === 'asc' || sortOrder === 'desc')) {
-      initialSortingValue = [{ id: sortBy, desc: sortOrder === 'desc' }];
-    }
-  }
-  console.log('initialGlobalFilterValue', initialGlobalFilterValue);
-  console.log('initialSortingValue', initialSortingValue);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const urlFilter = params.get('search') || '';
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setGlobalFilter(urlFilter);
-
-    // Optional: update on browser navigation
-    const onPopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      setGlobalFilter(params.get('search') || '');
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
+function StudentsCard({
+  students,
+  initialGlobalFilterValue,
+  initialSortingValue,
+}: {
+  students: StudentRow[];
+  initialGlobalFilterValue: string;
+  initialSortingValue: SortingState;
+}) {
   const [sorting, setSorting] = useState<SortingState>(initialSortingValue);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState(initialGlobalFilterValue);
@@ -306,15 +283,16 @@ interface InstructorStudentsContentProps {
   resLocals: ResLocals;
   courseOwners: User[];
   students: StudentRow[];
-  search?: string;
-  sortBy?: string;
-  sortOrder?: string;
+  initialGlobalFilterValue: string;
+  initialSortingValue: SortingState;
 }
 
 export const InstructorStudents = ({
   resLocals,
   courseOwners,
   students,
+  initialGlobalFilterValue,
+  initialSortingValue,
 }: InstructorStudentsContentProps) => {
   const { authz_data, urlPrefix } = resLocals;
 
@@ -339,7 +317,11 @@ export const InstructorStudents = ({
           urlPrefix={urlPrefix}
         />
       ) : (
-        <StudentsCard students={students ?? []} />
+        <StudentsCard
+          students={students ?? []}
+          initialGlobalFilterValue={initialGlobalFilterValue}
+          initialSortingValue={initialSortingValue}
+        />
       )}
     </>
   );
