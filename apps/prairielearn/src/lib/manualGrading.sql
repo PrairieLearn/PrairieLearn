@@ -473,6 +473,7 @@ WITH
       manual_points = COALESCE($manual_points, manual_points),
       status = 'complete',
       modified_at = now(),
+      -- TODO: is this correct? What if the new score is not the highest?
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,

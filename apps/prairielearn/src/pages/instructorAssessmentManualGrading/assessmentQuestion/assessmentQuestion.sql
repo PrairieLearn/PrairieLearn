@@ -71,3 +71,103 @@ SET
   ai_grading_mode = NOT ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK delete_ai_grading_jobs
+WITH
+  deleted_grading_jobs AS (
+    UPDATE grading_jobs AS gj
+    SET
+      deleted_at = NOW(),
+      deleted_by = $authn_user_id
+    FROM
+      submissions AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
+      JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    WHERE
+      gj.submission_id = s.id
+      AND gj.grading_method = 'AI'
+      AND iq.assessment_question_id = $assessment_question_id
+    RETURNING
+      gj.id AS grading_job_id,
+      iq.id AS instance_question_id
+  )
+SELECT DISTINCT
+  instance_question_id,
+  iq.max_points,
+  iq.max_manual_points,
+  iq.max_auto_points,
+  points,
+  score_perc,
+  auto_points,
+  manual_points (
+    SELECT
+      to_jsonb(gj.*)
+    FROM
+      grading_jobs AS gj
+      JOIN submissions AS s ON (s.id = gj.submission_id)
+      JOIN variants AS v ON (v.id = s.variant_id)
+      JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    WHERE
+      iq.id = instance_question_id
+      AND gj.grading_method = 'Manual'
+    ORDER BY
+      gj.date DESC,
+      gj.id DESC
+    LIMIT
+      1
+  ) AS last_manual_grading_job
+FROM
+  deleted_grading_jobs
+  JOIN instance_questions AS iq ON (iq.id = deleted_grading_jobs.instance_question_id);
+
+-- BLOCK update_instance_question_score
+-- TODO: this whole thing needs to handle the case where there was not in fact
+-- a previous manual grading job.
+-- TODO: we need to update `manual_rubric_grading_id` on the submission.
+WITH
+  updated_instance_questions AS (
+    UPDATE instance_questions AS iq
+    SET
+      points = $points,
+      score_perc = $score_perc,
+      manual_points = $manual_points,
+      modified_at = NOW(),
+      -- TODO: this probably needs to track the user from the previous grading job?
+      last_grader = $authn_user_id
+      -- TODO: this may need to compute `highest_submission_score`.
+      -- TODO: this should probably update `is_ai_graded` to FALSE.
+    WHERE
+      iq.id = ANY ($instance_question_ids::BIGINT[])
+    RETURNING
+      iq.max_points,
+      iq.max_manual_points,
+      iq.max_auto_points,
+      iq.points,
+      iq.score_perc,
+      iq.auto_points,
+      iq.auto_points
+  )
+INSERT INTO
+  question_score_logs (
+    instance_question_id,
+    auth_user_id,
+    max_points,
+    max_manual_points,
+    max_auto_points,
+    points,
+    score_perc,
+    auto_points,
+    manual_points
+  )
+SELECT
+  uiq.id,
+  $authn_user_id,
+  max_points,
+  max_manual_points,
+  max_auto_points,
+  points,
+  score_perc,
+  auto_points,
+  manual_points
+FROM
+  updated_instance_questions AS uiq;

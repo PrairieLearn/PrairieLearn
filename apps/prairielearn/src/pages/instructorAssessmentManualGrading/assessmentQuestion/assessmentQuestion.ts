@@ -1,15 +1,18 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { GradingJobSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -125,6 +128,36 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else if (req.body.batch_action === 'delete_ai_gradings') {
         console.log(req.body);
+        await runInTransactionAsync(async () => {
+          const ids = await queryRows(
+            sql.delete_ai_grading_jobs,
+            {
+              authn_user_id: res.locals.authn_user.user_id,
+              assessment_question_id: res.locals.assessment_question.id,
+            },
+            z.object({
+              instance_question_id: IdSchema,
+              last_manual_grading_job: GradingJobSchema.nullable(),
+            }),
+          );
+
+          console.log(ids);
+
+          // temp for testing, abort transaction
+          throw new Error('abort');
+
+          for (const id of ids) {
+            await manualGrading.updateInstanceQuestionScore(
+              res.locals.assessment.id,
+              id,
+              null,
+              null,
+              {},
+              res.locals.authn_user.user_id,
+              false, // is_ai_graded
+            );
+          }
+        });
         res.send({});
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
