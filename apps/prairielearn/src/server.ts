@@ -1,10 +1,6 @@
-/* eslint-disable import-x/order */
+ 
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as opentelemetry from '@prairielearn/opentelemetry';
-import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
-
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -45,10 +41,13 @@ import {
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
+import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
+import { generateSubmissions } from './ee/lib/ai-image-grading/generate-submissions-math220.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
@@ -1912,6 +1911,14 @@ export async function initExpress(): Promise<Express> {
     '/pl/administrator/batchedMigrations',
     (await import('./pages/administratorBatchedMigrations/administratorBatchedMigrations.js'))
       .default,
+  );
+  app.get(
+    '/pl/generate-submissions',
+    async (req, res) => {
+      await generateSubmissions();
+      res.status(200).send('Submissions generated successfully');
+
+    }
   );
 
   if (isEnterprise()) {

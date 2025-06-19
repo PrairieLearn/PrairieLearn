@@ -15,5 +15,5 @@
       "react-dom/*": ["./node_modules/preact/compat/*", "../../../node_modules/preact/compat/*"]
     }
   },
-  "include": ["**/*"]
+  "include": ["**/*", "../../../contrib/image-ai-grading-testing/generate-submissions-math220.ts"]
 }

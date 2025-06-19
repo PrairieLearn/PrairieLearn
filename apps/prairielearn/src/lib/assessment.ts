@@ -188,6 +188,8 @@ export async function updateAssessmentInstance(
       IdSchema,
     );
 
+    console.log('newInstanceQuestionIds', newInstanceQuestionIds); 
+
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
       { assessment_instance_id, authn_user_id },
