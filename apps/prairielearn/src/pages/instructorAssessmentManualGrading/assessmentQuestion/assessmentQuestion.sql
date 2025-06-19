@@ -86,6 +86,7 @@ WITH
     WHERE
       gj.submission_id = s.id
       AND gj.grading_method = 'AI'
+      AND gj.deleted_at IS NULL
       AND iq.assessment_question_id = $assessment_question_id
     RETURNING
       gj.id AS grading_job_id,
@@ -110,6 +111,23 @@ WITH
       gj.date DESC,
       gj.id DESC
   ),
+  previous_automatic_grading_jobs AS (
+    SELECT DISTINCT
+      ON (iq.id) iq.id AS instance_question_id,
+      gj.*
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN instance_questions AS iq ON (iq.id = dgj.instance_question_id)
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    WHERE
+      gj.grading_method NOT IN ('Manual', 'AI')
+    ORDER BY
+      iq.id,
+      gj.date DESC,
+      gj.id DESC
+  ),
   latest_submissions AS (
     SELECT DISTINCT
       ON (dgj.instance_question_id) dgj.instance_question_id AS instance_question_id,
@@ -123,29 +141,28 @@ WITH
       s.date DESC,
       s.id DESC
   ),
-  -- TODO: this will have to handle `feedback` in the case where there was no previous
-  -- manual grading job (but maybe an internal or external grading job).
   updated_submissions AS (
     UPDATE submissions AS s
     SET
       is_ai_graded = FALSE,
-      manual_rubric_grading_id = pmgj.manual_rubric_grading_id
+      manual_rubric_grading_id = pmgj.manual_rubric_grading_id,
+      feedback = COALESCE(pmgj.feedback, pagj.feedback)
     FROM
       deleted_grading_jobs AS dgj
-      JOIN previous_manual_grading_jobs AS pmgj ON (
+      LEFT JOIN previous_manual_grading_jobs AS pmgj ON (
         pmgj.instance_question_id = dgj.instance_question_id
+      )
+      LEFT JOIN previous_automatic_grading_jobs AS pagj ON (
+        pagj.instance_question_id = dgj.instance_question_id
       )
     WHERE
       s.id = dgj.submission_id
-      AND s.id = pmgj.submission_id
   ),
   -- TODO: this whole thing needs to handle the case where there was not in fact
   -- a previous manual grading job.
-  -- TODO: we need to update `manual_rubric_grading_id` on the submission.
-  -- TODO: this probably needs to update `is_ai_graded` on the submission itself.
   -- TODO: does this need locking, either on the instance questions or the submissions?
-  -- TODO: we should probably update `requires_manual_grading` to false if there are no
-  -- previous manual grading jobs for this instance question.
+  -- TODO: should we try to revert `status`? It gets set to `complete` when manual grading
+  -- occurs, but I'm not sure if we can safely revert it to another value, e.g. `saved`.
   updated_instance_questions AS (
     UPDATE instance_questions AS iq
     SET
@@ -160,9 +177,18 @@ WITH
       modified_at = NOW(),
       last_grader = pmgj.auth_user_id,
       -- TODO: this may need to compute `highest_submission_score`.
-      is_ai_graded = FALSE
+      is_ai_graded = FALSE,
+      -- If there is no previous manual grading job, we'll flag that the instance question
+      -- requires manual grading. This both helps ensure that it eventually gets graded, and
+      -- also ensures that this submission isn't erroneously picked up when we're looking for
+      -- similar submissions for RAG.
+      requires_manual_grading = (
+        CASE
+          WHEN pmgj.id IS NULL THEN TRUE
+          ELSE FALSE
+        END
+      )
     FROM
-      -- TODO: this would skip any instance questions that didn't have a previous manual grading job.
       deleted_grading_jobs AS dgj
       JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)
       LEFT JOIN previous_manual_grading_jobs AS pmgj ON (
