@@ -19,6 +19,9 @@ export const AccessTokenSchema = z.object({
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
 
+const ENHANCED_NAV_DISCUSSION_URL =
+  'https://github.com/PrairieLearn/PrairieLearn/discussions/12230';
+
 export function UserSettings({
   authn_user,
   authn_institution,
@@ -42,9 +45,6 @@ export function UserSettings({
   enhancedNavigationEnabled: boolean;
   resLocals: Record<string, any>;
 }) {
-  const discussionUrl =
-    'https://github.com/PrairieLearn/PrairieLearn/discussions/12230#discussion-8473637';
-
   return PageLayout({
     resLocals,
     pageTitle: 'User Settings',
@@ -112,32 +112,30 @@ export function UserSettings({
                         for="enhanced_navigation_toggle"
                       >
                         Enhanced navigation
-                        <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
-                          Beta
-                        </span>
                       </label>
                       <div class="small text-muted">
                         Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
-                      </div>
-                      <div class="small text-muted">
-                        Have feedback? <a href="${discussionUrl}" target="_blank">Share it here!</a>
+                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank"
+                          >Share your feedback</a
+                        >
+                        to help us improve the new design.
                       </div>
                     </div>
                   </li>
                 </ul>
-                <div id="enhanced_navigation_feedback" class="p-3 d-none border-top">
-                  <p class="my-0">We'd love your feedback!</p>
-                  <p class="my-0 small text-muted">
-                    If you have any feedback on the enhanced navigation experience, it would be
-                    helpful for us to improve.
-                  </p>
+                <div id="enhanced_navigation_feedback" class="alert alert-info mx-3 d-none">
+                  <div class="mb-2 text-dark">
+                    <strong>Turning off enhanced navigation?</strong> We'd love to know what's not
+                    working for you.
+                  </div>
                   <a
-                    class="btn btn-sm btn-info mt-3 text-white"
-                    href="${discussionUrl}"
+                    href="${ENHANCED_NAV_DISCUSSION_URL}"
                     target="_blank"
+                    class="btn btn-sm btn-outline-dark"
                   >
-                    Share feedback
+                    Share feedback on GitHub Discussions
+                    <i class="bi bi-box-arrow-up-right ms-1"></i>
                   </a>
                 </div>
 
