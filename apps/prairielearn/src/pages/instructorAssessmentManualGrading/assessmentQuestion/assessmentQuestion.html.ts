@@ -1,5 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { Modal } from '../../../components/Modal.html.js';
@@ -164,15 +165,25 @@ export function AssessmentQuestion({
                               html`<tr>
                                 <td>${item.rubric_item.description}</td>
                                 <td>
-                                  ${item.disagreement_count
-                                    ? html`
+                                  ${run(() => {
+                                    if (item.disagreement_count) {
+                                      return html`
                                         <i class="bi bi-x-square-fill text-danger"></i>
                                         <span class="text-muted">
                                           (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
                                           disagree)
                                         </span>
-                                      `
-                                    : html`<i class="bi bi-check-square-fill text-success"></i>`}
+                                      `;
+                                    }
+
+                                    if (aiGradingStats.submission_rubric_count === 0) {
+                                      return html`&mdash;`;
+                                    }
+
+                                    return html`<i
+                                      class="bi bi-check-square-fill text-success"
+                                    ></i>`;
+                                  })}
                                 </td>
                               </tr>`,
                           )}
