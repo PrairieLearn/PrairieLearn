@@ -89,6 +89,7 @@ WITH
       AND iq.assessment_question_id = $assessment_question_id
     RETURNING
       gj.id AS grading_job_id,
+      gj.submission_id,
       iq.id AS instance_question_id,
       iq.assessment_question_id
   ),
@@ -109,17 +110,52 @@ WITH
       gj.date DESC,
       gj.id DESC
   ),
+  latest_submissions AS (
+    SELECT DISTINCT
+      ON (dgj.instance_question_id) dgj.instance_question_id AS instance_question_id,
+      s.id AS submission_id
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+    ORDER BY
+      dgj.instance_question_id,
+      s.date DESC,
+      s.id DESC
+  ),
+  -- TODO: this will have to handle `feedback` in the case where there was no previous
+  -- manual grading job (but maybe an internal or external grading job).
+  updated_submissions AS (
+    UPDATE submissions AS s
+    SET
+      is_ai_graded = FALSE,
+      manual_rubric_grading_id = pmgj.manual_rubric_grading_id
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN previous_manual_grading_jobs AS pmgj ON (
+        pmgj.instance_question_id = dgj.instance_question_id
+      )
+    WHERE
+      s.id = dgj.submission_id
+      AND s.id = pmgj.submission_id
+  ),
   -- TODO: this whole thing needs to handle the case where there was not in fact
   -- a previous manual grading job.
   -- TODO: we need to update `manual_rubric_grading_id` on the submission.
   -- TODO: this probably needs to update `is_ai_graded` on the submission itself.
   -- TODO: does this need locking, either on the instance questions or the submissions?
+  -- TODO: we should probably update `requires_manual_grading` to false if there are no
+  -- previous manual grading jobs for this instance question.
   updated_instance_questions AS (
     UPDATE instance_questions AS iq
     SET
-      points = (iq.auto_points + COALESCE(pmgj.manual_points, 0)),
-      score_perc = (iq.auto_points + COALESCE(pmgj.manual_points, 0)) / aq.max_points * 100,
-      -- TODO: should this be set to 0 if there is no previous manual grading job?
+      points = (
+        COALESCE(iq.auto_points, 0) + COALESCE(pmgj.manual_points, 0)
+      ),
+      score_perc = (
+        COALESCE(iq.auto_points, 0) + COALESCE(pmgj.manual_points, 0)
+      ) / aq.max_points * 100,
+      -- TODO: should this be set to 0 if there is no previous manual grading job? Or is NULL ok?
       manual_points = pmgj.manual_points,
       modified_at = NOW(),
       last_grader = pmgj.auth_user_id,
