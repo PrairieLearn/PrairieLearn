@@ -493,7 +493,7 @@ export const FileTransferSchema = z.object({
   id: IdSchema,
   storage_filename: z.string(),
   to_course_id: IdSchema,
-  transfer_type: z.enum(['CopyQuestion']),
+  transfer_type: z.enum(['CopyQuestion', 'CopyCourseInstance']),
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
@@ -989,7 +989,7 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
-  modified_at: DateFromISOString.nullable(),
+  modified_at: DateFromISOString,
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -1066,7 +1066,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
-  modified_at: DateFromISOString.nullable(),
+  modified_at: DateFromISOString,
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),
