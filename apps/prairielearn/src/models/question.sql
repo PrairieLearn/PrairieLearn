@@ -44,4 +44,5 @@ FROM
   JOIN assessment_questions AS aq ON (aq.question_id = q.id)
   JOIN assessments AS a ON (aq.assessment_id = a.id)
 WHERE
-  a.course_instance_id = $course_instance_id;
+  a.course_instance_id = $course_instance_id
+  AND a.deleted_at IS NULL;

@@ -48,6 +48,7 @@ router.get(
       PublicAssessments({
         resLocals: res.locals,
         rows,
+        course,
         courseInstance,
         courseInstanceCopyTargets,
         questionsForCopy,

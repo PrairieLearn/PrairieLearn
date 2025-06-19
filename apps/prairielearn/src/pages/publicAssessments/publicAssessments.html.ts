@@ -6,22 +6,24 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
-import type { CourseInstance } from '../../lib/db-types.js';
+import type { Course, CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
 import type { QuestionForCopy } from '../../models/question.js';
 
 function CopyCourseInstanceModal({
+  course,
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
 }: {
+  course: Course;
   courseInstance: CourseInstance;
   courseInstanceCopyTargets: CopyTarget[] | null;
   questionsForCopy: QuestionForCopy[];
 }) {
   if (courseInstanceCopyTargets == null) return '';
   const questionsToCopy = questionsForCopy.filter((q) => q.should_copy).length;
-  const questionsToImport = questionsForCopy.filter((q) => !q.should_copy).length;
+  const questionsToLink = questionsForCopy.filter((q) => !q.should_copy).length;
   return Modal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
@@ -67,11 +69,11 @@ function CopyCourseInstanceModal({
                 used by this course instance will be copied to your course.
               </li>
               <li>
-                <strong>${questionsToImport}</strong> ${questionsToImport === 1
+                <strong>${questionsToLink}</strong> ${questionsToLink === 1
                   ? 'question'
                   : 'questions'}
-                used by this course instance will not be copied, but included by import from
-                original course.
+                used by this course instance will be linked from ${course.short_name} for use in
+                your course
               </li>
             </ul>
           `,
@@ -102,12 +104,14 @@ function CopyCourseInstanceModal({
 export function PublicAssessments({
   resLocals,
   rows,
+  course,
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
+  course: Course;
   courseInstance: CourseInstance;
   courseInstanceCopyTargets: CopyTarget[] | null;
   questionsForCopy: QuestionForCopy[];
@@ -187,7 +191,12 @@ export function PublicAssessments({
           </table>
         </div>
       </div>
-      ${CopyCourseInstanceModal({ courseInstance, courseInstanceCopyTargets, questionsForCopy })}
+      ${CopyCourseInstanceModal({
+        course,
+        courseInstance,
+        courseInstanceCopyTargets,
+        questionsForCopy,
+      })}
     `,
   });
 }

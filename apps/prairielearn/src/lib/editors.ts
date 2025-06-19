@@ -986,7 +986,7 @@ export class CourseInstanceCopyEditor extends Editor {
       infoJson['allowAccess'] = [];
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
-      const questionsToImport = new Set(
+      const questionsToLink = new Set(
         questionsForCopy.filter((q) => !q.should_copy).map((q) => q.qid),
       );
 
@@ -1016,7 +1016,7 @@ export class CourseInstanceCopyEditor extends Editor {
         this.course_instance.id,
         courseInstancePath,
         this.from_course.sharing_name,
-        questionsToImport,
+        questionsToLink,
         newQids,
       );
     }
@@ -1081,7 +1081,7 @@ async function updateInfoAssessmentFilesForTargetCourse(
           for (const alternative of question.alternatives) {
             if (alternative.id in newQids) {
               alternative.id = newQids[alternative.id];
-            } else if (shouldAddSharingPrefix(question.id)) {
+            } else if (shouldAddSharingPrefix(alternative.id)) {
               alternative.id = `@${fromCourseSharingName}/${alternative.id}`;
             }
           }
