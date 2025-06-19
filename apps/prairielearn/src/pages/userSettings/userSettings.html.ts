@@ -42,6 +42,9 @@ export function UserSettings({
   enhancedNavigationEnabled: boolean;
   resLocals: Record<string, any>;
 }) {
+  const discussionUrl =
+    'https://github.com/PrairieLearn/PrairieLearn/discussions/12230#discussion-8473637';
+
   return PageLayout({
     resLocals,
     pageTitle: 'User Settings',
@@ -117,18 +120,21 @@ export function UserSettings({
                         Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
                       </div>
+                      <div class="small text-muted">
+                        Have feedback? <a href="${discussionUrl}" target="_blank">Share it here!</a>
+                      </div>
                     </div>
                   </li>
                 </ul>
                 <div id="enhanced_navigation_feedback" class="p-3 d-none border-top">
-                  <p class="my-0">We’d love your feedback!</p>
+                  <p class="my-0">We'd love your feedback!</p>
                   <p class="my-0 small text-muted">
                     If you have any feedback on the enhanced navigation experience, it would be
                     helpful for us to improve.
                   </p>
                   <a
                     class="btn btn-sm btn-info mt-3 text-white"
-                    href="https://github.com/PrairieLearn/PrairieLearn/discussions/11550#discussion-8073325"
+                    href="${discussionUrl}"
                     target="_blank"
                   >
                     Share feedback
