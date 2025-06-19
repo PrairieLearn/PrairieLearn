@@ -146,6 +146,13 @@ WITH
     SET
       is_ai_graded = FALSE,
       manual_rubric_grading_id = pmgj.manual_rubric_grading_id,
+      -- TODO: this is incorrect.
+      -- - If real-time grading is disabled, someone could manually grade a
+      --   submission while it's in a saved state, and then the question could
+      --   be automatically graded later.
+      -- - This doesn't handle multiple submissions well. We need to deal with
+      --   each submission's grading jobs separately, but currently we're using
+      --   the latest grading jobs for the instance question as a whole.
       feedback = COALESCE(pmgj.feedback, pagj.feedback)
     FROM
       deleted_grading_jobs AS dgj
