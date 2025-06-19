@@ -96,8 +96,8 @@ export function UserSettings({
                 <div class="card-header bg-primary text-white d-flex align-items-center">
                   <h2>Feature preview</h2>
                 </div>
-                <ul class="list-group list-group-flush border-bottom-0">
-                  <li class="list-group-item d-flex align-items-center">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">
                     <div class="form-check">
                       <input
                         type="checkbox"
@@ -122,22 +122,26 @@ export function UserSettings({
                         to help us improve the new design.
                       </div>
                     </div>
+
+                    <div
+                      id="enhanced_navigation_feedback"
+                      class="alert alert-info mt-2 mb-2 d-none"
+                    >
+                      <div class="mb-2 text-dark">
+                        <strong>Turning off enhanced navigation?</strong> We'd love to know what's
+                        not working for you.
+                      </div>
+                      <a
+                        href="${ENHANCED_NAV_DISCUSSION_URL}"
+                        target="_blank"
+                        class="btn btn-sm btn-outline-dark"
+                      >
+                        Share feedback on GitHub Discussions
+                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                      </a>
+                    </div>
                   </li>
                 </ul>
-                <div id="enhanced_navigation_feedback" class="alert alert-info mx-3 d-none">
-                  <div class="mb-2 text-dark">
-                    <strong>Turning off enhanced navigation?</strong> We'd love to know what's not
-                    working for you.
-                  </div>
-                  <a
-                    href="${ENHANCED_NAV_DISCUSSION_URL}"
-                    target="_blank"
-                    class="btn btn-sm btn-outline-dark"
-                  >
-                    Share feedback on GitHub Discussions
-                    <i class="bi bi-box-arrow-up-right ms-1"></i>
-                  </a>
-                </div>
 
                 <div class="card-footer">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
