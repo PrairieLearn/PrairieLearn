@@ -89,85 +89,94 @@ WITH
       AND iq.assessment_question_id = $assessment_question_id
     RETURNING
       gj.id AS grading_job_id,
-      iq.id AS instance_question_id
-  )
-SELECT DISTINCT
-  instance_question_id,
-  iq.max_points,
-  iq.max_manual_points,
-  iq.max_auto_points,
-  points,
-  score_perc,
-  auto_points,
-  manual_points (
-    SELECT
-      to_jsonb(gj.*)
+      iq.id AS instance_question_id,
+      iq.assessment_question_id
+  ),
+  previous_manual_grading_jobs AS (
+    SELECT DISTINCT
+      ON (iq.id) iq.id AS instance_question_id,
+      gj.*
     FROM
-      grading_jobs AS gj
-      JOIN submissions AS s ON (s.id = gj.submission_id)
-      JOIN variants AS v ON (v.id = s.variant_id)
-      JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+      deleted_grading_jobs AS dgj
+      JOIN instance_questions AS iq ON (iq.id = dgj.instance_question_id)
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
-      iq.id = instance_question_id
-      AND gj.grading_method = 'Manual'
+      gj.grading_method = 'Manual'
     ORDER BY
+      iq.id,
       gj.date DESC,
       gj.id DESC
-    LIMIT
-      1
-  ) AS last_manual_grading_job
-FROM
-  deleted_grading_jobs
-  JOIN instance_questions AS iq ON (iq.id = deleted_grading_jobs.instance_question_id);
-
--- BLOCK update_instance_question_score
--- TODO: this whole thing needs to handle the case where there was not in fact
--- a previous manual grading job.
--- TODO: we need to update `manual_rubric_grading_id` on the submission.
-WITH
+  ),
+  -- TODO: this whole thing needs to handle the case where there was not in fact
+  -- a previous manual grading job.
+  -- TODO: we need to update `manual_rubric_grading_id` on the submission.
+  -- TODO: this probably needs to update `is_ai_graded` on the submission itself.
+  -- TODO: does this need locking, either on the instance questions or the submissions?
   updated_instance_questions AS (
     UPDATE instance_questions AS iq
     SET
-      points = $points,
-      score_perc = $score_perc,
-      manual_points = $manual_points,
+      points = (iq.auto_points + COALESCE(pmgj.manual_points, 0)),
+      score_perc = (iq.auto_points + COALESCE(pmgj.manual_points, 0)) / aq.max_points * 100,
+      -- TODO: should this be set to 0 if there is no previous manual grading job?
+      manual_points = pmgj.manual_points,
       modified_at = NOW(),
-      -- TODO: this probably needs to track the user from the previous grading job?
-      last_grader = $authn_user_id
+      last_grader = pmgj.auth_user_id,
       -- TODO: this may need to compute `highest_submission_score`.
-      -- TODO: this should probably update `is_ai_graded` to FALSE.
+      is_ai_graded = FALSE
+    FROM
+      -- TODO: this would skip any instance questions that didn't have a previous manual grading job.
+      deleted_grading_jobs AS dgj
+      JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)
+      LEFT JOIN previous_manual_grading_jobs AS pmgj ON (
+        pmgj.instance_question_id = dgj.instance_question_id
+      )
     WHERE
-      iq.id = ANY ($instance_question_ids::BIGINT[])
+      iq.id = dgj.instance_question_id
     RETURNING
-      iq.max_points,
-      iq.max_manual_points,
-      iq.max_auto_points,
+      iq.id,
+      iq.assessment_instance_id,
       iq.points,
       iq.score_perc,
       iq.auto_points,
-      iq.auto_points
-  )
-INSERT INTO
-  question_score_logs (
-    instance_question_id,
-    auth_user_id,
-    max_points,
-    max_manual_points,
-    max_auto_points,
-    points,
-    score_perc,
-    auto_points,
-    manual_points
+      iq.manual_points,
+      aq.max_points,
+      aq.max_auto_points,
+      aq.max_manual_points
+  ),
+  logs AS (
+    INSERT INTO
+      question_score_logs (
+        instance_question_id,
+        auth_user_id,
+        max_points,
+        max_auto_points,
+        max_manual_points,
+        points,
+        score_perc,
+        auto_points,
+        manual_points
+      )
+    SELECT
+      uiq.id,
+      -- TODO: is this the correct user ID? Should this be the user who submitted the
+      -- previous manual grading job? What if there was no previous manual grading job,
+      -- just null it out?
+      $authn_user_id,
+      uiq.max_points,
+      uiq.max_auto_points,
+      uiq.max_manual_points,
+      uiq.points,
+      uiq.score_perc,
+      uiq.auto_points,
+      uiq.manual_points
+    FROM
+      updated_instance_questions AS uiq
   )
 SELECT
-  uiq.id,
-  $authn_user_id,
-  max_points,
-  max_manual_points,
-  max_auto_points,
-  points,
-  score_perc,
-  auto_points,
-  manual_points
+  uiq.*,
+  to_jsonb(pmgj.*) AS last_manual_grading_job
 FROM
-  updated_instance_questions AS uiq;
+  updated_instance_questions AS uiq
+  LEFT JOIN previous_manual_grading_jobs AS pmgj ON (pmgj.instance_question_id = uiq.id);

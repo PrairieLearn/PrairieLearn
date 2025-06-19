@@ -3,7 +3,13 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  callAsync,
+  loadSqlEquiv,
+  queryAsync,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -12,9 +18,14 @@ import {
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { GradingJobSchema } from '../../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  GradingJobSchema,
+  InstanceQuestionSchema,
+} from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -128,36 +139,47 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else if (req.body.batch_action === 'delete_ai_gradings') {
         console.log(req.body);
-        await runInTransactionAsync(async () => {
-          const ids = await queryRows(
+        const iqs = await runInTransactionAsync(async () => {
+          const iqs = await queryRows(
             sql.delete_ai_grading_jobs,
             {
               authn_user_id: res.locals.authn_user.user_id,
               assessment_question_id: res.locals.assessment_question.id,
             },
             z.object({
-              instance_question_id: IdSchema,
+              id: IdSchema,
+              assessment_instance_id: IdSchema,
+              max_points: AssessmentQuestionSchema.shape.max_points,
+              max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+              max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+              points: InstanceQuestionSchema.shape.points,
+              score_perc: InstanceQuestionSchema.shape.score_perc,
+              auto_points: InstanceQuestionSchema.shape.auto_points,
+              manual_points: InstanceQuestionSchema.shape.manual_points,
               last_manual_grading_job: GradingJobSchema.nullable(),
             }),
           );
 
-          console.log(ids);
+          console.log(iqs);
 
-          // temp for testing, abort transaction
-          throw new Error('abort');
-
-          for (const id of ids) {
-            await manualGrading.updateInstanceQuestionScore(
-              res.locals.assessment.id,
-              id,
-              null,
-              null,
-              {},
+          for (const iq of iqs) {
+            await callAsync('assessment_instances_grade', [
+              iq.assessment_instance_id,
+              // TODO: Does this need to be the user who last manually graded the instance question?
               res.locals.authn_user.user_id,
-              false, // is_ai_graded
-            );
+              100, // credit
+              false, // only_log_if_score_updated
+              true, // allow_decrease
+            ]);
           }
+
+          return iqs;
         });
+
+        for (const iq of iqs) {
+          await ltiOutcomes.updateScore(iq.assessment_instance_id);
+        }
+
         res.send({});
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
