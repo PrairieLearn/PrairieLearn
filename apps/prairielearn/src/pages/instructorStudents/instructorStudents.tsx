@@ -1,48 +1,35 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { stripResLocals } from '../../lib/client/res-locals.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { hydrate } from '../../lib/preact.js';
 
-import { InstructorStudents, type ResLocals } from './instructorStudents.html.js';
+import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
+const QuerySchema = z.object({
+  search: z.string().optional().default(''),
+  sortBy: z.string().optional().default(''),
+  sortOrder: z.enum(['asc', 'desc']).optional().nullable().default(null),
+});
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const {
-      authz_data: {
-        has_course_instance_permission_view,
-        has_course_instance_permission_edit,
-        has_course_permission_own,
-      },
-      course_instance,
-      course,
-      urlPrefix,
-    } = res.locals;
-
-    const resLocals: ResLocals = {
-      authz_data: {
-        has_course_instance_permission_view,
-        has_course_instance_permission_edit,
-        has_course_permission_own,
-      },
-      course_instance,
-      course,
-      urlPrefix,
-    };
+    const resLocals = stripResLocals(res.locals);
 
     const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
     const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
-    const search = req.query.search as string;
-    const sortBy = req.query.sortBy as string;
-    const sortOrder = req.query.sortOrder as string;
+
+    const { search, sortBy, sortOrder } = QuerySchema.parse(req.query);
 
     const students = hasPermission
       ? await queryRows(
@@ -71,7 +58,7 @@ router.get(
             resLocals={resLocals}
             students={students}
             courseOwners={courseOwners}
-            initialGlobalFilterValue={search ?? ''}
+            initialGlobalFilterValue={search}
             initialSortingValue={sortBy ? [{ id: sortBy, desc: sortOrder === 'desc' }] : []}
           />,
         ),
