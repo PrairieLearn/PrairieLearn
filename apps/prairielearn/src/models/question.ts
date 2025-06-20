@@ -64,9 +64,9 @@ export async function selectQuestionsForCourseInstanceCopy(
     QuestionSchema,
   );
   questions.forEach((question) => {
-    // TODO in the future it would be nice to give users an option about if they
+    // TODO: in the future it would be nice to give users an option about if they
     // want to copy questions while copying a course instance or not. For now,
-    // we just default to only copying them if they are not importable
+    // we just default to only copying them if they are not importable.
     question.should_copy = !question.share_publicly;
   });
   return questions;

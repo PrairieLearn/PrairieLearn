@@ -989,16 +989,18 @@ export class CourseInstanceCopyEditor extends Editor {
       const questionsToLink = new Set(
         questionsForCopy.filter((q) => !q.should_copy).map((q) => q.qid),
       );
-
       const questionsToCopy = new Set(questionsForCopy.filter((q) => q.should_copy));
-      const newQids = {};
+
+      // Map of QIDs in the original assessments to the new QIDs in the target course.
+      const newQids: Record<string, string> = {};
+
       for (const question of questionsToCopy) {
-        if (!question.qid) {
-          continue; // TODO better error handling?
-        }
+        // This shouldn't happen in practice; this is just to satisfy TypeScript.
+        assert(question.qid, 'question.qid is required');
+
         const from_path = path.join(this.from_course.path, 'questions', question.qid);
         const from_qid = path.join(this.from_course.sharing_name, question.qid);
-        const { questionPath, qid } = await doQuestionCopy(
+        const { questionPath, qid } = await copyQuestion(
           this.course,
           from_path,
           from_qid,
@@ -1774,7 +1776,7 @@ export class QuestionCopyEditor extends Editor {
   async write() {
     debug('QuestionCopyEditor: write()');
 
-    const { questionPath, qid } = await doQuestionCopy(
+    const { questionPath, qid } = await copyQuestion(
       this.course,
       this.from_path,
       this.from_qid,
@@ -1788,7 +1790,7 @@ export class QuestionCopyEditor extends Editor {
   }
 }
 
-async function doQuestionCopy(
+async function copyQuestion(
   course: Course,
   from_path: string,
   from_qid: string,
