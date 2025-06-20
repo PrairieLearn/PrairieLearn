@@ -140,45 +140,50 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else if (req.body.batch_action === 'delete_ai_gradings') {
         console.log(req.body);
-        const iqs = await runInTransactionAsync(async () => {
-          const iqs = await queryRows(
-            sql.delete_ai_grading_jobs,
-            {
-              authn_user_id: res.locals.authn_user.user_id,
-              assessment_question_id: res.locals.assessment_question.id,
-            },
-            z.object({
-              id: IdSchema,
-              assessment_instance_id: IdSchema,
-              max_points: AssessmentQuestionSchema.shape.max_points,
-              max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
-              max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
-              points: InstanceQuestionSchema.shape.points,
-              score_perc: InstanceQuestionSchema.shape.score_perc,
-              auto_points: InstanceQuestionSchema.shape.auto_points,
-              manual_points: InstanceQuestionSchema.shape.manual_points,
-              last_manual_grading_job: GradingJobSchema.nullable(),
-            }),
-          );
+        try {
+          const iqs = await runInTransactionAsync(async () => {
+            const iqs = await queryRows(
+              sql.delete_ai_grading_jobs,
+              {
+                authn_user_id: res.locals.authn_user.user_id,
+                assessment_question_id: res.locals.assessment_question.id,
+              },
+              z.object({
+                id: IdSchema,
+                assessment_instance_id: IdSchema,
+                max_points: AssessmentQuestionSchema.shape.max_points,
+                max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+                max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+                points: InstanceQuestionSchema.shape.points,
+                score_perc: InstanceQuestionSchema.shape.score_perc,
+                auto_points: InstanceQuestionSchema.shape.auto_points,
+                manual_points: InstanceQuestionSchema.shape.manual_points,
+                most_recent_manual_grading_job: GradingJobSchema.nullable(),
+              }),
+            );
 
-          console.log(iqs);
+            console.log(iqs);
+
+            for (const iq of iqs) {
+              await callAsync('assessment_instances_grade', [
+                iq.assessment_instance_id,
+                // TODO: Does this need to be the user who last manually graded the instance question?
+                res.locals.authn_user.user_id,
+                100, // credit
+                false, // only_log_if_score_updated
+                true, // allow_decrease
+              ]);
+            }
+
+            return iqs;
+          });
 
           for (const iq of iqs) {
-            await callAsync('assessment_instances_grade', [
-              iq.assessment_instance_id,
-              // TODO: Does this need to be the user who last manually graded the instance question?
-              res.locals.authn_user.user_id,
-              100, // credit
-              false, // only_log_if_score_updated
-              true, // allow_decrease
-            ]);
+            await ltiOutcomes.updateScore(iq.assessment_instance_id);
           }
-
-          return iqs;
-        });
-
-        for (const iq of iqs) {
-          await ltiOutcomes.updateScore(iq.assessment_instance_id);
+        } catch (err) {
+          console.error(err);
+          throw err;
         }
 
         res.send({});

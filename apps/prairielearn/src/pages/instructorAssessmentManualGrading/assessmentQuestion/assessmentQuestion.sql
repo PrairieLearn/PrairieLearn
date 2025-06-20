@@ -94,7 +94,7 @@ WITH
       iq.id AS instance_question_id,
       iq.assessment_question_id
   ),
-  previous_manual_grading_jobs AS (
+  most_recent_instance_question_manual_grading_jobs AS (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       gj.*
@@ -111,22 +111,41 @@ WITH
       gj.date DESC,
       gj.id DESC
   ),
-  previous_automatic_grading_jobs AS (
+  most_recent_submission_manual_grading_jobs AS (
     SELECT DISTINCT
-      ON (iq.id) iq.id AS instance_question_id,
-      gj.*
+      ON (dgj.instance_question_id, s.id) dgj.instance_question_id AS instance_question_id,
+      s.id AS submission_id,
+      gj.manual_rubric_grading_id AS manual_rubric_grading_id
     FROM
       deleted_grading_jobs AS dgj
-      JOIN instance_questions AS iq ON (iq.id = dgj.instance_question_id)
-      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
-      gj.grading_method NOT IN ('Manual', 'AI')
+      gj.grading_method = 'Manual'
     ORDER BY
-      iq.id,
-      gj.date DESC,
-      gj.id DESC
+      dgj.instance_question_id,
+      s.id,
+      s.date DESC,
+      s.id DESC
+  ),
+  most_recent_submission_non_ai_grading_jobs AS (
+    SELECT DISTINCT
+      ON (dgj.instance_question_id, s.id) dgj.instance_question_id AS instance_question_id,
+      s.id AS submission_id,
+      gj.feedback
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    WHERE
+      gj.grading_method != 'AI'
+    ORDER BY
+      dgj.instance_question_id,
+      s.id,
+      s.date DESC,
+      s.id DESC
   ),
   latest_submissions AS (
     SELECT DISTINCT
@@ -145,28 +164,24 @@ WITH
     UPDATE submissions AS s
     SET
       is_ai_graded = FALSE,
-      manual_rubric_grading_id = pmgj.manual_rubric_grading_id,
-      -- TODO: this is incorrect.
-      -- - If real-time grading is disabled, someone could manually grade a
-      --   submission while it's in a saved state, and then the question could
-      --   be automatically graded later.
-      -- - This doesn't handle multiple submissions well. We need to deal with
-      --   each submission's grading jobs separately, but currently we're using
-      --   the latest grading jobs for the instance question as a whole.
-      feedback = COALESCE(pmgj.feedback, pagj.feedback)
+      -- For each submission, we'll pull the rubric grading ID from the most
+      -- recent manual grading job.
+      manual_rubric_grading_id = mrsmgj.manual_rubric_grading_id,
+      -- For each submission, we'll pull the feedback from the most recent
+      -- non-AI grading job. If there wasn't one, this will be set to `NULL`,
+      -- which is the implicit default value for something that has never been graded.
+      feedback = mrsnagj.feedback
     FROM
       deleted_grading_jobs AS dgj
-      LEFT JOIN previous_manual_grading_jobs AS pmgj ON (
-        pmgj.instance_question_id = dgj.instance_question_id
+      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON (
+        mrsmgj.instance_question_id = dgj.instance_question_id
       )
-      LEFT JOIN previous_automatic_grading_jobs AS pagj ON (
-        pagj.instance_question_id = dgj.instance_question_id
+      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON (
+        mrsnagj.instance_question_id = dgj.instance_question_id
       )
     WHERE
       s.id = dgj.submission_id
   ),
-  -- TODO: this whole thing needs to handle the case where there was not in fact
-  -- a previous manual grading job.
   -- TODO: does this need locking, either on the instance questions or the submissions?
   -- TODO: should we try to revert `status`? It gets set to `complete` when manual grading
   -- occurs, but I'm not sure if we can safely revert it to another value, e.g. `saved`.
@@ -174,15 +189,17 @@ WITH
     UPDATE instance_questions AS iq
     SET
       points = (
-        COALESCE(iq.auto_points, 0) + COALESCE(pmgj.manual_points, 0)
+        COALESCE(iq.auto_points, 0) + COALESCE(mriqmgj.manual_points, 0)
       ),
       score_perc = (
-        COALESCE(iq.auto_points, 0) + COALESCE(pmgj.manual_points, 0)
+        COALESCE(iq.auto_points, 0) + COALESCE(mriqmgj.manual_points, 0)
       ) / aq.max_points * 100,
-      -- TODO: should this be set to 0 if there is no previous manual grading job? Or is NULL ok?
-      manual_points = pmgj.manual_points,
+      -- If there was no previous manual grading job, this will be set to `NULL`, not 0.
+      -- This is the expected behavior, as an instance question that has never been manually graded
+      -- would already have `NULL` for `manual_points`.
+      manual_points = mriqmgj.manual_points,
       modified_at = NOW(),
-      last_grader = pmgj.auth_user_id,
+      last_grader = mriqmgj.auth_user_id,
       -- TODO: this may need to compute `highest_submission_score`.
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
@@ -191,15 +208,15 @@ WITH
       -- similar submissions for RAG.
       requires_manual_grading = (
         CASE
-          WHEN pmgj.id IS NULL THEN TRUE
+          WHEN mriqmgj.id IS NULL THEN TRUE
           ELSE FALSE
         END
       )
     FROM
       deleted_grading_jobs AS dgj
       JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)
-      LEFT JOIN previous_manual_grading_jobs AS pmgj ON (
-        pmgj.instance_question_id = dgj.instance_question_id
+      LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (
+        mriqmgj.instance_question_id = dgj.instance_question_id
       )
     WHERE
       iq.id = dgj.instance_question_id
@@ -229,9 +246,8 @@ WITH
       )
     SELECT
       uiq.id,
-      -- TODO: is this the correct user ID? Should this be the user who submitted the
-      -- previous manual grading job? What if there was no previous manual grading job,
-      -- just null it out?
+      -- We deliberately use the user that's performing the deletion, not the user who
+      -- performed the previous manual grading job, because there might not be one.
       $authn_user_id,
       uiq.max_points,
       uiq.max_auto_points,
@@ -245,7 +261,7 @@ WITH
   )
 SELECT
   uiq.*,
-  to_jsonb(pmgj.*) AS last_manual_grading_job
+  to_jsonb(mriqmgj.*) AS most_recent_manual_grading_job
 FROM
   updated_instance_questions AS uiq
-  LEFT JOIN previous_manual_grading_jobs AS pmgj ON (pmgj.instance_question_id = uiq.id);
+  LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (mriqmgj.instance_question_id = uiq.id);
