@@ -50,10 +50,11 @@ router.get(
         resLocals: res.locals,
         courseStaff,
         aiGradingEnabled,
-        aiGradingMode: res.locals.assessment_question.ai_grading_mode,
-        aiGradingStats: res.locals.assessment_question.ai_grading_mode
-          ? await calculateAiGradingStats(res.locals.assessment_question)
-          : null,
+        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
       }),
     );
   }),
