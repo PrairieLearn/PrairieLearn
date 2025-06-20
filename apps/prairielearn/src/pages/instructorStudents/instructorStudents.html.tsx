@@ -22,7 +22,7 @@ export const InstructorStudents = ({
   initialSortingValue: SortingState;
 }) => {
   const { authz_data, urlPrefix } = resLocals;
-
+  console.log('build');
   return (
     <>
       <div
