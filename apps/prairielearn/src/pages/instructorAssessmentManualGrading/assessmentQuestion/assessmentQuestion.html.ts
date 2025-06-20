@@ -323,11 +323,11 @@ export function AssessmentQuestion({
 
                         <button
                           class="dropdown-item"
-                          type="submit"
-                          name="batch_action"
-                          value="delete_ai_gradings"
+                          type="button"
+                          data-bs-toggle="modal"
+                          data-bs-target="#delete-all-ai-grading-jobs-modal"
                         >
-                          Delete all AI gradings
+                          Delete all AI grading results
                         </button>
                       </div>
                     </div>
@@ -339,7 +339,7 @@ export function AssessmentQuestion({
         </div>
       </form>
     `,
-    postContent: GradingConflictModal(),
+    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token })],
   });
 }
 
@@ -351,6 +351,23 @@ function GradingConflictModal() {
     footer: html`
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Dismiss</button>
       <a class="btn btn-primary conflict-details-link" href="/">See details</a>
+    `,
+  });
+}
+
+function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'delete-all-ai-grading-jobs-modal',
+    title: 'Delete all AI grading results',
+    body: html`
+      Are you sure you want to delete <strong>all AI grading results</strong> for this assessment?
+      This action cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="delete_ai_grading_jobs" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
 }
