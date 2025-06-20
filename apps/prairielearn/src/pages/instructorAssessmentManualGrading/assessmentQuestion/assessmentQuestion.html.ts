@@ -318,18 +318,9 @@ export function AssessmentQuestion({
                         >
                           Grade all
                         </button>
-                      </div>
-                    </div>
 
-                    <div class="dropdown">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-light dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                      >
-                        Actions
-                      </button>
-                      <div class="dropdown-menu dropdown-menu-end">
+                        <hr class="dropdown-divider" />
+
                         <button
                           class="dropdown-item"
                           type="submit"
