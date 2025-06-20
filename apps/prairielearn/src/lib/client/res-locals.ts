@@ -7,10 +7,23 @@ const ResLocalsSchema = z.object({
     has_course_instance_permission_edit: z.boolean(),
     has_course_instance_permission_view: z.boolean(),
     has_course_permission_own: z.boolean(),
+    user: z.object({
+      name: z.string(),
+      uid: z.string(),
+    }),
+    mode: z.string().nullable(),
   }),
   course_instance: z.custom<CourseInstance>(),
   course: z.custom<Course>(),
   urlPrefix: z.string(),
+  access_as_administrator: z.boolean(),
+  news_item_notification_count: z.number(),
+  authn_is_administrator: z.boolean(),
+  authn_user: z.object({
+    name: z.string(),
+    uid: z.string(),
+  }),
+  viewType: z.enum(['instructor', 'student']),
 });
 
 export type ResLocals = z.infer<typeof ResLocalsSchema>;

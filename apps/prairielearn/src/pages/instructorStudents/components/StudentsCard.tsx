@@ -1,13 +1,8 @@
-import { faSort, faSortDown, faSortUp } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   type ColumnDef,
   type ColumnFiltersState,
-  type SortDirection,
   type SortingState,
-  type Table,
   createColumnHelper,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
@@ -18,6 +13,8 @@ import { useMemo, useState } from 'preact/compat';
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import { useURLSync } from '../../../lib/client/useURLSync.js';
 import type { StudentRow } from '../instructorStudents.types.js';
+
+import { StudentsTable } from './StudentsTable.js';
 
 function downloadStudentsCSV(students: StudentRow[], filename: string): void {
   const rows = students.map((student) => [
@@ -32,63 +29,6 @@ function downloadStudentsCSV(students: StudentRow[], filename: string): void {
 }
 
 const columnHelper = createColumnHelper<StudentRow>();
-
-function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
-  if (sortMethod === 'asc') {
-    return <FontAwesomeIcon icon={faSortUp} className="fa-fw" />;
-  } else if (sortMethod === 'desc') {
-    return <FontAwesomeIcon icon={faSortDown} className="fa-fw" />;
-  } else {
-    return <FontAwesomeIcon icon={faSort} className="fa-fw opacity-75 text-muted" />;
-  }
-}
-
-function StudentsTableBody({ table }: { table: Table<StudentRow> }) {
-  return (
-    <div className="table-responsive">
-      <table className="table table-striped table-hover border">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="text-nowrap"
-                  style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getCanSort() && (
-                    <span className="ms-1">
-                      <SortIcon sortMethod={header.column.getIsSorted()} />
-                    </span>
-                  )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {table.getRowModel().rows.length === 0 && (
-        <div className="d-flex flex-column align-items-center text-muted py-4">
-          <i className="fa fa-search fa-2x mb-2"></i>
-          <p>No students found matching your search criteria.</p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function StudentsCard({
   students,
@@ -106,37 +46,37 @@ export function StudentsCard({
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
       columnHelper.accessor('uid', {
-        id: 'uid',
         header: 'UID',
         cell: (info) => info.getValue(),
         enableSorting: true,
+        size: 200,
       }),
       columnHelper.accessor('name', {
-        id: 'name',
         header: 'Name',
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
+        size: 200,
       }),
       columnHelper.accessor('email', {
-        id: 'email',
         header: 'Email',
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
+        size: 250,
       }),
       columnHelper.accessor('created_at', {
-        id: 'created_at',
         header: 'Enrolled At',
         cell: (info) => {
           const date = new Date(info.getValue());
           return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         },
         enableSorting: true,
+        size: 200,
       }),
     ],
     [],
   );
 
-  const table = useReactTable<StudentRow>({
+  const table = useReactTable({
     data: students,
     columns,
     state: {
@@ -247,7 +187,7 @@ export function StudentsCard({
           </div>
         </div>
 
-        <StudentsTableBody table={table} />
+        <StudentsTable table={table} />
       </div>
     </div>
   );

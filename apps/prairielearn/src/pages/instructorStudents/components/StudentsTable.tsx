@@ -1,32 +1,8 @@
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortDirection,
-  type SortingState,
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { useMemo, useState } from 'preact/compat';
+import { type SortDirection, type Table, flexRender } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.types.js';
-
-export interface InstructorStudentsData {
-  urlPrefix: string;
-  csvFilename: string;
-  csrfToken: string;
-  hasCourseInstancePermissionEdit: boolean;
-  students: StudentRow[];
-}
-
-interface StudentsTableProps {
-  students: StudentRow[];
-}
-
-const columnHelper = createColumnHelper<StudentRow>();
 
 function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -38,116 +14,73 @@ function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   }
 }
 
-export function StudentsTable({ students }: StudentsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState('');
-
-  const columns = useMemo<ColumnDef<StudentRow, any>[]>(
-    () => [
-      columnHelper.accessor('uid', {
-        header: 'UID',
-        cell: (info) => info.getValue(),
-        enableSorting: true,
-      }),
-      columnHelper.accessor('name', {
-        header: 'Name',
-        cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-      }),
-      columnHelper.accessor('email', {
-        header: 'Email',
-        cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-      }),
-      columnHelper.accessor('created_at', {
-        header: 'Enrolled At',
-        cell: (info) => {
-          const date = new Date(info.getValue());
-          return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-        },
-        enableSorting: true,
-      }),
-    ],
-    [],
-  );
-
-  const table = useReactTable({
-    data: students,
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
+export function StudentsTable({ table }: { table: Table<StudentRow> }) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const { rows } = table.getRowModel();
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 38,
+    overscan: 10,
   });
-
+  const virtualRows = rowVirtualizer.getVirtualItems();
   return (
     <>
-      <div className="mb-3">
-        <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-end align-items-md-center">
-          <div className="col-12 col-md-4">
-            <input
-              type="text"
-              id="search-input"
-              className="form-control"
-              placeholder="Search by UID, name, email..."
-              value={globalFilter}
-              onInput={(e) => {
-                if (!(e.target instanceof HTMLInputElement)) {
-                  return;
-                }
-                setGlobalFilter(e.target.value);
-              }}
-            />
-          </div>
-          <div className="text-muted mt-2 mt-md-0">
-            Showing {table.getRowModel().rows.length} of {students.length} students
-          </div>
-        </div>
-      </div>
-
-      <div className="table-responsive">
-        <table className="table table-striped table-hover border">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="text-nowrap"
-                    style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
-                    onClick={header.column.getToggleSortingHandler()}
+      <div
+        ref={parentRef}
+        className="table-responsive"
+        style={{ maxHeight: '600px', overflowY: 'auto', color: 'red' }}
+      >
+        <div style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
+          <table className="table table-striped table-hover border">
+            <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="text-nowrap"
+                      style={{
+                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                        width: header.getSize(),
+                      }}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getCanSort() && (
+                        <span className="ms-1">
+                          <SortIcon sortMethod={header.column.getIsSorted() || null} />
+                        </span>
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {virtualRows.map((virtualRow, index) => {
+                const row = rows[virtualRow.index];
+                return (
+                  <tr
+                    key={row.id}
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`,
+                    }}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getCanSort() && (
-                      <span className="ms-1">
-                        <SortIcon sortMethod={header.column.getIsSorted() || null} />
-                      </span>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} style={{ width: cell.column.getSize() }}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {table.getRowModel().rows.length === 0 && (

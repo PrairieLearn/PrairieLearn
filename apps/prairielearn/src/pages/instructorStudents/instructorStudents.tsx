@@ -25,6 +25,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const resLocals = stripResLocals(res.locals);
+    console.log('resLocals', resLocals);
 
     const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
     const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
