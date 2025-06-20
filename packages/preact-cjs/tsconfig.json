@@ -1,12 +1,10 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.package.json",
   "compilerOptions": {
-    "outDir": "./dist-tmp",
+    "checkJs": true,
+    "noEmit": true,
     "rootDir": "./src",
     "moduleResolution": "Node16",
-    "module": "Node16",
-    "verbatimModuleSyntax": false,
-    "typeRoots": [],
-    "types": []
+    "module": "Node16"
   }
 }
