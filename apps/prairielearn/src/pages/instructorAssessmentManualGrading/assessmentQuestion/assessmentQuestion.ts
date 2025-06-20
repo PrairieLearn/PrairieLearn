@@ -223,11 +223,14 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      // This implementation was added primarily to facilitate demos at ASEE 2025. It
-      // may not behave completely correctly in call cases; see the TODOs in the SQL
-      // query.
+      // TODO: revisit this before general availability of AI grading. This implementation
+      // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
+      // correctly in call cases; see the TODOs in the SQL query for more details.
       //
-      // TODO: revisit this before general availability of AI grading.
+      // TODO: we should add locking here. Specifically, we should process each
+      // assessment instance + instance question one at a time in separate
+      // transactions so that we don't need to lock all relevant assessment instances
+      // and assessment questions at once.
       const iqs = await runInTransactionAsync(async () => {
         const iqs = await queryRows(
           sql.delete_ai_grading_jobs,

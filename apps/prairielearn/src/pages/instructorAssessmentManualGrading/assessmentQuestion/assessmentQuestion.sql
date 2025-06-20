@@ -182,9 +182,9 @@ WITH
     WHERE
       s.id = dgj.submission_id
   ),
-  -- TODO: does this need locking, either on the instance questions or the submissions?
-  -- TODO: should we try to revert `status`? It gets set to `complete` when manual grading
-  -- occurs, but I'm not sure if we can safely revert it to another value, e.g. `saved`.
+  -- TODO: this should likely be updating `status` somehow. It gets set to `complete` when
+  -- manual grading occurs, but we may want to revert to `saved` (or maybe another status)
+  -- depending on the situation.
   updated_instance_questions AS (
     UPDATE instance_questions AS iq
     SET
@@ -200,7 +200,8 @@ WITH
       manual_points = mriqmgj.manual_points,
       modified_at = NOW(),
       last_grader = mriqmgj.auth_user_id,
-      -- TODO: this may need to compute `highest_submission_score`.
+      -- TODO: this may need to compute `highest_submission_score`. Or, as Matt suggested,
+      -- we may want to refactor `highest_submission_score` to only track auto points.
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
       -- requires manual grading. This both helps ensure that it eventually gets graded, and
