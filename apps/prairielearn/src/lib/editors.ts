@@ -507,13 +507,16 @@ export abstract class Editor {
 
 /**
  * Get all existing shortnames, recursing on nonempty directories that do not contain
- * an ".info" file.
+ * an "info" file.
+ *
+ * TODO: does this need to use the disk? Why can't we query the database instead?
+ *
  * @param rootDirectory Directory to start searching from.
  * @param infoFile Name of the info file, will stop recursing once a directory contains this.
  */
 async function getExistingShortNames(rootDirectory: string, infoFile: string) {
   const files: string[] = [];
-  const walk = async (relativeDir) => {
+  const walk = async (relativeDir: string) => {
     const directories = await fs.readdir(path.join(rootDirectory, relativeDir)).catch((err) => {
       // If the directory doesn't exist, then we have nothing to load
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
@@ -668,7 +671,7 @@ export class AssessmentCopyEditor extends Editor {
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
     const toPath = assessmentPath;
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    debug(`Copy question from ${fromPath} to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoAssessment.json');
@@ -784,7 +787,7 @@ export class AssessmentRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
@@ -969,7 +972,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const toPath = courseInstancePath;
 
-    debug(`Copy course instance\n from ${this.from_path}\n to ${toPath}`);
+    debug(`Copy course instance from ${this.from_path} to ${toPath}`);
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
@@ -980,6 +983,13 @@ export class CourseInstanceCopyEditor extends Editor {
       if (!this.from_course.sharing_name) {
         throw new AugmentedError("Can't copy from course which hasn't declared a sharing name", {});
       }
+
+      const existingQuestionUuids = new Set(await selectQuestionUuidsForCourse(this.course));
+      const existingQuestionTitles = await selectQuestionTitlesForCourse(this.course);
+      const existingQuestionQids = await getExistingShortNames(
+        path.join(this.course.path, 'questions'),
+        'info.json',
+      );
 
       // Clear access rules to avoid leaking student PII or unexpectedly
       // making the copied course instance available to users.
@@ -1014,17 +1024,37 @@ export class CourseInstanceCopyEditor extends Editor {
         // - We'd need to compare the JSON file, while ignoring things that don't
         //   change the behavior of the question, such as UUID, title, tags, topics, etc.
         // If questions are identical, we can just reuse the one that was copied before.
-        //
+
         // We'll make a best-effort attempt to preserve the UUID when copying a question,
         // as that will in theory allow us to track the usage of copied questions across
         // different courses. This would also let us perform the deduplication proposed
         // above even when questions have had their QIDs changed in the target course.
-        const { questionPath, qid } = await copyQuestion(
-          this.course,
+        const uuid = run(() => {
+          // All non-deleted questions should have a UUID.
+          assert(question.uuid, 'question.uuid is required');
+
+          if (existingQuestionUuids.has(question.uuid)) return uuidv4();
+
+          return question.uuid;
+        });
+
+        // For reasons that are lost to time, the `file_transfers` machinery that course instance
+        // copying utilizes first copies files from the source course to a temporary directory,
+        // and then completes the copy by moving the files to the target course. However, we opted
+        // not to use this mechanism to copy questions, as we think it's largely unnecessary.
+        //
+        // TODO: in the future, update `file_transfers` to copy content directly from the source
+        // course to the target course. To avoid races, we'd want to store just the _intent_ to copy
+        // a question or course instance, and then when we want to complete the copy, we'd grab a
+        // lock on both the source and target courses, then perform the copy.
+        const { questionPath, qid } = await copyQuestion({
+          course: this.course,
           from_path,
           from_qid,
-          uuidv4(),
-        );
+          uuid,
+          existingTitles: existingQuestionTitles,
+          existingQids: existingQuestionQids,
+        });
 
         newQids[question.qid] = qid;
         pathsToAdd.push(questionPath);
@@ -1190,7 +1220,7 @@ export class CourseInstanceRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
@@ -1387,10 +1417,8 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-        course_id: this.course.id,
-      });
-      const oldNamesLong = result.rows.map((row) => row.title);
+      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
+      const oldNamesLong = questionMetadata.filter((title) => title !== null);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1460,7 +1488,7 @@ export class QuestionAddEditor extends Editor {
         });
       }
 
-      debug(`Copy template\n from ${fromPath}\n to ${newQuestionPath}`);
+      debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
       await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
 
       debug('Read info.json');
@@ -1697,7 +1725,7 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files\n from ${oldPath}\n to ${newPath}`);
+    debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
@@ -1795,12 +1823,17 @@ export class QuestionCopyEditor extends Editor {
   async write() {
     debug('QuestionCopyEditor: write()');
 
-    const { questionPath, qid } = await copyQuestion(
-      this.course,
-      this.from_path,
-      this.from_qid,
-      this.uuid,
-    );
+    const { questionPath, qid } = await copyQuestion({
+      course: this.course,
+      from_path: this.from_path,
+      from_qid: this.from_qid,
+      uuid: this.uuid,
+      existingTitles: await selectQuestionTitlesForCourse(this.course),
+      existingQids: await getExistingShortNames(
+        path.join(this.course.path, 'questions'),
+        'info.json',
+      ),
+    });
 
     return {
       pathsToAdd: [questionPath],
@@ -1809,32 +1842,48 @@ export class QuestionCopyEditor extends Editor {
   }
 }
 
-async function copyQuestion(
-  course: Course,
-  from_path: string,
-  from_qid: string,
-  uuid: string,
-): Promise<{ questionPath: string; qid: string }> {
+async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
+  return await sqldb.queryRows(
+    sql.select_question_titles_for_course,
+    { course_id: course.id },
+    z.string(),
+  );
+}
+
+async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
+  return await sqldb.queryRows(
+    sql.select_question_uuids_for_course,
+    { course_id: course.id },
+    z.string(),
+  );
+}
+
+async function copyQuestion({
+  course,
+  from_path,
+  from_qid,
+  uuid,
+  existingTitles: oldLongNames,
+  existingQids: oldShortNames,
+}: {
+  course: Course;
+  from_path: string;
+  from_qid: string;
+  uuid: string;
+  existingTitles: string[];
+  existingQids: string[];
+}): Promise<{ questionPath: string; qid: string }> {
   const questionsPath = path.join(course.path, 'questions');
 
   debug('Get title of question that is being copied');
   const sourceInfoJson = await fs.readJson(path.join(from_path, 'info.json'));
   const from_title = sourceInfoJson.title || 'Empty Title';
 
-  debug('Get all existing long names');
-  const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-    course_id: course.id,
-  });
-  const oldNamesLong = result.rows.map((row) => row.title);
-
-  debug('Get all existing short names');
-  const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
-
   debug('Generate qid and title');
   let qid = from_qid;
   let questionTitle = from_title;
-  if (oldNamesShort.includes(from_qid) || oldNamesLong.includes(from_title)) {
-    const names = getNamesForCopy(from_qid, oldNamesShort, from_title, oldNamesLong);
+  if (oldShortNames.includes(from_qid) || oldLongNames.includes(from_title)) {
+    const names = getNamesForCopy(from_qid, oldShortNames, from_title, oldLongNames);
     qid = names.shortName;
     questionTitle = names.longName;
   }
@@ -1843,7 +1892,7 @@ async function copyQuestion(
   const fromPath = from_path;
   const toPath = questionPath;
 
-  debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+  debug(`Copy question from ${fromPath} to ${toPath}`);
   await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
   debug('Read info.json');
