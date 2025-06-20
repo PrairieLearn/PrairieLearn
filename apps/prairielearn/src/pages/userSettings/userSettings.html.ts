@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
@@ -17,6 +18,9 @@ export const AccessTokenSchema = z.object({
   token: z.string().nullable(),
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
+
+const ENHANCED_NAV_DISCUSSION_URL =
+  'https://github.com/PrairieLearn/PrairieLearn/discussions/12230';
 
 export function UserSettings({
   authn_user,
@@ -48,6 +52,7 @@ export function UserSettings({
       page: 'user_settings',
       type: 'plain',
     },
+    headContent: html` ${compiledScriptTag('userSettingsClient.ts')} `,
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
@@ -92,7 +97,7 @@ export function UserSettings({
                   <h2>Feature preview</h2>
                 </div>
                 <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex align-items-center">
+                  <li class="list-group-item">
                     <div class="form-check">
                       <input
                         type="checkbox"
@@ -107,17 +112,37 @@ export function UserSettings({
                         for="enhanced_navigation_toggle"
                       >
                         Enhanced navigation
-                        <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
-                          Beta
-                        </span>
                       </label>
                       <div class="small text-muted">
                         Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
+                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank">
+                          Share your feedback
+                        </a>
+                        to help us improve the new design.
                       </div>
+                    </div>
+
+                    <div
+                      id="enhanced_navigation_feedback"
+                      class="alert alert-info mt-2 mb-2 d-none"
+                    >
+                      <div class="mb-2 text-dark">
+                        <strong>Turning off enhanced navigation?</strong> We'd love to know what's
+                        not working for you.
+                      </div>
+                      <a
+                        href="${ENHANCED_NAV_DISCUSSION_URL}"
+                        target="_blank"
+                        class="btn btn-sm btn-outline-dark"
+                      >
+                        Share feedback on GitHub Discussions
+                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                      </a>
                     </div>
                   </li>
                 </ul>
+
                 <div class="card-footer">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
