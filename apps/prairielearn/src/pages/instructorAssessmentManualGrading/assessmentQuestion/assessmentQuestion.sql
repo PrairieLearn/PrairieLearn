@@ -147,19 +147,6 @@ WITH
       s.date DESC,
       s.id DESC
   ),
-  latest_submissions AS (
-    SELECT DISTINCT
-      ON (dgj.instance_question_id) dgj.instance_question_id AS instance_question_id,
-      s.id AS submission_id
-    FROM
-      deleted_grading_jobs AS dgj
-      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    ORDER BY
-      dgj.instance_question_id,
-      s.date DESC,
-      s.id DESC
-  ),
   updated_submissions AS (
     UPDATE submissions AS s
     SET
@@ -175,9 +162,11 @@ WITH
       deleted_grading_jobs AS dgj
       LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON (
         mrsmgj.instance_question_id = dgj.instance_question_id
+        AND mrsmgj.submission_id = s.id
       )
       LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON (
         mrsnagj.instance_question_id = dgj.instance_question_id
+        AND mrsnagj.submission_id = s.id
       )
     WHERE
       s.id = dgj.submission_id
