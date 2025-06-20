@@ -207,9 +207,7 @@ export function InstructorCourseAdminSettings({
                       for="ai_question_generation_toggle"
                     >
                       Enable AI question generation
-                      <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
-                        Beta
-                      </span>
+                      <span class="badge rounded-pill text-bg-success ms-2">Alpha preview</span>
                     </label>
                     <div class="small text-muted">
                       Generate questions with natural language using AI.
