@@ -116,7 +116,6 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
-    console.log(req.body);
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
