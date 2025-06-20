@@ -1,5 +1,5 @@
 import { type SortDirection, type Table, flexRender } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import { useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.types.js';
@@ -24,17 +24,31 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     overscan: 10,
   });
   const virtualRows = rowVirtualizer.getVirtualItems();
+  const [before, after] =
+    virtualRows.length > 0
+      ? [
+          notUndefined(virtualRows[0]).start - rowVirtualizer.options.scrollMargin,
+          rowVirtualizer.getTotalSize() - notUndefined(virtualRows[virtualRows.length - 1]).end,
+        ]
+      : [0, 0];
+  const headerGroups = table.getHeaderGroups();
+
   return (
     <>
-      <div
-        ref={parentRef}
-        className="table-responsive"
-        style={{ maxHeight: '600px', overflowY: 'auto', color: 'red' }}
-      >
-        <div style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
-          <table className="table table-striped table-hover border">
-            <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-              {table.getHeaderGroups().map((headerGroup) => (
+      <div ref={parentRef} style={{ maxHeight: '600px', overflow: 'auto', overflowAnchor: 'none' }}>
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            position: 'relative',
+            width: '100%',
+          }}
+        >
+          <table
+            className="table table-striped table-hover border border-top-0"
+            style={{ tableLayout: 'fixed' }}
+          >
+            <thead>
+              {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <th
@@ -43,6 +57,9 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       style={{
                         cursor: header.column.getCanSort() ? 'pointer' : 'default',
                         width: header.getSize(),
+                        position: 'sticky',
+                        // background: 'green',
+                        top: 0,
                       }}
                       onClick={header.column.getToggleSortingHandler()}
                     >
@@ -60,14 +77,18 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
               ))}
             </thead>
             <tbody>
-              {virtualRows.map((virtualRow, index) => {
+              {before > 0 && (
+                <tr>
+                  <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
+                </tr>
+              )}
+              {virtualRows.map((virtualRow) => {
                 const row = rows[virtualRow.index];
                 return (
                   <tr
                     key={row.id}
                     style={{
                       height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`,
                     }}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -78,6 +99,11 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                   </tr>
                 );
               })}
+              {after > 0 && (
+                <tr>
+                  <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
