@@ -509,7 +509,10 @@ export abstract class Editor {
  * Get all existing shortnames, recursing on nonempty directories that do not contain
  * an "info" file.
  *
- * TODO: does this need to use the disk? Why can't we query the database instead?
+ * TODO: we might be able to get away with querying the database for this information instead.
+ * It's unclear why we're going to disk in the first place. Possibly it's to be extra cautious
+ * in case we're in a state where there are sync errors, but even in that case, sync errors
+ * should not have prevented us from persisting short names in the first place.
  *
  * @param rootDirectory Directory to start searching from.
  * @param infoFile Name of the info file, will stop recursing once a directory contains this.
