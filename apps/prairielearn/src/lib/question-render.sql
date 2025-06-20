@@ -89,8 +89,7 @@ FROM
       grading_jobs
     WHERE
       submission_id = s.id
-      -- TODO: exclude AI grading jobs here too?
-      AND grading_method != 'Manual'
+      AND grading_method NOT IN ('Manual', 'AI')
     ORDER BY
       date DESC,
       id DESC

@@ -18,10 +18,10 @@ BEGIN
         JOIN submissions s ON (s.variant_id = v.id)
         JOIN grading_jobs gj ON (gj.submission_id = s.id)
     WHERE
-        -- TODO: exclude manual and AI grading jobs here?
         iq.id = instance_questions_next_allowed_grade.instance_question_id
         AND aq.grade_rate_minutes IS NOT NULL
-        AND gj.gradable;
+        AND gj.gradable
+        AND gj.grading_method NOT IN ('Manual', 'AI');
 
     IF NOT FOUND THEN
         allow_grade_date := NULL;
