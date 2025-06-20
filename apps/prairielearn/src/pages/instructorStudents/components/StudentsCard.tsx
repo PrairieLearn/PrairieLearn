@@ -77,7 +77,7 @@ export function StudentsCard({
         size: 32,
         enableResizing: false,
         enableHiding: false,
-        enablePinning: false,
+        enablePinning: true,
       }),
       columnHelper.accessor('uid', {
         header: 'UID',
@@ -181,7 +181,10 @@ export function StudentsCard({
                   <i className="bi bi-view-list me-2" />
                   View
                 </button>
-                <div className="dropdown-menu dropdown-menu-arrow">
+                <div
+                  className="dropdown-menu dropdown-menu-arrow"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="px-2 py-1">
                     <label className="form-check">
                       <input
@@ -219,45 +222,91 @@ export function StudentsCard({
                     <strong>Freeze columns</strong>
                   </div>
                   {(() => {
-                    const pinnableColumns = table
+                    const visiblePinnableColumns = table
                       .getAllLeafColumns()
                       .filter((c) => c.getCanPin() && c.getIsVisible());
+
                     const pinnedLeftIds = table.getState().columnPinning?.left ?? [];
+
+                    const frozenColumns = pinnedLeftIds
+                      .map((id) => visiblePinnableColumns.find((c) => c.id === id))
+                      .filter((c) => !!c);
+
+                    const nonFrozenColumns = visiblePinnableColumns.filter(
+                      (c) => !pinnedLeftIds.includes(c.id),
+                    );
+
+                    const handleFreeze = () => {
+                      if (nonFrozenColumns.length > 0) {
+                        const newPinnedIds = [...pinnedLeftIds, nonFrozenColumns[0].id];
+                        setColumnPinning({ left: newPinnedIds, right: [] });
+                      }
+                    };
+
+                    const handleUnfreeze = () => {
+                      if (pinnedLeftIds.length > 0) {
+                        const newPinnedIds = pinnedLeftIds.slice(0, -1);
+                        setColumnPinning({ left: newPinnedIds, right: [] });
+                      }
+                    };
+
                     return (
                       <>
-                        <div className="px-2 py-1">
-                          <label className="form-check">
-                            <input
-                              type="radio"
-                              className="form-check-input"
-                              name="freeze-columns"
-                              checked={pinnedLeftIds.length === 0}
-                              onChange={() => setColumnPinning({ left: [], right: [] })}
-                            />
-                            <span className="form-check-label">None</span>
-                          </label>
-                        </div>
-                        {pinnableColumns.map((column, index) => {
-                          const subset = pinnableColumns.slice(0, index + 1).map((c) => c.id);
+                        {/* Render frozen columns */}
+                        {frozenColumns.map((column, index) => {
+                          if (!column) return null;
                           const header =
                             typeof column.columnDef.header === 'string'
                               ? column.columnDef.header
                               : column.id;
+                          const isLast = index === frozenColumns.length - 1;
                           return (
-                            <div key={column.id} className="px-2 py-1">
-                              <label className="form-check">
-                                <input
-                                  type="radio"
-                                  className="form-check-input"
-                                  name="freeze-columns"
-                                  checked={
-                                    pinnedLeftIds.length === subset.length &&
-                                    subset.every((id, i) => id === pinnedLeftIds[i])
-                                  }
-                                  onChange={() => setColumnPinning({ left: subset, right: [] })}
-                                />
-                                <span className="form-check-label">Up to {header}</span>
-                              </label>
+                            <div
+                              key={column.id}
+                              className="px-2 py-1 d-flex align-items-center justify-content-between"
+                            >
+                              <span className="dropdown-item-text">{header}</span>
+                              {isLast && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-ghost"
+                                  title="Unfreeze column"
+                                  onClick={handleUnfreeze}
+                                >
+                                  <i className="bi bi-x-lg" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {frozenColumns.length > 0 && nonFrozenColumns.length > 0 && (
+                          <div className="dropdown-divider"></div>
+                        )}
+
+                        {/* Render non-frozen columns */}
+                        {nonFrozenColumns.map((column, index) => {
+                          const header =
+                            typeof column.columnDef.header === 'string'
+                              ? column.columnDef.header
+                              : column.id;
+                          const isFirst = index === 0;
+                          return (
+                            <div
+                              key={column.id}
+                              className="px-2 py-1 d-flex align-items-center justify-content-between"
+                            >
+                              <span className="dropdown-item-text">{header}</span>
+                              {isFirst && (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-ghost"
+                                  title="Freeze column"
+                                  onClick={handleFreeze}
+                                >
+                                  <i className="bi bi-snow" />
+                                </button>
+                              )}
                             </div>
                           );
                         })}

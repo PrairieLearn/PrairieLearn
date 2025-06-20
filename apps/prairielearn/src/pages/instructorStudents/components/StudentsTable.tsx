@@ -1,6 +1,6 @@
 import { type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'preact/compat';
+import { type JSX, useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.types.js';
 
@@ -52,63 +52,71 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      style={{
-                        width: header.getSize(),
-                        position: 'sticky',
-                        top: 0,
-                      }}
-                    >
-                      <div
-                        {...(header.column.getCanSort()
-                          ? {
-                              onClick: header.column.getToggleSortingHandler(),
-                              style: { cursor: 'pointer' },
-                              className: 'text-nowrap',
+                  {headerGroup.headers.map((header) => {
+                    const isPinned = header.column.getIsPinned();
+                    const style: JSX.CSSProperties = {
+                      width: header.getSize(),
+                      position: 'sticky',
+                      top: 0,
+                      background: 'var(--bs-body-bg)',
+                      zIndex: 1,
+                    };
+
+                    if (isPinned === 'left') {
+                      style.left = header.getStart();
+                    }
+
+                    return (
+                      <th key={header.id} style={style}>
+                        <div
+                          {...(header.column.getCanSort()
+                            ? {
+                                onClick: header.column.getToggleSortingHandler(),
+                                style: { cursor: 'pointer' },
+                                className: 'text-nowrap',
+                              }
+                            : { className: 'text-nowrap' })}
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getCanSort() && (
+                            <span className="ms-1">
+                              <SortIcon sortMethod={header.column.getIsSorted() || null} />
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            height: '100%',
+                            width: '4px',
+                            background: header.column.getIsResizing()
+                              ? 'var(--bs-primary)'
+                              : 'transparent',
+                            cursor: 'col-resize',
+                            userSelect: 'none',
+                            touchAction: 'none',
+                            transition: 'background-color 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!header.column.getIsResizing()) {
+                              e.currentTarget.style.background = 'var(--bs-gray-400)';
                             }
-                          : { className: 'text-nowrap' })}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && (
-                          <span className="ms-1">
-                            <SortIcon sortMethod={header.column.getIsSorted() || null} />
-                          </span>
-                        )}
-                      </div>
-                      <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                        style={{
-                          position: 'absolute',
-                          right: 0,
-                          top: 0,
-                          height: '100%',
-                          width: '4px',
-                          background: header.column.getIsResizing()
-                            ? 'var(--bs-primary)'
-                            : 'transparent',
-                          cursor: 'col-resize',
-                          userSelect: 'none',
-                          touchAction: 'none',
-                          transition: 'background-color 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!header.column.getIsResizing()) {
-                            e.currentTarget.style.background = 'var(--bs-gray-400)';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!header.column.getIsResizing()) {
-                            e.currentTarget.style.background = 'transparent';
-                          }
-                        }}
-                      />
-                    </th>
-                  ))}
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!header.column.getIsResizing()) {
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
+                        />
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
