@@ -66,14 +66,13 @@ function CopyCourseInstanceModal({
                 <strong>${questionsToCopy}</strong> ${questionsToCopy === 1
                   ? 'question'
                   : 'questions'}
-               will be copied to your course.
+                will be copied to your course.
               </li>
               <li>
                 <strong>${questionsToLink}</strong> ${questionsToLink === 1
                   ? 'question'
                   : 'questions'}
-                will be linked from ${course.short_name} for use in
-                your course
+                will be linked from ${course.short_name} for use in your course
               </li>
             </ul>
           `,

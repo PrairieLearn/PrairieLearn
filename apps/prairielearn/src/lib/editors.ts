@@ -1048,7 +1048,7 @@ export class CourseInstanceCopyEditor extends Editor {
         // a question or course instance, and then when we want to complete the copy, we'd grab a
         // lock on both the source and target courses, then perform the copy.
         // To avoid deadlocks we'll need to take these locks in a universal order,
-        // such as ordering the two courses by `id` and locking in that order.     
+        // such as ordering the two courses by `id` and locking in that order.
         const { questionPath, qid } = await copyQuestion({
           course: this.course,
           from_path,
