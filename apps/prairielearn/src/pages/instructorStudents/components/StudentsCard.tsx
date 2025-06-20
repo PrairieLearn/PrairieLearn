@@ -1,6 +1,8 @@
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type ColumnSizingState,
+  type RowPinningState,
   type SortingState,
   createColumnHelper,
   getCoreRowModel,
@@ -42,9 +44,32 @@ export function StudentsCard({
   const [sorting, setSorting] = useState<SortingState>(initialSortingValue);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState(initialGlobalFilterValue);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
+      columnHelper.display({
+        id: 'pin',
+        cell: ({ row }) => (
+          <div className="text-center">
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => row.pin(row.getIsPinned() ? false : 'top', true, true)}
+              title={row.getIsPinned() ? 'Unpin row' : 'Pin row'}
+            >
+              <i
+                className={`bi ${
+                  row.getIsPinned() ? 'bi-pin-angle-fill text-primary' : 'bi-pin-angle'
+                }`}
+              />
+            </button>
+          </div>
+        ),
+        size: 32,
+        enableResizing: false,
+      }),
       columnHelper.accessor('uid', {
         header: 'UID',
         cell: (info) => info.getValue(),
@@ -79,14 +104,20 @@ export function StudentsCard({
   const table = useReactTable({
     data: students,
     columns,
+    columnResizeMode: 'onChange',
+    getRowId: (row) => row.uid,
     state: {
       sorting,
       columnFilters,
       globalFilter,
+      columnSizing,
+      rowPinning,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    onColumnSizingChange: setColumnSizing,
+    onRowPinningChange: setRowPinning,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

@@ -16,7 +16,9 @@ function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
 
 export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { rows } = table.getRowModel();
+
+  const rows = [...table.getTopRows(), ...table.getCenterRows()];
+
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -53,24 +55,58 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className="text-nowrap"
                       style={{
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
                         width: header.getSize(),
                         position: 'sticky',
-                        // background: 'green',
                         top: 0,
                       }}
-                      onClick={header.column.getToggleSortingHandler()}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getCanSort() && (
-                        <span className="ms-1">
-                          <SortIcon sortMethod={header.column.getIsSorted() || null} />
-                        </span>
-                      )}
+                      <div
+                        {...(header.column.getCanSort()
+                          ? {
+                              onClick: header.column.getToggleSortingHandler(),
+                              style: { cursor: 'pointer' },
+                              className: 'text-nowrap',
+                            }
+                          : { className: 'text-nowrap' })}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && (
+                          <span className="ms-1">
+                            <SortIcon sortMethod={header.column.getIsSorted() || null} />
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        style={{
+                          position: 'absolute',
+                          right: 0,
+                          top: 0,
+                          height: '100%',
+                          width: '4px',
+                          background: header.column.getIsResizing()
+                            ? 'var(--bs-primary)'
+                            : 'transparent',
+                          cursor: 'col-resize',
+                          userSelect: 'none',
+                          touchAction: 'none',
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!header.column.getIsResizing()) {
+                            e.currentTarget.style.background = 'var(--bs-gray-400)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!header.column.getIsResizing()) {
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
+                      />
                     </th>
                   ))}
                 </tr>
