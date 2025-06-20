@@ -148,13 +148,24 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           width: cell.column.getSize(),
                           position: 'sticky',
                           left: cell.column.getStart(),
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
                     {row.getCenterVisibleCells().map((cell) => (
-                      <td key={cell.id} style={{ width: cell.column.getSize() }}>
+                      <td
+                        key={cell.id}
+                        style={{
+                          width: cell.column.getSize(),
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
