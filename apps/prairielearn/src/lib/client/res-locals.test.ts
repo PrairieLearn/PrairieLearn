@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { stripResLocals } from '../res-locals.js';
+import { stripResLocals } from './res-locals.js';
 
 describe('stripResLocals', () => {
   it('strips extra fields from the data', () => {
