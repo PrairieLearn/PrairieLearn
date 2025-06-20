@@ -176,6 +176,7 @@ export async function updateAssessmentInstance(
     if (assessmentInstance == null) {
       throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
+
     if (!assessmentInstance.open) {
       // Silently return without updating
       return false;
@@ -187,6 +188,8 @@ export async function updateAssessmentInstance(
       { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
       IdSchema,
     );
+
+    console.log('newInstanceQuestionIds', newInstanceQuestionIds); 
 
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
