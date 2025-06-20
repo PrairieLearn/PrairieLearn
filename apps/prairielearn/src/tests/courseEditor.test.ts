@@ -351,6 +351,32 @@ const publicCopyTestData: EditData[] = [
       'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
     ]),
   },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'courseInstances/Fa19_copy1/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'questions/test-course/shared-source-publicly_copy1/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
