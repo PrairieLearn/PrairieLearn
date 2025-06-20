@@ -127,7 +127,7 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 prepare-docs-venv:
 	@if uv --version >/dev/null 2>&1; then \
-		uv venv /tmp/pldocs/venv; \
+		uv venv --python-preference only-system /tmp/pldocs/venv; \
 		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
 	else \
 		python3 -m venv /tmp/pldocs/venv; \
