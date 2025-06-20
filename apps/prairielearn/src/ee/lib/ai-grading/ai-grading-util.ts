@@ -188,6 +188,9 @@ function generateSubmissionMessage({
     text: 'The student submitted the following response: \n<response>\n',
   });
 
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments 
+  // to the message content to construct an AI-readable version of the submission.
+
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
