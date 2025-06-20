@@ -1,8 +1,11 @@
 -- BLOCK select_course_instance_enrollments
 SELECT 
-    * 
+    *,
+    u.uid as user_uid
 FROM 
     enrollments as e
+JOIN 
+    users as u ON u.user_id = e.user_id
 WHERE
     e.course_instance_id = $course_instance_id
 

@@ -65,7 +65,9 @@ export async function generateSubmissions() {
     const enrollments = await queryRows(
         sql.select_course_instance_enrollments,
         { course_instance_id: courseInstance.id },
-        EnrollmentSchema
+        EnrollmentSchema.extend({
+            user_uid: z.string()
+        })
     );
 
     // Find the assessments
@@ -82,9 +84,10 @@ export async function generateSubmissions() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
 
+    const nameToSubmissionFolder: Record<string, string> = {};
+
     for (let i = 0; i < enrollments.length; i++) {
         const enrolled_student = enrollments[i];
-
 
         const submission_folder = path.join(
             __dirname,
@@ -102,7 +105,7 @@ export async function generateSubmissions() {
             client_fingerprint_id: null
         });
 
-        console.log('new_assessment_instance_id', new_assessment_instance_id);
+        nameToSubmissionFolder[enrolled_student.user_uid] = submission_folder;
 
         const instance_questions = await queryRows(
             sql.select_instance_questions,
@@ -114,8 +117,6 @@ export async function generateSubmissions() {
         );
         
         for (const instance_question of instance_questions) {
-            console.log('instance_question', instance_question);
-
             // Get the question
             const question = await selectQuestionById(
                 instance_question.question_id
@@ -150,16 +151,19 @@ export async function generateSubmissions() {
                     filename
                 );
                 // Retrieve the base-64 encoded image, stored locally 
-                const fileBuffer = fs.readFileSync(currentPath);
-                const base64_content = fileBuffer.toString('base64');
+                const encodedData = fs.readFileSync(currentPath, {
+                    encoding: 'base64'
+                });
+
+                const dataWithPrefix = `data:image/jpeg;base64,${encodedData}`;
 
                 const file = {
                     name: filename,
-                    contents: base64_content,
+                    contents: encodedData,
                     mimetype: 'image/jpeg',
                 };
 
-                submitted_answer[filename] = fileBuffer.toString('base64');
+                submitted_answer[filename] = dataWithPrefix;
                 submitted_files.push(file);
             }
 
@@ -181,7 +185,7 @@ export async function generateSubmissions() {
             );
         }            
         // break;
-
+        console.log('nameToSubmissionFolder: ', JSON.stringify(nameToSubmissionFolder, null, 2));
     }
     return;
 }
