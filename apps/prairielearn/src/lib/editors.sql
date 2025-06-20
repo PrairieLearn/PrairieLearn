@@ -12,16 +12,6 @@ WHERE
   AND a.deleted_at IS NULL
   AND ci.deleted_at IS NULL;
 
--- BLOCK select_assessments_with_course_instance
-SELECT
-  a.title,
-  a.tid AS assessment_directory
-FROM
-  assessments AS a
-WHERE
-  a.course_instance_id = $course_instance_id
-  AND a.deleted_at IS NULL;
-
 -- BLOCK select_course_instances_with_course
 SELECT
   ci.long_name

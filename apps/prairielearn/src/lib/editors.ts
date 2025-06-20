@@ -19,6 +19,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
+import { selectAssessments } from '../models/assessment.js';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
@@ -645,10 +646,8 @@ export class AssessmentCopyEditor extends Editor {
     );
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-      course_instance_id: this.course_instance.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
+    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -843,10 +842,16 @@ export class AssessmentAddEditor extends Editor {
     );
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-      course_instance_id: this.course_instance.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.title);
+    const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
+    const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
+    const nextAssessmentNumber =
+      Math.max(
+        0,
+        ...assessments
+          .filter((assessment) => assessment.assessment_set.name === this.set)
+          .map((assessment) => Number(assessment.number))
+          .filter(Number.isInteger),
+      ) + 1;
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
@@ -885,7 +890,7 @@ export class AssessmentAddEditor extends Editor {
       title: assessmentTitle,
       set: this.set,
       module: this.module,
-      number: '1',
+      number: nextAssessmentNumber.toString(),
       allowAccess: [],
       zones: [],
     };
@@ -1015,15 +1020,14 @@ async function updateInfoAssessmentFilesForTargetCourse(
   courseInstancePath: string,
   fromCourseSharingName: string,
 ) {
-  const result = await sqldb.queryAsync(sql.select_assessments_with_course_instance, {
-    course_instance_id: courseInstanceId,
-  });
-  const assessments = result.rows;
+  const assessments = await selectAssessments({ course_instance_id: courseInstanceId });
   for (const assessment of assessments) {
+    // The column is technically nullable, but in practice all assessments have a TID
+    assert(assessment.tid !== null, 'assessment.tid is required');
     const infoPath = path.join(
       courseInstancePath,
       'assessments',
-      assessment.assessment_directory,
+      assessment.tid,
       'infoAssessment.json',
     );
 
