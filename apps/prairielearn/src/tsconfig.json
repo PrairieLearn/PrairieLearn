@@ -9,6 +9,7 @@
       "@components/*": ["./components/*"],
       "@lib/*": ["./lib/*"],
       "@pages/*": ["./pages/*"],
+      "~/*": ["./*"],
       "react": ["./node_modules/preact/compat/", "../../../node_modules/preact/compat/"],
       "react/jsx-runtime": [
         "./node_modules/preact/jsx-runtime",

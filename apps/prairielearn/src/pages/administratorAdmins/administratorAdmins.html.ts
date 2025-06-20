@@ -1,7 +1,7 @@
+import { escapeHtml, html } from '@prairielearn/html';
+
 import { PageLayout } from '@components/PageLayout.html.js';
 import { type User } from '@lib/db-types.js';
-
-import { escapeHtml, html } from '@prairielearn/html';
 
 export function AdministratorAdmins({
   admins,

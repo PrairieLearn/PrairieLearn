@@ -63,6 +63,7 @@ export default defineConfig(({ mode }) => {
           '@components': path.resolve(import.meta.dirname, 'src/components'),
           '@lib': path.resolve(import.meta.dirname, 'src/lib'),
           '@pages': path.resolve(import.meta.dirname, 'src/pages'),
+          '~': import.meta.dirname,
         },
       },
     }),
