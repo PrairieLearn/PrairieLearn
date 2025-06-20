@@ -59,7 +59,13 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       position: 'sticky',
                       top: 0,
                       background: 'var(--bs-body-bg)',
-                      zIndex: 1,
+                      /*
+                      zIndex:
+                        2 - pinned header columns
+                        1 - unpinned header row
+                        0 - table body
+                      */
+                      zIndex: isPinned === 'left' ? 2 : 1,
                     };
 
                     if (isPinned === 'left') {

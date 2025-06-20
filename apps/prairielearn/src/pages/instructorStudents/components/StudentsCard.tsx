@@ -18,6 +18,7 @@ import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js'
 import { useURLSync } from '../../../lib/client/useURLSync.js';
 import type { StudentRow } from '../instructorStudents.types.js';
 
+import { ColumnManager } from './ColumnManager.js';
 import { StudentsTable } from './StudentsTable.js';
 
 function downloadStudentsCSV(students: StudentRow[], filename: string): void {
@@ -57,7 +58,7 @@ export function StudentsCard({
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
       columnHelper.display({
-        id: 'pin',
+        id: 'Pin',
         cell: ({ row }) => (
           <div className="text-center">
             <button
@@ -171,150 +172,7 @@ export function StudentsCard({
                   setGlobalFilter(e.target.value);
                 }}
               />
-              <div className="btn-group">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary dropdown-toggle text-nowrap"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  <i className="bi bi-view-list me-2" />
-                  View
-                </button>
-                <div
-                  className="dropdown-menu dropdown-menu-arrow"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="px-2 py-1">
-                    <label className="form-check">
-                      <input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={table.getIsAllColumnsVisible()}
-                        onChange={table.getToggleAllColumnsVisibilityHandler()}
-                      />
-                      <span className="form-check-label">Toggle all</span>
-                    </label>
-                  </div>
-                  <div className="dropdown-divider"></div>
-                  {table.getAllLeafColumns().map((column) => {
-                    if (!column.getCanHide()) return null;
-                    const header =
-                      typeof column.columnDef.header === 'string'
-                        ? column.columnDef.header
-                        : column.id;
-                    return (
-                      <div key={column.id} className="px-2 py-1">
-                        <label className="form-check">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            checked={column.getIsVisible()}
-                            onChange={column.getToggleVisibilityHandler()}
-                          />
-                          <span className="form-check-label">{header}</span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                  <div className="dropdown-divider"></div>
-                  <div className="px-2 py-1 dropdown-item-text">
-                    <strong>Freeze columns</strong>
-                  </div>
-                  {(() => {
-                    const visiblePinnableColumns = table
-                      .getAllLeafColumns()
-                      .filter((c) => c.getCanPin() && c.getIsVisible());
-
-                    const pinnedLeftIds = table.getState().columnPinning?.left ?? [];
-
-                    const frozenColumns = pinnedLeftIds
-                      .map((id) => visiblePinnableColumns.find((c) => c.id === id))
-                      .filter((c) => !!c);
-
-                    const nonFrozenColumns = visiblePinnableColumns.filter(
-                      (c) => !pinnedLeftIds.includes(c.id),
-                    );
-
-                    const handleFreeze = () => {
-                      if (nonFrozenColumns.length > 0) {
-                        const newPinnedIds = [...pinnedLeftIds, nonFrozenColumns[0].id];
-                        setColumnPinning({ left: newPinnedIds, right: [] });
-                      }
-                    };
-
-                    const handleUnfreeze = () => {
-                      if (pinnedLeftIds.length > 0) {
-                        const newPinnedIds = pinnedLeftIds.slice(0, -1);
-                        setColumnPinning({ left: newPinnedIds, right: [] });
-                      }
-                    };
-
-                    return (
-                      <>
-                        {/* Render frozen columns */}
-                        {frozenColumns.map((column, index) => {
-                          if (!column) return null;
-                          const header =
-                            typeof column.columnDef.header === 'string'
-                              ? column.columnDef.header
-                              : column.id;
-                          const isLast = index === frozenColumns.length - 1;
-                          return (
-                            <div
-                              key={column.id}
-                              className="px-2 py-1 d-flex align-items-center justify-content-between"
-                            >
-                              <span className="dropdown-item-text">{header}</span>
-                              {isLast && (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-ghost"
-                                  title="Unfreeze column"
-                                  onClick={handleUnfreeze}
-                                >
-                                  <i className="bi bi-x-lg" />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {frozenColumns.length > 0 && nonFrozenColumns.length > 0 && (
-                          <div className="dropdown-divider"></div>
-                        )}
-
-                        {/* Render non-frozen columns */}
-                        {nonFrozenColumns.map((column, index) => {
-                          const header =
-                            typeof column.columnDef.header === 'string'
-                              ? column.columnDef.header
-                              : column.id;
-                          const isFirst = index === 0;
-                          return (
-                            <div
-                              key={column.id}
-                              className="px-2 py-1 d-flex align-items-center justify-content-between"
-                            >
-                              <span className="dropdown-item-text">{header}</span>
-                              {isFirst && (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-ghost"
-                                  title="Freeze column"
-                                  onClick={handleFreeze}
-                                >
-                                  <i className="bi bi-snow" />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
+              <ColumnManager table={table} />
             </div>
             <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center">
               <div className="text-muted mt-2 mt-md-0 me-md-2">
