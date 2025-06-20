@@ -285,7 +285,8 @@ WITH
 SELECT
   rgr.*,
   gir.applied_rubric_items,
-  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed,
+  iq.is_ai_graded
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
