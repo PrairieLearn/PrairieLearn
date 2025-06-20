@@ -1047,6 +1047,8 @@ export class CourseInstanceCopyEditor extends Editor {
         // course to the target course. To avoid races, we'd want to store just the _intent_ to copy
         // a question or course instance, and then when we want to complete the copy, we'd grab a
         // lock on both the source and target courses, then perform the copy.
+        // To avoid deadlocks we'll need to take these locks in a universal order,
+        // such as ordering the two courses by `id` and locking in that order.     
         const { questionPath, qid } = await copyQuestion({
           course: this.course,
           from_path,
