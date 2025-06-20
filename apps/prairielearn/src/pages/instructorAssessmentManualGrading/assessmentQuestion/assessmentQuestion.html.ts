@@ -1,5 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { Modal } from '../../../components/Modal.html.js';
@@ -166,15 +167,25 @@ export function AssessmentQuestion({
                               html`<tr>
                                 <td>${item.rubric_item.description}</td>
                                 <td>
-                                  ${item.disagreement_count
-                                    ? html`
+                                  ${run(() => {
+                                    if (item.disagreement_count) {
+                                      return html`
                                         <i class="bi bi-x-square-fill text-danger"></i>
                                         <span class="text-muted">
                                           (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
                                           disagree)
                                         </span>
-                                      `
-                                    : html`<i class="bi bi-check-square-fill text-success"></i>`}
+                                      `;
+                                    }
+
+                                    if (aiGradingStats.submission_rubric_count === 0) {
+                                      return html`&mdash;`;
+                                    }
+
+                                    return html`<i
+                                      class="bi bi-check-square-fill text-success"
+                                    ></i>`;
+                                  })}
                                 </td>
                               </tr>`,
                           )}
@@ -199,6 +210,8 @@ export function AssessmentQuestion({
         : ''}
 
       <form name="grading-form" method="POST">
+        <input type="hidden" name="__action" value="batch_action" />
+        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
         <div class="card mb-4">
           <div
             class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
@@ -305,19 +318,28 @@ export function AssessmentQuestion({
                         >
                           Grade all
                         </button>
+
+                        <hr class="dropdown-divider" />
+
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          data-bs-toggle="modal"
+                          data-bs-target="#delete-all-ai-grading-jobs-modal"
+                        >
+                          Delete all AI grading results
+                        </button>
                       </div>
                     </div>
                   `
                 : ''}
             </div>
           </div>
-          <input type="hidden" name="__action" value="batch_action" />
-          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>
         </div>
       </form>
     `,
-    postContent: GradingConflictModal(),
+    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token })],
   });
 }
 
@@ -329,6 +351,23 @@ function GradingConflictModal() {
     footer: html`
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Dismiss</button>
       <a class="btn btn-primary conflict-details-link" href="/">See details</a>
+    `,
+  });
+}
+
+function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'delete-all-ai-grading-jobs-modal',
+    title: 'Delete all AI grading results',
+    body: html`
+      Are you sure you want to delete <strong>all AI grading results</strong> for this assessment?
+      This action cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="delete_ai_grading_jobs" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
 }
