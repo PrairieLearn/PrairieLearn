@@ -1022,10 +1022,12 @@ async function updateInfoAssessmentFilesForTargetCourse(
 ) {
   const assessments = await selectAssessments({ course_instance_id: courseInstanceId });
   for (const assessment of assessments) {
+    // The column is technically nullable, but in practice all assessments have a TID
+    assert(assessment.tid !== null, 'assessment.tid is required');
     const infoPath = path.join(
       courseInstancePath,
       'assessments',
-      assessment.tid ?? '',
+      assessment.tid,
       'infoAssessment.json',
     );
 
