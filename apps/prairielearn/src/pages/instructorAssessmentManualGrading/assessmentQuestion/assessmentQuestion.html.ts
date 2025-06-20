@@ -95,22 +95,20 @@ export function AssessmentQuestion({
         assessmentId: assessment.id,
         urlPrefix,
       })}
-      ${aiGradingEnabled
-        ? html`
-            <div class="d-flex flex-row justify-content-between align-items-center mb-3">
-              <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                  <li class="breadcrumb-item">
-                    <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading">
-                      Manual grading
-                    </a>
-                  </li>
-                  <li class="breadcrumb-item active" aria-current="page">
-                    Question ${number_in_alternative_group}. ${question.title}
-                  </li>
-                </ol>
-              </nav>
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+              <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading"> Manual grading </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+              Question ${number_in_alternative_group}. ${question.title}
+            </li>
+          </ol>
+        </nav>
 
+        ${aiGradingEnabled
+          ? html`
               <form method="POST" class="card px-3 py-2 mb-0">
                 <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
                 <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -129,8 +127,12 @@ export function AssessmentQuestion({
                   </label>
                 </div>
               </form>
-            </div>
+            `
+          : ''}
+      </div>
 
+      ${aiGradingEnabled
+        ? html`
             <form method="POST" id="ai-grading">
               <input type="hidden" name="__action" value="ai_grade_assessment" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -145,7 +147,7 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      ${aiGradingStats
+      ${aiGradingEnabled && aiGradingStats
         ? html`
             ${aiGradingStats.rubric_stats.length
               ? html`
@@ -262,43 +264,51 @@ export function AssessmentQuestion({
                 </div>
               </div>
 
-              <div class="dropdown">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  name="ai-grading"
-                >
-                  <i class="bi bi-stars" aria-hidden="true"></i> AI grading
-                </button>
-                <div class="dropdown-menu dropdown-menu-end">
-                  <button class="dropdown-item" type="button" onclick="$('#ai-grading').submit();">
-                    Grade all ungraded
-                  </button>
-                  <button
-                    class="dropdown-item"
-                    type="button"
-                    onclick="$('#ai-grading-graded').submit();"
-                  >
-                    Grade all human-graded
-                  </button>
-                  <button
-                    class="dropdown-item grading-tag-button"
-                    type="submit"
-                    name="batch_action"
-                    value="ai_grade_assessment_selected"
-                  >
-                    Grade selected
-                  </button>
-                  <button
-                    class="dropdown-item"
-                    type="button"
-                    onclick="$('#ai-grading-all').submit();"
-                  >
-                    Grade all
-                  </button>
-                </div>
-              </div>
+              ${aiGradingEnabled
+                ? html`
+                    <div class="dropdown">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        name="ai-grading"
+                      >
+                        <i class="bi bi-stars" aria-hidden="true"></i> AI grading
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#ai-grading').submit();"
+                        >
+                          Grade all ungraded
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#ai-grading-graded').submit();"
+                        >
+                          Grade all human-graded
+                        </button>
+                        <button
+                          class="dropdown-item grading-tag-button"
+                          type="submit"
+                          name="batch_action"
+                          value="ai_grade_assessment_selected"
+                        >
+                          Grade selected
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#ai-grading-all').submit();"
+                        >
+                          Grade all
+                        </button>
+                      </div>
+                    </div>
+                  `
+                : ''}
             </div>
           </div>
           <input type="hidden" name="__action" value="batch_action" />
