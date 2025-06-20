@@ -1,6 +1,7 @@
 import {
   type ColumnDef,
   type ColumnFiltersState,
+  type ColumnPinningState,
   type ColumnSizingState,
   type VisibilityState as ColumnVisibilityState,
   type RowPinningState,
@@ -48,6 +49,10 @@ export function StudentsCard({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
+    left: [],
+    right: [],
+  });
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
@@ -72,6 +77,7 @@ export function StudentsCard({
         size: 32,
         enableResizing: false,
         enableHiding: false,
+        enablePinning: false,
       }),
       columnHelper.accessor('uid', {
         header: 'UID',
@@ -79,6 +85,7 @@ export function StudentsCard({
         enableSorting: true,
         size: 200,
         enableHiding: true,
+        enablePinning: true,
       }),
       columnHelper.accessor('name', {
         header: 'Name',
@@ -86,6 +93,7 @@ export function StudentsCard({
         enableSorting: true,
         size: 200,
         enableHiding: true,
+        enablePinning: true,
       }),
       columnHelper.accessor('email', {
         header: 'Email',
@@ -93,6 +101,7 @@ export function StudentsCard({
         enableSorting: true,
         size: 250,
         enableHiding: true,
+        enablePinning: true,
       }),
       columnHelper.accessor('created_at', {
         header: 'Enrolled At',
@@ -103,6 +112,7 @@ export function StudentsCard({
         enableSorting: true,
         size: 200,
         enableHiding: true,
+        enablePinning: true,
       }),
     ],
     [],
@@ -120,6 +130,7 @@ export function StudentsCard({
       columnSizing,
       rowPinning,
       columnVisibility,
+      columnPinning,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -127,6 +138,7 @@ export function StudentsCard({
     onColumnSizingChange: setColumnSizing,
     onRowPinningChange: setRowPinning,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnPinningChange: setColumnPinning,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -202,6 +214,56 @@ export function StudentsCard({
                       </div>
                     );
                   })}
+                  <div className="dropdown-divider"></div>
+                  <div className="px-2 py-1 dropdown-item-text">
+                    <strong>Freeze columns</strong>
+                  </div>
+                  {(() => {
+                    const pinnableColumns = table
+                      .getAllLeafColumns()
+                      .filter((c) => c.getCanPin() && c.getIsVisible());
+                    const pinnedLeftIds = table.getState().columnPinning?.left ?? [];
+                    return (
+                      <>
+                        <div className="px-2 py-1">
+                          <label className="form-check">
+                            <input
+                              type="radio"
+                              className="form-check-input"
+                              name="freeze-columns"
+                              checked={pinnedLeftIds.length === 0}
+                              onChange={() => setColumnPinning({ left: [], right: [] })}
+                            />
+                            <span className="form-check-label">None</span>
+                          </label>
+                        </div>
+                        {pinnableColumns.map((column, index) => {
+                          const subset = pinnableColumns.slice(0, index + 1).map((c) => c.id);
+                          const header =
+                            typeof column.columnDef.header === 'string'
+                              ? column.columnDef.header
+                              : column.id;
+                          return (
+                            <div key={column.id} className="px-2 py-1">
+                              <label className="form-check">
+                                <input
+                                  type="radio"
+                                  className="form-check-input"
+                                  name="freeze-columns"
+                                  checked={
+                                    pinnedLeftIds.length === subset.length &&
+                                    subset.every((id, i) => id === pinnedLeftIds[i])
+                                  }
+                                  onChange={() => setColumnPinning({ left: subset, right: [] })}
+                                />
+                                <span className="form-check-label">Up to {header}</span>
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

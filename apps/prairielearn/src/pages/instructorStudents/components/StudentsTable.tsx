@@ -127,7 +127,19 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       height: `${virtualRow.size}px`,
                     }}
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getLeftVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        style={{
+                          width: cell.column.getSize(),
+                          position: 'sticky',
+                          left: cell.column.getStart(),
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                    {row.getCenterVisibleCells().map((cell) => (
                       <td key={cell.id} style={{ width: cell.column.getSize() }}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
