@@ -2,6 +2,7 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type ColumnSizingState,
+  type VisibilityState as ColumnVisibilityState,
   type RowPinningState,
   type SortingState,
   createColumnHelper,
@@ -46,6 +47,7 @@ export function StudentsCard({
   const [globalFilter, setGlobalFilter] = useState(initialGlobalFilterValue);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
@@ -69,24 +71,28 @@ export function StudentsCard({
         ),
         size: 32,
         enableResizing: false,
+        enableHiding: false,
       }),
       columnHelper.accessor('uid', {
         header: 'UID',
         cell: (info) => info.getValue(),
         enableSorting: true,
         size: 200,
+        enableHiding: true,
       }),
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
         size: 200,
+        enableHiding: true,
       }),
       columnHelper.accessor('email', {
         header: 'Email',
         cell: (info) => info.getValue() || '—',
         enableSorting: true,
         size: 250,
+        enableHiding: true,
       }),
       columnHelper.accessor('created_at', {
         header: 'Enrolled At',
@@ -96,6 +102,7 @@ export function StudentsCard({
         },
         enableSorting: true,
         size: 200,
+        enableHiding: true,
       }),
     ],
     [],
@@ -112,12 +119,14 @@ export function StudentsCard({
       globalFilter,
       columnSizing,
       rowPinning,
+      columnVisibility,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onRowPinningChange: setRowPinning,
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -136,7 +145,7 @@ export function StudentsCard({
       <div className="card-body">
         <div className="mb-3">
           <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <div className="col-12 col-md-4">
+            <div className="d-flex gap-2 col-12 col-lg-5">
               <input
                 type="text"
                 id="search-input"
@@ -150,6 +159,51 @@ export function StudentsCard({
                   setGlobalFilter(e.target.value);
                 }}
               />
+              <div className="btn-group">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary dropdown-toggle text-nowrap"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  <i className="bi bi-view-list me-2" />
+                  View
+                </button>
+                <div className="dropdown-menu dropdown-menu-arrow">
+                  <div className="px-2 py-1">
+                    <label className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={table.getIsAllColumnsVisible()}
+                        onChange={table.getToggleAllColumnsVisibilityHandler()}
+                      />
+                      <span className="form-check-label">Toggle all</span>
+                    </label>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  {table.getAllLeafColumns().map((column) => {
+                    if (!column.getCanHide()) return null;
+                    const header =
+                      typeof column.columnDef.header === 'string'
+                        ? column.columnDef.header
+                        : column.id;
+                    return (
+                      <div key={column.id} className="px-2 py-1">
+                        <label className="form-check">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={column.getIsVisible()}
+                            onChange={column.getToggleVisibilityHandler()}
+                          />
+                          <span className="form-check-label">{header}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center">
               <div className="text-muted mt-2 mt-md-0 me-md-2">
