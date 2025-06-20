@@ -94,6 +94,58 @@ WITH
       iq.id AS instance_question_id,
       iq.assessment_question_id
   ),
+  most_recent_submission_manual_grading_jobs AS (
+    SELECT DISTINCT
+      ON (s.id) s.id AS submission_id,
+      gj.manual_rubric_grading_id AS manual_rubric_grading_id
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    WHERE
+      gj.grading_method = 'Manual'
+    ORDER BY
+      s.id,
+      gj.date DESC,
+      gj.id DESC
+  ),
+  most_recent_submission_non_ai_grading_jobs AS (
+    SELECT DISTINCT
+      ON (s.id) s.id AS submission_id,
+      gj.feedback
+    FROM
+      deleted_grading_jobs AS dgj
+      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    WHERE
+      gj.grading_method != 'AI'
+    ORDER BY
+      s.id,
+      gj.date DESC,
+      gj.id DESC
+  ),
+  updated_submissions AS (
+    UPDATE submissions AS s
+    SET
+      is_ai_graded = FALSE,
+      -- For each submission, we'll pull the rubric grading ID from the most
+      -- recent manual grading job.
+      manual_rubric_grading_id = mrsmgj.manual_rubric_grading_id,
+      -- For each submission, we'll pull the feedback from the most recent
+      -- non-AI grading job. If there wasn't one, this will be set to `NULL`,
+      -- which is the implicit default value for something that has never been graded.
+      feedback = mrsnagj.feedback
+    FROM
+      deleted_grading_jobs AS dgj
+      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj
+      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj
+    WHERE
+      s.id = dgj.submission_id
+      AND mrsmgj.submission_id = s.id
+      AND mrsnagj.submission_id = s.id
+  ),
   most_recent_instance_question_manual_grading_jobs AS (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
@@ -110,66 +162,6 @@ WITH
       iq.id,
       gj.date DESC,
       gj.id DESC
-  ),
-  most_recent_submission_manual_grading_jobs AS (
-    SELECT DISTINCT
-      ON (dgj.instance_question_id, s.id) dgj.instance_question_id AS instance_question_id,
-      s.id AS submission_id,
-      gj.manual_rubric_grading_id AS manual_rubric_grading_id
-    FROM
-      deleted_grading_jobs AS dgj
-      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
-    WHERE
-      gj.grading_method = 'Manual'
-    ORDER BY
-      dgj.instance_question_id,
-      s.id,
-      s.date DESC,
-      s.id DESC
-  ),
-  most_recent_submission_non_ai_grading_jobs AS (
-    SELECT DISTINCT
-      ON (dgj.instance_question_id, s.id) dgj.instance_question_id AS instance_question_id,
-      s.id AS submission_id,
-      gj.feedback
-    FROM
-      deleted_grading_jobs AS dgj
-      JOIN variants AS v ON (v.instance_question_id = dgj.instance_question_id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-      JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
-    WHERE
-      gj.grading_method != 'AI'
-    ORDER BY
-      dgj.instance_question_id,
-      s.id,
-      s.date DESC,
-      s.id DESC
-  ),
-  updated_submissions AS (
-    UPDATE submissions AS s
-    SET
-      is_ai_graded = FALSE,
-      -- For each submission, we'll pull the rubric grading ID from the most
-      -- recent manual grading job.
-      manual_rubric_grading_id = mrsmgj.manual_rubric_grading_id,
-      -- For each submission, we'll pull the feedback from the most recent
-      -- non-AI grading job. If there wasn't one, this will be set to `NULL`,
-      -- which is the implicit default value for something that has never been graded.
-      feedback = mrsnagj.feedback
-    FROM
-      deleted_grading_jobs AS dgj
-      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON (
-        mrsmgj.instance_question_id = dgj.instance_question_id
-        AND mrsmgj.submission_id = s.id
-      )
-      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON (
-        mrsnagj.instance_question_id = dgj.instance_question_id
-        AND mrsnagj.submission_id = s.id
-      )
-    WHERE
-      s.id = dgj.submission_id
   ),
   -- TODO: this should likely be updating `status` somehow. It gets set to `complete` when
   -- manual grading occurs, but we may want to revert to `saved` (or maybe another status)
