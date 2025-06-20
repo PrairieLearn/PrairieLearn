@@ -845,7 +845,13 @@ export class AssessmentAddEditor extends Editor {
     const assessments = await selectAssessments({ course_instance_id: this.course_instance.id });
     const oldNamesLong = assessments.map((row) => row.title).filter((title) => title !== null);
     const nextAssessmentNumber =
-      Math.max(0, ...assessments.map((row) => Number(row.number)).filter(Number.isFinite)) + 1;
+      Math.max(
+        0,
+        ...assessments
+          .filter((assessment) => assessment.assessment_set.name === this.set)
+          .map((assessment) => Number(assessment.number))
+          .filter(Number.isInteger),
+      ) + 1;
 
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
