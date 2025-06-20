@@ -1000,6 +1000,25 @@ export class CourseInstanceCopyEditor extends Editor {
 
         const from_path = path.join(this.from_course.path, 'questions', question.qid);
         const from_qid = path.join(this.from_course.sharing_name, question.qid);
+
+        // If we previously copied the same question from the same course, this
+        // will avoid QID/title collisions by appending things like `_copy1` and
+        // `(copy 1)` to QIDs and titles, respectively.
+        //
+        // TODO: Ideally, we'd want to deduplicate questions if possible. That is,
+        // if a question was previously copied via another course instance, we can
+        // just reuse it instead of copying it again. This will require some way
+        // to intelligently compare questions:
+        // - We'd need to compare the files (`question.html`, `server.py`, everything
+        //   but the JSON file).
+        // - We'd need to compare the JSON file, while ignoring things that don't
+        //   change the behavior of the question, such as UUID, title, tags, topics, etc.
+        // If questions are identical, we can just reuse the one that was copied before.
+        //
+        // We'll make a best-effort attempt to preserve the UUID when copying a question,
+        // as that will in theory allow us to track the usage of copied questions across
+        // different courses. This would also let us perform the deduplication proposed
+        // above even when questions have had their QIDs changed in the target course.
         const { questionPath, qid } = await copyQuestion(
           this.course,
           from_path,
