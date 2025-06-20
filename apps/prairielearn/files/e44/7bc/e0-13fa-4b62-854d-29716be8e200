@@ -1,0 +1,6 @@
+<question-panel>
+  <p>Find the derivative of the function below.</p>
+</question-panel>
+
+<p>$f(x) = arcsin(2x)+cos(4x^3-5x)+e^{x^3}$</p>
+<pl-image-capture file-name="1a.jpeg"></pl-image-capture>

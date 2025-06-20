@@ -16,9 +16,13 @@ import { selectCourseById } from '../../../models/course.js';
 import { selectQuestionById } from '../../../models/question.js';
 
 const FILE_SUBMISSIONS: Record<string, string[]> = {
-    'derivatives-of-functions': [
-        '1a.jpeg',
-        '1b.jpeg',
+    'derivative-1': [
+        '1a.jpeg'
+    ],
+    'derivative-2': [
+        '1b.jpeg'
+    ],
+    'derivative-3': [
         '1c.jpeg'
     ],
     'linearization': [

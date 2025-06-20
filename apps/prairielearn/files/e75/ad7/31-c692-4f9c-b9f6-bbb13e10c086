@@ -1,0 +1,5 @@
+<question-panel>
+    <p>Given that $y$ is a function of $x$, use <b>implicit differentiation</b> to find the equation for the tangent line of $x^2-xy-y^2=1$ at $(1, 0)$.</p>
+</question-panel>
+
+<pl-image-capture file-name="submission.jpeg"></pl-image-capture>

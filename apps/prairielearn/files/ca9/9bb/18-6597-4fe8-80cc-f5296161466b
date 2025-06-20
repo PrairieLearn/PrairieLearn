@@ -1,0 +1,18 @@
+<question-panel>
+    <p>Fill in the missing information for the MVT.</p>
+</question-panel>
+
+<p>Suppose that $f$ is:</p>
+<p>(a) ____ on $[a, b]$ and </p>
+<p>(b) ____ on $(a, b)$.</p>
+<p>(c) Then, there is a $c$ in $(a, b)$ such that $f'(c) = ____$.</p>
+
+<p>Your response should include answers to parts a through c.</p>
+
+<pl-image-capture file-name="submission-abc.jpeg"></pl-image-capture>
+
+<p>(d) Consider $f(x) = x - cos(x)$ on $[-\frac{\pi}{2}, \frac{\pi}{2}]. Find all numbers $c$ that satisfy the conclusion of the MVT.</p>
+
+<p>Your final response should be the value of $c$. Show all intermediate work.</p>
+
+<pl-image-capture file-name="submission-d.jpeg"></pl-image-capture>

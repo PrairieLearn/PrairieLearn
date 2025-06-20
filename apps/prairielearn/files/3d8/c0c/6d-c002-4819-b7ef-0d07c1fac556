@@ -1,0 +1,6 @@
+<question-panel>
+  <p>Find the derivative of the function below.</p>
+</question-panel>
+
+<p>$h(x) = \frac{x-sec(\pi x)}{e^x}$</p>
+<pl-image-capture file-name="1c.jpeg"></pl-image-capture>
