@@ -1,10 +1,9 @@
 import crypto from 'node:crypto';
-import path from 'node:path';
 
 import { resolve } from 'pathe';
 import { slash } from 'vite-node/utils';
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification, resolveConfig } from 'vitest/node';
+import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
