@@ -21,7 +21,7 @@ WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
 
--- BLOCK select_questions_with_course
+-- BLOCK select_question_titles_for_course
 SELECT
   q.title
 FROM
@@ -29,6 +29,17 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL;
+
+-- BLOCK select_question_uuids_for_course
+SELECT
+  q.uuid
+FROM
+  questions AS q
+WHERE
+  -- We deliberately do not filter by deleted_at here. We want to fetch UUIDs
+  -- even for deleted question so that we can avoid using the same UUID for a
+  -- new question.
+  q.course_id = $course_id;
 
 -- BLOCK update_draft_number
 UPDATE pl_courses
