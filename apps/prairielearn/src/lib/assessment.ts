@@ -176,6 +176,7 @@ export async function updateAssessmentInstance(
     if (assessmentInstance == null) {
       throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
+
     if (!assessmentInstance.open) {
       // Silently return without updating
       return false;

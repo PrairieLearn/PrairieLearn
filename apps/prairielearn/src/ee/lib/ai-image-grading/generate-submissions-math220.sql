@@ -9,6 +9,7 @@ WHERE
 -- BLOCK select_instance_questions
 SELECT
     *,
+    iq.id as instance_question_id,
     q.id as question_id
 FROM 
     instance_questions as iq
