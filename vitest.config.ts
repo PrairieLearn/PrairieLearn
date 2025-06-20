@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 
 import { resolve } from 'pathe';
 import { slash } from 'vite-node/utils';
@@ -128,32 +129,16 @@ export const sharedConfig = defineConfig({
   },
 });
 
-export default defineConfig(async ({ mode }) => {
-  // Resolve the Vitest configuration for PrairieLearn with the given mode.
-  // By default, the configuration is not resolved with the mode.
-  const { vitestConfig: prairielearnTestConfig } = await resolveConfig({
-    mode,
-    config: 'vitest.config.ts',
-    root: 'apps/prairielearn',
-  });
-  return mergeConfig(
-    sharedConfig,
-    defineConfig({
-      test: {
-        projects: [
-          'packages/*',
-          'apps/grader-host',
-          'apps/workspace-host',
-          {
-            test: prairielearnTestConfig,
-          },
-        ],
-        coverage: {
-          all: true,
-          reporter: ['html', 'text-summary', 'cobertura'],
-          include: ['{apps,packages}/*/src/**'],
-        },
+export default mergeConfig(
+  sharedConfig,
+  defineConfig({
+    test: {
+      projects: ['packages/*', 'apps/grader-host', 'apps/workspace-host', 'apps/prairielearn'],
+      coverage: {
+        all: true,
+        reporter: ['html', 'text-summary', 'cobertura'],
+        include: ['{apps,packages}/*/src/**'],
       },
-    }),
-  );
-});
+    },
+  }),
+);
