@@ -1,6 +1,47 @@
-import { html } from '@prairielearn/html';
+import { filesize } from 'filesize';
 
+import { escapeHtml, html } from '@prairielearn/html';
+
+import { config } from '../../../lib/config.js';
 import { type RubricData } from '../../../lib/manualGrading.js';
+
+// Popover for users to import rubric settings from a JSON file.
+function ImportRubricSettingsPopover() {
+  return html`
+    <form
+      id="import-rubric-settings-popover-form"
+      class="needs-validation"
+      name="rubric-upload-form"
+      enctype="multipart/form-data"
+      novalidate
+    >
+      <div class="mb-3">
+        <label class="form-label" for="rubric-settings-file-input">Choose file</label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="rubric-settings-file-input"
+          accept="application/json,.json"
+          required
+        />
+        <small class="form-text text-muted">
+          Max file size: ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}
+        </small>
+        <div class="mb-3">
+          <div class="text-right">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">
+              Cancel
+            </button>
+            <button id="upload-rubric-file-button" type="submit" class="btn btn-primary">
+              Upload file
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  `;
+}
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
@@ -8,6 +49,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
         <form
+          id="rubric-settings-form"
           name="rubric-settings"
           method="POST"
           class="needs-validation"
@@ -17,6 +59,33 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
           <input type="hidden" name="use_rubric" value="true" />
+
+          <input type="hidden" name="course_short_name" value="${resLocals.course.short_name}" />
+          <input
+            type="hidden"
+            name="course_instance_short_name"
+            value="${resLocals.course_instance.short_name}"
+          />
+          <input type="hidden" name="assessment_tid" value="${resLocals.assessment.tid}" />
+          <input type="hidden" name="question_qid" value="${resLocals.question.qid}" />
+
+          <input
+            type="hidden"
+            name="max_points"
+            value="${resLocals.assessment_question.max_points}"
+          />
+          <input
+            type="hidden"
+            name="max_auto_points"
+            value="${resLocals.assessment_question.max_auto_points}"
+          />
+          <input
+            type="hidden"
+            name="max_manual_points"
+            value="${resLocals.assessment_question.max_manual_points}"
+          />
+
+          <input type="hidden" name="file_upload_max_bytes" value="${config.fileUploadMaxBytes}" />
 
           <div class="modal-content">
             <div class="modal-header bg-info">
@@ -150,6 +219,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       class="form-control js-rubric-item-limits"
                       name="min_points"
                       type="number"
+                      step="any"
                       required
                       value="${rubric_data?.min_points ?? 0}"
                     />
@@ -171,6 +241,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       class="form-control js-rubric-item-limits"
                       name="max_extra_points"
                       type="number"
+                      step="any"
                       required
                       value="${rubric_data?.max_extra_points ?? 0}"
                     />
@@ -220,6 +291,33 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                 <div class="js-settings-points-warning-placeholder"></div>
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
+                </button>
+                <button id="export-rubric-button" type="button" class="btn btn-sm btn-primary">
+                  <i class="fas fa-download"></i>
+                  Export rubric
+                </button>
+                <button
+                  id="import-rubric-button"
+                  type="button"
+                  class="btn btn-sm btn-primary"
+                  data-bs-title="Import rubric settings"
+                  data-bs-toggle="popover"
+                  data-bs-placement="auto"
+                  data-bs-html="true"
+                  data-bs-container="body"
+                  data-bs-content="${escapeHtml(ImportRubricSettingsPopover())}"
+                >
+                  <i class="fas fa-upload"></i>
+                  Import rubric
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+                >
+                  <i class="fas fa-circle-info"></i>
                 </button>
                 <template class="js-new-row-rubric-item">
                   ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
@@ -321,7 +419,7 @@ function RubricItemRow({
         <input
           type="number"
           class="form-control js-rubric-item-points"
-          style="width: 4rem"
+          style="width: 5rem"
           step="any"
           required
           name="${namePrefix}[points]"
