@@ -61,7 +61,8 @@ test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
 check-dependencies:
-	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+	@yarn depcruise --webpack-config apps/prairielearn/src/webpack.config.mjs apps/prairielearn/src
+	@yarn depcruise apps/{grader-host,workspace-host}/src apps/*/assets packages/*/src
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
