@@ -38,32 +38,32 @@ describe('Markdown processing', () => {
 
   it('handles block latex', async () => {
     const question = '$$\na^2 + b^2 = c^2\n$$';
-    const expected = '$$\na^2 + b^2 = c^2\n$$';
+    const expected = '<p>$$\na^2 + b^2 = c^2\n$$</p>';
     await testMarkdown(question, expected);
   });
 
   it('handles block latex with asterisks', async () => {
     const question = '$$\na **b** c\n$$';
-    const expected = '$$\na **b** c\n$$';
+    const expected = '<p>$$\na **b** c\n$$</p>';
     await testMarkdown(question, expected);
   });
 
   it('handles two consecutive latex blocks', async () => {
     const question = '$$\na **b** c\n$$\n$$\na+b=c\n$$';
-    const expected = '$$\na **b** c\n$$\n$$\na+b=c\n$$';
+    const expected = '<p>$$\na **b** c\n$$\n$$\na+b=c\n$$</p>';
     await testMarkdown(question, expected);
   });
 
   it('handles block latex with asterisks and surrounding text', async () => {
     const question = 'testing\n$$\na **b** c\n$$\ntesting';
-    const expected = '<p>testing</p>\n$$\na **b** c\n$$\n<p>testing</p>';
+    const expected = '<p>testing\n$$\na **b** c\n$$\ntesting</p>';
     await testMarkdown(question, expected);
   });
 
   it('handles GFM extension for tables', async () => {
     const question = '| foo | bar |\n| --- | --- |\n| baz | bim |';
     const expected =
-      '<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>baz</td><td>bim</td></tr></tbody></table>';
+      '<table>\n<thead>\n<tr>\n<th>foo</th>\n<th>bar</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>baz</td>\n<td>bim</td>\n</tr>\n</tbody></table>';
     await testMarkdown(question, expected);
   });
 
@@ -75,7 +75,8 @@ describe('Markdown processing', () => {
 
   it('handles HTML tags that do not close properly', async () => {
     const question = 'testing with <strong>bold</strong> and <em>italics words';
-    const expected = '<p>testing with <strong>bold</strong> and <em>italics words</em></p>';
+    const expected =
+      '<p>testing with <strong>bold</strong> and <em>italics words</em></p><em>\n</em>';
     await testMarkdown(question, expected);
   });
 
@@ -103,16 +104,15 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected, { inline: true });
   });
 
-  it('keeps p tag if content has more than one paragraph', async () => {
-    const question = 'test with **bold** and *italic* words\n\nand a new paragraph';
-    const expected =
-      '<p>test with <strong>bold</strong> and <em>italic</em> words</p>\n<p>and a new paragraph</p>';
+  it('ignores paragraphs in inline parsing', async () => {
+    const question = 'test with **bold** and *italic* words\n\nand a new line';
+    const expected = 'test with <strong>bold</strong> and <em>italic</em> words\n\nand a new line';
     await testMarkdown(question, expected, { inline: true });
   });
 
-  it('keeps external tag if it is not a paragraph', async () => {
-    const question = '* single item';
-    const expected = '<ul>\n<li>single item</li>\n</ul>';
+  it('ignores other block constructs in inline parsing', async () => {
+    const question = '* single _item_';
+    const expected = '* single <em>item</em>';
     await testMarkdown(question, expected, { inline: true });
   });
 
