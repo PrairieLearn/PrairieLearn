@@ -1,0 +1,19 @@
+{
+  "uuid": "aeaa8e3e-d574-4c2c-bad5-a4ec703db7c6",
+  "type": "Homework",
+  "title": "Image Capture",
+  "set": "Homework",
+  "number": "13",
+  "allowAccess": [],
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "demo/imageCapture",
+          "manualPoints": 2,
+          "maxManualPoints": 2
+        }
+      ]
+    }
+  ]
+}
