@@ -139,8 +139,8 @@ WITH
       feedback = mrsnagj.feedback
     FROM
       deleted_grading_jobs AS dgj
-      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj
-      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj
+      LEFT JOIN most_recent_submission_manual_grading_jobs AS mrsmgj ON TRUE
+      LEFT JOIN most_recent_submission_non_ai_grading_jobs AS mrsnagj ON TRUE
     WHERE
       s.id = dgj.submission_id
       AND mrsmgj.submission_id = s.id
