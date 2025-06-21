@@ -132,7 +132,7 @@ export function AssessmentQuestion({
           : ''}
       </div>
 
-      ${aiGradingEnabled
+      ${aiGradingEnabled && aiGradingMode
         ? html`
             <form method="POST" id="ai-grading">
               <input type="hidden" name="__action" value="ai_grade_assessment" />
@@ -148,7 +148,7 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      ${aiGradingEnabled && aiGradingStats
+      ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
             ${aiGradingStats.rubric_stats.length
               ? html`
@@ -277,7 +277,7 @@ export function AssessmentQuestion({
                 </div>
               </div>
 
-              ${aiGradingEnabled
+              ${aiGradingEnabled && aiGradingMode
                 ? html`
                     <div class="dropdown">
                       <button
