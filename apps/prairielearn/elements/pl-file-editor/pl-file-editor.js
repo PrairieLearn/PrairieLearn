@@ -111,11 +111,12 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     : '';
 
   const preview = this.element.find('.preview')[0];
+  const shadowRoot = preview.shadowRoot || preview.attachShadow({ mode: 'open' });
   if (html_contents.trim().length === 0) {
-    preview.innerHTML = default_preview_text;
+    shadowRoot.innerHTML = default_preview_text;
   } else {
-    const sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
-    preview.innerHTML = sanitized_contents;
+    const sanitized_contents = DOMPurify.sanitize(html_contents);
+    shadowRoot.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
       sanitized_contents.includes('\\(') ||

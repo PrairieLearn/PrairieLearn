@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "extensionScripts": ["mermaid-preview.js"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": { "mermaid": "mermaid/dist/mermaid.esm.min.mjs" }
+  }
+}
