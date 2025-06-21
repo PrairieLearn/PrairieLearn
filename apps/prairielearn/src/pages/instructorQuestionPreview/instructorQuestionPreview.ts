@@ -7,7 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { run } from '@prairielearn/run';
 
-import { setQuestionCopyTargets } from '../../lib/copy-content.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
@@ -59,8 +59,13 @@ router.get(
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
-    await setQuestionCopyTargets(res);
-
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
     const searchParams = getSearchParams(req);
 
     // Construct a URL to preview the question as it would appear in the manual
@@ -118,6 +123,7 @@ router.get(
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
         resLocals: res.locals,
+        questionCopyTargets,
       }),
     );
   }),
