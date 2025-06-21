@@ -52,12 +52,12 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     throw new Error('hydrate expects a Preact component');
   }
 
-  if (!nameOverride && !Component.displayName && !Component.name) {
+  const componentName = nameOverride || Component.name || Component.displayName;
+  if (!componentName || componentName === 'm') {
     throw new Error(
-      'Component does not have a name or displayName -- provide a nameOverride for the component.',
+      'Component does not have a name or displayName -- provide a nameOverride for the component, or give it a name.',
     );
   }
-  const componentName = `${nameOverride || Component.name || Component.displayName}`;
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
