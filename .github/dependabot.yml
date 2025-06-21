@@ -61,6 +61,7 @@ updates:
       - '/graders/c'
       - '/graders/python'
       - '/images/plbase'
+      - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
     schedule:
