@@ -100,7 +100,7 @@ ORDER BY
 
 -- BLOCK count_instance_questions_to_grade
 SELECT
-  COUNT(*)::INTEGER
+  COUNT(*)::integer
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

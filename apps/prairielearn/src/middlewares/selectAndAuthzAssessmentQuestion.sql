@@ -2,7 +2,7 @@
 WITH
   open_instances AS (
     SELECT
-      COUNT(*)::INTEGER AS num_open_instances
+      COUNT(*)::integer AS num_open_instances
     FROM
       assessments AS a
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)

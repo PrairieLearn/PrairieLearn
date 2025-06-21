@@ -10,15 +10,15 @@ WHERE
 -- BLOCK update_share_publicly
 UPDATE questions
 SET
-  share_publicly = true,
-  share_source_publicly = false
+  share_publicly = TRUE,
+  share_source_publicly = FALSE
 WHERE
   id = $question_id;
 
 -- BLOCK update_share_source_publicly
 UPDATE questions
 SET
-  share_source_publicly = true,
-  share_publicly = false
+  share_source_publicly = TRUE,
+  share_publicly = FALSE
 WHERE
   id = $question_id;

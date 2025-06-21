@@ -7,8 +7,8 @@ WHERE
   user_id = $user_id
   AND user_session_id = $user_session_id
   AND ip_address = $ip_address
-  AND user_agent = $user_agent::VARCHAR(255)
-  AND accept_language = $accept_language::VARCHAR(255);
+  AND user_agent = $user_agent::varchar(255)
+  AND accept_language = $accept_language::varchar(255);
 
 --BLOCK insert_client_fingerprint
 INSERT INTO
@@ -24,8 +24,8 @@ VALUES
     $user_id,
     $user_session_id,
     $ip_address,
-    $user_agent::VARCHAR(255),
-    $accept_language::VARCHAR(255)
+    $user_agent::varchar(255),
+    $accept_language::varchar(255)
   )
 ON CONFLICT (
   user_id,

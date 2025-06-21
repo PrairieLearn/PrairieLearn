@@ -15,7 +15,7 @@ WITH
         g.name
         FROM
           6
-      )::INTEGER + 1 AS group_number
+      )::integer + 1 AS group_number
     FROM
       groups AS g
       JOIN group_configs AS gc ON (gc.id = g.group_config_id)
@@ -33,7 +33,7 @@ WITH
       groups (name, group_config_id, course_instance_id) (
         SELECT
           COALESCE(
-            NULLIF($group_name::TEXT, ''),
+            NULLIF($group_name::text, ''),
             -- If no name is provided, use the next group number.
             (
               SELECT
@@ -108,7 +108,7 @@ WITH
   )
 SELECT
   gr.*,
-  COALESCE(gur.count, 0)::INT AS count
+  COALESCE(gur.count, 0)::int AS count
 FROM
   get_assessment_id
   JOIN group_roles AS gr ON (
@@ -196,7 +196,7 @@ SELECT
       group_users AS gu
     WHERE
       gu.group_id = g.id
-  )::INT AS cur_size,
+  )::int AS cur_size,
   gc.maximum AS max_size,
   gc.has_roles
 FROM
@@ -228,7 +228,7 @@ WITH
       gr.id,
       (
         gr.can_assign_roles
-        AND COALESCE($cur_size::INT, 0) = 0
+        AND COALESCE($cur_size::int, 0) = 0
       ) AS assigner_role_needed,
       (
         upgr.user_count IS NULL
