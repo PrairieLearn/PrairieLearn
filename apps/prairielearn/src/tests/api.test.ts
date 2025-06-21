@@ -335,5 +335,53 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 403);
     });
+
+    test.sequential('POST to API to start a course sync', async function () {
+      locals.apiCourseUrl = locals.apiUrl + '/course/1';
+      locals.apiCourseSyncUrl = locals.apiCourseUrl + '/sync';
+      const res = await fetch(locals.apiCourseSyncUrl, {
+        method: 'POST',
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+      locals.course_sync_job_sequence_id = json.job_sequence_id;
+    });
+
+    test.sequential('GET to API for course sync status info succeeds', async function () {
+      locals.apiCourseSyncJobUrl =
+        locals.apiCourseSyncUrl + '/' + locals.course_sync_job_sequence_id;
+      const res = await fetch(locals.apiCourseSyncJobUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.job_sequence_id);
+      assert.equal(json.job_sequence_id, locals.course_sync_job_sequence_id);
+      assert.exists(json.status);
+      assert.exists(json.start_date);
+      assert.exists(json.finish_date);
+      assert.exists(json.output);
+    });
+
+    test.sequential(
+      'GET to API for course sync status info fails with invalid job_sequence_id',
+      async function () {
+        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/NA';
+        const res = await fetch(locals.apiCourseSyncJobUrl, {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 404);
+      },
+    );
   });
 });
