@@ -11,7 +11,8 @@ import random
 import string
 import unicodedata
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator, Iterable
+from typing import TypeVar
 
 from pint import UnitRegistry
 from text_unidecode import unidecode
@@ -102,3 +103,32 @@ def get_uuid() -> str:
     random_char = random.choice("abcdef")
 
     return random_char + uuid_string[1:]
+
+
+ListItem = TypeVar("ListItem")
+
+
+def partition(
+    data: Iterable[ListItem], pred: Callable[[ListItem], bool]
+) -> tuple[list[ListItem], list[ListItem]]:
+    """Implement a partition function, splitting the data into two lists based on the predicate.
+
+    Returns:
+        A tuple with two lists, the first containing items that satisfy the predicate,
+        and the second containing items that do not.
+
+    Example:
+        >>> numbers = [1, 2, 3, 4, 5]
+        >>> evens, odds = partition(numbers, lambda x: x % 2 == 0)
+        >>> evens
+        [2, 4]
+        >>> odds
+        [1, 3, 5]
+    """
+    yes, no = [], []
+    for d in data:
+        if pred(d):
+            yes.append(d)
+        else:
+            no.append(d)
+    return (yes, no)
