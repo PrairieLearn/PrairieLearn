@@ -3,8 +3,8 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { ansiToHtml } from '../lib/chalk.js';
 import {
   type Assessment,
-  type Course,
-  type CourseInstance,
+  type InstructorCourse,
+  type InstructorCourseInstance,
   type Question,
 } from '../lib/db-types.js';
 
@@ -14,7 +14,7 @@ export function CourseSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  course: Course;
+  course: InstructorCourse;
   urlPrefix: string;
 }) {
   return SyncErrorsAndWarnings({
@@ -35,7 +35,7 @@ export function QuestionSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   question: Question;
-  course: Course;
+  course: InstructorCourse;
   urlPrefix: string;
 }) {
   return SyncErrorsAndWarnings({
@@ -55,8 +55,8 @@ export function CourseInstanceSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  courseInstance: CourseInstance;
-  course: Course;
+  courseInstance: InstructorCourseInstance;
+  course: InstructorCourse;
   urlPrefix: string;
 }) {
   return SyncErrorsAndWarnings({
@@ -78,8 +78,8 @@ export function AssessmentSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   assessment: Assessment;
-  courseInstance: CourseInstance;
-  course: Course;
+  courseInstance: InstructorCourseInstance;
+  course: InstructorCourse;
   urlPrefix: string;
 }) {
   return SyncErrorsAndWarnings({
