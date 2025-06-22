@@ -24,10 +24,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     estimateSize: () => 38,
     overscan: 10,
   });
-  // console.log(rowVirtualizer.getTotalSize());
 
   const virtualRows = rowVirtualizer.getVirtualItems();
-  console.log({ virtualRows });
   const [before, after] =
     virtualRows.length > 0
       ? [
@@ -39,7 +37,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
 
   return (
     <>
-      <div ref={parentRef} style={{ overflow: 'auto', overflowAnchor: 'none' }}>
+      <div ref={parentRef} style={{ overflow: 'auto', overflowAnchor: 'none', maxHeight: '70vh' }}>
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,

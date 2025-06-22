@@ -1,28 +1,28 @@
 import { type SortingState } from '@tanstack/react-table';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import type { BaseContext } from '../../lib/client/page-context.js';
+import type { PageContext } from '../../lib/client/page-context.js';
 import { type InstructorCourse, type InstructorCourseInstance } from '../../lib/db-types.js';
 
 import { StudentsCard } from './components/StudentsCard.js';
 import { type StudentRow } from './instructorStudents.types.js';
 
 export const InstructorStudents = ({
-  baseContext,
+  pageContext,
   courseInstance,
   course,
   students,
   initialGlobalFilterValue,
   initialSortingValue,
 }: {
-  baseContext: BaseContext;
+  pageContext: PageContext;
   courseInstance: InstructorCourseInstance;
   course: InstructorCourse;
   students: StudentRow[];
   initialGlobalFilterValue: string;
   initialSortingValue: SortingState;
 }) => {
-  const { authz_data, urlPrefix } = baseContext;
+  const { authz_data, urlPrefix } = pageContext;
   return (
     <>
       <div

@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { getBaseContext, getCourseInstanceContext } from '../../lib/client/page-context.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { hydrate } from '../../lib/preact.js';
 
@@ -25,19 +25,19 @@ const QuerySchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const baseContext = getBaseContext(res.locals);
+    const pageContext = getPageContext(res.locals);
     const { course_instance, course } = getCourseInstanceContext(res.locals, 'instructor');
 
     // TODO: Switch to nuqs for query params
     const { search, sortBy, sortOrder } = QuerySchema.parse(req.query);
 
-    const hasPermission = baseContext.authz_data.has_course_instance_permission_view;
+    const hasPermission = pageContext.authz_data.has_course_instance_permission_view;
     if (!hasPermission) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: {
-            ...baseContext,
+            ...pageContext,
             course_instance,
             course,
           },
@@ -66,7 +66,7 @@ router.get(
     res.status(hasPermission ? 200 : 403).send(
       PageLayout({
         resLocals: {
-          ...baseContext,
+          ...pageContext,
           course_instance,
           course,
         },
@@ -81,7 +81,7 @@ router.get(
         },
         content: hydrate(
           <InstructorStudents
-            baseContext={baseContext}
+            pageContext={pageContext}
             courseInstance={course_instance}
             course={course}
             students={students}

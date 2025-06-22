@@ -11,7 +11,7 @@ import {
   StudentCourseSchema,
 } from '../db-types.js';
 
-const BaseContext = z.object({
+const PageContext = z.object({
   authz_data: z.object({
     has_course_instance_permission_edit: z.boolean(),
     has_course_instance_permission_view: z.boolean(),
@@ -33,15 +33,15 @@ const BaseContext = z.object({
   }),
   viewType: z.enum(['instructor', 'student']),
 });
-export type BaseContext = z.infer<typeof BaseContext>;
+export type PageContext = z.infer<typeof PageContext>;
 
 /**
  * Parses and validates resLocals data, stripping any fields that aren't in the schema.
  * @param data - The raw data to parse
  * @returns Parsed and validated ResLocals object
  */
-export function getBaseContext(data: Record<string, any>): BaseContext {
-  return BaseContext.parse(data);
+export function getPageContext(data: Record<string, any>): PageContext {
+  return PageContext.parse(data);
 }
 
 interface StudentCourseInstanceContext {
@@ -70,12 +70,12 @@ export function getCourseInstanceContext(
 ): StudentCourseInstanceContext | InstructorCourseInstanceContext {
   if (authLevel === 'student') {
     return {
-      course_instance: StudentCourseInstanceSchema.parse(data),
-      course: StudentCourseSchema.parse(data),
+      course_instance: StudentCourseInstanceSchema.parse(data.course_instance),
+      course: StudentCourseSchema.parse(data.course),
     };
   }
   return {
-    course_instance: InstructorCourseInstanceSchema.parse(data),
-    course: InstructorCourseSchema.parse(data),
+    course_instance: InstructorCourseInstanceSchema.parse(data.course_instance),
+    course: InstructorCourseSchema.parse(data.course),
   };
 }
