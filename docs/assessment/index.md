@@ -581,7 +581,9 @@ To disable real-time grading for an assessment, add `"allowRealTimeGrading": fal
 
 An assessment without real-time grading will not show any score information during the exam. However, if a [time limit](../accessControl/index.md#time-limits) is used then when it runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../accessControl/index.md#showinghiding-closed-assessments).
 
-Note that submissions will still be parsed and in particular when students click the "Save" button, they will be informed of invalid submissions (and as usual, this does not count as an attempt).
+??? note
+
+    Submissions will still be parsed and in particular when students click the "Save" button, they will be informed of invalid submissions (and as usual, this does not count as an attempt).
 Students will not be prevented from completing the test with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission.
 
 Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
