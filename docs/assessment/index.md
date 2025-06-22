@@ -583,8 +583,8 @@ An assessment without real-time grading will not show any score information duri
 
 ??? note
 
-    Submissions will still be parsed and in particular when students click the "Save" button, they will be informed of invalid submissions (and as usual, this does not count as an attempt).
-Students will not be prevented from completing the test with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission.
+    Submissions will still be parsed and in particular when students click the "Save" button, they will be informed of invalid submissions (as usual, this does not count as an attempt).
+    Students will not be prevented from completing the test with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission.
 
 Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
 
