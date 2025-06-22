@@ -2,11 +2,8 @@
 WITH
   course_instance_users AS (
     SELECT
-      u.uid,
-      u.name,
-      u.email,
-      e.course_instance_id,
-      e.created_at
+      to_jsonb(u) AS user,
+      to_jsonb(e) AS enrollment
     FROM
       enrollments AS e
       JOIN users AS u ON (u.user_id = e.user_id)
@@ -14,7 +11,8 @@ WITH
       e.course_instance_id = $course_instance_id
   )
 SELECT
-  ciu.*
+  ciu.enrollment,
+  ciu.user
 FROM
   course_instance_users AS ciu
 ORDER BY

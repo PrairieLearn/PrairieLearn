@@ -4,8 +4,9 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { stripResLocals } from '../../lib/client/res-locals.js';
+import { getBaseContext, getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { hydrate } from '../../lib/preact.js';
 
@@ -24,26 +25,51 @@ const QuerySchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const resLocals = stripResLocals(res.locals);
+    const baseContext = getBaseContext(res.locals);
+    const { course_instance, course } = getCourseInstanceContext(res.locals, 'instructor');
 
-    const hasPermission = resLocals.authz_data.has_course_instance_permission_view;
-    const courseOwners = hasPermission ? [] : await getCourseOwners(resLocals.course.id);
-
+    // TODO: Switch to nuqs for query params
     const { search, sortBy, sortOrder } = QuerySchema.parse(req.query);
 
-    const students = hasPermission
-      ? await queryRows(
-          sql.select_students,
-          {
-            course_instance_id: resLocals.course_instance.id,
+    const hasPermission = baseContext.authz_data.has_course_instance_permission_view;
+    if (!hasPermission) {
+      const courseOwners = await getCourseOwners(course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: {
+            ...baseContext,
+            course_instance,
+            course,
           },
-          StudentRowSchema,
-        )
+          courseOwners,
+          pageTitle: 'Students',
+          requiredPermissions: 'Instructor',
+        }),
+      );
+    }
+
+    const students = hasPermission
+      ? (
+          await queryRows(
+            sql.select_students,
+            {
+              course_instance_id: course_instance.id,
+            },
+            StudentRowSchema,
+          )
+        ).map((student) => ({
+          ...student.user,
+          ...student.enrollment,
+        }))
       : [];
 
     res.status(hasPermission ? 200 : 403).send(
       PageLayout({
-        resLocals,
+        resLocals: {
+          ...baseContext,
+          course_instance,
+          course,
+        },
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
@@ -55,9 +81,10 @@ router.get(
         },
         content: hydrate(
           <InstructorStudents
-            resLocals={resLocals}
+            baseContext={baseContext}
+            courseInstance={course_instance}
+            course={course}
             students={students}
-            courseOwners={courseOwners}
             initialGlobalFilterValue={search}
             initialSortingValue={sortBy ? [{ id: sortBy, desc: sortOrder === 'desc' }] : []}
           />,

@@ -18,14 +18,16 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
-
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 38,
     overscan: 10,
   });
+  // console.log(rowVirtualizer.getTotalSize());
+
   const virtualRows = rowVirtualizer.getVirtualItems();
+  console.log({ virtualRows });
   const [before, after] =
     virtualRows.length > 0
       ? [
@@ -37,7 +39,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
 
   return (
     <>
-      <div ref={parentRef} style={{ maxHeight: '600px', overflow: 'auto', overflowAnchor: 'none' }}>
+      <div ref={parentRef} style={{ overflow: 'auto', overflowAnchor: 'none' }}>
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,

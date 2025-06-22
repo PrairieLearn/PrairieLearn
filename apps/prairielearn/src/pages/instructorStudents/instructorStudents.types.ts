@@ -1,12 +1,15 @@
 import z from 'zod';
 
-import { EnrollmentSchema, UserSchema } from '../../lib/db-types.js';
+import {
+  type Enrollment,
+  EnrollmentSchema,
+  type StudentUser,
+  StudentUserSchema,
+} from '../../lib/db-types.js';
 
 export const StudentRowSchema = z.object({
-  uid: UserSchema.shape.uid,
-  name: UserSchema.shape.name,
-  email: UserSchema.shape.email,
-  course_instance_id: EnrollmentSchema.shape.course_instance_id,
-  created_at: EnrollmentSchema.shape.created_at,
+  enrollment: EnrollmentSchema,
+  user: StudentUserSchema,
 });
-export type StudentRow = z.infer<typeof StudentRowSchema>;
+
+export type StudentRow = Enrollment & StudentUser;

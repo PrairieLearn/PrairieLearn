@@ -1,28 +1,28 @@
 import { type SortingState } from '@tanstack/react-table';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import type { ResLocals } from '../../lib/client/res-locals.js';
-import { type User } from '../../lib/db-types.js';
+import type { BaseContext } from '../../lib/client/page-context.js';
+import { type InstructorCourse, type InstructorCourseInstance } from '../../lib/db-types.js';
 
-import { StudentDataViewMissing } from './components/StudentDataViewMissing.js';
 import { StudentsCard } from './components/StudentsCard.js';
 import { type StudentRow } from './instructorStudents.types.js';
 
 export const InstructorStudents = ({
-  resLocals,
-  courseOwners,
+  baseContext,
+  courseInstance,
+  course,
   students,
   initialGlobalFilterValue,
   initialSortingValue,
 }: {
-  resLocals: ResLocals;
-  courseOwners: User[];
+  baseContext: BaseContext;
+  courseInstance: InstructorCourseInstance;
+  course: InstructorCourse;
   students: StudentRow[];
   initialGlobalFilterValue: string;
   initialSortingValue: SortingState;
 }) => {
-  const { authz_data, urlPrefix } = resLocals;
-  console.log('build');
+  const { authz_data, urlPrefix } = baseContext;
   return (
     <>
       <div
@@ -31,25 +31,17 @@ export const InstructorStudents = ({
         dangerouslySetInnerHTML={{
           __html: CourseInstanceSyncErrorsAndWarnings({
             authz_data,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
+            courseInstance,
+            course,
             urlPrefix,
           }).toString(),
         }}
       />
-      {!authz_data.has_course_instance_permission_view && courseOwners ? (
-        <StudentDataViewMissing
-          courseOwners={courseOwners}
-          hasCoursePermissionOwn={authz_data.has_course_permission_own}
-          urlPrefix={urlPrefix}
-        />
-      ) : (
-        <StudentsCard
-          students={students ?? []}
-          initialGlobalFilterValue={initialGlobalFilterValue}
-          initialSortingValue={initialSortingValue}
-        />
-      )}
+      <StudentsCard
+        students={students ?? []}
+        initialGlobalFilterValue={initialGlobalFilterValue}
+        initialSortingValue={initialSortingValue}
+      />
     </>
   );
 };
