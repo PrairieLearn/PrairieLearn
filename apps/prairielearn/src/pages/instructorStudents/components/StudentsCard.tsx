@@ -5,15 +5,24 @@ import {
   type ColumnSizingState,
   type ColumnSort,
   type VisibilityState as ColumnVisibilityState,
+  type OnChangeFn,
   type RowPinningState,
   type SortingState,
+  type Updater,
   createColumnHelper,
+  functionalUpdate,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsBoolean, parseAsString, useQueryState, useQueryStates } from 'nuqs';
+import {
+  parseAsBoolean,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryState,
+  useQueryStates,
+} from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
@@ -35,6 +44,7 @@ function downloadStudentsCSV(students: StudentRow[], filename: string): void {
 }
 
 const columnHelper = createColumnHelper<StudentRow>();
+const sortOrder = ['asc', 'desc'] as const;
 
 export function StudentsCard({
   students,
@@ -52,7 +62,7 @@ export function StudentsCard({
   const [columnSort, setColumnSort] = useQueryStates(
     {
       id: parseAsString.withDefault(initialColumnSort?.id ?? ''),
-      desc: parseAsBoolean.withDefault(initialColumnSort?.desc ?? false),
+      desc: parseAsStringLiteral(sortOrder),
     },
     {
       urlKeys: {
@@ -61,6 +71,13 @@ export function StudentsCard({
       },
     },
   );
+
+  // Memoize the sorting array for useReactTable
+  // Should the sorting be derived from the URL state management, or the URL be derived from the sorting?
+  const sorting = useMemo(() => {
+    console.log({ columnSort });
+    return columnSort.id ? [{ id: columnSort.id, desc: columnSort.desc }] : [];
+  }, [columnSort.id, columnSort.desc]);
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -141,7 +158,7 @@ export function StudentsCard({
     columnResizeMode: 'onChange',
     getRowId: (row) => row.uid,
     state: {
-      sorting: columnSort.id ? [columnSort] : [],
+      sorting,
       columnFilters,
       globalFilter,
       columnSizing,
@@ -149,9 +166,12 @@ export function StudentsCard({
       columnVisibility,
       columnPinning,
     },
-    onSortingChange: (sort: SortingState) => {
-      if (sort.length > 0) {
-        setColumnSort(sort[0]);
+    onSortingChange: (updaterFunction: Updater<SortingState>) => {
+      // Only update if changed
+      const newValue = functionalUpdate(updaterFunction, sorting);
+      console.log({ newValue });
+      if (newValue.length > 0) {
+        setColumnSort(newValue[0]);
       } else {
         setColumnSort({ id: '', desc: false });
       }
