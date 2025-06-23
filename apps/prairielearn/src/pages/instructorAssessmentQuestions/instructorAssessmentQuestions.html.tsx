@@ -1,25 +1,6 @@
-import { EncodedData } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
-
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import {
-  AssessmentQuestionHeaders,
-  AssessmentQuestionNumber,
-} from '../../components/AssessmentQuestions.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
-import type { Course } from '../../lib/db-types.js';
-import { idsEqual } from '../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 import { AssessmentQuestionsTable } from './components/AssessmentQuestionsTable.js';
-import { hydrate } from '../../lib/preact.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
