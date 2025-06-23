@@ -22,26 +22,11 @@ describe('getPageContext', () => {
       anotherExtraField: 123,
     };
 
+    const { extraField, anotherExtraField, ...expected } = mockData;
+
     const result = getPageContext(mockData);
 
-    expect(result).toEqual({
-      authz_data: {
-        has_course_instance_permission_edit: true,
-        has_course_instance_permission_view: true,
-        has_course_permission_own: true,
-        user: { name: 'Test User', uid: 'test@illinois.edu' },
-        mode: 'edit',
-      },
-      urlPrefix: '/pl/course/1/course_instance/1',
-      access_as_administrator: false,
-      news_item_notification_count: 0,
-      authn_is_administrator: false,
-      authn_user: { name: 'Test User', uid: 'test@illinois.edu' },
-      viewType: 'instructor',
-    });
-
-    expect(result).not.toHaveProperty('extraField');
-    expect(result).not.toHaveProperty('anotherExtraField');
+    expect(result).toEqual(expected);
   });
 
   it('throws error when required fields are missing', () => {
