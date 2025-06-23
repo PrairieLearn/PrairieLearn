@@ -141,7 +141,7 @@ export function StudentsCard({
     columnResizeMode: 'onChange',
     getRowId: (row) => row.uid,
     state: {
-      sorting: [columnSort],
+      sorting: columnSort.id ? [columnSort] : [],
       columnFilters,
       globalFilter,
       columnSizing,
@@ -149,7 +149,13 @@ export function StudentsCard({
       columnVisibility,
       columnPinning,
     },
-    onSortingChange: (sort: SortingState) => setColumnSort(sort[0]),
+    onSortingChange: (sort: SortingState) => {
+      if (sort.length > 0) {
+        setColumnSort(sort[0]);
+      } else {
+        setColumnSort({ id: '', desc: false });
+      }
+    },
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,

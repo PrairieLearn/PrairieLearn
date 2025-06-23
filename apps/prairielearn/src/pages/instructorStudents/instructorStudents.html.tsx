@@ -1,4 +1,5 @@
 import { type ColumnSort } from '@tanstack/react-table';
+import { NuqsAdapter } from 'nuqs/adapters/react';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import type { PageContext } from '../../lib/client/page-context.js';
@@ -24,7 +25,7 @@ export const InstructorStudents = ({
 }) => {
   const { authz_data, urlPrefix } = pageContext;
   return (
-    <>
+    <NuqsAdapter>
       <div
         // TODO: After #12197 use the component directly
         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
@@ -42,6 +43,6 @@ export const InstructorStudents = ({
         initialGlobalFilterValue={initialGlobalFilterValue}
         initialColumnSort={initialColumnSort}
       />
-    </>
+    </NuqsAdapter>
   );
 };
