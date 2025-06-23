@@ -10,6 +10,7 @@ import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
+import { renderHtml } from '../../lib/preact-html.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -87,13 +88,15 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(
+                <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
+              )}
               <tr>
                 <td>
                   <a
                     href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
                   >
-                    ${AssessmentQuestionNumber(question)}${question.title}
+                    ${renderHtml(AssessmentQuestionNumber(question))}${question.title}
                   </a>
                 </td>
                 <td>@${question.course_sharing_name}/${question.qid}</td>
