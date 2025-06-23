@@ -39,12 +39,12 @@ export function getPageContext(data: Record<string, any>): PageContext {
   return PageContext.parse(data);
 }
 
-interface StudentCourseInstanceContext {
+export interface StudentCourseInstanceContext {
   course_instance: StudentCourseInstance;
   course: StudentCourse;
 }
 
-interface StaffCourseInstanceContext {
+export interface StaffCourseInstanceContext {
   course_instance: StaffCourseInstance;
   course: StaffCourse;
 }

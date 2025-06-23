@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getCourseInstanceContext, getPageContext } from './page-context.js';
+import {
+  type StaffCourseInstanceContext,
+  type StudentCourseInstanceContext,
+  getCourseInstanceContext,
+  getPageContext,
+} from './page-context.js';
 
 describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
@@ -43,22 +48,8 @@ describe('getPageContext', () => {
 });
 
 describe('getCourseInstanceContext', () => {
-  /*
-      assessments_group_by: "Set" | "Module";
-    course_id: string;
-    deleted_at: Date | null;
-    display_timezone: string;
-    hide_in_enroll_page: boolean | null;
-    id: string;
-    json_comment: string | ... 2 more ... | null;
-    long_name: string | null;
-    share_source_publicly: boolean;
-    short_name: string | null;
-    uuid: string | null;
-  */
-  const mockStudentData = {
+  const mockStudentData: StudentCourseInstanceContext = {
     course_instance: {
-      announcement_color: 'red',
       assessments_group_by: 'Set',
       course_id: '1',
       deleted_at: null,
@@ -72,47 +63,42 @@ describe('getCourseInstanceContext', () => {
       uuid: '1',
     },
     course: {
-      assessments_group_by: 'Set',
-      course_id: '1',
       deleted_at: null,
       display_timezone: 'America/Chicago',
-      hide_in_enroll_page: false,
       id: '1',
-      json_comment: null,
-      long_name: 'Example Student Course',
-      share_source_publicly: true,
       short_name: 'Example Student Course',
-      uuid: '1',
+      announcement_color: 'red',
+      announcement_html: '<p>Hello, world!</p>',
+      course_instance_enrollment_limit: 10,
+      created_at: new Date(),
+      example_course: false,
+      institution_id: '1',
+      template_course: false,
+      title: 'Example Student Course',
     },
   };
-
-  const mockInstructorData = {
+  const mockInstructorData: StaffCourseInstanceContext = {
     course_instance: {
-      announcement_color: 'red',
-      assessments_group_by: 'Set',
-      course_id: '2',
-      deleted_at: null,
-      display_timezone: 'America/Chicago',
-      hide_in_enroll_page: false,
+      ...mockStudentData.course_instance,
       id: '2',
-      json_comment: null,
-      long_name: 'Example Instructor Course Instance',
-      share_source_publicly: true,
-      short_name: 'Example Instructor Course',
-      uuid: '2',
+      enrollment_limit: 10,
+      sync_errors: null,
+      sync_job_sequence_id: null,
+      sync_warnings: null,
     },
     course: {
-      assessments_group_by: 'Set',
-      course_id: '2',
-      deleted_at: null,
-      display_timezone: 'America/Chicago',
-      hide_in_enroll_page: false,
-      id: '2',
+      ...mockStudentData.course,
+      path: 'example/path',
       json_comment: null,
-      long_name: 'Example Instructor Course',
-      share_source_publicly: true,
-      short_name: 'Example Instructor Course',
-      uuid: '2',
+      sync_errors: null,
+      sync_job_sequence_id: null,
+      sync_warnings: null,
+      branch: 'main',
+      commit_hash: '1234567890',
+      repository: 'https://github.com/example/example.git',
+      sharing_name: 'example',
+      sharing_token: '1234567890',
+      show_getting_started: false,
     },
   };
 
