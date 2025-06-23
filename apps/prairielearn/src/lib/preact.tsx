@@ -53,6 +53,8 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   }
 
   if (!nameOverride && !Component.displayName) {
+    // This is only defined in development, not in production when the function name is minified.
+    const componentDevName = Component.name || 'UnknownComponent';
     throw new AugmentedError(
       'Component does not have a displayName or nameOverride, which is required for hydration.',
       {
@@ -60,9 +62,9 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
           <p>Make sure to add a displayName to the component:</p>
           <pre>
           <code>
-export const ${Component.name} = ...;
+export const ${componentDevName} = ...;
 // Add this line:
-${Component.name}.displayName = '${Component.name}';
+${componentDevName}.displayName = '${componentDevName}';
           </code>
           </pre>
         </div>`,
