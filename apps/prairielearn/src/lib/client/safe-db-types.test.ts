@@ -27,7 +27,6 @@ const minimalStaffCourse = {
   path: 'path',
   repository: null,
   sharing_name: null,
-  sharing_token: 'token',
   short_name: null,
   show_getting_started: false,
   sync_errors: null,
@@ -39,13 +38,15 @@ const minimalStaffCourse = {
 
 // StudentCourse omits many fields from StaffCourse
 const {
+  announcement_color: _announcement_color,
+  announcement_html: _announcement_html,
   branch: _branch,
   commit_hash: _commit_hash,
+  course_instance_enrollment_limit: _course_instance_enrollment_limit,
   json_comment: _json_comment,
   path: _path,
   repository: _repository,
   sharing_name: _sharing_name,
-  sharing_token: _sharing_token,
   show_getting_started: _show_getting_started,
   sync_errors: _sync_errors,
   sync_job_sequence_id: _sync_job_sequence_id,
@@ -74,9 +75,11 @@ const minimalStaffCourseInstance = {
 // StudentCourseInstance omits some fields from StaffCourseInstance
 const {
   enrollment_limit: _enrollment_limit,
+  share_source_publicly: _share_source_publicly,
   sync_errors: __sync_errors,
   sync_job_sequence_id: __sync_job_sequence_id,
   sync_warnings: __sync_warnings,
+  uuid: _uuid,
   ...minimalStudentCourseInstance
 } = minimalStaffCourseInstance;
 
