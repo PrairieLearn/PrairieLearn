@@ -39,11 +39,13 @@ export function renderHtmlDocument(content: VNode) {
 }
 
 /**
- * Renders a Preact component for client-side hydration. All interaactive components will need to be hydrated.
- * This function is intended to be used within a non-interactive Preact component that will be rendered without hydration through `renderHtml`.
+ * Renders a Preact component for client-side hydration. All interactive
+ * components will need to be hydrated. This function is intended to be used
+ * within a non-interactive Preact component that will be rendered without
+ * hydration through `renderHtml`.
  *
  * @param content - A Preact VNode to render to HTML.
- * @param nameOverride - An optional override for the component's name or displayName.
+ * @param nameOverride - An optional override for the component's displayName.
  * @returns A Preact VNode that can be used for client-side hydration.
  */
 export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
@@ -52,10 +54,11 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     throw new Error('hydrate expects a Preact component');
   }
 
-  const componentName = nameOverride || Component.name || Component.displayName;
+  // Note that we don't use `Component.name` here because it can be minified or mangled.
+  const componentName = nameOverride ?? Component.displayName;
   if (!componentName || componentName === 'm') {
     throw new Error(
-      'Component does not have a name or displayName -- provide a nameOverride for the component, or give it a name.',
+      'Component does not have a displayName -- provide a nameOverride for the component, or give it a displayName.',
     );
   }
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
@@ -64,17 +67,17 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     compiledScriptSrc = compiledScriptPath(scriptPath);
   } catch (error) {
     throw new AugmentedError(`Could not find script for component "${componentName}".`, {
-      info: html`<div>
-        Make sure you create a script at <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in the registry:
-        <pre>
-        <code>
-import { ${componentName} } from // ...
+      info: html`
+        <div>
+          Make sure you create a script at
+          <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in
+          the registry:
+          <pre><code>import { ${componentName} } from // ...
 import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
-registerReactFragment(${componentName});
-        </code>
-        <pre>
-      </div> `,
+registerReactFragment(${componentName});</code></pre>
+        </div>
+      `,
       cause: error,
     });
   }
