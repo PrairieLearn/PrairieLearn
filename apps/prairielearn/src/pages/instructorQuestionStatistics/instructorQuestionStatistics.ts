@@ -1,6 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -15,7 +15,7 @@ import {
   InstructorQuestionStatistics,
 } from './instructorQuestionStatistics.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function makeStatsCsvFilename(locals) {

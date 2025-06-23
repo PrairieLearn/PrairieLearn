@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.1.0
+
+### Minor Changes
+
+- 791b1c7: Support preloading assets, and assets processed with ESM + code splitting
+
 ## 3.0.18
 
 ### Patch Changes

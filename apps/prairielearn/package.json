@@ -11,7 +11,8 @@
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
-    "test:dist": "vitest run --coverage dist/**/*.test.js"
+    "test:dist": "vitest run --coverage dist/**/*.test.js",
+    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.823.0",
@@ -158,6 +159,7 @@
     "pg": "^8.16.0",
     "popper.js": "^1.16.1",
     "preact": "^10.26.8",
+    "preact-render-to-string": "^6.5.13",
     "prettier": "3.5.3",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.14.0",
@@ -250,7 +252,7 @@
     "@types/tmp": "^0.2.6",
     "@types/unzipper": "^0.10.11",
     "@types/uuid": "^10.0.0",
-    "@vitest/coverage-v8": "^3.2.1",
+    "@vitest/coverage-v8": "^3.2.2",
     "axe-core": "^4.10.3",
     "get-port": "^7.1.0",
     "jsdom": "^26.1.0",
@@ -258,7 +260,7 @@
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^3.2.1"
+    "vitest": "^3.2.2"
   },
   "nodemonConfig": {
     "ignore": [
