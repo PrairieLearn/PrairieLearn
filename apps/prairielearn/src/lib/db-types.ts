@@ -312,9 +312,6 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-/**
- * Includes all fields.
- */
 export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
@@ -368,13 +365,13 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
-  enrollment_limit: z.number().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
@@ -1066,11 +1063,11 @@ export const UserSchema = z.object({
   lti_course_instance_id: IdSchema.nullable(),
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
+  stripe_customer_id: z.string().nullable(),
   terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
   user_id: IdSchema,
-  stripe_customer_id: z.string().nullable(),
 });
 export type User = z.infer<typeof UserSchema>;
 
