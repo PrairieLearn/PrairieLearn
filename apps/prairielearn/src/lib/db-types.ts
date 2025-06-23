@@ -333,33 +333,13 @@ export const CourseSchema = z.object({
   short_name: z.string().nullable(),
   show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
+  sync_warnings: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   template_course: z.boolean(),
   title: z.string().nullable(),
-  sync_warnings: z.string().nullable(),
   yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
-
-export const StaffCourseSchema = CourseSchema.omit({
-  yearly_enrollment_limit: true,
-});
-export type StaffCourse = z.infer<typeof StaffCourseSchema>;
-
-export const StudentCourseSchema = StaffCourseSchema.omit({
-  branch: true,
-  commit_hash: true,
-  json_comment: true,
-  path: true,
-  repository: true,
-  sharing_name: true,
-  sharing_token: true,
-  show_getting_started: true,
-  sync_errors: true,
-  sync_job_sequence_id: true,
-  sync_warnings: true,
-});
-export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
 export const CourseInstanceSchema = z.object({
   assessments_group_by: z.enum(['Set', 'Module']),
@@ -379,17 +359,6 @@ export const CourseInstanceSchema = z.object({
   uuid: z.string().nullable(),
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
-
-export const StaffCourseInstanceSchema = CourseInstanceSchema;
-export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
-
-export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
-  enrollment_limit: true,
-  sync_errors: true,
-  sync_job_sequence_id: true,
-  sync_warnings: true,
-});
-export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 export const CourseInstanceAccessRuleSchema = z.object({
   course_instance_id: IdSchema,
@@ -1071,12 +1040,6 @@ export const UserSchema = z.object({
   user_id: IdSchema,
 });
 export type User = z.infer<typeof UserSchema>;
-
-export const StaffUserSchema = UserSchema.omit({ stripe_customer_id: true });
-export type StaffUser = z.infer<typeof StaffUserSchema>;
-
-export const StudentUserSchema = StaffUserSchema.omit({ uin: true });
-export type StudentUser = z.infer<typeof StudentUserSchema>;
 
 export const UserSessionSchema = z.object({
   id: IdSchema,
