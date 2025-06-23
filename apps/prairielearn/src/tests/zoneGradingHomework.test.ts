@@ -1,11 +1,12 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -135,11 +136,10 @@ const zoneGradingTests: TestZone[][] = [
   ],
 ];
 
-describe('Zone grading homework assessment', function () {
-  this.timeout(60000);
+describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   function startAssessment() {
     describe('the locals object', function () {
@@ -174,8 +174,11 @@ describe('Zone grading homework assessment', function () {
 
     describe('the database', function () {
       it('should contain HW4', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_hw4, []);
-        locals.assessment_id = result.rows[0].id;
+        const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: 'hw4-perzonegrading',
+        });
+        locals.assessment_id = assessmentId;
       });
     });
 
@@ -263,12 +266,10 @@ describe('Zone grading homework assessment', function () {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.after.call(this);
+          await helperServer.after();
         });
         it('should start up', async function () {
-          // pass "this" explicitly to enable this.timeout() calls
-          await helperServer.before().call(this);
+          await helperServer.before()();
         });
       });
 

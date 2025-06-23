@@ -1,53 +1,49 @@
 -- BLOCK select_next_ungraded_instance_question
 WITH
-  prior_instance_question AS (
+  instance_questions_to_grade AS (
     SELECT
-      iq.*,
-      COALESCE(g.name, u.name) AS prior_user_or_group_name
+      iq.id,
+      iq.assigned_grader,
+      ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
+      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order
     FROM
       instance_questions AS iq
-      LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-      LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
+      JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE
-      iq.id = $prior_instance_question_id
+      iq.assessment_question_id = $assessment_question_id
+      AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
+      AND (
+        $prior_instance_question_id::BIGINT IS NULL
+        OR iq.id != $prior_instance_question_id
+      )
+      AND iq.requires_manual_grading
+      AND (
+        iq.assigned_grader = $user_id
+        OR iq.assigned_grader IS NULL
+      )
+      AND EXISTS (
+        SELECT
+          1
+        FROM
+          variants AS v
+          JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+          v.instance_question_id = iq.id
+      )
   )
 SELECT
-  iq.id
+  id
 FROM
-  instance_questions AS iq
-  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN prior_instance_question AS piq ON (TRUE)
-WHERE
-  iq.assessment_question_id = $assessment_question_id
-  AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
-  AND (
-    $prior_instance_question_id::BIGINT IS NULL
-    OR iq.id != $prior_instance_question_id
-  )
-  AND iq.requires_manual_grading
-  AND (
-    iq.assigned_grader = $user_id
-    OR iq.assigned_grader IS NULL
-  )
-  AND EXISTS (
-    SELECT
-      1
-    FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      v.instance_question_id = iq.id
-  )
+  instance_questions_to_grade
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
-  iq.assigned_grader NULLS LAST,
-  -- Choose question that list after the prior if one exists (follow the order in the instance list)
-  (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
-  COALESCE(g.name, u.name),
-  iq.id
+  assigned_grader NULLS LAST,
+  -- Choose question that list after the prior if one exists. Follow the same
+  -- default pseudo-random deterministic stable order used in the instance
+  -- questions page.
+  iq_stable_order > prior_iq_stable_order DESC,
+  iq_stable_order,
+  id
 LIMIT
   1;
 
@@ -289,7 +285,8 @@ WITH
 SELECT
   rgr.*,
   gir.applied_rubric_items,
-  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed,
+  iq.is_ai_graded
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
@@ -453,6 +450,7 @@ SET
   partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
+  modified_at = now(),
   override_score = COALESCE($score, override_score),
   score = COALESCE($score, score),
   correct = COALESCE($correct, correct),
@@ -475,6 +473,8 @@ WITH
       manual_points = COALESCE($manual_points, manual_points),
       status = 'complete',
       modified_at = now(),
+      -- TODO: this might not be correct. Matt suggested that we might want to
+      -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,

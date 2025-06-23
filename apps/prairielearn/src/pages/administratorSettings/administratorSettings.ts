@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -12,7 +12,7 @@ import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',
@@ -45,13 +45,16 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
-      if (!config.openAiApiKey || !config.openAiOrganization) {
+      if (
+        !config.aiQuestionGenerationOpenAiApiKey ||
+        !config.aiQuestionGenerationOpenAiOrganization
+      ) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
       const client = new OpenAI({
-        apiKey: config.openAiApiKey,
-        organization: config.openAiOrganization,
+        apiKey: config.aiQuestionGenerationOpenAiApiKey,
+        organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
@@ -60,13 +63,17 @@ router.post(
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute
       // the production database.
-      if (!config.openAiApiKey || !config.openAiOrganization || !config.devMode) {
+      if (
+        !config.aiQuestionGenerationOpenAiApiKey ||
+        !config.aiQuestionGenerationOpenAiOrganization ||
+        !config.devMode
+      ) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
       const client = new OpenAI({
-        apiKey: config.openAiApiKey,
-        organization: config.openAiOrganization,
+        apiKey: config.aiQuestionGenerationOpenAiApiKey,
+        organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
       const { benchmarkAiQuestionGeneration } = await import(

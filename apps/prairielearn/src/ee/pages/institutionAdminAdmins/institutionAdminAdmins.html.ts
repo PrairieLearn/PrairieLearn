@@ -34,7 +34,7 @@ export function InstitutionAdminAdmins({
       institution,
     },
     pageTitle: `Admins — ${institution.short_name}`,
-    headContent: [compiledScriptTag('institutionAdminAdminsClient.ts')],
+    headContent: compiledScriptTag('institutionAdminAdminsClient.ts'),
     navContext: {
       type: 'institution',
       page: 'institution_admin',

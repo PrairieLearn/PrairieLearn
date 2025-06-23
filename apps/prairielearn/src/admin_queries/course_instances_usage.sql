@@ -136,7 +136,8 @@ WITH
       total.total_submissions,
       term.term_submissions::float / greatest(1, total.total_submissions::float) AS submission_term_ratio,
       term.external_grading_hours,
-      term.workspace_hours
+      term.workspace_hours,
+      NULL::double precision AS cost_ai_question_generation
     FROM
       student_active_data AS active
       JOIN student_term_data AS term ON (
@@ -179,7 +180,8 @@ WITH
             WHERE
               ciu.type = 'Workspace'
           )
-      ) / 3600 AS workspace_hours
+      ) / 3600 AS workspace_hours,
+      sum(ciu.cost_ai_question_generation) AS cost_ai_question_generation
     FROM
       term_course_instance_usages AS ciu
     WHERE
@@ -235,7 +237,9 @@ SELECT
   -- running duration of workspaces (in hours)
   cd.workspace_hours,
   -- total compute time for both workspaces and external grading jobs (in hours)
-  coalesce(cd.external_grading_hours, 0) + coalesce(cd.workspace_hours, 0) AS total_compute_hours
+  coalesce(cd.external_grading_hours, 0) + coalesce(cd.workspace_hours, 0) AS total_compute_hours,
+  -- cost of AI question generation (in USD)
+  cd.cost_ai_question_generation
 FROM
   combined_data AS cd
   LEFT JOIN course_instances AS ci ON (ci.id = cd.course_instance_id)

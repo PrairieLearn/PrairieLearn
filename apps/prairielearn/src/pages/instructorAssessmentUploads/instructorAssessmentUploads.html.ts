@@ -6,6 +6,7 @@ import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
@@ -45,6 +46,9 @@ export function InstructorAssessmentUploads({
         ? html`
             ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
             ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
+            ${config.devMode
+              ? UploadSubmissionsCsvModal({ csrfToken: resLocals.__csrf_token })
+              : ''}
           `
         : ''}
       ${AssessmentUploadCard({
@@ -119,15 +123,38 @@ function AssessmentUploadCard({
                     <td>
                       <p>
                         Upload a CSV file to set the total assessment score for individual students.
-                        <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp"
-                          >Show details...</a
-                        >
+                        <a data-bs-toggle="collapse" href="#uploadAssessmentScoresHelp">
+                          Show details...
+                        </a>
                       </p>
                       <div class="collapse" id="uploadAssessmentScoresHelp">
                         ${CsvHelpAssessmentInstanceScores()}
                       </div>
                     </td>
                   </tr>
+                  ${config.devMode
+                    ? html`
+                        <tr>
+                          <td style="width: 1%">
+                            <button
+                              type="button"
+                              class="btn btn-primary text-nowrap"
+                              data-bs-toggle="modal"
+                              data-bs-target="#upload-submissions-csv-form"
+                            >
+                              <i class="fas fa-upload"></i> Upload submissions
+                            </button>
+                          </td>
+                          <td>
+                            <p>
+                              Upload a CSV file to recreate users, assessment instances, questions,
+                              variants, and submissions. Useful for local testing with real data.
+                              <strong>Only available in development mode.</strong>
+                            </p>
+                          </td>
+                        </tr>
+                      `
+                    : ''}
                 </tbody>
               </table>
             </div>
@@ -293,6 +320,50 @@ function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string 
     `,
     footer: html`
       <input type="hidden" name="__action" value="upload_assessment_instance_scores" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Upload</button>
+    `,
+  });
+}
+
+function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'upload-submissions-csv-form',
+    title: 'Upload Submissions CSV',
+    formEncType: 'multipart/form-data',
+    body: html`
+      <p>
+        Upload a CSV file to recreate users, assessment instances, questions, variants, and
+        submissions.
+      </p>
+      <p>
+        You should upload one of the submissions CSV files (<code>*_all_submissions.csv</code>,
+        <code>*_final_submissions.csv</code>, or <code>*_best_submissions.csv</code>) from the
+        Downloads page.
+      </p>
+      <p>
+        The download/upload process is lossy. Some information, such as <code>format_errors</code>,
+        <code>raw_submitted_answers</code>, whether or not a submission was considered gradable, and
+        scores (including manual grading and rubrics) will not be preserved.
+      </p>
+      <div class="alert alert-danger">
+        This will delete all existing assessment instances and submissions for this assessment and
+        replace them with the submissions from the CSV file. This action cannot be undone.
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="uploadSubmissionsCsvFileInput">Choose CSV file</label>
+        <input
+          type="file"
+          name="file"
+          class="form-control"
+          id="uploadSubmissionsCsvFileInput"
+          accept=".csv"
+        />
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="upload_submissions" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>

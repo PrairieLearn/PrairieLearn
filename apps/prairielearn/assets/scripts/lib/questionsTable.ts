@@ -236,7 +236,7 @@ onDocumentReady(() => {
 
   if (showAddQuestionButton) {
     tableSettings.buttons.addQuestion = {
-      text: 'Add Question',
+      text: 'Add question',
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
       event: () => {
@@ -249,8 +249,8 @@ onDocumentReady(() => {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
-          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
-          Generate Question with AI
+          <i class="bi bi-stars" aria-hidden="true"></i>
+          Generate question with AI
         </a>
       `.toString(),
     };

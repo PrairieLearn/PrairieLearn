@@ -3,12 +3,12 @@ import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -255,27 +255,23 @@ const verifyFileData = [
   },
 ];
 
-describe('test file editor', function () {
-  this.timeout(20000);
-
+describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
-    before('create test course files', async () => {
+    beforeAll(async () => {
       await createCourseFiles();
     });
+    afterAll(async () => {
+      await deleteCourseFiles();
+    });
 
-    before('set up testing server', helperServer.before(courseDir));
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
 
-    before('update course repository in database', async () => {
+    beforeAll(async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
-    });
-
-    after('shut down testing server', helperServer.after);
-
-    after('delete test course files', async () => {
-      await deleteCourseFiles();
     });
 
     describe('the locals object', function () {
@@ -314,9 +310,9 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
-    after('shut down testing server', helperServer.after);
+    afterAll(helperServer.after);
 
     describe('disallow edits inside exampleCourse', function () {
       badGet(badExampleCoursePathUrl, 403, true);
@@ -704,15 +700,8 @@ function pullAndVerifyFileNotInDev(fileName) {
         env: process.env,
       });
     });
-    it('should not exist', function (callback) {
-      fs.access(path.join(courseDevDir, fileName), (err) => {
-        if (err) {
-          if (err.code === 'ENOENT') callback(null);
-          else callback(new Error(`got wrong error: ${err}`));
-        } else {
-          callback(new Error(`${fileName} should not exist, but does`));
-        }
-      });
+    it('should not exist', async () => {
+      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
     });
   });
 }

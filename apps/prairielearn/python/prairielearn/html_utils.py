@@ -17,6 +17,23 @@ from prairielearn.misc_utils import escape_unicode_string
 
 EnumT = TypeVar("EnumT", bound=Enum)
 
+# From https://gitlab.gnome.org/GNOME/libxml2/-/blob/4aa08c80b711ab296f6e6ecab24df8cf6d0be5fc/HTMLtree.c#L305-309
+LIBXML_BOOLEAN_ATTRIBUTES = frozenset({
+    "checked",
+    "compact",
+    "declare",
+    "defer",
+    "disabled",
+    "ismap",
+    "multiple",
+    "nohref",
+    "noresize",
+    "noshade",
+    "nowrap",
+    "readonly",
+    "selected",
+})
+
 
 def get_enum_attrib(
     element: lxml.html.HtmlElement,
@@ -116,6 +133,17 @@ def _get_attrib(
     if len(args) > 1:
         raise ValueError("Only one additional argument is allowed")
 
+    # libxml2 omits the content of certain boolean attributes during
+    # serialization, so their value is not reliable. To avoid problems, we raise
+    # an error if the value is used for anything other than a boolean check. The
+    # boolean function has a test before this point with an early return, so
+    # this point should only be reached if this is being handled with a
+    # non-boolean value.
+    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+        raise ValueError(
+            f"The attribute '{name}' is an HTML boolean attribute, and should not be used."
+        )
+
     if name in element.attrib:
         return (element.attrib[name], False)
 
@@ -203,6 +231,15 @@ def get_boolean_attrib(
     Raises:
         ValueError: If the attribute is not a valid boolean value.
     """
+    # If the attribute is a boolean attribute, then its value is determined by its presence
+    if name.lower() in LIBXML_BOOLEAN_ATTRIBUTES:
+        default_value = None if len(args) == 0 else args[0]
+        if default_value:
+            raise ValueError(
+                f'Attribute "{name}" is an HTML boolean attribute, and cannot be used with a default value of {default_value}.'
+            )
+        return has_attrib(element, name) or default_value
+
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
         return val

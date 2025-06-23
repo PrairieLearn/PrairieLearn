@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import * as express from 'express';
+import express, { Router } from 'express';
 import { type ServeStaticOptions } from 'serve-static';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
@@ -19,7 +19,7 @@ const NODE_MODULES_PATHS = [
  * to serve all files, or a subdirectory like `mathjax/es5`.
  */
 export default function (servePath: string, options?: ServeStaticOptions) {
-  const router = express.Router();
+  const router = Router();
 
   NODE_MODULES_PATHS.forEach((p) => {
     const resolvedServePath = path.resolve(p, servePath);

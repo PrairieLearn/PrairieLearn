@@ -51,7 +51,8 @@ WITH
     UPDATE variants
     SET
       params = $params,
-      true_answer = $true_answer
+      true_answer = $true_answer,
+      modified_at = now()
     WHERE
       id = $variant_id
     RETURNING
@@ -112,7 +113,8 @@ WITH
     UPDATE variants
     SET
       duration = duration + ($delta * interval '1 ms'),
-      first_duration = coalesce(first_duration, $delta * interval '1 ms')
+      first_duration = coalesce(first_duration, $delta * interval '1 ms'),
+      modified_at = now()
     WHERE
       id = $variant_id
   )

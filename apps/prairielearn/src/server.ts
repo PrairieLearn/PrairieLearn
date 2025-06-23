@@ -23,6 +23,7 @@ import express, {
   type Request,
   type RequestHandler,
   type Response,
+  Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
 import multer from 'multer';
@@ -151,7 +152,7 @@ export async function initExpress(): Promise<Express> {
     },
   });
 
-  const sessionRouter = express.Router();
+  const sessionRouter = Router();
   sessionRouter.use(sessionMiddleware);
   sessionRouter.use(flashMiddleware());
   sessionRouter.use((req, res, next) => {
@@ -173,7 +174,7 @@ export async function initExpress(): Promise<Express> {
   });
 
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api'], sessionRouter));
+  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -270,7 +271,7 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = express.Router();
+  const workspaceAuthRouter = Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
     // authn/authz for a specific workspace. We run the following
@@ -432,7 +433,7 @@ export async function initExpress(): Promise<Express> {
 
   // Set and check `res.locals.__csrf_token`. We exclude API routes as those
   // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -490,6 +491,13 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authzCourseOrInstance.js')).default,
       (await import('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher.js'))
         .default,
+    ],
+  );
+  app.use(
+    '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );
 
@@ -751,6 +759,15 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor',
+    asyncHandler(async (req, res, next) => {
+      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
+      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      next();
+    }),
+  );
 
   // single assessment
   app.use(
@@ -1120,15 +1137,20 @@ export async function initExpress(): Promise<Express> {
       )
     ).default,
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1172,9 +1194,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1569,15 +1588,20 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1626,6 +1650,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+  // Also not a page, like above. This route is used to initiate the transfer of a public course instance
+  app.use(
+    '/pl/course/:course_id(\\d+)/copy_public_course_instance',
+    (
+      await import(
+        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
+      )
+    ).default,
   );
 
   // Global client files
@@ -1725,6 +1758,10 @@ export async function initExpress(): Promise<Express> {
       publicQuestionEndpoint: true,
       coreElements: false,
     }),
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   );
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);

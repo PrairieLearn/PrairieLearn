@@ -45,6 +45,8 @@ def file(data):
             drawing += elm.Line().left()
             drawing.pop()
             drawing += elm.BatteryCell().down().label(battery_label_list)
+        case _:
+            raise RuntimeError("Invalid value for whichfig")
 
     return drawing.get_imagedata()
 
@@ -60,10 +62,10 @@ def generate(data):
     R3 = random.randrange(20, 100, 5) * ureg.ohm
 
     # Store magnitudes to present to the student
-    params_dict["Vt_quantity"] = int(Vt.magnitude)
-    params_dict["R1_quantity"] = int(R1.magnitude)
-    params_dict["R2_quantity"] = int(R2.magnitude)
-    params_dict["R3_quantity"] = int(R3.magnitude)
+    params_dict["Vt_quantity"] = int(Vt.magnitude)  # type: ignore
+    params_dict["R1_quantity"] = int(R1.magnitude)  # type: ignore
+    params_dict["R2_quantity"] = int(R2.magnitude)  # type: ignore
+    params_dict["R3_quantity"] = int(R3.magnitude)  # type: ignore
 
     # Generate labels for use in diagram, "~L" is the short latex format specifier
     params_dict["Vt_label"] = f"$V_T = {Vt:~L}$"
@@ -73,7 +75,7 @@ def generate(data):
 
     # Next randomly choose which diagram to ask about and compute
     # the resistance
-    whichfig = random.choice([0, 1])
+    whichfig = random.choice((0, 1))
     params_dict["whichfig"] = whichfig
 
     match whichfig:
@@ -89,7 +91,7 @@ def generate(data):
 
     # Finally, choose what to ask about (current or resistance)
     # Note: This is independent of the previous choice of which figure.
-    variant = random.choice([0, 1])
+    variant = random.choice((0, 1))
     match variant:
         case 0:
             params_dict["ask"] = "equivalent resistance $R_T$"
@@ -103,5 +105,5 @@ def generate(data):
             params_dict["lab"] = "I_T"
             params_dict["placeholder"] = "current + unit"
 
-            It = (Vt / Rt).to_base_units()
+            It = (Vt / Rt).to_base_units()  # type: ignore
             data["correct_answers"]["ans"] = str(It)

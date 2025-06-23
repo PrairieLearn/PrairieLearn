@@ -1,11 +1,12 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -68,8 +69,11 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-3. the database', function () {
     it('should contain E1', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_e1, []);
-      locals.assessment_id = result.rows[0].id;
+      const { id: assessmentId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam1-automaticTestSuite',
+      });
+      locals.assessment_id = assessmentId;
     });
   });
 

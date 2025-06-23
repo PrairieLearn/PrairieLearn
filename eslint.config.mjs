@@ -2,11 +2,10 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import mocha from 'eslint-plugin-mocha';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
-import noOnlyTests from 'eslint-plugin-no-only-tests';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -41,12 +40,10 @@ export default tseslint.config([
 
     plugins: {
       'import-x': importX,
-      mocha,
-      // @ts-expect-error Missing types for this plugin
       'no-floating-promise': noFloatingPromise,
-      'no-only-tests': noOnlyTests,
-      '@prairielearn': prairielearn,
+      vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+      '@prairielearn': prairielearn,
     },
 
     languageOptions: {
@@ -70,14 +67,12 @@ export default tseslint.config([
     },
 
     linterOptions: {
-      reportUnusedDisableDirectives: true,
+      reportUnusedDisableDirectives: 'error',
     },
 
     rules: {
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
-      'no-floating-promise/no-floating-promise': 'error',
-      'no-only-tests/no-only-tests': 'error',
       'handle-callback-err': 'error',
       'no-template-curly-in-string': 'error',
       'no-restricted-globals': [
@@ -88,6 +83,22 @@ export default tseslint.config([
       ],
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
+      'prefer-const': ['error', { destructuring: 'all' }],
+
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      quotes: ['error', 'single', { avoidEscape: true }],
+
+      // Enforce alphabetical order of import specifiers within each import group.
+      // The import-x/order rule handles the overall sorting of the import groups.
+      'sort-imports': [
+        'error',
+        {
+          ignoreDeclarationSort: true,
+          ignoreMemberSort: false,
+          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
+        },
+      ],
 
       'import-x/order': [
         'error',
@@ -110,21 +121,18 @@ export default tseslint.config([
         },
       ],
 
-      // Enforce alphabetical order of import specifiers within each import group.
-      // The import-x/order rule handles the overall sorting of the import groups.
-      'sort-imports': [
-        'error',
-        {
-          ignoreDeclarationSort: true,
-          ignoreMemberSort: false,
-          memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
-        },
-      ],
+      'no-floating-promise/no-floating-promise': 'error',
 
-      // The recommended Mocha rules are too strict for us; we'll only enable
-      // these two rules.
-      'mocha/no-exclusive-tests': 'error',
-      'mocha/no-pending-tests': 'error',
+      // Use the recommended rules for vitest
+      ...vitest.configs.recommended.rules,
+
+      // This gives a lot of false positives; we sometimes author tests that
+      // have the assertion in a helper function. We could refactor them in
+      // the future, but for now we'll disable this rule.
+      'vitest/expect-expect': ['off'],
+
+      // We violate this rule in a lot of places. We'll turn it off for now.
+      'vitest/no-identical-title': ['off'],
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
@@ -132,15 +140,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // Replaces the standard `no-unused-vars` rule.
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-        },
-      ],
 
       // We use empty functions in quite a few places, so we'll disable this rule.
       '@typescript-eslint/no-empty-function': 'off',
@@ -152,9 +151,15 @@ export default tseslint.config([
       // TODO: fix the violations so we can enable this rule.
       '@typescript-eslint/no-dynamic-delete': 'off',
 
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      quotes: ['error', 'single', { avoidEscape: true }],
+      // Replaces the standard `no-unused-vars` rule.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
@@ -174,14 +179,6 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.test.{js,ts,mjs}'],
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-      },
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
@@ -190,8 +187,15 @@ export default tseslint.config([
       },
     },
   },
+  {
+    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
   globalIgnores([
     '.venv/*',
+    '.yarn/*',
     'docs/*',
     'node_modules/*',
     'exampleCourse/*',
