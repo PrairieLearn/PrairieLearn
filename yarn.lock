@@ -8082,7 +8082,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:11.1.0, commander@npm:^11.1.0":
+"commander@npm:11.1.0":
   version: 11.1.0
   resolution: "commander@npm:11.1.0"
   checksum: 10c0/13cc6ac875e48780250f723fb81c1c1178d35c5decb1abb1b628b3177af08a8554e76b2c0f29de72d69eef7c864d12613272a71fabef8047922bc622ab75a179
@@ -11214,13 +11214,6 @@ __metadata:
     cjs-module-lexer: "npm:^1.2.2"
     module-details-from-path: "npm:^1.0.3"
   checksum: 10c0/7df8bff5cf8f3dc98d9e49b6e83b39bc5571d6afbeeaa7f783829e6f4a201329595f51f7c037ee7db395bb3866625d056edcd3f112a93f0e1f31930dbd8ec437
-  languageName: node
-  linkType: hard
-
-"import-meta-resolve@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "import-meta-resolve@npm:4.1.0"
-  checksum: 10c0/42f3284b0460635ddf105c4ad99c6716099c3ce76702602290ad5cbbcd295700cbc04e4bdf47bacf9e3f1a4cec2e1ff887dabc20458bef398f9de22ddff45ef5
   languageName: node
   linkType: hard
 
@@ -14464,7 +14457,6 @@ __metadata:
     turbo: "npm:^2.5.4"
     typescript: "npm:^5.8.3"
     typescript-eslint: "npm:^8.33.1"
-    vibe-rules: "npm:^0.3.41"
     vitest: "npm:^3.2.2"
   languageName: unknown
   linkType: soft
@@ -17242,21 +17234,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vibe-rules@npm:^0.3.41":
-  version: 0.3.41
-  resolution: "vibe-rules@npm:0.3.41"
-  dependencies:
-    chalk: "npm:^4.1.2"
-    commander: "npm:^11.1.0"
-    fs-extra: "npm:^11.3.0"
-    import-meta-resolve: "npm:^4.1.0"
-    zod: "npm:^3.24.4"
-  bin:
-    vibe-rules: dist/cli.js
-  checksum: 10c0/049dbaed08a1ea94b70db4da72d8578f1ed1df65f1d108e3988bc459285c94afd60d964d2d559704575e475fa52082d7ef19d20398d7509077a1c050a001f52d
-  languageName: node
-  linkType: hard
-
 "vite-node@npm:3.2.2":
   version: 3.2.2
   resolution: "vite-node@npm:3.2.2"
@@ -17807,13 +17784,6 @@ __metadata:
   peerDependencies:
     zod: ^3.24.1
   checksum: 10c0/0745b94ba53e652d39f262641cdeb2f75d24339fb6076a38ce55bcf53d82dfaea63adf524ebc5f658681005401687f8e9551c4feca7c4c882e123e66091dfb90
-  languageName: node
-  linkType: hard
-
-"zod@npm:^3.24.4":
-  version: 3.25.67
-  resolution: "zod@npm:3.25.67"
-  checksum: 10c0/80a0cab3033272c4ab9312198081f0c4ea88e9673c059aa36dc32024906363729db54bdb78f3dc9d5529bd1601f74974d5a56c0a23e40c6f04a9270c9ff22336
   languageName: node
   linkType: hard
 

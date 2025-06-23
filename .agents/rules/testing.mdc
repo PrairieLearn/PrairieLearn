@@ -1,0 +1,28 @@
+---
+description: Testing Practices
+globs: 
+alwaysApply: false
+---
+# Testing Practices
+
+## Test Information
+- Unit tests: `filename.test.ts` next to the file being tested
+- Integration tests: `apps/prairielearn/src/tests/`
+- Database gets overwritten on new test run
+
+## Example Test Structure
+```typescript
+import { describe, it, expect } from 'vitest';
+import { queryRow } from '@prairielearn/postgres';
+
+describe('Question Tests', () => {
+  it('should load question by ID', async () => {
+    const question = await queryRow(
+      sql.select_question,
+      { question_id: 45 },
+      QuestionSchema
+    );
+    expect(question).toBeDefined();
+  });
+});
+```

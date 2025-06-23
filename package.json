@@ -33,8 +33,7 @@
     "react": "^19.1.0",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
-    "tar-stream": "^3.1.7",
-    "vibe-rules": "^0.3.41"
+    "tar-stream": "^3.1.7"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.4",
