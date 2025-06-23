@@ -9,6 +9,7 @@ import { selectAssessments } from '../../models/assessment.js';
 import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
+import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
 import { PublicAssessments } from './publicAssessments.html.js';
 
@@ -41,13 +42,16 @@ router.get(
     const rows = await selectAssessments({
       course_instance_id: courseInstance.id,
     });
+    const questionsForCopy = await selectQuestionsForCourseInstanceCopy(courseInstance.id);
 
     res.send(
       PublicAssessments({
         resLocals: res.locals,
         rows,
+        course,
         courseInstance,
         courseInstanceCopyTargets,
+        questionsForCopy,
       }),
     );
   }),

@@ -157,6 +157,7 @@ export default tseslint.config([
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
 
@@ -184,6 +185,12 @@ export default tseslint.config([
         ...globals.browser,
         ...globals.jquery,
       },
+    },
+  },
+  {
+    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   globalIgnores([
