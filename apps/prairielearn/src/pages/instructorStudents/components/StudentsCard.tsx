@@ -3,30 +3,20 @@ import {
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
-  type ColumnSort,
   type VisibilityState as ColumnVisibilityState,
-  type OnChangeFn,
   type RowPinningState,
   type SortingState,
-  type Updater,
   createColumnHelper,
-  functionalUpdate,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import {
-  parseAsBoolean,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryState,
-  useQueryStates,
-} from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useEffect, useMemo, useState } from 'preact/compat';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
-import type { StudentRow } from '../instructorStudents.types.js';
+import { type StudentRow, parseAsSortingState } from '../instructorStudents.shared.js';
 
 import { ColumnManager } from './ColumnManager.js';
 import { StudentsTable } from './StudentsTable.js';
@@ -44,41 +34,28 @@ function downloadStudentsCSV(students: StudentRow[], filename: string): void {
 }
 
 const columnHelper = createColumnHelper<StudentRow>();
-const sortOrder = ['asc', 'desc'] as const;
+
+// Custom parser for SortingState: ?sort=col:asc or ?sort=col:desc
 
 export function StudentsCard({
   students,
   initialGlobalFilterValue,
-  initialColumnSort,
+  initialColumnSorts,
 }: {
   students: StudentRow[];
   initialGlobalFilterValue: string;
-  initialColumnSort: ColumnSort | undefined;
+  initialColumnSorts: SortingState;
 }) {
   const [globalFilter, setGlobalFilter] = useQueryState(
     'search',
-    parseAsString.withDefault(initialGlobalFilterValue),
-  );
-  const [columnSort, setColumnSort] = useQueryStates(
-    {
-      id: parseAsString.withDefault(initialColumnSort?.id ?? ''),
-      desc: parseAsStringLiteral(sortOrder),
-    },
-    {
-      urlKeys: {
-        id: 'sortBy',
-        desc: 'sortOrder',
-      },
-    },
+    parseAsString.withDefault(typeof window === 'undefined' ? initialGlobalFilterValue : ''),
   );
 
-  // Memoize the sorting array for useReactTable
-  // Should the sorting be derived from the URL state management, or the URL be derived from the sorting?
-  const sorting = useMemo(() => {
-    console.log({ columnSort });
-    return columnSort.id ? [{ id: columnSort.id, desc: columnSort.desc }] : [];
-  }, [columnSort.id, columnSort.desc]);
-
+  const [sorting, setSorting] = useQueryState(
+    'sort',
+    parseAsSortingState.withDefault(typeof window === 'undefined' ? initialColumnSorts : []),
+  );
+  // console.log('sorting', sorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
@@ -87,6 +64,8 @@ export function StudentsCard({
     left: [],
     right: [],
   });
+
+  console.log('rerender outer');
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
@@ -166,16 +145,7 @@ export function StudentsCard({
       columnVisibility,
       columnPinning,
     },
-    onSortingChange: (updaterFunction: Updater<SortingState>) => {
-      // Only update if changed
-      const newValue = functionalUpdate(updaterFunction, sorting);
-      console.log({ newValue });
-      if (newValue.length > 0) {
-        setColumnSort(newValue[0]);
-      } else {
-        setColumnSort({ id: '', desc: false });
-      }
-    },
+    onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,

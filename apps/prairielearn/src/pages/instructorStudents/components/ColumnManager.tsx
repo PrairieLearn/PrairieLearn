@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 
-import type { StudentRow } from '../instructorStudents.types.js';
+import type { StudentRow } from '../instructorStudents.shared.js';
 
 interface ColumnMenuItemProps {
   column: Column<StudentRow>;

@@ -1,4 +1,4 @@
-import { type ColumnSort } from '@tanstack/react-table';
+import { type SortingState } from '@tanstack/react-table';
 import { NuqsAdapter } from 'nuqs/adapters/react';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -6,7 +6,7 @@ import type { PageContext } from '../../lib/client/page-context.js';
 import { type InstructorCourse, type InstructorCourseInstance } from '../../lib/db-types.js';
 
 import { StudentsCard } from './components/StudentsCard.js';
-import { type StudentRow } from './instructorStudents.types.js';
+import { type StudentRow } from './instructorStudents.shared.js';
 
 export const InstructorStudents = ({
   pageContext,
@@ -14,14 +14,14 @@ export const InstructorStudents = ({
   course,
   students,
   initialGlobalFilterValue,
-  initialColumnSort,
+  initialColumnSorts,
 }: {
   pageContext: PageContext;
   courseInstance: InstructorCourseInstance;
   course: InstructorCourse;
   students: StudentRow[];
   initialGlobalFilterValue: string;
-  initialColumnSort: ColumnSort | undefined;
+  initialColumnSorts: SortingState | undefined;
 }) => {
   const { authz_data, urlPrefix } = pageContext;
   return (
@@ -41,7 +41,7 @@ export const InstructorStudents = ({
       <StudentsCard
         students={students ?? []}
         initialGlobalFilterValue={initialGlobalFilterValue}
-        initialColumnSort={initialColumnSort}
+        initialColumnSorts={initialColumnSorts}
       />
     </NuqsAdapter>
   );

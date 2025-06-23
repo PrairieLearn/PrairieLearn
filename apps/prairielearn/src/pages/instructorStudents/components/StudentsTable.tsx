@@ -2,7 +2,7 @@ import { type SortDirection, type Table, flexRender } from '@tanstack/react-tabl
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import { type JSX, useRef } from 'preact/compat';
 
-import type { StudentRow } from '../instructorStudents.types.js';
+import type { StudentRow } from '../instructorStudents.shared.js';
 
 function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   if (sortMethod === 'asc') {

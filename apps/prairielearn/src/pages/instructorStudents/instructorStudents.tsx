@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
+import { createLoader, parseAsString } from 'nuqs';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
@@ -11,16 +11,10 @@ import { getCourseOwners } from '../../lib/course.js';
 import { hydrate } from '../../lib/preact.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
-import { StudentRowSchema } from './instructorStudents.types.js';
+import { StudentRowSchema, parseAsSortingState } from './instructorStudents.shared.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const QuerySchema = z.object({
-  search: z.string().optional().default(''),
-  sortBy: z.string().optional().default(''),
-  sortOrder: z.enum(['asc', 'desc']).optional().nullable().default(null),
-});
 
 router.get(
   '/',
@@ -28,8 +22,11 @@ router.get(
     const pageContext = getPageContext(res.locals);
     const { course_instance, course } = getCourseInstanceContext(res.locals, 'instructor');
 
-    // TODO: Switch to nuqs for query params
-    const { search, sortBy, sortOrder } = QuerySchema.parse(req.query);
+    const loadSearchParams = createLoader({
+      search: parseAsString.withDefault(''),
+      sort: parseAsSortingState.withDefault([]),
+    });
+    const { search, sort } = loadSearchParams(req.query as any);
 
     const hasPermission = pageContext.authz_data.has_course_instance_permission_view;
     if (!hasPermission) {
@@ -86,7 +83,7 @@ router.get(
             course={course}
             students={students}
             initialGlobalFilterValue={search}
-            initialColumnSort={sortBy ? { id: sortBy, desc: sortOrder === 'desc' } : undefined}
+            initialColumnSorts={sort}
           />,
         ),
       }),
