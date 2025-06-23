@@ -1,4 +1,4 @@
-import { type SortingState } from '@tanstack/react-table';
+import { type ColumnSort } from '@tanstack/react-table';
 
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import type { PageContext } from '../../lib/client/page-context.js';
@@ -13,14 +13,14 @@ export const InstructorStudents = ({
   course,
   students,
   initialGlobalFilterValue,
-  initialSortingValue,
+  initialColumnSort,
 }: {
   pageContext: PageContext;
   courseInstance: InstructorCourseInstance;
   course: InstructorCourse;
   students: StudentRow[];
   initialGlobalFilterValue: string;
-  initialSortingValue: SortingState;
+  initialColumnSort: ColumnSort | undefined;
 }) => {
   const { authz_data, urlPrefix } = pageContext;
   return (
@@ -40,7 +40,7 @@ export const InstructorStudents = ({
       <StudentsCard
         students={students ?? []}
         initialGlobalFilterValue={initialGlobalFilterValue}
-        initialSortingValue={initialSortingValue}
+        initialColumnSort={initialColumnSort}
       />
     </>
   );

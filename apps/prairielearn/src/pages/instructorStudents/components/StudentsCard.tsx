@@ -3,6 +3,7 @@ import {
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type ColumnSort,
   type VisibilityState as ColumnVisibilityState,
   type RowPinningState,
   type SortingState,
@@ -12,10 +13,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { parseAsBoolean, parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
-import { useURLSync } from '../../../lib/client/useURLSync.js';
 import type { StudentRow } from '../instructorStudents.types.js';
 
 import { ColumnManager } from './ColumnManager.js';
@@ -38,15 +39,30 @@ const columnHelper = createColumnHelper<StudentRow>();
 export function StudentsCard({
   students,
   initialGlobalFilterValue,
-  initialSortingValue,
+  initialColumnSort,
 }: {
   students: StudentRow[];
   initialGlobalFilterValue: string;
-  initialSortingValue: SortingState;
+  initialColumnSort: ColumnSort | undefined;
 }) {
-  const [sorting, setSorting] = useState<SortingState>(initialSortingValue);
+  const [globalFilter, setGlobalFilter] = useQueryState(
+    'search',
+    parseAsString.withDefault(initialGlobalFilterValue),
+  );
+  const [columnSort, setColumnSort] = useQueryStates(
+    {
+      id: parseAsString.withDefault(initialColumnSort?.id ?? ''),
+      desc: parseAsBoolean.withDefault(initialColumnSort?.desc ?? false),
+    },
+    {
+      urlKeys: {
+        id: 'sortBy',
+        desc: 'sortOrder',
+      },
+    },
+  );
+
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState(initialGlobalFilterValue);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
@@ -125,7 +141,7 @@ export function StudentsCard({
     columnResizeMode: 'onChange',
     getRowId: (row) => row.uid,
     state: {
-      sorting,
+      sorting: [columnSort],
       columnFilters,
       globalFilter,
       columnSizing,
@@ -133,7 +149,7 @@ export function StudentsCard({
       columnVisibility,
       columnPinning,
     },
-    onSortingChange: setSorting,
+    onSortingChange: (sort: SortingState) => setColumnSort(sort[0]),
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
@@ -146,8 +162,6 @@ export function StudentsCard({
   });
 
   // Sync state to URL
-  useURLSync(globalFilter, sorting);
-
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white">

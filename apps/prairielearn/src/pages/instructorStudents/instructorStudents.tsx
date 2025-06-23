@@ -86,7 +86,7 @@ router.get(
             course={course}
             students={students}
             initialGlobalFilterValue={search}
-            initialSortingValue={sortBy ? [{ id: sortBy, desc: sortOrder === 'desc' }] : []}
+            initialColumnSort={sortBy ? { id: sortBy, desc: sortOrder === 'desc' } : undefined}
           />,
         ),
       }),
