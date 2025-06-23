@@ -36,9 +36,9 @@ RUN apt-get update && \
 # Download and build Python 3.10
 WORKDIR /usr/src
 RUN wget -q https://www.python.org/ftp/python/3.10.14/Python-3.10.14.tgz && \
-    tar xzf Python-3.10.14.tgz && \
-    cd Python-3.10.14 && \
-    ./configure --enable-optimizations && \
+    tar xzf Python-3.10.14.tgz
+WORKDIR /usr/src/Python-3.10.14
+RUN ./configure --enable-optimizations && \
     make -j"$(nproc)" && \
     make altinstall
 WORKDIR /
