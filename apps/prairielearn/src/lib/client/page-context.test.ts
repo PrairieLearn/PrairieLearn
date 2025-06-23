@@ -80,7 +80,6 @@ describe('getCourseInstanceContext', () => {
   const mockInstructorData: StaffCourseInstanceContext = {
     course_instance: {
       ...mockStudentData.course_instance,
-      id: '2',
       enrollment_limit: 10,
       sync_errors: null,
       sync_job_sequence_id: null,
