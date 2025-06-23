@@ -38,3 +38,5 @@ export const InstructorStudents = ({
     </NuqsAdapter>
   );
 };
+
+InstructorStudents.displayName = 'InstructorStudents';

@@ -11,9 +11,10 @@ const registry = new ReactFragmentsRegistry();
 
 export function registerReactFragment(component: ComponentType<any>, componentName?: string) {
   // Each React component that will be hydrated on the page must be registered.
-  const id = componentName || component.name || component.displayName;
+  // Note that we don't try to use `component.name` since it can be minified or mangled.
+  const id = componentName ?? component.displayName;
   if (!id) {
-    throw new Error('React fragment must have a name or displayName or componentName');
+    throw new Error('React fragment must have a displayName or an explicit name');
   }
   registry.setReactFragment(id, component);
 }
