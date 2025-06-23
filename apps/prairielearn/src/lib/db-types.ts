@@ -331,14 +331,14 @@ export const CourseSchema = z.object({
   options: z.any(),
   path: z.string(),
   repository: z.string().nullable(),
-  short_name: z.string().nullable(),
-  show_getting_started: z.boolean(),
-  template_course: z.boolean(),
-  title: z.string().nullable(),
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
+  short_name: z.string().nullable(),
+  show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
+  template_course: z.boolean(),
+  title: z.string().nullable(),
   sync_warnings: z.string().nullable(),
   yearly_enrollment_limit: z.number().nullable(),
 });
@@ -378,11 +378,11 @@ export const InstructorCourseInstanceSchema = z.object({
   long_name: z.string().nullable(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
-  uuid: z.string().nullable(),
   enrollment_limit: z.number().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
+  uuid: z.string().nullable(),
 });
 export type InstructorCourseInstance = z.infer<typeof InstructorCourseInstanceSchema>;
 
@@ -1078,8 +1078,8 @@ export const UserSchema = z.object({
   name: z.string().nullable(),
   terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
-  user_id: IdSchema,
   uin: z.string().nullable(),
+  user_id: IdSchema,
   stripe_customer_id: z.string().nullable(),
 });
 export type User = z.infer<typeof UserSchema>;
