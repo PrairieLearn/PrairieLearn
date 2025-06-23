@@ -48,12 +48,12 @@ export function StudentsCard({
 }) {
   const [globalFilter, setGlobalFilter] = useQueryState(
     'search',
-    parseAsString.withDefault(typeof window === 'undefined' ? initialGlobalFilterValue : ''),
+    parseAsString.withDefault(initialGlobalFilterValue),
   );
 
   const [sorting, setSorting] = useQueryState(
     'sort',
-    parseAsSortingState.withDefault(typeof window === 'undefined' ? initialColumnSorts : []),
+    parseAsSortingState.withDefault(initialColumnSorts),
   );
   // console.log('sorting', sorting);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
