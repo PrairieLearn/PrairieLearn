@@ -356,8 +356,13 @@ export type InstructorCourse = z.infer<typeof InstructorCourseSchema>;
  * Includes fields that are safe to expose to students.
  */
 export const StudentCourseSchema = InstructorCourseSchema.omit({
+  branch: true,
+  json_comment: true,
+  path: true,
+  repository: true,
   sharing_name: true,
   sharing_token: true,
+  show_getting_started: true,
   sync_errors: true,
   sync_job_sequence_id: true,
   sync_warnings: true,
