@@ -38,7 +38,20 @@ const minimalStaffCourse = {
 };
 
 // StudentCourse omits many fields from StaffCourse
-const { branch: _branch, ...minimalStudentCourse } = minimalStaffCourse;
+const {
+  branch: _branch,
+  commit_hash: _commit_hash,
+  json_comment: _json_comment,
+  path: _path,
+  repository: _repository,
+  sharing_name: _sharing_name,
+  sharing_token: _sharing_token,
+  show_getting_started: _show_getting_started,
+  sync_errors: _sync_errors,
+  sync_job_sequence_id: _sync_job_sequence_id,
+  sync_warnings: _sync_warnings,
+  ...minimalStudentCourse
+} = minimalStaffCourse;
 
 const minimalStaffCourseInstance = {
   assessments_group_by: 'Set',
@@ -59,19 +72,13 @@ const minimalStaffCourseInstance = {
 };
 
 // StudentCourseInstance omits some fields from StaffCourseInstance
-const minimalStudentCourseInstance = {
-  assessments_group_by: 'Set',
-  course_id: '1',
-  deleted_at: null,
-  display_timezone: 'UTC',
-  hide_in_enroll_page: null,
-  id: '3',
-  json_comment: null,
-  long_name: null,
-  share_source_publicly: false,
-  short_name: null,
-  uuid: null,
-};
+const {
+  enrollment_limit: _enrollment_limit,
+  sync_errors: __sync_errors,
+  sync_job_sequence_id: __sync_job_sequence_id,
+  sync_warnings: __sync_warnings,
+  ...minimalStudentCourseInstance
+} = minimalStaffCourseInstance;
 
 const minimalStaffUser = {
   deleted_at: null,
@@ -88,18 +95,7 @@ const minimalStaffUser = {
 };
 
 // StudentUser omits uin
-const minimalStudentUser = {
-  deleted_at: null,
-  email: 'a@b.com',
-  institution_id: '2',
-  lti_context_id: null,
-  lti_course_instance_id: null,
-  lti_user_id: null,
-  name: 'Test User',
-  terms_accepted_at: null,
-  uid: 'u123',
-  user_id: '4',
-};
+const { uin: _uin, ...minimalStudentUser } = minimalStaffUser;
 
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
