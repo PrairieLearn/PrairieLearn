@@ -22,6 +22,7 @@ describe('getPageContext', () => {
       anotherExtraField: 123,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { extraField, anotherExtraField, ...expected } = mockData;
 
     const result = getPageContext(mockData);
