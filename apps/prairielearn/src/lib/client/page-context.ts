@@ -9,7 +9,7 @@ import {
   type StudentCourseInstance,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
-} from '../db-types.js';
+} from './safe-db-types.js';
 
 const PageContext = z.object({
   authz_data: z.object({
