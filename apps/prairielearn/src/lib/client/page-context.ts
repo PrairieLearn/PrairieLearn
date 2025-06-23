@@ -35,8 +35,8 @@ const PageContext = z.object({
 });
 export type PageContext = z.infer<typeof PageContext>;
 
-export function getPageContext(data: Record<string, any>): PageContext {
-  return PageContext.parse(data);
+export function getPageContext(resLocals: Record<string, any>): PageContext {
+  return PageContext.parse(resLocals);
 }
 
 export interface StudentCourseInstanceContext {
@@ -50,27 +50,27 @@ export interface StaffCourseInstanceContext {
 }
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'student',
 ): StudentCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'instructor',
 ): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
   if (authLevel === 'student') {
     return {
-      course_instance: StudentCourseInstanceSchema.parse(data.course_instance),
-      course: StudentCourseSchema.parse(data.course),
+      course_instance: StudentCourseInstanceSchema.parse(resLocals.course_instance),
+      course: StudentCourseSchema.parse(resLocals.course),
     };
   }
   return {
-    course_instance: StaffCourseInstanceSchema.parse(data.course_instance),
-    course: StaffCourseSchema.parse(data.course),
+    course_instance: StaffCourseInstanceSchema.parse(resLocals.course_instance),
+    course: StaffCourseSchema.parse(resLocals.course),
   };
 }
