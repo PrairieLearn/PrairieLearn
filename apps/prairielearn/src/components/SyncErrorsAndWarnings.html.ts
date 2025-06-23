@@ -1,12 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import { ansiToHtml } from '../lib/chalk.js';
-import {
-  type Assessment,
-  type Question,
-  type StaffCourse,
-  type StaffCourseInstance,
-} from '../lib/db-types.js';
+import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
+import { type Assessment, type Question } from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
   authz_data,
