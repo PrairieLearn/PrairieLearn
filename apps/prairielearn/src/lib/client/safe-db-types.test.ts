@@ -75,6 +75,7 @@ const minimalStaffCourseInstance = {
 // StudentCourseInstance omits some fields from StaffCourseInstance
 const {
   enrollment_limit: _enrollment_limit,
+  json_comment: __json_comment,
   share_source_publicly: _share_source_publicly,
   sync_errors: __sync_errors,
   sync_job_sequence_id: __sync_job_sequence_id,
