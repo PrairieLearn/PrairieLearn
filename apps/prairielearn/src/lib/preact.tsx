@@ -1,3 +1,4 @@
+import { isFragment } from 'preact/compat';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -52,10 +53,10 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     throw new Error('hydrate expects a Preact component');
   }
 
-  if (isFragment(content) {
-    throw new Error('Cannot render a fragment for hydration.')
+  if (isFragment(content)) {
+    throw new Error('Cannot render a fragment for hydration.');
   }
-  
+
   const componentName = nameOverride || Component.name || Component.displayName;
   if (!componentName) {
     throw new Error(
