@@ -43,14 +43,77 @@ describe('getPageContext', () => {
 });
 
 describe('getCourseInstanceContext', () => {
+  /*
+      assessments_group_by: "Set" | "Module";
+    course_id: string;
+    deleted_at: Date | null;
+    display_timezone: string;
+    hide_in_enroll_page: boolean | null;
+    id: string;
+    json_comment: string | ... 2 more ... | null;
+    long_name: string | null;
+    share_source_publicly: boolean;
+    short_name: string | null;
+    uuid: string | null;
+  */
   const mockStudentData = {
-    course_instance: { id: '1', long_name: 'Example Student Course Instance' },
-    course: { id: '1', short_name: 'Example Student Course' },
+    course_instance: {
+      announcement_color: 'red',
+      assessments_group_by: 'Set',
+      course_id: '1',
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      hide_in_enroll_page: false,
+      id: '1',
+      json_comment: null,
+      long_name: 'Example Student Course Instance',
+      share_source_publicly: true,
+      short_name: 'Example Student Course',
+      uuid: '1',
+    },
+    course: {
+      assessments_group_by: 'Set',
+      course_id: '1',
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      hide_in_enroll_page: false,
+      id: '1',
+      json_comment: null,
+      long_name: 'Example Student Course',
+      share_source_publicly: true,
+      short_name: 'Example Student Course',
+      uuid: '1',
+    },
   };
 
   const mockInstructorData = {
-    course_instance: { id: '2', long_name: 'Example Instructor Course Instance' },
-    course: { id: '2', short_name: 'Example Instructor Course' },
+    course_instance: {
+      announcement_color: 'red',
+      assessments_group_by: 'Set',
+      course_id: '2',
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      hide_in_enroll_page: false,
+      id: '2',
+      json_comment: null,
+      long_name: 'Example Instructor Course Instance',
+      share_source_publicly: true,
+      short_name: 'Example Instructor Course',
+      uuid: '2',
+    },
+    course: {
+      assessments_group_by: 'Set',
+      course_id: '2',
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      hide_in_enroll_page: false,
+      id: '2',
+      json_comment: null,
+      long_name: 'Example Instructor Course',
+      share_source_publicly: true,
+      short_name: 'Example Instructor Course',
+      uuid: '2',
+    },
   };
 
   it('parses student context correctly', () => {
