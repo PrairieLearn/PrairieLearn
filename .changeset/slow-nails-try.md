@@ -1,6 +1,5 @@
 ---
-'@prairielearn/compiled-assets': patch
 '@prairielearn/preact-cjs': patch
 ---
 
-Support debugging Preact code
+Export `preact/debug` and `preact/devtools`
