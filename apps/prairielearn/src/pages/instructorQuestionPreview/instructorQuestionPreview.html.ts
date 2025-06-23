@@ -6,6 +6,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { type CopyTarget } from '../../lib/copy-content.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
@@ -15,6 +16,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   readmeHtml,
+  questionCopyTargets,
   resLocals,
 }: {
   normalPreviewUrl: string;
@@ -24,6 +26,7 @@ export function InstructorQuestionPreview({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
+  questionCopyTargets: CopyTarget[] | null;
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -132,6 +135,7 @@ export function InstructorQuestionPreview({
               : manualGradingPreviewUrl,
             aiGradingPreviewUrl: aiGradingPreviewEnabled ? undefined : aiGradingPreviewUrl,
             renderSubmissionSearchParams,
+            questionCopyTargets,
           })}
         </div>
 
