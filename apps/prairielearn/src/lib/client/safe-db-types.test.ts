@@ -38,21 +38,7 @@ const minimalStaffCourse = {
 };
 
 // StudentCourse omits many fields from StaffCourse
-const minimalStudentCourse = {
-  announcement_color: null,
-  announcement_html: null,
-  course_instance_enrollment_limit: null,
-  created_at: minimalStaffCourse.created_at,
-  deleted_at: null,
-  display_timezone: 'UTC',
-  example_course: false,
-  id: '1',
-  institution_id: '2',
-  options: {},
-  short_name: null,
-  template_course: false,
-  title: null,
-};
+const { branch: _branch, ...minimalStudentCourse } = minimalStaffCourse;
 
 const minimalStaffCourseInstance = {
   assessments_group_by: 'Set',
