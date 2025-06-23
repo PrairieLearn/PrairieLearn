@@ -52,8 +52,12 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     throw new Error('hydrate expects a Preact component');
   }
 
+  if (isFragment(content) {
+    throw new Error('Cannot render a fragment for hydration.')
+  }
+  
   const componentName = nameOverride || Component.name || Component.displayName;
-  if (!componentName || componentName === 'm') {
+  if (!componentName) {
     throw new Error(
       'Component does not have a name or displayName -- provide a nameOverride for the component, or give it a name.',
     );
