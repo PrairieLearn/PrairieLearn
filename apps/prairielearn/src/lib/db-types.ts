@@ -312,10 +312,7 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-/**
- * Includes fields that are safe to expose to students.
- */
-export const StudentCourseSchema = z.object({
+export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
@@ -331,72 +328,67 @@ export const StudentCourseSchema = z.object({
   options: z.any(),
   path: z.string(),
   repository: z.string().nullable(),
-  short_name: z.string().nullable(),
-  show_getting_started: z.boolean(),
-  template_course: z.boolean(),
-  title: z.string().nullable(),
-});
-export type StudentCourse = z.infer<typeof StudentCourseSchema>;
-
-/**
- * Includes fields that are safe to expose to instructors.
- */
-export const InstructorCourseSchema = z.object({
-  ...StudentCourseSchema.shape,
   sharing_name: z.string().nullable(),
   sharing_token: z.string(),
+  short_name: z.string().nullable(),
+  show_getting_started: z.boolean(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
+  template_course: z.boolean(),
+  title: z.string().nullable(),
   sync_warnings: z.string().nullable(),
-});
-export type InstructorCourse = z.infer<typeof InstructorCourseSchema>;
-/**
- * Includes all fields.
- */
-export const CourseSchema = z.object({
-  ...InstructorCourseSchema.shape,
   yearly_enrollment_limit: z.number().nullable(),
 });
 export type Course = z.infer<typeof CourseSchema>;
 
-/**
- * Includes fields that are safe to expose to students.
- */
-export const StudentCourseInstanceSchema = z.object({
+export const StaffCourseSchema = CourseSchema.omit({
+  yearly_enrollment_limit: true,
+});
+export type StaffCourse = z.infer<typeof StaffCourseSchema>;
+
+export const StudentCourseSchema = StaffCourseSchema.omit({
+  branch: true,
+  json_comment: true,
+  path: true,
+  repository: true,
+  sharing_name: true,
+  sharing_token: true,
+  show_getting_started: true,
+  sync_errors: true,
+  sync_job_sequence_id: true,
+  sync_warnings: true,
+});
+export type StudentCourse = z.infer<typeof StudentCourseSchema>;
+
+export const CourseInstanceSchema = z.object({
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
-  uuid: z.string().nullable(),
-});
-export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
-
-/**
- * Includes fields that are safe to expose to instructors.
- */
-export const InstructorCourseInstanceSchema = z.object({
-  ...StudentCourseInstanceSchema.shape,
-  enrollment_limit: z.number().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
+  uuid: z.string().nullable(),
 });
-export type InstructorCourseInstance = z.infer<typeof InstructorCourseInstanceSchema>;
-
-/**
- * Includes all fields.
- */
-export const CourseInstanceSchema = z.object({
-  ...InstructorCourseInstanceSchema.shape,
-});
-
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
+
+export const StaffCourseInstanceSchema = CourseInstanceSchema;
+export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
+
+export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
+  enrollment_limit: true,
+  sync_errors: true,
+  sync_job_sequence_id: true,
+  sync_warnings: true,
+});
+export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 export const CourseInstanceAccessRuleSchema = z.object({
   course_instance_id: IdSchema,
@@ -1063,7 +1055,7 @@ export const TopicSchema = z.object({
 });
 export type Topic = z.infer<typeof TopicSchema>;
 
-export const StudentUserSchema = z.object({
+export const UserSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
   email: z.string().nullable(),
   institution_id: IdSchema,
@@ -1071,23 +1063,19 @@ export const StudentUserSchema = z.object({
   lti_course_instance_id: IdSchema.nullable(),
   lti_user_id: z.string().nullable(),
   name: z.string().nullable(),
+  stripe_customer_id: z.string().nullable(),
   terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
+  uin: z.string().nullable(),
   user_id: IdSchema,
 });
-export type StudentUser = z.infer<typeof StudentUserSchema>;
-
-export const InstructorUserSchema = z.object({
-  ...StudentUserSchema.shape,
-  uin: z.string().nullable(),
-});
-export type InstructorUser = z.infer<typeof InstructorUserSchema>;
-
-export const UserSchema = z.object({
-  ...InstructorUserSchema.shape,
-  stripe_customer_id: z.string().nullable(),
-});
 export type User = z.infer<typeof UserSchema>;
+
+export const StaffUserSchema = UserSchema.omit({ stripe_customer_id: true });
+export type StaffUser = z.infer<typeof StaffUserSchema>;
+
+export const StudentUserSchema = StaffUserSchema.omit({ uin: true });
+export type StudentUser = z.infer<typeof StudentUserSchema>;
 
 export const UserSessionSchema = z.object({
   id: IdSchema,
