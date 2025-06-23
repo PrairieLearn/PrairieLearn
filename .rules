@@ -1,0 +1,409 @@
+<testing>
+  <!-- Description: Testing Practices for PrairieLearn -->
+  <!-- Globs: **/*.test.ts, apps/prairielearn/src/tests/** -->
+  # Testing Practices
+
+## Test Information
+
+- Unit tests: `filename.test.ts` next to the file being tested
+- Integration tests: `apps/prairielearn/src/tests/`
+- Database gets overwritten on new test run
+
+## Example Test Structure
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { queryRow } from '@prairielearn/postgres';
+
+describe('Question Tests', () => {
+  it('should load question by ID', async () => {
+    const question = await queryRow(sql.select_question, { question_id: 45 }, QuestionSchema);
+    expect(question).toBeDefined();
+  });
+});
+```
+
+</testing>
+
+<typescript-conventions>
+  <!-- Description: TypeScript code style, error handling, and component structure conventions for PrairieLearn -->
+  <!-- Globs: **/*.ts, **/*.tsx -->
+  # TypeScript Conventions
+
+## Code Style
+
+- Use `async`/`await` for asynchronous operations
+- Use `===` operator (never `==` except for ID comparisons with `idsEqual()`)
+- Use explicit typing for all variables and function parameters
+- Use tagged template literals with `@prairielearn/html` for HTML generation
+
+## Error Handling
+
+- Use `HttpStatusError` for HTTP errors
+- Log errors with Winston logger:
+
+```typescript
+import { logger } from '@prairielearn/logger';
+
+logger.info('This is an info message');
+logger.error('This is an error message');
+```
+
+## Component Structure
+
+- Place components in `apps/prairielearn/src/components/`
+- Consider writing the component in Preact
+- Accept typed props objects instead of using `res.locals` when possible
+- Use Bootstrap 5 classes for styling
+- Minimize custom CSS
+- Example:
+
+```typescript
+interface ComponentProps {
+  title: string;
+  content: string;
+}
+
+export function MyComponent(props: ComponentProps) {
+  return html`
+    <div class="card">
+      <div class="card-header">${props.title}</div>
+      <div class="card-body">${props.content}</div>
+    </div>
+  `;
+}
+```
+
+</typescript-conventions>
+
+<prairielearn-overview>
+  <!-- Description: Core development guidelines and technical standards for PrairieLearn -->
+  <!-- Globs: ** -->
+  # Tech stack
+
+- TypeScript, Bootstrap 5, PostgreSQL 16, Express, Preact
+
+## Linting
+
+- `make lint-js-cached` to lint JS code
+- `make build` to ensure Typescript code builds
+
+## Additional Rules:
+
+These rules should be referenced for a deeper understanding of PrairieLearn's conventions.
+
+- Page Structure
+  - Each page has its own directory with a route handler, SQL file, and HTML/JSX template, following consistent naming and structure.
+- Preact
+  - Use strongly-typed function components in `.tsx` files, leverage hooks, and integrate with legacy code using `hydrate` and `renderHtml()`.
+- Security
+  - Enforce authentication and authorization, require CSRF tokens and POST for state changes, and always include action identifiers in forms.
+- SQL Conventions
+  - Organize SQL in adjacent `.sql` files using the Yesql pattern, validate data with Zod, and use soft deletion and named parameters.
+- Testing
+  - Place unit tests next to code, use integration tests for end-to-end flows, and run all tests automatically on CI with Vitest and a managed test DB.
+- Typescript Conventions - Use strict typing, async/await, tagged template literals for HTML, and Bootstrap 5 for styling, with minimal custom CSS.
+  </prairielearn-overview>
+
+<preact>
+  <!-- Description: Preact component conventions for PrairieLearn -->
+  <!-- Globs: **/*.tsx -->
+  # Preact Conventions
+
+- All new Preact components should use the `.tsx` extension.
+- Use function components with hooks (e.g., `useState`, `useMemo`).
+- All props and state should be strongly typed with explicit interfaces.
+- Use the `hydrate` utility for server-rendered components that need client-side interactivity.
+- Use `renderHtml()` to convert Preact VNodes to HTML when integrating with legacy tagged-template (html`...` code)
+- Use `dangerouslySetInnerHTML` to embed legacy tagged-template code within Preact VNodes. Prefer converting legacy tagged-template code over doing this.
+- Import from `preact/compat` instead of `react`. For example,
+
+```ts
+import { useState, useMemo } from 'preact/compat';
+```
+
+- When writing interactive Preact pages, include a snippet in `assets/scripts/esm-bundles/react-fragments/ComponentName.ts` that calls `registerReactFragment`. For example,
+
+```ts
+import { InstructorInstanceAdminBillingForm } from '../../../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.js';
+import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+
+registerReactFragment(InstructorInstanceAdminBillingForm);
+```
+
+## Example
+
+```tsx
+export function InstructorCourseInstanceBilling(
+  {
+    // ...props...
+  },
+) {
+  return PageLayout({
+    // ...other props...
+    content: (
+      <>
+        {/* ... */}
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white d-flex">Billing</div>
+          <div class="card-body">
+            {hydrate(
+              <InstructorInstanceAdminBillingForm
+              // ...props...
+              />,
+            )}
+          </div>
+        </div>
+      </>
+    ),
+  });
+}
+```
+
+</preact>
+
+<security>
+  <!-- Description: Security model and best practices for PrairieLearn -->
+  <!-- Globs: **/routes/**, **/forms/**, **/*.ts -->
+  # Security Model
+
+## Authentication vs Authorization
+
+- Authentication: `res.locals.authn_user` (real user)
+- Authorization: `res.locals.user` (effective user)
+- Support for real vs effective user for impersonation
+
+## Authorization Levels
+
+- Course instance authorization based on `authn_user`
+- Course instance authorization checked against effective `user`
+- Assessment authorization based on effective `user`, `role`, `mode`, and `date`
+
+## Request Security
+
+- All state-modifying requests must be POST
+- All associated data must be in the body
+- GET requests may use query parameters for viewing options only
+- Use Post/Redirect/Get pattern for state modification
+- Include CSRF tokens in all forms:
+  ```html
+  <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+  ```
+- Include action identifier in forms:
+  ```html
+  <input type="hidden" name="__action" value="action_name" />
+  ```
+
+## Form Security Example
+
+```typescript
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'enroll') {
+      await queryAsync(sql.enroll, {
+        course_instance_id: req.body.course_instance_id,
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.redirect(req.originalUrl);
+    }
+  }),
+);
+```
+
+</security>
+
+<sql-conventions>
+  <!-- Description: SQL file, query, and schema conventions for PrairieLearn -->
+  <!-- Globs: **/*.sql, **/*.ts -->
+  # SQL Conventions
+
+## File Organization
+
+- Each `.ts` file should have a corresponding `.sql` file in the same directory
+- Use Yesql pattern with `-- BLOCK` comments to name queries
+- Uppercase SQL keywords: `SELECT`, `FROM`, `WHERE`, etc.
+
+## SQL Queries via @prairielearn/postgres
+
+- To keep SQL definitions and TypeScript logic cleanly separated yet colocated, each `*.ts` file has a same-named `*.sql` alongside it.
+- Use `loadSqlEquiv(import.meta.url)` in TypeScript files to load and parse the adjacent `.sql` file.
+- `loadSqlEquiv` reads the SQL file, splits it on the `-- BLOCK` markers, and returns an object whose keys are the block names.
+- Use `queryRow`, `queryRows`, and `runInTransactionAsync` from `@prairielearn/postgres` to execute SQL queries.
+- Prefer using the models in `src/models/*.ts` instead of writing new SQL code
+- Always validate data from the database using the appropriate Zod codec from `src/lib/db-types.ts`.
+- When the database schema changes, update `src/components/AuditEventsTable.html.ts` to reflect the changes.
+
+## Database Access
+
+- Use `queryRow` for single-row queries (errors if not exactly one result)
+- Use `queryRows` for multiple-row queries
+- Always use prepared statements with named parameters
+- Example:
+
+```typescript
+const question = await queryRow(sql.select_question, { question_id: 45 }, QuestionSchema);
+
+const questions = await queryRows(
+  sql.select_questions_by_course,
+  { course_id: 45 },
+  QuestionSchema,
+);
+```
+
+#### Example
+
+In `accommodations.ts`:
+
+```ts
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+
+// this will locate and parse "<same‑base‑name>.sql" next to the current file
+const sql = loadSqlEquiv(import.meta.url);
+```
+
+In `accommodations.sql`:
+
+```sql
+-- BLOCK select_accommodation_by_id
+SELECT …;
+-- BLOCK insert_accommodation
+INSERT … RETURNING …;
+```
+
+then in `accommodations.ts` you can write:
+
+```ts
+const row = await queryRow(
+  sql.select_accommodation_by_id,
+  { accommodation_id: id },
+  AccommodationCodec,
+);
+const inserted = await runInTransactionAsync(async () =>
+  queryRow(sql.insert_accommodation, { center_id, name, description }, AccommodationCodec),
+);
+```
+
+## Naming Conventions
+
+- Tables: plural names (e.g., `assessments`, `questions`)
+- Primary keys: always named `id`
+- Foreign keys: singular table name + `_id` (e.g., `assessment_id`)
+- Variables: use `snake_case` matching SQL names
+- Table aliases: first letters of words (e.g., `ai` for `assessment_instances`)
+
+## Database Schema Conventions
+
+- Tables have plural names (e.g. `assessments`) and always have a primary key called `id`
+- Foreign keys pointing to a table are non-plural, like `assessment_id`
+- Table aliases use first letters of words (e.g. `ai` for `assessment_instances`)
+- Exceptions: `aset` for `assessment_sets`, `top` for `topics`, `tag` for `tags`
+- Never delete student data from the database
+- Use soft deletion with `deleted_at` column for course configuration tables
+- Always include `WHERE deleted_at IS NULL` for soft-deletable tables
+
+## Query Patterns
+
+- Use CTEs (`WITH` queries) for complex queries
+- Use named parameters with `$parameter_name`
+- Always include `WHERE deleted_at IS NULL` for soft-deletable tables
+- Use explicit row locking for student data modifications:
+  ```sql
+  SELECT
+    *
+  FROM
+    assessment_instances
+  WHERE
+    id = $assessment_instance_id
+  FOR NO KEY UPDATE;
+  ```
+
+## Example Structure
+
+```sql
+-- BLOCK select_questions_by_course
+SELECT
+  *
+FROM
+  questions
+WHERE
+  course_id = $course_id
+  AND deleted_at IS NULL;
+
+-- BLOCK insert_user
+INSERT INTO
+  users (uid)
+VALUES
+  ($uid)
+RETURNING
+  *;
+```
+
+</sql-conventions>
+
+<page-structure>
+  <!-- Description: Page structure and organization conventions for PrairieLearn -->
+  <!-- Globs: apps/prairielearn/src/pages/** -->
+  # Page Structure
+
+## Directory Organization
+
+Each web page should have its own directory with consistent naming:
+
+```
+pages/pageName/
+├── pageName.ts         # Main entry point (route handler)
+├── pageName.sql        # SQL queries (Yesql pattern)
+└── pageName.html.ts    # HTML template
+```
+
+## Route Handler (`pageName.ts`)
+
+- Use `express-async-handler` for async route handlers
+- Follow Post/Redirect/Get pattern for state modifications
+- Include CSRF protection and action identifiers
+- Example structure:
+
+```typescript
+import asyncHandler from 'express-async-handler';
+import { loadSqlEquiv } from '@prairielearn/postgres';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'enroll') {
+      await queryAsync(sql.enroll, {
+        course_instance_id: req.body.course_instance_id,
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.redirect(req.originalUrl);
+    }
+  }),
+);
+```
+
+## HTML Template (`pageName.html.ts`)
+
+- Legacy pages use the `@prairielearn/html` package with tagged template literals
+- Newer Preact pages use preact and jsx (`pageName.html.tsx`)
+- Server-side rendering only
+- Pass explicit typed properties to templates
+- Example structure:
+
+```typescript
+import { html } from '@prairielearn/html';
+
+export function pageTemplate(props: PageProps) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${props.__csrf_token}" />
+      <input type="hidden" name="__action" value="action_name" />
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  `;
+}
+```
+
+</page-structure>
