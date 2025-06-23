@@ -97,9 +97,7 @@ export function InstructorQuestionPreview({
           ${readmeHtml
             ? html`
                 <div class="card mb-3">
-                  <div
-                    class="card-header bg-light text-dark d-flex align-items-center submission-header"
-                  >
+                  <div class="card-header d-flex align-items-center submission-header">
                     <h2 class="me-auto">README</h2>
                     <button
                       type="button"
@@ -112,7 +110,7 @@ export function InstructorQuestionPreview({
                       <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
                     </button>
                   </div>
-                  <div class="show" id="readme-card-body">
+                  <div class="show js-submission-body" id="readme-card-body">
                     <div class="card-body markdown-body">${unsafeHtml(readmeHtml)}</div>
                     <div class="card-footer">
                       <p class="mb-0 small">This README is not visible to students.</p>

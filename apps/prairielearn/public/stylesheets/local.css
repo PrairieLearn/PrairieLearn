@@ -237,7 +237,7 @@ mjx-container {
 }
 
 .submission-header .expand-icon-container::before {
-  content: 'hide';
+  content: 'Hide';
 }
 
 .submission-header .expand-icon-container.collapsed .expand-icon {
@@ -245,7 +245,7 @@ mjx-container {
 }
 
 .submission-header .expand-icon-container.collapsed::before {
-  content: 'show';
+  content: 'Show';
 }
 
 /***************************************
