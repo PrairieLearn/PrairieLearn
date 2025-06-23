@@ -30,6 +30,7 @@ export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
 
 export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
   enrollment_limit: true,
+  json_comment: true,
   share_source_publicly: true,
   sync_errors: true,
   sync_job_sequence_id: true,
