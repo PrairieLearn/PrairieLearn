@@ -3,7 +3,17 @@ build:
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 python-deps:
-	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+	@if uv --version >/dev/null 2>&1; then \
+		if test ! -f .venv/bin/python; then \
+			uv venv --python-preference only-system --python 3.10 --seed .venv; \
+		fi; \
+		uv pip install -r images/plbase/python-requirements.txt --python .venv; \
+	else \
+		if test ! -f .venv/bin/python; then \
+			python3 -m venv .venv; \
+		fi; \
+		.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt; \
+	fi
 deps:
 	@yarn
 	@$(MAKE) python-deps build
