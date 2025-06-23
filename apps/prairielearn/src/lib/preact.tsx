@@ -1,3 +1,4 @@
+import { isFragment } from 'preact/compat';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -52,12 +53,16 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
     throw new Error('hydrate expects a Preact component');
   }
 
-  if (!nameOverride && !Component.displayName && !Component.name) {
+  if (isFragment(content)) {
+    throw new Error('Cannot render a fragment for hydration.');
+  }
+
+  const componentName = nameOverride || Component.name || Component.displayName;
+  if (!componentName) {
     throw new Error(
-      'Component does not have a name or displayName -- provide a nameOverride for the component.',
+      'Component does not have a name or displayName -- provide a nameOverride for the component, or give it a name.',
     );
   }
-  const componentName = `${nameOverride || Component.name || Component.displayName}`;
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
