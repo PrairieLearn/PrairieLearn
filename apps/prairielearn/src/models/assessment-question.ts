@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import * as sqldb from '@prairielearn/postgres';
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
@@ -72,21 +75,14 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-let selectAssessmentQuestions:
-  | undefined
-  | ((assessment_id: string) => Promise<AssessmentQuestionRow[]>);
+export async function selectAssessmentQuestions(
+  assessment_id: string,
+): Promise<AssessmentQuestionRow[]> {
+  const rows = await sqldb.queryRows(
+    sql.select_assessment_questions,
+    { assessment_id },
+    AssessmentQuestionRowSchema,
+  );
 
-if (typeof window === 'undefined') {
-  selectAssessmentQuestions = async function (
-    assessment_id: string,
-  ): Promise<AssessmentQuestionRow[]> {
-    const sqldb = await import('@prairielearn/postgres');
-    const sql = sqldb.loadSqlEquiv(import.meta.url);
-    const rows = await sqldb.queryRows(
-      sql.select_assessment_questions,
-      { assessment_id },
-      AssessmentQuestionRowSchema,
-    );
-    return rows;
-  };
+  return rows;
 }
