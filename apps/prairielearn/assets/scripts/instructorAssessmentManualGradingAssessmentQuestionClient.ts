@@ -389,7 +389,7 @@ onDocumentReady(() => {
                       html`<div>
                         ${item.false_positive
                           ? html`<i class="bi bi-plus-square-fill text-danger"></i>`
-                          : html`<i class="bi bi-dash-square-fill text-success"></i>`}
+                          : html`<i class="bi bi-dash-square-fill text-danger"></i>`}
                         <span>${item.description}</span>
                       </div>`,
                   ),

@@ -473,6 +473,8 @@ WITH
       manual_points = COALESCE($manual_points, manual_points),
       status = 'complete',
       modified_at = now(),
+      -- TODO: this might not be correct. Matt suggested that we might want to
+      -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,
