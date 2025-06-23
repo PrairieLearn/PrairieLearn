@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'preact/compat';
+import { useMemo, useState } from 'preact/compat';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import { type StudentRow, parseAsSortingState } from '../instructorStudents.shared.js';
@@ -35,27 +35,17 @@ function downloadStudentsCSV(students: StudentRow[], filename: string): void {
 
 const columnHelper = createColumnHelper<StudentRow>();
 
-// Custom parser for SortingState: ?sort=col:asc or ?sort=col:desc
+// This default must be declared outside the component to ensure referential
+// stability across renders, as `[] !== []` in JavaScript.
+const DEFAULT_SORT: SortingState = [];
 
-export function StudentsCard({
-  students,
-  initialGlobalFilterValue,
-  initialColumnSorts,
-}: {
-  students: StudentRow[];
-  initialGlobalFilterValue: string;
-  initialColumnSorts: SortingState;
-}) {
-  const [globalFilter, setGlobalFilter] = useQueryState(
-    'search',
-    parseAsString.withDefault(initialGlobalFilterValue),
-  );
-
-  const [sorting, setSorting] = useQueryState(
+export function StudentsCard({ students }: { students: StudentRow[] }) {
+  const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
+  const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
-    parseAsSortingState.withDefault(initialColumnSorts),
+    parseAsSortingState.withDefault(DEFAULT_SORT),
   );
-  // console.log('sorting', sorting);
+
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
@@ -64,8 +54,6 @@ export function StudentsCard({
     left: [],
     right: [],
   });
-
-  console.log('rerender outer');
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
@@ -137,7 +125,7 @@ export function StudentsCard({
     columnResizeMode: 'onChange',
     getRowId: (row) => row.uid,
     state: {
-      sorting,
+      sorting: sorting ?? undefined,
       columnFilters,
       globalFilter,
       columnSizing,

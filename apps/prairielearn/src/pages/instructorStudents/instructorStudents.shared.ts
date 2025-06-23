@@ -16,6 +16,7 @@ export const StudentRowSchema = z.object({
 
 export type StudentRow = Enrollment & StudentUser;
 
+// Custom parser for SortingState: ?sort=col:asc or ?sort=col:desc
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {
     if (!queryValue) return [];
@@ -33,6 +34,10 @@ export const parseAsSortingState = createParser<SortingState>({
     return `${id}:${desc ? 'desc' : 'asc'}`;
   },
   eq(a, b) {
-    return a.length === b.length && a.every((item, index) => item.id === b[index].id);
+    if (!a || !b) return a === b;
+    return (
+      a.length === b.length &&
+      a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
+    );
   },
 });

@@ -1,7 +1,5 @@
-import { type SortingState } from '@tanstack/react-table';
-import { NuqsAdapter } from 'nuqs/adapters/react';
-
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { NuqsAdapter } from '../../lib/client/nuqs.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { type InstructorCourse, type InstructorCourseInstance } from '../../lib/db-types.js';
 
@@ -13,19 +11,17 @@ export const InstructorStudents = ({
   courseInstance,
   course,
   students,
-  initialGlobalFilterValue,
-  initialColumnSorts,
+  search,
 }: {
   pageContext: PageContext;
   courseInstance: InstructorCourseInstance;
   course: InstructorCourse;
   students: StudentRow[];
-  initialGlobalFilterValue: string;
-  initialColumnSorts: SortingState | undefined;
+  search: string;
 }) => {
   const { authz_data, urlPrefix } = pageContext;
   return (
-    <NuqsAdapter>
+    <NuqsAdapter search={search}>
       <div
         // TODO: After #12197 use the component directly
         // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
@@ -38,11 +34,7 @@ export const InstructorStudents = ({
           }).toString(),
         }}
       />
-      <StudentsCard
-        students={students ?? []}
-        initialGlobalFilterValue={initialGlobalFilterValue}
-        initialColumnSorts={initialColumnSorts}
-      />
+      <StudentsCard students={students ?? []} />
     </NuqsAdapter>
   );
 };

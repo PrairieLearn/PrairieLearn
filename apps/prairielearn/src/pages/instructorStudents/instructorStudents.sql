@@ -8,4 +8,4 @@ FROM
 WHERE
   e.course_instance_id = $course_instance_id
 ORDER BY
-  e.created_at DESC;
+  u.uid ASC;

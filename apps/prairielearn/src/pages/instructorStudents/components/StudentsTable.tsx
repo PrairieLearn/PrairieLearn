@@ -6,7 +6,7 @@ import type { StudentRow } from '../instructorStudents.shared.js';
 
 function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   if (sortMethod === 'asc') {
-    return <i className="bi bi-sort-up"></i>;
+    return <i className="bi bi-sort-up-alt"></i>;
   } else if (sortMethod === 'desc') {
     return <i className="bi bi-sort-down"></i>;
   } else {

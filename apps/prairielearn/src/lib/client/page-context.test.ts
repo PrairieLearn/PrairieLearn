@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { getBaseContext, getCourseInstanceContext } from './page-context.js';
+import { getCourseInstanceContext, getPageContext } from './page-context.js';
 
-describe('getBaseContext', () => {
+describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
     const mockData = {
       authz_data: {
@@ -22,7 +22,7 @@ describe('getBaseContext', () => {
       anotherExtraField: 123,
     };
 
-    const result = getBaseContext(mockData);
+    const result = getPageContext(mockData);
 
     expect(result).toEqual({
       authz_data: {
@@ -52,7 +52,7 @@ describe('getBaseContext', () => {
       },
     };
 
-    expect(() => getBaseContext(invalidData)).toThrow();
+    expect(() => getPageContext(invalidData)).toThrow();
   });
 });
 
