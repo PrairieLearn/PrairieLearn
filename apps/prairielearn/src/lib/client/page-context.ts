@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import {
-  type InstructorCourse,
-  type InstructorCourseInstance,
-  InstructorCourseInstanceSchema,
-  InstructorCourseSchema,
+  type StaffCourse,
+  type StaffCourseInstance,
+  StaffCourseInstanceSchema,
+  StaffCourseSchema,
   type StudentCourse,
   type StudentCourseInstance,
   StudentCourseInstanceSchema,
@@ -35,11 +35,6 @@ const PageContext = z.object({
 });
 export type PageContext = z.infer<typeof PageContext>;
 
-/**
- * Parses and validates resLocals data, stripping any fields that aren't in the schema.
- * @param data - The raw data to parse
- * @returns Parsed and validated ResLocals object
- */
 export function getPageContext(data: Record<string, any>): PageContext {
   return PageContext.parse(data);
 }
@@ -49,9 +44,9 @@ interface StudentCourseInstanceContext {
   course: StudentCourse;
 }
 
-interface InstructorCourseInstanceContext {
-  course_instance: InstructorCourseInstance;
-  course: InstructorCourse;
+interface StaffCourseInstanceContext {
+  course_instance: StaffCourseInstance;
+  course: StaffCourse;
 }
 
 export function getCourseInstanceContext(
@@ -62,12 +57,12 @@ export function getCourseInstanceContext(
 export function getCourseInstanceContext(
   data: Record<string, any>,
   authLevel: 'instructor',
-): InstructorCourseInstanceContext;
+): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
   data: Record<string, any>,
   authLevel: 'student' | 'instructor',
-): StudentCourseInstanceContext | InstructorCourseInstanceContext {
+): StudentCourseInstanceContext | StaffCourseInstanceContext {
   if (authLevel === 'student') {
     return {
       course_instance: StudentCourseInstanceSchema.parse(data.course_instance),
@@ -75,7 +70,7 @@ export function getCourseInstanceContext(
     };
   }
   return {
-    course_instance: InstructorCourseInstanceSchema.parse(data.course_instance),
-    course: InstructorCourseSchema.parse(data.course),
+    course_instance: StaffCourseInstanceSchema.parse(data.course_instance),
+    course: StaffCourseSchema.parse(data.course),
   };
 }
