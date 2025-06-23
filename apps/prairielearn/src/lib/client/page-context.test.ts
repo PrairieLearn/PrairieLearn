@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getPageContext, getCourseInstanceContext } from './page-context.js';
+import { getCourseInstanceContext, getPageContext } from './page-context.js';
 
 describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
