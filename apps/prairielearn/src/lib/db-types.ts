@@ -348,6 +348,7 @@ export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
 export const StudentCourseSchema = StaffCourseSchema.omit({
   branch: true,
+  commit_hash: true,
   json_comment: true,
   path: true,
   repository: true,
