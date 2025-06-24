@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
 import {
-  type InstructorCourse,
-  type InstructorCourseInstance,
-  InstructorCourseInstanceSchema,
-  InstructorCourseSchema,
+  type StaffCourse,
+  type StaffCourseInstance,
+  StaffCourseInstanceSchema,
+  StaffCourseSchema,
   type StudentCourse,
   type StudentCourseInstance,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
-} from '../db-types.js';
+} from './safe-db-types.js';
 
 const PageContext = z.object({
   authz_data: z.object({
@@ -25,57 +25,50 @@ const PageContext = z.object({
 
   urlPrefix: z.string(),
   access_as_administrator: z.boolean(),
-  news_item_notification_count: z.number(),
   authn_is_administrator: z.boolean(),
   authn_user: z.object({
     name: z.string(),
     uid: z.string(),
   }),
-  viewType: z.enum(['instructor', 'student']),
 });
 export type PageContext = z.infer<typeof PageContext>;
 
-/**
- * Parses and validates resLocals data, stripping any fields that aren't in the schema.
- * @param data - The raw data to parse
- * @returns Parsed and validated ResLocals object
- */
-export function getPageContext(data: Record<string, any>): PageContext {
-  return PageContext.parse(data);
+export function getPageContext(resLocals: Record<string, any>): PageContext {
+  return PageContext.parse(resLocals);
 }
 
-interface StudentCourseInstanceContext {
+export interface StudentCourseInstanceContext {
   course_instance: StudentCourseInstance;
   course: StudentCourse;
 }
 
-interface InstructorCourseInstanceContext {
-  course_instance: InstructorCourseInstance;
-  course: InstructorCourse;
+export interface StaffCourseInstanceContext {
+  course_instance: StaffCourseInstance;
+  course: StaffCourse;
 }
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'student',
 ): StudentCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'instructor',
-): InstructorCourseInstanceContext;
+): StaffCourseInstanceContext;
 
 export function getCourseInstanceContext(
-  data: Record<string, any>,
+  resLocals: Record<string, any>,
   authLevel: 'student' | 'instructor',
-): StudentCourseInstanceContext | InstructorCourseInstanceContext {
+): StudentCourseInstanceContext | StaffCourseInstanceContext {
   if (authLevel === 'student') {
     return {
-      course_instance: StudentCourseInstanceSchema.parse(data.course_instance),
-      course: StudentCourseSchema.parse(data.course),
+      course_instance: StudentCourseInstanceSchema.parse(resLocals.course_instance),
+      course: StudentCourseSchema.parse(resLocals.course),
     };
   }
   return {
-    course_instance: InstructorCourseInstanceSchema.parse(data.course_instance),
-    course: InstructorCourseSchema.parse(data.course),
+    course_instance: StaffCourseInstanceSchema.parse(resLocals.course_instance),
+    course: StaffCourseSchema.parse(resLocals.course),
   };
 }

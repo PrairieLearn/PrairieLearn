@@ -18,14 +18,14 @@ This page describes the procedure to install and run PrairieLearn fully natively
 
 Most of these prerequisites can be installed using the package manager of your OS:
 
-=== "Ubuntu (WSL2)"
+=== "Ubuntu (including WSL2)"
 
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
     sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
     # Optional; needed only for some example questions that use LaTeX
-    sudo apt install texlive
+    sudo apt install texlive texlive-latex-extra texlive-fonts-extra dvipng
     ```
 
     Make sure you start Postgres:

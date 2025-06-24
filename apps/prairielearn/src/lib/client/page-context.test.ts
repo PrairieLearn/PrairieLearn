@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getCourseInstanceContext, getPageContext } from './page-context.js';
+import {
+  type StaffCourseInstanceContext,
+  type StudentCourseInstanceContext,
+  getCourseInstanceContext,
+  getPageContext,
+} from './page-context.js';
 
 describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
@@ -9,22 +14,18 @@ describe('getPageContext', () => {
         has_course_instance_permission_edit: true,
         has_course_instance_permission_view: true,
         has_course_permission_own: true,
-        user: { name: 'Test User', uid: 'test@illinois.edu' },
+        user: { name: 'Test User', uid: 'test@illinois.edu', foo: 'bar' },
         mode: 'edit',
       },
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
-      news_item_notification_count: 0,
       authn_is_administrator: false,
-      authn_user: { name: 'Test User', uid: 'test@illinois.edu' },
-      viewType: 'instructor',
+      authn_user: { name: 'Test User', uid: 'test@illinois.edu', foo: 'bar' },
       extraField: 'this should be stripped',
       anotherExtraField: 123,
     };
 
-    const result = getPageContext(mockData);
-
-    expect(result).toEqual({
+    const expected = {
       authz_data: {
         has_course_instance_permission_edit: true,
         has_course_instance_permission_view: true,
@@ -34,14 +35,13 @@ describe('getPageContext', () => {
       },
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
-      news_item_notification_count: 0,
       authn_is_administrator: false,
       authn_user: { name: 'Test User', uid: 'test@illinois.edu' },
-      viewType: 'instructor',
-    });
+    };
 
-    expect(result).not.toHaveProperty('extraField');
-    expect(result).not.toHaveProperty('anotherExtraField');
+    const result = getPageContext(mockData);
+
+    expect(result).toEqual(expected);
   });
 
   it('throws error when required fields are missing', () => {
@@ -57,14 +57,56 @@ describe('getPageContext', () => {
 });
 
 describe('getCourseInstanceContext', () => {
-  const mockStudentData = {
-    course_instance: { id: '1', long_name: 'Example Student Course Instance' },
-    course: { id: '1', short_name: 'Example Student Course' },
+  const mockStudentData: StudentCourseInstanceContext = {
+    course_instance: {
+      assessments_group_by: 'Set',
+      course_id: '1',
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      hide_in_enroll_page: false,
+      id: '1',
+      long_name: 'Example Student Course Instance',
+      short_name: 'Example Student Course',
+    },
+    course: {
+      deleted_at: null,
+      display_timezone: 'America/Chicago',
+      id: '1',
+      short_name: 'Example Student Course',
+      created_at: new Date(),
+      example_course: false,
+      institution_id: '1',
+      template_course: false,
+      title: 'Example Student Course',
+    },
   };
-
-  const mockInstructorData = {
-    course_instance: { id: '2', long_name: 'Example Instructor Course Instance' },
-    course: { id: '2', short_name: 'Example Instructor Course' },
+  const mockInstructorData: StaffCourseInstanceContext = {
+    course_instance: {
+      ...mockStudentData.course_instance,
+      enrollment_limit: 10,
+      json_comment: 'foo',
+      share_source_publicly: true,
+      sync_errors: null,
+      sync_job_sequence_id: null,
+      sync_warnings: null,
+      uuid: '1',
+    },
+    course: {
+      ...mockStudentData.course,
+      announcement_color: 'red',
+      announcement_html: '<p>Hello, world!</p>',
+      course_instance_enrollment_limit: 10,
+      path: 'example/path',
+      json_comment: null,
+      sync_errors: null,
+      sync_job_sequence_id: null,
+      sync_warnings: null,
+      branch: 'main',
+      commit_hash: '1234567890',
+      repository: 'https://github.com/example/example.git',
+      sharing_name: 'example',
+      show_getting_started: false,
+    },
   };
 
   it('parses student context correctly', () => {
