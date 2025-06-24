@@ -766,6 +766,13 @@ function NavbarButtons({
     });
   }
 
+  if (resLocals.course_instance) {
+    allNavbarButtons.push({
+      text: resLocals.course_instance.short_name,
+      href: `/pl/course_instance/${resLocals.course_instance.id}/instructor/instance_admin/assessments`,
+    });
+  }
+
   return html`
     ${allNavbarButtons.map((navbarButton, index) =>
       NavbarButton({
