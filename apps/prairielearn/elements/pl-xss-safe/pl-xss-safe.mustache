@@ -1,12 +1,12 @@
 <script>
-  $(async function() {
+  $(async function () {
     const element = document.getElementById('xss-{{uuid}}');
     const language = element.dataset.language;
     let code = element.dataset.code;
     // Uses the same JS library as the pl-file-editor for markdown
     // conversion and xss filter for compatibility and to avoid
     // confusion
-    if (language == "markdown") {
+    if (language === 'markdown') {
       const marked = (await import('marked')).marked;
       await MathJax.startup.promise;
       (await import('@prairielearn/marked-mathjax')).addMathjaxExtension(marked, MathJax);
@@ -15,7 +15,12 @@
     code = DOMPurify.sanitize(code);
     const shadowRoot = element.attachShadow({ mode: 'open' });
     shadowRoot.innerHTML = code;
-    // MathJax styles need to be applied to the shadow DOM
+
+    // MathJax includes assistive content that is not visible by default (i.e.,
+    // only readable by screen readers). The hiding of this content is found in
+    // a style tag in the head, but this tag is not applied to the shadow DOM by
+    // default, so we need to manually adopt the MathJax styles.
+    await MathJax.startup.promise;
     const mjxStyles = document.getElementById('MJX-SVG-styles');
     if (mjxStyles) {
       const style = new CSSStyleSheet();
@@ -25,4 +30,4 @@
     await MathJax.typesetPromise(shadowRoot.children);
   });
 </script>
-<div id="xss-{{uuid}}" data-code="{{contents}}" data-language="{{language}}"></div>
+<div id="xss-{{ uuid }}" data-code="{{ contents }}" data-language="{{ language }}"></div>
