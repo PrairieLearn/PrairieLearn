@@ -7,7 +7,7 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { hydrate } from '../../lib/preact.js';
+import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -65,14 +65,16 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        content: hydrate(
-          <InstructorStudents
-            pageContext={pageContext}
-            courseInstance={course_instance}
-            course={course}
-            students={students}
-            search={search}
-          />,
+        content: (
+          <Hydrate>
+            <InstructorStudents
+              pageContext={pageContext}
+              courseInstance={course_instance}
+              course={course}
+              students={students}
+              search={search}
+            />
+          </Hydrate>
         ),
       }),
     );

@@ -4,7 +4,7 @@ import { render } from 'preact-render-to-string/jsx';
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { Fragment, type VNode } from '@prairielearn/preact-cjs';
+import { type ComponentChildren, Fragment, type VNode } from '@prairielearn/preact-cjs';
 
 import { renderHtml } from './preact-html.js';
 
@@ -39,20 +39,36 @@ export function renderHtmlDocument(content: VNode) {
   return `<!doctype html>\n${render(content, {}, { pretty: true, jsx: false })}`;
 }
 
+interface HydrateProps {
+  /** Optional override for the component's name or displayName */
+  nameOverride?: string;
+  /** Whether to apply full height styles. Defaults to true. */
+  fullHeight?: boolean;
+  /** The component to hydrate */
+  children: ComponentChildren;
+}
+
 /**
- * Renders a Preact component for client-side hydration. All interactive
- * components will need to be hydrated. This function is intended to be used
- * within a non-interactive Preact component that will be rendered without
- * hydration through `renderHtml`.
- *
- * @param content - A Preact VNode to render to HTML.
- * @param nameOverride - An optional override for the component's displayName.
- * @returns A Preact VNode that can be used for client-side hydration.
+ * A component that renders a Preact component for client-side hydration.
+ * All interactive components will need to be hydrated.
+ * This component is intended to be used within a non-interactive Preact component
+ * that will be rendered without hydration through `renderHtml`.
  */
-export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
+export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateProps): VNode {
+  // We expect a single child that is a VNode
+  if (
+    !children ||
+    Array.isArray(children) ||
+    typeof children !== 'object' ||
+    !('type' in children)
+  ) {
+    throw new Error('Hydrate expects a single Preact component as its child');
+  }
+
+  const content = children as VNode;
   const { type: Component, props } = content;
   if (typeof Component !== 'function') {
-    throw new Error('hydrate expects a Preact component');
+    throw new Error('Hydrate expects a Preact component');
   }
   if (isFragment(content)) {
     throw new Error('Cannot render a fragment for hydration.');
@@ -105,7 +121,7 @@ registerReactFragment(${componentName});</code></pre>
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
-      <div data-component={componentName} class="js-react-fragment">
+      <div data-component={componentName} class={`js-react-fragment${fullHeight ? ' h-100' : ''}`}>
         <script
           type="application/json"
           data-component-props
@@ -114,7 +130,7 @@ registerReactFragment(${componentName});</code></pre>
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component-root>
+        <div data-component-root class={fullHeight ? 'h-100' : ''}>
           <Component {...props} />
         </div>
       </div>
@@ -131,5 +147,5 @@ registerReactFragment(${componentName});</code></pre>
  */
 export function hydrateHtml<T>(content: VNode<T>): HtmlSafeString {
   // Useful for adding Preact components to existing tagged-template pages.
-  return renderHtml(hydrate(content));
+  return renderHtml(<Hydrate>{content}</Hydrate>);
 }
