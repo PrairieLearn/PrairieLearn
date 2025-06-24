@@ -29,11 +29,7 @@ router.get(
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
-          resLocals: {
-            ...pageContext,
-            course_instance,
-            course,
-          },
+          resLocals: res.locals,
           courseOwners,
           pageTitle: 'Students',
           requiredPermissions: 'Instructor',
@@ -58,11 +54,7 @@ router.get(
 
     res.status(hasPermission ? 200 : 403).send(
       PageLayout({
-        resLocals: {
-          ...pageContext,
-          course_instance,
-          course,
-        },
+        resLocals: res.locals,
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
