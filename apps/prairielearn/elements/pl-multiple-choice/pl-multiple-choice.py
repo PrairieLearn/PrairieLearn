@@ -242,23 +242,21 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must not include any correct answers when none-of-the-above is set to "correct"'
         )
 
-    if len_correct == 0:
-        # If no correct option is provided, 'None of the above' will always
-        # be correct, and 'All of the above' always incorrect
-        if nota is AotaNotaType.RANDOM:
-            nota = AotaNotaType.CORRECT
+    # If no correct option is provided, a random 'None of the above' will be
+    # treated as correct
+    if len_correct == 0 and nota is AotaNotaType.RANDOM:
+        nota = AotaNotaType.CORRECT
 
-        if aota is AotaNotaType.RANDOM:
-            aota = AotaNotaType.INCORRECT
+    # If no incorrect option is provided, a random 'All of the above' will be
+    # treated as correct
+    if len_incorrect == 0 and aota is AotaNotaType.RANDOM:
+        aota = AotaNotaType.CORRECT
 
-    if len_incorrect == 0:
-        # 'All of the above' will always be correct when no incorrect option is
-        # provided, while still never both True
-        if aota is AotaNotaType.RANDOM:
-            aota = AotaNotaType.CORRECT
-
-        if nota is AotaNotaType.RANDOM:
-            nota = AotaNotaType.INCORRECT
+    # 'All of the above' and 'None of the above' cannot both be correct.
+    if aota is AotaNotaType.CORRECT and nota is not AotaNotaType.FALSE:
+        nota = AotaNotaType.INCORRECT
+    if nota is AotaNotaType.CORRECT and aota is not AotaNotaType.FALSE:
+        aota = AotaNotaType.INCORRECT
 
     # 1. Pick the choice(s) to display
     # determine if user provides number-answers
@@ -276,7 +274,7 @@ def prepare_answers_to_display(
     expected_num_answers = number_answers
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
-        # min number if 'All of the above' is correct
+        # max number if 'All of the above' is correct
         number_answers = min(len_correct, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
@@ -284,13 +282,22 @@ def prepare_answers_to_display(
                 f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
             )
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
-        # if nota correct
+        # max number if 'None of the above' is correct
         number_answers = min(len_incorrect, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
                 f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
             )
+    elif aota is not AotaNotaType.CORRECT:
+        # 'None of the above' does not exist or is not correct, so:
+        # - If 'All of the above' is correct, we rely on the limits set by the
+        #   previous conditional.
+        # - If 'All of the above' is incorrect or not used, we limit ourselves
+        #   to one correct answer and as many incorrect answers as needed.
+        # - If 'All of the above' is random, we choose the lower bound, so that
+        #   the number of answers is stable regardless of the random choice.
+        number_answers = min(1 + len_incorrect, number_answers)
 
     if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
         # Either 'None of the above' or 'All of the above' is correct
@@ -309,24 +316,14 @@ def prepare_answers_to_display(
     if aota is AotaNotaType.CORRECT:
         # when 'All of the above' is correct, we choose all from correct
         # and none from incorrect
-        number_answers = min(len_correct, number_answers)
         number_correct = number_answers
         number_incorrect = 0
     elif nota is AotaNotaType.CORRECT:
         # when 'None of the above' is correct, we choose all from incorrect
         # and none from correct
-        number_answers = min(len_incorrect, number_answers)
         number_correct = 0
         number_incorrect = number_answers
     else:
-        # this is the case for
-        # - 'All of the above' is incorrect
-        # - 'None of the above' is incorrect
-        # - nota and aota disabled
-        number_answers = min(1 + len_incorrect, number_answers)
-        # PROOF: by the above probability, if len_correct == 0, then nota_correct
-        # conversely; if not nota_correct, then len_correct != 0. Since len_correct
-        # is none negative, this means len_correct >= 1.
         number_correct = 1
         number_incorrect = max(0, number_answers - number_correct)
 
