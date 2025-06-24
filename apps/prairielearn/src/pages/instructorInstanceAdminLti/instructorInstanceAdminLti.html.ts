@@ -5,6 +5,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<string, any> }) {
   const {
@@ -85,8 +86,11 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
                 </p>
                 <p>
                   <strong>
-                    This version of LTI is deprecated. See the "Integrations" tab for more
-                    information about newer integration methods.
+                    This version of LTI is deprecated.
+                    ${isEnterprise()
+                      ? html`See the "Integrations" tab for more information about newer integration
+                        methods.`
+                      : html`Check with your PrairieLearn admins about newer integration methods.`}
                   </strong>
                 </p>
                 ${!lti11_enabled
