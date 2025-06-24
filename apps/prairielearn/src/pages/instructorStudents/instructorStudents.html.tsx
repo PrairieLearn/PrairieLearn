@@ -34,7 +34,7 @@ export const InstructorStudents = ({
           }).toString(),
         }}
       />
-      <StudentsCard students={students ?? []} />
+      <StudentsCard students={students} />
     </NuqsAdapter>
   );
 };
