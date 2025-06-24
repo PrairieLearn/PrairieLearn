@@ -157,6 +157,7 @@ export default tseslint.config([
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
 

@@ -145,6 +145,7 @@
     "nodemon": "^3.1.10",
     "notebookjs": "^0.8.3",
     "numeric": "^1.2.6",
+    "nuqs": "^2.4.3",
     "oauth-signature": "^1.5.0",
     "object-hash": "^3.0.0",
     "on-finished": "^2.4.1",
