@@ -230,18 +230,6 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
         )
 
-    if aota is AotaNotaType.CORRECT and len_incorrect > 0:
-        # To prevent confusion on the client side
-        raise ValueError(
-            'pl-multiple-choice element must not include any incorrect answers when all-of-the-above is set to "correct"'
-        )
-
-    if nota is AotaNotaType.CORRECT and len_correct > 0:
-        # To prevent confusion on the client side
-        raise ValueError(
-            'pl-multiple-choice element must not include any correct answers when none-of-the-above is set to "correct"'
-        )
-
     # If no correct option is provided, a random 'None of the above' will be
     # treated as correct
     if len_correct == 0 and nota is AotaNotaType.RANDOM:
