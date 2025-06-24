@@ -25,7 +25,7 @@ export const DownloadButton = ({
     <div class="btn-group">
       <button
         type="button"
-        class="btn btn-sm btn-outline-primary dropdown-toggle"
+        class="btn btn-outline-light btn-sm dropdown-toggle"
         data-bs-toggle="dropdown"
         aria-expanded="false"
       >
@@ -39,7 +39,7 @@ export const DownloadButton = ({
             type="button"
             onClick={() => downloadAsJSON(students, 'students.csv')}
           >
-            All Students as CSV
+            All students as CSV
           </button>
         </li>
         <li>
@@ -48,7 +48,7 @@ export const DownloadButton = ({
             type="button"
             onClick={() => downloadAsJSON(students, 'students.csv')}
           >
-            All Students as JSON
+            All students as JSON
           </button>
         </li>
         <li>
@@ -62,7 +62,7 @@ export const DownloadButton = ({
               )
             }
           >
-            Filtered Students as CSV
+            Filtered students as CSV
           </button>
         </li>
         <li>
@@ -76,7 +76,7 @@ export const DownloadButton = ({
               )
             }
           >
-            Filtered Students as JSON
+            Filtered students as JSON
           </button>
         </li>
       </ul>

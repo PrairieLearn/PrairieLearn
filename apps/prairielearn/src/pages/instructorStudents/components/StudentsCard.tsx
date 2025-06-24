@@ -99,13 +99,16 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
   });
 
   return (
-    <div class="card mb-4" style={{ height: '100%' }}>
+    <div class="card" style={{ height: '100%' }}>
       <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center justify-content-between">
           <div>Students</div>
+          <div>
+            <DownloadButton students={students} table={table} />
+          </div>
         </div>
       </div>
-      <div class="card-body mb-3">
+      <div class="card-body">
         <div class="d-flex flex-row mb-2">
           <div class="col-md-6 col-xl-4 col-10 col-auto">
             <input
@@ -126,17 +129,11 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
             <div class="mx-2">
               <ColumnManager table={table} />
             </div>
-            <div class="d-none d-md-block">
-              <DownloadButton students={students} table={table} />
-            </div>
           </div>
         </div>
-        <div class="d-flex flex-row justify-content-between justify-content-md-end mb-2 align-items-end">
+        <div class="d-flex flex-row justify-content-start mb-2 align-items-end">
           <div class="text-muted">
             Showing {table.getRowModel().rows.length} of {students.length} students
-          </div>
-          <div class="d-block d-md-none">
-            <DownloadButton students={students} table={table} />
           </div>
         </div>
         <StudentsTable table={table} />
