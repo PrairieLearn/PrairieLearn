@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
@@ -177,11 +179,11 @@ export function InstructorInstanceAdminBillingForm({
             {formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
           </span>
           <div
-            class={`progress flex-grow-1 ${studentBillingEnabled ? 'd-none' : ''}`}
+            class={clsx('progress flex-grow-1', { 'd-none': studentBillingEnabled })}
             style="max-width: 100px"
           >
             <div
-              class={`progress-bar ${enrollmentLimitProgressBarColor}`}
+              class={clsx('progress-bar', enrollmentLimitProgressBarColor)}
               role="progressbar"
               style={{ width: `${enrollmentLimitProgressBarPercentage}%` }}
               aria-valuenow={enrollmentCount}
@@ -270,7 +272,7 @@ export function InstructorInstanceAdminBillingForm({
 InstructorInstanceAdminBillingForm.displayName = 'InstructorInstanceAdminBillingForm';
 
 function Alert(props: AlertProps) {
-  return <div class={`alert alert-${props.color}`}>{props.message}</div>;
+  return <div class={clsx('alert', `alert-${props.color}`)}>{props.message}</div>;
 }
 
 function enrollmentLimitExplanation({
