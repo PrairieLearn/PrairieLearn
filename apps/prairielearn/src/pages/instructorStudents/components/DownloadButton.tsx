@@ -3,13 +3,13 @@ import type { Table } from '@tanstack/react-table';
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
-export const DownloadButton = ({
+export function DownloadButton({
   students,
   table,
 }: {
   students: StudentRow[];
   table: Table<StudentRow>;
-}) => {
+}) {
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {
     const rows = students.map((student) => [
       student.uid,
@@ -25,11 +25,11 @@ export const DownloadButton = ({
     <div class="btn-group">
       <button
         type="button"
-        class="btn btn-outline-light btn-sm dropdown-toggle"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        class="btn btn-outline-light btn-sm dropdown-toggle"
       >
-        <i class="px-2 fa fa-download" aria-hidden="true"></i>
+        <i aria-hidden="true" class="px-2 fa fa-download"></i>
         Download
       </button>
       <ul class="dropdown-menu">
@@ -82,4 +82,4 @@ export const DownloadButton = ({
       </ul>
     </div>
   );
-};
+}

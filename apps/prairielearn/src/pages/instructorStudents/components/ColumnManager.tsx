@@ -30,6 +30,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
         <button
           type="button"
           class="btn btn-sm btn-ghost ms-2"
+          aria-label={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           onClick={() => onTogglePin(column.id)}
           onMouseDown={(e) => e.preventDefault()}
@@ -73,11 +74,11 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
     <div class="btn-group">
       <button
         type="button"
-        class="btn btn-outline-secondary dropdown-toggle text-nowrap"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        class="btn btn-outline-secondary dropdown-toggle text-nowrap"
       >
-        <i class="bi bi-view-list me-2" />
+        <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
       </button>
       <div
