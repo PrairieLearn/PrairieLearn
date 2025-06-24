@@ -1,4 +1,4 @@
-import { type SortDirection, type Table, flexRender } from '@tanstack/react-table';
+import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import { type JSX, useRef } from 'preact/compat';
 
@@ -12,6 +12,37 @@ function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   } else {
     return <i class="bi bi-arrow-down-up opacity-75 text-muted"></i>;
   }
+}
+
+function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
+  return (
+    <div
+      onMouseDown={header.getResizeHandler()}
+      onTouchStart={header.getResizeHandler()}
+      style={{
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        height: '100%',
+        width: '4px',
+        background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'transparent',
+        cursor: 'col-resize',
+        userSelect: 'none',
+        touchAction: 'none',
+        transition: 'background-color 0.2s',
+      }}
+      onMouseEnter={(e) => {
+        if (!header.column.getIsResizing()) {
+          e.currentTarget.style.background = 'var(--bs-gray-400)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!header.column.getIsResizing()) {
+          e.currentTarget.style.background = 'transparent';
+        }
+      }}
+    />
+  );
 }
 
 export function StudentsTable({ table }: { table: Table<StudentRow> }) {
@@ -71,6 +102,16 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                     const isPinned = header.column.getIsPinned();
                     const style: JSX.CSSProperties = {
                       width:
+                        /*
+                        If the cell is the last column, use whichever is larger:
+                          1. The remaining space
+                          2. The column width
+                        
+                        Widths:
+                          2px - table border
+                          32px - card body padding
+                          24px - card padding
+                        */
                         header.column.id === lastColumnId
                           ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${header.getSize()}px)`
                           : header.getSize(),
@@ -84,22 +125,19 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         0 - table body
                       */
                       zIndex: isPinned === 'left' ? 2 : 1,
+                      left: isPinned === 'left' ? header.getStart() : undefined,
                     };
-
-                    if (isPinned === 'left') {
-                      style.left = header.getStart();
-                    }
 
                     return (
                       <th key={header.id} style={style}>
                         <div
-                          {...(header.column.getCanSort()
-                            ? {
-                                onClick: header.column.getToggleSortingHandler(),
-                                style: { cursor: 'pointer' },
-                                class: 'text-nowrap',
-                              }
-                            : { class: 'text-nowrap' })}
+                          class="text-nowrap"
+                          style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
+                          onClick={
+                            header.column.getCanSort()
+                              ? header.column.getToggleSortingHandler()
+                              : undefined
+                          }
                         >
                           {header.isPlaceholder
                             ? null
@@ -110,34 +148,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             </span>
                           )}
                         </div>
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          style={{
-                            position: 'absolute',
-                            right: 0,
-                            top: 0,
-                            height: '100%',
-                            width: '4px',
-                            background: header.column.getIsResizing()
-                              ? 'var(--bs-primary)'
-                              : 'transparent',
-                            cursor: 'col-resize',
-                            userSelect: 'none',
-                            touchAction: 'none',
-                            transition: 'background-color 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!header.column.getIsResizing()) {
-                              e.currentTarget.style.background = 'var(--bs-gray-400)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!header.column.getIsResizing()) {
-                              e.currentTarget.style.background = 'transparent';
-                            }
-                          }}
-                        />
+                        <ResizeHandle header={header} />
                       </th>
                     );
                   })}
@@ -164,14 +175,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         key={cell.id}
                         style={{
                           width:
-                            // If the cell is the last column, use whichever is larger:
-                            // 1. The remaining space
-                            // 2. The column width
                             cell.column.id === lastColumnId
-                              ? // 2px is the width of the table border
-                                // 32px is the width of the card body padding
-                                // 24px is the width of the card padding
-                                `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                              ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
                               : cell.column.getSize(),
                           position: 'sticky',
                           left: cell.column.getStart(),
