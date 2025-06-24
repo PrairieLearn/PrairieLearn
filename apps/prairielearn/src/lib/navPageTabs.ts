@@ -83,6 +83,13 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
           },
           {
+            activeSubPage: 'students',
+            urlSuffix: '/instance_admin/students',
+            iconClasses: 'fas fa-users-line',
+            tabLabel: 'Students',
+            renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+          },
+          {
             activeSubPage: 'lti',
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
