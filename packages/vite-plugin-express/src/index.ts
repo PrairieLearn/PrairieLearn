@@ -10,7 +10,9 @@ export const debugServer = createDebugger('vite:node-plugin:server');
 const env: ConfigEnv = { command: 'serve', mode: '' };
 
 const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginNodeConfig> => {
-  const plugin = server.config.plugins.find((p) => p.name === PLUGIN_NAME) as Plugin;
+  const plugin = server.config.plugins.find((p) => p.name === PLUGIN_NAME) as unknown as {
+    config: (...args: any[]) => UserConfig & { VitePluginNodeConfig: VitePluginNodeConfig };
+  };
   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
   let userConfig: UserConfig | null | void = null;
 
