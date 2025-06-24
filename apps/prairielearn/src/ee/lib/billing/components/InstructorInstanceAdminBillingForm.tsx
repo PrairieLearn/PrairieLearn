@@ -156,9 +156,6 @@ export function InstructorInstanceAdminBillingForm({
   const showEnableAlert =
     (studentBillingEnabled && studentBillingDidChange) || (computeEnabled && computeDidChange);
 
-  const showEnableAlert =
-    (studentBillingEnabled && studentBillingDidChange) || (computeEnabled && computeDidChange);
-
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
 

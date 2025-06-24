@@ -1,4 +1,5 @@
-import { isFragment } from 'preact/compat';
+import clsx from 'clsx';
+import { isFragment, isValidElement } from 'preact/compat';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -55,23 +56,18 @@ interface HydrateProps {
  * that will be rendered without hydration through `renderHtml`.
  */
 export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateProps): VNode {
-  // We expect a single child that is a VNode
-  if (
-    !children ||
-    Array.isArray(children) ||
-    typeof children !== 'object' ||
-    !('type' in children)
-  ) {
-    throw new Error('Hydrate expects a single Preact component as its child');
+  if (!isValidElement(children)) {
+    throw new Error('<Hydrate> expects a single Preact component as its child');
+  }
+
+  if (isFragment(children)) {
+    throw new Error('<Hydrate> does not support fragments');
   }
 
   const content = children as VNode;
   const { type: Component, props } = content;
   if (typeof Component !== 'function') {
-    throw new Error('Hydrate expects a Preact component');
-  }
-  if (isFragment(content)) {
-    throw new Error('Cannot render a fragment for hydration.');
+    throw new Error('<Hydrate> expects a Preact component');
   }
 
   // Note that we don't use `Component.name` here because it can be minified or mangled.
@@ -80,7 +76,7 @@ export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateP
     // This is only defined in development, not in production when the function name is minified.
     const componentDevName = Component.name || 'UnknownComponent';
     throw new AugmentedError(
-      'Component does not have a displayName or nameOverride, which is required for hydration.',
+      '<Hydrate> expects a component to have a displayName or nameOverride.',
       {
         info: html`
           <div>
@@ -121,7 +117,10 @@ registerReactFragment(${componentName});</code></pre>
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
-      <div data-component={componentName} class={`js-react-fragment${fullHeight ? ' h-100' : ''}`}>
+      <div
+        data-component={componentName}
+        class={clsx('js-react-fragment', { 'h-100': fullHeight })}
+      >
         <script
           type="application/json"
           data-component-props
