@@ -230,6 +230,18 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
         )
 
+    if aota is AotaNotaType.CORRECT and len_incorrect > 0:
+        # To prevent confusion on the client side
+        raise ValueError(
+            'pl-multiple-choice element must not include any incorrect answers when all-of-the-above is set to "correct"'
+        )
+
+    if nota is AotaNotaType.CORRECT and len_correct > 0:
+        # To prevent confusion on the client side
+        raise ValueError(
+            'pl-multiple-choice element must not include any correct answers when none-of-the-above is set to "correct"'
+        )
+
     if len_correct == 0:
         # If no correct option is provided, 'None of the above' will always
         # be correct, and 'All of the above' always incorrect
@@ -279,11 +291,6 @@ def prepare_answers_to_display(
             raise ValueError(
                 f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
             )
-    # this is the case for
-    # - 'All of the above' is incorrect
-    # - 'None of the above' is incorrect
-    # - nota and aota disabled
-    number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
 
     if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
         # Either 'None of the above' or 'All of the above' is correct
@@ -302,14 +309,21 @@ def prepare_answers_to_display(
     if aota is AotaNotaType.CORRECT:
         # when 'All of the above' is correct, we choose all from correct
         # and none from incorrect
+        number_answers = min(len_correct, number_answers)
         number_correct = number_answers
         number_incorrect = 0
     elif nota is AotaNotaType.CORRECT:
         # when 'None of the above' is correct, we choose all from incorrect
         # and none from correct
+        number_answers = min(len_incorrect, number_answers)
         number_correct = 0
         number_incorrect = number_answers
     else:
+        # this is the case for
+        # - 'All of the above' is incorrect
+        # - 'None of the above' is incorrect
+        # - nota and aota disabled
+        number_answers = min(1 + len_incorrect, number_answers)
         # PROOF: by the above probability, if len_correct == 0, then nota_correct
         # conversely; if not nota_correct, then len_correct != 0. Since len_correct
         # is none negative, this means len_correct >= 1.
@@ -317,8 +331,8 @@ def prepare_answers_to_display(
         number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
-        raise ValueError(
-            f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
+        assert_never(
+            f"number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
         )
 
     # 2. Sample correct and incorrect choices
@@ -326,6 +340,12 @@ def prepare_answers_to_display(
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
+
+    # If 'All of the above' is correct, set all other answers to incorrect with no score.
+    if aota is AotaNotaType.CORRECT:
+        sampled_answers = [
+            AnswerTuple(a.idx, False, a.html, a.feedback, 0) for a in sampled_answers
+        ]
 
     # 3. Sort sampled choices based on user preference.
     if order_type is OrderType.FIXED:
