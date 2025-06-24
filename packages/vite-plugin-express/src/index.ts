@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'http';
 import { exit } from 'process';
 
+import debounce from 'debounce';
 import debug from 'debug';
 import type { ConfigEnv, Connect, Plugin, UserConfig, ViteDevServer } from 'vite';
 
@@ -50,6 +51,17 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     });
   }
 
+  if (config.watchFileChanges) {
+    const debounceDelayMs = 500;
+
+    server.watcher.on(
+      'change',
+      debounce(async () => {
+        await _loadApp(config);
+      }, debounceDelayMs),
+    );
+  }
+
   return async function (
     req: IncomingMessage,
     res: ServerResponse,
@@ -88,6 +100,7 @@ interface VitePluginNodeConfig {
   initAppOnBoot?: boolean;
   exportName?: string;
   outputFormat?: ModuleFormat;
+  watchFileChanges?: boolean;
 }
 
 declare interface ViteConfig extends UserConfig {
@@ -101,6 +114,7 @@ export function VitePluginNode(cfg: VitePluginNodeConfig): Plugin[] {
     exportName: cfg.exportName ?? 'viteNodeApp',
     initAppOnBoot: cfg.initAppOnBoot ?? false,
     outputFormat: cfg.outputFormat ?? 'cjs',
+    watchFileChanges: cfg.watchFileChanges ?? false,
   };
 
   const plugins: Plugin[] = [
