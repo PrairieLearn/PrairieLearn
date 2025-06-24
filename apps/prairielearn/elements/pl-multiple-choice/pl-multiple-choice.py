@@ -331,8 +331,8 @@ def prepare_answers_to_display(
         number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
-        assert_never(
-            f"number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
+        raise ValueError(
+            f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
         )
 
     # 2. Sample correct and incorrect choices
