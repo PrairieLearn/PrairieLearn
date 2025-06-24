@@ -20,9 +20,14 @@ body:has(div.app-container) {
   height: 100%;
   width: 100%;
   transition: 300ms;
+  /**
+   * The width of the sidebar is set to 25ch, which is dependent on the font size.
+   * This should ensure that the sidebar is wide enough to accommodate its content,
+   * while also being responsive to changes in font size.
+   */
   grid-template:
     'top-nav top-nav' auto
-    'side-nav content' 1fr / 300px 1fr;
+    'side-nav content' 1fr / 25ch 1fr;
 }
 
 .app-top-nav {
@@ -83,7 +88,7 @@ body:has(div.app-container) {
   width: 4px;
   position: absolute;
   left: -0.5rem;
-  background-color: var(--bs-secondary);
+  background-color: var(--bs-primary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
@@ -140,7 +145,7 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.collapsed {
     grid-template:
       'top-nav top-nav' auto
-      'side-nav content' 1fr / 50px 1fr;
+      'side-nav content' 1fr / 60px 1fr;
   }
 
   .app-container.side-nav-enabled.collapsed #course-dropdown {
@@ -149,11 +154,6 @@ body:has(div.app-container) {
 
   .app-container.side-nav-enabled.collapsed #course-instance-dropdown {
     display: none;
-  }
-
-  .app-container.side-nav-enabled.collapsed .app-side-nav {
-    padding: 0.5rem 0;
-    padding-top: 0.3rem;
   }
 
   .app-container.side-nav-enabled.collapsed .side-nav-group {
@@ -207,7 +207,8 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled.collapsed #side-nav-toggler {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0rem;
+    width: 100%;
   }
 
   .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {

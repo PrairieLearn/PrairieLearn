@@ -1,7 +1,7 @@
 import { Fragment } from '@prairielearn/preact-cjs';
 
 import { PageLayout } from '../../../components/PageLayout.html.js';
-import { hydrate } from '../../../lib/preact.js';
+import { Hydrate } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
@@ -46,7 +46,7 @@ export function InstructorCourseInstanceBilling({
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex">Billing</div>
           <div class="card-body">
-            {hydrate(
+            <Hydrate>
               <InstructorInstanceAdminBillingForm
                 initialRequiredPlans={requiredPlans}
                 desiredRequiredPlans={requiredPlans}
@@ -59,8 +59,8 @@ export function InstructorCourseInstanceBilling({
                 workspaceQuestionCount={workspaceQuestionCount}
                 editable={editable}
                 csrfToken={resLocals.__csrf_token}
-              />,
-            )}
+              />
+            </Hydrate>
           </div>
         </div>
       </Fragment>

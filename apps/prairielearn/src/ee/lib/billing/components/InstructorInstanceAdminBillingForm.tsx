@@ -250,7 +250,6 @@ export function InstructorInstanceAdminBillingForm({
         {computeAlert && <Alert {...computeAlert} />}
       </div>
 
-      {/* TODO: something should be showing this. But what/when? */}
       {showEnableAlert && (
         <div class="alert alert-warning js-student-billing-warning">
           Any students currently enrolled in your course will lose access until they have paid for
