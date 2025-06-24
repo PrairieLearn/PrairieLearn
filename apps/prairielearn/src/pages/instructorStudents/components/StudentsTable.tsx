@@ -68,23 +68,31 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
   return (
-    <div style={{ height: '65vh' }} class="d-flex border flex-column justify-content-start">
+    <div
+      style={{ position: 'relative', height: '100%', minHeight: 0 }}
+      class="border d-flex flex-column"
+    >
       <div
         ref={parentRef}
         style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           overflow: 'auto',
           overflowAnchor: 'none',
-          // Fill the height of the parent div if there are any rows, otherwise fit to the content
-          flexGrow: table.getRowModel().rows.length === 0 ? 0 : 1,
+          minHeight: 0,
         }}
       >
         <div
           style={{
             position: 'relative',
             width: `max(${table.getTotalSize()}px, 100%)`,
+            minHeight: 0,
           }}
         >
-          <table class="table table-hover" style={{ tableLayout: 'fixed' }}>
+          <table class="table table-hover mb-0" style={{ tableLayout: 'fixed', minHeight: 0 }}>
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -210,9 +218,19 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       </div>
 
       {table.getRowModel().rows.length === 0 && (
-        <div class="d-flex flex-column justify-content-center align-items-center text-muted py-4 flex-grow-1">
+        <div
+          class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'var(--bs-body-bg)',
+          }}
+        >
           <i class="fa fa-search fa-2x mb-2"></i>
-          <p>No students found matching your search criteria.</p>
+          <p class="mb-0">No students found matching your search criteria.</p>
         </div>
       )}
     </div>

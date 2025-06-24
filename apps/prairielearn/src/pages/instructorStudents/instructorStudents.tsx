@@ -66,7 +66,7 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <Hydrate>
+          <Hydrate fullHeight>
             <InstructorStudents
               pageContext={pageContext}
               courseInstance={course_instance}
