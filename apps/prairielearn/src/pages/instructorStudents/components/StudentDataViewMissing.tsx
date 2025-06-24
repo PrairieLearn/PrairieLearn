@@ -10,11 +10,11 @@ export function StudentDataViewMissing({
   urlPrefix: string;
 }) {
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-danger text-white">
+    <div class="card mb-4">
+      <div class="card-header bg-danger text-white">
         <h1>Students</h1>
       </div>
-      <div className="card-body">
+      <div class="card-body">
         <h2>Insufficient permissions</h2>
         <p>You must have permission to view student data in order to access the students list.</p>
         {hasCoursePermissionOwn ? (

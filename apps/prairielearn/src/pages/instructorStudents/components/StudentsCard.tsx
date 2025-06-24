@@ -5,6 +5,7 @@ import {
   type ColumnSizingState,
   type VisibilityState as ColumnVisibilityState,
   type SortingState,
+  type Table,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -31,6 +32,76 @@ function downloadStudentsCSV(students: StudentRow[], filename: string): void {
   ]);
   downloadAsCSV(['UID', 'Name', 'Email', 'Enrolled At'], rows, filename);
 }
+
+const DownloadButton = ({
+  students,
+  table,
+}: {
+  students: StudentRow[];
+  table: Table<StudentRow>;
+}) => {
+  return (
+    <div class="btn-group">
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-primary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <i class="px-2 fa fa-download" aria-hidden="true"></i>
+        Download
+      </button>
+      <ul class="dropdown-menu">
+        <li>
+          <button
+            class="dropdown-item"
+            type="button"
+            onClick={() => downloadAsJSON(students, 'students.csv')}
+          >
+            All Students as CSV
+          </button>
+        </li>
+        <li>
+          <button
+            class="dropdown-item"
+            type="button"
+            onClick={() => downloadAsJSON(students, 'students.csv')}
+          >
+            All Students as JSON
+          </button>
+        </li>
+        <li>
+          <button
+            class="dropdown-item"
+            type="button"
+            onClick={() =>
+              downloadStudentsCSV(
+                table.getFilteredRowModel().rows.map((row) => row.original),
+                'students-current-view.csv',
+              )
+            }
+          >
+            Filtered Students as CSV
+          </button>
+        </li>
+        <li>
+          <button
+            class="dropdown-item"
+            type="button"
+            onClick={() =>
+              downloadAsJSON(
+                table.getFilteredRowModel().rows.map((row) => row.original),
+                'students-current-view.json',
+              )
+            }
+          >
+            Filtered Students as JSON
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+};
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -112,98 +183,44 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
 
   // Sync state to URL
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white">
-        <div className="d-flex justify-content-between align-items-center">
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center">
           <div>Students</div>
         </div>
       </div>
-      <div className="card-body">
-        <div className="mb-3">
-          <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
-            <div className="d-flex gap-2 col-12 col-lg-5">
-              <input
-                type="text"
-                id="search-input"
-                className="form-control"
-                placeholder="Search by UID, name, email..."
-                value={globalFilter}
-                onInput={(e) => {
-                  if (!(e.target instanceof HTMLInputElement)) {
-                    return;
-                  }
-                  setGlobalFilter(e.target.value);
-                }}
-              />
-              <ColumnManager table={table} />
-            </div>
-            <div className="d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center">
-              <div className="text-muted mt-2 mt-md-0 me-md-2">
-                Showing {table.getRowModel().rows.length} of {students.length} students
-              </div>
-              <div className="btn-group">
-                <button
-                  type="button"
-                  className="btn btn-outline-primary btn-sm dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  <i className="px-2 fa fa-download" aria-hidden="true"></i>
-                  Download
-                </button>
-                <ul className="dropdown-menu">
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      type="button"
-                      onClick={() => downloadAsJSON(students, 'students.csv')}
-                    >
-                      All Students as CSV
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      type="button"
-                      onClick={() => downloadAsJSON(students, 'students.csv')}
-                    >
-                      All Students as JSON
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      type="button"
-                      onClick={() =>
-                        downloadStudentsCSV(
-                          table.getFilteredRowModel().rows.map((row) => row.original),
-                          'students-current-view.csv',
-                        )
-                      }
-                    >
-                      Filtered Students as CSV
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className="dropdown-item"
-                      type="button"
-                      onClick={() =>
-                        downloadAsJSON(
-                          table.getFilteredRowModel().rows.map((row) => row.original),
-                          'students-current-view.json',
-                        )
-                      }
-                    >
-                      Filtered Students as JSON
-                    </button>
-                  </li>
-                </ul>
-              </div>
+      <div class="card-body mb-3">
+        <div class="d-flex flex-row mb-2">
+          <div class="col-md-4 col-10 col-auto">
+            <input
+              type="text"
+              id="search-input"
+              class="form-control"
+              placeholder="Search by UID, name, email..."
+              value={globalFilter}
+              onInput={(e) => {
+                if (!(e.target instanceof HTMLInputElement)) {
+                  return;
+                }
+                setGlobalFilter(e.target.value);
+              }}
+            />
+          </div>
+          <div class="col-md-8 col-2 d-flex flex-row justify-content-md-between justify-content-end">
+            <ColumnManager table={table} />
+            <div class="d-none d-md-block">
+              <DownloadButton students={students} table={table} />
             </div>
           </div>
         </div>
-
+        <div class="d-flex flex-row justify-content-between justify-content-md-end mb-2">
+          <div class="text-muted">
+            Showing {table.getRowModel().rows.length} of {students.length} students
+          </div>
+          <div class="d-block d-md-none">
+            <DownloadButton students={students} table={table} />
+          </div>
+        </div>
         <StudentsTable table={table} />
       </div>
     </div>

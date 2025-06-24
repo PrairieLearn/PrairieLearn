@@ -6,11 +6,11 @@ import type { StudentRow } from '../instructorStudents.shared.js';
 
 function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   if (sortMethod === 'asc') {
-    return <i className="bi bi-sort-up-alt"></i>;
+    return <i class="bi bi-sort-up-alt"></i>;
   } else if (sortMethod === 'desc') {
-    return <i className="bi bi-sort-down"></i>;
+    return <i class="bi bi-sort-down"></i>;
   } else {
-    return <i className="bi bi-arrow-down-up opacity-75 text-muted"></i>;
+    return <i class="bi bi-arrow-down-up opacity-75 text-muted"></i>;
   }
 }
 
@@ -66,7 +66,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           }}
         >
           <table
-            className="table table-striped table-hover border border-top-0"
+            class="table table-striped table-hover border border-top-0"
             style={{ tableLayout: 'fixed' }}
           >
             <thead>
@@ -102,15 +102,15 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             ? {
                                 onClick: header.column.getToggleSortingHandler(),
                                 style: { cursor: 'pointer' },
-                                className: 'text-nowrap',
+                                class: 'text-nowrap',
                               }
-                            : { className: 'text-nowrap' })}
+                            : { class: 'text-nowrap' })}
                         >
                           {header.isPlaceholder
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
                           {header.column.getCanSort() && (
-                            <span className="ms-2">
+                            <span class="ms-2">
                               <SortIcon sortMethod={header.column.getIsSorted() || null} />
                             </span>
                           )}
@@ -220,8 +220,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       </div>
 
       {table.getRowModel().rows.length === 0 && (
-        <div className="d-flex flex-column justify-content-center align-items-center text-muted py-4 flex-grow-1">
-          <i className="fa fa-search fa-2x mb-2"></i>
+        <div class="d-flex flex-column justify-content-center align-items-center text-muted py-4 flex-grow-1">
+          <i class="fa fa-search fa-2x mb-2"></i>
           <p>No students found matching your search criteria.</p>
         </div>
       )}

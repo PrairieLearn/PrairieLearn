@@ -14,27 +14,27 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
   const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
 
   return (
-    <div key={column.id} className="px-2 py-1 d-flex align-items-center justify-content-between">
-      <label className="form-check me-auto text-nowrap d-flex align-items-center">
+    <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
+      <label class="form-check me-auto text-nowrap d-flex align-items-center">
         <input
           type="checkbox"
-          className="form-check-input"
+          class="form-check-input"
           checked={column.getIsVisible()}
           onChange={column.getToggleVisibilityHandler()}
           disabled={!column.getCanHide()}
           onMouseDown={(e) => e.preventDefault()}
         />
-        <span className="form-check-label ms-2">{header}</span>
+        <span class="form-check-label ms-2">{header}</span>
       </label>
       {column.getCanPin() && !hidePinButton && (
         <button
           type="button"
-          className="btn btn-sm btn-ghost ms-2"
+          class="btn btn-sm btn-ghost ms-2"
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           onClick={() => onTogglePin(column.id)}
           onMouseDown={(e) => e.preventDefault()}
         >
-          <i className={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} />
+          <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} />
         </button>
       )}
     </div>
@@ -70,18 +70,18 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   // console.log(pinnedColumns, unpinnedColumns);
 
   return (
-    <div className="btn-group">
+    <div class="btn-group">
       <button
         type="button"
-        className="btn btn-outline-secondary dropdown-toggle text-nowrap"
+        class="btn btn-outline-secondary dropdown-toggle text-nowrap"
         data-bs-toggle="dropdown"
         aria-expanded="false"
       >
-        <i className="bi bi-view-list me-2" />
+        <i class="bi bi-view-list me-2" />
         View
       </button>
       <div
-        className="dropdown-menu dropdown-menu-arrow"
+        class="dropdown-menu dropdown-menu-arrow"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.preventDefault()}
       >
@@ -93,7 +93,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
             onTogglePin={handleTogglePin}
           />
         ))}
-        {pinnedColumns.length > 0 && <div className="dropdown-divider"></div>}
+        {pinnedColumns.length > 0 && <div class="dropdown-divider"></div>}
         {unpinnedColumns.map((column, index) => (
           <ColumnMenuItem
             key={column.id}
@@ -104,14 +104,10 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         ))}
         {showResetButton && (
           <>
-            <div className="dropdown-divider"></div>
-            <div className="px-2 py-1">
-              <button
-                type="button"
-                className="btn btn-sm w-100 btn-secondary"
-                onClick={handleReset}
-              >
-                <i className="bi bi-arrow-counterclockwise me-2" />
+            <div class="dropdown-divider"></div>
+            <div class="px-2 py-1">
+              <button type="button" class="btn btn-sm w-100 btn-secondary" onClick={handleReset}>
+                <i class="bi bi-arrow-counterclockwise me-2" />
                 Reset view
               </button>
             </div>
