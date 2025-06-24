@@ -93,7 +93,7 @@ const minimalStaffUser = {
   lti_user_id: null,
   name: 'Test User',
   terms_accepted_at: null,
-  uid: 'u123',
+  uid: 'u123@example.com',
   uin: '123456789',
   user_id: '4',
 };
