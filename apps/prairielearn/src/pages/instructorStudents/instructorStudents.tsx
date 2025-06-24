@@ -11,7 +11,7 @@ import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
-import { StudentRowSchema } from './instructorStudents.shared.js';
+import { StudentQuerySchema, type StudentRow } from './instructorStudents.shared.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -37,14 +37,14 @@ router.get(
       );
     }
 
-    const students = hasPermission
+    const students: StudentRow[] = hasPermission
       ? (
           await queryRows(
             sql.select_students,
             {
               course_instance_id: course_instance.id,
             },
-            StudentRowSchema,
+            StudentQuerySchema,
           )
         ).map((student) => ({
           ...student.user,

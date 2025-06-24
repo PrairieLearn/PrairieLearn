@@ -2,20 +2,16 @@ import type { SortingState } from '@tanstack/table-core';
 import { createParser } from 'nuqs';
 import z from 'zod';
 
-import {
-  type Enrollment,
-  EnrollmentSchema,
-  type StudentUser,
-  StudentUserSchema,
-} from '../../lib/db-types.js';
+import { type StaffUser, StaffUserSchema } from '../../lib/client/safe-db-types.js';
+import { type Enrollment, EnrollmentSchema } from '../../lib/db-types.js';
 
-export const StudentRowSchema = z.object({
+export const StudentQuerySchema = z.object({
   enrollment: EnrollmentSchema,
-  user: StudentUserSchema,
+  user: StaffUserSchema,
 });
 
-export type StudentRow = Enrollment & StudentUser;
-
+export type StudentQuery = z.infer<typeof StudentQuerySchema>;
+export type StudentRow = Enrollment & StaffUser;
 // Custom parser for SortingState: ?sort=col:asc or ?sort=col:desc
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {

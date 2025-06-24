@@ -1,7 +1,7 @@
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { NuqsAdapter } from '../../lib/client/nuqs.js';
 import type { PageContext } from '../../lib/client/page-context.js';
-import { type InstructorCourse, type InstructorCourseInstance } from '../../lib/db-types.js';
+import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 
 import { StudentsCard } from './components/StudentsCard.js';
 import { type StudentRow } from './instructorStudents.shared.js';
@@ -14,8 +14,8 @@ export const InstructorStudents = ({
   search,
 }: {
   pageContext: PageContext;
-  courseInstance: InstructorCourseInstance;
-  course: InstructorCourse;
+  courseInstance: StaffCourseInstance;
+  course: StaffCourse;
   students: StudentRow[];
   search: string;
 }) => {
