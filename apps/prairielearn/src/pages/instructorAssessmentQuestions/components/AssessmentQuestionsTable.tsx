@@ -104,10 +104,9 @@ export function AssessmentQuestionsTable({
                       ? question.qid
                       : `@${question.course_sharing_name}/${question.qid}`}
                   </td>
-                  <td>${TopicBadge(question.topic)}</td>
-                  <td>${TagBadgeList(question.tags)}</td>
+                  <td>{TopicBadge(question.topic)}</td>
+                  <td>{TagBadgeList(question.tags)}</td>
                   <td>
-                    $
                     {maxPoints({
                       max_auto_points: question.max_auto_points,
                       max_manual_points: question.max_manual_points,
@@ -115,7 +114,7 @@ export function AssessmentQuestionsTable({
                       init_points: question.init_points,
                     })}
                   </td>
-                  <td>${question.max_manual_points || '—'}</td>$
+                  <td>{question.max_manual_points || '—'}</td>
                   {showAdvanceScorePercCol ? (
                     <td
                       class="${question.assessment_question_advance_score_perc === 0
@@ -123,19 +122,17 @@ export function AssessmentQuestionsTable({
                             : ''}"
                       data-testid="advance-score-perc"
                     >
-                      ${question.assessment_question_advance_score_perc}%
+                      {question.assessment_question_advance_score_perc}%
                     </td>
                   ) : (
                     ''
                   )}
                   <td>
-                    $
                     {question.mean_question_score
                       ? `${question.mean_question_score.toFixed(3)} %`
                       : ''}
                   </td>
                   <td class="text-center">
-                    $
                     {question.number_submissions_hist ? (
                       <div
                         class="js-histmini"
