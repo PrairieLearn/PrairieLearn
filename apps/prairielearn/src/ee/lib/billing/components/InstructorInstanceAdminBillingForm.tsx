@@ -264,6 +264,8 @@ export function InstructorInstanceAdminBillingForm({
   );
 }
 
+InstructorInstanceAdminBillingForm.displayName = 'InstructorInstanceAdminBillingForm';
+
 function Alert(props: AlertProps) {
   return <div class={`alert alert-${props.color}`}>{props.message}</div>;
 }
