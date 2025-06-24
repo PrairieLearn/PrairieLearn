@@ -1,8 +1,3 @@
-import { Modal } from '../../../components/Modal.html.js';
-import { html } from '@prairielearn/html';
-
-import { hydrate } from '../../../lib/preact.js';
-
 export function ResetQuestionVariantsModal({ csrfToken }: { csrfToken: string }) {
   return (
     <>

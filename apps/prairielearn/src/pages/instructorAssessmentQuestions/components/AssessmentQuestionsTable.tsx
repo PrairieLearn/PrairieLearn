@@ -8,8 +8,6 @@ import type { AssessmentQuestionRow } from '../../../models/assessment-question.
 import { IssueBadge } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
-import { TagBadgeList } from '../../../components/TagBadge.html.js';
-import { TopicBadge } from '../../../components/TopicBadge.html.js';
 
 export function AssessmentQuestionsTable({
   course,
