@@ -1,7 +1,8 @@
 import { PageLayout } from '../../../components/PageLayout.html.js';
 import { Hydrate } from '../../../lib/preact.js';
-import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
+
+import { InstructorInstanceAdminBillingForm } from './components/InstructorInstanceAdminBillingForm.js';
 
 export type EnrollmentLimitSource = 'course_instance' | 'institution';
 

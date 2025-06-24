@@ -2,7 +2,7 @@ import clsx from 'clsx';
 
 import { useState } from '@prairielearn/preact-cjs/hooks';
 
-import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
+import { type PlanName, planGrantsMatchPlanFeatures } from '../../../lib/billing/plans-types.js';
 
 interface InstructorInstanceAdminBillingInput {
   /** The current state */
