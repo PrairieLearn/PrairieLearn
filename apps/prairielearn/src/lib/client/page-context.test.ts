@@ -14,21 +14,30 @@ describe('getPageContext', () => {
         has_course_instance_permission_edit: true,
         has_course_instance_permission_view: true,
         has_course_permission_own: true,
+        user: { name: 'Test User', uid: 'test@illinois.edu', foo: 'bar' },
+        mode: 'edit',
+      },
+      urlPrefix: '/pl/course/1/course_instance/1',
+      access_as_administrator: false,
+      authn_is_administrator: false,
+      authn_user: { name: 'Test User', uid: 'test@illinois.edu', foo: 'bar' },
+      extraField: 'this should be stripped',
+      anotherExtraField: 123,
+    };
+
+    const expected = {
+      authz_data: {
+        has_course_instance_permission_edit: true,
+        has_course_instance_permission_view: true,
+        has_course_permission_own: true,
         user: { name: 'Test User', uid: 'test@illinois.edu' },
         mode: 'edit',
       },
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
-      news_item_notification_count: 0,
       authn_is_administrator: false,
       authn_user: { name: 'Test User', uid: 'test@illinois.edu' },
-      viewType: 'instructor',
-      extraField: 'this should be stripped',
-      anotherExtraField: 123,
     };
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { extraField, anotherExtraField, ...expected } = mockData;
 
     const result = getPageContext(mockData);
 

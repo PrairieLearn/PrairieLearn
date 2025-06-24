@@ -25,13 +25,11 @@ const PageContext = z.object({
 
   urlPrefix: z.string(),
   access_as_administrator: z.boolean(),
-  news_item_notification_count: z.number(),
   authn_is_administrator: z.boolean(),
   authn_user: z.object({
     name: z.string(),
     uid: z.string(),
   }),
-  viewType: z.enum(['instructor', 'student']),
 });
 export type PageContext = z.infer<typeof PageContext>;
 
