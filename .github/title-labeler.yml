@@ -5,7 +5,7 @@ labels:
     sync: false
     matcher:
       # no case-insensitive flag (https://github.com/fuxingloh/multi-labeler/issues/341)
-      title: '.*(fix|Fix|bug|Bug|correctly|Correctly|use correct|Use correct).*'
+      title: '.*(fix|Fix|bug |Bug |correctly|Correctly|use correct|Use correct).*'
   - label: 'chore'
     sync: false
     matcher:
