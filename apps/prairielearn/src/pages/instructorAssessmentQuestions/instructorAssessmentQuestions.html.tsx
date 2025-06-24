@@ -1,6 +1,7 @@
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
+import type { AssessmentQuestionRow } from '../../models/assessment-question.types.js';
 import { AssessmentQuestionsTable } from './components/AssessmentQuestionsTable.js';
+import { ResetQuestionVariantsModal } from './components/ResetQuestionVariantsModal.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -38,6 +39,7 @@ export function InstructorAssessmentQuestions({
           hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
         />
       </div>
+      <ResetQuestionVariantsModal csrfToken={resLocals.__csrf_token} />
     </>
   );
 }

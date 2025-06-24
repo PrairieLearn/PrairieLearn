@@ -1,4 +1,4 @@
-import { type AssessmentQuestionRow } from '../models/assessment-question.js';
+import { type AssessmentQuestionRow } from '../models/assessment-question.types.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -45,12 +45,12 @@ export function AssessmentQuestionHeaders({
   );
 }
 
-export function AssessmentQuestionNumber(question: AssessmentQuestionRow) {
+export function AssessmentQuestionNumber({ question }: { question: AssessmentQuestionRow }) {
   return question.alternative_group_size === 1 ? (
-    `${question.alternative_group_number}.`
+    <>{question.alternative_group_number}. </>
   ) : (
     <span class="ms-3">
-      {question.alternative_group_number}.{question.number_in_alternative_group}.
+      {question.alternative_group_number}.{question.number_in_alternative_group}.{' '}
     </span>
   );
 }

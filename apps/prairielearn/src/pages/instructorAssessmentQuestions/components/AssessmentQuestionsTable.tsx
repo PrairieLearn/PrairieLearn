@@ -4,7 +4,7 @@ import {
 } from '../../../components/AssessmentQuestions.html.js';
 import type { Course } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
+import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
 import { IssueBadge } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
@@ -46,13 +46,18 @@ export function AssessmentQuestionsTable({
   }
 
   function title(question) {
-    const number = AssessmentQuestionNumber(question);
+    const number = <AssessmentQuestionNumber question={question} />;
     const issueBadge = IssueBadge({
       urlPrefix,
       count: question.open_issue_count ?? 0,
       issueQid: question.qid,
     });
-    const title = `${number} ${question.title} ${issueBadge}`;
+    const title = (
+      <>
+        <AssessmentQuestionNumber question={question} />
+        {question.title} {issueBadge}
+      </>
+    );
 
     if (hasCoursePermissionPreview) {
       return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
@@ -104,8 +109,14 @@ export function AssessmentQuestionsTable({
                       ? question.qid
                       : `@${question.course_sharing_name}/${question.qid}`}
                   </td>
-                  <td>{TopicBadge(question.topic)}</td>
-                  <td>{TagBadgeList(question.tags)}</td>
+                  <td>
+                    <span class={`badge color-${question.topic.color}`}>{question.topic.name}</span>
+                  </td>
+                  <td>
+                    {question.tags?.map((tag) => (
+                      <span class={`badge color-${tag.color}`}>{tag.name}</span>
+                    ))}
+                  </td>
                   <td>
                     {maxPoints({
                       max_auto_points: question.max_auto_points,
@@ -144,9 +155,9 @@ export function AssessmentQuestionsTable({
                     )}
                   </td>
                   <td>
-                    {question.other_assessments?.map((assessment) =>
-                      AssessmentBadge({ urlPrefix, assessment }),
-                    )}
+                    {question.other_assessments?.map((assessment) => (
+                      <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
+                    ))}
                   </td>
                   <td class="text-right">
                     <div class="dropdown js-question-actions">
