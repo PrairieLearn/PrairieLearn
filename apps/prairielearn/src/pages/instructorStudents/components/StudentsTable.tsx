@@ -85,6 +85,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         style={{
           overflow: 'auto',
           overflowAnchor: 'none',
+          // Fill the height of the parent div if there are any rows, otherwise fit to the content
           flexGrow: table.getRowModel().rows.length === 0 ? 0 : 1,
         }}
       >
