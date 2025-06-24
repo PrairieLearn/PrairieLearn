@@ -4014,6 +4014,7 @@ __metadata:
     nodemon: "npm:^3.1.10"
     notebookjs: "npm:^0.8.3"
     numeric: "npm:^1.2.6"
+    nuqs: "npm:^2.4.3"
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
@@ -4028,6 +4029,7 @@ __metadata:
     pg: "npm:^8.16.0"
     popper.js: "npm:^1.16.1"
     preact: "npm:^10.26.8"
+    preact-render-to-string: "npm:^6.5.13"
     prettier: "npm:3.5.3"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.0"
@@ -13271,6 +13273,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mitt@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "mitt@npm:3.0.1"
+  checksum: 10c0/3ab4fdecf3be8c5255536faa07064d05caa3dd332bd318ff02e04621f7b3069ca1de9106cfe8e7ced675abfc2bec2ce4c4ef321c4a1bb1fb29df8ae090741913
+  languageName: node
+  linkType: hard
+
 "mkdirp-classic@npm:^0.5.2":
   version: 0.5.3
   resolution: "mkdirp-classic@npm:0.5.3"
@@ -13698,6 +13707,30 @@ __metadata:
   version: 1.2.6
   resolution: "numeric@npm:1.2.6"
   checksum: 10c0/5bf9b303975b46be73525858da9326f325e2ffd9a89869fa97eb4367b4d62588a32920c1c41e656df6cac26526e4645ba909e756ce79d644c0ab1f015dbcd27e
+  languageName: node
+  linkType: hard
+
+"nuqs@npm:^2.4.3":
+  version: 2.4.3
+  resolution: "nuqs@npm:2.4.3"
+  dependencies:
+    mitt: "npm:^3.0.1"
+  peerDependencies:
+    "@remix-run/react": ">=2"
+    next: ">=14.2.0"
+    react: ">=18.2.0 || ^19.0.0-0"
+    react-router: ^6 || ^7
+    react-router-dom: ^6 || ^7
+  peerDependenciesMeta:
+    "@remix-run/react":
+      optional: true
+    next:
+      optional: true
+    react-router:
+      optional: true
+    react-router-dom:
+      optional: true
+  checksum: 10c0/29a911749a74a1b2933942f7de7952ddf6158ec2f19c2a0a849111f894b9d0745848b84095e5e0549ad9f2690303a122392b76296e6018c3bb540b4ea68a58c8
   languageName: node
   linkType: hard
 
@@ -14493,6 +14526,15 @@ __metadata:
   peerDependencies:
     preact: "*"
   checksum: 10c0/e139fb6d0bbfa4131f5ab07ab8175fd1633fb4dc3d68a045499b38bf30428131e7a7ebdf86778f9a2981b6f315083eb2d698302e74351ac1a48cebc3baa0bb35
+  languageName: node
+  linkType: hard
+
+"preact-render-to-string@npm:^6.5.13":
+  version: 6.5.13
+  resolution: "preact-render-to-string@npm:6.5.13"
+  peerDependencies:
+    preact: ">=10"
+  checksum: 10c0/10c6c424af03066b832cb3f2c44372dd64180e9e2a6038cccb758e06337b13b3dd399bf26697afff07d7c5b253fd6bc194524d726ec36d930e36ea2defbb60f7
   languageName: node
   linkType: hard
 
