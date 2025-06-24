@@ -40,12 +40,12 @@ export function renderHtmlDocument(content: VNode) {
 }
 
 interface HydrateProps {
-  /** Optional override for the component's name or displayName */
-  nameOverride?: string;
-  /** Whether to apply full height styles. Defaults to true. */
-  fullHeight?: boolean;
   /** The component to hydrate */
   children: ComponentChildren;
+  /** Optional override for the component's name or displayName */
+  nameOverride?: string;
+  /** Whether to apply full height styles. */
+  fullHeight?: boolean;
 }
 
 /**
