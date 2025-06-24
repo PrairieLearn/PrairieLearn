@@ -99,7 +99,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
   });
 
   return (
-    <div class="card mb-4">
+    <div class="card mb-4" style={{ height: '100%' }}>
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center">
           <div>Students</div>

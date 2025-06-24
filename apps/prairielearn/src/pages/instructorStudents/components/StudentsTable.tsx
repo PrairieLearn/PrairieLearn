@@ -66,17 +66,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
-  const allButLastColumnWidth = headerGroups.reduce((acc, headerGroup) => {
-    return (
-      acc +
-      headerGroup.headers.reduce((acc, header) => {
-        if (header.column.id === lastColumnId) {
-          return acc;
-        }
-        return acc + header.getSize();
-      }, 0)
-    );
-  }, 0);
 
   return (
     <div style={{ height: '65vh' }} class="d-flex border flex-column justify-content-start">
@@ -92,10 +81,10 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         <div
           style={{
             position: 'relative',
-            width: table.getTotalSize(),
+            width: `max(${table.getTotalSize()}px, 100%)`,
           }}
         >
-          <table class="table table-striped table-hover" style={{ tableLayout: 'fixed' }}>
+          <table class="table table-hover" style={{ tableLayout: 'fixed' }}>
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -114,7 +103,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           24px - card padding
                         */
                         header.column.id === lastColumnId
-                          ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${header.getSize()}px)`
+                          ? `max(100%, ${header.getSize()}px)`
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
@@ -177,7 +166,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         style={{
                           width:
                             cell.column.id === lastColumnId
-                              ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                              ? `max(100%, ${cell.column.getSize()}px)`
                               : cell.column.getSize(),
                           position: 'sticky',
                           left: cell.column.getStart(),
@@ -196,7 +185,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           style={{
                             width:
                               cell.column.id === lastColumnId
-                                ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                                ? `max(100%, ${cell.column.getSize()}px)`
                                 : cell.column.getSize(),
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',

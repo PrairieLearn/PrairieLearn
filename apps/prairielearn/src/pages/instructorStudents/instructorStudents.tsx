@@ -63,6 +63,7 @@ router.get(
         },
         options: {
           fullWidth: true,
+          fullHeight: true,
         },
         content: hydrate(
           <InstructorStudents
