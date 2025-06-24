@@ -48,9 +48,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   }, 0);
 
   return (
-    <div
-      style={{ height: '70vh', display: 'flex', flexDirection: 'column', justifyContent: 'start' }}
-    >
+    <div style={{ height: '70vh' }} class="d-flex border flex-column justify-content-start">
       <div
         ref={parentRef}
         style={{
@@ -65,10 +63,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             width: table.getTotalSize(),
           }}
         >
-          <table
-            class="table table-striped table-hover border border-top-0"
-            style={{ tableLayout: 'fixed' }}
-          >
+          <table class="table table-striped table-hover" style={{ tableLayout: 'fixed' }}>
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>

@@ -191,7 +191,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
       </div>
       <div class="card-body mb-3">
         <div class="d-flex flex-row mb-2">
-          <div class="col-md-4 col-10 col-auto">
+          <div class="col-md-6 col-xl-4 col-10 col-auto">
             <input
               type="text"
               id="search-input"
@@ -206,14 +206,16 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
               }}
             />
           </div>
-          <div class="col-md-8 col-2 d-flex flex-row justify-content-md-between justify-content-end">
-            <ColumnManager table={table} />
+          <div class="col-md-6 col-xl-8 col-2 d-flex flex-row justify-content-md-between justify-content-end">
+            <div class="mx-2">
+              <ColumnManager table={table} />
+            </div>
             <div class="d-none d-md-block">
               <DownloadButton students={students} table={table} />
             </div>
           </div>
         </div>
-        <div class="d-flex flex-row justify-content-between justify-content-md-end mb-2">
+        <div class="d-flex flex-row justify-content-between justify-content-md-end mb-2 align-items-end">
           <div class="text-muted">
             Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
