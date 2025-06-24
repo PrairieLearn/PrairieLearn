@@ -10,7 +10,7 @@ function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
   } else if (sortMethod === 'desc') {
     return <i className="bi bi-sort-down"></i>;
   } else {
-    return <i className="bi bi-arrows-expand opacity-75 text-muted"></i>;
+    return <i className="bi bi-arrow-down-up opacity-75 text-muted"></i>;
   }
 }
 
