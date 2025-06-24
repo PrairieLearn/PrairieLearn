@@ -44,7 +44,7 @@ router.get(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Questions',
-        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.tsx'),
+        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
         navContext: {
           type: 'instructor',
           page: 'assessment',
@@ -56,7 +56,6 @@ router.get(
         content: hydrate(
           <InstructorAssessmentQuestions resLocals={res.locals} questions={questions} />,
         ),
-        // postContent: hydrate(<ResetQuestionVariantsModal csrfToken={res.locals.__csrf_token} />),
       }),
     );
   }),

@@ -7,7 +7,7 @@ import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
 import { IssueBadge } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
-import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
 
 export function AssessmentQuestionsTable({
   course,
@@ -30,13 +30,25 @@ export function AssessmentQuestionsTable({
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
-  function maxPoints({ max_auto_points, max_manual_points, points_list, init_points }) {
+  function maxPoints({
+    max_auto_points,
+    max_manual_points,
+    points_list,
+    init_points,
+  }: {
+    max_auto_points: number | null;
+    max_manual_points: number | null;
+    points_list: number[] | null;
+    init_points: number | null;
+  }) {
     if (max_auto_points || !max_manual_points) {
       if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points]).map((p) => p - max_manual_points).join(',');
+        return (points_list || [max_manual_points])
+          .map((p) => (p ?? 0) - (max_manual_points ?? 0))
+          .join(',');
       }
       if (assessmentType === 'Homework') {
-        return `${init_points - max_manual_points}/${max_auto_points}`;
+        return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
       }
     } else {
       return `&mdash`;
@@ -112,7 +124,7 @@ export function AssessmentQuestionsTable({
                   </td>
                   <td>
                     {question.tags?.map((tag) => (
-                      <span class={`badge color-${tag.color}`}>{tag.name}</span>
+                      <span class={`badge color-${tag.color} me-1`}>{tag.name}</span>
                     ))}
                   </td>
                   <td>
@@ -145,8 +157,8 @@ export function AssessmentQuestionsTable({
                     {question.number_submissions_hist ? (
                       <div
                         class="js-histmini"
-                        data-data="${JSON.stringify(question.number_submissions_hist)}"
-                        data-options="${JSON.stringify({ width: 60, height: 20 })}"
+                        data-data={JSON.stringify(question.number_submissions_hist)}
+                        data-options={JSON.stringify({ width: 60, height: 20 })}
                       ></div>
                     ) : (
                       ''
@@ -154,7 +166,9 @@ export function AssessmentQuestionsTable({
                   </td>
                   <td>
                     {question.other_assessments?.map((assessment) => (
-                      <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
+                      <div class="d-inline-block me-1">
+                        <AssessmentBadgeJsx urlPrefix={urlPrefix} assessment={assessment} />
+                      </div>
                     ))}
                   </td>
                   <td class="text-right">

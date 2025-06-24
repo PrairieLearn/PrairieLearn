@@ -34,7 +34,7 @@ export function InstructorAssessmentQuestions({
           course={resLocals.course}
           questions={questions}
           urlPrefix={resLocals.urlPrefix}
-          assessmentType={resLocals.assessment_type}
+          assessmentType={resLocals.assessment.type}
           hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
           hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
         />
@@ -43,3 +43,5 @@ export function InstructorAssessmentQuestions({
     </>
   );
 }
+
+InstructorAssessmentQuestions.displayName = 'InstructorAssessmentQuestions';

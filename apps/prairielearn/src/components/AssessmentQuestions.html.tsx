@@ -8,7 +8,7 @@ export function AssessmentQuestionHeaders({
   nTableCols: number;
 }) {
   return (
-    <div>
+    <>
       {question.start_new_zone ? (
         <tr>
           <th colspan={nTableCols}>
@@ -41,7 +41,7 @@ export function AssessmentQuestionHeaders({
       ) : (
         ''
       )}
-    </div>
+    </>
   );
 }
 
