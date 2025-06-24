@@ -23,10 +23,10 @@ const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 // For example, shard 3 will get 2/7 of these other tests.
 const NUM_SLICES = 7;
 const SHARD_SLICES = {
-  1: { start: 0, end: 1 },
-  2: { start: 1, end: 2 },
-  3: { start: 2, end: 4 },
-  4: { start: 4, end: NUM_SLICES },
+  1: { start: 0, end: 0 },
+  2: { start: 0, end: 1 },
+  3: { start: 1, end: 3 },
+  4: { start: 3, end: NUM_SLICES },
 };
 
 class CustomSequencer extends BaseSequencer {
