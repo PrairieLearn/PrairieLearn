@@ -48,11 +48,19 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   }, 0);
 
   return (
-    <>
-      <div ref={parentRef} style={{ overflow: 'auto', overflowAnchor: 'none', maxHeight: '70vh' }}>
+    <div
+      style={{ height: '70vh', display: 'flex', flexDirection: 'column', justifyContent: 'start' }}
+    >
+      <div
+        ref={parentRef}
+        style={{
+          overflow: 'auto',
+          overflowAnchor: 'none',
+          flexGrow: table.getRowModel().rows.length === 0 ? 0 : 1,
+        }}
+      >
         <div
           style={{
-            height: rowVirtualizer.getTotalSize(),
             position: 'relative',
             width: table.getTotalSize(),
           }}
@@ -212,11 +220,11 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       </div>
 
       {table.getRowModel().rows.length === 0 && (
-        <div className="d-flex flex-column align-items-center text-muted py-4">
+        <div className="d-flex flex-column justify-content-center align-items-center text-muted py-4 flex-grow-1">
           <i className="fa fa-search fa-2x mb-2"></i>
           <p>No students found matching your search criteria.</p>
         </div>
       )}
-    </>
+    </div>
   );
 }
