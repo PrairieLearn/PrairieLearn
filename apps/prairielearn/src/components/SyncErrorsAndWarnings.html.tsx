@@ -1,10 +1,6 @@
 import { ansiToHtml } from '../lib/chalk.js';
-import {
-  type Assessment,
-  type Course,
-  type CourseInstance,
-  type Question,
-} from '../lib/db-types.js';
+import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
+import { type Assessment, type Question } from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
   authz_data,
@@ -12,7 +8,7 @@ export function CourseSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  course: Course;
+  course: StaffCourse;
   urlPrefix: string;
 }) {
   return (
@@ -35,7 +31,7 @@ export function QuestionSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   question: Question;
-  course: Course;
+  course: StaffCourse;
   urlPrefix: string;
 }) {
   return (
@@ -57,8 +53,8 @@ export function CourseInstanceSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  courseInstance: CourseInstance;
-  course: Course;
+  courseInstance: StaffCourseInstance;
+  course: StaffCourse;
   urlPrefix: string;
 }) {
   return (
@@ -82,8 +78,8 @@ export function AssessmentSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   assessment: Assessment;
-  courseInstance: CourseInstance;
-  course: Course;
+  courseInstance: StaffCourseInstance;
+  course: StaffCourse;
   urlPrefix: string;
 }) {
   return (
