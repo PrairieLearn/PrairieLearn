@@ -93,7 +93,8 @@ const minimalStaffUser: StaffUser = {
   user_id: '4',
 };
 
-// StudentUser omits uin
+// StudentUser omits uin and email. We're building this type to reflect
+// information about one student that should be available to other students.
 const minimalStudentUser: StudentUser = {
   email: 'a@b.com',
   institution_id: '2',
