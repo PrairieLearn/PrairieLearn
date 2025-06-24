@@ -128,7 +128,12 @@ export function PageLayout({
             class="${clsx(
               'app-container',
               sideNavEnabled && 'side-nav-enabled',
+              // Collapsed state for wider viewports (768px and above).
+              // Persisted in the user session.
               !sideNavExpanded && 'collapsed',
+              // Separate collapsed state for narrower viewports (768px and below).
+              // Not persisted.
+              'mobile-collapsed',
             )}"
           >
             <div class="app-top-nav">
@@ -138,6 +143,7 @@ export function PageLayout({
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
                 isInPageLayout: true,
+                sideNavEnabled,
               })}
             </div>
             ${sideNavEnabled

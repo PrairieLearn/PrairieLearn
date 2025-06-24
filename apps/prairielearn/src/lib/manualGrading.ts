@@ -668,6 +668,7 @@ export async function updateInstanceQuestionScore(
         true, // allow_decrease
       ]);
 
+      // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 

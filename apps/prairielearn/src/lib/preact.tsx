@@ -1,3 +1,4 @@
+import { isFragment } from 'preact/compat';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -53,14 +54,30 @@ export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
   if (typeof Component !== 'function') {
     throw new Error('hydrate expects a Preact component');
   }
+  if (isFragment(content)) {
+    throw new Error('Cannot render a fragment for hydration.');
+  }
 
   // Note that we don't use `Component.name` here because it can be minified or mangled.
   const componentName = nameOverride ?? Component.displayName;
-  if (!componentName || componentName === 'm') {
-    throw new Error(
-      'Component does not have a displayName -- provide a nameOverride for the component, or give it a displayName.',
+  if (!componentName) {
+    // This is only defined in development, not in production when the function name is minified.
+    const componentDevName = Component.name || 'UnknownComponent';
+    throw new AugmentedError(
+      'Component does not have a displayName or nameOverride, which is required for hydration.',
+      {
+        info: html`
+          <div>
+            <p>Make sure to add a displayName to the component:</p>
+            <pre><code>export const ${componentDevName} = ...;
+// Add this line:
+${componentDevName}.displayName = '${componentDevName}';</code></pre>
+          </div>
+        `,
+      },
     );
   }
+
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
