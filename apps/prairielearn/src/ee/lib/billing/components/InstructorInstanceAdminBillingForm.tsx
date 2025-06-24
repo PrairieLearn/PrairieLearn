@@ -124,10 +124,11 @@ export function InstructorInstanceAdminBillingForm({
   institutionPlanGrants,
   courseInstancePlanGrants,
 }: InstructorInstanceAdminBillingFormProps) {
-  const [basicPlanEnabled, setBasicPlanEnabled] = useState(initialRequiredPlans.includes('basic'));
-  const [computePlanEnabled, setComputePlanEnabled] = useState(
-    initialRequiredPlans.includes('compute'),
-  );
+  const initialBasicPlanEnabled = initialRequiredPlans.includes('basic');
+  const initialComputePlanEnabled = initialRequiredPlans.includes('compute');
+
+  const [basicPlanEnabled, setBasicPlanEnabled] = useState(initialBasicPlanEnabled);
+  const [computePlanEnabled, setComputePlanEnabled] = useState(initialComputePlanEnabled);
 
   const requiredPlans: PlanName[] = [];
   if (basicPlanEnabled) requiredPlans.push('basic');
@@ -149,6 +150,13 @@ export function InstructorInstanceAdminBillingForm({
     enrollmentCount,
     enrollmentLimit,
   });
+
+  const showEnableAlert =
+    (!initialBasicPlanEnabled && basicPlanEnabled) ||
+    (!initialComputePlanEnabled && computePlanEnabled);
+  console.log('showEnableAlert', showEnableAlert);
+  console.log('studentBillingEnabled', studentBillingEnabled);
+  console.log('computeEnabled', computeEnabled);
 
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
@@ -245,16 +253,14 @@ export function InstructorInstanceAdminBillingForm({
       </div>
 
       {/* TODO: something should be showing this. But what/when? */}
-      <div
-        class="alert alert-warning js-student-billing-warning"
-        data-student-billing-enabled={studentBillingEnabled}
-        hidden
-      >
-        Any students currently enrolled in your course will lose access until they have paid for the
-        above features. If your course is currently in session, you should carefully consider the
-        impact of enabling student billing. Before proceeding, you should communicate this change to
-        your students.
-      </div>
+      {showEnableAlert && (
+        <div class="alert alert-warning js-student-billing-warning">
+          Any students currently enrolled in your course will lose access until they have paid for
+          the above features. If your course is currently in session, you should carefully consider
+          the impact of enabling student billing. Before proceeding, you should communicate this
+          change to your students.
+        </div>
+      )}
 
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <button type="submit" class="btn btn-primary" disabled={!editable}>
