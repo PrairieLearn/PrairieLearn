@@ -156,6 +156,9 @@ export function InstructorInstanceAdminBillingForm({
   const showEnableAlert =
     (studentBillingEnabled && studentBillingDidChange) || (computeEnabled && computeDidChange);
 
+  const showEnableAlert =
+    (studentBillingEnabled && studentBillingDidChange) || (computeEnabled && computeDidChange);
+
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
 
@@ -250,9 +253,8 @@ export function InstructorInstanceAdminBillingForm({
         {computeAlert && <Alert {...computeAlert} />}
       </div>
 
-      {/* TODO: something should be showing this. But what/when? */}
       {showEnableAlert && (
-        <div class="alert alert-warning js-student-billing-warning">
+        <div class="alert alert-warning" role="alert">
           Any students currently enrolled in your course will lose access until they have paid for
           the above features. If your course is currently in session, you should carefully consider
           the impact of enabling student billing. Before proceeding, you should communicate this
