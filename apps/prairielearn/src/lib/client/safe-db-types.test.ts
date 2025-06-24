@@ -21,7 +21,7 @@ const minimalStaffCourse: StaffCourse = {
   branch: 'main',
   commit_hash: null,
   course_instance_enrollment_limit: null,
-  created_at: new Date().toISOString(),
+  created_at: new Date(),
   deleted_at: null,
   display_timezone: 'UTC',
   example_course: false,
@@ -96,7 +96,6 @@ const minimalStaffUser: StaffUser = {
 // StudentUser omits uin and email. We're building this type to reflect
 // information about one student that should be available to other students.
 const minimalStudentUser: StudentUser = {
-  email: 'a@b.com',
   institution_id: '2',
   name: 'Test User',
   uid: 'u123@example.com',
@@ -107,18 +106,13 @@ describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
-    const expected = { ...minimalStaffCourse, created_at: new Date(minimalStaffCourse.created_at) };
-    expect(parsed).toMatchObject(expected);
+    expect(parsed).toMatchObject(minimalStaffCourse);
   });
 
   it('parses valid StudentCourse and drops extra fields', () => {
     const parsed = StudentCourseSchema.parse({ ...minimalStudentCourse, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
-    const expected = {
-      ...minimalStudentCourse,
-      created_at: new Date(minimalStudentCourse.created_at),
-    };
-    expect(parsed).toMatchObject(expected);
+    expect(parsed).toMatchObject(minimalStudentCourse);
   });
 
   it('parses valid StaffCourseInstance and drops extra fields', () => {

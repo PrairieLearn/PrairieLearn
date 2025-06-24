@@ -49,5 +49,5 @@ export const StaffUserSchema = UserSchema.omit({
 });
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 
-export const StudentUserSchema = StaffUserSchema.omit({ uin: true });
+export const StudentUserSchema = StaffUserSchema.omit({ email: true, uin: true });
 export type StudentUser = z.infer<typeof StudentUserSchema>;
