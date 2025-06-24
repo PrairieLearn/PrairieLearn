@@ -583,9 +583,9 @@ An assessment without real-time grading will not show any score information duri
 
 ??? note
 
-    Submissions will still be parsed and in particular when students click the "Save" button, they will be informed of invalid submissions. This includes any pre-processing of content associated to individual elements (e.g., checking for blank answers, or checking if numeric inputs have numeric values), as well as [question-specific custom parse functionality](../question/server.md#step-4-parse). As usual, invalid submissions do not count towards limited attempts.
+    When real-time grading is disabled, submissions will still be parsed, and students will be informed of invalid submissions when they click the "Save" button. This includes any element-specific validation (e.g., checking for blank answers, or checking if numeric inputs have numeric values), as well as [question-specific custom parse functionality](../question/server.md#step-4-parse). As usual, invalid submissions do not count towards limited attempts.
 
-    Students will not be prevented from completing the test with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission. However, invalid submissions will not trigger any auto-grading process, and will by default cause the student to get a zero in the whole question (even if there are elements in the submission with valid answers). Manual grading is still available for these submissions.
+    Students will not be prevented from completing the assessment with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission. However, invalid submissions will not trigger any auto-grading process, and will by default cause the student to get a zero on the whole question (even if there are elements in the submission with valid answers). Manual grading is still available for these submissions.
 
 Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
 
