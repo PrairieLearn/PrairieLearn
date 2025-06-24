@@ -36,6 +36,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
+    share_source_publicly: courseInstance.shareSourcePublicly || false,
   };
 }
 

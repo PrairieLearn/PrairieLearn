@@ -36,7 +36,7 @@ $(() => {
 
 function resetInstructorGradingPanel() {
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
-    let clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
+    const clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
       container: modal,
     });
     clipboard.on('success', (e) => {

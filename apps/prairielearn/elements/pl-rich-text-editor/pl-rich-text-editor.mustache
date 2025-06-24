@@ -1,6 +1,7 @@
 <script>
 $(function() {
-    var rte = window.PLRTE('{{editor_uuid}}');
+  // Function is async, but there's no reason to await here.
+  window.PLRTE('{{editor_uuid}}');
 });
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"

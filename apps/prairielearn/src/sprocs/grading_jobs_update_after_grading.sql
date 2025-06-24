@@ -112,6 +112,7 @@ BEGIN
     UPDATE submissions
     SET
         graded_at = now(),
+        modified_at = now(),
         gradable = new_gradable,
         broken = new_broken,
         params = COALESCE(new_params, params),
@@ -128,7 +129,8 @@ BEGIN
     UPDATE variants AS v
     SET
         params = COALESCE(new_params, params),
-        true_answer = COALESCE(new_true_answer, true_answer)
+        true_answer = COALESCE(new_true_answer, true_answer),
+        modified_at = now()
     WHERE v.id = variant_id;
 
     UPDATE grading_jobs

@@ -1,8 +1,8 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -25,6 +25,7 @@ import type {
   GroupRoleJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -101,10 +102,11 @@ async function findSyncedUndeletedAssessment(tid) {
 }
 
 describe('Assessment syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('allows nesting of assessments in subfolders', async () => {
     const courseData = util.getCourseData();
@@ -1801,11 +1803,13 @@ describe('Assessment syncing', () => {
     );
   });
 
-  describe('Test validating shared quesitons on sync', () => {
-    before('Temporarily enable validation of shared questions', () => {
+  describe('Test validating shared questions on sync', () => {
+    beforeAll(() => {
+      // Temporarily enable validation of shared questions
       config.checkSharingOnSync = true;
     });
-    after('Disable again for other tests', () => {
+    afterAll(() => {
+      // Disable again for other tests
       config.checkSharingOnSync = false;
     });
 
@@ -2302,7 +2306,6 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('fail');
     assert.isOk(syncedData.assessment.sync_errors);
-    console.log(syncedData.assessment.sync_errors);
     assert.match(
       syncedData.assessment?.sync_errors,
       /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
@@ -2311,11 +2314,11 @@ describe('Assessment syncing', () => {
 
   describe('exam UUID validation', () => {
     let originalCheckAccessRulesExamUuid: boolean;
-    before(() => {
+    beforeAll(() => {
       originalCheckAccessRulesExamUuid = config.checkAccessRulesExamUuid;
       config.checkAccessRulesExamUuid = true;
     });
-    after(() => {
+    afterAll(() => {
       config.checkAccessRulesExamUuid = originalCheckAccessRulesExamUuid;
     });
 
@@ -2791,5 +2794,48 @@ describe('Assessment syncing', () => {
       comment: 'alternative question comment',
       comment2: 'alternative question comment 2',
     });
+  });
+
+  it('records a warning for UIDs containing commas or spaces', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess = [
+      {
+        startDate: '2024-01-01T00:00:00',
+        endDate: '3024-01-31T00:00:00',
+        uids: ['foo@example.com,bar@example.com', 'biz@example.com baz@example.com'],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['testAssessment'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === 'testAssessment');
+    assert.isOk(syncedAssessment);
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected whitespace: "biz@example.com baz@example.com"/,
+    );
+    assert.match(
+      syncedAssessment?.sync_warnings,
+      /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
+    );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+      util.ASSESSMENT_ID
+    ].shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedAssessments = await util.dumpTable('assessments');
+    const syncedAssessment = syncedAssessments.find((a) => a.tid === util.ASSESSMENT_ID);
+    assert.isOk(syncedAssessment);
+    assert.match(syncedAssessment?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

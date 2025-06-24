@@ -417,27 +417,34 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
 
-    # Get raw correct answer
-    a_tru = data["correct_answers"][name]
-
-    # Parse correct answer based on type
-    if isinstance(a_tru, str):
-        a_tru = psu.convert_string_to_sympy(
-            a_tru,
-            variables,
-            allow_complex=allow_complex,
-            allow_trig_functions=allow_trig,
-            custom_functions=custom_functions,
-        )
-    else:
-        a_tru = psu.json_to_sympy(
-            a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
-        )
-
-    # Substitute in imaginary unit symbol
-    a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
-
     result = data["test_type"]
+    a_tru_str = ""
+
+    if result in ["correct", "incorrect"]:
+        if name not in data["correct_answers"]:
+            # This element cannot test itself. Defer the generation of test inputs to server.py
+            return
+
+        # Get raw correct answer
+        a_tru = data["correct_answers"][name]
+
+        # Parse correct answer based on type
+        if isinstance(a_tru, str):
+            a_tru = psu.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru = psu.json_to_sympy(
+                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+            )
+
+        # Substitute in imaginary unit symbol
+        a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
+
     if result == "correct":
         correct_answers = [
             a_tru_str,

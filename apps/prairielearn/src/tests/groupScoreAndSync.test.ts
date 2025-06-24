@@ -1,7 +1,7 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -25,20 +25,21 @@ const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
 
 describe('assessment instance group synchronization test', function () {
-  this.timeout(10000);
-
   const storedConfig: Record<string, any> = {};
-  before('store authenticated user', () => {
+
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
   });
-  after('unset authenticated user', () => {
+
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 
-  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before(TEST_COURSE_PATH));
+
+  afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
       const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
@@ -238,12 +239,11 @@ describe('assessment instance group synchronization test', function () {
     });
   });
   describe('7. check Score for another student', function () {
-    it('should be able to switch user we generated', function (callback) {
+    it('should be able to switch user we generated', function () {
       const student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
-      callback(null);
     });
     it('should load assessment page successfully', async () => {
       const res = await fetch(locals.assessmentUrl);

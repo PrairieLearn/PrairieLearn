@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { MemoryStore } from './memory-store.js';
 import { loadSession, makeSession } from './session.js';

@@ -1,16 +1,23 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
+import { html, joinHtml } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
-  InstanceQuestionRow,
+  InstanceQuestionRowWithAIGradingStats,
   InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
+type InstanceQuestionRow = InstanceQuestionRowWithAIGradingStats;
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
+
+declare global {
+  interface Window {
+    gradersList: () => any;
+    rubricItemsList: () => any;
+  }
+}
 
 onDocumentReady(() => {
   const {
@@ -20,14 +27,43 @@ onDocumentReady(() => {
     groupWork,
     maxAutoPoints,
     aiGradingEnabled,
-    courseStaff,
+    aiGradingMode,
     csrfToken,
-    aiGradingUrl,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
   });
+
+  window.gradersList = function () {
+    const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+    const graders = data.flatMap((row) =>
+      (row.ai_grading_status !== 'None'
+        ? [generateAiGraderName(row.ai_grading_status)]
+        : []
+      ).concat(row.last_human_grader ? [row.last_human_grader] : []),
+    );
+    const aiGraders = graders.filter(
+      (value) =>
+        value === generateAiGraderName('LatestRubric') ||
+        value === generateAiGraderName('OutdatedRubric'),
+    );
+    aiGraders.sort();
+    const humanGraders = graders.filter(
+      (value) =>
+        value !== generateAiGraderName('LatestRubric') &&
+        value !== generateAiGraderName('OutdatedRubric'),
+    );
+    humanGraders.sort();
+    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
+  };
+
+  window.rubricItemsList = function () {
+    const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+    const rubricItems = data.flatMap((row) => row.rubric_difference ?? []);
+    rubricItems.sort((a, b) => a.number - b.number);
+    return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
+  };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
@@ -56,25 +92,21 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
+    // The way that `bootstrap-table` applies options over defaults is bad: when combining
+    // arrays, it treats them as objects with keys and merges them. So, if the default
+    // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
+    //
+    // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
+    // we put a dummy element at the end of the array. This won't be rendered, as any button
+    // keys that aren't recognized are silently skipped.
+    //
+    // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'not-a-real-button'],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      aiGrade: {
-        render: aiGradingEnabled,
-        attributes: {
-          id: 'js-ai-grade-button',
-          title: 'AI grading',
-        },
-        html: html`
-          <a class="btn btn-secondary" href="${aiGradingUrl}">
-            <i class="fa fa-pen" aria-hidden="true"></i>
-            AI Grading
-          </a>
-        `.toString(),
-      },
       showStudentInfo: {
         text: 'Show student info',
         icon: 'fa-eye',
@@ -90,12 +122,6 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
-      },
-      status: {
-        text: 'Tag for grading',
-        icon: 'fa-tags',
-        render: hasCourseInstancePermissionEdit,
-        html: () => gradingTagDropdown(courseStaff),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -209,6 +235,7 @@ onDocumentReady(() => {
           title: 'Assigned grader',
           filterControl: 'select',
           formatter: (_value: string, row: InstanceQuestionRow) => row.assigned_grader_name || '—',
+          visible: !aiGradingMode,
         },
         {
           field: 'auto_points',
@@ -264,35 +291,195 @@ onDocumentReady(() => {
           sortable: true,
           formatter: (score: number | null, row: InstanceQuestionRow) =>
             scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
+          visible: !aiGradingMode,
         },
         {
           field: 'last_grader',
           title: 'Graded by',
+          visible: !aiGradingMode,
           filterControl: 'select',
+          filterCustomSearch: (text: string, value: string) => {
+            if (text === generateAiGraderName().toLowerCase()) {
+              return value.includes('js-custom-search-ai-grading');
+            }
+            return null;
+          },
           formatter: (value: string, row: InstanceQuestionRow) =>
-            value ? row.last_grader_name : '&mdash;',
+            value
+              ? row.is_ai_graded
+                ? html`
+                    <span
+                      class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
+                    >
+                      ${generateAiGraderName()}
+                    </span>
+                  `.toString()
+                : row.last_grader_name
+              : '&mdash;',
         },
         aiGradingEnabled
           ? {
-              field: 'is_ai_graded',
-              title: 'AI Graded',
+              field: 'ai_graded',
+              title: 'Graded by',
+              visible: aiGradingMode,
               filterControl: 'select',
-              visible: aiGradingEnabled,
-              formatter: (value: boolean, row: InstanceQuestionRow) =>
-                row.is_ai_graded ? 'Yes' : 'No',
+              formatter: (value: boolean, row: InstanceQuestionRow) => {
+                const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
+
+                return html`
+                  ${row.ai_grading_status !== 'None'
+                    ? html`
+                        <span
+                          class="badge rounded-pill text-bg-light border ${row.ai_grading_status ===
+                            'Graded' || row.ai_grading_status === 'LatestRubric'
+                            ? 'js-custom-search-ai-grading-latest-rubric'
+                            : 'js-custom-search-ai-grading-nonlatest-rubric'}"
+                        >
+                          ${generateAiGraderName(row.ai_grading_status)}
+                        </span>
+                      `
+                    : ''}
+                  ${showPlus ? ' + ' : ''}
+                  ${row.last_human_grader ? html`<span>${row.last_human_grader}</span>` : ''}
+                `.toString();
+              },
+              filterData: 'func:gradersList',
+              filterCustomSearch: (text: string, value: string) => {
+                if (text === generateAiGraderName('LatestRubric').toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading-latest-rubric');
+                } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else {
+                  return value.toLowerCase().includes(text);
+                }
+              },
+            }
+          : null,
+        aiGradingEnabled
+          ? {
+              field: 'rubric_difference',
+              title: 'AI agreement',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              formatter: (_value: unknown, row: InstanceQuestionRow) => {
+                if (row.point_difference === null) {
+                  // missing grade from human and/or AI
+                  return html`&mdash;`.toString();
+                }
+
+                if (row.rubric_difference === null) {
+                  if (!row.point_difference) {
+                    return html`<i class="bi bi-check-square-fill text-success"></i>`.toString();
+                  } else {
+                    const prefix = row.point_difference < 0 ? '' : '+';
+                    return html`<span class="text-danger">
+                      <i class="bi bi-x-square-fill"></i>
+                      ${prefix}${formatPoints(row.point_difference)}
+                    </span>`.toString();
+                  }
+                }
+
+                if (row.rubric_difference.length === 0) {
+                  return html`<i class="bi bi-check-square-fill text-success"></i>`.toString();
+                }
+
+                return joinHtml(
+                  row.rubric_difference.map(
+                    (item) =>
+                      html`<div>
+                        ${item.false_positive
+                          ? html`<i class="bi bi-plus-square-fill text-danger"></i>`
+                          : html`<i class="bi bi-dash-square-fill text-danger"></i>`}
+                        <span>${item.description}</span>
+                      </div>`,
+                  ),
+                ).toString();
+              },
+              filterData: 'func:rubricItemsList',
+              filterCustomSearch: (text: string, value: string) =>
+                value.toLowerCase().includes(html`<span>${text}</span>`.toString()),
+              sortable: true,
             }
           : null,
       ].filter(Boolean),
     ],
+    customSort: (sortName: string, sortOrder: string, data: InstanceQuestionRow[]) => {
+      const order = sortOrder === 'desc' ? -1 : 1;
+      if (sortName === 'rubric_difference') {
+        data.sort(function (a, b) {
+          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
+          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          if (a_diff === null && b_diff === null) {
+            // Can't compare if both are null
+            return 0;
+          } else if (a_diff !== null && b_diff !== null) {
+            // Actually sorting based on accuracy
+            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
+            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            if (
+              a_rubric_diff !== null &&
+              b_rubric_diff !== null &&
+              a_rubric_diff !== b_rubric_diff
+            ) {
+              // Prioritize number of disagreeing items
+              return (a_rubric_diff - b_rubric_diff) * order;
+            } else {
+              // Otherwise sort by point difference
+              return (a_diff - b_diff) * order;
+            }
+          } else if (a_diff !== null) {
+            // Make b appear in the end regardless of sort order
+            return -1;
+          } else {
+            // Make a appear in the end regardless of sort order
+            return 1;
+          }
+        });
+      } else {
+        (data as any[]).sort(function (a, b) {
+          if (a[sortName] < b[sortName]) {
+            return order * -1;
+          } else if (a[sortName] > b[sortName]) {
+            return order;
+          } else {
+            return 0;
+          }
+        });
+      }
+    },
   });
 });
 
+function generateAiGraderName(
+  ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
+): string {
+  return (
+    'AI' +
+    (ai_grading_status === undefined ||
+    ai_grading_status === 'Graded' ||
+    ai_grading_status === 'LatestRubric'
+      ? ''
+      : ' (outdated)')
+  );
+}
+
 async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
+  const formData = new FormData(this, e.submitter);
+
+  // Access specific values from the form data (or other fields)
+  const action = formData.get('__action');
+  const batchAction = formData.get('batch_action');
+
+  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+    // We'll handle this with a normal form submission since it redirects to another page.
+    return;
+  }
+
   e.preventDefault();
 
   const postBody = new URLSearchParams(
     // https://github.com/microsoft/TypeScript/issues/30584
-    new FormData(this, e.submitter) as any,
+    formData as any,
   );
 
   const response = await fetch(this.action, { method: 'POST', body: postBody }).catch(
@@ -324,69 +511,6 @@ function updatePointsPopoverHandlers(this: Element) {
     form.removeEventListener('submit', pointsFormEventListener);
     form.addEventListener('submit', pointsFormEventListener);
   });
-}
-
-function gradingTagDropdown(courseStaff: User[]) {
-  return html`
-    <div class="dropdown btn-group">
-      <button
-        type="button"
-        class="btn btn-secondary dropdown-toggle grading-tag-button"
-        data-bs-toggle="dropdown"
-        name="status"
-        disabled
-      >
-        <i class="fas fa-tags"></i> Tag for grading
-      </button>
-      <div class="dropdown-menu dropdown-menu-end">
-        <div class="dropdown-header">Assign for grading</div>
-        ${courseStaff?.map(
-          (grader) => html`
-            <button
-              class="dropdown-item"
-              type="submit"
-              name="batch_action_data"
-              value="${JSON.stringify({
-                requires_manual_grading: true,
-                assigned_grader: grader.user_id,
-              })}"
-            >
-              <i class="fas fa-user-tag"></i>
-              Assign to: ${grader.name || ''} (${grader.uid})
-            </button>
-          `,
-        )}
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ assigned_grader: null })}"
-        >
-          <i class="fas fa-user-slash"></i>
-          Remove grader assignment
-        </button>
-        <div class="dropdown-divider"></div>
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ requires_manual_grading: true })}"
-        >
-          <i class="fas fa-tag"></i>
-          Tag as required grading
-        </button>
-        <button
-          class="dropdown-item"
-          type="submit"
-          name="batch_action_data"
-          value="${JSON.stringify({ requires_manual_grading: false })}"
-        >
-          <i class="fas fa-check-square"></i>
-          Tag as graded
-        </button>
-      </div>
-    </div>
-  `.toString();
 }
 
 function updateGradingTagButton() {

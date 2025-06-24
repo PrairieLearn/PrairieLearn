@@ -186,6 +186,8 @@ extra:
   additional_readmes:
     - src: './contrib'
       dest: 'dev-guide/contrib/'
+    - src: './apps/prairielearn/src/migrations/'
+      dest: 'dev-guide/migrations/'
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/PrairieLearn/PrairieLearn
@@ -213,6 +215,7 @@ nav:
           - 'question/index.md'
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Accessibility': 'question/accessibility.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'
       - 'Access control': 'accessControl/index.md'
@@ -240,7 +243,7 @@ nav:
           - 'SymPy': python-reference/prairielearn/sympy_utils.md
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question sharing': 'questionSharing.md'
+      - 'Content sharing': 'contentSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
@@ -253,12 +256,14 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element': schemas/infoElementCore.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
-  - Developer Guide:
-      - developer-guide/index.md
-      - 'Developer guide': 'dev-guide/index.md'
-      - 'Running in Docker with local source': 'installingLocal.md'
-      - 'Running natively': 'installingNative.md'
-      - 'Server configuration': 'configJson.md'
+  - 'Developer Guide':
+      - dev-guide/index.md
+      - 'Running in Docker': dev-guide/installingLocal.md
+      - dev-guide/installingNative.md
+      - 'Quickstart': dev-guide/quickstart.md
+      - dev-guide/guide.md
+      - 'Migrations': 'dev-guide/migrations/'
+      - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
       - 'Code execution': 'codeExecution.md'

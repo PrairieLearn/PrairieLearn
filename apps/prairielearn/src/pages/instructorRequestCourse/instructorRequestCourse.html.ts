@@ -42,7 +42,7 @@ export function RequestCourse({
       type: 'plain',
       page: 'request_course',
     },
-    headContent: [compiledScriptTag('instructorRequestCourseClient.ts')],
+    headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
     content: html`
       <h1 class="visually-hidden">Request a Course</h1>
       ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
@@ -286,21 +286,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               </li>
             </ul>
             <div
-              style="display: none;"
-              class="role-comment role-comment-ta role-comment-admin form-text card"
+              class="d-none role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
+              role="alert"
             >
-              <p class="card-body">
-                <b>A new course instance must be requested by the instructor.</b> Please ask the
-                official course instructor to submit this form.
-              </p>
+              <strong>A new course instance must be requested by the instructor.</strong> Please ask
+              the official course instructor to submit this form.
             </div>
-            <div style="display: none;" class="role-comment role-comment-student form-text card">
-              <p class="card-body">
-                <b>This is the wrong form for you.</b> If you would like to enroll in an existing
-                course, please use the <a href="enroll">form to Enroll in a course</a>. If your
-                course is not listed there, contact your instructor for instructions on how to
-                access your assessments.
-              </p>
+            <div
+              class="d-none role-comment role-comment-student alert alert-warning mt-3 mb-0"
+              role="alert"
+            >
+              <strong>This is the wrong form for you.</strong> Contact your instructor for
+              instructions on how to access your assessments.
             </div>
           </div>
         </div>

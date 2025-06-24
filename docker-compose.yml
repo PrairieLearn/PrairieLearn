@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   pl:
     build:
@@ -7,7 +6,6 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./testCourse:/course
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
       - .:/PrairieLearn

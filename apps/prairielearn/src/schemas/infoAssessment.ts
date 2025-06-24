@@ -331,9 +331,17 @@ export const AssessmentJsonSchema = z
       .default(true),
     requireHonorCode: z
       .boolean()
-      .describe('Requires the student to accept an honor code before starting exam assessments.')
+      .describe(
+        'Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.',
+      )
       .optional()
       .default(true),
+    honorCode: z
+      .string()
+      .describe(
+        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+      )
+      .optional(),
     groupWork: z
       .boolean()
       .describe('Whether the assessment will support group work.')
@@ -362,6 +370,13 @@ export const AssessmentJsonSchema = z
       .describe('Whether students can create groups.')
       .optional()
       .default(false),
+    studentGroupChooseName: z
+      .boolean()
+      .describe(
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.',
+      )
+      .optional()
+      .default(true),
     studentGroupJoin: z
       .boolean()
       .describe('Whether students can join groups.')
@@ -386,7 +401,9 @@ export const AssessmentJsonSchema = z
       .optional(),
     shareSourcePublicly: z
       .boolean()
-      .describe("If true, the assessment's source code is shared publicly.")
+      .describe(
+        "If true, the assessment's JSON configuration and question list are available for others to view and copy.",
+      )
       .optional()
       .default(false),
   })

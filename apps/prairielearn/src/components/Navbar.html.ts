@@ -16,6 +16,7 @@ export function Navbar({
   navbarType,
   marginBottom = true,
   isInPageLayout = false,
+  sideNavEnabled = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
@@ -27,6 +28,10 @@ export function Navbar({
    * Used to ensure that enhanced navigation features are only present on pages that use PageLayout.
    */
   isInPageLayout?: boolean;
+  /**
+   * Indicates if the side nav is enabled for the current page.
+   */
+  sideNavEnabled?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -46,11 +51,18 @@ export function Navbar({
         `
       : ''}
 
-    <div class="container-fluid bg-primary">
-      <a href="#content" class="visually-hidden-focusable d-inline-flex p-2 m-2 text-white">
-        Skip to main content
+    <nav
+      class="container-fluid bg-primary visually-hidden-focusable"
+      aria-label="Skip link and accessibility guide"
+    >
+      <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        class="d-inline-flex p-2 m-2 text-white"
+      >
+        Accessibility guide
       </a>
-    </div>
+    </nav>
 
     ${config.announcementHtml
       ? html`
@@ -63,7 +75,21 @@ export function Navbar({
       : ''}
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
-      <div class="container-fluid">
+      <div class="container-fluid position-relative">
+        ${sideNavEnabled
+          ? html`
+              <button
+                id="side-nav-mobile-toggler"
+                class="navbar-toggler"
+                type="button"
+                aria-expanded="false"
+                aria-label="Toggle side nav"
+                style="height: 40px;"
+              >
+                <span class="navbar-toggler-icon"></span>
+              </button>
+            `
+          : ''}
         <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
@@ -71,16 +97,19 @@ export function Navbar({
           </span>
         </a>
         <button
+          id="course-nav-toggler"
           class="navbar-toggler"
           type="button"
           data-bs-toggle="collapse"
-          data-bs-target=".navbar-collapse"
+          data-bs-target="#course-nav"
+          data-bs-animation="false"
           aria-expanded="false"
           aria-label="Toggle navigation"
+          style="height: 40px;"
         >
-          <span class="navbar-toggler-icon"></span>
+          <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
-        <div id="course-nav" class="collapse navbar-collapse">
+        <div id="course-nav" class="collapse navbar-collapse mobile-collapsed">
           <ul class="nav navbar-nav me-auto" id="main-nav">
             ${NavbarByType({
               resLocals,
@@ -222,7 +251,7 @@ function UserDropdownMenu({
       data-authn-course-instance-role="${authz_data?.authn_course_instance_role}"
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
-      <li class="nav-item dropdown mb-2 mb-md-0 me-2 ${navPage === 'effective' ? 'active' : ''}">
+      <li class="nav-item dropdown mb-2 mb-md-0 ${navPage === 'effective' ? 'active' : ''}">
         <a
           class="nav-link dropdown-toggle"
           id="navbarDropdown"
@@ -451,7 +480,11 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <h6 class="dropdown-header">${headingAuthnViewTypeMenu}</h6>
 
-    <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${instructorLink}"
+      id="navbar-user-view-authn-instructor"
+    >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
@@ -461,12 +494,20 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       </span>
     </a>
 
-    <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${studentLink}"
+      id="navbar-user-view-authn-student"
+    >
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">Student view <span class="badge text-bg-warning">student</span></span>
     </a>
 
-    <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
+    <a
+      class="dropdown-item viewtype-dropdown-item"
+      href="${studentLink}"
+      id="navbar-user-view-authn-student-no-rules"
+    >
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>
@@ -555,12 +596,12 @@ function AuthnOverrides({
     <h6 class="dropdown-header">Effective user</h6>
 
     <form class="dropdown-item-text d-flex flex-nowrap js-effective-uid-form">
-      <label class="visually-hidden" for="effective-uid">UID</label>
       <input
         id="effective-uid"
         type="email"
         placeholder="student@example.com"
         class="form-control form-control-sm me-2 flex-grow-1 js-effective-uid-input"
+        aria-label="UID"
       />
       <button
         type="submit"

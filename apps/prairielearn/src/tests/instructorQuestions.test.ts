@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -60,11 +60,10 @@ const testQuestions = [
   customElement,
 ];
 
-describe('Instructor questions', function () {
-  this.timeout(60000);
+describe('Instructor questions', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   let questionData;
 

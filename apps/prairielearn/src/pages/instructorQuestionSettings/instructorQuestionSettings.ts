@@ -1,9 +1,10 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -11,10 +12,16 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import {
+  ArrayFromStringOrArraySchema,
+  BooleanFromCheckboxSchema,
+  IntegerFromStringOrEmptySchema,
+} from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
+import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   MultiEditor,
@@ -27,6 +34,7 @@ import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -41,7 +49,7 @@ import {
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
@@ -113,10 +121,42 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
-      if (!req.body.qid) {
-        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.qid}`);
-      }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
+      const body = z
+        .object({
+          orig_hash: z.string(),
+          qid: z.string(),
+          title: z.string(),
+          topic: z.string().optional(),
+          tags: ArrayFromStringOrArraySchema.optional(),
+          grading_method: EnumGradingMethodSchema.optional(),
+          single_variant: BooleanFromCheckboxSchema,
+          show_correct_answer: BooleanFromCheckboxSchema,
+          workspace_image: z.string().optional(),
+          workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
+          workspace_home: z.string().optional(),
+          workspace_args: z
+            .string()
+            .transform((s) => shlex.split(s || ''))
+            .optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          // This will not correctly handle any filenames that have a comma in them.
+          // Currently, we do not have any such filenames in prod so we don't think that
+          // escaping commas in individual filenames is necessary.
+          workspace_graded_files: z
+            .string()
+            .transform((s) =>
+              s
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s !== ''),
+            )
+            .optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
+          workspace_environment: z.string().optional(),
+        })
+        .parse(req.body);
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
@@ -127,35 +167,97 @@ router.post(
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
-      const origHash = req.body.orig_hash;
-      questionInfo.title = req.body.title;
-      questionInfo.topic = req.body.topic;
-      questionInfo.tags = run(() => {
-        // If no tags are provided, remove the entire property.
-        if (!req.body.tags) return undefined;
-
-        // Handle multiple and single tags.
-        if (Array.isArray(req.body.tags)) return req.body.tags;
-        return [req.body.tags];
-      });
+      const origHash = body.orig_hash;
+      questionInfo.title = body.title;
+      questionInfo.topic = body.topic;
+      questionInfo.tags = propertyValueWithDefault(
+        questionInfo.tags,
+        body.tags,
+        (val) => !val || val.length === 0,
+      );
 
       questionInfo.gradingMethod = propertyValueWithDefault(
         questionInfo.gradingMethod,
-        req.body.grading_method,
+        body.grading_method,
         'Internal',
       );
 
       questionInfo.singleVariant = propertyValueWithDefault(
         questionInfo.singleVariant,
-        req.body.single_variant === 'on',
+        body.single_variant,
         false,
       );
 
       questionInfo.showCorrectAnswer = propertyValueWithDefault(
         questionInfo.showCorrectAnswer,
-        req.body.show_correct_answer === 'on',
+        body.show_correct_answer,
         true,
       );
+
+      const workspaceOptions = {
+        comment: questionInfo.workspaceOptions?.comment ?? undefined,
+        image: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.image,
+          body.workspace_image?.trim(),
+          '',
+        ),
+        port: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.port,
+          body.workspace_port,
+          null,
+        ),
+        home: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.home,
+          body.workspace_home?.trim(),
+          '',
+        ),
+        args: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.args,
+          body.workspace_args,
+          (v) => !v || v.length === 0,
+        ),
+        rewriteUrl: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.rewriteUrl,
+          body.workspace_rewrite_url,
+          true,
+        ),
+        gradedFiles: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.gradedFiles,
+          body.workspace_graded_files,
+          (v) => !v || v.length === 0,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.enableNetworking,
+          body.workspace_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.workspaceOptions?.environment,
+          JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -208,6 +310,10 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course_short_name: res.locals.course.short_name,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {
