@@ -99,7 +99,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
   });
 
   return (
-    <div class="card d-flex flex-column" style={{ height: '100%' }}>
+    <div class="card d-flex flex-column h-100">
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between">
           <div>Students</div>
@@ -108,7 +108,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
           </div>
         </div>
       </div>
-      <div class="card-body d-flex flex-column" style={{ minHeight: 0 }}>
+      <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row mb-2">
           <div class="col-md-6 col-xl-4 col-10 col-auto">
             <input
@@ -136,7 +136,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
             Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
         </div>
-        <div class="flex-grow-1" style={{ minHeight: 0 }}>
+        <div class="flex-grow-1">
           <StudentsTable table={table} />
         </div>
       </div>

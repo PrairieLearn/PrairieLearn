@@ -68,10 +68,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
   return (
-    <div
-      style={{ position: 'relative', height: '100%', minHeight: 0 }}
-      class="border d-flex flex-column"
-    >
+    <div style={{ position: 'relative' }} class="border d-flex flex-column h-100">
       <div
         ref={parentRef}
         style={{
@@ -82,17 +79,15 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           bottom: 0,
           overflow: 'auto',
           overflowAnchor: 'none',
-          minHeight: 0,
         }}
       >
         <div
           style={{
             position: 'relative',
             width: `max(${table.getTotalSize()}px, 100%)`,
-            minHeight: 0,
           }}
         >
-          <table class="table table-hover mb-0" style={{ tableLayout: 'fixed', minHeight: 0 }}>
+          <table class="table table-hover mb-0" style={{ tableLayout: 'fixed' }}>
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
