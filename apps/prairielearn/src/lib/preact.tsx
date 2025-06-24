@@ -103,7 +103,7 @@ registerReactFragment(${componentName});</code></pre>
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
-      <div data-component={componentName} class="js-react-fragment">
+      <div data-component={componentName} class="js-react-fragment h-100">
         <script
           type="application/json"
           data-component-props
@@ -112,7 +112,7 @@ registerReactFragment(${componentName});</code></pre>
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component-root>
+        <div data-component-root class="h-100">
           <Component {...props} />
         </div>
       </div>
