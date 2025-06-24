@@ -27,8 +27,6 @@ function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
         width: '4px',
         background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'transparent',
         cursor: 'col-resize',
-        userSelect: 'none',
-        touchAction: 'none',
         transition: 'background-color 0.2s',
       }}
       onMouseEnter={(e) => {
