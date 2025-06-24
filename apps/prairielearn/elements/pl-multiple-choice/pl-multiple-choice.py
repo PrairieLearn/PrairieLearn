@@ -38,7 +38,7 @@ class AnswerTuple(NamedTuple):
     correct: bool
     html: str
     feedback: str | None
-    score: float
+    score: float | None
 
 
 SCORE_INCORRECT_DEFAULT = 0.0
@@ -83,18 +83,14 @@ def categorize_options(
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
 
-            default_score = (
-                SCORE_CORRECT_DEFAULT if correct else SCORE_INCORRECT_DEFAULT
-            )
-            score = pl.get_float_attrib(child, "score", default_score)
+            score = pl.get_float_attrib(child, "score", None)
 
-            if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
+            if score is not None and not (
+                SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
+            ):
                 raise ValueError(
                     f"Score {score} is invalid, must be in the range [0.0, 1.0]."
                 )
-
-            if correct and score != SCORE_CORRECT_DEFAULT:
-                raise ValueError("Correct answers must give full credit.")
 
             answer_tuple = AnswerTuple(
                 next(index_counter), correct, child_html, child_feedback, score
@@ -139,7 +135,7 @@ def categorize_options(
                     correct=True,
                     html=text,
                     feedback=None,
-                    score=SCORE_CORRECT_DEFAULT,
+                    score=None,
                 )
             )
 
@@ -150,7 +146,7 @@ def categorize_options(
                     correct=False,
                     html=text,
                     feedback=None,
-                    score=SCORE_INCORRECT_DEFAULT,
+                    score=None,
                 )
             )
 
@@ -217,6 +213,11 @@ def prepare_answers_to_display(
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
+
+    if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
+        raise ValueError(
+            'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'
+        )
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
@@ -326,10 +327,11 @@ def prepare_answers_to_display(
 
     sampled_answers = sampled_correct + sampled_incorrect
 
-    # If 'All of the above' is correct, set all other answers to incorrect with no score.
+    # If 'All of the above' is correct, set all other answers to incorrect.
     if aota is AotaNotaType.CORRECT:
         sampled_answers = [
-            AnswerTuple(a.idx, False, a.html, a.feedback, 0) for a in sampled_answers
+            AnswerTuple(a.idx, False, a.html, a.feedback, a.score)
+            for a in sampled_answers
         ]
 
     # 3. Sort sampled choices based on user preference.
@@ -349,40 +351,42 @@ def prepare_answers_to_display(
     # Add 'All of the above' option after shuffling
     if aota is not AotaNotaType.FALSE:
         aota_text = "All of these" if use_inline_display else "All of the above"
-        aota_default_score = (
-            SCORE_CORRECT_DEFAULT
-            if aota is AotaNotaType.CORRECT
-            else SCORE_INCORRECT_DEFAULT
-        )
         sampled_answers.append(
             AnswerTuple(
                 len_total,
                 aota is AotaNotaType.CORRECT,
                 aota_text,
                 aota_feedback,
-                aota_default_score,
+                None,
             )
         )
 
     # Add 'None of the above' option after shuffling
     if nota is not AotaNotaType.FALSE:
         nota_text = "None of these" if use_inline_display else "None of the above"
-        nota_default_score = (
-            SCORE_CORRECT_DEFAULT
-            if nota is AotaNotaType.CORRECT
-            else SCORE_INCORRECT_DEFAULT
-        )
         sampled_answers.append(
             AnswerTuple(
                 len_total + 1,
                 nota is AotaNotaType.CORRECT,
                 nota_text,
                 nota_feedback,
-                nota_default_score,
+                None,
             )
         )
 
-    return sampled_answers
+    # Set the score for each answer that does not have an explicit score.
+    return [
+        AnswerTuple(
+            a.idx,
+            a.correct,
+            a.html,
+            a.feedback,
+            a.score
+            if a.score is not None
+            else (SCORE_CORRECT_DEFAULT if a.correct else SCORE_INCORRECT_DEFAULT),
+        )
+        for a in sampled_answers
+    ]
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -466,8 +470,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         display_type=get_display_type(element),
     )
 
-    # Write to data. Because 'All of the above' is below all the correct choice(s) when it's
-    # true, the variable correct_answer will save it as correct, and overwriting previous choice(s).
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None
