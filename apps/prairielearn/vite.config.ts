@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
-import { VitePluginNode } from 'vite-plugin-node';
+
+import { VitePluginNode } from '@prairielearn/vite-plugin-express';
 
 export default defineConfig({
   server: {
