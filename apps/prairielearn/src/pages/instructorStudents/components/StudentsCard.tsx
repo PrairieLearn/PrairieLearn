@@ -4,7 +4,6 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type VisibilityState as ColumnVisibilityState,
-  type RowPinningState,
   type SortingState,
   createColumnHelper,
   getCoreRowModel,
@@ -48,7 +47,6 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [rowPinning, setRowPinning] = useState<RowPinningState>({ top: [], bottom: [] });
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
     left: [],
@@ -57,52 +55,17 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
-      columnHelper.display({
-        id: 'Pin',
-        cell: ({ row }) => (
-          <div className="text-center">
-            <button
-              type="button"
-              className="btn btn-sm btn-ghost"
-              onClick={() => row.pin(row.getIsPinned() ? false : 'top', true, true)}
-              title={row.getIsPinned() ? 'Unpin row' : 'Pin row'}
-            >
-              <i
-                className={`bi ${
-                  row.getIsPinned() ? 'bi-pin-angle-fill text-primary' : 'bi-pin-angle'
-                }`}
-              />
-            </button>
-          </div>
-        ),
-        size: 32,
-        enableResizing: false,
-        enableHiding: false,
-        enablePinning: true,
-      }),
       columnHelper.accessor('uid', {
         header: 'UID',
         cell: (info) => info.getValue(),
-        enableSorting: true,
-        size: 200,
-        enableHiding: true,
-        enablePinning: true,
       }),
       columnHelper.accessor('name', {
         header: 'Name',
         cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-        size: 200,
-        enableHiding: true,
-        enablePinning: true,
       }),
       columnHelper.accessor('email', {
         header: 'Email',
         cell: (info) => info.getValue() || '—',
-        enableSorting: true,
-        size: 250,
-        enableHiding: true,
-        enablePinning: true,
       }),
       columnHelper.accessor('created_at', {
         header: 'Enrolled At',
@@ -110,10 +73,6 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
           const date = new Date(info.getValue());
           return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         },
-        enableSorting: true,
-        size: 200,
-        enableHiding: true,
-        enablePinning: true,
       }),
     ],
     [],
@@ -129,7 +88,6 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
       columnFilters,
       globalFilter,
       columnSizing,
-      rowPinning,
       columnVisibility,
       columnPinning,
     },
@@ -137,12 +95,19 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
-    onRowPinningChange: setRowPinning,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    defaultColumn: {
+      minSize: 150,
+      size: 300,
+      maxSize: 500,
+      enableSorting: true,
+      enableHiding: true,
+      enablePinning: true,
+    },
   });
 
   // Sync state to URL
@@ -193,7 +158,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
                       type="button"
                       onClick={() => downloadAsJSON(students, 'students.csv')}
                     >
-                      <i class="bi bi-filetype-csv"></i> All Students
+                      All Students as CSV
                     </button>
                   </li>
                   <li>
@@ -202,7 +167,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
                       type="button"
                       onClick={() => downloadAsJSON(students, 'students.csv')}
                     >
-                      <i class="bi bi-filetype-json"></i> All Students
+                      All Students as JSON
                     </button>
                   </li>
                   <li>
@@ -216,7 +181,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
                         )
                       }
                     >
-                      <i class="bi bi-filetype-csv"></i> Filtered Students
+                      Filtered Students as CSV
                     </button>
                   </li>
                   <li>
@@ -230,7 +195,7 @@ export function StudentsCard({ students }: { students: StudentRow[] }) {
                         )
                       }
                     >
-                      <i class="bi bi-filetype-json"></i> Filtered Students
+                      Filtered Students as JSON
                     </button>
                   </li>
                 </ul>

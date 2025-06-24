@@ -30,7 +30,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
         <button
           type="button"
           className="btn btn-sm btn-ghost ms-2"
-          title={column.getIsPinned() ? 'Unpin column' : 'Pin column'}
+          title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           onClick={() => onTogglePin(column.id)}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -56,7 +56,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
     table.setColumnPinning({ left: newLeft, right: [] });
   };
 
-  const isVisibilityChanged = Object.keys(table.getState().columnVisibility).length > 0;
+  const isVisibilityChanged = Object.values(table.getState().columnVisibility).some((v) => !v);
   const isPinningChanged = (table.getState().columnPinning.left?.length ?? 0) > 0;
   const showResetButton = isVisibilityChanged || isPinningChanged;
 

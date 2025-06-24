@@ -34,15 +34,27 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         ]
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
+  const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
+  const allButLastColumnWidth = headerGroups.reduce((acc, headerGroup) => {
+    return (
+      acc +
+      headerGroup.headers.reduce((acc, header) => {
+        if (header.column.id === lastColumnId) {
+          return acc;
+        }
+        return acc + header.getSize();
+      }, 0)
+    );
+  }, 0);
 
   return (
     <>
       <div ref={parentRef} style={{ overflow: 'auto', overflowAnchor: 'none', maxHeight: '70vh' }}>
         <div
           style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
+            height: rowVirtualizer.getTotalSize(),
             position: 'relative',
-            width: '100%',
+            width: table.getTotalSize(),
           }}
         >
           <table
@@ -55,7 +67,10 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                   {headerGroup.headers.map((header) => {
                     const isPinned = header.column.getIsPinned();
                     const style: JSX.CSSProperties = {
-                      width: header.getSize(),
+                      width:
+                        header.column.id === lastColumnId
+                          ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${header.getSize()}px)`
+                          : header.getSize(),
                       position: 'sticky',
                       top: 0,
                       background: 'var(--bs-body-bg)',
@@ -87,7 +102,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             ? null
                             : flexRender(header.column.columnDef.header, header.getContext())}
                           {header.column.getCanSort() && (
-                            <span className="ms-1">
+                            <span className="ms-2">
                               <SortIcon sortMethod={header.column.getIsSorted() || null} />
                             </span>
                           )}
@@ -145,7 +160,16 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       <td
                         key={cell.id}
                         style={{
-                          width: cell.column.getSize(),
+                          width:
+                            // If the cell is the last column, use whichever is larger:
+                            // 1. The remaining space
+                            // 2. The column width
+                            cell.column.id === lastColumnId
+                              ? // 2px is the width of the table border
+                                // 32px is the width of the card body padding
+                                // 24px is the width of the card padding
+                                `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                              : cell.column.getSize(),
                           position: 'sticky',
                           left: cell.column.getStart(),
                           whiteSpace: 'nowrap',
@@ -156,19 +180,24 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
-                    {row.getCenterVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        style={{
-                          width: cell.column.getSize(),
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                    {row.getCenterVisibleCells().map((cell) => {
+                      return (
+                        <td
+                          key={cell.id}
+                          style={{
+                            width:
+                              cell.column.id === lastColumnId
+                                ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                                : cell.column.getSize(),
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
