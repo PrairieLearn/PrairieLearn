@@ -27,7 +27,7 @@ export function DownloadButton({
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
-        class="btn btn-outline-light btn-sm dropdown-toggle"
+        class="btn btn-light btn-sm dropdown-toggle"
       >
         <i aria-hidden="true" class="px-2 fa fa-download"></i>
         Download
