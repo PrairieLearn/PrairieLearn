@@ -39,7 +39,14 @@ export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
 });
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
-export const StaffUserSchema = UserSchema.omit({ stripe_customer_id: true });
+export const StaffUserSchema = UserSchema.omit({
+  deleted_at: true,
+  lti_context_id: true,
+  lti_course_instance_id: true,
+  lti_user_id: true,
+  stripe_customer_id: true,
+  terms_accepted_at: true,
+});
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 
 export const StudentUserSchema = StaffUserSchema.omit({ uin: true });
