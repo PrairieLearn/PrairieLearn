@@ -108,12 +108,12 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           2. The column width
                         
                         Widths:
-                          2px - table border
+                          2.5px - table + card border
                           32px - card body padding
                           24px - card padding
                         */
                         header.column.id === lastColumnId
-                          ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${header.getSize()}px)`
+                          ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${header.getSize()}px)`
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
@@ -176,7 +176,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         style={{
                           width:
                             cell.column.id === lastColumnId
-                              ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                              ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
                               : cell.column.getSize(),
                           position: 'sticky',
                           left: cell.column.getStart(),
@@ -195,7 +195,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           style={{
                             width:
                               cell.column.id === lastColumnId
-                                ? `max(calc(100vw - 32px - 24px - 2px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
+                                ? `max(calc(100vw - 32px - 24px - 2.5px - ${allButLastColumnWidth}px), ${cell.column.getSize()}px)`
                                 : cell.column.getSize(),
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
