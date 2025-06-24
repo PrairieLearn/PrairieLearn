@@ -79,7 +79,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   }, 0);
 
   return (
-    <div style={{ height: '70vh' }} class="d-flex border flex-column justify-content-start">
+    <div style={{ height: '65vh' }} class="d-flex border flex-column justify-content-start">
       <div
         ref={parentRef}
         style={{
