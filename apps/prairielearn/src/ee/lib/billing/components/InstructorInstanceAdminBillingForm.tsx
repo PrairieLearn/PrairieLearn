@@ -137,9 +137,11 @@ export function InstructorInstanceAdminBillingForm({
   const {
     studentBillingEnabled,
     studentBillingCanChange,
+    studentBillingDidChange,
     studentBillingAlert,
     computeEnabled,
     computeCanChange,
+    computeDidChange,
     computeAlert,
   } = instructorInstanceAdminBillingState({
     initialRequiredPlans,
@@ -152,8 +154,7 @@ export function InstructorInstanceAdminBillingForm({
   });
 
   const showEnableAlert =
-    (!initialBasicPlanEnabled && basicPlanEnabled) ||
-    (!initialComputePlanEnabled && computePlanEnabled);
+    (studentBillingEnabled && studentBillingDidChange) || (computeEnabled && computeDidChange);
 
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
