@@ -81,6 +81,7 @@ describe('parseAsSortingState', () => {
       ];
       expect(parseAsSortingState.eq(a, b)).toBe(true);
     });
+    // The order of the sort columns matters for multi-column sorting.
     it('returns false for different order in multi-column', () => {
       const a: SortingState = [
         { id: 'col1', desc: false },
