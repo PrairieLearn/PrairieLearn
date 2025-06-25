@@ -11,7 +11,8 @@
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
-    "test:dist": "vitest run --coverage dist/**/*.test.js"
+    "test:dist": "vitest run --coverage dist/**/*.test.js",
+    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.823.0",
@@ -59,6 +60,7 @@
     "@prairielearn/zod": "workspace:^",
     "@pyroscope/nodejs": "^0.4.5",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@tanstack/table-core": "^8.21.3",
     "@trpc/client": "^11.2.0",
     "@trpc/server": "^11.2.0",
     "@types/d3": "^7.4.3",
@@ -144,6 +146,7 @@
     "nodemon": "^3.1.10",
     "notebookjs": "^0.8.3",
     "numeric": "^1.2.6",
+    "nuqs": "^2.4.3",
     "oauth-signature": "^1.5.0",
     "object-hash": "^3.0.0",
     "on-finished": "^2.4.1",
@@ -158,6 +161,7 @@
     "pg": "^8.16.0",
     "popper.js": "^1.16.1",
     "preact": "^10.26.8",
+    "preact-render-to-string": "^6.5.13",
     "prettier": "3.5.3",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.14.0",
