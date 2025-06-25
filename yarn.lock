@@ -8437,24 +8437,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cropper@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "cropper@npm:4.1.0"
-  dependencies:
-    cropperjs: "npm:^1.5.6"
-  peerDependencies:
-    jquery: ">=1.9.1"
-  checksum: 10c0/cd976085b71f90027d310a74bfb03c4000b0fd0b5754f9509a8d725ba1bdd49110ac281388c0f6c439629e35e300a19c764f44809d88e61466ee8cfb7b131c43
-  languageName: node
-  linkType: hard
-
-"cropperjs@npm:^1.5.6":
-  version: 1.6.2
-  resolution: "cropperjs@npm:1.6.2"
-  checksum: 10c0/5002e0cc3a491ceb8a104b2cb7a7c335a03e109fe590653f3aeefa27ca7115466edae62afc8ba21105bbaad4134583f5057ebbf5e8d843c7b2c1c1f0779630e9
-  languageName: node
-  linkType: hard
-
 "cropperjs@npm:^2.0.0":
   version: 2.0.0
   resolution: "cropperjs@npm:2.0.0"
@@ -14614,7 +14596,6 @@ __metadata:
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^3.2.2"
     "@vitest/eslint-plugin": "npm:^1.2.1"
-    cropper: "npm:^4.1.0"
     dependency-cruiser: "npm:^16.10.2"
     eslint: "npm:^9.28.0"
     eslint-import-resolver-typescript: "npm:^4.4.2"
