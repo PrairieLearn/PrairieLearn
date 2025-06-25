@@ -5,26 +5,27 @@ import debounce from 'debounce';
 import debug from 'debug';
 import type { ConfigEnv, Connect, Plugin, UserConfig, ViteDevServer } from 'vite';
 
-export const debugServer = createDebugger('vite:node-plugin:server');
+export const debugServer = createDebugger('vite:express-plugin:server');
 
 const env: ConfigEnv = { command: 'serve', mode: '' };
 
-const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginNodeConfig> => {
+const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginExpressConfig> => {
+  // Ugly type hack to get the plugin config
   const plugin = server.config.plugins.find((p) => p.name === PLUGIN_NAME) as unknown as {
-    config: (...args: any[]) => UserConfig & { VitePluginNodeConfig: VitePluginNodeConfig };
+    config: (...args: any[]) => UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig };
   };
   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
   let userConfig: UserConfig | null | void = null;
 
   if (typeof plugin.config === 'function') {
-    userConfig = await plugin.config({}, env);
+    userConfig = plugin.config({}, env);
   }
 
   if (userConfig) {
-    return (userConfig as ViteConfig).VitePluginNodeConfig;
+    return (userConfig as ViteConfig).VitePluginExpressConfig;
   }
 
-  console.error('Please setup VitePluginNode in your vite.config.js first');
+  console.error('Please setup VitePluginExpress in your vite.config.ts first');
   exit(1);
 };
 
@@ -32,7 +33,7 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   const config = await getPluginConfig(server);
   const logger = server.config.logger;
 
-  async function _loadApp(config: VitePluginNodeConfig) {
+  async function _loadApp(config: VitePluginExpressConfig) {
     const appModule = await server.ssrLoadModule(config.appPath);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     let app = appModule[config.exportName!];
@@ -64,24 +65,21 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     );
   }
 
-  return async function (
-    req: IncomingMessage,
-    res: ServerResponse,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    next: Connect.NextFunction,
-  ): Promise<void> {
+  return async function (req: IncomingMessage, res: ServerResponse): Promise<void> {
     const app = await _loadApp(config);
-    if (app) {
-      app.use((err: unknown, _req: typeof req, _res: typeof res, next: Connect.NextFunction) => {
-        if (err instanceof Error) {
-          server.ssrFixStacktrace(err);
-        }
-
-        next(err);
-      });
-
-      app(req, res);
+    if (!app) {
+      return;
     }
+
+    app.use((err: unknown, _req: typeof req, _res: typeof res, next: Connect.NextFunction) => {
+      if (err instanceof Error) {
+        server.ssrFixStacktrace(err);
+      }
+
+      next(err);
+    });
+
+    app(req, res);
   };
 };
 
@@ -92,11 +90,11 @@ function createDebugger(ns: string) {
   };
 }
 
-const PLUGIN_NAME = 'vite-plugin-node';
+const PLUGIN_NAME = 'vite-plugin-express';
 
 type InternalModuleFormat = 'amd' | 'cjs' | 'es' | 'iife' | 'system' | 'umd';
 type ModuleFormat = InternalModuleFormat | 'commonjs' | 'esm' | 'module' | 'systemjs';
-interface VitePluginNodeConfig {
+interface VitePluginExpressConfig {
   appPath: string;
   appName?: string;
   initAppOnBoot?: boolean;
@@ -106,11 +104,11 @@ interface VitePluginNodeConfig {
 }
 
 declare interface ViteConfig extends UserConfig {
-  VitePluginNodeConfig: VitePluginNodeConfig;
+  VitePluginExpressConfig: VitePluginExpressConfig;
 }
 
-export function VitePluginNode(cfg: VitePluginNodeConfig): Plugin[] {
-  const config: VitePluginNodeConfig = {
+export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
+  const config: VitePluginExpressConfig = {
     appPath: cfg.appPath,
     appName: cfg.appName ?? 'app',
     exportName: cfg.exportName ?? 'viteNodeApp',
@@ -123,7 +121,7 @@ export function VitePluginNode(cfg: VitePluginNodeConfig): Plugin[] {
     {
       name: PLUGIN_NAME,
       config: () => {
-        const plugincConfig: UserConfig & { VitePluginNodeConfig: VitePluginNodeConfig } = {
+        const plugincConfig: UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig } = {
           build: {
             ssr: config.appPath,
             rollupOptions: {
@@ -136,13 +134,7 @@ export function VitePluginNode(cfg: VitePluginNodeConfig): Plugin[] {
           server: {
             hmr: false,
           },
-          optimizeDeps: {
-            noDiscovery: true,
-            // Vite does not work well with optionnal dependencies,
-            // mark them as ignored for now
-            exclude: ['@swc/core'],
-          },
-          VitePluginNodeConfig: config,
+          VitePluginExpressConfig: config,
         };
 
         return plugincConfig;
