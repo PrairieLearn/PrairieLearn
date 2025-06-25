@@ -40,4 +40,4 @@ export function InstructorCourseAdminTopicsTable({ topics }: { topics: Topic[] }
   );
 }
 
-InstructorCourseAdminTopicsTable.displayName = 'TopicsTable';
+InstructorCourseAdminTopicsTable.displayName = 'InstructorCourseAdminTopicsTable';
