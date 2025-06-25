@@ -84,6 +84,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
 
@@ -111,6 +114,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
@@ -287,6 +293,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true, // Write metadata about the build
   });
 
@@ -307,6 +316,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true,
   });
 

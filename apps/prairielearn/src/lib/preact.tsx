@@ -1,9 +1,11 @@
+import clsx from 'clsx';
+import { isFragment, isValidElement } from 'preact/compat';
 import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { Fragment, type VNode } from '@prairielearn/preact-cjs';
+import { type ComponentChildren, Fragment, type VNode } from '@prairielearn/preact-cjs';
 
 import { renderHtml } from './preact-html.js';
 
@@ -38,43 +40,73 @@ export function renderHtmlDocument(content: VNode) {
   return `<!doctype html>\n${render(content, {}, { pretty: true, jsx: false })}`;
 }
 
+interface HydrateProps {
+  /** The component to hydrate */
+  children: ComponentChildren;
+  /** Optional override for the component's name or displayName */
+  nameOverride?: string;
+  /** Whether to apply full height styles. */
+  fullHeight?: boolean;
+}
+
 /**
- * Renders a Preact component for client-side hydration. All interaactive components will need to be hydrated.
- * This function is intended to be used within a non-interactive Preact component that will be rendered without hydration through `renderHtml`.
- *
- * @param content - A Preact VNode to render to HTML.
- * @param nameOverride - An optional override for the component's name or displayName.
- * @returns A Preact VNode that can be used for client-side hydration.
+ * A component that renders a Preact component for client-side hydration.
+ * All interactive components will need to be hydrated.
+ * This component is intended to be used within a non-interactive Preact component
+ * that will be rendered without hydration through `renderHtml`.
  */
-export function hydrate<T>(content: VNode<T>, nameOverride?: string): VNode {
-  const { type: Component, props } = content;
-  if (typeof Component !== 'function') {
-    throw new Error('hydrate expects a Preact component');
+export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateProps): VNode {
+  if (!isValidElement(children)) {
+    throw new Error('<Hydrate> expects a single Preact component as its child');
   }
 
-  if (!nameOverride && !Component.displayName && !Component.name) {
-    throw new Error(
-      'Component does not have a name or displayName -- provide a nameOverride for the component.',
+  if (isFragment(children)) {
+    throw new Error('<Hydrate> does not support fragments');
+  }
+
+  const content = children as VNode;
+  const { type: Component, props } = content;
+  if (typeof Component !== 'function') {
+    throw new Error('<Hydrate> expects a Preact component');
+  }
+
+  // Note that we don't use `Component.name` here because it can be minified or mangled.
+  const componentName = nameOverride ?? Component.displayName;
+  if (!componentName) {
+    // This is only defined in development, not in production when the function name is minified.
+    const componentDevName = Component.name || 'UnknownComponent';
+    throw new AugmentedError(
+      '<Hydrate> expects a component to have a displayName or nameOverride.',
+      {
+        info: html`
+          <div>
+            <p>Make sure to add a displayName to the component:</p>
+            <pre><code>export const ${componentDevName} = ...;
+// Add this line:
+${componentDevName}.displayName = '${componentDevName}';</code></pre>
+          </div>
+        `,
+      },
     );
   }
-  const componentName = `${nameOverride || Component.name || Component.displayName}`;
+
   const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
     compiledScriptSrc = compiledScriptPath(scriptPath);
   } catch (error) {
     throw new AugmentedError(`Could not find script for component "${componentName}".`, {
-      info: html`<div>
-        Make sure you create a script at <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in the registry:
-        <pre>
-        <code>
-import { ${componentName} } from // ...
+      info: html`
+        <div>
+          Make sure you create a script at
+          <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in
+          the registry:
+          <pre><code>import { ${componentName} } from // ...
 import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
-registerReactFragment(${componentName});
-        </code>
-        <pre>
-      </div> `,
+registerReactFragment(${componentName});</code></pre>
+        </div>
+      `,
       cause: error,
     });
   }
@@ -85,7 +117,10 @@ registerReactFragment(${componentName});
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
-      <div data-component={componentName} class="js-react-fragment">
+      <div
+        data-component={componentName}
+        class={clsx('js-react-fragment', { 'h-100': fullHeight })}
+      >
         <script
           type="application/json"
           data-component-props
@@ -94,7 +129,7 @@ registerReactFragment(${componentName});
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component-root>
+        <div data-component-root class={fullHeight ? 'h-100' : ''}>
           <Component {...props} />
         </div>
       </div>
@@ -111,5 +146,5 @@ registerReactFragment(${componentName});
  */
 export function hydrateHtml<T>(content: VNode<T>): HtmlSafeString {
   // Useful for adding Preact components to existing tagged-template pages.
-  return renderHtml(hydrate(content));
+  return renderHtml(<Hydrate>{content}</Hydrate>);
 }
