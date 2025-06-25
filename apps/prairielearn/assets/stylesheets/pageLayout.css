@@ -264,7 +264,7 @@ body:has(div.app-container) {
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    min-height: calc(100vh - 48px - 8px);
+    min-height: calc(100vh - 40px - 16px); /* Subtract from 100vh to account for the navbar */
     will-change: transform; /* Performance optimization */
   }
 
@@ -279,7 +279,7 @@ body:has(div.app-container) {
     left: 0;
     width: 100%;
     height: fit-content;
-    min-height: calc(100vh - 48px - 8px);
+    min-height: calc(100vh - 40px - 16px); /* Subtract from 100vh to account for the navbar */
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
@@ -302,7 +302,7 @@ body:has(div.app-container) {
   *  either nav is open. */
   .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
-    height: calc(100vh - 48px - 8px);
+    height: calc(100vh - 40px - 16px); /* Subtract from 100vh to account for the navbar */
     overflow-y: hidden;
   }
 
