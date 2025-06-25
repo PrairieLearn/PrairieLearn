@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
 import { formatDate } from '@prairielearn/formatter';
 
@@ -48,6 +48,22 @@ function InstructorStudents({
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus the search input when Ctrl+F is pressed
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
+          searchInputRef.current.focus();
+          event.preventDefault();
+        }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
@@ -135,6 +151,7 @@ function InstructorStudents({
         <div class="d-flex flex-row mb-2">
           <div class="col-xl-4 col-md-6 col-8 col-auto">
             <input
+              ref={searchInputRef}
               type="text"
               class="form-control"
               aria-label="Search by UID, name or email."
