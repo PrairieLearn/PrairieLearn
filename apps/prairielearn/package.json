@@ -60,6 +60,8 @@
     "@prairielearn/zod": "workspace:^",
     "@pyroscope/nodejs": "^0.4.5",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.10",
     "@tanstack/table-core": "^8.21.3",
     "@trpc/client": "^11.2.0",
     "@trpc/server": "^11.2.0",
