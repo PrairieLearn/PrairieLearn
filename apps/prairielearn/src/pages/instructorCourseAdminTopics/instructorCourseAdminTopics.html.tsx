@@ -36,7 +36,10 @@ export function InstructorCourseAdminTopics({
           }}
         />
         <Hydrate>
-          <InstructorCourseAdminTopicsTable topics={topics} />
+          <InstructorCourseAdminTopicsTable
+            topics={topics}
+            hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
+          />
         </Hydrate>
       </>
     ),
