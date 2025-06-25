@@ -50,9 +50,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       res.locals.course = await selectCourseById(result.course_id);
       res.locals.user = UserSchema.parse(res.locals.authn_user);
       res.locals.question = await selectQuestionById(result.question_id);
-    }
-
-    if (result.course_instance_id) {
+    } else if (result.course_instance_id) {
       req.params.course_instance_id = result.course_instance_id;
       await authzCourseOrInstance(req, res);
 
@@ -74,10 +72,10 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
           return;
         }
       }
-    } else if (res.locals.course_id && !publicQuestionEndpoint) {
+    } else if (res.locals.course_id) {
       req.params.course_id = res.locals.course_id;
       await authzCourseOrInstance(req, res);
-    } else if (!publicQuestionEndpoint) {
+    } else {
       throw new Error('Workspace has no course and no course instance!');
     }
 
