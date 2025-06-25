@@ -13,14 +13,14 @@
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
+  "dependencies": {
+    "express": "^4",
+    "vite": "^7.0.0"
+  },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.15.29",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "express": "^4",
-    "vite": "^7.0.0"
   }
 }
