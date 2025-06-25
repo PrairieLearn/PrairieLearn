@@ -52,6 +52,14 @@ export function InstructorCourseAdminTopicsTable({
         <table class="table table-sm table-hover table-striped" aria-label="Topics">
           <thead>
             <tr>
+              {editMode && hasCoursePermissionEdit ? (
+                <>
+                  <th></th>
+                  <th></th>
+                </>
+              ) : (
+                ''
+              )}
               <th>Number</th>
               <th>Name</th>
               <th>Color</th>
@@ -62,6 +70,22 @@ export function InstructorCourseAdminTopicsTable({
             {topics.map(function (topic) {
               return (
                 <tr key={topic.id}>
+                  {editMode && hasCoursePermissionEdit ? (
+                    <>
+                      <td class="align-middle">
+                        <button class="btn btn-sm btn-ghost" type="button">
+                          <i class="fa fa-edit" aria-hidden="true"></i>
+                        </button>
+                      </td>
+                      <td class="align-middle">
+                        <button class="btn btn-sm" type="button">
+                          <i class="fa fa-trash text-danger" aria-hidden="true"></i>
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    ''
+                  )}
                   <td class="align-middle">{topic.number}</td>
                   <td class="align-middle">
                     <TopicBadgeJsx topic={topic} />
