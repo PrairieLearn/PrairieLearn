@@ -1,4 +1,4 @@
-/* global QRCode, io, bootstrap */
+/* global QRCode, io, bootstrap, Cropper */
 
 (() => {
   class PLImageCapture {
@@ -47,6 +47,8 @@
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
+
+      this.createCropRotateListeners();
     }
 
     createExternalCaptureListeners() {
@@ -120,6 +122,18 @@
       });
     }
 
+    createCropRotateListeners() {
+      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+
+      if (!cropRotateButton) {
+        throw new Error('Crop and rotate button not found in image capture element');
+      }
+
+      cropRotateButton.addEventListener('click', () => {
+        this.startCropRotate();
+      });
+    }
+
     /**
      * Show the specified container within the image capture element and hide all others.
      *
@@ -128,7 +142,7 @@
      */
     openContainer(containerName) {
       if (
-        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation'].includes(
+        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation', 'crop-rotate'].includes(
           containerName,
         )
       ) {
@@ -150,10 +164,14 @@
         '.js-local-camera-confirmation-container',
       );
 
+      // Displays an interface for cropping and rotating the captured image.
+      const cropRotateContainer = this.imageCaptureDiv.querySelector('.js-crop-rotate-container');
+
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraConfirmationContainer,
+        cropRotateContainer
       });
 
       // element corresponds to the container element. flex indicates if the container uses a flexbox layout when shown.
@@ -173,6 +191,11 @@
           element: localCameraConfirmationContainer,
           flex: true,
         },
+        {
+          name: 'crop-rotate',
+          element: cropRotateContainer,
+          flex: false,
+        }
       ];
 
       for (const container of containers) {
@@ -360,6 +383,8 @@
         const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
         hiddenCaptureInput.value = dataUrl;
       }
+
+      this.showCropRotateButton();
     }
 
     loadCapturePreviewFromBlob(blob) {
@@ -580,6 +605,33 @@
           );
         }
       }
+    }
+
+    showCropRotateButton() {
+      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+
+      if (!cropRotateButton) {
+        throw new Error('Crop and rotate button not found in image capture element');
+      }
+
+      cropRotateButton.classList.remove('d-none');
+    }
+
+    startCropRotate() {
+      this.openContainer('crop-rotate');
+
+      const image = new Image();
+
+      image.src = this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value;
+      image.alt = 'Captured image';
+
+      console.log('Cropper JS', cropperjs);
+
+      const crop_obj = new cropperjs(image, {
+        container: '.js-cropper-container',
+      });
+
+      console.log('cropper', crop_obj);
     }
   }
 
