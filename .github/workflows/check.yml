@@ -118,6 +118,12 @@ jobs:
           source .venv/bin/activate
           echo PATH=$PATH >> $GITHUB_ENV
 
+      - name: Test venv
+        run: |
+          echo $PATH
+          which python3
+          python3 --version
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
