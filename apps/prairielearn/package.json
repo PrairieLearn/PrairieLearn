@@ -186,6 +186,7 @@
     "streamifier": "^0.1.1",
     "strip-ansi": "^7.1.0",
     "stripe": "^18.2.1",
+    "superjson": "^2.2.2",
     "tablesorter": "^2.32.0",
     "tar": "^7.4.3",
     "three": "0.160.1",
