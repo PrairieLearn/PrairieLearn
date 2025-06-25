@@ -96,7 +96,7 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      const module = await import(`${queriesDir}/${queryFilename}`);
+      const module = await import(/* @vite-ignore */ path.join(queriesDir, queryFilename));
       result = (await module.default(queryParams)) as AdministratorQueryResult;
     } catch (err) {
       logger.error(err);
