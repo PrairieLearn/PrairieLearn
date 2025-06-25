@@ -16,13 +16,13 @@ import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
 import { formatDate } from '@prairielearn/formatter';
 
-import { NuqsAdapter } from '../../lib/client/nuqs.js';
+import { NuqsAdapter, parseAsSortingState } from '../../lib/client/nuqs.js';
 import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { StudentsTable } from './components/StudentsTable.js';
-import { type StudentRow, parseAsSortingState } from './instructorStudents.shared.js';
+import { type StudentRow } from './instructorStudents.shared.js';
 
 const columnHelper = createColumnHelper<StudentRow>();
 
