@@ -112,7 +112,11 @@ jobs:
       - name: Install Python dependencies
         run: |
           make python-deps
+
+      - name: Activate virtualenv
+        run: |
           source .venv/bin/activate
+          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Set up Node
         uses: actions/setup-node@v4
