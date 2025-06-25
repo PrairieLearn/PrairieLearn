@@ -1,19 +1,17 @@
 import { defineConfig } from 'vite';
 
-import { VitePluginNode } from '@prairielearn/vite-plugin-express';
+import { VitePluginExpress } from '@prairielearn/vite-plugin-express';
 
 export default defineConfig({
   server: {
     port: 3000,
   },
   plugins: [
-    ...VitePluginNode({
-      adapter: 'express',
+    ...VitePluginExpress({
       appPath: './src/server.ts',
-      exportName: 'viteNodeApp',
+      exportName: 'viteExpressApp',
       initAppOnBoot: true,
-      tsCompiler: 'esbuild',
-      swcOptions: {},
+      watchFileChanges: true,
     }),
   ],
 });

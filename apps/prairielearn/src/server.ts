@@ -2500,4 +2500,4 @@ if ((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer
     }
   });
 }
-export const viteNodeApp = app;
+export const viteExpressApp = app;
