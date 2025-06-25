@@ -541,10 +541,9 @@ function FileContentPreview({
   }
   if (fileInfo.isPDF) {
     return html`
-      <div class="embed-responsive embed-responsive-4by3">
+      <div class="ratio ratio-4x3">
         <iframe
           src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          class="embed-responsive-item"
         >
           This PDF cannot be displayed.
         </iframe>
