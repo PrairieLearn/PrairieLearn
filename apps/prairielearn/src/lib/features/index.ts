@@ -12,6 +12,8 @@ const featureNames = [
   'ai-question-generation-course-toggle',
   // Can be applied to any context.
   'ai-question-generation',
+  // LTI 1.1. Deprecated so keep scope to course instance, where possible.
+  'lti11',
   // Should only be applied globally.
   'enhanced-navigation-user-toggle',
   // Can be applied to any context.
