@@ -10,17 +10,18 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage"
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "debounce": "^2.2.0",
+    "debug": "^4.4.1",
+    "express": "^4",
+    "vite": "^7.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/debug": "^4.1.12",
     "@types/node": "^22.15.29",
-    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "express": "^4",
-    "vite": "^7.0.0"
   }
 }
