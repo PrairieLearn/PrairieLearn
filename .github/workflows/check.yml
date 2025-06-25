@@ -110,7 +110,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
-        run: make python-deps
+        run: |
+          make python-deps
+          source .venv/bin/activate
 
       - name: Set up Node
         uses: actions/setup-node@v4
