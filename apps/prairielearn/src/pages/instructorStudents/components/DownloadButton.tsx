@@ -1,26 +1,44 @@
 import type { Table } from '@tanstack/react-table';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
+import type { StaffCourse, StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { courseInstanceFilenamePrefix } from '../../../lib/sanitize-name.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
 export function DownloadButton({
   students,
   table,
+  course,
+  courseInstance,
 }: {
   students: StudentRow[];
   table: Table<StudentRow>;
+  course: StaffCourse;
+  courseInstance: StaffCourseInstance;
 }) {
+  const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {
     const rows = students.map((student) => [
-      student.uid,
-      student.name,
-      student.email,
-      student.created_at
-        ? new Date(student.created_at).toISOString().replace('T', ' ').split('.')[0]
+      student.user.uid,
+      student.user.name,
+      student.user.email,
+      student.enrollment.created_at
+        ? new Date(student.enrollment.created_at).toISOString().replace('T', ' ').split('.')[0]
         : '',
     ]);
     downloadAsCSV(['UID', 'Name', 'Email', 'Enrolled At'], rows, filename);
   }
+
+  function downloadStudentsJSON(students: StudentRow[], filename: string): void {
+    const rows = students.map((student) => ({
+      uid: student.user.uid,
+      name: student.user.name,
+      email: student.user.email,
+      enrolled_at: student.enrollment.created_at,
+    }));
+    downloadAsJSON(rows, filename);
+  }
+
   return (
     <div class="btn-group">
       <button
@@ -29,7 +47,7 @@ export function DownloadButton({
         aria-expanded="false"
         class="btn btn-light btn-sm dropdown-toggle"
       >
-        <i aria-hidden="true" class="px-2 fa fa-download"></i>
+        <i aria-hidden="true" class="pe-2 bi bi-download"></i>
         Download
       </button>
       <ul class="dropdown-menu">
@@ -37,7 +55,7 @@ export function DownloadButton({
           <button
             class="dropdown-item"
             type="button"
-            onClick={() => downloadAsJSON(students, 'students.csv')}
+            onClick={() => downloadStudentsCSV(students, `${filenamePrefix}students.csv`)}
           >
             All students as CSV
           </button>
@@ -46,7 +64,7 @@ export function DownloadButton({
           <button
             class="dropdown-item"
             type="button"
-            onClick={() => downloadAsJSON(students, 'students.csv')}
+            onClick={() => downloadStudentsJSON(students, `${filenamePrefix}students.json`)}
           >
             All students as JSON
           </button>
@@ -58,7 +76,7 @@ export function DownloadButton({
             onClick={() =>
               downloadStudentsCSV(
                 table.getFilteredRowModel().rows.map((row) => row.original),
-                'students-current-view.csv',
+                `${filenamePrefix}students_filtered.csv`,
               )
             }
           >
@@ -70,9 +88,9 @@ export function DownloadButton({
             class="dropdown-item"
             type="button"
             onClick={() =>
-              downloadAsJSON(
+              downloadStudentsJSON(
                 table.getFilteredRowModel().rows.map((row) => row.original),
-                'students-current-view.json',
+                `${filenamePrefix}students_filtered.json`,
               )
             }
           >

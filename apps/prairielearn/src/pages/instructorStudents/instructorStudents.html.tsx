@@ -17,6 +17,7 @@ import { useMemo, useState } from 'preact/compat';
 import { formatDate } from '@prairielearn/formatter';
 
 import { NuqsAdapter } from '../../lib/client/nuqs.js';
+import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -29,7 +30,19 @@ const columnHelper = createColumnHelper<StudentRow>();
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
 
-function InstructorStudents({ students, timezone }: { students: StudentRow[]; timezone: string }) {
+interface InstructorStudentsProps {
+  students: StudentRow[];
+  timezone: string;
+  courseInstance: StaffCourseInstance;
+  course: StaffCourse;
+}
+
+function InstructorStudents({
+  students,
+  timezone,
+  courseInstance,
+  course,
+}: InstructorStudentsProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -46,23 +59,25 @@ function InstructorStudents({ students, timezone }: { students: StudentRow[]; ti
 
   const columns = useMemo<ColumnDef<StudentRow, any>[]>(
     () => [
-      columnHelper.accessor('uid', {
+      columnHelper.accessor('user.uid', {
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor('name', {
+      columnHelper.accessor('user.name', {
         header: 'Name',
         cell: (info) => info.getValue() || '—',
       }),
-      columnHelper.accessor('email', {
+      columnHelper.accessor('user.email', {
         header: 'Email',
         cell: (info) => info.getValue() || '—',
       }),
-      columnHelper.accessor('created_at', {
-        header: 'Enrolled At',
+      columnHelper.accessor('enrollment.created_at', {
+        header: 'Enrolled on',
         cell: (info) => {
           const date = new Date(info.getValue());
-          return formatDate(date, timezone);
+          return (
+            <div style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDate(date, timezone)}</div>
+          );
         },
       }),
     ],
@@ -73,7 +88,7 @@ function InstructorStudents({ students, timezone }: { students: StudentRow[]; ti
     data: students,
     columns,
     columnResizeMode: 'onChange',
-    getRowId: (row) => row.uid,
+    getRowId: (row) => row.user.user_id,
     state: {
       sorting: sorting ?? undefined,
       columnFilters,
@@ -107,7 +122,12 @@ function InstructorStudents({ students, timezone }: { students: StudentRow[]; ti
         <div class="d-flex align-items-center justify-content-between">
           <div>Students</div>
           <div>
-            <DownloadButton students={students} table={table} />
+            <DownloadButton
+              students={students}
+              course={course}
+              courseInstance={courseInstance}
+              table={table}
+            />
           </div>
         </div>
       </div>
@@ -116,8 +136,8 @@ function InstructorStudents({ students, timezone }: { students: StudentRow[]; ti
           <div class="col-xl-4 col-md-6 col-8 col-auto">
             <input
               type="text"
-              id="search-input"
               class="form-control"
+              aria-label="Search by UID, name or email."
               placeholder="Search by UID, name, email..."
               value={globalFilter}
               onInput={(e) => {
@@ -148,20 +168,25 @@ function InstructorStudents({ students, timezone }: { students: StudentRow[]; ti
 }
 
 export const InstructorStudentsRoot = ({
-  students,
   search,
+  students,
   timezone,
+  courseInstance,
+  course,
 }: {
-  students: StudentRow[];
   search: string;
-  timezone: string;
-}) => {
+} & InstructorStudentsProps) => {
   /**
    * This needs to be a wrapper component because we need to use the NuqsAdapter.
    */
   return (
     <NuqsAdapter search={search}>
-      <InstructorStudents students={students} timezone={timezone} />
+      <InstructorStudents
+        students={students}
+        timezone={timezone}
+        courseInstance={courseInstance}
+        course={course}
+      />
     </NuqsAdapter>
   );
 };

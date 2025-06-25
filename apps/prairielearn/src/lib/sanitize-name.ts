@@ -14,8 +14,8 @@ export function sanitizeString(s: string): string {
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function courseFilenamePrefix(course: { short_name: string }): string {
-  const prefix = sanitizeString(course.short_name) + '_';
+export function courseFilenamePrefix(course: { short_name: string | null }): string {
+  const prefix = sanitizeString(course.short_name ?? '') + '_';
   return prefix;
 }
 
@@ -28,11 +28,12 @@ export function courseFilenamePrefix(course: { short_name: string }): string {
  */
 export function courseInstanceFilenamePrefix(
   course_instance: {
-    short_name: string;
+    short_name: string | null;
   },
-  course: { short_name: string },
+  course: { short_name: string | null },
 ): string {
-  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
+  const prefix =
+    courseFilenamePrefix(course) + sanitizeString(course_instance.short_name ?? '') + '_';
   return prefix;
 }
 

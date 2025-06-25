@@ -97,11 +97,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         If the cell is the last column, use whichever is larger:
                           1. The remaining space
                           2. The column width
-                        
-                        Widths:
-                          2.5px - table + card border
-                          32px - card body padding
-                          24px - card padding
                         */
                         header.column.id === lastColumnId
                           ? `max(100%, ${header.getSize()}px)`

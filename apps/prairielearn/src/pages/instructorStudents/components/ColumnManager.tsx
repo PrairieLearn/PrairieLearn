@@ -68,7 +68,6 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
 
   const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');
   const unpinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() !== 'left');
-  // console.log(pinnedColumns, unpinnedColumns);
 
   return (
     <div class="btn-group">

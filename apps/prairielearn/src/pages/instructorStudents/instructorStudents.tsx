@@ -12,7 +12,7 @@ import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 
 import { InstructorStudentsRoot } from './instructorStudents.html.js';
-import { StudentQuerySchema, type StudentRow } from './instructorStudents.shared.js';
+import { StudentRowSchema } from './instructorStudents.shared.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -40,24 +40,18 @@ router.get(
           requiredPermissions: 'Instructor',
         }),
       );
+      return;
     }
 
-    const students: StudentRow[] = hasPermission
-      ? (
-          await queryRows(
-            sql.select_students,
-            {
-              course_instance_id: courseInstance.id,
-            },
-            StudentQuerySchema,
-          )
-        ).map((student) => ({
-          ...student.user,
-          ...student.enrollment,
-        }))
-      : [];
+    const students = await queryRows(
+      sql.select_students,
+      {
+        course_instance_id: courseInstance.id,
+      },
+      StudentRowSchema,
+    );
 
-    res.status(hasPermission ? 200 : 403).send(
+    res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Students',
@@ -89,6 +83,8 @@ router.get(
                 students={students}
                 search={search}
                 timezone={course.display_timezone}
+                courseInstance={courseInstance}
+                course={course}
               />
             </Hydrate>
           </>
