@@ -17,7 +17,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { formatDate } from '@prairielearn/formatter';
 
 import { NuqsAdapter, parseAsSortingState } from '../../lib/client/nuqs.js';
-import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
+import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -33,8 +33,8 @@ const DEFAULT_SORT: SortingState = [];
 interface StudentsCardProps {
   students: StudentRow[];
   timezone: string;
-  courseInstance: StaffCourseInstance;
-  course: StaffCourse;
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: StaffCourseInstanceContext['course'];
 }
 
 function StudentsCard({ students, timezone, courseInstance, course }: StudentsCardProps) {

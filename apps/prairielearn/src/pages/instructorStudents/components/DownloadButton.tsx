@@ -1,7 +1,7 @@
 import type { Table } from '@tanstack/react-table';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
-import type { StaffCourse, StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import { courseInstanceFilenamePrefix } from '../../../lib/sanitize-name.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -13,8 +13,8 @@ export function DownloadButton({
 }: {
   students: StudentRow[];
   table: Table<StudentRow>;
-  course: StaffCourse;
-  courseInstance: StaffCourseInstance;
+  course: StaffCourseInstanceContext['course'];
+  courseInstance: StaffCourseInstanceContext['course_instance'];
 }) {
   const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {

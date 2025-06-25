@@ -1,12 +1,8 @@
 import { z } from 'zod';
 
 import {
-  type StaffCourse,
-  type StaffCourseInstance,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
-  type StudentCourse,
-  type StudentCourseInstance,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
 } from './safe-db-types.js';
@@ -37,15 +33,34 @@ export function getPageContext(resLocals: Record<string, any>): PageContext {
   return PageContext.parse(resLocals);
 }
 
-export interface StudentCourseInstanceContext {
-  course_instance: StudentCourseInstance;
-  course: StudentCourse;
-}
+// Since this data comes from res.locals and not the database, we can make certain guarantees
+// about the data.
 
-export interface StaffCourseInstanceContext {
-  course_instance: StaffCourseInstance;
-  course: StaffCourse;
-}
+const StudentCourseInstanceContextSchema = z.object({
+  course_instance: z.object({
+    ...StudentCourseInstanceSchema.shape,
+    short_name: z.string(),
+  }),
+  course: z.object({
+    ...StudentCourseSchema.shape,
+    short_name: z.string(),
+  }),
+});
+
+export type StudentCourseInstanceContext = z.infer<typeof StudentCourseInstanceContextSchema>;
+
+const StaffCourseInstanceContextSchema = z.object({
+  course_instance: z.object({
+    ...StaffCourseInstanceSchema.shape,
+    short_name: z.string(),
+  }),
+  course: z.object({
+    ...StaffCourseSchema.shape,
+    short_name: z.string(),
+  }),
+});
+
+export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
 
 export function getCourseInstanceContext(
   resLocals: Record<string, any>,
@@ -62,13 +77,7 @@ export function getCourseInstanceContext(
   authLevel: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
   if (authLevel === 'student') {
-    return {
-      course_instance: StudentCourseInstanceSchema.parse(resLocals.course_instance),
-      course: StudentCourseSchema.parse(resLocals.course),
-    };
+    return StudentCourseInstanceContextSchema.parse(resLocals);
   }
-  return {
-    course_instance: StaffCourseInstanceSchema.parse(resLocals.course_instance),
-    course: StaffCourseSchema.parse(resLocals.course),
-  };
+  return StaffCourseInstanceContextSchema.parse(resLocals);
 }

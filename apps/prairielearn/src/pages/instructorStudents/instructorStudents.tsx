@@ -11,7 +11,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 
-import { InstructorStudentsRoot } from './instructorStudents.html.js';
+import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
 
 const router = Router();
@@ -79,7 +79,7 @@ router.get(
               }}
             />
             <Hydrate fullHeight>
-              <InstructorStudentsRoot
+              <InstructorStudents
                 students={students}
                 search={search}
                 timezone={course.display_timezone}
