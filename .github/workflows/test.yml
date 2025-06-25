@@ -176,11 +176,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
-        env:
-          UV_SYSTEM_PYTHON: 1
-          # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
-          UV_COMPILE_BYTECODE: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
+        run: make python-deps
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4

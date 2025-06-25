@@ -7,7 +7,7 @@ python-deps:
 		if test ! -f .venv/bin/python; then \
 			uv venv --python-preference only-system --python 3.10 --seed .venv; \
 		fi; \
-		uv pip install -r images/plbase/python-requirements.txt --python .venv; \
+		uv pip install -r images/plbase/python-requirements.txt --compile-bytecode --python .venv; \
 	else \
 		if test ! -f .venv/bin/python; then \
 			python3 -m venv .venv; \
