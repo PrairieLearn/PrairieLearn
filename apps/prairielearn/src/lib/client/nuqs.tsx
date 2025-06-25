@@ -1,3 +1,5 @@
+import type { SortingState } from '@tanstack/table-core';
+import { createParser } from 'nuqs';
 import {
   type unstable_AdapterInterface,
   unstable_createAdapterProvider,
@@ -39,3 +41,43 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
   // We're rendering on the client.
   return <NuqsReactAdapter>{children}</NuqsReactAdapter>;
 }
+
+/**
+ * Custom parser for SortingState: parses a TanStack Table sorting state from a URL query string.
+ *
+ * ```ts
+ * // sort=col:asc
+ * const sortingState = parseAsSortingState('sort');
+ * // sortingState = [{ id: 'col', desc: false }]
+ * ```
+ */
+export const parseAsSortingState = createParser<SortingState>({
+  parse(queryValue) {
+    if (!queryValue) return [];
+    return queryValue
+      .split(',')
+      .map((part) => {
+        const [id, dir] = part.split(':');
+        if (!id) return undefined;
+        if (dir === 'asc' || dir === 'desc') {
+          return { id, desc: dir === 'desc' };
+        }
+        return undefined;
+      })
+      .filter((v): v is { id: string; desc: boolean } => !!v);
+  },
+  serialize(value) {
+    if (!value || value.length === 0) return '';
+    return value
+      .filter((v) => v.id)
+      .map((v) => `${v.id}:${v.desc ? 'desc' : 'asc'}`)
+      .join(',');
+  },
+  eq(a, b) {
+    if (!a || !b) return a === b;
+    return (
+      a.length === b.length &&
+      a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
+    );
+  },
+});
