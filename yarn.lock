@@ -3880,6 +3880,7 @@ __metadata:
     "@sa11y/format": "npm:^7.2.0"
     "@smithy/types": "npm:^4.3.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
+    "@tanstack/table-core": "npm:^8.21.3"
     "@trpc/client": "npm:^11.2.0"
     "@trpc/server": "npm:^11.2.0"
     "@types/archiver": "npm:^6.0.3"
@@ -5357,6 +5358,13 @@ __metadata:
   dependencies:
     tslib: "npm:^2.8.0"
   checksum: 10c0/fe1f33ebb968558c5a0c595e54f2e479e4609bff844f9ca9a2d1ffd8dd8504c26f862a11b031f48f75c95b0381c2966c3dd156e25942f90089badd24341e7dbb
+  languageName: node
+  linkType: hard
+
+"@tanstack/table-core@npm:^8.21.3":
+  version: 8.21.3
+  resolution: "@tanstack/table-core@npm:8.21.3"
+  checksum: 10c0/40e3560e6d55e07cc047024aa7f83bd47a9323d21920d4adabba8071fd2d21230c48460b26cedf392588f8265b9edc133abb1b0d6d0adf4dae0970032900a8c9
   languageName: node
   linkType: hard
 
