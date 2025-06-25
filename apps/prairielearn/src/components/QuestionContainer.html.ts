@@ -642,7 +642,7 @@ function AvailablePointsNotes({
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
   const additional = instance_question.points === 0 ? '' : 'additional';
   return html`
-    <small class="fst-italic align-self-center text-right">
+    <small class="fst-italic align-self-center text-end">
       ${roundedPoints[0] === 1
         ? `1 ${additional} point available for this attempt`
         : `${roundedPoints[0]} ${additional} points available for this attempt`}

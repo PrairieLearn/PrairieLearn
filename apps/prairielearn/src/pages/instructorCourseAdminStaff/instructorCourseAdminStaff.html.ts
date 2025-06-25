@@ -213,7 +213,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
         </p>
       </div>
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove all student data access</button>
       </div>
@@ -234,7 +234,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
         </p>
       </div>
 
-      <div class="text-right">
+      <div class="text-end
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete users with no access</button>
       </div>
@@ -298,37 +298,39 @@ function CoursePermissionsInsertForm({
         </select>
       </div>
 
-      ${courseInstances?.length > 0
-        ? html`
-            <div class="mb-3">
-              <label class="form-label" for="addUsersInputCourseInstance">
-                Student data access for all new users:
-              </label>
-              <div class="input-group">
-                <select
-                  class="form-select form-select-sm"
-                  id="addUsersInputCourseInstance"
-                  name="course_instance_id"
-                >
-                  <option selected value>None</option>
-                  ${courseInstances.map(
-                    (ci) => html` <option value="${ci.id}">${ci.short_name}</option>`,
-                  )}
-                </select>
-                <select
-                  class="form-select form-select-sm"
-                  id="addUsersInputCourseInstanceRole"
-                  name="course_instance_role"
-                >
-                  <option value="Student Data Viewer" selected>Viewer</option>
-                  <option value="Student Data Editor">Editor</option>
-                </select>
+      ${
+        courseInstances?.length > 0
+          ? html`
+              <div class="mb-3">
+                <label class="form-label" for="addUsersInputCourseInstance">
+                  Student data access for all new users:
+                </label>
+                <div class="input-group">
+                  <select
+                    class="form-select form-select-sm"
+                    id="addUsersInputCourseInstance"
+                    name="course_instance_id"
+                  >
+                    <option selected value>None</option>
+                    ${courseInstances.map(
+                      (ci) => html` <option value="${ci.id}">${ci.short_name}</option>`,
+                    )}
+                  </select>
+                  <select
+                    class="form-select form-select-sm"
+                    id="addUsersInputCourseInstanceRole"
+                    name="course_instance_role"
+                  >
+                    <option value="Student Data Viewer" selected>Viewer</option>
+                    <option value="Student Data Editor">Editor</option>
+                  </select>
+                </div>
               </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
 
-      <div class="text-right">
+      <div class="text-end
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add users</button>
       </div>
@@ -348,8 +350,9 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
           Owner.
         </p>
       </div>
+      text-end
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete non-owners</button>
       </div>
