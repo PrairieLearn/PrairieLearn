@@ -129,8 +129,9 @@ export async function initWithLock(directories: string[], project: string) {
       logger.info(`Running migration ${filename}`);
     }
 
+    const migrationPath = path.join(directory, filename);
     if (filename.endsWith('.sql')) {
-      const migrationSql = await fs.readFile(`${directory}/${filename}`, 'utf8');
+      const migrationSql = await fs.readFile(migrationPath, 'utf8');
       const annotations = parseAnnotations(migrationSql);
       try {
         if (annotations.has('NO TRANSACTION')) {
@@ -145,7 +146,7 @@ export async function initWithLock(directories: string[], project: string) {
         throw err;
       }
     } else {
-      const migrationModule = await import(`${directory}/${filename}`);
+      const migrationModule = await import(/* @vite-ignore */ migrationPath);
       const implementation = migrationModule.default;
       if (typeof implementation !== 'function') {
         throw new Error(`Migration ${filename} does not export a default function`);
