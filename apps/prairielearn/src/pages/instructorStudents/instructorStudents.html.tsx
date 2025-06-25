@@ -1,42 +1,169 @@
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  type ColumnPinningState,
+  type ColumnSizingState,
+  type VisibilityState as ColumnVisibilityState,
+  type SortingState,
+  createColumnHelper,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useMemo, useState } from 'preact/compat';
+
+import { formatDate } from '@prairielearn/formatter';
+
 import { NuqsAdapter } from '../../lib/client/nuqs.js';
-import type { PageContext } from '../../lib/client/page-context.js';
-import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 
-import { StudentsCard } from './components/StudentsCard.js';
-import { type StudentRow } from './instructorStudents.shared.js';
+import { ColumnManager } from './components/ColumnManager.js';
+import { DownloadButton } from './components/DownloadButton.js';
+import { StudentsTable } from './components/StudentsTable.js';
+import { type StudentRow, parseAsSortingState } from './instructorStudents.shared.js';
 
-export const InstructorStudents = ({
-  pageContext,
-  courseInstance,
-  course,
+const columnHelper = createColumnHelper<StudentRow>();
+
+// This default must be declared outside the component to ensure referential
+// stability across renders, as `[] !== []` in JavaScript.
+const DEFAULT_SORT: SortingState = [];
+
+function InstructorStudents({ students, timezone }: { students: StudentRow[]; timezone: string }) {
+  const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
+  const [sorting, setSorting] = useQueryState<SortingState>(
+    'sort',
+    parseAsSortingState.withDefault(DEFAULT_SORT),
+  );
+
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
+    left: [],
+    right: [],
+  });
+
+  const columns = useMemo<ColumnDef<StudentRow, any>[]>(
+    () => [
+      columnHelper.accessor('uid', {
+        header: 'UID',
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor('name', {
+        header: 'Name',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('email', {
+        header: 'Email',
+        cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor('created_at', {
+        header: 'Enrolled At',
+        cell: (info) => {
+          const date = new Date(info.getValue());
+          return formatDate(date, timezone);
+        },
+      }),
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: students,
+    columns,
+    columnResizeMode: 'onChange',
+    getRowId: (row) => row.uid,
+    state: {
+      sorting: sorting ?? undefined,
+      columnFilters,
+      globalFilter,
+      columnSizing,
+      columnVisibility,
+      columnPinning,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnSizingChange: setColumnSizing,
+    onColumnVisibilityChange: setColumnVisibility,
+    onColumnPinningChange: setColumnPinning,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    defaultColumn: {
+      minSize: 150,
+      size: 300,
+      maxSize: 500,
+      enableSorting: true,
+      enableHiding: true,
+      enablePinning: true,
+    },
+  });
+
+  return (
+    <div class="card d-flex flex-column h-100">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>Students</div>
+          <div>
+            <DownloadButton students={students} table={table} />
+          </div>
+        </div>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex flex-row mb-2">
+          <div class="col-xl-4 col-md-6 col-8 col-auto">
+            <input
+              type="text"
+              id="search-input"
+              class="form-control"
+              placeholder="Search by UID, name, email..."
+              value={globalFilter}
+              onInput={(e) => {
+                if (!(e.target instanceof HTMLInputElement)) {
+                  return;
+                }
+                setGlobalFilter(e.target.value);
+              }}
+            />
+          </div>
+          <div class="col-xl-8 col-md-6 col-4 d-flex flex-row justify-content-md-between justify-content-end">
+            <div class="mx-2">
+              <ColumnManager table={table} />
+            </div>
+          </div>
+        </div>
+        <div class="d-flex flex-row justify-content-start mb-2 align-items-end">
+          <div class="text-muted">
+            Showing {table.getRowModel().rows.length} of {students.length} students
+          </div>
+        </div>
+        <div class="flex-grow-1">
+          <StudentsTable table={table} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export const InstructorStudentsRoot = ({
   students,
   search,
+  timezone,
 }: {
-  pageContext: PageContext;
-  courseInstance: StaffCourseInstance;
-  course: StaffCourse;
   students: StudentRow[];
   search: string;
+  timezone: string;
 }) => {
-  const { authz_data, urlPrefix } = pageContext;
+  /**
+   * This needs to be a wrapper component because we need to use the NuqsAdapter.
+   */
   return (
     <NuqsAdapter search={search}>
-      <div
-        // TODO: After #12197 use the component directly
-        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{
-          __html: CourseInstanceSyncErrorsAndWarnings({
-            authz_data,
-            courseInstance,
-            course,
-            urlPrefix,
-          }).toString(),
-        }}
-      />
-      <StudentsCard students={students} />
+      <InstructorStudents students={students} timezone={timezone} />
     </NuqsAdapter>
   );
 };
 
-InstructorStudents.displayName = 'InstructorStudents';
+InstructorStudentsRoot.displayName = 'InstructorStudents';

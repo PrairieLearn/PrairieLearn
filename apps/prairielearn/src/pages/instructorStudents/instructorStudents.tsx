@@ -5,12 +5,13 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 
-import { InstructorStudents } from './instructorStudents.html.js';
+import { InstructorStudentsRoot } from './instructorStudents.html.js';
 import { StudentQuerySchema, type StudentRow } from './instructorStudents.shared.js';
 
 const router = Router();
@@ -20,7 +21,11 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
-    const { course_instance, course } = getCourseInstanceContext(res.locals, 'instructor');
+    const { authz_data, urlPrefix } = pageContext;
+    const { course_instance: courseInstance, course } = getCourseInstanceContext(
+      res.locals,
+      'instructor',
+    );
 
     const search = getUrl(req).search;
 
@@ -42,7 +47,7 @@ router.get(
           await queryRows(
             sql.select_students,
             {
-              course_instance_id: course_instance.id,
+              course_instance_id: courseInstance.id,
             },
             StudentQuerySchema,
           )
@@ -66,15 +71,27 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <Hydrate fullHeight>
-            <InstructorStudents
-              pageContext={pageContext}
-              courseInstance={course_instance}
-              course={course}
-              students={students}
-              search={search}
+          <>
+            <div
+              // TODO: After #12197 use the component directly
+              // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+              dangerouslySetInnerHTML={{
+                __html: CourseInstanceSyncErrorsAndWarnings({
+                  authz_data,
+                  courseInstance,
+                  course,
+                  urlPrefix,
+                }).toString(),
+              }}
             />
-          </Hydrate>
+            <Hydrate fullHeight>
+              <InstructorStudentsRoot
+                students={students}
+                search={search}
+                timezone={course.display_timezone}
+              />
+            </Hydrate>
+          </>
         ),
       }),
     );
