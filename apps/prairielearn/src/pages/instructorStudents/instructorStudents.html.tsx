@@ -30,19 +30,14 @@ const columnHelper = createColumnHelper<StudentRow>();
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
 
-interface InstructorStudentsProps {
+interface StudentsCardProps {
   students: StudentRow[];
   timezone: string;
   courseInstance: StaffCourseInstance;
   course: StaffCourse;
 }
 
-function InstructorStudents({
-  students,
-  timezone,
-  courseInstance,
-  course,
-}: InstructorStudentsProps) {
+function StudentsCard({ students, timezone, courseInstance, course }: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -187,7 +182,7 @@ function InstructorStudents({
   );
 }
 
-export const InstructorStudentsRoot = ({
+export const InstructorStudents = ({
   search,
   students,
   timezone,
@@ -195,13 +190,13 @@ export const InstructorStudentsRoot = ({
   course,
 }: {
   search: string;
-} & InstructorStudentsProps) => {
+} & StudentsCardProps) => {
   /**
    * This needs to be a wrapper component because we need to use the NuqsAdapter.
    */
   return (
     <NuqsAdapter search={search}>
-      <InstructorStudents
+      <StudentsCard
         students={students}
         timezone={timezone}
         courseInstance={courseInstance}
@@ -211,4 +206,4 @@ export const InstructorStudentsRoot = ({
   );
 };
 
-InstructorStudentsRoot.displayName = 'InstructorStudents';
+InstructorStudents.displayName = 'InstructorStudents';
