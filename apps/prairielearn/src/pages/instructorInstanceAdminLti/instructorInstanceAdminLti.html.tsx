@@ -5,6 +5,7 @@ import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrors
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { isEnterprise } from '../../lib/license.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<string, any> }) {
@@ -12,6 +13,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     authz_data,
     course_owners,
     lti_credentials,
+    lti11_enabled,
     __csrf_token: csrfToken,
     lti_links,
     assessments,
@@ -92,15 +94,20 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
                 </p>
                 <p>
                   <strong>
-                    This version of LTI is deprecated. Check with PrairieLearn admins before
-                    enabling to ensure it is appropriate for your course.
+                    This version of LTI is deprecated.
+                    ${isEnterprise()
+                      ? html`See the "Integrations" tab for more information about newer integration
+                        methods.`
+                      : html`Check with your PrairieLearn admins about newer integration methods.`}
                   </strong>
                 </p>
-                ${!config.hasLti ? html`<p><em>LTI not enabled on this server.</em></p>` : ''}
+                ${!lti11_enabled
+                  ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
+                  : ''}
               </div>
             </div>
 
-            ${config.hasLti
+            ${lti11_enabled
               ? html`
                   ${LtiCredentialsCard({ lti_credentials, csrfToken })}
                   ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
@@ -221,7 +228,7 @@ function LtiCredentialsCard({
         <form method="post">
           <input type="hidden" name="__action" value="lti_new_cred" />
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <input type="submit" class="btn btn-success" value="Create new LTI credential" />
+          <button type="submit" class="btn btn-success">Create new LTI credential</button>
         </form>
       </div>
     </div>
