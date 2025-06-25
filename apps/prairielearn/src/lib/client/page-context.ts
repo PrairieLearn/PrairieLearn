@@ -34,7 +34,8 @@ export function getPageContext(resLocals: Record<string, any>): PageContext {
 }
 
 // Since this data comes from res.locals and not the database, we can make certain guarantees
-// about the data.
+// about the data. Specifically, `short_name` will never be null for non-deleted courses
+// and course instances.
 
 const StudentCourseInstanceContextSchema = z.object({
   course_instance: z.object({
