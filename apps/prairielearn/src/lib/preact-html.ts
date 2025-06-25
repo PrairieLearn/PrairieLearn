@@ -1,6 +1,6 @@
 import { render } from 'preact-render-to-string/jsx';
 
-import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 // This function must live outside of `preact.tsx` so that it can be imported
@@ -14,9 +14,6 @@ import type { VNode } from '@prairielearn/preact-cjs';
  * @param vnode - A Preact VNode to render to HTML.
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
-export function renderHtml(vnode: VNode | null): HtmlSafeString {
-  if (vnode === null) {
-    return html``;
-  }
+export function renderHtml(vnode: VNode): HtmlSafeString {
   return unsafeHtml(render(vnode, {}, { pretty: false, jsx: false }));
 }
