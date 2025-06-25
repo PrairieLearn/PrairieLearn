@@ -55,17 +55,11 @@ export function AssessmentQuestionsTable({
     }
   }
 
-  function title(question) {
-    const number = <AssessmentQuestionNumber question={question} />;
-    const issueBadge = IssueBadge({
-      urlPrefix,
-      count: question.open_issue_count ?? 0,
-      issueQid: question.qid,
-    });
+  function title(question: AssessmentQuestionRow) {
     const title = (
       <>
         <AssessmentQuestionNumber question={question} />
-        {question.title} {issueBadge}
+        {question.title}
       </>
     );
 
@@ -102,7 +96,20 @@ export function AssessmentQuestionsTable({
               <>
                 <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                 <tr>
-                  <td>{title(question)}</td>
+                  <td>
+                    {title(question)}
+                    {question.open_issue_count && question.qid ? (
+                      <a
+                        class="badge rounded-pill text-bg-danger ms-1 "
+                        href={`${urlPrefix}/course_admin/issues?q=+qid%3A${encodeURIComponent(question.qid ?? '')}`}
+                        aria-label={`${question.open_issue_count} open ${question.open_issue_count === 1 ? 'issue' : 'issues'}`}
+                      >
+                        {question.open_issue_count}
+                      </a>
+                    ) : (
+                      ''
+                    )}
+                  </td>
                   <td>
                     {question.sync_errors
                       ? SyncProblemButton({
