@@ -39,7 +39,6 @@ export function InstructorInstanceAdminLti13NoInstances({
     },
     options: {
       fullWidth: true,
-      marginBottom: true,
     },
     content: html`
       <div class="card mb-4">
