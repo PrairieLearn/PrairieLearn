@@ -783,7 +783,7 @@ function FileRenameForm({
           required
         />
       </div>
-      <div class="text-end
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
