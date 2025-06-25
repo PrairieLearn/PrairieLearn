@@ -625,13 +625,11 @@
       image.src = this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value;
       image.alt = 'Captured image';
 
-      console.log('Cropper JS', cropperjs);
+      // const crop_obj = new Cropper(image, {
+      //   container: '.js-cropper-container',
+      // });
 
-      const crop_obj = new cropperjs(image, {
-        container: '.js-cropper-container',
-      });
-
-      console.log('cropper', crop_obj);
+      // console.log('cropper', crop_obj);
     }
   }
 
