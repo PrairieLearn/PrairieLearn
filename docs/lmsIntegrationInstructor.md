@@ -38,7 +38,7 @@ Canvas courses must be "Published" for certain integration functionality, like g
 
 ## "Integrations" tab in your PrairieLearn course instance
 
-Use the "Integrations" tab in your course instance to manage all integration configurations.
+Use the "Integrations" tab in your course instance to manage all LMS integrations.
 
 ### Linking assessments
 
