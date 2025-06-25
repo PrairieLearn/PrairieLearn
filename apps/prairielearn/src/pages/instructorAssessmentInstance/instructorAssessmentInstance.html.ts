@@ -417,10 +417,10 @@ export function InstructorAssessmentInstance({
                           })
                         : ''}
                     </td>
-                    <td class="align-middle text-center text-nowrap">
+                    <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
                       ${Scorebar(instance_question.score_perc)}
                     </td>
-                    <td class="align-middle" style="width: 1em;">
+                    <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
                         ? EditQuestionPointsScoreButton({
                             field: 'score_perc',
@@ -431,7 +431,7 @@ export function InstructorAssessmentInstance({
                           })
                         : ''}
                     </td>
-                    <td class="align-middle text-nowrap" style="width: 1em;">
+                    <td class="text-nowrap" style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit &&
                       instance_question.status !== 'unanswered'
                         ? html`
