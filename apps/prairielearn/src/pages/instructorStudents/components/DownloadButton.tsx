@@ -1,5 +1,7 @@
 import type { Table } from '@tanstack/react-table';
 
+import { formatDate, formatTz } from '@prairielearn/formatter';
+
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import { courseInstanceFilenamePrefix } from '../../../lib/sanitize-name.js';
@@ -23,10 +25,16 @@ export function DownloadButton({
       student.user.name,
       student.user.email,
       student.enrollment.created_at
-        ? new Date(student.enrollment.created_at).toISOString().replace('T', ' ').split('.')[0]
+        ? formatDate(student.enrollment.created_at, course.display_timezone, {
+            includeTz: false,
+          })
         : '',
     ]);
-    downloadAsCSV(['UID', 'Name', 'Email', 'Enrolled At'], rows, filename);
+    downloadAsCSV(
+      ['UID', 'Name', 'Email', `Enrolled At (${formatTz(course.display_timezone)})`],
+      rows,
+      filename,
+    );
   }
 
   function downloadStudentsJSON(students: StudentRow[], filename: string): void {

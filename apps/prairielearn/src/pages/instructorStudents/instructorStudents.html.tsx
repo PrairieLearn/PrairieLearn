@@ -14,7 +14,7 @@ import {
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
-import { formatDate } from '@prairielearn/formatter';
+import { formatDate, formatTz } from '@prairielearn/formatter';
 
 import { NuqsAdapter, parseAsSortingState } from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
@@ -83,11 +83,15 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
         cell: (info) => info.getValue() || '—',
       }),
       columnHelper.accessor('enrollment.created_at', {
-        header: 'Enrolled on',
+        header: `Enrolled on (${formatTz(timezone)})`,
         cell: (info) => {
           const date = new Date(info.getValue());
           return (
-            <div style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDate(date, timezone)}</div>
+            <div style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {formatDate(date, timezone, {
+                includeTz: false,
+              })}
+            </div>
           );
         },
       }),
