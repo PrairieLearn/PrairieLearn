@@ -9,11 +9,11 @@ import { ReactFragmentsRegistry } from './registry.js';
 
 const registry = new ReactFragmentsRegistry();
 
-export function registerReactFragment(component: ComponentType<any>, componentName?: string) {
+export function registerReactFragment(component: ComponentType<any>, nameOverride?: string) {
   // Each React component that will be hydrated on the page must be registered.
-  const id = componentName || component.name || component.displayName;
+  const id = nameOverride ?? component.displayName;
   if (!id) {
-    throw new Error('React fragment must have a name or displayName or componentName');
+    throw new Error('React fragment must have a displayName or nameOverride');
   }
   registry.setReactFragment(id, component);
 }
