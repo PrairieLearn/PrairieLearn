@@ -80,16 +80,13 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
     '/',
     asyncHandler(async (req, res, next) => {
       const workspace_id = res.locals.workspace_id;
-      const redirectUrl = publicQuestionEndpoint
-        ? `/pl/public/workspace/${workspace_id}`
-        : `/pl/workspace/${workspace_id}`;
 
       if (req.body.__action === 'reboot') {
         await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
         await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
           workspace_id,
         });
-        res.redirect(redirectUrl);
+        res.redirect(req.originalUrl);
       } else if (req.body.__action === 'reset') {
         await workspaceUtils.updateWorkspaceState(
           workspace_id,
@@ -97,7 +94,7 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
           'Resetting container',
         );
         await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
-        res.redirect(redirectUrl);
+        res.redirect(req.originalUrl);
       } else {
         return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));
       }
