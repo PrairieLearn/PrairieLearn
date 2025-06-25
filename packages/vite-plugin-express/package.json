@@ -10,8 +10,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage"
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "debounce": "^2.2.0",
