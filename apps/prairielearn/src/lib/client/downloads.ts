@@ -1,3 +1,5 @@
+import { stringify } from 'csv-stringify/browser/esm/sync';
+
 /**
  * Triggers a browser download of a text-based file.
  *
@@ -19,25 +21,6 @@ export function downloadTextFile(content: string, filename: string, mimeType: st
 }
 
 /**
- * Converts a 2D array into a CSV string.
- *
- * @param data 2D array of data.
- * @returns A CSV-formatted string.
- */
-export function arrayToCsv(data: unknown[][]): string {
-  return data
-    .map((row) =>
-      row
-        .map((field) => {
-          const stringField = String(field ?? '');
-          return /[",\n]/.test(stringField) ? `"${stringField.replace(/"/g, '""')}"` : stringField;
-        })
-        .join(','),
-    )
-    .join('\r\n');
-}
-
-/**
  * Triggers a browser download of a JSON file.
  *
  * @param data The data to be included in the JSON file.
@@ -55,7 +38,7 @@ export function downloadAsJSON(data: any, filename: string): void {
  * @param data The data rows of the CSV.
  * @param filename The desired filename.
  */
-export function downloadAsCSV(header: unknown[], data: unknown[][], filename: string): void {
-  const csvContent = arrayToCsv([header, ...data]);
+export function downloadAsCSV(header: string[], data: unknown[][], filename: string): void {
+  const csvContent = stringify(data, { header: true, columns: header });
   downloadTextFile(csvContent, filename, 'text/csv');
 }
