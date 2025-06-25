@@ -1,13 +1,14 @@
+import { Fragment } from 'preact/jsx-runtime';
+
+import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.html.js';
+import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
 import type { Course } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
-import { IssueBadge } from '../../../components/IssueBadge.html.js';
-import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
-import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
 
 export function AssessmentQuestionsTable({
   course,
@@ -51,7 +52,7 @@ export function AssessmentQuestionsTable({
         return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
       }
     } else {
-      return `&mdash`;
+      return '&mdash';
     }
   }
 
@@ -93,14 +94,14 @@ export function AssessmentQuestionsTable({
         <tbody>
           {questions.map((question) => {
             return (
-              <>
+              <Fragment key={question.qid}>
                 <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                 <tr>
                   <td>
                     {title(question)}
                     {question.open_issue_count && question.qid ? (
                       <a
-                        class="badge rounded-pill text-bg-danger ms-1 "
+                        class="badge rounded-pill text-bg-danger ms-1"
                         href={`${urlPrefix}/course_admin/issues?q=+qid%3A${encodeURIComponent(question.qid ?? '')}`}
                         aria-label={`${question.open_issue_count} open ${question.open_issue_count === 1 ? 'issue' : 'issues'}`}
                       >
@@ -131,7 +132,12 @@ export function AssessmentQuestionsTable({
                   </td>
                   <td>
                     {question.tags?.map((tag) => (
-                      <span class={`badge color-${tag.color} me-1`}>{tag.name}</span>
+                      <span
+                        class={`badge color-${tag.color} me-1`}
+                        key={`${question.qid}-${tag.name}`}
+                      >
+                        {tag.name}
+                      </span>
                     ))}
                   </td>
                   <td>
@@ -145,9 +151,9 @@ export function AssessmentQuestionsTable({
                   <td>{question.max_manual_points || '—'}</td>
                   {showAdvanceScorePercCol ? (
                     <td
-                      class="${question.assessment_question_advance_score_perc === 0
-                            ? 'text-muted'
-                            : ''}"
+                      class={
+                        question.assessment_question_advance_score_perc === 0 ? 'text-muted' : ''
+                      }
                       data-testid="advance-score-perc"
                     >
                       {question.assessment_question_advance_score_perc}%
@@ -173,7 +179,10 @@ export function AssessmentQuestionsTable({
                   </td>
                   <td>
                     {question.other_assessments?.map((assessment) => (
-                      <div class="d-inline-block me-1">
+                      <div
+                        class="d-inline-block me-1"
+                        key={`${question.qid}-${assessment.assessment_id}`}
+                      >
                         <AssessmentBadgeJsx urlPrefix={urlPrefix} assessment={assessment} />
                       </div>
                     ))}
@@ -197,7 +206,7 @@ export function AssessmentQuestionsTable({
                             class="dropdown-item"
                             data-bs-toggle="modal"
                             data-bs-target="#resetQuestionVariantsModal"
-                            data-assessment-question-id="${question.id}"
+                            data-assessment-question-id={question.id}
                           >
                             Reset question variants
                           </button>
@@ -210,7 +219,7 @@ export function AssessmentQuestionsTable({
                     </div>
                   </td>
                 </tr>
-              </>
+              </Fragment>
             );
           })}
         </tbody>

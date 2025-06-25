@@ -20,7 +20,7 @@ export function AssessmentBadgeJsx({
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
   if (hideLink) {
-    return <span class="badge color-${assessment.color}">${assessment.label}</span>;
+    return <span class={`badge color-${assessment.color}`}>{assessment.label}</span>;
   }
 
   if (publicURL) {

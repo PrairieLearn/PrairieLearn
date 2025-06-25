@@ -1,5 +1,6 @@
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.types.js';
+
 import { AssessmentQuestionsTable } from './components/AssessmentQuestionsTable.js';
 import { ResetQuestionVariantsModal } from './components/ResetQuestionVariantsModal.js';
 

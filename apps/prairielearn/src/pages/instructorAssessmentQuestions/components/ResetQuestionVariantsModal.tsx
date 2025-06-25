@@ -12,7 +12,7 @@ export function ResetQuestionVariantsModal({ csrfToken }: { csrfToken: string })
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
-                <h2 class="modal-title h4" id="${titleId}">
+                <h2 class="modal-title h4" id="resetQuestionVariantsModal-title">
                   Confirm reset question variants
                 </h2>
               </div>
@@ -25,7 +25,7 @@ export function ResetQuestionVariantsModal({ csrfToken }: { csrfToken: string })
               </div>
               <div class="modal-footer">
                 <input type="hidden" name="__action" value="reset_question_variants" />
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="__csrf_token" value={csrfToken} />
                 <input
                   type="hidden"
                   name="unsafe_assessment_question_id"

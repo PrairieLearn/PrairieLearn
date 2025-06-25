@@ -9,8 +9,8 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
-import { type AssessmentQuestionRow } from '../../models/assessment-question.types.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import { type AssessmentQuestionRow } from '../../models/assessment-question.types.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
