@@ -149,7 +149,7 @@ function InstructorStudents({
       </div>
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row mb-2">
-          <div class="col-xl-4 col-md-6 col-8 col-auto">
+          <div class="col-xl-4 col-md-6 col-12 col-auto">
             <input
               ref={searchInputRef}
               type="text"
@@ -165,14 +165,17 @@ function InstructorStudents({
               }}
             />
           </div>
-          <div class="col-xl-8 col-md-6 col-4 d-flex flex-row justify-content-md-between justify-content-end">
+          <div class="col-xl-8 col-md-6 d-none d-md-flex flex-row justify-content-md-between justify-content-end">
             <div class="mx-2">
               <ColumnManager table={table} />
             </div>
           </div>
         </div>
-        <div class="d-flex flex-row justify-content-start mb-2 align-items-end">
-          <div class="text-muted">
+        <div class="d-flex flex-row justify-content-between mb-2 align-items-end">
+          <div class="me-2 d-md-none">
+            <ColumnManager table={table} />
+          </div>
+          <div class="text-muted text-nowrap">
             Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
         </div>
