@@ -131,6 +131,9 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
               },
             },
           },
+          optimizeDeps: {
+            noDiscovery: true,
+          },
           server: {
             hmr: false,
           },
