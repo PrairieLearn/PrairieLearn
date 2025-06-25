@@ -4213,7 +4213,6 @@ __metadata:
     debounce: "npm:^2.2.0"
     debug: "npm:^4.4.1"
     express: "npm:^4"
-    tsx: "npm:^4.19.4"
     typescript: "npm:^5.8.3"
     vite: "npm:^7.0.0"
   languageName: unknown
