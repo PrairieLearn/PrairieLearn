@@ -44,6 +44,8 @@ interface HydrateProps {
   children: ComponentChildren;
   /** Optional override for the component's name or displayName */
   nameOverride?: string;
+  /** Whether to apply full height styles. */
+  fullHeight?: boolean;
 }
 
 /**
@@ -52,7 +54,7 @@ interface HydrateProps {
  * This component is intended to be used within a non-interactive Preact component
  * that will be rendered without hydration through `renderHtml`.
  */
-export function Hydrate({ children, nameOverride }: HydrateProps): VNode {
+export function Hydrate({ children, nameOverride, fullHeight = false }: HydrateProps): VNode {
   // We expect a single child that is a VNode
   if (
     !children ||
@@ -119,7 +121,7 @@ registerReactFragment(${componentName});</code></pre>
       {scriptPreloads.map((preloadPath) => (
         <link key={preloadPath} rel="modulepreload" href={preloadPath} />
       ))}
-      <div data-component={componentName} class="d-flex flex-column js-react-fragment w-100">
+      <div data-component={componentName} class={`js-react-fragment${fullHeight ? ' h-100' : ''}`}>
         <script
           type="application/json"
           data-component-props
@@ -128,7 +130,7 @@ registerReactFragment(${componentName});</code></pre>
             __html: escapeJsonForHtml(props),
           }}
         />
-        <div data-component-root class="d-flex flex-column flex-grow-1 w-100">
+        <div data-component-root class={fullHeight ? 'h-100' : ''}>
           <Component {...props} />
         </div>
       </div>

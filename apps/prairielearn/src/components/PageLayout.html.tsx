@@ -134,7 +134,6 @@ export function PageLayout({
               // Separate collapsed state for narrower viewports (768px and below).
               // Not persisted.
               'mobile-collapsed',
-              options.fullHeight && 'd-flex flex-column flex-grow-1',
             )}"
           >
             <div class="app-top-nav">
@@ -158,12 +157,7 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div
-              class="${clsx(
-                sideNavEnabled && 'app-main',
-                options.fullHeight && 'd-flex flex-column flex-grow-1',
-              )}"
-            >
+            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.course_instance &&
@@ -186,7 +180,7 @@ export function PageLayout({
                   class="${clsx(
                     options.fullWidth ? 'container-fluid' : 'container',
                     paddingBottom && 'pb-4',
-                    options.fullHeight && 'd-flex h-100',
+                    options.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
                   )}"
