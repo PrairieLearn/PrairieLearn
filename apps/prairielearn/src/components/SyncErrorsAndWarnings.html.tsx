@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { ansiToHtml } from '../lib/chalk.js';
 import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
 import { type Assessment, type Question } from '../lib/db-types.js';
@@ -131,7 +133,7 @@ function SyncErrorsAndWarnings({
             error and sync again.
           </p>
           <pre
-            class={`text-white rounded p-3 ${exampleCourse ? 'mb-0' : ''}`}
+            class={clsx('text-white', 'rounded', 'p-3', exampleCourse && 'mb-0')}
             style="background-color: black;"
           >
             {syncErrorsAnsified && (
@@ -159,7 +161,7 @@ function SyncErrorsAndWarnings({
             be reviewed and corrected.
           </p>
           <pre
-            class={`text-white rounded p-3 ${exampleCourse ? 'mb-0' : ''}`}
+            class={clsx('text-white', 'rounded', 'p-3', exampleCourse && 'mb-0')}
             style="background-color: black;"
           >
             {syncWarningsAnsified && (
