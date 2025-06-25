@@ -265,7 +265,9 @@ body:has(div.app-container) {
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    min-height: calc(100vh - var(--navbar-height));
+    min-height: calc(
+      100vh - var(--navbar-height)
+    ); /* Subtract from 100vh to account for the navbar */
     will-change: transform; /* Performance optimization */
   }
 
@@ -286,7 +288,7 @@ body:has(div.app-container) {
     position: absolute;
     top: calc(
       var(--navbar-height) - 0.5rem
-    ); /* Subtract 0.5rem to account for top padding of the parent div of course-nav. */
+    ); /* Subtract 0.5rem to account for the top padding of the parent div of course-nav. */
     left: 0;
     width: 100%;
     height: fit-content;
