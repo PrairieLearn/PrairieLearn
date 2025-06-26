@@ -54,6 +54,11 @@ export function InstructorCourseAdminTopicsTable({
     handleModalClose();
   };
 
+  const handleDeleteTopic = (topicIndex: number) => {
+    topicsState.splice(topicIndex, 1);
+    setTopicsState([...topicsState]);
+  };
+
   return (
     <>
       <div class="card mb-4">
@@ -115,7 +120,7 @@ export function InstructorCourseAdminTopicsTable({
             <tbody>
               {topicsState.map(function (topic, index) {
                 return (
-                  <tr key={topic.id}>
+                  <tr key={topic.name}>
                     {editMode && hasCoursePermissionEdit ? (
                       <>
                         <td class="align-middle">
@@ -128,7 +133,11 @@ export function InstructorCourseAdminTopicsTable({
                           </button>
                         </td>
                         <td class="align-middle">
-                          <button class="btn btn-sm" type="button">
+                          <button
+                            class="btn btn-sm"
+                            type="button"
+                            onClick={() => handleDeleteTopic(index)}
+                          >
                             <i class="fa fa-trash text-danger" aria-hidden="true"></i>
                           </button>
                         </td>
@@ -136,7 +145,7 @@ export function InstructorCourseAdminTopicsTable({
                     ) : (
                       ''
                     )}
-                    <td class="align-middle">{topic.number}</td>
+                    <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
                       <TopicBadgeJsx topic={topic} />
                     </td>
