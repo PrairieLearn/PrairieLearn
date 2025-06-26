@@ -79,7 +79,7 @@ We pick the assessment
 */
 
 router.get(
-  '/:unsafe_lti13_course_instance_id?',
+  '/:unsafe_assessment_id?',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
@@ -88,35 +88,30 @@ router.get(
     console.log(res.locals);
     console.log(req.params);
 
-    res.send('OK');
-
-    /*
-
-    const instances = await queryRows(
-      sql.select_lti13_instances,
+    const instance = await queryRow(
+      sql.select_lti13_instance,
       {
         course_instance_id: res.locals.course_instance.id,
+        lti13_course_instance_id: req.params.lti13_course_instance_id,
       },
       Lti13CombinedInstanceSchema,
     );
 
-    // Handle the no parameter offered case, take the first one
-    if (!req.params.unsafe_lti13_course_instance_id) {
-      const lti13_course_instance_id = instances[0].lti13_course_instance.id;
+    console.log(instance);
 
-      res.redirect(
-        `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/lti13_instance/${lti13_course_instance_id}`,
-      );
-      return;
+    let assessment_id: string | null = null;
+
+    if ('unsafe_assessment_id' in req.params) {
+      // Query to sanitize to this course instance and LTI 1.3 course instance
+      // Then set assessment_id
+
+      assessment_id = req.params.unsafe_assessment_id;
+    } else {
+      // No assessment ID, we probably need to pick one
+      // Get metadata from LTI
     }
 
-    const instance = instances.find(
-      (i) => i.lti13_course_instance.id === req.params.unsafe_lti13_course_instance_id,
-    );
-
-    if (!instance) {
-      throw error.make(404, 'LTI 1.3 instance not found.');
-    }
+    console.log(assessment_id);
 
     const assessments: AssessmentLti13AssessmentRowSchema[] = await selectAssessments({
       course_instance_id: res.locals.course_instance.id,
@@ -142,6 +137,9 @@ router.get(
       a.lti13_assessment = lti13AssessmentsByAssessmentId[a.id] ?? undefined;
       assessmentsById[a.id] = a;
     }
+
+    // Fixme
+    const assessment = assessmentsById[assessment_id ?? 1];
 
     if ('lineitems' in req.query) {
       let lineItemRows: LineItemsRow[];
@@ -184,12 +182,11 @@ router.get(
       InstructorInstanceAdminLti13({
         resLocals: res.locals,
         instance,
-        instances,
+        assessment,
         assessments,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
       }),
     );
-    */
   }),
 );
 

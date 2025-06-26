@@ -24,13 +24,13 @@ export type AssessmentLti13AssessmentRowSchema = z.infer<typeof AssessmentLti13A
 export function InstructorInstanceAdminLti13({
   resLocals,
   instance,
-  instances,
+  assessment,
   assessments,
   assessmentsGroupBy,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13CombinedInstance;
-  instances: Lti13CombinedInstance[];
+  assessment: AssessmentRow;
   assessments: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
 }): string {
@@ -38,7 +38,7 @@ export function InstructorInstanceAdminLti13({
 
   return PageLayout({
     resLocals,
-    pageTitle: 'LTI 1.3',
+    pageTitle: 'LTI 1.3 assignment linking',
     navContext: {
       type: 'instructor',
       page: 'instance_admin',
@@ -49,96 +49,40 @@ export function InstructorInstanceAdminLti13({
       marginBottom: true,
     },
     content: html`
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
-          <h1>LTI 1.3 configuration</h1>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-2">
-              <div class="dropdown mb-2">
-                <button
-                  type="button"
-                  class="btn dropdown-toggle border border-gray"
-                  data-bs-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                  data-bs-boundary="window"
-                >
-                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
-                </button>
-                <div class="dropdown-menu">
-                  ${instances.map((i) => {
-                    return html`
-                      <a
-                        class="dropdown-item ${instance.lti13_course_instance.id ===
-                        i.lti13_course_instance.id
-                          ? 'active'
-                          : ''}"
-                        href="/pl/course_instance/${resLocals.course_instance
-                          .id}/instructor/instance_admin/lti13_instance/${i.lti13_course_instance
-                          .id}"
-                        aria-current="${instance.lti13_course_instance.id ===
-                        i.lti13_course_instance.id
-                          ? 'true'
-                          : ''}"
-                      >
-                        ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
-                      </a>
-                    `;
-                  })}
-                </div>
-              </div>
-              Quick links:
-              <ul>
-                <li><a href="#assessments">Linked Assessments</a></li>
-                <li><a href="#connection">Connection to LMS</a></li>
-              </ul>
-              Created at:
-              ${formatDateYMDHM(
-                instance.lti13_course_instance.created_at,
-                resLocals.course_instance.display_timezone,
-              )}
-            </div>
-            <div class="col-10">
-              <h3 id="assessments">Linked Assessments</h3>
-              ${instance.lti13_course_instance.context_memberships_url &&
-              instance.lti13_course_instance.lineitems_url
-                ? LinkedAssessments({
-                    resLocals,
-                    lms_name,
-                    assessments,
-                    assessmentsGroupBy,
-                  })
-                : html`
-                    <p>
-                      PrairieLearn does not have enough LTI metadata to link assignments and do
-                      grade passback.
-                    </p>
-                    <p>
-                      To update our metadata, go back to the LMS and initiate a PrairieLearn
-                      connection via LTI as an instructor, then return here.
-                    </p>
-                  `}
-
-              <h3 id="connection">Connection to LMS</h3>
-              <form method="POST">
-                <input type="hidden" name="__action" value="delete_lti13_course_instance" />
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <button
-                  class="btn btn-danger btn-sm"
-                  onclick="return confirm('Are you sure you want to remove this connection?');"
-                >
-                  Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
-                  ${instance.lti13_course_instance.context_label}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
+      ${KnowAssessmentPickLineItem({
+        lms_name,
+        resLocals,
+        assessment,
+      })}
     `,
   });
+}
+
+function KnowAssessmentPickLineItem({ lms_name, resLocals, assessment }) {
+  return html`
+    <p>Which ${lms_name} assignment should we link?</p>
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="unsafe_assessment_id" value="${assessment.id}" />
+      <button class="btn btn-success" name="__action" value="create_link_assessment">
+        Create a new assignment named ${assessment.label}: ${assessment.title}
+      </button>
+    </form>
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="unsafe_assessment_id" value="${assessment.id}" />
+      <button
+        class="btn btn-primary"
+        hx-get="?lineitems"
+        hx-target="next .line-items-inputs"
+        onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
+      >
+        Pick from existing ${lms_name} assignments
+        <span class="refresh-button d-none"><i class="fa fa-refresh"></i></span>
+      </button>
+      <div class="line-items-inputs"></div>
+    </form>
+  `;
 }
 
 function LinkedAssessments({

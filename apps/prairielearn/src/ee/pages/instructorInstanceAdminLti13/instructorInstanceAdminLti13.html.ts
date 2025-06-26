@@ -109,6 +109,7 @@ export function InstructorInstanceAdminLti13({
                     lms_name,
                     assessments,
                     assessmentsGroupBy,
+                    lti13_course_instance_id: instance.lti13_course_instance.id,
                   })
                 : html`
                     <p>
@@ -146,11 +147,13 @@ function LinkedAssessments({
   lms_name,
   assessments,
   assessmentsGroupBy,
+  lti13_course_instance_id,
 }: {
   resLocals: Record<string, any>;
   lms_name: string;
   assessments: AssessmentLti13AssessmentRowSchema[];
   assessmentsGroupBy: 'Set' | 'Module';
+  lti13_course_instance_id: string;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
 
@@ -359,6 +362,10 @@ function LinkedAssessments({
                           </button>
                         `}
                   </form>
+
+                  <a href="${lti13_course_instance_id}/assessment/${row.id}" class="btn btn-primary"
+                    >New UI</a
+                  >
                 </td>
                 <td class="align-middle">
                   ${row.lti13_assessment
