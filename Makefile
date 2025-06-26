@@ -2,16 +2,21 @@ build:
 	@yarn turbo run build
 build-sequential:
 	@yarn turbo run --concurrency 1 build
-python-deps:
+
+venv-setup:
 	@if uv --version >/dev/null 2>&1; then \
-		if test ! -f .venv/bin/python; then \
-			uv venv --python-preference only-system --python 3.10 --seed .venv; \
-		fi; \
+		[ -f .venv/bin/python ] || uv venv --python-preference only-system --python 3.10 --seed .venv; \
+	else \
+		[ -f .venv/bin/python ] || python3 -m venv .venv; \
+	fi
+
+venv-activate:
+	@. .venv/bin/activate
+
+python-deps: venv-setup
+	@if uv --version >/dev/null 2>&1; then \
 		uv pip install -r images/plbase/python-requirements.txt --compile-bytecode --python .venv; \
 	else \
-		if test ! -f .venv/bin/python; then \
-			python3 -m venv .venv; \
-		fi; \
 		.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt; \
 	fi
 deps:
@@ -64,7 +69,7 @@ test-prairielearn-docker-smoke-tests: start-support
 	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
-test-python:
+test-python: venv-activate
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
@@ -115,7 +120,7 @@ format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
-format-python:
+format-python: venv-activate
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
@@ -126,7 +131,7 @@ typecheck-scripts:
 	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
-typecheck-python:
+typecheck-python: venv-activate
 	@yarn pyright
 
 changeset:
