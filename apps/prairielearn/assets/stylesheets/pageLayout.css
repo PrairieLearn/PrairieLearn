@@ -239,7 +239,9 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled {
-    display: block;
+    /* Use flexbox to ensure that app-main fills the entire space of app-container. */
+    display: flex;
+    flex-direction: column;
     transition: none;
     --navbar-height: 3.5rem;
   }
