@@ -106,7 +106,12 @@ function getPackageVersion(packageName: string): string {
           //
           // In this case, `err.path` should point to the root of the package.
           if (err.code === 'MODULE_NOT_FOUND' && err.path) {
-            return path.resolve(err.path, 'package.json');
+            // Check if the path is a directory
+            if (fs.lstatSync(err.path).isDirectory()) {
+              return path.resolve(err.path, 'package.json');
+            } else {
+              return path.resolve(path.dirname(err.path), 'package.json');
+            }
           }
 
           throw err;

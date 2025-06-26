@@ -155,9 +155,30 @@ $(function() {
       </button>
     </div>
   </div>
-  <div class="js-crop-rotate-container d-none mb-2">
+  <div class="js-crop-rotate-container d-none p-3 pb-5 mt-3">
     <div class="js-cropper-container">
+      <img class="js-cropper-image w-100" alt="Picture" />
     </div>
+    <div class="d-flex align-items-center mt-3">
+      <p class="text-muted text-nowrap mb-0 me-1">
+        Rotation angle: 
+      </p>
+      <p class="text-muted mb-0 fw-bold">
+        <span class="js-rotation-angle">0</span>°
+      </p>
+    </div>
+    <input type="range" class="js-rotation-slider form-range" min="-180" max="180" step="1" value="0" />  
+
+    <div class="d-flex align-items-center">
+      <p class="text-muted text-nowrap mb-0 me-1">
+        Zoom: 
+      </p>
+      <p class="text-muted mb-0 fw-bold">
+        <span class="js-zoom-amount">100</span>%
+      </p>
+    </div>
+    <input type="range" class="js-zoom-slider form-range" min="10" max="500" step="1" value="100" />  
   </div>
+  
   {{/editable}}
 </div>

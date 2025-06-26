@@ -123,14 +123,39 @@
     }
 
     createCropRotateListeners() {
-      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+      this.rotationAngle = 0;
+      this.zoomAmount = 100;
 
-      if (!cropRotateButton) {
-        throw new Error('Crop and rotate button not found in image capture element');
-      }
+      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+      const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
+      const zoomSlider = this.imageCaptureDiv.querySelector('.js-zoom-slider');
+
+      this.ensureElementsExist({
+        cropRotateButton,
+        rotationSlider,
+      })
 
       cropRotateButton.addEventListener('click', () => {
         this.startCropRotate();
+      });
+
+      rotationSlider.addEventListener('input', (event) => {
+        const rotationAngle = parseFloat(event.target.value);
+
+        console.log('Rotation angle changed:', event.target.value);
+
+        if (isNaN(rotationAngle)) {
+          throw new Error('Invalid rotation angle');
+        }
+        this.handleRotationUpdate(rotationAngle);
+      });
+
+      zoomSlider.addEventListener('input', (event) => {
+        const zoomAmount = parseFloat(event.target.value);
+        if (isNaN(zoomAmount)) {
+          throw new Error('Invalid zoom amount');
+        }
+        this.handleZoomUpdate(zoomAmount);
       });
     }
 
@@ -618,20 +643,84 @@
     }
 
     startCropRotate() {
+      const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-image');
+
+      this.ensureElementsExist({
+        cropperImage
+      });
+
       this.openContainer('crop-rotate');
 
-      const image = new Image();
+      cropperImage.value = this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value;
+      cropperImage.src = this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value;
 
-      image.src = this.imageCaptureDiv.querySelector('.js-hidden-capture-input').value;
-      image.alt = 'Captured image';
+      this.cropper = new Cropper.default('.js-cropper-container .js-cropper-image');
 
-      // const crop_obj = new Cropper(image, {
-      //   container: '.js-cropper-container',
-      // });
+      const cropperHandle = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-handle[action="move"]');
+      const cropperShade = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-shade');
+      const cropperCanvas = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-canvas');
 
-      // console.log('cropper', crop_obj);
+      this.ensureElementsExist({
+        cropperHandle,
+        cropperShade,
+        cropperCanvas
+      });
+
+      cropperCanvas.style.height = cropperImage.naturalHeight + 'px';
+      cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)')
+    }
+
+    handleRotationUpdate(rotationAngle) {
+      const rotationAngleText = this.imageCaptureDiv.querySelector('.js-rotation-angle');
+
+      this.ensureElementsExist({
+        rotationAngleText,
+      });
+
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      const rotationChange = rotationAngle - this.rotationAngle;
+
+      this.rotationAngle = rotationAngle;
+
+      console.log('cropper', this.cropper);
+
+      console.log('Cropper ready, methods:', Object.getOwnPropertyNames(
+        Object.getPrototypeOf(this.cropper)
+      ));
+
+      this.cropper.getCropperImage().$rotate(`${rotationChange}deg`);
+
+      rotationAngleText.innerHTML = String(rotationAngle);
+    }
+
+    handleZoomUpdate(zoomAmount) {
+      const zoomAmountText = this.imageCaptureDiv.querySelector('.js-zoom-amount');
+
+      this.ensureElementsExist({
+        zoomAmountText,
+      });
+
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      // Obtain the current center of the cropper crosshair
+      // console.log('Cropper ready, methods:', Object.getOwnPropertyNames(
+      //   Object.getPrototypeOf(this.cropper.getCropperSelection().$getSelections())
+      // ));
+      
+      const zoomChange = zoomAmount / this.zoomAmount;
+      this.zoomAmount = zoomAmount;
+
+      this.cropper.getCropperImage().$scale(zoomChange, zoomChange);
+      
+      zoomAmountText.innerHTML = String(zoomAmount);
     }
   }
+
 
   window.PLImageCapture = PLImageCapture;
 })();
