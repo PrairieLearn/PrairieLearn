@@ -115,7 +115,6 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
     columns,
     columnResizeMode: 'onChange',
     getRowId: (row) => row.user.user_id,
-    initialState: undefined,
     state: {
       sorting,
       columnFilters,
