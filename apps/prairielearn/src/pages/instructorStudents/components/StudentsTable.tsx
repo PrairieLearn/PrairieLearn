@@ -16,20 +16,18 @@ function SortIcon({ sortMethod }: { sortMethod: null | SortDirection }) {
 
 function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
   return (
-    <div
-      onMouseDown={header.getResizeHandler()}
-      onTouchStart={header.getResizeHandler()}
-      style={{
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        height: '100%',
-        width: '4px',
-        background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
-        cursor: 'col-resize',
-        transition: 'background-color 0.2s',
-      }}
-    />
+    <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
+      <div
+        onMouseDown={header.getResizeHandler()}
+        onTouchStart={header.getResizeHandler()}
+        class="h-100"
+        style={{
+          background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
+          cursor: 'col-resize',
+          transition: 'background-color 0.2s',
+        }}
+      />
+    </div>
   );
 }
 
@@ -95,7 +93,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
-                      background: 'var(--bs-body-bg)',
+                      background: isPinned === 'left' ? 'var(--bs-secondary-bg)' : undefined,
                       /*
                       zIndex:
                         2 - pinned header columns
@@ -104,13 +102,18 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       */
                       zIndex: isPinned === 'left' ? 2 : 1,
                       left: isPinned === 'left' ? header.getStart() : undefined,
+                      boxShadow: 'inset 0 -2px 0 0 rgba(0, 0, 0, 1)',
                     };
 
                     return (
-                      <th key={header.id} style={style}>
+                      <th key={header.id} style={{ ...style }}>
                         <div
                           class="text-nowrap"
-                          style={{ cursor: header.column.getCanSort() ? 'pointer' : 'default' }}
+                          style={{
+                            cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
                           onClick={
                             header.column.getCanSort()
                               ? header.column.getToggleSortingHandler()
@@ -161,6 +164,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
+                          background: 'var(--bs-secondary-bg)',
                         }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

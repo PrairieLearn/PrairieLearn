@@ -46,7 +46,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
     parseAsSortingState.withDefault(DEFAULT_SORT),
   );
   const [columnPinning, setColumnPinning] = useQueryState(
-    'pin',
+    'frozen',
     parseAsColumnPinningState.withDefault({ left: [], right: [] }),
   );
 
