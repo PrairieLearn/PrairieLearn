@@ -127,7 +127,7 @@ typecheck-scripts:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@yarn pyright --verbose
+	@yarn pyright
 
 changeset:
 	@yarn changeset
