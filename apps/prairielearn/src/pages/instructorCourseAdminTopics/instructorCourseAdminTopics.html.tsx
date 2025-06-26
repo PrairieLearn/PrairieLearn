@@ -8,9 +8,11 @@ import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseA
 export function InstructorCourseAdminTopics({
   resLocals,
   topics,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   topics: Topic[];
+  origHash: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -39,6 +41,8 @@ export function InstructorCourseAdminTopics({
           <InstructorCourseAdminTopicsTable
             topics={topics}
             hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
+            csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
           />
         </Hydrate>
       </>

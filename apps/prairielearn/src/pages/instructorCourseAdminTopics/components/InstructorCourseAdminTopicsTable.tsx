@@ -9,9 +9,13 @@ import { EditTopicsModal } from './EditTopicsModal.js';
 export function InstructorCourseAdminTopicsTable({
   topics,
   hasCoursePermissionEdit,
+  origHash,
+  csrfToken,
 }: {
   topics: Topic[];
   hasCoursePermissionEdit: boolean;
+  origHash: string | null;
+  csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>({
@@ -50,17 +54,13 @@ export function InstructorCourseAdminTopicsTable({
     handleModalClose();
   };
 
-  const handleSave = () => {
-    console.log('Saving topic:', selectedTopic);
-  };
-
   return (
     <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Topics</h1>
           <div class="ms-auto">
-            {hasCoursePermissionEdit ? (
+            {hasCoursePermissionEdit && origHash ? (
               !editMode ? (
                 <button
                   class="btn btn-sm btn-light"
@@ -70,22 +70,24 @@ export function InstructorCourseAdminTopicsTable({
                   <i class="fa fa-edit" aria-hidden="true"></i> Edit topics
                 </button>
               ) : (
-                <span class="js-edit-mode-buttons">
-                  <button
-                    class="btn btn-sm btn-light mx-1"
-                    type="button"
-                    onClick={() => handleSave()}
-                  >
-                    <i class="fa fa-save" aria-hidden="true"></i> Save and sync
-                  </button>
-                  <button
-                    class="btn btn-sm btn-light"
-                    type="button"
-                    onClick={() => window.location.reload()}
-                  >
-                    Cancel
-                  </button>
-                </span>
+                <form method="POST">
+                  <input type="hidden" name="__action" value="save_topics" />
+                  <input type="hidden" name="__csrf_token" value={csrfToken} />
+                  <input type="hidden" name="orig_hash" value={origHash} />
+                  <input type="hidden" name="topics" value={JSON.stringify(topicsState)} />
+                  <span class="js-edit-mode-buttons">
+                    <button class="btn btn-sm btn-light mx-1" type="submit">
+                      <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                    </button>
+                    <button
+                      class="btn btn-sm btn-light"
+                      type="button"
+                      onClick={() => window.location.reload()}
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                </form>
               )
             ) : (
               ''
