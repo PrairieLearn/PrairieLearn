@@ -12,6 +12,7 @@ const registry = new ReactFragmentsRegistry();
 
 export function registerReactFragment(component: ComponentType<any>, nameOverride?: string) {
   // Each React component that will be hydrated on the page must be registered.
+  // Note that we don't try to use `component.name` since it can be minified or mangled.
   const id = nameOverride ?? component.displayName;
   if (!id) {
     throw new Error('React fragment must have a displayName or nameOverride');
