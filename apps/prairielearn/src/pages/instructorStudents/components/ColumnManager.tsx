@@ -15,7 +15,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
 
   return (
     <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
-      <label class="form-check me-auto text-nowrap d-flex align-items-center">
+      <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
         <input
           type="checkbox"
           class="form-check-input"
