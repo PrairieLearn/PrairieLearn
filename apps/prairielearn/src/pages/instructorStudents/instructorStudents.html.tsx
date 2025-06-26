@@ -158,26 +158,24 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
         </div>
       </div>
       <div class="card-body d-flex flex-column">
-        <div class="d-flex flex-row mb-2">
-          <div class="col-xl-4 col-md-6 col-12 col-auto" style={{ position: 'relative' }}>
-            <input
-              ref={searchInputRef}
-              type="text"
-              class="form-control"
-              aria-label="Search by UID, name or email."
-              placeholder="Search by UID, name, email..."
-              value={globalFilter}
-              onInput={(e) => {
-                if (!(e.target instanceof HTMLInputElement)) {
-                  return;
-                }
-                setGlobalFilter(e.target.value);
-              }}
-            />
-            {globalFilter && (
+        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
+          <div class="flex-grow-1">
+            <div class="input-group">
+              <input
+                ref={searchInputRef}
+                type="text"
+                class="form-control"
+                aria-label="Search by UID, name or email."
+                placeholder="Search by UID, name, email..."
+                value={globalFilter}
+                onInput={(e) => {
+                  if (!(e.target instanceof HTMLInputElement)) return;
+                  setGlobalFilter(e.target.value);
+                }}
+              />
               <button
                 type="button"
-                class="btn p-0 position-absolute end-0 top-50 translate-middle-y me-2"
+                class="btn btn-outline-secondary"
                 aria-label="Clear search"
                 title="Clear search"
                 data-bs-toggle="tooltip"
@@ -185,18 +183,9 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
               >
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
               </button>
-            )}
-          </div>
-          <div class="col-xl-8 col-md-6 d-none d-md-flex flex-row justify-content-md-between justify-content-end">
-            <div class="mx-2">
-              <ColumnManager table={table} />
             </div>
           </div>
-        </div>
-        <div class="d-flex flex-row justify-content-between mb-2 align-items-end">
-          <div class="me-2 d-md-none">
-            <ColumnManager table={table} />
-          </div>
+          <ColumnManager table={table} />
           <div class="text-muted text-nowrap">
             Showing {table.getRowModel().rows.length} of {students.length} students
           </div>
