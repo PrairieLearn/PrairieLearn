@@ -87,23 +87,18 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                   {headerGroup.headers.map((header) => {
                     const isPinned = header.column.getIsPinned();
                     const style: JSX.CSSProperties = {
+                      // If the cell is the last column, use whichever is larger:
+                      // 1. The remaining space
+                      // 2. The column width
                       width:
-                        /*
-                        If the cell is the last column, use whichever is larger:
-                          1. The remaining space
-                          2. The column width
-                        */
                         header.column.id === lastColumnId
                           ? `max(100%, ${header.getSize()}px)`
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
-                      /*
-                      zIndex:
-                        2 - pinned header columns
-                        1 - unpinned header row
-                        0 - table body
-                      */
+                      // 2 - pinned header columns
+                      // 1 - unpinned header row
+                      // 0 - table body
                       zIndex: isPinned === 'left' ? 2 : 1,
                       left: isPinned === 'left' ? header.getStart() : undefined,
                       boxShadow:
