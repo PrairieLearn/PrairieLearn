@@ -114,9 +114,7 @@ jobs:
           make python-deps
 
       - name: Activate virtualenv
-        run: |
-          source .venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
       - name: Test venv
         run: |
