@@ -56,7 +56,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   // Empty state if no columns are visible
 
   return (
-    <div style={{ position: 'relative' }} class="border d-flex flex-column h-100">
+    <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
       <div
         ref={parentRef}
         style={{
@@ -67,6 +67,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           bottom: 0,
           overflow: 'auto',
           overflowAnchor: 'none',
+          paddingRight: '1em',
         }}
       >
         <div
@@ -75,7 +76,10 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             width: `max(${table.getTotalSize()}px, 100%)`,
           }}
         >
-          <table class="table table-hover mb-0" style={{ tableLayout: 'fixed' }}>
+          <table
+            class="table table-hover mb-0 border border-top-0"
+            style={{ tableLayout: 'fixed' }}
+          >
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -102,7 +106,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                       */
                       zIndex: isPinned === 'left' ? 2 : 1,
                       left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow: 'inset 0 -2px 0 0 rgba(0, 0, 0, 1)',
+                      boxShadow:
+                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
                     };
 
                     return (
@@ -164,7 +169,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          background: 'var(--bs-secondary-bg)',
                         }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
