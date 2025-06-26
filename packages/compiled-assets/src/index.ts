@@ -84,13 +84,16 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
 
     const splitSourceGlob = path.join(
       options.sourceDirectory,
       'scripts',
-      'split-bundles',
+      'esm-bundles',
       '**',
       '*.{js,ts,jsx,tsx}',
     );
@@ -111,6 +114,9 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
     splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
@@ -159,7 +165,7 @@ export function handler() {
   // and watching our assets.
   return function (req: IncomingMessage, res: ServerResponse) {
     const isSplitBundle =
-      req.url?.startsWith('/scripts/split-bundles') ||
+      req.url?.startsWith('/scripts/esm-bundles') ||
       // Chunked assets must be served by the split server.
       req.url?.startsWith('/chunk-');
 
@@ -287,6 +293,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true, // Write metadata about the build
   });
 
@@ -307,6 +316,9 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true,
   });
 

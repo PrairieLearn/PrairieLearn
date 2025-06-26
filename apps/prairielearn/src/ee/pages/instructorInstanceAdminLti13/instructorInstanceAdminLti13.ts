@@ -19,6 +19,7 @@ import {
   type Lti13Assessments,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -37,6 +38,7 @@ import {
 import {
   type AssessmentLti13AssessmentRowSchema,
   InstructorInstanceAdminLti13,
+  InstructorInstanceAdminLti13NoInstances,
   type LineItemsRow,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
@@ -52,12 +54,27 @@ router.get(
     }
 
     const instances = await queryRows(
-      sql.select_lti13_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      sql.select_combined_lti13_instances,
+      { course_instance_id: res.locals.course_instance.id },
       Lti13CombinedInstanceSchema,
     );
+
+    if (instances.length === 0) {
+      // See if we have configurations per institution
+      const lti13_instances = await queryRows(
+        sql.select_lti13_instances,
+        { institution_id: res.locals.institution.id },
+        Lti13InstanceSchema,
+      );
+
+      res.send(
+        InstructorInstanceAdminLti13NoInstances({
+          resLocals: res.locals,
+          lti13_instances,
+        }),
+      );
+      return;
+    }
 
     // Handle the no parameter offered case, take the first one
     if (!req.params.unsafe_lti13_course_instance_id) {
@@ -83,9 +100,7 @@ router.get(
 
     const lti13_assessments = await queryRows(
       sql.select_lti13_assessments,
-      {
-        lti13_course_instance_id: instance.lti13_course_instance.id,
-      },
+      { lti13_course_instance_id: instance.lti13_course_instance.id },
       Lti13AssessmentsSchema,
     );
 
@@ -159,7 +174,7 @@ router.post(
     }
 
     const instance = await queryRow(
-      sql.select_lti13_instance,
+      sql.select_combined_lti13_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,

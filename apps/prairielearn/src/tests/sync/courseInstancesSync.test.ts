@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -501,5 +502,22 @@ describe('Course instance syncing', () => {
       syncedCourseInstance?.sync_warnings,
       /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
     );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(
+      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
+    );
+    assert.isOk(syncedCourseInstance);
+    assert.match(syncedCourseInstance?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });
