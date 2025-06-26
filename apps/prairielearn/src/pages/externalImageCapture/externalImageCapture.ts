@@ -84,7 +84,7 @@ router.post(
     }
 
     // Emit a socket event to notify the client that the image has been captured.
-    await emitExternalImageCapture({
+    emitExternalImageCapture({
       variant_id: variantId,
       variant_token: res.locals.variantToken,
       file_name: fileName,
