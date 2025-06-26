@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { instructorInstanceAdminBillingState } from './InstructorInstanceAdminBillingForm.html.js';
+import { instructorInstanceAdminBillingState } from './InstructorInstanceAdminBillingForm.js';
 
 describe('instructorInstanceAdminBillingState', () => {
   it('allows enabling student billing by default', () => {
