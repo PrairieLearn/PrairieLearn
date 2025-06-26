@@ -1,7 +1,6 @@
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type Topic } from '../../lib/db-types.js';
-import { Hydrate } from '../../lib/preact.js';
 
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
@@ -25,19 +24,12 @@ export function InstructorCourseAdminTopics({
     },
     content: (
       <>
-        <div
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: CourseSyncErrorsAndWarnings({
-              authz_data: resLocals.authz_data,
-              course: resLocals.course,
-              urlPrefix: resLocals.urlPrefix,
-            }).toString(),
-          }}
+        <CourseSyncErrorsAndWarnings
+          authz_data={resLocals.authz_data}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
         />
-        <Hydrate>
-          <InstructorCourseAdminTopicsTable topics={topics} />
-        </Hydrate>
+        <InstructorCourseAdminTopicsTable topics={topics} />
       </>
     ),
   });
