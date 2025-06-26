@@ -85,17 +85,10 @@ export const parseAsSortingState = createParser<SortingState>({
 export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
   return createParser<VisibilityState>({
     parse(queryValue: string) {
-      console.log('parse', queryValue);
-      if (!queryValue) {
-        // Default: all columns visible
-        const result: VisibilityState = {};
-        for (const col of allColumns) {
-          result[col] = true;
-        }
-        return result;
-      }
-      // Format: foo,bar (only these columns are shown)
-      const shown = new Set(queryValue.split(',').filter(Boolean));
+      const shown =
+        queryValue.length > 0
+          ? new Set(queryValue.split(',').filter(Boolean))
+          : new Set(allColumns);
       const result: VisibilityState = {};
       for (const col of allColumns) {
         result[col] = shown.has(col);
