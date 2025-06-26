@@ -65,6 +65,7 @@ export function QuestionContainer({
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
+      data-workspace-id="${variant.workspace_id}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
