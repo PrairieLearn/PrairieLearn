@@ -20,7 +20,7 @@ export function CourseSyncErrorsAndWarnings({
       syncErrors={course.sync_errors}
       syncWarnings={course.sync_warnings}
       fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
-      context={'course'}
+      context="course"
     />
   );
 }
@@ -43,7 +43,7 @@ export function QuestionSyncErrorsAndWarnings({
       syncErrors={question.sync_errors}
       syncWarnings={question.sync_warnings}
       fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
-      context={'question'}
+      context="question"
     />
   );
 }
@@ -66,7 +66,7 @@ export function CourseInstanceSyncErrorsAndWarnings({
       syncErrors={courseInstance.sync_errors}
       syncWarnings={courseInstance.sync_warnings}
       fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
-      context={'course instance'}
+      context="course instance"
     />
   );
 }
@@ -91,7 +91,7 @@ export function AssessmentSyncErrorsAndWarnings({
       syncErrors={assessment.sync_errors}
       syncWarnings={assessment.sync_warnings}
       fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
-      context={'assessment'}
+      context="assessment"
     />
   );
 }
