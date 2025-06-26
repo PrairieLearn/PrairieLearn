@@ -2,6 +2,7 @@ import './debug.js';
 
 import { type ComponentType, hydrate } from 'preact';
 import { observe } from 'selector-observer';
+import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -33,7 +34,7 @@ onDocumentReady(() => {
       const dataElement = el.querySelector('script[data-component-props]');
       if (!dataElement) throw new Error('No data element found');
       if (!dataElement.textContent) throw new Error('Data element has no content');
-      const data = JSON.parse(dataElement.textContent);
+      const data = superjson.parse(dataElement.textContent) as object;
 
       const rootElement = el.querySelector('div[data-component-root]');
       if (!rootElement) throw new Error('No root element found');
