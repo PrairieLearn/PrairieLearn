@@ -176,8 +176,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'images/plbase/python-requirements.txt'
       - name: Install Python dependencies
-        run: |
-          make python-deps
+        run: make python-deps
 
       - name: Activate virtualenv
         # https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#adding-a-system-path
