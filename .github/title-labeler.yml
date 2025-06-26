@@ -22,3 +22,7 @@ labels:
     sync: false
     matcher:
       title: '.*(Preact|preact).*'
+  - label: 'documentation'
+    sync: false
+    matcher:
+      title: '.*(document |Document |documentation |Documentation ).*'
