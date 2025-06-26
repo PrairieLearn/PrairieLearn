@@ -1,2 +1,2 @@
-export { formatDate, formatDateYMD, formatDateYMDHM } from './date.js';
+export { formatDate, formatDateYMD, formatDateYMDHM, formatTz } from './date.js';
 export { formatInterval } from './interval.js';
