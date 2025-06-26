@@ -23,6 +23,11 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           onChange={column.getToggleVisibilityHandler()}
           disabled={!column.getCanHide()}
           onMouseDown={(e) => e.preventDefault()}
+          title={column.getIsVisible() ? 'Hide column' : 'Show column'}
+          // Since this doesn't cause a re-render, we need to set the original title manually
+          data-bs-original-title={column.getIsVisible() ? 'Hide column' : 'Show column'}
+          aria-label={column.getIsVisible() ? 'Hide column' : 'Show column'}
+          data-bs-toggle="tooltip"
         />
         <span class="form-check-label ms-2">{header}</span>
       </label>
@@ -32,6 +37,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           class="btn btn-sm btn-ghost ms-2"
           aria-label={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
+          data-bs-toggle="tooltip"
           onClick={() => onTogglePin(column.id)}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -85,6 +91,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.preventDefault()}
       >
+        {pinnedColumns.length > 0 && <div class="px-2 py-1 text-muted small">Frozen columns</div>}
         {pinnedColumns.map((column, index) => (
           <ColumnMenuItem
             key={column.id}

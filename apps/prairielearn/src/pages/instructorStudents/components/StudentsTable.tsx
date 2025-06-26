@@ -25,19 +25,9 @@ function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
         top: 0,
         height: '100%',
         width: '4px',
-        background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'transparent',
+        background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
         cursor: 'col-resize',
         transition: 'background-color 0.2s',
-      }}
-      onMouseEnter={(e) => {
-        if (!header.column.getIsResizing()) {
-          e.currentTarget.style.background = 'var(--bs-gray-400)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!header.column.getIsResizing()) {
-          e.currentTarget.style.background = 'transparent';
-        }
       }}
     />
   );
@@ -64,6 +54,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
+
+  // Empty state if no columns are visible
 
   return (
     <div style={{ position: 'relative' }} class="border d-flex flex-column h-100">
@@ -205,6 +197,24 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         </div>
       </div>
 
+      {table.getVisibleLeafColumns().length === 0 && (
+        <div>
+          <div
+            class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'var(--bs-body-bg)',
+            }}
+          >
+            <i class="bi bi-eye-slash fa-2x mb-2" aria-hidden="true"></i>
+            <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
+          </div>
+        </div>
+      )}
       {table.getRowModel().rows.length === 0 && (
         <div
           class="d-flex flex-column justify-content-center align-items-center text-muted py-4"
