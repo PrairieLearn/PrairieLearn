@@ -129,9 +129,8 @@ export function InstructorInstanceAdminLti13({
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  <span class="d-inline-block text-truncate w-100">
-                    ${instance.lti13_instance.name}: <br />
-                    ${instance.lti13_course_instance.context_label}
+                  <span class="d-inline-block text-wrap w-100">
+                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
                   </span>
                 </button>
                 <div class="dropdown-menu">
