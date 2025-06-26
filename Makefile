@@ -1,3 +1,5 @@
+WITH_VENV = . .venv/bin/activate &&
+
 build:
 	@yarn turbo run build
 build-sequential:
@@ -9,9 +11,6 @@ venv-setup:
 	else \
 		[ -f .venv/bin/python ] || python3 -m venv .venv; \
 	fi
-
-venv-activate:
-	@. .venv/bin/activate
 
 python-deps: venv-setup
 	@if uv --version >/dev/null 2>&1; then \
@@ -69,9 +68,9 @@ test-prairielearn-docker-smoke-tests: start-support
 	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
-test-python: venv-activate
-	@python3 -m pytest
-	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
+test-python:
+	@$(WITH_VENV) python3 -m pytest
+	@$(WITH_VENV) python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
@@ -120,9 +119,9 @@ format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
-format-python: venv-activate
-	@python3 -m ruff check --fix ./
-	@python3 -m ruff format ./
+format-python:
+	@$(WITH_VENV) python3 -m ruff check --fix ./
+	@$(WITH_VENV) python3 -m ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts
 typecheck-contrib:
@@ -131,8 +130,8 @@ typecheck-scripts:
 	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
-typecheck-python: venv-activate
-	@yarn pyright
+typecheck-python:
+	@$(WITH_VENV) yarn pyright
 
 changeset:
 	@yarn changeset
