@@ -27,10 +27,11 @@ import { DownloadButton } from './components/DownloadButton.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './instructorStudents.shared.js';
 
-const columnHelper = createColumnHelper<StudentRow>();
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
+
+const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
   students: StudentRow[];
@@ -198,6 +199,9 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
   );
 }
 
+/**
+ * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
+ */
 export const InstructorStudents = ({
   search,
   students,
@@ -207,9 +211,6 @@ export const InstructorStudents = ({
 }: {
   search: string;
 } & StudentsCardProps) => {
-  /**
-   * This needs to be a wrapper component because we need to use the NuqsAdapter.
-   */
   return (
     <NuqsAdapter search={search}>
       <StudentsCard

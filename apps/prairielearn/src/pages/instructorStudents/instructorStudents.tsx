@@ -45,9 +45,7 @@ router.get(
 
     const students = await queryRows(
       sql.select_students,
-      {
-        course_instance_id: courseInstance.id,
-      },
+      { course_instance_id: courseInstance.id },
       StudentRowSchema,
     );
 
