@@ -1,4 +1,4 @@
-import type { SortingState } from '@tanstack/table-core';
+import type { ColumnPinningState, SortingState, VisibilityState } from '@tanstack/table-core';
 import { createParser } from 'nuqs';
 import {
   type unstable_AdapterInterface,
@@ -79,5 +79,59 @@ export const parseAsSortingState = createParser<SortingState>({
       a.length === b.length &&
       a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
     );
+  },
+});
+
+export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
+  return createParser<VisibilityState>({
+    parse(queryValue: string) {
+      console.log('parse', queryValue);
+      if (!queryValue) {
+        // Default: all columns visible
+        const result: VisibilityState = {};
+        for (const col of allColumns) {
+          result[col] = true;
+        }
+        return result;
+      }
+      // Format: foo,bar (only these columns are shown)
+      const shown = new Set(queryValue.split(',').filter(Boolean));
+      const result: VisibilityState = {};
+      for (const col of allColumns) {
+        result[col] = shown.has(col);
+      }
+      return result;
+    },
+    serialize(value) {
+      if (!value) return '';
+      // Only output columns that are visible
+      const visible = allColumns.filter((col) => value[col]);
+      if (visible.length === allColumns.length) return '';
+      return visible.join(',');
+    },
+    eq(a, b) {
+      return Object.keys(a).every((col) => a[col] === b[col]);
+    },
+  });
+}
+
+export const parseAsColumnPinningState = createParser<ColumnPinningState>({
+  parse(queryValue) {
+    if (!queryValue) return { left: [], right: [] };
+    // Format: col1,col2,col3 (all left-pinned columns)
+    return {
+      left: queryValue.split(',').filter(Boolean),
+      right: [],
+    };
+  },
+  serialize(value) {
+    if (!value || !value.left) return '';
+    return value.left.join(',');
+  },
+  eq(a, b) {
+    const aLeft = Array.isArray(a.left) ? a.left : [];
+    const bLeft = Array.isArray(b.left) ? b.left : [];
+    if (aLeft.length !== bLeft.length) return false;
+    return aLeft.every((v, i) => v === bLeft[i]);
   },
 });

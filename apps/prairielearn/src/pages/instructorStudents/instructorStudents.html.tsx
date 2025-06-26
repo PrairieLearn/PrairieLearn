@@ -1,9 +1,7 @@
 import {
-  type ColumnDef,
+  type AccessorKeyColumnDef,
   type ColumnFiltersState,
-  type ColumnPinningState,
   type ColumnSizingState,
-  type VisibilityState as ColumnVisibilityState,
   type SortingState,
   createColumnHelper,
   getCoreRowModel,
@@ -16,7 +14,12 @@ import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
 import { formatDate, formatTz } from '@prairielearn/formatter';
 
-import { NuqsAdapter, parseAsSortingState } from '../../lib/client/nuqs.js';
+import {
+  NuqsAdapter,
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsSortingState,
+} from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
@@ -25,7 +28,6 @@ import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './instructorStudents.shared.js';
 
 const columnHelper = createColumnHelper<StudentRow>();
-
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
@@ -42,6 +44,10 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
     parseAsSortingState.withDefault(DEFAULT_SORT),
+  );
+  const [columnPinning, setColumnPinning] = useQueryState(
+    'pin',
+    parseAsColumnPinningState.withDefault({ left: [], right: [] }),
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -62,13 +68,8 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
-  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
-  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
-    left: [],
-    right: [],
-  });
 
-  const columns = useMemo<ColumnDef<StudentRow, any>[]>(
+  const columns = useMemo<AccessorKeyColumnDef<StudentRow, any>[]>(
     () => [
       columnHelper.accessor('user.uid', {
         header: 'UID',
@@ -99,13 +100,23 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
     [],
   );
 
+  const allColumnIds = columns
+    .filter((col) => col.accessorKey)
+    .map((col) => col.accessorKey.replace('.', '_'));
+  const [columnVisibility, setColumnVisibility] = useQueryState(
+    'columns',
+    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(
+      Object.fromEntries(allColumnIds.map((id) => [id, true])),
+    ),
+  );
+
   const table = useReactTable({
     data: students,
     columns,
     columnResizeMode: 'onChange',
     getRowId: (row) => row.user.user_id,
     state: {
-      sorting: sorting ?? undefined,
+      sorting,
       columnFilters,
       globalFilter,
       columnSizing,
