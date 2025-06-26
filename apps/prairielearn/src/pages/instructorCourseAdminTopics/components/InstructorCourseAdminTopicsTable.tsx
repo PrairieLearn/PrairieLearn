@@ -24,9 +24,10 @@ export function InstructorCourseAdminTopicsTable({
     name: '',
     number: null,
   });
+  const [topicsState, setTopicsState] = useState<Topic[]>(topics);
 
   const handleModalOpen = (topicIndex: number) => {
-    setSelectedTopic(topics[topicIndex]);
+    setSelectedTopic(topicsState[topicIndex]);
     window.bootstrap.Modal.getOrCreateInstance(
       document.querySelector('#editTopicModal') as HTMLElement,
     ).show();
@@ -40,7 +41,14 @@ export function InstructorCourseAdminTopicsTable({
   };
 
   const handleModalSave = () => {
-    console.log('Save changes for topic:', selectedTopic);
+    // Ensure the button loses focus to prevent Bootstrap modal issues
+    const buttonElement = document.activeElement as HTMLElement;
+    buttonElement.blur();
+    setTopicsState((prevTopics) =>
+      prevTopics.map((topic) =>
+        topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
+      ),
+    );
     handleModalClose();
   };
 
@@ -105,7 +113,7 @@ export function InstructorCourseAdminTopicsTable({
               </tr>
             </thead>
             <tbody>
-              {topics.map(function (topic, index) {
+              {topicsState.map(function (topic, index) {
                 return (
                   <tr key={topic.id}>
                     {editMode && hasCoursePermissionEdit ? (

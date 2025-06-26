@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'preact/compat';
+
 import { type Topic } from '../../../lib/db-types.js';
 
 export function EditTopicsModal({
@@ -11,7 +13,24 @@ export function EditTopicsModal({
   handleModalSave: () => void;
   handleModalClose: (e) => void;
 }) {
-  if (!selectedTopic) return null;
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Ensure Bootstrap modal instance is cleaned up
+  useEffect(() => {
+    const modalEl = modalRef.current;
+    let modalInstance: any = null;
+    if (window.bootstrap && modalEl) {
+      modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
+    }
+    if (!selectedTopic && modalInstance) {
+      modalInstance.hide();
+    }
+    return () => {
+      if (modalInstance) {
+        modalInstance.hide();
+      }
+    };
+  }, []);
 
   return (
     <div
@@ -21,6 +40,7 @@ export function EditTopicsModal({
       role="dialog"
       id="editTopicModal"
       aria-labelledby="editTopicModalTitle"
+      ref={modalRef}
     >
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -32,56 +52,60 @@ export function EditTopicsModal({
           </div>
           <div class="modal-body">
             <form>
-              <div class="mb-3">
-                <label class="form-label" htmlFor="topicName">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="topicName"
-                  value={selectedTopic.name}
-                  onChange={(e) =>
-                    setSelectedTopic({
-                      ...selectedTopic,
-                      name: (e.target as HTMLInputElement)?.value,
-                    })
-                  }
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label" htmlFor="topicColor">
-                  Color
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="topicColor"
-                  value={selectedTopic.color}
-                  onChange={(e) =>
-                    setSelectedTopic({
-                      ...selectedTopic,
-                      color: (e.target as HTMLInputElement)?.value,
-                    })
-                  }
-                />
-              </div>
-              <div class="mb-3">
-                <label class="form-label" htmlFor="topicDescription">
-                  Description
-                </label>
-                <textarea
-                  class="form-control"
-                  id="topicDescription"
-                  value={selectedTopic.description}
-                  onChange={(e) =>
-                    setSelectedTopic({
-                      ...selectedTopic,
-                      description: (e.target as HTMLTextAreaElement)?.value,
-                    })
-                  }
-                />
-              </div>
+              {selectedTopic ? (
+                <>
+                  <div class="mb-3">
+                    <label class="form-label" htmlFor="topicName">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="topicName"
+                      value={selectedTopic.name}
+                      onChange={(e) =>
+                        setSelectedTopic({
+                          ...selectedTopic,
+                          name: (e.target as HTMLInputElement)?.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" htmlFor="topicColor">
+                      Color
+                    </label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="topicColor"
+                      value={selectedTopic.color}
+                      onChange={(e) =>
+                        setSelectedTopic({
+                          ...selectedTopic,
+                          color: (e.target as HTMLInputElement)?.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label" htmlFor="topicDescription">
+                      Description
+                    </label>
+                    <textarea
+                      class="form-control"
+                      id="topicDescription"
+                      value={selectedTopic.description}
+                      onChange={(e) =>
+                        setSelectedTopic({
+                          ...selectedTopic,
+                          description: (e.target as HTMLTextAreaElement)?.value,
+                        })
+                      }
+                    />
+                  </div>
+                </>
+              ) : null}
             </form>
           </div>
           <div class="modal-footer">
