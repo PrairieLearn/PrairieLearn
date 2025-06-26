@@ -1,4 +1,4 @@
-export PATH := .venv/bin/activate:$(PATH)
+export PATH := .venv/bin:$(PATH)
 
 build:
 	@yarn turbo run build
