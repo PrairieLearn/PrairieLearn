@@ -179,7 +179,23 @@ $(function() {
     </div>
     <input type="range" class="js-zoom-slider form-range" min="10" max="500" step="1" value="100" />  
 
-    <div class="d-flex gap-1 mt-2">
+    <button 
+      type="button"
+      class="js-reset-crop-rotate-button btn btn-light border mt-2"
+    >
+      <i class="bi bi-symmetry-horizontal me-1"></i>
+      Flip horizontally
+    </button>
+
+    <button 
+      type="button"
+      class="js-reset-crop-rotate-button btn btn-light border mt-2"
+    >
+      <i class="bi bi-symmetry-vertical me-1"></i>
+      Flip vertically
+    </button>
+
+    <div class="d-flex gap-1 mt-3">
       <button 
         type="button" 
         class="js-use-edited-image-buttobn btn btn-info"
