@@ -118,12 +118,6 @@ jobs:
         # Prepend to PATH so that the virtualenv is used instead of the system Python.
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      - name: Test venv
-        run: |
-          echo $PATH
-          which python3
-          python3 --version
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
