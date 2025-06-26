@@ -23,7 +23,7 @@ class Test(PLTestCase):
                 continue
             if lst != check:
                 Feedback.add_feedback(
-                    f"Your function modified the input list {lst} to {check}. It should not modify the input list."
+                    f"Your function modified the input list {check} to {lst}. It should not modify the input list."
                 )
                 continue
             score += 1
