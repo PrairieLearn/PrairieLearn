@@ -1,5 +1,6 @@
 import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
+import clsx from 'clsx';
 import { type JSX, useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
@@ -97,7 +98,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
-                      background: isPinned === 'left' ? 'var(--bs-secondary-bg)' : undefined,
                       /*
                       zIndex:
                         2 - pinned header columns
@@ -111,7 +111,11 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                     };
 
                     return (
-                      <th key={header.id} style={{ ...style }}>
+                      <th
+                        key={header.id}
+                        class={clsx(isPinned === 'left' && 'bg-light')}
+                        style={{ ...style }}
+                      >
                         <div
                           class="text-nowrap"
                           style={{
@@ -159,6 +163,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                     {row.getLeftVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
+                        class="bg-light"
                         style={{
                           width:
                             cell.column.id === lastColumnId
