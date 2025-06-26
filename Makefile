@@ -6,14 +6,12 @@ build-sequential:
 	@yarn turbo run --concurrency 1 build
 
 venv-setup:
-	[ -f .venv/bin/python ] || uv venv --python-preference only-system --python 3.10 --seed .venv || python3 -m venv .venv
+	@[ -f .venv/bin/python ] || uv venv --python-preference only-system --python 3.10 --seed .venv || \
+		python3 -m venv .venv
 
 python-deps: venv-setup
-	@if uv --version >/dev/null 2>&1; then \
-		uv pip install -r images/plbase/python-requirements.txt --compile-bytecode --python .venv; \
-	else \
-		.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt; \
-	fi
+	@uv pip install -r images/plbase/python-requirements.txt --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt
 deps:
 	@yarn
 	@$(MAKE) python-deps build
