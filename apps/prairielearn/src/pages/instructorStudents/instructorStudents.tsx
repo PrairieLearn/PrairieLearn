@@ -66,17 +66,11 @@ router.get(
         },
         content: (
           <>
-            <div
-              // TODO: After #12197 use the component directly
-              // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-              dangerouslySetInnerHTML={{
-                __html: CourseInstanceSyncErrorsAndWarnings({
-                  authz_data,
-                  courseInstance,
-                  course,
-                  urlPrefix,
-                }).toString(),
-              }}
+            <CourseInstanceSyncErrorsAndWarnings
+              authz_data={authz_data}
+              courseInstance={courseInstance}
+              course={course}
+              urlPrefix={urlPrefix}
             />
             <Hydrate fullHeight>
               <InstructorStudents
