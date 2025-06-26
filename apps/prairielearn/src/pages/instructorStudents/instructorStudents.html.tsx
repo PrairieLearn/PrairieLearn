@@ -47,7 +47,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
   );
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
-    parseAsColumnPinningState.withDefault({ left: [], right: [] }),
+    parseAsColumnPinningState.withDefault({ left: ['user_uid'], right: [] }),
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +115,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
     columns,
     columnResizeMode: 'onChange',
     getRowId: (row) => row.user.user_id,
+    initialState: undefined,
     state: {
       sorting,
       columnFilters,
