@@ -211,6 +211,9 @@ def add_submitted_file(
 ) -> None:
     """Add a submitted file to the data dictionary.
 
+    Raises:
+        ValueError: If neither `base64_contents` nor `raw_contents` is provided.
+
     Examples:
         >>> add_submitted_file(data, "foo.txt", "base64-contents", mimetype="text/plain")
         >>> data["submitted_answers"]
@@ -221,9 +224,11 @@ def add_submitted_file(
                     {"name": "bar.txt", "contents": "cmF3IGNvbnRlbnRz"}]}
     """
     if base64_contents is None:
-        # If raw_contents is None, use an empty string as the contents
+        # If raw_contents is None, raise an error
         if raw_contents is None:
-            raw_contents = b""
+            raise ValueError(
+                "No content provided for file. Either base64_contents or raw_contents must be provided."
+            )
         # If raw_contents is provided, encode it to base64
         if isinstance(raw_contents, str):
             raw_contents = raw_contents.encode("utf-8")

@@ -1280,12 +1280,12 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     ]
 
     # Test adding fourth file with no content
-    pl.add_submitted_file(question_data, "test4.txt")
+    with pytest.raises(ValueError, match="No content provided for file"):
+        pl.add_submitted_file(question_data, "test4.txt")
     assert question_data["submitted_answers"]["_files"] == [
         {"name": "test1.txt", "contents": base64_msg1},
         {"name": "test2.txt", "contents": base64_msg2},
         {"name": "test3.txt", "contents": base64_msg3},
-        {"name": "test4.txt", "contents": ""},
     ]
 
 
