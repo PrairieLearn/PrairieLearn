@@ -155,7 +155,7 @@ $(function() {
       </button>
     </div>
   </div>
-  <div class="js-crop-rotate-container d-none p-3 pb-5 mt-3">
+  <div class="js-crop-rotate-container d-none p-3 mt-3">
     <div class="js-cropper-container">
       <img class="js-cropper-image w-100" alt="Picture" />
     </div>
@@ -178,6 +178,29 @@ $(function() {
       </p>
     </div>
     <input type="range" class="js-zoom-slider form-range" min="10" max="500" step="1" value="100" />  
+
+    <div class="d-flex gap-1 mt-2">
+      <button 
+        type="button" 
+        class="js-use-edited-image-buttobn btn btn-info"
+      >
+        <i class="bi bi-check2 me-1"></i>
+        Use image
+      </button>
+      <button 
+        type="button"
+        class="js-reset-crop-rotate-button btn btn-secondary"
+      >
+        <i class="bi bi-arrow-counterclockwise me-1"></i>
+        Reset
+      </button>
+      <button 
+        type="button"
+        class="js-discard-changes-button btn btn-secondary"
+      >
+        Discard changes
+      </button>
+    </div>
   </div>
   
   {{/editable}}
