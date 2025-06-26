@@ -19,7 +19,7 @@ export function ExternalImageCapture({
       type: 'student',
       page: 'assessment_instance',
     },
-    preContent: html` ${compiledScriptTag('externalImageCaptureClient.ts')} `,
+    headContent: compiledScriptTag('externalImageCaptureClient.ts'),
     content: html`
       <form
         id="external-image-capture-form"
