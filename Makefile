@@ -1,4 +1,4 @@
-WITH_VENV = source .venv/bin/activate &&
+export PATH := .venv/bin/activate:$(PATH)
 
 build:
 	@yarn turbo run build
@@ -69,8 +69,8 @@ test-prairielearn-docker-smoke-tests: start-support
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
-	@$(WITH_VENV) python3 -m pytest
-	@$(WITH_VENV) python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
+	@python3 -m pytest
+	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 
@@ -94,8 +94,8 @@ lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
-	@$(WITH_VENV) python3 -m ruff check ./
-	@$(WITH_VENV) python3 -m ruff format --check ./
+	@python3 -m ruff check ./
+	@python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -120,8 +120,8 @@ format-js-cached:
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-python:
-	@$(WITH_VENV) python3 -m ruff check --fix ./
-	@$(WITH_VENV) python3 -m ruff format ./
+	@python3 -m ruff check --fix ./
+	@python3 -m ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts
 typecheck-contrib:
@@ -131,7 +131,7 @@ typecheck-scripts:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
-	@$(WITH_VENV) yarn pyright
+	@yarn pyright
 
 changeset:
 	@yarn changeset
