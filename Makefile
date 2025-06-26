@@ -1,4 +1,4 @@
-WITH_VENV = . .venv/bin/activate &&
+WITH_VENV = source .venv/bin/activate &&
 
 build:
 	@yarn turbo run build
@@ -94,8 +94,8 @@ lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
-	@python3 -m ruff check ./
-	@python3 -m ruff format --check ./
+	@$(WITH_VENV) python3 -m ruff check ./
+	@$(WITH_VENV) python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
