@@ -4,7 +4,7 @@ ARG CACHEBUST=2025-06-15-14-13-20
 
 COPY scripts/pl-install.sh requirements.txt /
 
-RUN /bin/bash /plbase-install.sh
+RUN /bin/bash /pl-install.sh
 
 WORKDIR /PrairieLearn
 
