@@ -3,7 +3,7 @@ import debugfn from 'debug';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config.js';
+import { DEV_EXECUTION_MODE, config } from './config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:load');
@@ -148,7 +148,7 @@ export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJob
   );
   if (Object.prototype.hasOwnProperty.call(estimators, jobType)) {
     // For Vite HMR mode
-    if ((import.meta as any).env?.DEV) return;
+    if (DEV_EXECUTION_MODE === 'hmr') return;
     throw new Error(`duplicate jobType: ${jobType}`);
   }
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);

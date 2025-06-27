@@ -53,7 +53,7 @@ import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
@@ -1995,7 +1995,7 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
-  if ((import.meta as any).env?.DEV) {
+  if (DEV_EXECUTION_MODE === 'hmr') {
     return server;
   }
 
@@ -2071,7 +2071,7 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if ((esMain(import.meta) || (import.meta as any).env?.DEV) && config.startServer) {
+if ((esMain(import.meta) || DEV_EXECUTION_MODE === 'hmr') && config.startServer) {
   try {
     logger.verbose('PrairieLearn server start');
 

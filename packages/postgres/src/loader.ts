@@ -23,10 +23,10 @@ export function loadSql(filename: string): SqlFile {
   return sql;
 }
 
-export function loadSqlEquiv(filePathOrUrl: string | undefined): SqlFile {
-  if (!filePathOrUrl) {
-    return {};
-  }
+export function loadSqlEquiv(filePathOrUrl: string): SqlFile {
+  // if (!filePathOrUrl) {
+  //   return {};
+  // }
   let resolvedPath = filePathOrUrl;
 
   // This allows for us to pass `import.meta.url` to this function in ES Modules

@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { doWithLock } from '@prairielearn/named-locks';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { DEV_EXECUTION_MODE } from '../execution-mode.js';
 import {
   type MigrationFile,
   readAndValidateMigrationsFromDirectories,
@@ -297,7 +298,7 @@ function assertRunner(
 export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
   if (runner) {
     // For Vite HMR mode
-    if ((import.meta as any).env?.DEV) return null;
+    if (DEV_EXECUTION_MODE === 'hmr') return null;
     throw new Error('Batched migrations already initialized');
   }
   runner = new BatchedMigrationsRunner(options);
