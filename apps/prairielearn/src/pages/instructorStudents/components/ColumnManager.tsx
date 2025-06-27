@@ -22,7 +22,6 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           checked={column.getIsVisible()}
           onChange={column.getToggleVisibilityHandler()}
           disabled={!column.getCanHide()}
-          onMouseDown={(e) => e.preventDefault()}
           title={column.getIsVisible() ? 'Hide column' : 'Show column'}
           // Since this doesn't cause a re-render, we need to set the original title manually
           data-bs-original-title={column.getIsVisible() ? 'Hide column' : 'Show column'}
@@ -39,7 +38,6 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
           onClick={() => onTogglePin(column.id)}
-          onMouseDown={(e) => e.preventDefault()}
         >
           <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} />
         </button>
@@ -76,7 +74,11 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   const unpinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() !== 'left');
 
   return (
-    <div class="btn-group">
+    <div
+      class="btn-group"
+      // Prevent the dropdown from closing when the user clicks within the dropdown
+      onClick={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
         data-bs-toggle="dropdown"
@@ -86,11 +88,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
       </button>
-      <div
-        class="dropdown-menu dropdown-menu-arrow"
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.preventDefault()}
-      >
+      <div class="dropdown-menu dropdown-menu-arrow">
         {pinnedColumns.length > 0 && <div class="px-2 py-1 text-muted small">Frozen columns</div>}
         {pinnedColumns.map((column, index) => (
           <ColumnMenuItem
