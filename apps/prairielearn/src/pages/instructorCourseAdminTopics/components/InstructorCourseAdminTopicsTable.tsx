@@ -1,0 +1,173 @@
+import { useState } from 'preact/compat';
+
+import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
+import { TopicDescriptionJsx } from '../../../components/TopicDescription.html.js';
+import { type Topic } from '../../../lib/db-types.js';
+
+import { EditTopicsModal } from './EditTopicsModal.js';
+
+export function InstructorCourseAdminTopicsTable({
+  topics,
+  hasCoursePermissionEdit,
+  origHash,
+  csrfToken,
+}: {
+  topics: Topic[];
+  hasCoursePermissionEdit: boolean;
+  origHash: string | null;
+  csrfToken: string;
+}) {
+  const [editMode, setEditMode] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>({
+    color: '',
+    course_id: '',
+    description: '',
+    id: '',
+    implicit: false,
+    json_comment: '',
+    name: '',
+    number: null,
+  });
+  const [topicsState, setTopicsState] = useState<Topic[]>(topics);
+
+  const handleModalOpen = (topicIndex: number) => {
+    setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
+    window.bootstrap.Modal.getOrCreateInstance(
+      document.querySelector('#editTopicModal') as HTMLElement,
+    ).show();
+  };
+
+  const handleModalClose = () => {
+    (document.activeElement as HTMLElement).blur();
+    window.bootstrap.Modal.getOrCreateInstance(
+      document.querySelector('#editTopicModal') as HTMLElement,
+    ).hide();
+    setSelectedTopic(null);
+  };
+
+  const handleModalSave = () => {
+    setTopicsState((prevTopics) =>
+      prevTopics.map((topic) =>
+        topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
+      ),
+    );
+    handleModalClose();
+  };
+
+  const handleDeleteTopic = (topicIndex: number) => {
+    topicsState.splice(topicIndex, 1);
+    setTopicsState([...topicsState]);
+  };
+
+  return (
+    <>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>Topics</h1>
+          <div class="ms-auto">
+            {hasCoursePermissionEdit && origHash ? (
+              !editMode ? (
+                <button
+                  class="btn btn-sm btn-light"
+                  type="button"
+                  onClick={() => setEditMode(true)}
+                >
+                  <i class="fa fa-edit" aria-hidden="true"></i> Edit topics
+                </button>
+              ) : (
+                <form method="POST">
+                  <input type="hidden" name="__action" value="save_topics" />
+                  <input type="hidden" name="__csrf_token" value={csrfToken} />
+                  <input type="hidden" name="orig_hash" value={origHash} />
+                  <input type="hidden" name="topics" value={JSON.stringify(topicsState)} />
+                  <span class="js-edit-mode-buttons">
+                    <button class="btn btn-sm btn-light mx-1" type="submit">
+                      <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                    </button>
+                    <button
+                      class="btn btn-sm btn-light"
+                      type="button"
+                      onClick={() => window.location.reload()}
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                </form>
+              )
+            ) : (
+              ''
+            )}
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Topics">
+            <thead>
+              <tr>
+                {editMode && hasCoursePermissionEdit ? (
+                  <>
+                    <th></th>
+                    <th></th>
+                  </>
+                ) : (
+                  ''
+                )}
+                <th>Number</th>
+                <th>Name</th>
+                <th>Color</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topicsState.map(function (topic, index) {
+                return (
+                  <tr key={topic.name}>
+                    {editMode && hasCoursePermissionEdit ? (
+                      <>
+                        <td class="align-middle">
+                          <button
+                            class="btn btn-sm btn-ghost"
+                            type="button"
+                            onClick={() => handleModalOpen(index)}
+                          >
+                            <i class="fa fa-edit" aria-hidden="true"></i>
+                          </button>
+                        </td>
+                        <td class="align-middle">
+                          <button
+                            class="btn btn-sm"
+                            type="button"
+                            onClick={() => handleDeleteTopic(index)}
+                          >
+                            <i class="fa fa-trash text-danger" aria-hidden="true"></i>
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      ''
+                    )}
+                    <td class="align-middle">{index + 1}</td>
+                    <td class="align-middle">
+                      <TopicBadgeJsx topic={topic} />
+                    </td>
+                    <td class="align-middle">{topic.color}</td>
+                    <td class="align-middle">
+                      <TopicDescriptionJsx topic={topic} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <EditTopicsModal
+        selectedTopic={selectedTopic}
+        setSelectedTopic={setSelectedTopic}
+        handleModalSave={handleModalSave}
+        handleModalClose={handleModalClose}
+      />
+    </>
+  );
+}
+
+InstructorCourseAdminTopicsTable.displayName = 'InstructorCourseAdminTopicsTable';
