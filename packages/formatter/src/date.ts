@@ -80,3 +80,19 @@ export function formatDateYMDHM(date: Date, timeZone: string): string {
   const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
   return `${parts.year.value}-${parts.month.value}-${parts.day.value} ${parts.hour.value}:${parts.minute.value}`;
 }
+
+/**
+ * Format a time zone to a human-readable string like 'CDT'.
+ *
+ * @param timeZone The time zone to format.
+ * @returns Human-readable string representing the time zone.
+ */
+export function formatTz(timeZone: string): string {
+  const date = new Date();
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    timeZoneName: 'short',
+  }).formatToParts(date);
+  const tz = parts.find((p) => p.type === 'timeZoneName');
+  return tz ? tz.value : timeZone;
+}

@@ -7,6 +7,10 @@ export function getCanonicalHost(req: Request): string {
   return `${req.protocol}://${req.get('host')}`;
 }
 
+export function getUrl(req: Request): URL {
+  return new URL(req.originalUrl, getCanonicalHost(req));
+}
+
 export function getSearchParams(req: Request): URLSearchParams {
   return new URL(req.originalUrl, getCanonicalHost(req)).searchParams;
 }
