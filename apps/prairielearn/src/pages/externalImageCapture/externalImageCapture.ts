@@ -87,7 +87,6 @@ export default function (options = { publicQuestionPreview: false }) {
       // Emit a socket event to notify the client that the image has been captured.
       emitExternalImageCapture({
         variant_id: variantId,
-        variant_token: res.locals.variantToken,
         file_name: fileName,
         file_content: req.file.buffer.toString('base64'),
       });
