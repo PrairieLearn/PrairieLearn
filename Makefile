@@ -3,7 +3,7 @@ build:
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 python-deps:
-	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+	@python3 -m pip install -r requirements.txt --root-user-action=ignore
 deps:
 	@yarn
 	@$(MAKE) python-deps build

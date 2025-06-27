@@ -17,7 +17,7 @@ python:
       - any-glob-to-any-file:
           - 'apps/prairielearn/python/**'
           - 'apps/prairielearn/elements/**/*.py'
-          - 'images/plbase/python-requirements.txt'
+          - 'requirements.txt'
           - 'pyproject.toml'
           - 'docs/requirements.txt'
 

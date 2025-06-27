@@ -4,7 +4,7 @@ Since PrairieLearn executes your question code in an environment that is not ful
 
 ## General information
 
-All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt). The only packages guaranteed to be installed are those listed in the requirements file.
+All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/requirements.txt). The only packages guaranteed to be installed are those listed in the requirements file.
 
 To run a command line version of this Python environment, you may start it with the following command:
 
@@ -43,11 +43,11 @@ PrairieLearn downloads all of its Python packages from the [Python Package Index
 ![SciPy release page](scipy_version.png)
 Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 
-### Add the library to `python-requirements.txt`
+### Add the library to `requirements.txt`
 
-A list of of the Python libraries that PrairieLearn uses is stored in a file called `python-requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake).
+A list of of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake).
 
-First, browse to the file `images/plbase/python-requirements.txt` in the [PL GitHub Repo](https://github.com/prairielearn/prairielearn). An edit button should be visible on the top right of the file preview:
+First, browse to the file `requirements.txt` in the [PL GitHub Repo](https://github.com/prairielearn/prairielearn). An edit button should be visible on the top right of the file preview:
 
 ![GitHub edit button](edit_btn.png)
 

@@ -57,10 +57,10 @@ updates:
 
   - package-ecosystem: pip
     directories:
+      - '/'
       - '/docs'
       - '/graders/c'
       - '/graders/python'
-      - '/images/plbase'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
     schedule:

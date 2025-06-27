@@ -9,6 +9,7 @@
 !.prettierignore
 !.prettierrc.json
 !.yarnrc.yml
+!requirements.txt
 !tsconfig.json
 !turbo.json
 !vitest.config.ts

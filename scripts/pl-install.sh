@@ -79,7 +79,7 @@ curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Min
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
-python3 -m pip install --no-cache-dir -r /python-requirements.txt
+python3 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt
 
 # Clear various caches to minimize the final image size.
 dnf clean all

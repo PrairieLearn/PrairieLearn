@@ -108,11 +108,11 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'images/plbase/python-requirements.txt'
+          cache-dependency-glob: 'requirements.txt'
       - name: Install Python dependencies
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Set up Node
         uses: actions/setup-node@v4
