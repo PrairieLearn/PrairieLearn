@@ -26,7 +26,7 @@ router.use(
       authn_user: res.locals.authn_user,
       user: res.locals.user,
       is_administrator: res.locals.is_administrator,
-      publicQuestionPreview: res.locals.public_question_preview ?? false,
+      publicQuestionPreview: res.locals.public_question_preview,
     });
 
     if (!variant) {
