@@ -1,4 +1,9 @@
 import { type Column, type Table } from '@tanstack/react-table';
+import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger';
+import TooltipOriginal from 'react-bootstrap/cjs/Tooltip';
+
+const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
+const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -16,18 +21,19 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
   return (
     <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
-        <input
-          type="checkbox"
-          class="form-check-input"
-          checked={column.getIsVisible()}
-          onChange={column.getToggleVisibilityHandler()}
-          disabled={!column.getCanHide()}
-          title={column.getIsVisible() ? 'Hide column' : 'Show column'}
-          // Since this doesn't cause a re-render, we need to set the original title manually
-          data-bs-original-title={column.getIsVisible() ? 'Hide column' : 'Show column'}
-          aria-label={column.getIsVisible() ? 'Hide column' : 'Show column'}
-          data-bs-toggle="tooltip"
-        />
+        <OverlayTrigger
+          placement="top"
+          overlay={<Tooltip>{column.getIsVisible() ? 'Hide column' : 'Show column'}</Tooltip>}
+        >
+          <input
+            type="checkbox"
+            class="form-check-input"
+            checked={column.getIsVisible()}
+            onChange={column.getToggleVisibilityHandler()}
+            disabled={!column.getCanHide()}
+            aria-label={column.getIsVisible() ? 'Hide column' : 'Show column'}
+          />
+        </OverlayTrigger>
         <span class="form-check-label ms-2">{header}</span>
       </label>
       {column.getCanPin() && !hidePinButton && (
