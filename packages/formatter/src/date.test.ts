@@ -295,8 +295,8 @@ describe('date formatting', () => {
 
     it('should handle noon', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
-      const date = new Date(Date.UTC(2018, 0, 1, 0, 0, 0));
-      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12am (UTC)');
+      const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+      assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12pm (UTC)');
     });
   });
 
