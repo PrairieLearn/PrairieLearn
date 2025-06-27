@@ -51,7 +51,7 @@ jobs:
           IMAGES: ${{ inputs.images }}
           CACHE_ONLY: ${{ inputs.cache_images }}
           PUSH_IMAGES: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-          CACHE_STRATEGY: ${{ github.ref == 'refs/heads/stengerp/merge-plbase-prairielearn' && 'update' || 'pull' }}
+          CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
 
