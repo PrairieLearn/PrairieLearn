@@ -332,7 +332,7 @@ export function InstructorAssessmentInstance({
                 <th class="text-center">Awarded points</th>
                 <th class="text-center" colspan="2">Percentage score</th>
                 <th><!--Manual grading column --></th>
-                <th class="text-right">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -447,7 +447,7 @@ export function InstructorAssessmentInstance({
                           `
                         : ''}
                     </td>
-                    <td class="text-right">
+                    <td class="text-end">
                       <div class="dropdown js-question-actions">
                         <button
                           type="button"
@@ -750,7 +750,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
           This change will be overwritten if further questions are answered by the student.
         </small>
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
@@ -785,7 +785,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
           This change will be overwritten if further questions are answered by the student.
         </small>
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>

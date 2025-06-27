@@ -55,7 +55,7 @@ export function GroupWorkInfoContainer({
         <div class="col-sm bg-light py-4 px-4 border">
           ${groupConfig.student_authz_leave
             ? html`
-                <div class="text-right">
+                <div class="text-end">
                   <button
                     type="button"
                     class="btn btn-danger"

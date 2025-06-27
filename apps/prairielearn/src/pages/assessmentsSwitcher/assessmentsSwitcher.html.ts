@@ -79,8 +79,9 @@ export function AssessmentSwitcher({
               })}
             </div>
             <div class="d-flex overflow-hidden align-items-center ${isActive ? '' : 'text-muted'}">
-              <span class="text-nowrap text-truncate text-left" style="direction: rtl;">
-                ${row.tid}
+              <!-- Use RTL so the overflow is on the left, but with an inner span with auto direction so it doesn't affect the text itself -->
+              <span class="text-nowrap text-truncate text-start" dir="rtl">
+                <span dir="auto">${row.tid}</span>
               </span>
             </div>
           </div>

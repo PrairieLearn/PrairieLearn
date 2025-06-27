@@ -77,6 +77,8 @@ const BOOTSTRAP_LEGACY_CLASSES = [
   'border-right-0',
   'rounded-left',
   'rounded-right',
+  'text-left',
+  'text-right',
   ...BOOTSTRAP_BREAKPOINTS.flatMap((breakpoint) =>
     ['left', 'right'].map((suffix) => `text-${breakpoint}${suffix}`),
   ),
