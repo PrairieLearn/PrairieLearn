@@ -1,18 +1,23 @@
 import * as url from 'node:url';
+import * as path from 'path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
+import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
@@ -114,6 +119,23 @@ router.get(
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
+    // If we are on a chunk server, we need to make sure we are using the actual course directory
+    // and not the directory for the chunk server.
+    const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+    const coursePath = getRuntimeDirectoryForCourse(question_course);
+    const questionReadmePath = path.join(
+      path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
+    );
+
+    // We do not need an explicit `ensureChunks()` call here as the `getAndRenderVariant()` call
+    // above will have already done that.
+    const questionReadmeExists = await fs.pathExists(questionReadmePath);
+    let readmeHtml = '';
+    if (questionReadmeExists) {
+      const readme = await fs.readFile(questionReadmePath, 'utf8');
+      readmeHtml = await markdownToHtml(readme, { allowHtml: false });
+    }
+
     res.send(
       InstructorQuestionPreview({
         normalPreviewUrl,
@@ -122,6 +144,7 @@ router.get(
         aiGradingPreviewEnabled,
         aiGradingPreviewUrl,
         renderSubmissionSearchParams,
+        readmeHtml,
         resLocals: res.locals,
         questionCopyTargets,
       }),
