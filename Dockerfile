@@ -6,7 +6,7 @@ WORKDIR /PrairieLearn
 
 COPY scripts/pl-install.sh requirements.txt /PrairieLearn/
 
-RUN /bin/bash /pl-install.sh
+RUN /bin/bash scripts/pl-install.sh
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
