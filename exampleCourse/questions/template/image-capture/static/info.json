@@ -3,5 +3,6 @@
   "title": "Image capture: capture image from webcam or external device",
   "topic": "Template",
   "type": "v3",
-  "tags": ["miguelaenlle"]
+  "shareSourcePublicly": true,
+  "singleVariant": true
 }
