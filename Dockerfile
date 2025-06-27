@@ -4,8 +4,7 @@ ARG CACHEBUST=2025-06-15-14-13-20
 
 WORKDIR /PrairieLearn
 
-COPY scripts/pl-install.sh /PrairieLearn/scripts/pl-install.sh
-COPY requirements.txt /PrairieLearn/requirements.txt
+COPY --parents scripts/pl-install.sh requirements.txt /PrairieLearn
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 
