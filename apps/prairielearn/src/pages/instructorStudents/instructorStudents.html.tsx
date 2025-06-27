@@ -185,6 +185,11 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
               </button>
             </div>
+            <div class="d-none d-md-block">
+              <ColumnManager table={table} />
+            </div>
+          </div>
+          <div class="d-md-none">
             <ColumnManager table={table} />
           </div>
           <div class="flex-md-grow-1 d-flex flex-row justify-content-end">
