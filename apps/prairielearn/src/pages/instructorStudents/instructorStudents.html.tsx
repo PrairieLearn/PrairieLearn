@@ -85,7 +85,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
         cell: (info) => info.getValue() || '—',
       }),
       columnHelper.accessor('enrollment.created_at', {
-        header: `Enrolled on (${formatTz(timezone)})`,
+        header: 'Enrolled on',
         cell: (info) => {
           const date = new Date(info.getValue());
           return (
