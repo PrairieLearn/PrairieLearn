@@ -915,7 +915,7 @@ async function renderPanel(
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
 
-    variant_id: variant?.id,
+    variant_id: variant.id,
     external_image_capture_url: locals.externalImageCaptureUrl,
 
     base_url: locals.baseUrl,
