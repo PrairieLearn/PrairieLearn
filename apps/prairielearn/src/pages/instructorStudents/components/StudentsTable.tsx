@@ -52,6 +52,11 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         ]
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
+  const isTableResizing = () => {
+    return headerGroups.some((headerGroup) =>
+      headerGroup.headers.some((header) => header.column.getIsResizing()),
+    );
+  };
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
   // Empty state if no columns are visible
@@ -69,6 +74,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           overflow: 'auto',
           overflowAnchor: 'none',
           paddingRight: '1em',
+          userSelect: isTableResizing() ? 'none' : undefined,
         }}
       >
         <div
