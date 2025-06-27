@@ -3547,6 +3547,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
+    "@js-temporal/polyfill": "npm:^0.5.1"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.29"
     "@vitest/coverage-v8": "npm:^3.2.2"
