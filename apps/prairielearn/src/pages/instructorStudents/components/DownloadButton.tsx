@@ -1,6 +1,6 @@
 import type { Table } from '@tanstack/react-table';
 
-import { formatDate, formatTz } from '@prairielearn/formatter';
+import { formatDate } from '@prairielearn/formatter';
 
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';

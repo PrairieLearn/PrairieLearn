@@ -12,7 +12,7 @@ import {
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
-import { formatDate, formatTz } from '@prairielearn/formatter';
+import { formatDate } from '@prairielearn/formatter';
 
 import {
   NuqsAdapter,
