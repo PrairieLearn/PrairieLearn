@@ -7,7 +7,7 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
-import { DEV_EXECUTION_MODE } from '../execution-mode.js';
+// import { DEV_EXECUTION_MODE } from '../execution-mode.js';
 import {
   type MigrationFile,
   parseAnnotations,
@@ -58,7 +58,8 @@ let didMigration = false;
 
 export async function initWithLock(directories: string[], project: string) {
   // For Vite HMR mode
-  if (didMigration && DEV_EXECUTION_MODE === 'hmr') return;
+  // if (didMigration && DEV_EXECUTION_MODE === 'hmr') return;
+  if (didMigration && true) return;
 
   logger.verbose('Starting DB schema migration');
   didMigration = true;
