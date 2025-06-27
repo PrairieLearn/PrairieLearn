@@ -2,11 +2,11 @@
 FROM amazonlinux:2023
 ARG CACHEBUST=2025-06-15-14-13-20
 
+WORKDIR /PrairieLearn
+
 COPY scripts/pl-install.sh requirements.txt /
 
 RUN /bin/bash /pl-install.sh
-
-WORKDIR /PrairieLearn
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 

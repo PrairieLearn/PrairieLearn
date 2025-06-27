@@ -57,6 +57,7 @@ updates:
 
   - package-ecosystem: pip
     directories:
+      - '/'
       - '/docs'
       - '/graders/c'
       - '/graders/python'
