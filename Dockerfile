@@ -1,5 +1,10 @@
 # syntax=docker/dockerfile-upstream:master-labs
-FROM prairielearn/plbase:latest
+FROM amazonlinux:2023
+ARG CACHEBUST=2025-06-15-14-13-20
+
+COPY scripts/pl-install.sh requirements.txt /
+
+RUN /bin/bash /plbase-install.sh
 
 WORKDIR /PrairieLearn
 
