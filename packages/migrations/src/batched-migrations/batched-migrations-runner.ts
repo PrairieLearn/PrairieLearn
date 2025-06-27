@@ -166,7 +166,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
   start(options: BatchedMigrationStartOptions = {}) {
     if (this.running) {
       // For Vite HMR mode
-      if ((import.meta as any).env?.DEV) return;
+      if (DEV_EXECUTION_MODE === 'hmr') return;
       throw new Error('BatchedMigrationsRunner is already running');
     }
 
