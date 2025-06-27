@@ -1,6 +1,7 @@
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type Topic } from '../../lib/db-types.js';
+import { Hydrate } from '../../lib/preact.js';
 
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
@@ -31,12 +32,14 @@ export function InstructorCourseAdminTopics({
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />
-        <InstructorCourseAdminTopicsTable
-          topics={topics}
-          hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
-          csrfToken={resLocals.__csrf_token}
-          origHash={origHash}
-        />
+        <Hydrate>
+          <InstructorCourseAdminTopicsTable
+            topics={topics}
+            hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
+            csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
+          />
+        </Hydrate>
       </>
     ),
   });
