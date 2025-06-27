@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
-import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger';
-import TooltipOriginal from 'react-bootstrap/cjs/Tooltip';
+import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger.js';
+import TooltipOriginal from 'react-bootstrap/cjs/Tooltip.js';
 
 const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
 const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
