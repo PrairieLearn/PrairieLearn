@@ -12,8 +12,7 @@ import {
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 
-import { formatDate } from '@prairielearn/formatter';
-
+import { FriendlyDate } from '../../components/FriendlyDate.js';
 import {
   NuqsAdapter,
   parseAsColumnPinningState,
@@ -88,13 +87,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
         header: 'Enrolled on',
         cell: (info) => {
           const date = new Date(info.getValue());
-          return (
-            <div style={{ fontVariantNumeric: 'tabular-nums' }}>
-              {formatDate(date, timezone, {
-                includeTz: false,
-              })}
-            </div>
-          );
+          return <FriendlyDate date={date} timezone={timezone} />;
         },
       }),
     ],
