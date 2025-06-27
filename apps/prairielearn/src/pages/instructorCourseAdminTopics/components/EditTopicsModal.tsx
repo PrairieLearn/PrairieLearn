@@ -43,7 +43,7 @@ export function EditTopicsModal({
   selectedTopic: Topic | null;
   setSelectedTopic: (topic: Topic | null) => void;
   handleModalSave: () => void;
-  handleModalClose: (e) => void;
+  handleModalClose: () => void;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
 
