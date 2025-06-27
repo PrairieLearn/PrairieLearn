@@ -84,7 +84,6 @@ export function Navbar({
                 type="button"
                 aria-expanded="false"
                 aria-label="Toggle side nav"
-                style="height: 40px;"
               >
                 <span class="navbar-toggler-icon"></span>
               </button>
@@ -105,7 +104,6 @@ export function Navbar({
           data-bs-animation="false"
           aria-expanded="false"
           aria-label="Toggle navigation"
-          style="height: 40px;"
         >
           <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
