@@ -1535,8 +1535,6 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
-  // External image capture page for a question variant generated on the question preview page. Enables
-  // users to capture and submit images from an external device (e.g. a mobile phone).
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
