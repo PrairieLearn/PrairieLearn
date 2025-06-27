@@ -2,6 +2,8 @@ import clsx from 'clsx';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
+import { isEnterprise } from '../lib/license.js';
+
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
@@ -135,11 +137,11 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['lti13'],
+      activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
-      tabLabel: 'LTI 1.3',
-      renderCondition: (resLocals) => resLocals.lti13_enabled,
+      tabLabel: 'Integrations',
+      renderCondition: () => isEnterprise(),
     },
     {
       activePages: ['instance_admin'],

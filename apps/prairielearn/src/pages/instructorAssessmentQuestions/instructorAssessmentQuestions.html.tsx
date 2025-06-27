@@ -13,17 +13,12 @@ export function InstructorAssessmentQuestions({
 }) {
   return (
     <>
-      <div
-        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{
-          __html: AssessmentSyncErrorsAndWarnings({
-            authz_data: resLocals.authz_data,
-            assessment: resLocals.assessment,
-            courseInstance: resLocals.course_instance,
-            course: resLocals.course,
-            urlPrefix: resLocals.urlPrefix,
-          }).toString(),
-        }}
+      <AssessmentSyncErrorsAndWarnings
+        authz_data={resLocals.authz_data}
+        assessment={resLocals.assessment}
+        courseInstance={resLocals.course_instance}
+        course={resLocals.course}
+        urlPrefix={resLocals.urlPrefix}
       />
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
