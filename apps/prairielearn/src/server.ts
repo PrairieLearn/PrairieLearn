@@ -1780,8 +1780,9 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (req, res) => {
+    (req, res, next) => {
       res.locals.public_question_preview = true;
+      next();
     },
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
   );
