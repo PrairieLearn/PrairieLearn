@@ -170,7 +170,7 @@ function Capacity({ total, current }: { total: number; current: number }) {
 
 function WorkspaceState({ state }) {
   const color = state === 'running' ? 'success' : 'secondary';
-  return html` <span class="badge badge-${color} me-2">${state}</span> `;
+  return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }
 
 function WorkspaceHostState({ state }) {
@@ -185,5 +185,5 @@ function WorkspaceHostState({ state }) {
       color = 'danger';
       break;
   }
-  return html`<span class="badge badge-${color} me-2">${state}</span>`;
+  return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }

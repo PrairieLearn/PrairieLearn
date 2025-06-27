@@ -48,15 +48,15 @@ export function StudentCourseInstanceUpgrade({
                 ${PriceTable({ planNames: missingPlans, planPrices })}
 
                 <form method="POST">
-                  <div class="custom-control custom-checkbox mb-3">
+                  <div class="form-check mb-3">
                     <input
                       type="checkbox"
-                      class="custom-control-input"
+                      class="form-check-input"
                       id="js-terms-agreement"
                       name="terms_agreement"
                       value="1"
                     />
-                    <label class="custom-control-label" for="js-terms-agreement">
+                    <label class="form-check-label" for="js-terms-agreement">
                       I agree to the PrairieLearn
                       <a href="https://www.prairielearn.com/legal/terms">Terms of Service</a> and
                       <a href="https://www.prairielearn.com/legal/privacy">Privacy Policy</a>.

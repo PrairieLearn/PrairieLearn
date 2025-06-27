@@ -45,7 +45,7 @@ function CopyCourseInstanceModal({
               This course instance can be copied to course for which you have editor permissions.
               Select one of your courses to copy this course instance to.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="form-select" name="to_course_id" required>
               ${courseInstanceCopyTargets.map(
                 (course, index) => html`
                   <option

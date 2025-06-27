@@ -275,7 +275,7 @@ export function ExamQuestionStatus({
   const badge_color = {
     unanswered: 'warning',
     invalid: 'danger',
-    grading: 'default',
+    grading: 'info',
     saved: 'info',
     complete: 'success',
     correct: 'success',
@@ -284,7 +284,7 @@ export function ExamQuestionStatus({
 
   return html`
     <span class="align-middle">
-      <span class="badge badge-${badge_color[instance_question.status ?? 'grading'] ?? 'default'}">
+      <span class="badge text-bg-${badge_color[instance_question.status ?? 'grading'] ?? 'info'}">
         ${instance_question.status}
       </span>
 
@@ -345,8 +345,8 @@ export function QuestionVariantHistory({
       (variant, index) => html`
         <a
           class="badge ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? 'badge-info'
-            : 'badge-secondary'} ${collapseClass}"
+            ? 'text-bg-info'
+            : 'text-bg-secondary'} ${collapseClass}"
           ${index < previousVariants.length - MAX_DISPLAYED_VARIANTS ? 'style="display: none"' : ''}
           href="${urlPrefix}/instance_question/${instanceQuestionId}/?variant_id=${variant.id}"
         >
