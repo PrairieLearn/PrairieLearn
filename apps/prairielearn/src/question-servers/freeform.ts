@@ -914,6 +914,10 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+
+    variant_id: variant.id,
+    external_image_capture_url: locals.externalImageCaptureUrl,
+
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),

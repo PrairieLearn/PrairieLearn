@@ -4,11 +4,10 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { gradingJobStatus } from '../models/grading-job.js';
 
-import { config } from './config.js';
+import { checkVariantToken } from './checkVariantToken.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
@@ -39,7 +38,7 @@ export function connection(socket: Socket) {
     if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
       return callback(null);
     }
-    if (!checkToken(msg.variant_token, msg.variant_id)) {
+    if (!checkVariantToken(msg.variant_token, msg.variant_id)) {
       return callback(null);
     }
 
@@ -108,14 +107,4 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
     }
   }
   return true;
-}
-
-function checkToken(token: string, variantId: string): boolean {
-  const data = { variantId };
-  const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
-  if (!valid) {
-    logger.error(`Token for variant ${variantId} failed validation.`);
-    Sentry.captureException(new Error(`Token for variant ${variantId} failed validation.`));
-  }
-  return valid;
 }

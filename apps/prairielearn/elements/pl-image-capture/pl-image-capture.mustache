@@ -1,0 +1,152 @@
+<script>
+$(function() {
+    new window.PLImageCapture("{{uuid}}");
+});
+</script>
+
+<div id="image-capture-{{uuid}}" class="card w-75 mb-3" data-options="{{image_capture_options_json}}">
+  <div class="card-header">
+    Image capture
+  </div>
+  <div 
+    class="js-capture-preview-container p-3" 
+  >
+    {{#editable}}
+    <input
+      class="js-hidden-capture-input"
+      type="hidden"
+      name="{{file_name}}"
+      data-skip-unload-check="true"
+    />
+    {{/editable}}
+    <div class="js-uploaded-image-container mb-2">
+      <div
+        class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border"
+      >
+        <div class="spinning-wheel spinner-border">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    {{#editable}}
+    <div class="d-flex gap-1 flex-wrap">
+      <button
+        type="button"
+        class="js-capture-with-local-camera-button btn btn-info"
+      >
+        <i class="bi bi-camera-fill me-1"></i>
+        Capture with local camera
+      </button>
+      {{#mobile_capture_enabled}}
+        <button 
+          type="button" 
+          class="js-capture-with-mobile-device-button btn btn-info"
+          data-bs-toggle="popover"
+          data-bs-container="body"
+          data-bs-html="true"
+          data-bs-placement="auto"
+          data-bs-title="Capture with mobile device"
+          data-bs-content='
+          <div class="w-100 d-flex flex-column align-items-center">
+            {{#external_image_capture_available}}
+              <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center rounded border" style="width:200px;height:200px">
+                <div class="spinning-wheel spinner-border">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+              <p class="text-muted mb-0">
+                Scan the QR code with your mobile device to capture an image of your solution. 
+              </p>
+            {{/external_image_capture_available}}
+            {{^external_image_capture_available}}
+              <p class="text-muted mb-0">
+                Mobile device capture is not available in this environment.
+              </p>
+              <p class="text-muted mb-0 mt-3">
+                It will be available once the question is deployed to production.
+              </p>
+              <p class="text-muted mb-0 mt-3">
+                For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+              </p>
+            {{/external_image_capture_available}}
+          </div>
+          '
+        >
+          <i class="bi bi-qr-code-scan me-1"></i>
+          Capture with mobile device
+        </button>
+      {{/mobile_capture_enabled}}
+    </div>
+    {{/editable}}
+  </div>
+  {{#editable}}
+  <div class="js-local-camera-capture-container d-none flex-column p-3">
+    <div class="position-relative">
+      <video
+        class="js-local-camera-video w-100 bg-body-secondary rounded border"
+        autoplay
+        playsinline
+      >
+      </video>
+
+      <div
+        class="js-local-camera-error-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2 d-none"
+        style="pointer-events: none;"
+      >
+      </div>
+    </div>
+
+    <p class="text-muted mt-0">
+      Make sure your photo is clear, well-lit, and shows all your work legibly.
+    </p>
+
+    <div class="d-flex gap-1 mt-1">
+      <button 
+        type="button"
+        class="js-capture-local-camera-image-button btn btn-info" 
+        disabled
+      >
+        <i class="bi bi-camera-fill me-1"></i>
+        Capture image
+      </button>
+      <button 
+        type="button"
+        class="js-cancel-local-camera-button btn btn-secondary"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+  <div class="js-local-camera-confirmation-container d-none d-flex flex-column p-3">
+    <canvas
+      class="js-local-camera-image-preview w-100 bg-body-secondary rounded border mb-1"
+      autoplay
+      playsinline
+    >
+    </canvas>
+    <div class="d-flex gap-1 mt-1">
+      <button 
+        type="button" 
+        class="js-confirm-local-camera-image-button btn btn-info"
+      >
+        <i class="bi bi-check2 me-1"></i>
+        Use image
+      </button>
+      <button 
+        type="button"
+        class="js-retake-local-camera-image-button btn btn-secondary"
+      >
+        <i class="bi bi-arrow-counterclockwise me-1"></i>
+        Retake
+      </button>
+      <button 
+        type="button"
+        class="js-cancel-local-camera-confirmation-button btn btn-secondary"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+  {{/editable}}
+</div>

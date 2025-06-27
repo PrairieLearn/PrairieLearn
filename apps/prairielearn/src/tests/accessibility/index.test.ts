@@ -289,6 +289,12 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
 
+  // File upload pages for external image capture.
+  '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id',
+  '/pl/public/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
+
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',
