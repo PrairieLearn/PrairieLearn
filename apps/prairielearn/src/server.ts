@@ -53,7 +53,7 @@ import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
@@ -1939,12 +1939,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-
 let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
-export async function startServer() {
-  const app = await initExpress();
-
+export async function startServer(app: express.Express) {
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -1996,6 +1994,12 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
+
+  if (DEV_EXECUTION_MODE === 'hmr') {
+    return server;
+  }
+
+  // In production, startup the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2067,7 +2071,7 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (esMain(import.meta) && config.startServer) {
+if ((esMain(import.meta) || DEV_EXECUTION_MODE === 'hmr') && config.startServer) {
   try {
     logger.verbose('PrairieLearn server start');
 
@@ -2223,7 +2227,7 @@ if (esMain(import.meta) && config.startServer) {
       directories: [path.join(import.meta.dirname, 'batched-migrations')],
     });
 
-    runner.on('error', (err) => {
+    runner?.on('error', (err) => {
       logger.error('Batched migration runner error', err);
       Sentry.captureException(err);
     });
@@ -2403,9 +2407,10 @@ if (esMain(import.meta) && config.startServer) {
     }
 
     logger.verbose('Starting server...');
-    const server = await startServer();
+    app = await initExpress();
+    const serverInstance = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(serverInstance);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2495,3 +2500,4 @@ if (esMain(import.meta) && config.startServer) {
     }
   });
 }
+export const viteExpressApp = app;

@@ -7,6 +7,7 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
+// import { DEV_EXECUTION_MODE } from '../execution-mode.js';
 import {
   type MigrationFile,
   parseAnnotations,
@@ -53,8 +54,15 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
+let didMigration = false;
+
 export async function initWithLock(directories: string[], project: string) {
+  // For Vite HMR mode
+  // if (didMigration && DEV_EXECUTION_MODE === 'hmr') return;
+  if (didMigration && true) return;
+
   logger.verbose('Starting DB schema migration');
+  didMigration = true;
 
   // Create the migrations table if needed
   await sqldb.queryAsync(sql.create_migrations_table, {});
@@ -140,7 +148,7 @@ export async function initWithLock(directories: string[], project: string) {
         throw err;
       }
     } else {
-      const migrationModule = await import(migrationPath);
+      const migrationModule = await import(/* @vite-ignore */ migrationPath);
       const implementation = migrationModule.default;
       if (typeof implementation !== 'function') {
         throw new Error(`Migration ${filename} does not export a default function`);
@@ -155,4 +163,7 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
+
+  // Mark that the migrations have finished, and shouldn't be run again
+  didMigration = true;
 }
