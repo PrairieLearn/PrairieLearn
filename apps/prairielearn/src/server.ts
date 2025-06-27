@@ -1086,7 +1086,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   app.use(
@@ -1426,7 +1426,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   if (config.devMode) {
@@ -1535,7 +1535,7 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   app.use(
@@ -1776,11 +1776,9 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (req, res, next) => {
-      res.locals.public_question_preview = true;
-      next();
-    },
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
+      publicQuestionPreview: true,
+    }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',

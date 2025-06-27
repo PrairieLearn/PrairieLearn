@@ -4,6 +4,8 @@ export interface StatusMessage {
   file_name: string;
 }
 
-export interface StatusMessageWithFileContent extends StatusMessage {
+export interface StatusMessageWithFileContent {
+  variant_id: string;
+  file_name: string;
   file_content: string;
 }
