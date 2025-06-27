@@ -160,7 +160,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
       </div>
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-md-grow-0 col-xl-6 col-lg-8 col-md-7 d-flex flex-row gap-2">
+          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-8 d-flex flex-row gap-2">
             <div class="input-group">
               <input
                 ref={searchInputRef}
@@ -192,7 +192,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
           <div class="d-md-none">
             <ColumnManager table={table} />
           </div>
-          <div class="flex-md-grow-1 d-flex flex-row justify-content-end">
+          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {table.getRowModel().rows.length} of {students.length} students
             </div>
