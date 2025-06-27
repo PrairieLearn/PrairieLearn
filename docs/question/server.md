@@ -140,6 +140,16 @@ Although questions with custom grading may not rely on the full grading function
     code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
     [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
 
+The `parse()` function can also be used to create custom files to be sent to an external grader. This can be done with the `pl.add_submitted_file()` function, as in the example below:
+
+```python title="server.py"
+import prairielearn as pl
+
+def parse(data):
+    code = f"x = {data["submitted_answers"]["expression"]}"
+    pl.add_submitted_file(data, "user_code.py", raw_contents=code)
+```
+
 ## Step 5: `grade`
 
 Finally, the `grade(data)` function is called to grade the question. The grade function is responsible for:

@@ -145,7 +145,7 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['lti13'],
+      activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
       tabLabel: 'Integrations',
