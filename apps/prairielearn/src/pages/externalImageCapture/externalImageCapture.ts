@@ -16,8 +16,6 @@ const router = Router({ mergeParams: true });
 router.use(
   '/',
   asyncHandler(async (req, res, next) => {
-    console.log('res.locals.public_question_preview', res.locals.public_question_preview);
-
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.variant_id,
       variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
