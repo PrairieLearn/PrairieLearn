@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
 
 import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
@@ -12,7 +13,7 @@ import type { AssessmentQuestionRow } from '../../../models/assessment-question.
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
-export function AssessmentQuestionsTable({
+export function InstructorAssessmentQuestionsTable({
   course,
   questions,
   urlPrefix,
@@ -29,6 +30,8 @@ export function AssessmentQuestionsTable({
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
 }) {
+  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
+
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
     questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
@@ -67,11 +70,9 @@ export function AssessmentQuestionsTable({
         {question.title}
       </>
     );
-
     if (hasCoursePermissionPreview) {
       return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
     }
-
     return title;
   }
 
@@ -212,6 +213,7 @@ export function AssessmentQuestionsTable({
                               class="dropdown-item"
                               data-bs-toggle="modal"
                               data-bs-target="#resetQuestionVariantsModal"
+                              onClick={() => setResetAssessmentQuestionId(question.id)}
                               data-assessment-question-id={question.id}
                             >
                               Reset question variants
@@ -231,7 +233,12 @@ export function AssessmentQuestionsTable({
           </tbody>
         </table>
       </div>
-      <ResetQuestionVariantsModal csrfToken={csrfToken} />
+      <ResetQuestionVariantsModal
+        csrfToken={csrfToken}
+        assessmentQuestionId={resetAssessmentQuestionId}
+      />
     </>
   );
 }
+
+InstructorAssessmentQuestionsTable.displayName = 'InstructorAssessmentQuestionsTable';

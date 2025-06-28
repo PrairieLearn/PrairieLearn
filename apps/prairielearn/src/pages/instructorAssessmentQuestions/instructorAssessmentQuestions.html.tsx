@@ -1,9 +1,10 @@
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { Hydrate } from '../../lib/preact.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.types.js';
 
-import { AssessmentQuestionsTable } from './components/AssessmentQuestionsTable.js';
+import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -39,17 +40,19 @@ export function InstructorAssessmentQuestions({
               {resLocals.assessment_set.name} {resLocals.assessment.number}: Questions
             </h1>
           </div>
-          <AssessmentQuestionsTable
-            course={resLocals.course}
-            questions={questions}
-            urlPrefix={resLocals.urlPrefix}
-            assessmentType={resLocals.assessment.type}
-            hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
-            hasCourseInstancePermissionEdit={
-              resLocals.authz_data.has_course_instance_permission_edit
-            }
-            csrfToken={resLocals.__csrf_token}
-          />
+          <Hydrate>
+            <InstructorAssessmentQuestionsTable
+              course={resLocals.course}
+              questions={questions}
+              urlPrefix={resLocals.urlPrefix}
+              assessmentType={resLocals.assessment.type}
+              hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                resLocals.authz_data.has_course_instance_permission_edit
+              }
+              csrfToken={resLocals.__csrf_token}
+            />
+          </Hydrate>
         </div>
       </>
     ),

@@ -1,7 +1,13 @@
-export function ResetQuestionVariantsModal({ csrfToken }: { csrfToken: string }) {
+export function ResetQuestionVariantsModal({
+  csrfToken,
+  assessmentQuestionId,
+}: {
+  csrfToken: string;
+  assessmentQuestionId: string;
+}) {
   return (
     <>
-      <form>
+      <form method="POST">
         <div
           class="modal fade"
           tabindex={-1}
@@ -29,8 +35,7 @@ export function ResetQuestionVariantsModal({ csrfToken }: { csrfToken: string })
                 <input
                   type="hidden"
                   name="unsafe_assessment_question_id"
-                  class="js-assessment-question-id"
-                  value=""
+                  value={assessmentQuestionId}
                 />
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                   Cancel
