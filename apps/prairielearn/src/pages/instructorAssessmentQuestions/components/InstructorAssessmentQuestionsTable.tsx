@@ -6,7 +6,10 @@ import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.html.js';
-import { SyncProblemButton } from '../../../components/SyncProblemButton.html.js';
+import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
+import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
+import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
+import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
 import type { Course } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
@@ -105,48 +108,29 @@ export function InstructorAssessmentQuestionsTable({
                   <tr>
                     <td>
                       {title(question)}
-                      {question.open_issue_count && question.qid ? (
-                        <a
-                          class="badge rounded-pill text-bg-danger ms-1"
-                          href={`${urlPrefix}/course_admin/issues?q=+qid%3A${encodeURIComponent(question.qid ?? '')}`}
-                          aria-label={`${question.open_issue_count} open ${question.open_issue_count === 1 ? 'issue' : 'issues'}`}
-                        >
-                          {question.open_issue_count}
-                        </a>
+                      <IssueBadgeJsx
+                        urlPrefix={urlPrefix}
+                        count={question.open_issue_count ?? 0}
+                        issueQid={question.qid}
+                      />
+                    </td>
+                    <td>
+                      {question.sync_errors ? (
+                        <SyncProblemButtonJsx output={question.sync_errors} type="error" />
+                      ) : question.sync_warnings ? (
+                        <SyncProblemButtonJsx output={question.sync_warnings} type="warning" />
                       ) : (
                         ''
                       )}
-                    </td>
-                    <td>
-                      {question.sync_errors
-                        ? SyncProblemButton({
-                            type: 'error',
-                            output: question.sync_errors,
-                          })
-                        : question.sync_warnings
-                          ? SyncProblemButton({
-                              type: 'warning',
-                              output: question.sync_warnings,
-                            })
-                          : ''}
                       {idsEqual(course.id, question.course_id)
                         ? question.qid
                         : `@${question.course_sharing_name}/${question.qid}`}
                     </td>
                     <td>
-                      <span class={`badge color-${question.topic.color}`}>
-                        {question.topic.name}
-                      </span>
+                      <TopicBadgeJsx topic={question.topic} />
                     </td>
                     <td>
-                      {question.tags?.map((tag) => (
-                        <span
-                          class={`badge color-${tag.color} me-1`}
-                          key={`${question.qid}-${tag.name}`}
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
+                      <TagBadgeListJsx tags={question.tags} />
                     </td>
                     <td>
                       {maxPoints({
