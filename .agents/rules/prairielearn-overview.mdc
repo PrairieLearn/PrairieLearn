@@ -1,0 +1,30 @@
+---
+description: Core development guidelines and technical standards for PrairieLearn
+globs: apps/prairielearn/**/*.ts,apps/prairielearn/**/*.tsx,apps/prairielearn/**/*.sql
+alwaysApply: false
+---
+# Tech stack
+
+- TypeScript, Bootstrap 5, PostgreSQL 16, Express, Preact
+
+## Linting
+
+- `make lint-js-cached` to lint JS code
+- `make build` to ensure Typescript code builds
+
+## Additional Rules:
+
+These rules should be referenced for a deeper understanding of PrairieLearn's conventions.
+
+- Page Structure
+  - Each page has its own directory with a route handler, SQL file, and HTML/JSX template, following consistent naming and structure.
+- Preact
+  - Use strongly-typed function components in `.tsx` files, leverage hooks, and integrate with legacy code using `hydrate` and `renderHtml()`.
+- Security
+  - Enforce authentication and authorization, require CSRF tokens and POST for state changes, and always include action identifiers in forms.
+- SQL Conventions
+  - Organize SQL in adjacent `.sql` files using the Yesql pattern, validate data with Zod, and use soft deletion and named parameters.
+- Testing
+  - Place unit tests next to code, use integration tests for end-to-end flows, and run all tests automatically on CI with Vitest and a managed test DB.
+- Typescript Conventions
+  - Use strict typing, async/await, tagged template literals for HTML, and Bootstrap 5 for styling, with minimal custom CSS.

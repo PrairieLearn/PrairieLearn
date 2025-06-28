@@ -18,6 +18,7 @@ docker-compose.override.yml
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+!.vscode/mcp.json
 
 ### tmux
 .tmux.conf
@@ -121,3 +122,7 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
+
+## Agent files
+.cursor
+.cursorignore
