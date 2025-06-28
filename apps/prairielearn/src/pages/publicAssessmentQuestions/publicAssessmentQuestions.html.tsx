@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeJsx } from '../../components/AssessmentBadge.html.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
@@ -9,7 +9,8 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
-import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
+import { renderHtml } from '../../lib/preact-html.js';
+import { type AssessmentQuestionRow } from '../../models/assessment-question.types.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -87,13 +88,15 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(
+                <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
+              )}
               <tr>
                 <td>
                   <a
                     href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
                   >
-                    ${AssessmentQuestionNumber(question)}${question.title}
+                    ${renderHtml(<AssessmentQuestionNumber question={question} />)}${question.title}
                   </a>
                 </td>
                 <td>@${question.course_sharing_name}/${question.qid}</td>
@@ -102,12 +105,14 @@ function AssessmentQuestionsTable({
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
-                        return AssessmentBadge({
-                          assessment,
-                          plainUrlPrefix: urlPrefix,
-                          course_instance_id,
-                          publicURL: true,
-                        });
+                        return renderHtml(
+                          <AssessmentBadgeJsx
+                            assessment={assessment}
+                            plainUrlPrefix={urlPrefix}
+                            course_instance_id={course_instance_id}
+                            publicURL={true}
+                          />,
+                        );
                       })
                     : ''}
                 </td>
