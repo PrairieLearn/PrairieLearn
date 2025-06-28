@@ -3,9 +3,6 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
-import { hydrate } from '../../lib/preact.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
@@ -18,21 +15,9 @@ router.get(
   asyncHandler(async (req, res) => {
     const questions = await selectAssessmentQuestions(res.locals.assessment.id);
     res.send(
-      PageLayout({
+      InstructorAssessmentQuestions({
         resLocals: res.locals,
-        pageTitle: 'Questions',
-        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
-        navContext: {
-          type: 'instructor',
-          page: 'assessment',
-          subPage: 'questions',
-        },
-        options: {
-          fullWidth: true,
-        },
-        content: hydrate(
-          <InstructorAssessmentQuestions resLocals={res.locals} questions={questions} />,
-        ),
+        questions,
       }),
     );
   }),
