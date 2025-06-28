@@ -34,26 +34,21 @@ export function InstructorAssessmentQuestions({
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white d-flex align-items-center">
-            <h1>
-              {resLocals.assessment_set.name} {resLocals.assessment.number}: Questions
-            </h1>
-          </div>
-          <Hydrate>
-            <InstructorAssessmentQuestionsTable
-              course={resLocals.course}
-              questions={questions}
-              urlPrefix={resLocals.urlPrefix}
-              assessmentType={resLocals.assessment.type}
-              hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
-              hasCourseInstancePermissionEdit={
-                resLocals.authz_data.has_course_instance_permission_edit
-              }
-              csrfToken={resLocals.__csrf_token}
-            />
-          </Hydrate>
-        </div>
+        <Hydrate>
+          <InstructorAssessmentQuestionsTable
+            course={resLocals.course}
+            questions={questions}
+            urlPrefix={resLocals.urlPrefix}
+            assessmentType={resLocals.assessment.type}
+            assessmentSetName={resLocals.assessment_set_name}
+            assessmentNumber={resLocals.assessment.number}
+            hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
+            csrfToken={resLocals.__csrf_token}
+          />
+        </Hydrate>
       </>
     ),
   });

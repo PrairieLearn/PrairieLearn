@@ -6,7 +6,13 @@ export function TagBadgeJsx({ tag }: { tag: Pick<Tag, 'color' | 'name'> }) {
 }
 
 export function TagBadgeListJsx({ tags }: { tags: Pick<Tag, 'color' | 'name'>[] | null }) {
-  return tags?.map((tag) => <TagBadgeJsx tag={tag} key={tag.name} />) ?? [];
+  return (
+    tags?.map((tag) => (
+      <span class="me-1" key={tag.name}>
+        <TagBadgeJsx tag={tag} />
+      </span>
+    )) ?? []
+  );
 }
 
 export function TagBadge(tag: Pick<Tag, 'color' | 'name'>) {
