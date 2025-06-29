@@ -71,18 +71,15 @@ function ensureProps(data: Record<string, any>, props: string[]): boolean {
  */
 export function emitExternalImageCapture({
   variant_id,
-  variant_token,
   file_name,
   file_content,
 }: {
   variant_id: string;
-  variant_token: string;
   file_name: string;
   file_content: string;
 }) {
   namespace.to(`variant-${variant_id}-file-${file_name}`).emit('externalImageCapture', {
     variant_id,
-    variant_token,
     file_name,
     file_content,
   } satisfies StatusMessageWithFileContent);

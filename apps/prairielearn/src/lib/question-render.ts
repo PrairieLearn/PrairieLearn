@@ -158,7 +158,7 @@ interface QuestionUrls {
   clientFilesCourseUrl: string;
   clientFilesQuestionGeneratedFileUrl: string;
   baseUrl: string;
-  externalImageCaptureUrl: string;
+  externalImageCaptureUrl: string | null;
   workspaceUrl?: string;
 }
 
@@ -201,8 +201,9 @@ export function buildQuestionUrls(
       clientFilesQuestionGeneratedFileUrl:
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
-      externalImageCaptureUrl:
-        config.serverCanonicalHost + questionUrl + 'externalImageCapture/variant/' + variant.id,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + questionUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   } else {
     // student question pages
@@ -223,8 +224,9 @@ export function buildQuestionUrls(
       clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
       clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
-      externalImageCaptureUrl:
-        config.serverCanonicalHost + iqUrl + 'externalImageCapture/variant/' + variant.id,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + iqUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   }
 
