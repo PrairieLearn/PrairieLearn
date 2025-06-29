@@ -18,6 +18,7 @@ RUN apt-get update && \
         libffi-dev \
         libjpeg-dev \
         libssl-dev \
+        libbz2-dev \
         lsof \
         make \
         openssl \
