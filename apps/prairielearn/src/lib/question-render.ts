@@ -368,6 +368,13 @@ function buildLocals({
     locals.disableSaveButton = true;
   }
 
+  if (assessment_question) {
+    question.question_params = {
+      ...question.question_params,
+      ...assessment_question.question_params,
+    };
+  }
+
   return locals;
 }
 
@@ -462,12 +469,11 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        locals.assessment_question?.question_params,
       );
     }
   });
-
   resultLocals.variant = variant;
-
   const {
     urlPrefix,
     course,
