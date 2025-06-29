@@ -42,8 +42,8 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Whether the main container should have a bottom margin of mb-4 in Bootstrap. */
-    marginBottom?: boolean;
+    /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
+    paddingBottom?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
@@ -60,7 +60,7 @@ export function PageLayout({
   /** The content of the page in the body after the main container. */
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
-  const marginBottom = options.marginBottom ?? true;
+  const paddingBottom = options.paddingBottom ?? true;
 
   const headContentString = asHtmlSafe(headContent);
   const preContentString = asHtmlSafe(preContent);
@@ -148,7 +148,7 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav bg-light border-right">
+                  <div class="app-side-nav bg-light border-end">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
@@ -179,8 +179,8 @@ export function PageLayout({
                   id="content"
                   class="${clsx(
                     options.fullWidth ? 'container-fluid' : 'container',
-                    marginBottom && 'mb-4',
-                    options.fullHeight && 'flex-grow-1',
+                    paddingBottom && 'pb-4',
+                    options.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
                   )}"
@@ -221,7 +221,7 @@ export function PageLayout({
             id="content"
             class="
             ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${marginBottom ? 'mb-4' : ''}
+            ${paddingBottom ? 'pb-4' : ''}
             ${options.fullHeight ? 'flex-grow-1' : ''}
           "
           >

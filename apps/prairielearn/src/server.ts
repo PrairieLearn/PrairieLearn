@@ -781,8 +781,8 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      res.locals.lti11_enabled =
+        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
       next();
     }),
   );
@@ -1086,7 +1086,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   app.use(
@@ -1424,11 +1424,9 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
-  // External image capture page for an instance question. Enables users to capture and submit
-  // images from an external device (e.g. a mobile phone).
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   if (config.devMode) {
@@ -1535,11 +1533,9 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
-  // External image capture page for a question variant generated on the question preview page. Enables
-  // users to capture and submit images from an external device (e.g. a mobile phone).
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
   );
 
   app.use(
@@ -1780,7 +1776,9 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
-    (await import('./pages/externalImageCapture/externalImageCapture.js')).default,
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
+      publicQuestionPreview: true,
+    }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',

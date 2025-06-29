@@ -172,7 +172,7 @@ export async function generatePrompt({
 }
 
 /**
- * Parses the student's submission text and answer to generate a message for the AI model.
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({
   submission_text,
@@ -187,6 +187,9 @@ function generateSubmissionMessage({
     type: 'text',
     text: 'The student submitted the following response: \n<response>\n',
   });
+
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
+  // to the message content to construct an AI-readable version of the submission.
 
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';

@@ -179,9 +179,7 @@ onDocumentReady(() => {
 
     if (!cameraInput.files || cameraInput.files.length === 0) {
       // The user cannot submit if no file was uploaded.
-      if (!uploadButton.classList.contains('d-none')) {
-        uploadButton.classList.add('d-none');
-      }
+      uploadButton.classList.add('d-none');
       uploadButton.disabled = true;
       return;
     }
