@@ -172,7 +172,7 @@ export async function generatePrompt({
 }
 
 /**
- * Parses the student's submission text and answer to generate a message for the AI model.
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({
   submission_text,
