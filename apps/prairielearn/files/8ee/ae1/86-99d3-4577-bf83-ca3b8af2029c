@@ -1,0 +1,12 @@
+<question-panel>
+  <p>Find the derivatives of the functions below.</p>
+</question-panel>
+
+<p>(a) $f(x) = arcsin(2x)+cos(4x^3-5x)+e^{x^3}$</p>
+<pl-image-capture file-name="1a.jpeg"></pl-image-capture>
+
+<p>(b) $g(x) = 3^{8x} + ln(15x)-tan(x^2+1)$</p>
+<pl-image-capture file-name="1b.jpeg"></pl-image-capture>
+
+<p>(c) $h(x) = \frac{x-sec(\pi x)}{e^x}$</p>
+<pl-image-capture file-name="1c.jpeg"></pl-image-capture>

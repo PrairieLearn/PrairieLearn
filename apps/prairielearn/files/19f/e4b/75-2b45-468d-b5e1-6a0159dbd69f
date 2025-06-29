@@ -1,0 +1,10 @@
+<question-panel>
+  <p>
+    Use <b>logarithmic differentiation</b> to find $\frac{dy}{dx}$ for the following function. Your
+    final answer must be fully simplified and written only in terms of x.
+  </p>
+</question-panel>
+
+<p>$y = (tan(x))^{\sqrt{x}}$</p>
+
+<pl-image-capture file-name="5.jpeg"></pl-image-capture>
