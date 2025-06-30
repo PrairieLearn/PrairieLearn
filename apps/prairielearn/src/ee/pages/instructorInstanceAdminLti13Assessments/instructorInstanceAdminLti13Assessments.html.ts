@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
@@ -12,7 +11,9 @@ import {
   type Lti13Assessments,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
+import { Lti13NavTabs } from '../../components/Lti13NavTabs.html.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
+import { InstanceDropdown } from '../instructorInstanceAdminLti13Settings/instructorInstanceAdminLti13Settings.html.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -115,52 +116,13 @@ export function InstructorInstanceAdminLti13({
     },
     preContent: html`
       <div class="bg-light pt-2 px-3">
-        <div class="dropdown">
-          <button
-            type="button"
-            class="btn dropdown-toggle border border-gray"
-            data-bs-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-            data-bs-boundary="window"
-          >
-            ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
-          </button>
-          <div class="dropdown-menu">
-            ${instances.map((i) => {
-              return html`
-                <a
-                  class="dropdown-item ${instance.lti13_course_instance.id ===
-                  i.lti13_course_instance.id
-                    ? 'active'
-                    : ''}"
-                  href="/pl/course_instance/${resLocals.course_instance
-                    .id}/instructor/instance_admin/lti13_instance/${i.lti13_course_instance.id}"
-                  aria-current="${instance.lti13_course_instance.id === i.lti13_course_instance.id
-                    ? 'true'
-                    : ''}"
-                >
-                  ${i.lti13_instance.name}: ${i.lti13_course_instance.context_label}
-                </a>
-              `;
-            })}
-          </div>
-        </div>
+        ${InstanceDropdown({ resLocals, instance, instances, page: 'assessments' })}
       </div>
-      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
-        <li class="nav-item">
-          <a class="${clsx('nav-link', 'active text-dark')}" href="#">
-            <i class="me-1 fa fa-list"></i>
-            Assessments
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-secondary" href="#">
-            <i class="me-1 fa fa-cog"></i>
-            Settings</a
-          >
-        </li>
-      </ul>
+      ${Lti13NavTabs({
+        course_instance: resLocals.course_instance,
+        lti13_course_instance: instance.lti13_course_instance,
+        page: 'assessments',
+      })}
     `,
     content: html`
       <div class="card mb-4">
