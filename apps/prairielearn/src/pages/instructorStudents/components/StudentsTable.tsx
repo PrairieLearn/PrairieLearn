@@ -1,7 +1,7 @@
 import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -32,38 +32,9 @@ function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
   );
 }
 
-// https://stackoverflow.com/a/59185109
-export function useWindowDimensions() {
-  const hasWindow = typeof window !== 'undefined';
-
-  function getWindowDimensions() {
-    const width = hasWindow ? window.innerWidth : null;
-    const height = hasWindow ? window.innerHeight : null;
-    return {
-      width,
-      height,
-    };
-  }
-
-  const [windowDimensions, setWindowDimensions] = useState(() => getWindowDimensions());
-
-  useEffect(() => {
-    if (hasWindow) {
-      function handleResize() {
-        setWindowDimensions(getWindowDimensions());
-      }
-
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, [hasWindow]);
-
-  return windowDimensions;
-}
-
 export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
-
+  const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -87,7 +58,8 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     );
   };
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
-  const { width: windowWidth } = useWindowDimensions();
+
+  const tableRect = tableRef.current?.getBoundingClientRect();
 
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing());
@@ -108,6 +80,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         }}
       >
         <div
+          ref={tableRef}
           style={{
             position: 'relative',
             width: `max(${table.getTotalSize()}px, 100%)`,
@@ -169,9 +142,9 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             </span>
                           )}
                         </div>
-                        {/* If the table is narrower than the window, don't show the resize handle for the last column. */}
-                        {windowWidth &&
-                        windowWidth > table.getTotalSize() &&
+                        {/* If the table is narrower than its container, don't show the resize handle for the last column. */}
+                        {tableRect?.width &&
+                        tableRect.width > table.getTotalSize() &&
                         index === headerGroup.headers.length - 1 ? null : (
                           <ResizeHandle header={header} />
                         )}
