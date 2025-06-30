@@ -158,7 +158,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       >
         <div
           ref={tableRef}
-          id="foo"
           style={{
             position: 'relative',
             width: `max(${table.getTotalSize()}px, 100%)`,
