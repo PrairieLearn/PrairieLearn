@@ -231,7 +231,12 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           role={canSort ? 'button' : undefined}
                           aria-label={
                             canSort
-                              ? `Sort by ${columnName}, currently ${getAriaSort(sortDirection)}`
+                              ? `${columnName} column, current sort is ${getAriaSort(sortDirection)}`
+                              : `${columnName} column, not sortable`
+                          }
+                          aria-description={
+                            canSort
+                              ? `Use Enter to toggle the sort direction of the ${columnName} column.`
                               : undefined
                           }
                         >

@@ -31,7 +31,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
             checked={column.getIsVisible()}
             onChange={column.getToggleVisibilityHandler()}
             disabled={!column.getCanHide()}
-            aria-label={column.getIsVisible() ? 'Hide column' : 'Show column'}
+            aria-label={column.getIsVisible() ? `Hide ${header} column` : `Show ${header} column`}
           />
         </OverlayTrigger>
         <span class="form-check-label ms-2">{header}</span>
@@ -40,7 +40,9 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
         <button
           type="button"
           class="btn btn-sm btn-ghost ms-2"
-          aria-label={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
+          aria-label={
+            column.getIsPinned() ? `Unfreeze ${header} column` : `Freeze ${header} column`
+          }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
           onClick={() => onTogglePin(column.id)}
