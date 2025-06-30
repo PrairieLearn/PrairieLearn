@@ -1258,6 +1258,7 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     # Test adding first file
     base64_msg1 = base64.b64encode(b"msg1").decode("utf-8")
     base64_msg2 = base64.b64encode(b"msg2").decode("utf-8")
+    base64_msg3 = base64.b64encode(b"msg3").decode("utf-8")
     pl.add_submitted_file(question_data, "test1.txt", base64_msg1)
     assert question_data["submitted_answers"]["_files"] == [
         {"name": "test1.txt", "contents": base64_msg1}
@@ -1268,6 +1269,23 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     assert question_data["submitted_answers"]["_files"] == [
         {"name": "test1.txt", "contents": base64_msg1},
         {"name": "test2.txt", "contents": base64_msg2},
+    ]
+
+    # Test adding third file with raw content
+    pl.add_submitted_file(question_data, "test3.txt", raw_contents="msg3")
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
+        {"name": "test3.txt", "contents": base64_msg3},
+    ]
+
+    # Test adding fourth file with no content
+    with pytest.raises(ValueError, match="No content provided for file"):
+        pl.add_submitted_file(question_data, "test4.txt")
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
+        {"name": "test3.txt", "contents": base64_msg3},
     ]
 
 
