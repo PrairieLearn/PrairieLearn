@@ -22,6 +22,8 @@ function ResizeHandle({
   header: Header<StudentRow, unknown>;
   setColumnSizing: Table<StudentRow>['setColumnSizing'];
 }) {
+  const minSize = header.column.columnDef.minSize ?? 0;
+  const maxSize = header.column.columnDef.maxSize ?? 0;
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
@@ -29,8 +31,8 @@ function ResizeHandle({
       const increment = e.shiftKey ? 20 : 5; // Larger increment with Shift key
       const newSize =
         e.key === 'ArrowLeft'
-          ? Math.max(header.column.columnDef.minSize ?? 0, currentSize - increment) // Minimum width of 50px
-          : Math.min(header.column.columnDef.maxSize ?? 0, currentSize + increment); // Maximum width of 800px
+          ? Math.max(minSize, currentSize - increment) // Minimum width of 50px
+          : Math.min(maxSize, currentSize + increment); // Maximum width of 800px
 
       // Use the table's setColumnSizing method to update column size
       setColumnSizing((prevSizing) => ({
@@ -47,6 +49,7 @@ function ResizeHandle({
     typeof header.column.columnDef.header === 'string'
       ? header.column.columnDef.header
       : header.column.id;
+
   return (
     <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
       <div
@@ -55,9 +58,12 @@ function ResizeHandle({
         onKeyDown={handleKeyDown}
         tabIndex={0}
         role="separator"
-        aria-label={`Resize ${columnName} column`}
+        aria-label={`Resize '${columnName}' column`}
         aria-description="Use left and right arrow keys to resize, shift for larger increments, or home to reset."
         aria-orientation="vertical"
+        aria-valuemin={minSize}
+        aria-valuemax={maxSize}
+        aria-valuenow={header.getSize()}
         class="h-100"
         style={{
           background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
@@ -218,7 +224,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             : undefined
                         }
                       >
-                        <div
+                        <button
                           class="text-nowrap"
                           style={{
                             cursor: canSort ? 'pointer' : 'default',
@@ -226,15 +232,15 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             textOverflow: 'ellipsis',
                           }}
                           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                          role={canSort ? 'button' : undefined}
+                          type="button"
                           aria-label={
                             canSort
-                              ? `${columnName} column, current sort is ${getAriaSort(sortDirection)}`
+                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
                               : undefined
                           }
                           aria-description={
                             canSort
-                              ? `Use Enter to toggle the sort direction of the ${columnName} column.`
+                              ? `Use Enter to toggle the sort direction of the '${columnName}' column.`
                               : undefined
                           }
                         >
@@ -251,7 +257,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                               , {getAriaSort(sortDirection)}, click to sort
                             </span>
                           )}
-                        </div>
+                        </button>
                         {/* If the table is narrower than its container, don't show the resize handle for the last column. */}
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&

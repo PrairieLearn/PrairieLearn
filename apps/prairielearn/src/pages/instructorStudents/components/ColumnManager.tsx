@@ -35,7 +35,9 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
             checked={column.getIsVisible()}
             onChange={column.getToggleVisibilityHandler()}
             disabled={!column.getCanHide()}
-            aria-label={column.getIsVisible() ? `Hide ${header} column` : `Show ${header} column`}
+            aria-label={
+              column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
+            }
             aria-describedby={`${column.id}-label`}
           />
         </OverlayTrigger>
@@ -48,7 +50,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           type="button"
           class="btn btn-sm btn-ghost ms-2"
           aria-label={
-            column.getIsPinned() ? `Unfreeze ${header} column` : `Freeze ${header} column`
+            column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
@@ -105,12 +107,12 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
       </button>
-      <div
-        class="dropdown-menu dropdown-menu-arrow"
-        role="menu"
-        aria-label="Column management options"
-      >
-        {pinnedColumns.length > 0 && <div class="px-2 py-1 text-muted small">Frozen columns</div>}
+      <div class="dropdown-menu dropdown-menu-arrow" role="menu">
+        {pinnedColumns.length > 0 && (
+          <div class="px-2 py-1 text-muted small" role="presentation">
+            Frozen columns
+          </div>
+        )}
         {pinnedColumns.map((column, index) => (
           <ColumnMenuItem
             key={column.id}
@@ -131,7 +133,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         {showResetButton && (
           <>
             <div class="dropdown-divider" role="presentation"></div>
-            <div class="px-2 py-1">
+            <div class="px-2 py-1" role="menuitem">
               <button
                 type="button"
                 class="btn btn-sm w-100 btn-secondary"
