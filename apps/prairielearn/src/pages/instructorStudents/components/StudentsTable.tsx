@@ -1,7 +1,7 @@
 import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -32,6 +32,35 @@ function ResizeHandle({ header }: { header: Header<StudentRow, unknown> }) {
   );
 }
 
+// https://stackoverflow.com/a/59185109
+export function useWindowDimensions() {
+  const hasWindow = typeof window !== 'undefined';
+
+  function getWindowDimensions() {
+    const width = hasWindow ? window.innerWidth : null;
+    const height = hasWindow ? window.innerHeight : null;
+    return {
+      width,
+      height,
+    };
+  }
+
+  const [windowDimensions, setWindowDimensions] = useState(() => getWindowDimensions());
+
+  useEffect(() => {
+    if (hasWindow) {
+      function handleResize() {
+        setWindowDimensions(getWindowDimensions());
+      }
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [hasWindow]);
+
+  return windowDimensions;
+}
+
 export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +87,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     );
   };
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
+  const { width: windowWidth } = useWindowDimensions();
 
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing());
@@ -90,7 +120,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             <thead>
               {headerGroups.map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
+                  {headerGroup.headers.map((header, index) => {
                     const isPinned = header.column.getIsPinned();
                     const style: JSX.CSSProperties = {
                       // If the cell is the last column, use whichever is larger:
@@ -139,7 +169,12 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             </span>
                           )}
                         </div>
-                        <ResizeHandle header={header} />
+                        {/* If the table is narrower than the window, don't show the resize handle for the last column. */}
+                        {windowWidth &&
+                        windowWidth > table.getTotalSize() &&
+                        index === headerGroup.headers.length - 1 ? null : (
+                          <ResizeHandle header={header} />
+                        )}
                       </th>
                     );
                   })}
