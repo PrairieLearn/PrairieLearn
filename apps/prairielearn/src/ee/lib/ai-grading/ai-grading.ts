@@ -21,6 +21,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   GradingResultSchema,
   OPEN_AI_MODEL,
@@ -145,9 +146,23 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
+    const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
+
     let error_count = 0;
     // Grade each instance question
     for (const instance_question of instance_questions) {
+      const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
+
+      const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+      const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+
+      const should_update_score =
+        !manualGradingJob || // no manual grading job
+        (manualGradingJob &&
+          aiGradingJob &&
+          manualGradingJob.graded_at &&
+          aiGradingJob.graded_at &&
+          manualGradingJob.graded_at > aiGradingJob.graded_at); // exist more recent ai grading job
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
@@ -237,7 +252,7 @@ export async function aiGrade({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            if (instance_question.requires_manual_grading) {
+            if (should_update_score) {
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -338,7 +353,7 @@ export async function aiGrade({
           if (response.parsed) {
             const score = response.parsed.score;
 
-            if (instance_question.requires_manual_grading) {
+            if (should_update_score) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
