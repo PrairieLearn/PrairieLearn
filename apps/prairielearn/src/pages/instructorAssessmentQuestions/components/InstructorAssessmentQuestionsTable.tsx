@@ -3,8 +3,8 @@ import { Fragment } from 'preact/jsx-runtime';
 
 import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
 import {
-  AssessmentQuestionHeaders,
-  AssessmentQuestionNumber,
+  AssessmentQuestionHeadersJsx,
+  AssessmentQuestionNumberJsx,
 } from '../../../components/AssessmentQuestions.html.js';
 import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
@@ -73,7 +73,7 @@ export function InstructorAssessmentQuestionsTable({
   function title(question: AssessmentQuestionRow) {
     const title = (
       <>
-        <AssessmentQuestionNumber question={question} />
+        <AssessmentQuestionNumberJsx question={question} />
         {question.title}
       </>
     );
@@ -114,7 +114,7 @@ export function InstructorAssessmentQuestionsTable({
               {questions.map((question) => {
                 return (
                   <Fragment key={question.qid}>
-                    <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
+                    <AssessmentQuestionHeadersJsx question={question} nTableCols={nTableCols} />
                     <tr>
                       <td>
                         {title(question)}

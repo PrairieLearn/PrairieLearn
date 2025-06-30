@@ -1,6 +1,7 @@
+import { renderHtml } from '../lib/preact-html.js';
 import { type AssessmentQuestionRow } from '../models/assessment-question.types.js';
 
-export function AssessmentQuestionHeaders({
+export function AssessmentQuestionHeadersJsx({
   question,
   nTableCols,
 }: {
@@ -45,7 +46,17 @@ export function AssessmentQuestionHeaders({
   );
 }
 
-export function AssessmentQuestionNumber({ question }: { question: AssessmentQuestionRow }) {
+export function AssessmentQuestionHeaders({
+  question,
+  nTableCols,
+}: {
+  question: AssessmentQuestionRow;
+  nTableCols: number;
+}) {
+  return renderHtml(<AssessmentQuestionHeadersJsx question={question} nTableCols={nTableCols} />);
+}
+
+export function AssessmentQuestionNumberJsx({ question }: { question: AssessmentQuestionRow }) {
   return question.alternative_group_size === 1 ? (
     <>{question.alternative_group_number}. </>
   ) : (
@@ -53,4 +64,8 @@ export function AssessmentQuestionNumber({ question }: { question: AssessmentQue
       {question.alternative_group_number}.{question.number_in_alternative_group}.{' '}
     </span>
   );
+}
+
+export function AssessmentQuestionNumber(question: AssessmentQuestionRow) {
+  return renderHtml(<AssessmentQuestionNumberJsx question={question} />);
 }
