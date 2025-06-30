@@ -126,8 +126,12 @@ export function InstructorCourseAdminTopicsTable({
               <tr>
                 {editMode && hasCoursePermissionEdit ? (
                   <>
-                    <th></th>
-                    <th></th>
+                    <th>
+                      <span class="visually-hidden">Edit</span>
+                    </th>
+                    <th>
+                      <span class="visually-hidden">Delete</span>
+                    </th>
                   </>
                 ) : (
                   ''
@@ -149,6 +153,7 @@ export function InstructorCourseAdminTopicsTable({
                             class="btn btn-sm btn-ghost"
                             type="button"
                             onClick={() => handleOpenEditModal(index)}
+                            aria-label={`Edit topic ${topic.name}`}
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -158,6 +163,7 @@ export function InstructorCourseAdminTopicsTable({
                             class="btn btn-sm"
                             type="button"
                             onClick={() => handleDeleteTopic(index)}
+                            aria-label={`Delete topic ${topic.name}`}
                           >
                             <i class="fa fa-trash text-danger" aria-hidden="true"></i>
                           </button>

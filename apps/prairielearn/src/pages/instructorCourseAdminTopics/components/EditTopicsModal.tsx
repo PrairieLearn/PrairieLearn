@@ -78,73 +78,76 @@ export function EditTopicsModal({
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="editTopicModalTitle">
+            <h2 class="modal-title" id="editTopicModalTitle">
               Edit Topic
-            </h5>
-            <button type="button" class="btn-close" onClick={handleCloseModal}></button>
+            </h2>
+            <button
+              type="button"
+              class="btn-close"
+              onClick={handleCloseModal}
+              aria-label="close"
+            ></button>
           </div>
           <div class="modal-body">
-            <form>
-              {selectedTopic ? (
-                <>
-                  <div class="mb-3">
-                    <label class="form-label" htmlFor="topicName">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="topicName"
-                      value={selectedTopic.name}
-                      onChange={(e) =>
-                        setSelectedTopic({
-                          ...selectedTopic,
-                          name: (e.target as HTMLInputElement)?.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label" htmlFor="topicColor">
-                      Color
-                    </label>
-                    <select
-                      class="form-select"
-                      id="topicColor"
-                      value={selectedTopic.color}
-                      onChange={(e) =>
-                        setSelectedTopic({
-                          ...selectedTopic,
-                          color: (e.target as HTMLSelectElement)?.value,
-                        })
-                      }
-                    >
-                      {colorOptions.map((color) => (
-                        <option key={color} value={color}>
-                          {color}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div class="mb-3">
-                    <label class="form-label" htmlFor="topicDescription">
-                      Description
-                    </label>
-                    <textarea
-                      class="form-control"
-                      id="topicDescription"
-                      value={selectedTopic.description}
-                      onChange={(e) =>
-                        setSelectedTopic({
-                          ...selectedTopic,
-                          description: (e.target as HTMLTextAreaElement)?.value,
-                        })
-                      }
-                    />
-                  </div>
-                </>
-              ) : null}
-            </form>
+            {selectedTopic ? (
+              <>
+                <div class="mb-3">
+                  <label class="form-label" htmlFor="topicName">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="topicName"
+                    value={selectedTopic.name}
+                    onChange={(e) =>
+                      setSelectedTopic({
+                        ...selectedTopic,
+                        name: (e.target as HTMLInputElement)?.value,
+                      })
+                    }
+                  />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" htmlFor="topicColor">
+                    Color
+                  </label>
+                  <select
+                    class="form-select"
+                    id="topicColor"
+                    value={selectedTopic.color ?? 'Select a color'}
+                    onChange={(e) =>
+                      setSelectedTopic({
+                        ...selectedTopic,
+                        color: (e.target as HTMLSelectElement)?.value,
+                      })
+                    }
+                  >
+                    {colorOptions.map((color) => (
+                      <option key={color} value={color}>
+                        {color}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" htmlFor="topicDescription">
+                    Description
+                  </label>
+                  <textarea
+                    class="form-control"
+                    id="topicDescription"
+                    value={selectedTopic.description}
+                    onChange={(e) =>
+                      setSelectedTopic({
+                        ...selectedTopic,
+                        description: (e.target as HTMLTextAreaElement)?.value,
+                      })
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary" onClick={handleModalUpdate}>
