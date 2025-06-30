@@ -6,6 +6,17 @@ import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
 
+const emptyTopic: Topic = {
+  color: '',
+  course_id: '',
+  description: '',
+  id: '',
+  implicit: false,
+  json_comment: '',
+  name: '',
+  number: null,
+};
+
 export function InstructorCourseAdminTopicsTable({
   topics,
   hasCoursePermissionEdit,
@@ -18,26 +29,25 @@ export function InstructorCourseAdminTopicsTable({
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>({
-    color: '',
-    course_id: '',
-    description: '',
-    id: '',
-    implicit: false,
-    json_comment: '',
-    name: '',
-    number: null,
-  });
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(emptyTopic);
+  const [selectedTopicIndex, setSelectedTopicIndex] = useState<number | null>(null);
   const [topicsState, setTopicsState] = useState<Topic[]>(topics);
+  const [addTopic, setAddTopic] = useState(false);
 
-  const handleModalOpen = (topicIndex: number) => {
-    setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
+  const handleOpenModal = () => {
     window.bootstrap.Modal.getOrCreateInstance(
       document.querySelector('#editTopicModal') as HTMLElement,
     ).show();
   };
 
-  const handleModalClose = () => {
+  const handleOpenEditModal = (topicIndex: number) => {
+    setAddTopic(false);
+    setSelectedTopicIndex(topicIndex);
+    setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
+    handleOpenModal();
+  };
+
+  const handleCloseModal = () => {
     (document.activeElement as HTMLElement).blur();
     window.bootstrap.Modal.getOrCreateInstance(
       document.querySelector('#editTopicModal') as HTMLElement,
@@ -45,18 +55,29 @@ export function InstructorCourseAdminTopicsTable({
     setSelectedTopic(null);
   };
 
-  const handleModalSave = () => {
-    setTopicsState((prevTopics) =>
-      prevTopics.map((topic) =>
-        topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
-      ),
-    );
-    handleModalClose();
+  const handleModalUpdate = () => {
+    if (addTopic) {
+      setTopicsState((prevTopics) => [...prevTopics, selectedTopic as Topic]);
+    } else {
+      setTopicsState((prevTopics) =>
+        prevTopics.map((topic, index) =>
+          index === selectedTopicIndex ? { ...topic, ...selectedTopic } : topic,
+        ),
+      );
+    }
+    handleCloseModal();
   };
 
   const handleDeleteTopic = (topicIndex: number) => {
     topicsState.splice(topicIndex, 1);
     setTopicsState([...topicsState]);
+  };
+
+  const handleNewTopic = () => {
+    setAddTopic(true);
+    setSelectedTopicIndex(topicsState.length);
+    setSelectedTopic(emptyTopic);
+    handleOpenModal();
   };
 
   return (
@@ -127,7 +148,7 @@ export function InstructorCourseAdminTopicsTable({
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            onClick={() => handleModalOpen(index)}
+                            onClick={() => handleOpenEditModal(index)}
                           >
                             <i class="fa fa-edit" aria-hidden="true"></i>
                           </button>
@@ -156,6 +177,17 @@ export function InstructorCourseAdminTopicsTable({
                   </tr>
                 );
               })}
+              {editMode ? (
+                <tr>
+                  <td colSpan={6}>
+                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleNewTopic}>
+                      <i class="fa fa-plus" aria-hidden="true"></i> New Topic
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                ''
+              )}
             </tbody>
           </table>
         </div>
@@ -163,8 +195,9 @@ export function InstructorCourseAdminTopicsTable({
       <EditTopicsModal
         selectedTopic={selectedTopic}
         setSelectedTopic={setSelectedTopic}
-        handleModalSave={handleModalSave}
-        handleModalClose={handleModalClose}
+        handleModalUpdate={handleModalUpdate}
+        handleCloseModal={handleCloseModal}
+        addTopic={addTopic}
       />
     </>
   );

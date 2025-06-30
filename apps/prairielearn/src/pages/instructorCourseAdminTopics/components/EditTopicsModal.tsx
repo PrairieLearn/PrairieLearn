@@ -37,13 +37,15 @@ const colorOptions = [
 export function EditTopicsModal({
   selectedTopic,
   setSelectedTopic,
-  handleModalSave,
-  handleModalClose,
+  handleModalUpdate,
+  handleCloseModal,
+  addTopic,
 }: {
   selectedTopic: Topic | null;
   setSelectedTopic: (topic: Topic | null) => void;
-  handleModalSave: () => void;
-  handleModalClose: () => void;
+  handleModalUpdate: () => void;
+  handleCloseModal: () => void;
+  addTopic: boolean;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +81,7 @@ export function EditTopicsModal({
             <h5 class="modal-title" id="editTopicModalTitle">
               Edit Topic
             </h5>
-            <button type="button" class="btn-close" onClick={handleModalClose}></button>
+            <button type="button" class="btn-close" onClick={handleCloseModal}></button>
           </div>
           <div class="modal-body">
             <form>
@@ -145,10 +147,10 @@ export function EditTopicsModal({
             </form>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" onClick={handleModalSave}>
-              Update topic
+            <button type="button" class="btn btn-primary" onClick={handleModalUpdate}>
+              {addTopic ? 'Add topic' : 'Update topic'}
             </button>
-            <button type="button" class="btn btn-secondary" onClick={handleModalClose}>
+            <button type="button" class="btn btn-secondary" onClick={handleCloseModal}>
               Close
             </button>
           </div>
