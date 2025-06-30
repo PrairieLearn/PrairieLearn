@@ -184,8 +184,10 @@ extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 executionEnvironments = [
   # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
-  { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [] },
-  { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [] },
+  { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
+  ] },
+  { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
+  ] },
   { root = "./exampleCourse/questions", pythonVersion = "3.10", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
 ]
 reportUnnecessaryTypeIgnoreComment = "error"
