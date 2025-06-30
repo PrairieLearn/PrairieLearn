@@ -1,0 +1,45 @@
+{
+    "uuid": "3afb7f28-8a0e-4785-89ca-c3b4ccbbd109",
+    "type": "Exam",
+    "title": "MATH 220 Final",
+    "set": "Exam",
+    "number": "2",
+    "allowAccess": [],
+    "zones": [
+      {
+        "comment": "Free response",
+        "questions": [
+          { "id": "cos-sin-1", "manualPoints": 2},
+          { "id": "cosine-sine-2", "manualPoints": 4 },
+          { "id": "piecewise-continuous_2", "manualPoints": 6 },
+          { "id": "function-limit-1", "manualPoints": 5},
+          { "id": "function-limit-2", "manualPoints": 5 },
+          
+          { "id": "derivative-1", "manualPoints": 5 },
+          { "id": "derivative-2", "manualPoints": 6 },
+          { "id": "derivative-3", "manualPoints": 5 },
+          { "id": "derivative-4", "manualPoints": 4 },
+          
+          { "id": "implicit-differentiation", "manualPoints": 8 },
+          
+          { "id": "ladder-and-the-wall_2", "manualPoints": 8 },
+          
+          { "id": "full-limit-evaluation", "manualPoints": 8 },
+          
+          { "id": "max-product", "manualPoints": 8 },
+          
+          { "id": "definite-integral-substitution", "manualPoints": 6 },
+          
+          { "id": "riemann-sum", "manualPoints": 4 },
+          
+          { "id": "area-between-curves", "manualPoints": 8 },
+          
+          
+          { "id": "volume-of-solid", "manualPoints": 8 },
+          
+          { "id": "derivative-ec", "manualPoints": 3 },
+          { "id": "car-approach", "manualPoints": 3 }
+        ]
+      }
+    ]
+}

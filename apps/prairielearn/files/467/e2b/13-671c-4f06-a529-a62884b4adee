@@ -1,0 +1,17 @@
+<p>Determine if the following function is continuous at $x = 0$. </p>
+<p>
+    $
+        $$
+        f(x)=\left\{
+        \begin{array}{ll}
+        23\cos(-4x)+1, & x\le 0,\\
+        2-3x          & x>0.
+        \end{array}
+        \right.
+        $$
+
+    $
+</p>
+
+<p>Show your work.</p>
+<pl-image-capture file-name="2.jpg"></pl-image-capture> 

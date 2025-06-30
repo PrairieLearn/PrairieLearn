@@ -1913,7 +1913,7 @@ export async function initExpress(): Promise<Express> {
   app.get(
     '/pl/generate-submissions',
     async (req, res) => {
-      await generateSubmissions();
+      await generateSubmissions(req, res);
       res.status(200).send('Submissions generated successfully');
 
     }

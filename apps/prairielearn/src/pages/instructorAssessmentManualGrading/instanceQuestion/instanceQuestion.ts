@@ -231,6 +231,8 @@ router.post(
           }
         : undefined;
 
+      console.log('manual_rubric_data', manual_rubric_data);
+
       const { modified_at_conflict, grading_job_id } =
         await manualGrading.updateInstanceQuestionScore(
           res.locals.assessment.id,
