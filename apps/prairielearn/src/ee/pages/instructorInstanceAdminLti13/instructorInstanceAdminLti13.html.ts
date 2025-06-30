@@ -43,7 +43,7 @@ export function InstructorInstanceAdminLti13NoInstances({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Integrations with other learning systems</h1>
+          <h1>Integrations with other learning systems after</h1>
         </div>
         <div class="card-body">
           ${lti13_instances.length === 0

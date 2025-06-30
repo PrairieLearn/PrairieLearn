@@ -16,7 +16,7 @@ export default defineConfig({
       appPath: './src/server.ts',
       exportName: 'viteExpressApp',
       initAppOnBoot: true,
-      watchFileChanges: true,
+      watchFileChanges: false,
     }),
   ],
 });

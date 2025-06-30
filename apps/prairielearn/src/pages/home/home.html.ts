@@ -130,7 +130,7 @@ function DevModeCard() {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        <h2>Development Mode!</h2>
+        <h2>Development Mode2</h2>
       </div>
       <div class="card-body">
         <p>
