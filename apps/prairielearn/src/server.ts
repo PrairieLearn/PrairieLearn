@@ -1238,8 +1238,11 @@ export async function initExpress(): Promise<Express> {
     );
     app.use(
       '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance',
-      (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
-        .default,
+      (
+        await import(
+          './ee/pages/instructorInstanceAdminLti13Assessments/instructorInstanceAdminLti13Assessments.js'
+        )
+      ).default,
     );
   }
 

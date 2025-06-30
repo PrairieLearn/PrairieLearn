@@ -38,7 +38,7 @@ import {
   InstructorInstanceAdminLti13,
   InstructorInstanceAdminLti13NoInstances,
   LineitemsInputs,
-} from './instructorInstanceAdminLti13.html.js';
+} from './instructorInstanceAdminLti13Assessments.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
