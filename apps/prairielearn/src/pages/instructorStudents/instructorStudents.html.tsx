@@ -87,7 +87,9 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
         header: 'Enrolled on',
         cell: (info) => {
           const date = new Date(info.getValue());
-          return <FriendlyDate date={date} timezone={timezone} />;
+          return (
+            <FriendlyDate date={date} timezone={timezone} tooltip options={{ includeTz: false }} />
+          );
         },
       }),
     ],

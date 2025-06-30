@@ -24,7 +24,7 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   const fullString = formatDate(date, timezone);
   if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
   return (
-    <OverlayTrigger placement="top" overlay={<Tooltip>{fullString}</Tooltip>}>
+    <OverlayTrigger placement="top" delay={{ show: 100 }} overlay={<Tooltip>{fullString}</Tooltip>}>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>
     </OverlayTrigger>
   );
