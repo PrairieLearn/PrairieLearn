@@ -154,7 +154,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           overflow: 'auto',
           overflowAnchor: 'none',
         }}
-        aria-label="Students table"
       >
         <div
           ref={tableRef}
@@ -167,6 +166,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             class="table table-hover mb-0 border border-top-0"
             style={{ tableLayout: 'fixed' }}
             onKeyDown={handleTableKeyDown}
+            aria-label="Students table"
           >
             <thead>
               {headerGroups.map((headerGroup) => (
@@ -230,7 +230,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           aria-label={
                             canSort
                               ? `${columnName} column, current sort is ${getAriaSort(sortDirection)}`
-                              : `${columnName} column, not sortable`
+                              : undefined
                           }
                           aria-description={
                             canSort
