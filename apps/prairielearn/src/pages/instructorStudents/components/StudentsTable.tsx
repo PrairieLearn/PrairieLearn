@@ -1,7 +1,7 @@
 import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import { type JSX, useRef } from 'preact/compat';
+import { type JSX, useEffect, useRef } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -59,7 +59,9 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   };
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
-  // Empty state if no columns are visible
+  useEffect(() => {
+    document.body.classList.toggle('no-user-select', isTableResizing());
+  }, [isTableResizing()]);
 
   return (
     <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
@@ -73,8 +75,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           bottom: 0,
           overflow: 'auto',
           overflowAnchor: 'none',
-          paddingRight: '1em',
-          userSelect: isTableResizing() ? 'none' : undefined,
         }}
       >
         <div

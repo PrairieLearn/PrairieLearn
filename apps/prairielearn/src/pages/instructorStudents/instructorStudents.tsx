@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -62,6 +63,7 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
+        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
