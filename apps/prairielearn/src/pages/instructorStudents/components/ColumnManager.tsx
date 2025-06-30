@@ -19,7 +19,11 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
   const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
 
   return (
-    <div key={column.id} class="px-2 py-1 d-flex align-items-center justify-content-between">
+    <div
+      key={column.id}
+      class="px-2 py-1 d-flex align-items-center justify-content-between"
+      role="menuitem"
+    >
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
         <OverlayTrigger
           placement="top"
@@ -32,9 +36,12 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
             onChange={column.getToggleVisibilityHandler()}
             disabled={!column.getCanHide()}
             aria-label={column.getIsVisible() ? `Hide ${header} column` : `Show ${header} column`}
+            aria-describedby={`${column.id}-label`}
           />
         </OverlayTrigger>
-        <span class="form-check-label ms-2">{header}</span>
+        <span class="form-check-label ms-2" id={`${column.id}-label`}>
+          {header}
+        </span>
       </label>
       {column.getCanPin() && !hidePinButton && (
         <button
@@ -47,7 +54,7 @@ function ColumnMenuItem({ column, hidePinButton = false, onTogglePin }: ColumnMe
           data-bs-toggle="tooltip"
           onClick={() => onTogglePin(column.id)}
         >
-          <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} />
+          <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
         </button>
       )}
     </div>
@@ -91,12 +98,18 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        aria-haspopup="true"
+        aria-label="Manage column visibility and pinning options"
         class="btn btn-outline-secondary dropdown-toggle text-nowrap"
       >
         <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
       </button>
-      <div class="dropdown-menu dropdown-menu-arrow">
+      <div
+        class="dropdown-menu dropdown-menu-arrow"
+        role="menu"
+        aria-label="Column management options"
+      >
         {pinnedColumns.length > 0 && <div class="px-2 py-1 text-muted small">Frozen columns</div>}
         {pinnedColumns.map((column, index) => (
           <ColumnMenuItem
@@ -106,7 +119,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
             onTogglePin={handleTogglePin}
           />
         ))}
-        {pinnedColumns.length > 0 && <div class="dropdown-divider"></div>}
+        {pinnedColumns.length > 0 && <div class="dropdown-divider" role="presentation"></div>}
         {unpinnedColumns.map((column, index) => (
           <ColumnMenuItem
             key={column.id}
@@ -117,10 +130,15 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         ))}
         {showResetButton && (
           <>
-            <div class="dropdown-divider"></div>
+            <div class="dropdown-divider" role="presentation"></div>
             <div class="px-2 py-1">
-              <button type="button" class="btn btn-sm w-100 btn-secondary" onClick={handleReset}>
-                <i class="bi bi-arrow-counterclockwise me-2" />
+              <button
+                type="button"
+                class="btn btn-sm w-100 btn-secondary"
+                onClick={handleReset}
+                aria-label="Reset all columns to default visibility and pinning"
+              >
+                <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
                 Reset view
               </button>
             </div>
