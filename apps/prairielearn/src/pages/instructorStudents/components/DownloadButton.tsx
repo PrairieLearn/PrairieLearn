@@ -49,34 +49,42 @@ export function DownloadButton({
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
+        aria-haspopup="true"
+        aria-label="Download student data in various formats"
         class="btn btn-light btn-sm dropdown-toggle"
       >
         <i aria-hidden="true" class="pe-2 bi bi-download"></i>
         Download
       </button>
-      <ul class="dropdown-menu">
-        <li>
+      <ul class="dropdown-menu" role="menu" aria-label="Download options">
+        <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
+            role="menuitem"
+            aria-label="Download all students as CSV file"
             onClick={() => downloadStudentsCSV(students, `${filenamePrefix}students.csv`)}
           >
             All students as CSV
           </button>
         </li>
-        <li>
+        <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
+            role="menuitem"
+            aria-label="Download all students as JSON file"
             onClick={() => downloadStudentsJSON(students, `${filenamePrefix}students.json`)}
           >
             All students as JSON
           </button>
         </li>
-        <li>
+        <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
+            role="menuitem"
+            aria-label="Download filtered students as CSV file"
             onClick={() =>
               downloadStudentsCSV(
                 table.getFilteredRowModel().rows.map((row) => row.original),
@@ -87,10 +95,12 @@ export function DownloadButton({
             Filtered students as CSV
           </button>
         </li>
-        <li>
+        <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
+            role="menuitem"
+            aria-label="Download filtered students as JSON file"
             onClick={() =>
               downloadStudentsJSON(
                 table.getFilteredRowModel().rows.map((row) => row.original),
