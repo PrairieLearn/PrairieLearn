@@ -4,7 +4,7 @@ ARG CACHEBUST=2025-06-15-14-13-20
 
 WORKDIR /PrairieLearn
 
-COPY --parents scripts/pl-install.sh requirements.txt /PrairieLearn/
+COPY --parents scripts/pl-install.sh /PrairieLearn/
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 
@@ -17,9 +17,12 @@ ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
 # We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,
 # both of which are necessary for Yarn to correctly install dependencies.
 #
-# Finally, we copy `packages/bind-mount/` since this package contains native
+# We copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
+#
+# Finally, we copy `requirements.txt` and the `Makefile` since we need to install Python dependencies.
+COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ \
+    requirements.txt Makefile /PrairieLearn/
 
 # Install Node dependencies.
 #
@@ -36,7 +39,10 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 #
 # If the following issue is ever addressed, we can use that instead:
 # https://github.com/yarnpkg/berry/issues/6339
-RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
+RUN yarn dlx node-gyp install && \
+    yarn install --immutable --inline-builds && \
+    yarn cache clean && \
+    make python-deps
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . .

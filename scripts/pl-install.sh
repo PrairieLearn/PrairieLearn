@@ -78,12 +78,6 @@ arch="$(uname -m)"
 curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
-echo "installing Python packages..."
-cd /PrairieLearn
-python3 -m venv .venv
-.venv/bin/python3 -m pip install -r requirements.txt
-cd /
-
 # Clear various caches to minimize the final image size.
 dnf clean all
 conda clean --all
