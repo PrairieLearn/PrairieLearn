@@ -3969,7 +3969,7 @@ __metadata:
     fast-glob: "npm:^3.3.3"
     fast-json-stable-stringify: "npm:^2.1.0"
     fetch-cookie: "npm:^3.1.0"
-    file-type: "npm:^20.5.0"
+    file-type: "npm:^21.0.0"
     filesize: "npm:^10.1.6"
     folder-hash: "npm:^4.1.1"
     fs-extra: "npm:^11.3.0"
@@ -5412,7 +5412,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tokenizer/inflate@npm:^0.2.6":
+"@tokenizer/inflate@npm:^0.2.7":
   version: 0.2.7
   resolution: "@tokenizer/inflate@npm:0.2.7"
   dependencies:
@@ -10309,15 +10309,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:^20.5.0":
-  version: 20.5.0
-  resolution: "file-type@npm:20.5.0"
+"file-type@npm:^21.0.0":
+  version: 21.0.0
+  resolution: "file-type@npm:21.0.0"
   dependencies:
-    "@tokenizer/inflate": "npm:^0.2.6"
-    strtok3: "npm:^10.2.0"
+    "@tokenizer/inflate": "npm:^0.2.7"
+    strtok3: "npm:^10.2.2"
     token-types: "npm:^6.0.0"
     uint8array-extras: "npm:^1.4.0"
-  checksum: 10c0/9b13d7e4eca79752008f036712a42df78393f05b88b9013c5754b04d3eb90b051cb692836a04acf7d2c696cb9f28077ddf8ebd6830175807f14fddf837d63be3
+  checksum: 10c0/ee6b0bb5771ad154e236bb77b5c00907743fef3637c3825713c1d6913377d3d969ebba4a6f0aa854b8231552e2c1bd0387229fe67394dc3d08a01819c7d107b1
   languageName: node
   linkType: hard
 
@@ -14350,13 +14350,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"peek-readable@npm:^6.1.1":
-  version: 6.1.1
-  resolution: "peek-readable@npm:6.1.1"
-  checksum: 10c0/5200f480e34b93ba95d13353bbec672cc9fd778377d3eb5fc07f4417486a68445bc23100838afc95493fa89c8263522ea01323e7fd28fc5a737cc876466bfedb
-  languageName: node
-  linkType: hard
-
 "pem@npm:^1.14.8":
   version: 1.14.8
   resolution: "pem@npm:1.14.8"
@@ -16346,13 +16339,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strtok3@npm:^10.2.0":
-  version: 10.2.1
-  resolution: "strtok3@npm:10.2.1"
+"strtok3@npm:^10.2.2":
+  version: 10.3.1
+  resolution: "strtok3@npm:10.3.1"
   dependencies:
     "@tokenizer/token": "npm:^0.3.0"
-    peek-readable: "npm:^6.1.1"
-  checksum: 10c0/864d88358c1cbca5c1a4538e74189ea89e0ed89d46cafe82178a2bb8b2bf22d5882da711fe73e9eaacad9cf1a3f875aa5a666900f3b0af6a7f5d8d94b211af1f
+  checksum: 10c0/4ba982bbb8009ae4d19f1ce83b95e5f3b4d774a646c6d0ade9afcb813a61e9c1ca0ad89ce06c0045ebd391f0a939e2316ebef67e74d492ef0e87a40450a5eeb4
   languageName: node
   linkType: hard
 
