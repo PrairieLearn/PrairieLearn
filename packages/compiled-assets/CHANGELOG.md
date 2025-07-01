@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.2.0
+
+### Minor Changes
+
+- 6e2ba4f: Define `process.env.NODE_ENV` when bundling JavaScript
+
 ## 3.1.0
 
 ### Minor Changes

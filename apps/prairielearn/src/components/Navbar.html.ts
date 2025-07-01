@@ -84,7 +84,6 @@ export function Navbar({
                 type="button"
                 aria-expanded="false"
                 aria-label="Toggle side nav"
-                style="height: 40px;"
               >
                 <span class="navbar-toggler-icon"></span>
               </button>
@@ -105,7 +104,6 @@ export function Navbar({
           data-bs-animation="false"
           aria-expanded="false"
           aria-label="Toggle navigation"
-          style="height: 40px;"
         >
           <span class="${sideNavEnabled ? 'bi bi-person-circle' : 'navbar-toggler-icon'}"></span>
         </button>
@@ -763,6 +761,13 @@ function NavbarButtons({
     allNavbarButtons.push({
       text: resLocals.course.short_name,
       href: `/pl/course/${resLocals.course.id}/course_admin/instances`,
+    });
+  }
+
+  if (resLocals.course_instance) {
+    allNavbarButtons.push({
+      text: resLocals.course_instance.short_name,
+      href: `/pl/course_instance/${resLocals.course_instance.id}/instructor/instance_admin/assessments`,
     });
   }
 
