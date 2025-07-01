@@ -26,6 +26,8 @@
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
+    "@html-eslint/eslint-plugin": "^0.42.0",
+    "@html-eslint/parser": "^0.42.0",
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
     "node-gyp": "^11.2.0",

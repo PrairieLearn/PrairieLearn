@@ -73,14 +73,6 @@ export default tseslint.config([
     },
 
     rules: {
-      ...html.configs['flat/recommended'].rules,
-      '@html-eslint/element-newline': 'off',
-      '@html-eslint/indent': 'off',
-      '@html-eslint/attrs-newline': 'off',
-      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
-      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
-      '@html-eslint/use-baseline': 'off',
-
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
       'handle-callback-err': 'error',
@@ -143,6 +135,18 @@ export default tseslint.config([
 
       // We violate this rule in a lot of places. We'll turn it off for now.
       'vitest/no-identical-title': ['off'],
+
+      // Use the recommended rules for HTML.
+      ...html.configs['flat/recommended'].rules,
+      // We don't want these style rules
+      '@html-eslint/attrs-newline': 'off',
+      '@html-eslint/element-newline': 'off',
+      '@html-eslint/indent': 'off',
+      // We prefer tags like `<img />` over `<img>`.
+      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
+      // False positives for attribute/element baseline browser compatibility.
+      '@html-eslint/use-baseline': 'off',
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',

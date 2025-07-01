@@ -172,7 +172,7 @@ function ShibLoginButton() {
   return html`
     <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
       ${config.shibLinkLogo != null
-        ? html`<img src="${config.shibLinkLogo}" class="social-icon" alt="Shibboleth logo" />`
+        ? html`<img src="${config.shibLinkLogo}" class="social-icon" alt="" />`
         : html`<span class="social-icon"></span>`}
       <span class="fw-bold">${config.shibLinkText}</span>
     </a>
@@ -182,7 +182,7 @@ function ShibLoginButton() {
 function GoogleLoginButton() {
   return html`
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
-      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" alt="Google logo" />
+      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" alt="" />
       <span class="fw-bold">Sign in with Google</span>
     </a>
   `;
@@ -191,7 +191,7 @@ function GoogleLoginButton() {
 function MicrosoftLoginButton() {
   return html`
     <a class="btn btn-dark d-block position-relative" href="/pl/azure_login">
-      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" alt="Microsoft logo" />
+      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" alt="" />
       <span class="fw-bold">Sign in with Microsoft</span>
     </a>
   `;
