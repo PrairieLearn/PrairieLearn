@@ -80,7 +80,9 @@ bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
 cd /PrairieLearn
-make python-deps
+python3 -m venv .venv
+.venv/bin/python3 -m pip install -r requirements.txt
+cd /
 
 # Clear various caches to minimize the final image size.
 dnf clean all
