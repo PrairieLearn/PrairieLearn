@@ -5,7 +5,6 @@ This page describes the procedure to install and run PrairieLearn fully natively
 ## Installation
 
 - Install the prerequisites:
-
   - [Git](https://git-scm.com)
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
