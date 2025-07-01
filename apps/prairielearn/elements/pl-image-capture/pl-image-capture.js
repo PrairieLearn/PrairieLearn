@@ -765,6 +765,5 @@
     }
   }
 
-
   window.PLImageCapture = PLImageCapture;
 })();
