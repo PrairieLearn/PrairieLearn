@@ -464,9 +464,7 @@
 
       this.openContainer('local-camera-capture');
 
-      if (!localCameraErrorMessage.classList.contains('d-none')) {
-        localCameraErrorMessage.classList.add('d-none');
-      }
+      localCameraErrorMessage.classList.add('d-none');
 
       try {
         // Stream the local camera video to the video element
@@ -608,9 +606,7 @@
 
       this.openContainer('capture-preview');
 
-      if (!localCameraErrorMessage.classList.contains('d-none')) {
-        localCameraErrorMessage.classList.add('d-none');
-      }
+      localCameraErrorMessage.classList.add('d-none');
 
       this.deactivateVideoStream();
     }

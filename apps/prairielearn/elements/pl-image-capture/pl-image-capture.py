@@ -159,9 +159,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "invalid":
         data["raw_submitted_answers"][file_name] = ""
 
-        if not data["format_errors"]:
-            data["format_errors"] = {}
-
         if "_files" not in data["format_errors"]:
             data["format_errors"]["_files"] = []
 
