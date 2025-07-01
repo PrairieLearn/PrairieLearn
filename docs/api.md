@@ -85,3 +85,12 @@ In the endpoint list below, path components starting with a colon like
 - **One submission:**
   - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
   - One specific submission.
+
+- **Course sync:**
+  - `/pl/api/v1/course/:course_id/sync`
+  - `POST` endpoint to start a course sync.
+  - Returns the `job_sequence_id` of the course sync job.
+
+- **Course sync status:**
+  - `/pl/api/v1/course/:course_id/sync/:job_sequence_id`
+  - Retrieves the output and status of a course sync job.
