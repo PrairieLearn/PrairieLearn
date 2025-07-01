@@ -176,6 +176,17 @@ export default tseslint.config([
     },
   },
   {
+    files: ['apps/prairielearn/src/pages/**/*.html.ts'],
+    rules: {
+      '@html-eslint/sort-attrs': [
+        'error',
+        {
+          priority: ['id', 'type', 'class', 'style'],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.ts'],
     rules: {
       'no-restricted-syntax': [

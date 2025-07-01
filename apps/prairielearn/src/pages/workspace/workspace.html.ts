@@ -29,7 +29,7 @@ export function Workspace({
   const { workspace_id, urlPrefix, __csrf_token } = resLocals;
   return html`
     <!doctype html>
-    <html lang="en" class="h-100">
+    <html class="h-100" lang="en">
       <head>
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
@@ -53,10 +53,10 @@ export function Workspace({
 
       <body
         class="d-flex flex-column h-100"
-        data-socket-token="${socketToken}"
-        data-workspace-id="${workspace_id}"
         data-heartbeat-interval-sec="${heartbeatIntervalSec}"
+        data-socket-token="${socketToken}"
         data-visibility-timeout-sec="${visibilityTimeoutSec}"
+        data-workspace-id="${workspace_id}"
       >
         ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
 
@@ -64,7 +64,7 @@ export function Workspace({
           <div class="container-fluid">
             <div class="d-flex flex-column me-3">
               <h1 class="h6 fw-normal mb-0">
-                <a href="${navTitleHref}" target="_blank" style="color: #000;">${navTitle}</a>
+                <a style="color: #000;" href="${navTitleHref}" target="_blank">${navTitle}</a>
               </h1>
               <span class="small" style="color: #000;">
                 <i class="fa fa-laptop-code" aria-hidden="true"></i>
@@ -82,14 +82,14 @@ export function Workspace({
               ></span>
             </div>
             <button
-              class="navbar-toggler ms-2"
               type="button"
-              data-bs-toggle="collapse"
+              class="navbar-toggler ms-2"
               data-bs-target="#workspace-nav"
+              data-bs-toggle="collapse"
             >
               <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="workspace-nav">
+            <div id="workspace-nav" class="collapse navbar-collapse">
               <ul class="navbar-nav ms-auto">
                 ${resLocals.assessment?.type === 'Exam' &&
                 resLocals.assessment_instance_remaining_ms
@@ -104,8 +104,8 @@ export function Workspace({
                   <button
                     id="reboot"
                     class="nav-item btn btn-light"
-                    data-bs-toggle="modal"
                     data-bs-target="#rebootModal"
+                    data-bs-toggle="modal"
                   >
                     <i class="fas fa-sync text-info" aria-hidden="true"></i>
                     Reboot
@@ -115,8 +115,8 @@ export function Workspace({
                   <button
                     id="reset"
                     class="nav-item btn btn-light"
-                    data-bs-toggle="modal"
                     data-bs-target="#resetModal"
+                    data-bs-toggle="modal"
                   >
                     <i class="fas fa-trash text-danger" aria-hidden="true"></i>
                     Reset
@@ -140,11 +140,11 @@ export function Workspace({
                   <button
                     type="button"
                     class="nav-item btn btn-light"
-                    data-bs-toggle="popover"
                     data-bs-container="body"
-                    data-bs-placement="bottom"
-                    data-bs-html="true"
                     data-bs-content="${escapeHtml(HelpButtonContents())}"
+                    data-bs-html="true"
+                    data-bs-placement="bottom"
+                    data-bs-toggle="popover"
                   >
                     <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
                   </button>
@@ -208,7 +208,7 @@ function ResetModal({ __csrf_token }: { __csrf_token: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button name="__action" value="reset" class="btn btn-danger">
+      <button class="btn btn-danger" name="__action" value="reset">
         <i class="fas fa-trash" aria-hidden="true"></i>
         Reset
       </button>
@@ -236,7 +236,7 @@ function RebootModal({ __csrf_token }: { __csrf_token: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button name="__action" value="reboot" class="btn btn-info">
+      <button class="btn btn-info" name="__action" value="reboot">
         <i class="fas fa-sync" aria-hidden="true"></i>
         Reboot
       </button>
