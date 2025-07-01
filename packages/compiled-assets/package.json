@@ -18,7 +18,7 @@
     "@prairielearn/html": "workspace:^",
     "commander": "^13.1.0",
     "esbuild": "^0.25.5",
-    "express-static-gzip": "^2.2.0",
+    "express-static-gzip": "^3.0.0",
     "fs-extra": "^11.3.0",
     "globby": "^14.1.0",
     "pretty-bytes": "^7.0.0",
