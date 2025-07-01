@@ -193,13 +193,11 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
               </button>
             </div>
-            <div class="d-none d-md-block" aria-hidden={!isMediumOrLarger}>
-              <ColumnManager table={table} />
-            </div>
+            {/* We do this instead of CSS properties for the accessibility checker */}
+            {isMediumOrLarger && <ColumnManager table={table} />}
           </div>
-          <div class="d-md-none" aria-hidden={isMediumOrLarger}>
-            <ColumnManager table={table} />
-          </div>
+          {/* We do this instead of CSS properties for the accessibility checker */}
+          {!isMediumOrLarger && <ColumnManager table={table} />}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {table.getRowModel().rows.length} of {students.length} students
