@@ -3678,7 +3678,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    marked: "npm:^15.0.12"
+    marked: "npm:^16.0.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
@@ -4008,7 +4008,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.1.0"
-    marked: "npm:^15.0.12"
+    marked: "npm:^16.0.0"
     mathjax: "npm:^3.2.2"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
@@ -12504,12 +12504,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^15.0.12":
-  version: 15.0.12
-  resolution: "marked@npm:15.0.12"
+"marked@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "marked@npm:16.0.0"
   bin:
     marked: bin/marked.js
-  checksum: 10c0/e09da211544b787ecfb25fed07af206060bf7cd6d9de6cb123f15c496a57f83b7aabea93340aaa94dae9c94e097ae129377cad6310abc16009590972e85f4212
+  checksum: 10c0/f8bce34edca365dd30dbc435ba5f052404483c254f76e9926ac29f9ddcaf85543e23fee5bda8e28216304111b63f7430e3a00556ce49f24edb92f0a216f52047
   languageName: node
   linkType: hard
 

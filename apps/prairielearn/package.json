@@ -136,7 +136,7 @@
     "lodash": "^4.17.21",
     "loopbench": "^2.0.0",
     "lru-cache": "^11.1.0",
-    "marked": "^15.0.12",
+    "marked": "^16.0.0",
     "mathjax": "^3.2.2",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
