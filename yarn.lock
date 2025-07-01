@@ -216,9 +216,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-cloudwatch@npm:^3.840.0":
-  version: 3.840.0
-  resolution: "@aws-sdk/client-cloudwatch@npm:3.840.0"
+"@aws-sdk/client-cloudwatch@npm:^3.841.0":
+  version: 3.841.0
+  resolution: "@aws-sdk/client-cloudwatch@npm:3.841.0"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:5.2.0"
     "@aws-crypto/sha256-js": "npm:5.2.0"
@@ -261,7 +261,7 @@ __metadata:
     "@smithy/util-utf8": "npm:^4.0.0"
     "@smithy/util-waiter": "npm:^4.0.6"
     tslib: "npm:^2.6.2"
-  checksum: 10c0/37a3d8bf1517a1ae1cb3dfe548535793ae7380e06c15e6c9968414168a9f6bd6d832c0956b1390c47c3f3cf599afe897a96af7dc7f6f712505fb7b67758abada
+  checksum: 10c0/4b11b4432de4db7abebc9f33f17d709e8bf258d7084c1390d92e60f595db15c9726c766926bd2caca7b0a97e512daa71f1428def4a1c3ad8469039d7f8ee71b5
   languageName: node
   linkType: hard
 
@@ -312,9 +312,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ec2@npm:^3.840.0":
-  version: 3.840.0
-  resolution: "@aws-sdk/client-ec2@npm:3.840.0"
+"@aws-sdk/client-ec2@npm:^3.841.0":
+  version: 3.841.0
+  resolution: "@aws-sdk/client-ec2@npm:3.841.0"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:5.2.0"
     "@aws-crypto/sha256-js": "npm:5.2.0"
@@ -359,7 +359,7 @@ __metadata:
     "@types/uuid": "npm:^9.0.1"
     tslib: "npm:^2.6.2"
     uuid: "npm:^9.0.1"
-  checksum: 10c0/bb190e3cfcfe31a8f84581267f53c58cc8d4b08a4f94d2a432feb10277738bb3af35edfe8a9ba01dc9e3973735b8e5df2d16746311e8b741ba372e3e719396c5
+  checksum: 10c0/82040ddc6bfd0156dec183ea7be40bc927f523e286a8bd27e00e936ee1766c2a74637ebe8d06f0a424f5f049781a8392623c53adb233548f2162ce21ef9e69a8
   languageName: node
   linkType: hard
 
@@ -3426,7 +3426,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/config@workspace:packages/config"
   dependencies:
-    "@aws-sdk/client-ec2": "npm:^3.840.0"
+    "@aws-sdk/client-ec2": "npm:^3.841.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.840.0"
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
@@ -3731,7 +3731,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/node-metrics@workspace:packages/node-metrics"
   dependencies:
-    "@aws-sdk/client-cloudwatch": "npm:^3.840.0"
+    "@aws-sdk/client-cloudwatch": "npm:^3.841.0"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/loopbench": "npm:^1.2.4"
     "@types/node": "npm:^22.15.34"
@@ -3842,8 +3842,8 @@ __metadata:
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
     "@aws-sdk/client-auto-scaling": "npm:^3.840.0"
-    "@aws-sdk/client-cloudwatch": "npm:^3.840.0"
-    "@aws-sdk/client-ec2": "npm:^3.840.0"
+    "@aws-sdk/client-cloudwatch": "npm:^3.841.0"
+    "@aws-sdk/client-ec2": "npm:^3.841.0"
     "@aws-sdk/client-ecr": "npm:^3.840.0"
     "@aws-sdk/client-s3": "npm:^3.840.0"
     "@aws-sdk/client-sqs": "npm:^3.840.0"
@@ -4156,8 +4156,8 @@ __metadata:
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@sentry/core": "npm:^9.33.0"
-    "@sentry/node": "npm:^9.33.0"
+    "@sentry/core": "npm:^9.34.0"
+    "@sentry/node": "npm:^9.34.0"
     "@types/node": "npm:^22.15.34"
     execa: "npm:^9.6.0"
     tsx: "npm:^4.20.3"
@@ -4628,16 +4628,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:9.33.0, @sentry/core@npm:^9.33.0":
-  version: 9.33.0
-  resolution: "@sentry/core@npm:9.33.0"
-  checksum: 10c0/c923060a255f0cd1f0afbda4581188ba137df2c509ddfc9460db05804024b5dc2b9b1f54847c4f49d16c749a20f62dc599c64491d59d51289ed454a12cb49fd2
+"@sentry/core@npm:9.34.0, @sentry/core@npm:^9.34.0":
+  version: 9.34.0
+  resolution: "@sentry/core@npm:9.34.0"
+  checksum: 10c0/f880b1848cfd399655d882c18a69dabefd7a4d4a8a83f60eb6e4760dc1a05c78cd224793bfb1637752cae6176d8f423a0afbe2e33da3bca0a64447ceffa7e695
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:^9.33.0":
-  version: 9.33.0
-  resolution: "@sentry/node@npm:9.33.0"
+"@sentry/node@npm:^9.34.0":
+  version: 9.34.0
+  resolution: "@sentry/node@npm:9.34.0"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
     "@opentelemetry/context-async-hooks": "npm:^1.30.1"
@@ -4669,19 +4669,19 @@ __metadata:
     "@opentelemetry/sdk-trace-base": "npm:^1.30.1"
     "@opentelemetry/semantic-conventions": "npm:^1.34.0"
     "@prisma/instrumentation": "npm:6.10.1"
-    "@sentry/core": "npm:9.33.0"
-    "@sentry/opentelemetry": "npm:9.33.0"
+    "@sentry/core": "npm:9.34.0"
+    "@sentry/opentelemetry": "npm:9.34.0"
     import-in-the-middle: "npm:^1.14.2"
     minimatch: "npm:^9.0.0"
-  checksum: 10c0/359f6217571dab284f8e31892c28b9ec7bca3fc65ebcd8e2f3b3b89e19766a06c65925ac6e34fdab29216319ad2a6de83e08d6e79a51c9c5cfd54601f59e8355
+  checksum: 10c0/48075c197243590a46dcf2c6190f33e253b3316da67c67c3d41c7586f1de2f98f10c9134d39850d2c757986231a6db8698cc47e1ec3d61ebd69625d66c4e9ded
   languageName: node
   linkType: hard
 
-"@sentry/opentelemetry@npm:9.33.0":
-  version: 9.33.0
-  resolution: "@sentry/opentelemetry@npm:9.33.0"
+"@sentry/opentelemetry@npm:9.34.0":
+  version: 9.34.0
+  resolution: "@sentry/opentelemetry@npm:9.34.0"
   dependencies:
-    "@sentry/core": "npm:9.33.0"
+    "@sentry/core": "npm:9.34.0"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
     "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.0.0
@@ -4689,7 +4689,7 @@ __metadata:
     "@opentelemetry/instrumentation": ^0.57.1 || ^0.200.0
     "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.0.0
     "@opentelemetry/semantic-conventions": ^1.34.0
-  checksum: 10c0/42e47e36864908e88ed0dac6db4869f86901ba24a2ee990daea9c9c8d7cf143d680f9474157786bb22392db7164f7984985fb982c426b6e1dece758229e21580
+  checksum: 10c0/7f5e12c657c50093dda090b2b6f13132fcdc96ac329d2f21d112cd60790b531edb969851ab557fc11e3afff1d11708c8ef284fd97da540c0bccd10499708c0a9
   languageName: node
   linkType: hard
 
@@ -6911,9 +6911,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/eslint-plugin@npm:^1.3.3":
-  version: 1.3.3
-  resolution: "@vitest/eslint-plugin@npm:1.3.3"
+"@vitest/eslint-plugin@npm:^1.3.4":
+  version: 1.3.4
+  resolution: "@vitest/eslint-plugin@npm:1.3.4"
   dependencies:
     "@typescript-eslint/utils": "npm:^8.24.1"
   peerDependencies:
@@ -6925,7 +6925,7 @@ __metadata:
       optional: true
     vitest:
       optional: true
-  checksum: 10c0/a79137f4baba8ea62e690b4ab43765009380c84cc16b4343aacce9387a9e3b71519d0df98afa6c0caae8a91ea0ed9432079cc09dcc3b5cea54ee013d3181800c
+  checksum: 10c0/26ee3fabfcbd37d55ccf4912bf0e12ee85320c362096ff9537f70dc094364419f25e626c62e7b94d93f758fb732d34811438c669ad58ea080c29d5a4ac459c05
   languageName: node
   linkType: hard
 
@@ -14574,7 +14574,7 @@ __metadata:
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    "@vitest/eslint-plugin": "npm:^1.3.3"
+    "@vitest/eslint-plugin": "npm:^1.3.4"
     dependency-cruiser: "npm:^16.10.3"
     eslint: "npm:^9.30.0"
     eslint-import-resolver-typescript: "npm:^4.4.4"
