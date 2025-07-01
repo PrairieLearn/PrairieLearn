@@ -1,6 +1,6 @@
 # API
 
-PrairieLearn contains a limited read-only API for use by instructors that
+PrairieLearn contains a limited API for use by instructors that
 allows programmatic access to assessments, assessment instances, and
 submissions.
 
@@ -16,6 +16,16 @@ Provide your token via the `Private-Token` header:
 
 ```sh
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+```
+
+## Types of Endpoints
+
+When sending a request to an endpoint, it will require you to send either a `GET` or a `POST` request. A `GET` request retrieves information from PrairieLearn, such as gradebook information. Whereas a `POST` request asks PrairieLearn to perform an action. For example, syncing a course repository to PrairieLearn. You will need the correct permissions to be able to perform this request. Unless specified otherwise, all requests are going to be `GET` requests and will follow the above example format when using `curl`.
+
+Here is an example of using `curl` for a `POST` request:
+
+```sh
+curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
 ## Example access script
@@ -86,9 +96,8 @@ In the endpoint list below, path components starting with a colon like
   - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
   - One specific submission.
 
-- **Course sync:**
+- **Course sync: (`POST`)**
   - `/pl/api/v1/course/:course_id/sync`
-  - `POST` endpoint to start a course sync.
   - Returns the `job_sequence_id` of the course sync job.
 
 - **Course sync status:**
