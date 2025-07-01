@@ -3,6 +3,8 @@ import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import { type JSX, type ThHTMLAttributes, useEffect, useRef } from 'preact/compat';
 
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 import type { StudentRow } from '../instructorStudents.shared.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
@@ -75,7 +77,7 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({ table }: { table: Table<StudentRow> }) {
+export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; timezone: string }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
@@ -279,10 +281,28 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
               )}
               {virtualRows.map((virtualRow) => {
                 const row = rows[virtualRow.index];
+                const student = row.original;
+
+                // TODO: Do we want to instead allow cells to get individual focus so we don't need to do this?
+                const ariaLabelPortions = {
+                  user_uid: student.user.uid,
+                  user_name: student.user.name,
+                  user_email: student.user.email,
+                  enrollment_created_at: student.enrollment.created_at
+                    ? formatDateFriendly(student.enrollment.created_at, timezone)
+                    : 'Unknown',
+                };
+                const studentLabel = row
+                  .getVisibleCells()
+                  .map((cell) => ariaLabelPortions[cell.column.id])
+                  .filter(Boolean)
+                  .join(', ');
+
                 return (
                   <tr
                     key={row.id}
                     tabIndex={0}
+                    aria-label={studentLabel}
                     style={{
                       height: `${virtualRow.size}px`,
                     }}

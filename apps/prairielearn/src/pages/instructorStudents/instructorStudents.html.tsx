@@ -33,13 +33,13 @@ const DEFAULT_SORT: SortingState = [];
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
+  course: StaffCourseInstanceContext['course'];
+  courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
   timezone: string;
-  courseInstance: StaffCourseInstanceContext['course_instance'];
-  course: StaffCourseInstanceContext['course'];
 }
 
-function StudentsCard({ students, timezone, courseInstance, course }: StudentsCardProps) {
+function StudentsCard({ course, courseInstance, students, timezone }: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -205,7 +205,7 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
           </div>
         </div>
         <div class="flex-grow-1">
-          <StudentsTable table={table} />
+          <StudentsTable table={table} timezone={timezone} />
         </div>
       </div>
     </div>
@@ -227,10 +227,10 @@ export const InstructorStudents = ({
   return (
     <NuqsAdapter search={search}>
       <StudentsCard
+        course={course}
+        courseInstance={courseInstance}
         students={students}
         timezone={timezone}
-        courseInstance={courseInstance}
-        course={course}
       />
     </NuqsAdapter>
   );
