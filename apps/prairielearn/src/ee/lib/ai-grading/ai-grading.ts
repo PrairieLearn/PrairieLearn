@@ -162,7 +162,7 @@ export async function aiGrade({
           aiGradingJob &&
           manualGradingJob.graded_at &&
           aiGradingJob.graded_at &&
-          manualGradingJob.graded_at > aiGradingJob.graded_at); // exist more recent ai grading job
+          manualGradingJob.graded_at < aiGradingJob.graded_at); // exist more recent ai grading job
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
