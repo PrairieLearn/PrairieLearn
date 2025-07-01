@@ -13,7 +13,7 @@ nltk==3.9.1
 numpy==1.26.4
 openpyxl==3.1.5
 pandas==2.3.0
-Pillow==11.2.1
+Pillow==11.3.0
 PuLP==3.2.1
 Pygments==2.19.2
 pyarrow==20.0.0
