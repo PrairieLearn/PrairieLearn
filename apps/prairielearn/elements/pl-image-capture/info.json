@@ -6,7 +6,6 @@
       "qrcode-svg/dist/qrcode.min.js",
       "socket.io-client/dist/socket.io.min.js"
     ],
-    "elementScripts": ["pl-image-capture.js"],
-    "elementStyles": ["pl-image-capture.css"]
+    "elementScripts": ["pl-image-capture.js"]
   }
 }
