@@ -284,7 +284,7 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
                 const student = row.original;
 
                 // TODO: Do we want to instead allow cells to get individual focus so we don't need to do this?
-                const ariaLabelPortions = {
+                const ariaLabelPortions: Record<string, string | null> = {
                   user_uid: student.user.uid,
                   user_name: student.user.name,
                   user_email: student.user.email,
