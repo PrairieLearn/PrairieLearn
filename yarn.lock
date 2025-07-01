@@ -3980,7 +3980,7 @@ __metadata:
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
     html-validate: "npm:^9.7.1"
-    htmx.org: "npm:^1.9.12"
+    htmx.org: "npm:^2.0.6"
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.6.1"
@@ -11098,10 +11098,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"htmx.org@npm:^1.9.12":
-  version: 1.9.12
-  resolution: "htmx.org@npm:1.9.12"
-  checksum: 10c0/c239a751621501cca35e49c32152b1b7edd1c4f217ef709e84f005346ea0dc0d156cf59b0da91a0dd0b62ddefa98d67945b31e361245c5a2c94cb1b1285fbd2a
+"htmx.org@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "htmx.org@npm:2.0.6"
+  checksum: 10c0/df344f4d23f265b56bcd8ffa07e6feeae89c7efe5d773ca17a857f54388f5b30b52d5b0fda6ff4c89a994b149e7a77c8bcbc88bf9bd0b4b977b4fa641ba3c89b
   languageName: node
   linkType: hard
 
