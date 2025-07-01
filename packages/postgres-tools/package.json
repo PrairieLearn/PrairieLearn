@@ -24,7 +24,7 @@
     "fs-extra": "^11.3.0",
     "lodash": "^4.17.21",
     "postgres-array": "^3.0.4",
-    "yargs": "^17.7.2"
+    "yargs": "^18.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
