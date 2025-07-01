@@ -4032,7 +4032,7 @@ __metadata:
     qs: "npm:^6.14.0"
     quill: "npm:2.0.2"
     quilljs-markdown: "npm:^1.2.0"
-    react: "npm:^19.0.0"
+    react: "npm:^19.1.0"
     react-bootstrap: "npm:^2.10.10"
     react-dom: "npm:^19.0.0"
     remark-gfm: "npm:^4.0.1"
