@@ -44,7 +44,7 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.5.0
+FROM rocker/rstudio:4.5.1
 ARG CACHEBUST=2025-06-15-14-13-20
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
