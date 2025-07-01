@@ -50,28 +50,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Check whether images/plbase was modified
-        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
-      - name: Build and push prairielearn/plbase
-        if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: images/plbase
-          platforms: linux/amd64
-          pull: true
-          cache-from: type=registry,ref=prairielearn/plbase:buildcache-linux-amd64
-          tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
-
-      # This ensures that the `prairielearn/prairielearn` image is built with the
-      # correct version of `prairielearn/plbase`. We'll only tag this as `latest`
-      # if we actually built it; if it wasn't built, we don't tag it, so Docker will
-      # correctly fall back to pulling the `latest` version from the registry.
-      - name: Tag plbase image as latest
-        if: ${{ env.images_plbase_modified }}
-        run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
-
       - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} --cache-from type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64 .
+        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
 
       # This ensures that the `prairielearn/executor` image is built with the
       # correct version of `prairielearn/prairielearn`.
@@ -174,13 +154,13 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'images/plbase/python-requirements.txt'
+          cache-dependency-glob: 'requirements.txt'
       - name: Install Python dependencies
         env:
           UV_SYSTEM_PYTHON: 1
           # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
           UV_COMPILE_BYTECODE: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
