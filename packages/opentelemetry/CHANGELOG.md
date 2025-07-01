@@ -198,7 +198,6 @@
 ### Minor Changes
 
 - cfbab7a69: The following types are now exported:
-
   - `Meter`
   - `Counter`
   - `Histogram`

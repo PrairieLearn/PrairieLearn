@@ -1,5 +1,5 @@
 import './lib/morphdom';
 import './lib/htmx';
 
-import 'htmx.org/dist/ext/loading-states.js';
-import 'htmx.org/dist/ext/morphdom-swap.js';
+import 'htmx-ext-loading-states/dist/loading-states.js';
+import 'htmx-ext-morphdom-swap/dist/morphdom-swap.js';
