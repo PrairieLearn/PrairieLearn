@@ -10,8 +10,8 @@ venv-setup:
 		python3 -m venv .venv
 
 python-deps: venv-setup
-	@uv pip install -r images/plbase/python-requirements.txt --compile-bytecode --python .venv || \
-		.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt
+	@uv pip install -r requirements.txt --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install -r requirements.txt
 deps:
 	@yarn
 	@$(MAKE) python-deps build

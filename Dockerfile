@@ -1,9 +1,14 @@
 # syntax=docker/dockerfile-upstream:master-labs
-FROM prairielearn/plbase:latest
+FROM amazonlinux:2023
+ARG CACHEBUST=2025-06-15-14-13-20
 
 WORKDIR /PrairieLearn
 
-ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
+COPY --parents scripts/pl-install.sh requirements.txt /PrairieLearn/
+
+RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
+
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.
