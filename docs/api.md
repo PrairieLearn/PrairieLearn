@@ -25,7 +25,7 @@ When sending a request to an endpoint, it will require you to send either a `GET
 Here is an example of using `curl` for a `POST` request:
 
 ```sh
-curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+curl -H "Private-Token: TOKEN" -d "" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
 ## Example access script
