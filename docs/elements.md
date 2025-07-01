@@ -406,12 +406,11 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
 
 If file names or patterns overlap, uploaded files are first used to fill the required file names in `file-names`. Next, files that match a required pattern in `file-patterns` are used to fill that pattern. Any remaining uploaded files are accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
 
-Required files (`file-names` or `file-patterns`) and optional files (`optional-file-names` or `optional-file-patterns`) are handled identically, so if you need to distinguish between the two sets, you should ensure that patterns don't overlap.
+Required files (`file-names` or `file-patterns`) and optional files (`optional-file-names` or `optional-file-patterns`) are handled identically, so if you need to distinguish between the two sets, you should ensure that the patterns don't overlap.
 
 !!! tip
 
-    The same required pattern in `file-patterns` can be repeated, for example `*.py,*.py` means that exactly two Python files must be uploaded.
-    However, different required patterns should not overlap (e.g. `*.py,solution.*`) because files are assigned to a matching pattern arbitrarily, and this can lead to unintended behavior.
+    The same required pattern in `file-patterns` can be repeated, for example `*.py,*.py` means that exactly two Python files must be uploaded. However, different required patterns should not overlap (e.g. `*.py,solution.*`) because files are assigned to a matching pattern arbitrarily, and this can lead to unintended behavior.
 
 #### Details
 
