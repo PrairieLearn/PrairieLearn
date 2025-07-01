@@ -24,6 +24,8 @@
     "@aws-sdk/credential-providers": "^3.840.0",
     "@aws-sdk/lib-storage": "^3.840.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@html-eslint/eslint-plugin": "^0.42.0",
+    "@html-eslint/parser": "^0.42.0",
     "@js-temporal/polyfill": "^0.5.1",
     "@node-saml/passport-saml": "^5.0.1",
     "@octokit/rest": "^22.0.0",

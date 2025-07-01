@@ -421,10 +421,10 @@ function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
 
 export function DecodedAssertion({ xml, profile }: { xml: string; profile: string }) {
   return html`
-    <h3 class="h5 mt-3">Decoded XML</h2>
+    <h3 class="h5 mt-3">Decoded XML</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${xml}</pre>
 
-    <h3 class="h5 mt-3">Profile</h2>
+    <h3 class="h5 mt-3">Profile</h3>
     <pre class="bg-dark text-white rounded p-3 mt-3 mb-0">${profile}</pre>
   `.toString();
 }

@@ -2,6 +2,7 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import html from '@html-eslint/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -44,6 +45,7 @@ export default tseslint.config([
       vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       '@prairielearn': prairielearn,
+      '@html-eslint': html,
     },
 
     languageOptions: {
@@ -71,6 +73,14 @@ export default tseslint.config([
     },
 
     rules: {
+      ...html.configs['flat/recommended'].rules,
+      '@html-eslint/element-newline': 'off',
+      '@html-eslint/indent': 'off',
+      '@html-eslint/attrs-newline': 'off',
+      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
+      '@html-eslint/use-baseline': 'off',
+
       curly: ['error', 'multi-line', 'consistent'],
       eqeqeq: ['error', 'smart'],
       'handle-callback-err': 'error',

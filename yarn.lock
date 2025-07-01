@@ -1987,6 +1987,46 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@html-eslint/eslint-plugin@npm:^0.42.0":
+  version: 0.42.0
+  resolution: "@html-eslint/eslint-plugin@npm:0.42.0"
+  dependencies:
+    "@eslint/plugin-kit": "npm:^0.3.1"
+    "@html-eslint/parser": "npm:^0.42.0"
+    "@html-eslint/template-parser": "npm:^0.42.0"
+    "@html-eslint/template-syntax-parser": "npm:^0.42.0"
+  peerDependencies:
+    eslint: ^8.0.0 || ^9.0.0
+  checksum: 10c0/80a387d08303feebee0681ed4f2159fbd39f46c89ec7012fbdb47d8676eb71c6a5e4aa3d2f1bada51d60612f4c845f7b117d9824741b937345e4be93787e13f7
+  languageName: node
+  linkType: hard
+
+"@html-eslint/parser@npm:^0.42.0":
+  version: 0.42.0
+  resolution: "@html-eslint/parser@npm:0.42.0"
+  dependencies:
+    "@html-eslint/template-syntax-parser": "npm:^0.42.0"
+    es-html-parser: "npm:0.2.0"
+  checksum: 10c0/16b3e5e2058c21e80890aa2a4a83a5db59815e47c29028dc8e12a16d441e1fecfede26a6dcca9264e632f2e082483b3cdc3434e57bdb94ea290b4a056bc151f4
+  languageName: node
+  linkType: hard
+
+"@html-eslint/template-parser@npm:^0.42.0":
+  version: 0.42.0
+  resolution: "@html-eslint/template-parser@npm:0.42.0"
+  dependencies:
+    es-html-parser: "npm:0.2.0"
+  checksum: 10c0/f6baa1ad4dcd5ac5e431a0f0e56cfefc98f416abdc4fb1dd28e3dc642c3484154115ca98575f511529fdcf9818341566f5fb8c25b0e920838aab04baa5592047
+  languageName: node
+  linkType: hard
+
+"@html-eslint/template-syntax-parser@npm:^0.42.0":
+  version: 0.42.0
+  resolution: "@html-eslint/template-syntax-parser@npm:0.42.0"
+  checksum: 10c0/73d32f47ccb620c958f5d159c66f6a3928ef05c5d5fdc6899bee1681663435f4f036651b5bbd59853a656981243951059b9a04f421945c911e898a508cf58c22
+  languageName: node
+  linkType: hard
+
 "@html-validate/stylish@npm:^4.1.0":
   version: 4.2.0
   resolution: "@html-validate/stylish@npm:4.2.0"
@@ -3850,6 +3890,8 @@ __metadata:
     "@aws-sdk/credential-providers": "npm:^3.840.0"
     "@aws-sdk/lib-storage": "npm:^3.840.0"
     "@fortawesome/fontawesome-free": "npm:^6.7.2"
+    "@html-eslint/eslint-plugin": "npm:^0.42.0"
+    "@html-eslint/parser": "npm:^0.42.0"
     "@js-temporal/polyfill": "npm:^0.5.1"
     "@node-saml/passport-saml": "npm:^5.0.1"
     "@octokit/rest": "npm:^22.0.0"
@@ -9452,6 +9494,13 @@ __metadata:
   version: 1.3.0
   resolution: "es-errors@npm:1.3.0"
   checksum: 10c0/0a61325670072f98d8ae3b914edab3559b6caa980f08054a3b872052640d91da01d38df55df797fcc916389d77fc92b8d5906cf028f4db46d7e3003abecbca85
+  languageName: node
+  linkType: hard
+
+"es-html-parser@npm:0.2.0":
+  version: 0.2.0
+  resolution: "es-html-parser@npm:0.2.0"
+  checksum: 10c0/bda5e1dc9f6297eeea8707d67d36162e567a3bbf2696814c204edb1d30e4641511cde4cf3bd43f649e5a6c4644a07dfaf16b007a3000ecf98e48c324e38937ad
   languageName: node
   linkType: hard
 

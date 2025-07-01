@@ -663,7 +663,7 @@ onDocumentReady(() => {
           data-bs-placement="bottom"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
-        </a>
+        </button>
       </span>
     `.toString();
   }

@@ -546,6 +546,7 @@ function FileContentPreview({
       <img
         src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}"
         class="img-fluid"
+        alt="File preview"
       />
     `;
   }
