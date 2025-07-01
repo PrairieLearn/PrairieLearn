@@ -11,7 +11,7 @@ numpy==1.26.4
 openpyxl==3.1.5
 pandas-stubs==2.2.3.250527
 pandas==2.3.0
-Pillow==11.2.1
+Pillow==11.3.0
 Pint==0.24.4
 psutil==7.0.0
 PuLP==3.2.1
