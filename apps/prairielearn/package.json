@@ -211,7 +211,7 @@
   "devDependencies": {
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@sa11y/format": "^7.2.0",
+    "@sa11y/format": "^7.3.0",
     "@smithy/types": "^4.3.1",
     "@types/archiver": "^6.0.3",
     "@types/async": "^3.2.24",
