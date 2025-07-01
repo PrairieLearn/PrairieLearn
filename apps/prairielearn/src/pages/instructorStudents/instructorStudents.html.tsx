@@ -52,6 +52,19 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Track screen size for aria-hidden
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(true);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setIsMediumOrLarger(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -180,11 +193,11 @@ function StudentsCard({ students, timezone, courseInstance, course }: StudentsCa
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
               </button>
             </div>
-            <div class="d-none d-md-block">
+            <div class="d-none d-md-block" aria-hidden={!isMediumOrLarger}>
               <ColumnManager table={table} />
             </div>
           </div>
-          <div class="d-md-none">
+          <div class="d-md-none" aria-hidden={isMediumOrLarger}>
             <ColumnManager table={table} />
           </div>
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">

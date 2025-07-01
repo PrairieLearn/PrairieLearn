@@ -211,18 +211,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         class={clsx(isPinned === 'left' && 'bg-light')}
                         style={style}
                         aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        tabIndex={canSort ? 0 : undefined}
-                        onKeyDown={
-                          canSort
-                            ? (e) => {
-                                const handleSort = header.column.getToggleSortingHandler();
-                                if (e.key === 'Enter' && handleSort) {
-                                  e.preventDefault();
-                                  handleSort(e);
-                                }
-                              }
-                            : undefined
-                        }
                       >
                         <button
                           class="text-nowrap"
@@ -230,8 +218,21 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             cursor: canSort ? 'pointer' : 'default',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
+                            background: 'transparent',
+                            border: 'none',
                           }}
                           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                          onKeyDown={
+                            canSort
+                              ? (e) => {
+                                  const handleSort = header.column.getToggleSortingHandler();
+                                  if (e.key === 'Enter' && handleSort) {
+                                    e.preventDefault();
+                                    handleSort(e);
+                                  }
+                                }
+                              : undefined
+                          }
                           type="button"
                           aria-label={
                             canSort
