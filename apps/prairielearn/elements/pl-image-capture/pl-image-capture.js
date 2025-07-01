@@ -147,8 +147,6 @@
       rotationSlider.addEventListener('input', (event) => {
         const rotationAngle = parseFloat(event.target.value);
 
-        console.log('Rotation angle changed:', event.target.value);
-
         if (isNaN(rotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
@@ -700,13 +698,6 @@
 
       this.rotationAngle = rotationAngle;
 
-      console.log('cropper', this.cropper);
-
-      console.log('Cropper ready, methods:', Object.getOwnPropertyNames(
-        Object.getPrototypeOf(this.cropper)
-      ));
-
-      // TODO: use settransform 
       this.cropper.getCropperImage().$rotate(`${rotationChange}deg`);
 
       rotationAngleText.innerHTML = String(rotationAngle);
