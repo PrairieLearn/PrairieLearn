@@ -13,12 +13,12 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "sql-formatter": "^15.6.2"
+    "sql-formatter": "^15.6.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.15.29",
-    "prettier": "3.5.3",
+    "@types/node": "^22.15.34",
+    "prettier": "3.6.2",
     "typescript": "^5.8.3"
   }
 }
