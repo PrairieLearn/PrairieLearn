@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.840.0",
-    "@aws-sdk/client-cloudwatch": "^3.840.0",
-    "@aws-sdk/client-ec2": "^3.840.0",
+    "@aws-sdk/client-cloudwatch": "^3.841.0",
+    "@aws-sdk/client-ec2": "^3.841.0",
     "@aws-sdk/client-ecr": "^3.840.0",
     "@aws-sdk/client-s3": "^3.840.0",
     "@aws-sdk/client-sqs": "^3.840.0",
