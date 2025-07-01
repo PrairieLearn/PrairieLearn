@@ -79,6 +79,7 @@ def test_match_regex_with_files_fn(
         ("test*test", "^test.*test$"),
         ("test???test", "^test...test$"),
         ("test[a-z][abc]test", "^test[a-z][abc]test$"),
+        ("[!_]*.py", "^[^_].*\\.py$"),
         ("[a-z0-9][abc]?test*", "^[a-z0-9][abc].test.*$"),
         # . is a regex character that needs escaping, but characters in ranges don't
         (
