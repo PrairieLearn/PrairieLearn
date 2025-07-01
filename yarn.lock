@@ -3980,6 +3980,8 @@ __metadata:
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
     html-validate: "npm:^9.7.1"
+    htmx-ext-loading-states: "npm:^2.0.1"
+    htmx-ext-morphdom-swap: "npm:^2.0.1"
     htmx.org: "npm:^2.0.6"
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
@@ -11098,7 +11100,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"htmx.org@npm:^2.0.6":
+"htmx-ext-loading-states@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "htmx-ext-loading-states@npm:2.0.1"
+  dependencies:
+    htmx.org: "npm:^2.0.2"
+  checksum: 10c0/89ff754bbcf87f68e32cc94e44c2c8068fc290d6bfa845a193ea1afaf1aac80e2af53c4bd0c7a3e5c57317bb499cdac6739081baaf831d54a3169d829e3c74de
+  languageName: node
+  linkType: hard
+
+"htmx-ext-morphdom-swap@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "htmx-ext-morphdom-swap@npm:2.0.1"
+  dependencies:
+    htmx.org: "npm:^2.0.2"
+  checksum: 10c0/4aa01ff738bd63b6333544dc12516322447c563cb19206e4ee28a4dff78d6d457828bc163ea9d1e2ca543f7bb97e796394a93d1cea2098fa0584f28e09799c40
+  languageName: node
+  linkType: hard
+
+"htmx.org@npm:^2.0.2, htmx.org@npm:^2.0.6":
   version: 2.0.6
   resolution: "htmx.org@npm:2.0.6"
   checksum: 10c0/df344f4d23f265b56bcd8ffa07e6feeae89c7efe5d773ca17a857f54388f5b30b52d5b0fda6ff4c89a994b149e7a77c8bcbc88bf9bd0b4b977b4fa641ba3c89b
