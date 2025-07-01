@@ -58,7 +58,7 @@ if drop_privileges:
     texmf_var_path = "/tmp/texmf-var"
     texmf_home_path = "/tmp/texmf-home"
 
-    oldmask = os.umask(000)
+    oldmask = os.umask(0o000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)

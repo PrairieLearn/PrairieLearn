@@ -77,7 +77,6 @@ export function AssessmentQuestion({
           maxPoints: assessment_question.max_points,
           groupWork: assessment.group_work,
           maxAutoPoints: assessment_question.max_auto_points,
-          aiGradingEnabled,
           csrfToken: __csrf_token,
           aiGradingMode,
         },
