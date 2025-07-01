@@ -159,7 +159,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy redirect URL to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -170,7 +170,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy consumer key to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -181,7 +181,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy shared secret to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -289,7 +289,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
                           class="form-select"
-                          onChange="this.form.submit();"
+                          onchange="this.form.submit();"
                           name="newAssessment"
                         >
                           <option value="" ${!link.assessment_id ? 'selected' : ''}>-- None</option>

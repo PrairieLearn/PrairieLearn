@@ -180,6 +180,7 @@ export function InstructorCourseAdminInstances({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
                     target="_blank"
+                    rel="noreferrer"
                     >course instance documentation</a
                   >.
                 </p>

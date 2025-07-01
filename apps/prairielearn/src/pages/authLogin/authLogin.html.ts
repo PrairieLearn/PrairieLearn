@@ -141,7 +141,12 @@ function LoginPageContainer({
           <div class="login-container">
             <div>
               <h1 class="text-center">
-                <a href="https://www.prairielearn.com/" target="_blank" class="text-body">
+                <a
+                  href="https://www.prairielearn.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="text-body"
+                >
                   PrairieLearn
                 </a>
               </h1>

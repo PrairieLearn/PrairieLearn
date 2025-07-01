@@ -172,6 +172,7 @@ export function InstructorAssessments({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/assessment/"
                     target="_blank"
+                    rel="noreferrer"
                     >assessments documentation</a
                   >.
                 </p>

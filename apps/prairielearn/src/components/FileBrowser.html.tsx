@@ -559,6 +559,7 @@ function FileContentPreview({
         <iframe
           src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
           class="embed-responsive-item"
+          title="PDF preview of ${fileInfo.name}"
         >
           This PDF cannot be displayed.
         </iframe>
