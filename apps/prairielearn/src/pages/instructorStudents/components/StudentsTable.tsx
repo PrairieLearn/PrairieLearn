@@ -175,6 +175,7 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
             style={{ tableLayout: 'fixed' }}
             onKeyDown={handleTableKeyDown}
             aria-label="Students table"
+            role="grid"
           >
             <thead>
               {headerGroups.map((headerGroup) => (
