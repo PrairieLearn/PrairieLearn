@@ -130,7 +130,6 @@ export function InstructorInstanceAdminLti13({
           <h1>LTI 1.3 configuration</h1>
         </div>
         <div class="card-body">
-          <h3 id="assessments">Linked Assessments</h3>
           ${instance.lti13_course_instance.context_memberships_url &&
           instance.lti13_course_instance.lineitems_url
             ? LinkedAssessments({
@@ -149,19 +148,6 @@ export function InstructorInstanceAdminLti13({
                   via LTI as an instructor, then return here.
                 </p>
               `}
-
-          <h3 id="connection">Connection to LMS</h3>
-          <form method="POST">
-            <input type="hidden" name="__action" value="delete_lti13_course_instance" />
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <button
-              class="btn btn-danger btn-sm"
-              onclick="return confirm('Are you sure you want to remove this connection?');"
-            >
-              Remove LTI 1.3 connection with ${instance.lti13_instance.name}:
-              ${instance.lti13_course_instance.context_label}
-            </button>
-          </form>
         </div>
       </div>
     `,
