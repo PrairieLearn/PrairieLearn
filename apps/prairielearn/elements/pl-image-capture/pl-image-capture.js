@@ -722,7 +722,9 @@
           '.js-hidden-original-capture-input',
         ).value;
 
-        this.cropper = new Cropper.default('.js-cropper-container .js-cropper-base-image');
+        this.cropper = new Cropper.default(
+          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
+        );
       } else {
         // If the cropper already exists, update its image source to the original capture.
         this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(

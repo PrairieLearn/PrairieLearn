@@ -72,10 +72,11 @@ export function ExternalImageCapture({
               style="display: none;"
               alt="Image capture preview"
             />
-            <p class="text-muted mt-3">
+            <p class="text-muted my-2">
               Before uploading, make sure your photo is clear, well-lit, and shows all your work
               legibly.
             </p>
+            <p class="text-muted">Later, you can crop or rotate the image as needed.</p>
           </div>
           <button type="submit" class="btn btn-primary d-none" id="upload-button" disabled>
             <i class="bi bi-check2 me-1"></i>
