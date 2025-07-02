@@ -31,7 +31,7 @@
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
     "logform": "^2.7.0",
-    "shlex": "^2.1.2",
+    "shlex": "^3.0.0",
     "tmp-promise": "^3.0.3",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
