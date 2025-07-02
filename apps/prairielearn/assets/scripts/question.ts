@@ -32,17 +32,21 @@ onDocumentReady(() => {
     loadPendingSubmissionPanel(e.currentTarget, false);
   });
 
-  $<HTMLDivElement>('.js-submission-body').on('show.bs.collapse', (e) => {
-    e.target
-      .closest('.card')
-      ?.querySelector<HTMLDivElement>('.submission-header')
-      ?.classList.remove('border-bottom-0');
+  document.addEventListener('show.bs.collapse', (e) => {
+    if (e.target?.classList.contains('js-submission-body')) {
+      (e.target as HTMLElement)
+        .closest('.card')
+        ?.querySelector<HTMLDivElement>('.submission-header')
+        ?.classList.remove('border-bottom-0');
+    }
   });
-  $<HTMLDivElement>('.js-submission-body').on('hidden.bs.collapse', (e) => {
-    e.target
-      .closest('.card')
-      ?.querySelector<HTMLDivElement>('.submission-header')
-      ?.classList.add('border-bottom-0');
+  document.addEventListener('hidden.bs.collapse', (e) => {
+    if (e.target?.classList.contains('js-submission-body')) {
+      (e.target as HTMLElement)
+        .closest('.card')
+        ?.querySelector<HTMLDivElement>('.submission-header')
+        ?.classList.add('border-bottom-0');
+    }
   });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
