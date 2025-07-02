@@ -87,9 +87,7 @@
         '.js-cancel-local-camera-confirmation-button',
       );
 
-      const useImageButton = this.imageCaptureDiv.querySelector(
-        '.js-use-edited-image-button',
-      );
+      const useImageButton = this.imageCaptureDiv.querySelector('.js-use-edited-image-button');
 
       this.ensureElementsExist({
         captureWithLocalCameraButton,
@@ -139,12 +137,16 @@
       const resetButton = this.imageCaptureDiv.querySelector('.js-reset-crop-rotate-button');
       const discardChangesButton = this.imageCaptureDiv.querySelector('.js-discard-changes-button');
 
-      const rotateClockwiseButton = this.imageCaptureDiv.querySelector('.js-rotate-clockwise-button');
-      const rotateCounterclockwiseButton = this.imageCaptureDiv.querySelector('.js-rotate-counterclockwise-button');
+      const rotateClockwiseButton = this.imageCaptureDiv.querySelector(
+        '.js-rotate-clockwise-button',
+      );
+      const rotateCounterclockwiseButton = this.imageCaptureDiv.querySelector(
+        '.js-rotate-counterclockwise-button',
+      );
 
       const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
       const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
-    
+
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
@@ -200,9 +202,12 @@
      */
     openContainer(containerName) {
       if (
-        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation', 'crop-rotate'].includes(
-          containerName,
-        )
+        ![
+          'capture-preview',
+          'local-camera-capture',
+          'local-camera-confirmation',
+          'crop-rotate',
+        ].includes(containerName)
       ) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
@@ -229,7 +234,7 @@
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraConfirmationContainer,
-        cropRotateContainer
+        cropRotateContainer,
       });
 
       // element corresponds to the container element. flex indicates if the container uses a flexbox layout when shown.
@@ -253,7 +258,7 @@
           name: 'crop-rotate',
           element: cropRotateContainer,
           flex: false,
-        }
+        },
       ];
 
       for (const container of containers) {
@@ -419,10 +424,7 @@
       }
     }
 
-    loadCapturePreviewFromDataUrl({
-      dataUrl,
-      originalCapture = true
-    }) {
+    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -432,26 +434,32 @@
       });
 
       let capturePreview = document.createElement('img');
-      capturePreview.className = 'js-capture-preview img-fluid rounded border border-secondary w-100';
+      capturePreview.className =
+        'js-capture-preview img-fluid rounded border border-secondary w-100';
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
       uploadedImageContainer.innerHTML = '';
       uploadedImageContainer.appendChild(capturePreview);
 
-      
       if (originalCapture) {
         capturePreview = this.imageCaptureDiv.querySelector('.js-capture-preview');
-        capturePreview.addEventListener('load', () => {
-          this.capturePreviewHeight = capturePreview.clientHeight;
-        }, { once: true });
+        capturePreview.addEventListener(
+          'load',
+          () => {
+            this.capturePreviewHeight = capturePreview.clientHeight;
+          },
+          { once: true },
+        );
       }
 
       if (this.editable) {
         const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
         hiddenCaptureInput.value = dataUrl;
         if (originalCapture) {
-          const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-original-capture-input');
+          const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+            '.js-hidden-original-capture-input',
+          );
           hiddenOriginalCaptureInput.value = dataUrl;
           this.resetCropRotate();
         }
@@ -463,13 +471,13 @@
     loadCapturePreviewFromBlob(blob) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        this.loadCapturePreviewFromDataUrl({dataUrl: event.target.result});
+        this.loadCapturePreviewFromDataUrl({ dataUrl: event.target.result });
       };
       reader.readAsDataURL(blob);
     }
 
     loadCapturePreview({ data, type }) {
-      this.loadCapturePreviewFromDataUrl({dataUrl: `data:${type};base64,${data}`});
+      this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
     }
 
     async startLocalCameraCapture() {
@@ -604,7 +612,7 @@
         imagePreviewCanvas,
       });
 
-      this.loadCapturePreviewFromDataUrl({dataUrl: imagePreviewCanvas.toDataURL('image/jpeg')});
+      this.loadCapturePreviewFromDataUrl({ dataUrl: imagePreviewCanvas.toDataURL('image/jpeg') });
       this.closeConfirmationContainer();
     }
 
@@ -643,9 +651,7 @@
 
       this.openContainer('capture-preview');
 
-      if (!localCameraErrorMessage.classList.contains('d-none')) {
-        localCameraErrorMessage.classList.add('d-none');
-      }
+      localCameraErrorMessage.classList.add('d-none');
 
       this.deactivateVideoStream();
     }
@@ -682,7 +688,7 @@
 
     showCropRotateButton() {
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
-      
+
       if (!cropRotateButton) {
         return;
       }
@@ -694,33 +700,45 @@
       const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-image');
 
       this.ensureElementsExist({
-        cropperImage
+        cropperImage,
       });
 
       this.openContainer('crop-rotate');
 
-      cropperImage.value = this.imageCaptureDiv.querySelector('.js-hidden-original-capture-input').value;
-      cropperImage.src = this.imageCaptureDiv.querySelector('.js-hidden-original-capture-input').value;
+      cropperImage.value = this.imageCaptureDiv.querySelector(
+        '.js-hidden-original-capture-input',
+      ).value;
+      cropperImage.src = this.imageCaptureDiv.querySelector(
+        '.js-hidden-original-capture-input',
+      ).value;
 
       if (!this.cropper) {
         this.cropper = new Cropper.default('.js-cropper-container .js-cropper-image');
       } else {
         // Update the cropper image source if it already exists
-        this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector('.js-hidden-original-capture-input').value;
+        this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
+          '.js-hidden-original-capture-input',
+        ).value;
       }
 
-      const cropperHandle = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-handle[action="move"]');
-      const cropperShade = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-shade');
-      const cropperCanvas = this.imageCaptureDiv.querySelector('.js-cropper-container cropper-canvas');
+      const cropperHandle = this.imageCaptureDiv.querySelector(
+        '.js-cropper-container cropper-handle[action="move"]',
+      );
+      const cropperShade = this.imageCaptureDiv.querySelector(
+        '.js-cropper-container cropper-shade',
+      );
+      const cropperCanvas = this.imageCaptureDiv.querySelector(
+        '.js-cropper-container cropper-canvas',
+      );
 
       this.ensureElementsExist({
         cropperHandle,
         cropperShade,
-        cropperCanvas
+        cropperCanvas,
       });
 
       cropperCanvas.style.height = this.capturePreviewHeight + 'px';
-      cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)')
+      cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
     }
 
     handleRotationUpdateSlider(rotationAngleOffset) {
@@ -733,9 +751,7 @@
       this.setRotationAngle(this.rotationAngle);
     }
 
-    handleRotate90Degrees(
-      clockwise
-    ) {
+    handleRotate90Degrees(clockwise) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
@@ -747,7 +763,7 @@
     }
 
     handleFlip(
-      horizontal // true for horizontal flip, false for vertical flip
+      horizontal, // true for horizontal flip, false for vertical flip
     ) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
@@ -755,12 +771,12 @@
 
       this.cropper.getCropperImage().$scale(
         horizontal ? -1 : 1, // flip horizontally
-        horizontal ? 1 : -1 // flip vertically
+        horizontal ? 1 : -1, // flip vertically
       );
     }
 
     setRotationAngle(rotationAngle) {
-      const angle = rotationAngle * Math.PI / 180;
+      const angle = (rotationAngle * Math.PI) / 180;
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
 
@@ -775,26 +791,18 @@
       const [prevA, prevB, prevC, prevD, prevE, prevF] = transform;
 
       // extract the existing scales
-      const scaleX = Math.hypot(prevA, prevB);     // sqrt(a² + b²)
-      const scaleY = Math.hypot(prevC, prevD);     // sqrt(c² + d²)
+      const scaleX = Math.hypot(prevA, prevB); // sqrt(a² + b²)
+      const scaleY = Math.hypot(prevC, prevD); // sqrt(c² + d²)
 
       // build a new matrix = Scale × Rotation
-      const newA = scaleX * cos;    // new scaleX·cosθ
-      const newB = scaleX * sin;    // new scaleX·sinθ
-      const newC = -scaleY * sin;   // new (−sinθ)·scaleY
-      const newD = scaleY * cos;    // new cosθ·scaleY
+      const newA = scaleX * cos; // new scaleX·cosθ
+      const newB = scaleX * sin; // new scaleX·sinθ
+      const newC = -scaleY * sin; // new (−sinθ)·scaleY
+      const newD = scaleY * cos; // new cosθ·scaleY
 
       // preserve translation (prevE, prevF)
-      image.$setTransform(
-        newA,
-        newB,
-        newC,
-        newD,
-        prevE,
-        prevF
-      );
+      image.$setTransform(newA, newB, newC, newD, prevE, prevF);
     }
-
 
     resetCropRotate() {
       if (!this.cropper) {
@@ -803,13 +811,13 @@
 
       this.cropper.getCropperImage().$resetTransform();
       this.cropper.getCropperSelection().$reset();
-      
+
       this.rotationAngle = 0;
 
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
 
       this.ensureElementsExist({
-        rotationSlider
+        rotationSlider,
       });
 
       rotationSlider.value = 0;
@@ -829,7 +837,7 @@
       const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-image');
 
       this.ensureElementsExist({
-        cropperImage
+        cropperImage,
       });
 
       // Get the cropped image data URL
@@ -839,7 +847,7 @@
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
         originalCapture: false,
-      })
+      });
 
       // Close the crop/rotate container
       this.openContainer('capture-preview');
@@ -849,7 +857,6 @@
       this.openContainer('capture-preview');
     }
   }
-
 
   window.PLImageCapture = PLImageCapture;
 })();
