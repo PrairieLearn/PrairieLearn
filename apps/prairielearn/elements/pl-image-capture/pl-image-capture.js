@@ -129,8 +129,12 @@
     }
 
     createCropRotateListeners() {
-      this.baseRotationAmount = 0;
-      this.rotationAngle = 0;
+      // Rotation angle, in degrees, set by clicking the clockwise and counterclockwise 90-degree rotation buttons.
+      this.baseRotationAngle = 0;
+
+      // Total rotation angle of the image, in degrees.
+      // Calculated as the sum of the base rotation angle and the offset rotation angle set by the slider.
+      this.totalRotationAngle = 0;
 
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
@@ -161,12 +165,11 @@
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const rotationAngle = parseFloat(event.target.value);
-
-        if (isNaN(rotationAngle)) {
+        const newRotationAngle = parseFloat(event.target.value);
+        if (isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
-        this.handleRotationUpdateSlider(rotationAngle);
+        this.handleRotationUpdateSlider(newRotationAngle);
       });
 
       rotateClockwiseButton.addEventListener('click', () => {
@@ -463,9 +466,8 @@
           hiddenOriginalCaptureInput.value = dataUrl;
           this.resetCropRotate();
         }
+        this.showCropRotateButton();
       }
-
-      this.showCropRotateButton();
     }
 
     loadCapturePreviewFromBlob(blob) {
@@ -690,7 +692,7 @@
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
 
       if (!cropRotateButton) {
-        return;
+        throw new Error('Crop/rotate button not found in image capture element');
       }
 
       cropRotateButton.classList.remove('d-none');
@@ -741,44 +743,65 @@
       cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
     }
 
-    handleRotationUpdateSlider(rotationAngleOffset) {
+    /**
+     * Updates the rotation angle slider based on the offset rotation angle.
+     * @param {number} offsetRotationAngle The offset rotation angle in degrees.
+     * This value is added to the base rotation angle to calculate the total rotation angle.
+     */
+    handleRotationUpdateSlider(offsetRotationAngle) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      this.rotationAngle = rotationAngleOffset + this.baseRotationAmount;
+      this.totalRotationAngle = offsetRotationAngle + this.baseRotationAngle;
 
-      this.setRotationAngle(this.rotationAngle);
+      this.setRotationAngle(this.totalRotationAngle);
     }
 
+    /**
+     * Rotates the image by 90 degrees clockwise or counterclockwise.
+     * @param {boolean} clockwise If true, rotates the image 90 degrees clockwise.
+     * If false, rotates it 90 degrees counterclockwise.
+     */
     handleRotate90Degrees(clockwise) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      this.rotationAngle += clockwise ? 90 : -90;
-      this.baseRotationAmount += clockwise ? 90 : -90;
+      this.baseRotationAngle += clockwise ? 90 : -90;
+      this.totalRotationAngle += clockwise ? 90 : -90;
 
-      this.setRotationAngle(this.rotationAngle);
+      this.setRotationAngle(this.totalRotationAngle);
     }
 
-    handleFlip(
-      horizontal, // true for horizontal flip, false for vertical flip
-    ) {
+    /**
+     * Flips the image horizontally or vertically.
+     * @param {boolean} horizontal If true, flips the image horizontally. If false, flips it vertically.
+     */
+    handleFlip(horizontal) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
       this.cropper.getCropperImage().$scale(
-        horizontal ? -1 : 1, // flip horizontally
-        horizontal ? 1 : -1, // flip vertically
+        horizontal
+          ? -1 // Flip horizontally
+          : 1, // Leave the image horizontally unchanged
+        horizontal
+          ? 1 // Leave the image vertically unchanged
+          : -1, // Flip vertically
       );
     }
 
+    /**
+     * Updates the rotation angle of the cropper image while preserving the existing scale and translation.
+     * @param {number} rotationAngle The new rotation angle, in degrees.
+     */
     setRotationAngle(rotationAngle) {
-      const angle = (rotationAngle * Math.PI) / 180;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
+      const rotationAngleRad = (rotationAngle * Math.PI) / 180;
+
+      const cos = Math.cos(rotationAngleRad);
+      const sin = Math.sin(rotationAngleRad);
 
       const image = this.cropper.getCropperImage();
       const transform = image.$getTransform();
@@ -786,22 +809,28 @@
         throw new Error('Cropper image transform not found. Please start crop/rotate first.');
       }
 
-      // unpack the matrix [ a  b  e ]
-      //                   [ c  d  f ]
-      const [prevA, prevB, prevC, prevD, prevE, prevF] = transform;
+      const [
+        prevHorizontalScale,
+        prevVerticalSkewAngle,
+        prevHorizontalSkewAngle,
+        prevVerticalScale,
+        prevHorizontalTranslation,
+        prevVerticalTranslation,
+      ] = transform;
 
-      // extract the existing scales
-      const scaleX = Math.hypot(prevA, prevB); // sqrt(a² + b²)
-      const scaleY = Math.hypot(prevC, prevD); // sqrt(c² + d²)
+      // Extract the existing scale factors from the transformation matrix
+      const scaleX = Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
+      const scaleY = Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
 
-      // build a new matrix = Scale × Rotation
-      const newA = scaleX * cos; // new scaleX·cosθ
-      const newB = scaleX * sin; // new scaleX·sinθ
-      const newC = -scaleY * sin; // new (−sinθ)·scaleY
-      const newD = scaleY * cos; // new cosθ·scaleY
-
-      // preserve translation (prevE, prevF)
-      image.$setTransform(newA, newB, newC, newD, prevE, prevF);
+      // Apply the new rotation while preserving the existing scale and translation
+      image.$setTransform(
+        scaleX * cos,
+        scaleX * sin,
+        -scaleY * sin,
+        scaleY * cos,
+        prevHorizontalTranslation,
+        prevVerticalTranslation,
+      );
     }
 
     resetCropRotate() {
@@ -822,7 +851,7 @@
 
       rotationSlider.value = 0;
 
-      this.baseRotationAmount = 0;
+      this.baseRotationAngle = 0;
 
       this.handleRotationUpdateSlider(0);
 
