@@ -3919,7 +3919,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
     "@types/mime": "npm:^4.0.0"
-    "@types/multer": "npm:^1.4.13"
+    "@types/multer": "npm:^2.0.0"
     "@types/mustache": "npm:^4.2.6"
     "@types/node": "npm:^22.15.34"
     "@types/node-fetch": "npm:^2.6.12"
@@ -6137,12 +6137,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/multer@npm:^1.4.13":
-  version: 1.4.13
-  resolution: "@types/multer@npm:1.4.13"
+"@types/multer@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@types/multer@npm:2.0.0"
   dependencies:
     "@types/express": "npm:*"
-  checksum: 10c0/aed716fdc0bc8c5bfe6689bfe6569b6743b64be795140e80cab169bfe43f687027880b7fc401fca98f820dd464ad5986093ec322d865116eb31ce29a3361c469
+  checksum: 10c0/375b0e77c4675c2ff27d1170e469df48dced928cc9fcd077ead111a20d0f2c01921fd25e20e25426604d6d3e311b37da2bc03ce47523d06adafba5c4b8077b67
   languageName: node
   linkType: hard
 
