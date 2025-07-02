@@ -3,6 +3,7 @@ import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
+import htmlParser from '@html-eslint/parser';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -37,6 +38,38 @@ export default tseslint.config([
   tseslint.configs.strict,
   eslintReact.configs['recommended-typescript'],
   {
+    rules: {
+      // Use the recommended rules for HTML.
+      ...Object.fromEntries(
+        Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
+      ),
+      // We don't want these style rules
+      '@html-eslint/attrs-newline': 'off',
+      '@html-eslint/element-newline': 'off',
+      '@html-eslint/indent': 'off',
+      '@html-eslint/no-inline-styles': 'off',
+      '@html-eslint/no-trailing-spaces': 'off',
+      '@html-eslint/sort-attrs': 'off',
+      // We don't want these rules
+      '@html-eslint/no-heading-inside-button': 'off', // not important
+      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
+      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
+      '@html-eslint/require-input-label': 'off', // we don't always have labels.
+      // We prefer tags like `<img />` over `<img>`.
+      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
+      // False positives for attribute/element baseline browser compatibility.
+      '@html-eslint/use-baseline': 'off',
+      // We violate these rules in a lot of places.
+      '@html-eslint/id-naming-convention': 'off',
+      '@html-eslint/require-button-type': 'off',
+    },
+    plugins: {
+      '@html-eslint': html,
+    },
+  },
+  {
+    files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
     extends: compat.extends('plugin:you-dont-need-lodash-underscore/all'),
 
     plugins: {
@@ -136,31 +169,6 @@ export default tseslint.config([
       // We violate this rule in a lot of places. We'll turn it off for now.
       'vitest/no-identical-title': ['off'],
 
-      // Use the recommended rules for HTML.
-      ...Object.fromEntries(
-        Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
-      ),
-      // We don't want these style rules
-      '@html-eslint/attrs-newline': 'off',
-      '@html-eslint/element-newline': 'off',
-      '@html-eslint/indent': 'off',
-      '@html-eslint/no-inline-styles': 'off',
-      '@html-eslint/no-trailing-spaces': 'off',
-      '@html-eslint/sort-attrs': 'off',
-      // We don't want these rules
-      '@html-eslint/no-heading-inside-button': 'off', // not important
-      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
-      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
-      '@html-eslint/require-input-label': 'off', // we don't always have labels.
-      // We prefer tags like `<img />` over `<img>`.
-      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
-      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
-      // False positives for attribute/element baseline browser compatibility.
-      '@html-eslint/use-baseline': 'off',
-      // We violate these rules in a lot of places.
-      '@html-eslint/id-naming-convention': 'off',
-      '@html-eslint/require-button-type': 'off',
-
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
@@ -220,12 +228,26 @@ export default tseslint.config([
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
+  {
+    files: ['exampleCourse/questions/**/question.html'],
+    rules: {
+      '@html-eslint/no-extra-spacing-text': 'off',
+    },
+    languageOptions: {
+      parser: htmlParser,
+      parserOptions: {
+        templateEngineSyntax: htmlParser.TEMPLATE_ENGINE_SYNTAX.HANDLEBAR,
+      },
+    },
+  },
   globalIgnores([
     '.venv/*',
     '.yarn/*',
     'docs/*',
     'node_modules/*',
-    'exampleCourse/*',
+    'exampleCourse/{clientFilesCourse,courseInstances,elementExtensions,elements,serverFilesCourse}/*',
+    'exampleCourse/questions/**/*.json',
+    'exampleCourse/questions/**/clientFilesQuestion/*',
     'testCourse/*',
     'coverage/*',
     'out/*',
