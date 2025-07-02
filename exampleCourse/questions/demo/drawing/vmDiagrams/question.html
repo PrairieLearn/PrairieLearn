@@ -11,10 +11,10 @@
         <pl-axes origin="{{params.V_origin}}"
                  grid-label="{{params.label_V}}"
                  supporting-lines="{{params.sup_line}}"
-                 label-y="V" >
+                 label-y="V">
         </pl-axes>
-        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}" > </pl-graph-line>
-        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}" >  </pl-graph-line>
+        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}"> </pl-graph-line>
+        <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}">  </pl-graph-line>
 
         <!-- Drawing the moment diagram -->
         <pl-axes origin="{{params.M_origin}}"
@@ -26,12 +26,12 @@
     </pl-drawing-initial>
 
     <pl-drawing-answer draw-error-box="true">
-        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M1}}" end-gradients="{{params.dM1}}" offset-control-tol-y="20" offset-control-tol-x="20" > </pl-graph-line>
-        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M2}}" > </pl-graph-line>
+        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M1}}" end-gradients="{{params.dM1}}" offset-control-tol-y="20" offset-control-tol-x="20"> </pl-graph-line>
+        <pl-graph-line origin="{{params.M_origin}}" end-points="{{params.M2}}"> </pl-graph-line>
     </pl-drawing-answer>
 
     <pl-controls>
-      <pl-controls-group label="Graded objects:" >
+      <pl-controls-group label="Graded objects:">
           <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
           <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
       </pl-controls-group>
