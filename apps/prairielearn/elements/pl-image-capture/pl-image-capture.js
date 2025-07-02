@@ -136,6 +136,10 @@
       // The sum of this and the base rotation angle gives the total rotation angle, which is applied to the image.
       this.offsetRotationAngle = 0;
 
+      // Tracked to preserve flip transformations when the user rotates the image.
+      this.flippedX = false;
+      this.flippedY = false;
+
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
       const resetCropRotationButton = this.imageCaptureDiv.querySelector(
@@ -779,6 +783,12 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
+      if (horizontal) {
+        this.flippedX = !this.flippedX;
+      } else {
+        this.flippedY = !this.flippedY;
+      }
+
       this.cropper.getCropperImage().$scale(
         horizontal
           ? -1 // Flip horizontally
@@ -816,8 +826,11 @@
       ] = transform;
 
       // Extract the existing scale factors from the transformation matrix
-      const scaleX = Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
-      const scaleY = Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
+      const absScaleX = Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
+      const absScaleY = Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
+
+      const scaleX = (this.flippedX ? -1 : 1) * absScaleX;
+      const scaleY = (this.flippedY ? -1 : 1) * absScaleY;
 
       // Apply the new rotation while preserving the existing scale and translation
       image.$setTransform(
@@ -841,6 +854,9 @@
       this.baseRotationAngle = 0;
       this.offsetRotationAngle = 0;
 
+      this.flippedX = false;
+      this.flippedY = false;
+
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
 
       this.ensureElementsExist({
@@ -848,12 +864,6 @@
       });
 
       rotationSlider.value = 0;
-
-      this.baseRotationAngle = 0;
-
-      this.setRotationOffset(0);
-
-      this.cropper.getCropperImage().$moveTo(0, 0);
     }
 
     async confirmCropRotateChanges() {
