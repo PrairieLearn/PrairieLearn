@@ -394,8 +394,8 @@
             if (this.isPdf(fileData)) {
               const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
               const $objectPreview = $(
-                `<div class="mt-2 embed-responsive embed-responsive-4by3">
-                   <iframe class="embed-responsive-item" src="${url}">
+                `<div class="mt-2 ratio ratio-4x3">
+                   <iframe src="${url}">
                      PDF file cannot be displayed.
                    </iframe>
                  </div>`,
