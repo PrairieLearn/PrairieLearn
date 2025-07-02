@@ -10,18 +10,18 @@
       "questions": [
         {
           "id": "demo/imageCapture",
-          "manualPoints": 6,
-          "maxManualPoints": 6
+          "manualPoints": 2,
+          "maxManualPoints": 2
         },
         {
           "id": "aiGradingSingleImageCapture",
-          "manualPoints": 6,
-          "maxManualPoints": 6
+          "manualPoints": 2,
+          "maxManualPoints": 2
         },
         {
           "id": "aiGradingMultiImageCapture",
-          "manualPoints": 18,
-          "maxManualPoints": 18
+          "manualPoints": 6,
+          "maxManualPoints": 6
         }
       ]
     }
