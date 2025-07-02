@@ -20,7 +20,7 @@ curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PA
 
 ## Endpoint HTTP methods
 
-When sending a request to an endpoint, it will require you to send either a `GET` or a `POST` request. A `GET` request retrieves information from PrairieLearn, such as gradebook information. Whereas a `POST` request asks PrairieLearn to perform an action. For example, syncing a course repository to PrairieLearn. You will need the correct permissions to be able to perform this request. Unless specified otherwise, all requests are going to be `GET` requests and will follow the above example format when using `curl`.
+API endpoints require either a [`GET` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET) or a [`POST` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST). A `GET` request retrieves information from PrairieLearn, such as gradebook information. A `POST` request asks PrairieLearn to perform an action, such as syncing a course GitHub repository. Unless otherwise specified, all requests are `GET` requests and will follow the above example format when using `curl`.
 
 Here is an example of using `curl` for a `POST` request:
 
