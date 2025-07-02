@@ -171,7 +171,7 @@
         if (isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
-        this.handleRotationUpdateSlider(newRotationAngle);
+        this.setRotationOffset(newRotationAngle);
       });
 
       rotateClockwiseButton.addEventListener('click', () => {
@@ -438,7 +438,7 @@
         uploadedImageContainer,
       });
 
-      let capturePreview = document.createElement('img');
+      const capturePreview = document.createElement('img');
       capturePreview.className =
         'js-capture-preview img-fluid rounded border border-secondary w-100';
       capturePreview.src = dataUrl;
@@ -448,10 +448,10 @@
       uploadedImageContainer.appendChild(capturePreview);
 
       if (originalCapture) {
-        capturePreview = this.imageCaptureDiv.querySelector('.js-capture-preview');
         capturePreview.addEventListener(
           'load',
           () => {
+            // This is used later to set the height of the crop/rotate container.
             this.capturePreviewHeight = capturePreview.clientHeight;
           },
           { once: true },
@@ -461,6 +461,7 @@
       if (this.editable) {
         const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
         hiddenCaptureInput.value = dataUrl;
+
         if (originalCapture) {
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
             '.js-hidden-original-capture-input',
@@ -468,6 +469,7 @@
           hiddenOriginalCaptureInput.value = dataUrl;
           this.resetCropRotate();
         }
+
         this.showCropRotateButton();
       }
     }
@@ -701,25 +703,24 @@
     }
 
     startCropRotate() {
-      const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-image');
-
-      this.ensureElementsExist({
-        cropperImage,
-      });
-
       this.openContainer('crop-rotate');
 
-      cropperImage.value = this.imageCaptureDiv.querySelector(
-        '.js-hidden-original-capture-input',
-      ).value;
-      cropperImage.src = this.imageCaptureDiv.querySelector(
-        '.js-hidden-original-capture-input',
-      ).value;
-
       if (!this.cropper) {
-        this.cropper = new Cropper.default('.js-cropper-container .js-cropper-image');
+        // This cropper image is used by Cropper JS to set the image that will be cropped/rotated.
+        const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-base-image');
+        this.ensureElementsExist({
+          cropperImage,
+        });
+
+        // Use the image capture prior to any crop / rotation as the cropper image source.
+        // That way, the user can restore any part of the original image that is lost while editing.
+        cropperImage.src = this.imageCaptureDiv.querySelector(
+          '.js-hidden-original-capture-input',
+        ).value;
+
+        this.cropper = new Cropper.default('.js-cropper-container .js-cropper-base-image');
       } else {
-        // Update the cropper image source if it already exists
+        // If the cropper already exists, update its image source to the original capture.
         this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
           '.js-hidden-original-capture-input',
         ).value;
@@ -728,16 +729,12 @@
       const cropperHandle = this.imageCaptureDiv.querySelector(
         '.js-cropper-container cropper-handle[action="move"]',
       );
-      const cropperShade = this.imageCaptureDiv.querySelector(
-        '.js-cropper-container cropper-shade',
-      );
       const cropperCanvas = this.imageCaptureDiv.querySelector(
         '.js-cropper-container cropper-canvas',
       );
 
       this.ensureElementsExist({
         cropperHandle,
-        cropperShade,
         cropperCanvas,
       });
 
@@ -746,11 +743,11 @@
     }
 
     /**
-     * Updates the rotation angle slider based on the offset rotation angle.
+     * Sets the rotation offset angle for the cropper image.
+     * This angle is added to the base rotation angle to calculate the total rotation angle.
      * @param {number} offsetRotationAngle The offset rotation angle in degrees.
-     * This value is added to the base rotation angle to calculate the total rotation angle.
      */
-    handleRotationUpdateSlider(offsetRotationAngle) {
+    setRotationOffset(offsetRotationAngle) {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
@@ -793,8 +790,8 @@
     }
 
     /**
-     * Updates the rotation angle of the cropper image using the base and offset rotation angles,
-     * while preserving the existing scale and translation.
+     * Updates the rotation angle of the cropper image using the base and offset rotation angles.
+     * Preserves existing scale and translation of the image.
      */
     updateImageRotationAngle() {
       const totalRotationAngle = this.baseRotationAngle + this.offsetRotationAngle;
@@ -854,7 +851,7 @@
 
       this.baseRotationAngle = 0;
 
-      this.handleRotationUpdateSlider(0);
+      this.setRotationOffset(0);
 
       this.cropper.getCropperImage().$moveTo(0, 0);
     }
@@ -864,13 +861,7 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-image');
-
-      this.ensureElementsExist({
-        cropperImage,
-      });
-
-      // Get the cropped image data URL
+      // Obtain the data URL of the edited image.
       const canvas = await this.cropper.getCropperSelection().$toCanvas();
       const dataUrl = canvas.toDataURL('image/jpeg');
 
