@@ -71,6 +71,7 @@ updates:
       - '/docs'
       - '/graders/c'
       - '/graders/python'
+      - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
     schedule:

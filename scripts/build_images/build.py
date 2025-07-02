@@ -26,6 +26,8 @@ BASE_IMAGE_MAPPING = {
     # Core images.
     "prairielearn/executor": "prairielearn/prairielearn",
     # Workspace images.
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
