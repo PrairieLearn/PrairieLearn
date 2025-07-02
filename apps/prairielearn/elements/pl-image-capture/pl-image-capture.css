@@ -1,0 +1,9 @@
+.image-capture-card {
+    width: 75%;   
+}
+
+@media (max-width: 1024px) {
+    .image-capture-card {
+        width: 100%;
+    }
+}

@@ -1,19 +1,10 @@
 <script>
-  $(function() {
-      new window.PLImageCapture("{{uuid}}");
-  });
+$(function() {
+    new window.PLImageCapture("{{uuid}}");
+});
 </script>
-<style>
-  #image-capture-{{uuid}} {
-    width: 75%;
-  }
-  @media (max-width: 768px) {
-    #image-capture-{{uuid}} {
-      width: 100%;
-    }
-  }
-</style>
-<div id="image-capture-{{uuid}}" class="card mb-3" data-options="{{image_capture_options_json}}">
+
+<div id="image-capture-{{uuid}}" class="image-capture-card card mb-3" data-options="{{image_capture_options_json}}">
   <div class="card-header">
     Image capture
   </div>
