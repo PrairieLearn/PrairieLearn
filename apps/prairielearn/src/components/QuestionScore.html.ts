@@ -275,7 +275,7 @@ export function ExamQuestionStatus({
   const badge_color: Record<NonNullable<InstanceQuestion['status']>, string> = {
     unanswered: 'warning',
     invalid: 'danger',
-    grading: 'info',
+    grading: 'info', // grading is never used in practice, but we keep it for type safety
     saved: 'info',
     complete: 'success',
     correct: 'success',
@@ -284,7 +284,7 @@ export function ExamQuestionStatus({
 
   return html`
     <span class="align-middle">
-      <span class="badge text-bg-${badge_color[instance_question.status ?? 'grading']}">
+      <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
         ${instance_question.status}
       </span>
 
