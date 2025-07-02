@@ -127,7 +127,7 @@ export function InstructorInstanceAdminLti13({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>LTI 1.3 configuration</h1>
+          <h1>Linked assessments</h1>
         </div>
         <div class="card-body">
           ${instance.lti13_course_instance.context_memberships_url &&

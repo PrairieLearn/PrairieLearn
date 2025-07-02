@@ -37,7 +37,7 @@ export function InstructorInstanceAdminLti13Settings({
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
-          <h1>LTI 1.3 Settings</h1>
+          <h1>Integration settings</h1>
         </div>
         <div class="card-body">
           <h3 id="connection">Connection to LMS</h3>
