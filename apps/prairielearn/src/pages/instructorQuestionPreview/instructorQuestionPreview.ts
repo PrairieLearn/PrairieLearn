@@ -119,9 +119,12 @@ router.get(
       renderSubmissionSearchParams.set('ai_grading_preview', 'true');
     }
 
-    // If we are on a chunk server, we need to make sure we are using the actual course directory
-    // and not the directory for the chunk server.
+    // We must use the question's course, which is not necessarily the same as
+    // the current course in the case of shared questions.
     const question_course = await getQuestionCourse(res.locals.question, res.locals.course);
+
+    // We must read the README from the course's runtime directory to handle
+    // the case where this process is a chunk consumer.
     const coursePath = getRuntimeDirectoryForCourse(question_course);
     const questionReadmePath = path.join(
       path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
