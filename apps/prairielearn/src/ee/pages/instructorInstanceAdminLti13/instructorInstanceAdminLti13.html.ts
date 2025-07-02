@@ -52,7 +52,10 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a target="_blank" href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                  <a
+                    target="_blank"
+                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
+                    rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -72,6 +75,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   <a
                     target="_blank"
                     href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?
                   </a>
@@ -276,7 +280,7 @@ function LinkedAssessments({
                                 class="btn btn-success"
                                 name="__action"
                                 value="bulk_create_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Create and link assignments in ${lms_name}
                               </button>
@@ -286,7 +290,7 @@ function LinkedAssessments({
                                 class="btn btn-med-light"
                                 name="__action"
                                 value="bulk_unlink_assessments"
-                                onClick="return confirm('Are you sure?');"
+                                onclick="return confirm('Are you sure?');"
                               >
                                 Unlink assessments
                               </button>
@@ -355,7 +359,7 @@ function LinkedAssessments({
                           class="btn btn-primary"
                           hx-get="?lineitems"
                           hx-target="next .line-items-inputs"
-                          onClick="this.querySelector('.refresh-button').classList.remove('d-none');"
+                          onclick="this.querySelector('.refresh-button').classList.remove('d-none');"
                         >
                           Pick from existing ${lms_name} assignments
                           <span class="refresh-button d-none"><i class="fa fa-refresh"></i></span>
