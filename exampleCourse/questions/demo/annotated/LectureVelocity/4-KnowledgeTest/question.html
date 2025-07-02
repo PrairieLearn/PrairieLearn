@@ -20,18 +20,18 @@ $$ s(t) = - {{params.a}} t^2 + {{params.b}} t + 30 $$
 
 </pl-question-panel>
 
-<pl-overlay width="550" height="450"  clip="false">
+<pl-overlay width="550" height="450" clip="false">
     <pl-background>
       <pl-figure file-name="figure1.png" type="dynamic"></pl-figure>
     </pl-background>
 
     <pl-location left="20" top="0" valign="top" halign="left">
-        <pl-drawing  answers-name="lines" gradable="true" width="500" height="400" grid-size="0" show-tolerance-hint="false" hide-answer-panel="false">
+        <pl-drawing answers-name="lines" gradable="true" width="500" height="400" grid-size="0" show-tolerance-hint="false" hide-answer-panel="false">
             <pl-drawing-answer draw-error-box="true">
                 <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.line}}" offset-tol-x="5" offset-tol-y="5"></pl-graph-line>
             </pl-drawing-answer>
             <pl-controls>
-                <pl-controls-group label="Add line:" >
+                <pl-controls-group label="Add line:">
                     <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
                 </pl-controls-group>
                 <pl-controls-group label="Delete:">

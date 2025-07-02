@@ -56,7 +56,10 @@ export default tseslint.config([
       '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
       '@html-eslint/require-input-label': 'off', // we don't always have labels.
       // We prefer tags like `<img />` over `<img>`.
-      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/no-extra-spacing-attrs': [
+        'error',
+        { enforceBeforeSelfClose: true, disallowMissing: true },
+      ],
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
       // False positives for attribute/element baseline browser compatibility.
       '@html-eslint/use-baseline': 'off',
@@ -232,8 +235,8 @@ export default tseslint.config([
     files: ['exampleCourse/questions/**/question.html'],
     rules: {
       // We prefer tags like `<img>` over `<img />`.
-      '@html-eslint/no-extra-spacing-attrs': 'error',
-      '@html-eslint/require-closing-tags': 'error',
+      // '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'never' }],
       '@html-eslint/no-extra-spacing-text': 'off',
     },
     languageOptions: {
