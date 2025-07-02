@@ -138,7 +138,7 @@
 
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
-      const resetButton = this.imageCaptureDiv.querySelector('.js-reset-crop-rotate-button');
+      const resetCropRotationButton = this.imageCaptureDiv.querySelector('.js-reset-crop-rotate-button');
       const discardChangesButton = this.imageCaptureDiv.querySelector('.js-discard-changes-button');
 
       const rotateClockwiseButton = this.imageCaptureDiv.querySelector(
@@ -154,7 +154,7 @@
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
-        resetButton,
+        resetCropRotationButton,
         discardChangesButton,
         flipHorizontalButton,
         flipVerticalButton,
@@ -188,7 +188,7 @@
         this.handleFlip(false);
       });
 
-      resetButton.addEventListener('click', () => {
+      resetCropRotationButton.addEventListener('click', () => {
         this.resetCropRotate();
       });
 
