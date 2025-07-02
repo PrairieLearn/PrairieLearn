@@ -18,7 +18,7 @@ Provide your token via the `Private-Token` header:
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
-## Types of Endpoints
+## Endpoint HTTP methods
 
 When sending a request to an endpoint, it will require you to send either a `GET` or a `POST` request. A `GET` request retrieves information from PrairieLearn, such as gradebook information. Whereas a `POST` request asks PrairieLearn to perform an action. For example, syncing a course repository to PrairieLearn. You will need the correct permissions to be able to perform this request. Unless specified otherwise, all requests are going to be `GET` requests and will follow the above example format when using `curl`.
 
