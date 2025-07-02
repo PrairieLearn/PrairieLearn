@@ -102,7 +102,8 @@ WITH
     -- status. This is a no-op for instructor and public variants.
     UPDATE instance_questions AS iq
     SET
-      status = 'grading'
+      status = 'grading',
+      modified_at = now()
     FROM
       new_grading_job AS gj
       JOIN submissions AS s ON (s.id = gj.submission_id)
