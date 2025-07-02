@@ -19,7 +19,7 @@ API endpoints require either a [`GET` request](https://developer.mozilla.org/en-
 Here is an example of using `curl` for a `POST` request:
 
 ```sh
-curl -H "Private-Token: TOKEN" -d "" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
 ## Example access script
