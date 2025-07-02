@@ -4,7 +4,6 @@ colormath==3.0.0
 defusedxml==0.7.1
 Faker==37.4.0
 folium==0.20.0
-jupyter-collaboration==4.0.2
 ipython==8.37.0
 matplotlib==3.10.3
 nbconvert==7.16.6
