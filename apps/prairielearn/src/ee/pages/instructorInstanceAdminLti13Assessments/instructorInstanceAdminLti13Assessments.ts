@@ -18,7 +18,6 @@ import {
   AssessmentSchema,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
-  Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -36,7 +35,6 @@ import {
 import {
   AssessmentRowSchema,
   InstructorInstanceAdminLti13,
-  InstructorInstanceAdminLti13NoInstances,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13Assessments.html.js';
 
@@ -44,7 +42,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(
-  '/:unsafe_lti13_course_instance_id?',
+  '/:unsafe_lti13_course_instance_id/assessments',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
@@ -55,33 +53,6 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       Lti13CombinedInstanceSchema,
     );
-
-    if (instances.length === 0) {
-      // See if we have configurations per institution
-      const lti13_instances = await queryRows(
-        sql.select_lti13_instances,
-        { institution_id: res.locals.institution.id },
-        Lti13InstanceSchema,
-      );
-
-      res.send(
-        InstructorInstanceAdminLti13NoInstances({
-          resLocals: res.locals,
-          lti13_instances,
-        }),
-      );
-      return;
-    }
-
-    // Handle the no parameter offered case, take the first one
-    if (!req.params.unsafe_lti13_course_instance_id) {
-      const lti13_course_instance_id = instances[0].lti13_course_instance.id;
-
-      res.redirect(
-        `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/lti13_instance/${lti13_course_instance_id}`,
-      );
-      return;
-    }
 
     const instance = instances.find(
       (i) => i.lti13_course_instance.id === req.params.unsafe_lti13_course_instance_id,
