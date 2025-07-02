@@ -126,8 +126,12 @@ GET /pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id
 POST /pl/api/v1/course/:course_id/sync
 ```
 
+Returns a `job_sequence_id` that can be used to check on the sync job's status.
+
 #### Check course sync status
 
 ```text
 GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
 ```
+
+Returns the status and output of the sync job.
