@@ -3919,6 +3919,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
     "@types/mime": "npm:^4.0.0"
+    "@types/minimist": "npm:^1.2.5"
     "@types/multer": "npm:^2.0.0"
     "@types/mustache": "npm:^4.2.6"
     "@types/node": "npm:^22.15.34"
@@ -4021,6 +4022,7 @@ __metadata:
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.0.7"
+    minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.5"
     multer: "npm:^2.0.1"
     mustache: "npm:^4.2.0"
@@ -4089,7 +4091,6 @@ __metadata:
     winston: "npm:^3.17.0"
     xml-formatter: "npm:^3.6.6"
     xml2js: "npm:^0.6.2"
-    yargs-parser: "npm:^22.0.0"
     zod: "npm:^3.25.69"
     zod-to-json-schema: "npm:^3.24.6"
   languageName: unknown
@@ -4238,6 +4239,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
+    "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^22.15.34"
     "@vitest/coverage-v8": "npm:^3.2.4"
     archiver: "npm:^7.0.1"
@@ -4251,6 +4253,7 @@ __metadata:
     fast-glob: "npm:^3.3.3"
     ioredis: "npm:^5.6.1"
     lodash: "npm:^4.17.21"
+    minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.10"
     shlex: "npm:^2.1.2"
@@ -4259,7 +4262,6 @@ __metadata:
     typescript-cp: "npm:^0.1.9"
     uuid: "npm:^11.1.0"
     vitest: "npm:^3.2.4"
-    yargs-parser: "npm:^22.0.0"
     zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
@@ -6127,6 +6129,13 @@ __metadata:
   dependencies:
     mime: "npm:*"
   checksum: 10c0/c544ca670c2cb53b96c7e4a1b4ecfdf3777dad4b74f7bb305680eed82c753a7ccfdf03c8b06c9fba48bb10d2a96ae95c9a4007b6c83bc5fdc9cfa7250c07b85b
+  languageName: node
+  linkType: hard
+
+"@types/minimist@npm:^1.2.5":
+  version: 1.2.5
+  resolution: "@types/minimist@npm:1.2.5"
+  checksum: 10c0/3f791258d8e99a1d7d0ca2bda1ca6ea5a94e5e7b8fc6cde84dd79b0552da6fb68ade750f0e17718f6587783c24254bbca0357648dd59dc3812c150305cabdc46
   languageName: node
   linkType: hard
 

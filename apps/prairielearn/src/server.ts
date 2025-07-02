@@ -26,12 +26,12 @@ import express, {
   Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -78,9 +78,10 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
-const argv = yargsParser(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
