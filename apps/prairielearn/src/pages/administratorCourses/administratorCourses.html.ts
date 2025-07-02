@@ -191,7 +191,7 @@ function CourseDeleteForm({
         </label>
         <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete course</button>
       </div>
@@ -284,7 +284,7 @@ function CourseInsertForm({
           value="${config.courseRepoDefaultBranch}"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add course</button>
       </div>
@@ -359,7 +359,7 @@ function CourseUpdateColumnForm({
           aria-label="${label}"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>

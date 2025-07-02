@@ -189,7 +189,7 @@ export function QuestionScorePanelContent({
         ${!hasAutoAndManualPoints && assessment_question.max_points
           ? html`
               <tr>
-                <td colspan="2" class="text-right">
+                <td colspan="2" class="text-end">
                   <small>
                     ${!assessment_question.max_auto_points
                       ? 'Manually-graded question'
@@ -233,7 +233,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <div class="mb-3 text-right">
+        <div class="mb-3 text-end">
           <button type="submit" class="btn btn-sm btn-warning" name="__action" value="report_issue">
             Report error
           </button>
