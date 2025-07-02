@@ -216,7 +216,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
         </p>
       </div>
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove all student data access</button>
       </div>
@@ -237,7 +237,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
         </p>
       </div>
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete users with no access</button>
       </div>
@@ -288,7 +288,7 @@ function CoursePermissionsInsertForm({
           Course content access for all new users:
         </label>
         <select
-          class="custom-select form-select-sm"
+          class="form-select form-select-sm"
           id="addUsersInputCourseRole"
           name="course_role"
           required
@@ -309,7 +309,7 @@ function CoursePermissionsInsertForm({
               </label>
               <div class="input-group">
                 <select
-                  class="custom-select form-select-sm"
+                  class="form-select form-select-sm"
                   id="addUsersInputCourseInstance"
                   name="course_instance_id"
                 >
@@ -319,7 +319,7 @@ function CoursePermissionsInsertForm({
                   )}
                 </select>
                 <select
-                  class="custom-select form-select-sm"
+                  class="form-select form-select-sm"
                   id="addUsersInputCourseInstanceRole"
                   name="course_instance_role"
                 >
@@ -331,7 +331,7 @@ function CoursePermissionsInsertForm({
           `
         : ''}
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add users</button>
       </div>
@@ -352,7 +352,7 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
         </p>
       </div>
 
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete non-owners</button>
       </div>
