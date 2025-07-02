@@ -69,7 +69,6 @@ You can also build a local copy of this image and use it to make sure you have a
 
 ```sh
 cd /path/to/PrairieLearn
-docker build -t prairielearn/plbase images/plbase
 docker build -t prairielearn/prairielearn .
 ```
 
