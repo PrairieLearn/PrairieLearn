@@ -710,14 +710,14 @@
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
-        // This cropper image is used by Cropper JS to set the image that will be cropped/rotated.
+        // Used by CropperJS to initialize the cropper instance.
         const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-base-image');
         this.ensureElementsExist({
           cropperImage,
         });
 
-        // Use the image capture prior to any crop / rotation as the cropper image source.
-        // That way, the user can restore any part of the original image that is lost while editing.
+        // Use the image capture prior to any crop or rotation as the cropper image source.
+        // That way, the user can bring any part of the original image cropped out while editing back into view.
         cropperImage.src = this.imageCaptureDiv.querySelector(
           '.js-hidden-original-capture-input',
         ).value;
@@ -828,11 +828,10 @@
       ] = transform;
 
       // Extract the existing scale factors from the transformation matrix
-      const absScaleX = Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
-      const absScaleY = Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
-
-      const scaleX = (this.flippedX ? -1 : 1) * absScaleX;
-      const scaleY = (this.flippedY ? -1 : 1) * absScaleY;
+      const scaleX =
+        (this.flippedX ? -1 : 1) * Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
+      const scaleY =
+        (this.flippedY ? -1 : 1) * Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
 
       // Apply the new rotation while preserving the existing scale and translation
       image.$setTransform(
