@@ -46,7 +46,7 @@ jobs:
     uses: ./.github/workflows/image-builder.yml
     with:
       group: core
-      images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
+      images: prairielearn/prairielearn,prairielearn/executor
       cache_images: prairielearn/prairielearn
     secrets: inherit
 
@@ -95,6 +95,5 @@ jobs:
             prairielearn/grader-java
             prairielearn/grader-python
             prairielearn/grader-r
-            prairielearn/plbase
             prairielearn/prairielearn
             prairielearn/executor
