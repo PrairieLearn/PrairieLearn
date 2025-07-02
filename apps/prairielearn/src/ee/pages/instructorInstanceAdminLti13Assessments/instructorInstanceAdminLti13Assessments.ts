@@ -23,10 +23,11 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  Lti13CombinedInstanceSchema,
   createAndLinkLineitem,
   getLineitems,
   queryAndLinkLineitem,
+  selectLti13CombinedInstancesForCourseInstance,
+  selectOptionalLti13CombinedInstance,
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
@@ -48,18 +49,13 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const instances = await queryRows(
-      sql.select_combined_lti13_instances,
-      { course_instance_id: res.locals.course_instance.id },
-      Lti13CombinedInstanceSchema,
-    );
-
-    const instance = instances.find(
-      (i) => i.lti13_course_instance.id === req.params.unsafe_lti13_course_instance_id,
-    );
+    const instance = await selectOptionalLti13CombinedInstance({
+      lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     if (!instance) {
-      throw error.make(404, 'LTI 1.3 instance not found.');
+      throw new error.HttpStatusError(404, 'Not found');
     }
 
     if ('lineitems' in req.query) {
@@ -71,6 +67,10 @@ router.get(
       }
       return;
     }
+
+    const instances = await selectLti13CombinedInstancesForCourseInstance({
+      course_instance_id: res.locals.course_instance.id,
+    });
 
     const assessments = await queryRows(
       sql.select_assessments,
@@ -108,14 +108,14 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const instance = await queryRow(
-      sql.select_combined_lti13_instance,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
-      },
-      Lti13CombinedInstanceSchema,
-    );
+    const instance = await selectOptionalLti13CombinedInstance({
+      lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
+      course_instance_id: res.locals.course_instance.id,
+    });
+
+    if (!instance) {
+      throw new error.HttpStatusError(404, 'Not found');
+    }
 
     const serverJobOptions = {
       courseId: res.locals.course.id,

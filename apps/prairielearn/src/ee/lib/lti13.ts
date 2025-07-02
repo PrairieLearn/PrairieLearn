@@ -11,6 +11,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryAsync,
+  queryOptionalRow,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -945,4 +946,27 @@ export async function updateLti13Scores(
     );
   }
   job.info(`${counts.not_sent} score${counts.not_sent === 1 ? '' : 's'} skipped (not sent).`);
+}
+
+export async function selectOptionalLti13CombinedInstance({
+  lti13_course_instance_id,
+  course_instance_id,
+}) {
+  return await queryOptionalRow(
+    sql.select_lti13_course_instance,
+    { lti13_course_instance_id, course_instance_id },
+    Lti13CombinedInstanceSchema,
+  );
+}
+
+export async function selectLti13CombinedInstancesForCourseInstance({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}) {
+  return await queryRows(
+    sql.select_lti13_course_instances_for_course_instance,
+    { course_instance_id },
+    Lti13CombinedInstanceSchema,
+  );
 }

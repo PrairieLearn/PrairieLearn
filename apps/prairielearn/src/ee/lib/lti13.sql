@@ -156,3 +156,20 @@ WHERE
   a.id = $unsafe_assessment_id
   AND lti13_course_instances.id = $lti13_course_instance_id
   AND a.deleted_at IS NULL;
+
+-- BLOCK select_lti13_course_instance
+SELECT
+  *
+FROM
+  lti13_course_instances
+WHERE
+  id = $lti13_course_instance_id
+  AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_lti13_course_instances_for_course_instance
+SELECT
+  *
+FROM
+  lti13_course_instances
+WHERE
+  course_instance_id = $course_instance_id;
