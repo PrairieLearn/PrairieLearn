@@ -58,7 +58,12 @@ export default tseslint.config([
       // We prefer tags like `<img />` over `<img>`.
       '@html-eslint/no-extra-spacing-attrs': [
         'error',
-        { enforceBeforeSelfClose: true, disallowMissing: true },
+        {
+          enforceBeforeSelfClose: true,
+          disallowMissing: true,
+          disallowTabs: true,
+          disallowInAssignment: true,
+        },
       ],
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
       // False positives for attribute/element baseline browser compatibility.
@@ -232,10 +237,9 @@ export default tseslint.config([
     },
   },
   {
-    files: ['exampleCourse/questions/**/question.html'],
+    files: ['exampleCourse/questions/**/*.html'],
     rules: {
       // We prefer tags like `<img>` over `<img />`.
-      // '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'never' }],
       '@html-eslint/no-extra-spacing-text': 'off',
     },
