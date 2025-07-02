@@ -132,9 +132,9 @@
       // Rotation angle, in degrees, set by clicking the clockwise and counterclockwise 90-degree rotation buttons.
       this.baseRotationAngle = 0;
 
-      // Total rotation angle of the image, in degrees.
-      // Calculated as the sum of the base rotation angle and the offset rotation angle set by the slider.
-      this.totalRotationAngle = 0;
+      // Rotation angle, in degrees, set by the rotation slider.
+      // The sum of this and the base rotation angle gives the total rotation angle, which is applied to the image.
+      this.offsetRotationAngle = 0;
 
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
@@ -755,9 +755,8 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      this.totalRotationAngle = offsetRotationAngle + this.baseRotationAngle;
-
-      this.setRotationAngle(this.totalRotationAngle);
+      this.offsetRotationAngle = offsetRotationAngle;
+      this.updateImageRotationAngle();
     }
 
     /**
@@ -771,9 +770,7 @@
       }
 
       this.baseRotationAngle += clockwise ? 90 : -90;
-      this.totalRotationAngle += clockwise ? 90 : -90;
-
-      this.setRotationAngle(this.totalRotationAngle);
+      this.updateImageRotationAngle();
     }
 
     /**
@@ -796,11 +793,12 @@
     }
 
     /**
-     * Updates the rotation angle of the cropper image while preserving the existing scale and translation.
-     * @param {number} rotationAngle The new rotation angle, in degrees.
+     * Updates the rotation angle of the cropper image using the base and offset rotation angles,
+     * while preserving the existing scale and translation.
      */
-    setRotationAngle(rotationAngle) {
-      const rotationAngleRad = (rotationAngle * Math.PI) / 180;
+    updateImageRotationAngle() {
+      const totalRotationAngle = this.baseRotationAngle + this.offsetRotationAngle;
+      const rotationAngleRad = (totalRotationAngle * Math.PI) / 180;
 
       const cos = Math.cos(rotationAngleRad);
       const sin = Math.sin(rotationAngleRad);
@@ -843,7 +841,8 @@
       this.cropper.getCropperImage().$resetTransform();
       this.cropper.getCropperSelection().$reset();
 
-      this.rotationAngle = 0;
+      this.baseRotationAngle = 0;
+      this.offsetRotationAngle = 0;
 
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
 
