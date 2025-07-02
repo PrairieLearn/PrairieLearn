@@ -29,7 +29,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.19",
+    "@types/lodash": "^4.17.20",
     "@types/node": "^22.15.34",
     "@types/yargs": "^17.0.33",
     "typescript": "^5.8.3",

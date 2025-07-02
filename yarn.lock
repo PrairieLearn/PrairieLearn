@@ -312,9 +312,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-ec2@npm:^3.841.0":
-  version: 3.841.0
-  resolution: "@aws-sdk/client-ec2@npm:3.841.0"
+"@aws-sdk/client-ec2@npm:^3.842.0":
+  version: 3.842.0
+  resolution: "@aws-sdk/client-ec2@npm:3.842.0"
   dependencies:
     "@aws-crypto/sha256-browser": "npm:5.2.0"
     "@aws-crypto/sha256-js": "npm:5.2.0"
@@ -359,7 +359,7 @@ __metadata:
     "@types/uuid": "npm:^9.0.1"
     tslib: "npm:^2.6.2"
     uuid: "npm:^9.0.1"
-  checksum: 10c0/82040ddc6bfd0156dec183ea7be40bc927f523e286a8bd27e00e936ee1766c2a74637ebe8d06f0a424f5f049781a8392623c53adb233548f2162ce21ef9e69a8
+  checksum: 10c0/75e11bd32171c86f3826eddae7ed9a78c4717f75b0daf32983632d789032881cb9af1c815d25fc373bb024dc78c90026072164c0246e07f257b41115e8bfb7bc
   languageName: node
   linkType: hard
 
@@ -411,9 +411,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/client-s3@npm:^3.840.0":
-  version: 3.840.0
-  resolution: "@aws-sdk/client-s3@npm:3.840.0"
+"@aws-sdk/client-s3@npm:^3.842.0":
+  version: 3.842.0
+  resolution: "@aws-sdk/client-s3@npm:3.842.0"
   dependencies:
     "@aws-crypto/sha1-browser": "npm:5.2.0"
     "@aws-crypto/sha256-browser": "npm:5.2.0"
@@ -473,7 +473,7 @@ __metadata:
     "@types/uuid": "npm:^9.0.1"
     tslib: "npm:^2.6.2"
     uuid: "npm:^9.0.1"
-  checksum: 10c0/c923c8a0b6743f81478758641190b7c1da8306e7f6bf81d7f9df722be183f7ad506ad47e1b9de0807961fffec6b36074385d4c611c0c2fb08c8e5b1d47948a48
+  checksum: 10c0/43e32f70d17cf868b74f1b6f59bb0f5ddb7d1a0d5b0f9708c3114d4b7e5064880e03198f9ae91ef155177358e66ec81a43724dfc79f31f72e616ed7552b0addc
   languageName: node
   linkType: hard
 
@@ -800,9 +800,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/lib-storage@npm:^3.840.0":
-  version: 3.840.0
-  resolution: "@aws-sdk/lib-storage@npm:3.840.0"
+"@aws-sdk/lib-storage@npm:^3.842.0":
+  version: 3.842.0
+  resolution: "@aws-sdk/lib-storage@npm:3.842.0"
   dependencies:
     "@smithy/abort-controller": "npm:^4.0.4"
     "@smithy/middleware-endpoint": "npm:^4.1.13"
@@ -812,8 +812,8 @@ __metadata:
     stream-browserify: "npm:3.0.0"
     tslib: "npm:^2.6.2"
   peerDependencies:
-    "@aws-sdk/client-s3": ^3.840.0
-  checksum: 10c0/027d1f812a37e8290c8f76022d91ff2cf66e7ab709528c91223478214521846760adcf77e0e2cfb642cdebf14901cf7e3d4ad8b905c004e10132434d5ad2574e
+    "@aws-sdk/client-s3": ^3.842.0
+  checksum: 10c0/d4fb5414dba0f0d3a0d47f4f1f7fc6d52d59e9423ce1aa5161767eb26830e65ae5a54f587d3512fab8af5418dc79a311dc0d0018e0851d7cebfb50ac3e56f9a9
   languageName: node
   linkType: hard
 
@@ -3329,7 +3329,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.34"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3341,7 +3341,7 @@ __metadata:
     "@types/node": "npm:^22.15.34"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3392,7 +3392,7 @@ __metadata:
     ioredis: "npm:^5.6.1"
     lru-cache: "npm:^11.1.0"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3426,12 +3426,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/config@workspace:packages/config"
   dependencies:
-    "@aws-sdk/client-ec2": "npm:^3.841.0"
+    "@aws-sdk/client-ec2": "npm:^3.842.0"
     "@aws-sdk/client-secrets-manager": "npm:^3.840.0"
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.19"
+    "@types/lodash": "npm:^4.17.20"
     "@types/node": "npm:^22.15.34"
     "@vitest/coverage-v8": "npm:^3.2.4"
     fs-extra: "npm:^11.3.0"
@@ -3440,7 +3440,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3572,10 +3572,10 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": "npm:^3.840.0"
     "@aws-sdk/client-ecr": "npm:^3.840.0"
-    "@aws-sdk/client-s3": "npm:^3.840.0"
+    "@aws-sdk/client-s3": "npm:^3.842.0"
     "@aws-sdk/client-sqs": "npm:^3.840.0"
     "@aws-sdk/credential-providers": "npm:^3.840.0"
-    "@aws-sdk/lib-storage": "npm:^3.840.0"
+    "@aws-sdk/lib-storage": "npm:^3.842.0"
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
@@ -3605,7 +3605,7 @@ __metadata:
     vitest: "npm:^3.2.4"
     winston: "npm:^3.17.0"
     winston-transport: "npm:^4.9.0"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3647,7 +3647,7 @@ __metadata:
     logform: "npm:^2.7.0"
     typescript: "npm:^5.8.3"
     winston: "npm:^3.17.0"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3711,7 +3711,7 @@ __metadata:
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3796,7 +3796,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.19"
+    "@types/lodash": "npm:^4.17.20"
     "@types/node": "npm:^22.15.34"
     "@types/yargs": "npm:^17.0.33"
     async: "npm:^3.2.6"
@@ -3820,7 +3820,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/lodash": "npm:^4.17.19"
+    "@types/lodash": "npm:^4.17.20"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^22.15.34"
     "@types/pg-cursor": "npm:^2.7.2"
@@ -3833,7 +3833,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -3843,12 +3843,12 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": "npm:^3.840.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.841.0"
-    "@aws-sdk/client-ec2": "npm:^3.841.0"
+    "@aws-sdk/client-ec2": "npm:^3.842.0"
     "@aws-sdk/client-ecr": "npm:^3.840.0"
-    "@aws-sdk/client-s3": "npm:^3.840.0"
+    "@aws-sdk/client-s3": "npm:^3.842.0"
     "@aws-sdk/client-sqs": "npm:^3.840.0"
     "@aws-sdk/credential-providers": "npm:^3.840.0"
-    "@aws-sdk/lib-storage": "npm:^3.840.0"
+    "@aws-sdk/lib-storage": "npm:^3.842.0"
     "@fortawesome/fontawesome-free": "npm:^6.7.2"
     "@js-temporal/polyfill": "npm:^0.5.1"
     "@node-saml/passport-saml": "npm:^5.0.1"
@@ -3914,7 +3914,7 @@ __metadata:
     "@types/jsdom": "npm:^21.1.7"
     "@types/json-stringify-safe": "npm:^5.0.3"
     "@types/klaw": "npm:^3.0.7"
-    "@types/lodash": "npm:^4.17.19"
+    "@types/lodash": "npm:^4.17.20"
     "@types/loopbench": "npm:^1.2.4"
     "@types/mdast": "npm:^4.0.4"
     "@types/memorystream": "npm:^0.3.4"
@@ -3943,8 +3943,8 @@ __metadata:
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@viz-js/viz": "npm:^3.14.0"
     "@web3-storage/parse-link-header": "npm:^3.1.0"
-    ace-builds: "npm:^1.43.0"
-    ace-code: "npm:^1.43.0"
+    ace-builds: "npm:^1.43.1"
+    ace-code: "npm:^1.43.1"
     ajv: "npm:^8.17.1"
     ansi_up: "npm:^6.0.6"
     archiver: "npm:^7.0.1"
@@ -4069,7 +4069,7 @@ __metadata:
     socket.io-client: "npm:^4.8.1"
     streamifier: "npm:^0.1.1"
     strip-ansi: "npm:^7.1.0"
-    stripe: "npm:^18.2.1"
+    stripe: "npm:^18.3.0"
     superjson: "npm:^2.2.2"
     tablesorter: "npm:^2.32.0"
     tar: "npm:^7.4.3"
@@ -4090,7 +4090,7 @@ __metadata:
     xml-formatter: "npm:^3.6.6"
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^22.0.0"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
     zod-to-json-schema: "npm:^3.24.6"
   languageName: unknown
   linkType: soft
@@ -4223,9 +4223,9 @@ __metadata:
   resolution: "@prairielearn/workspace-host@workspace:apps/workspace-host"
   dependencies:
     "@aws-sdk/client-ecr": "npm:^3.840.0"
-    "@aws-sdk/client-s3": "npm:^3.840.0"
+    "@aws-sdk/client-s3": "npm:^3.842.0"
     "@aws-sdk/credential-providers": "npm:^3.840.0"
-    "@aws-sdk/lib-storage": "npm:^3.840.0"
+    "@aws-sdk/lib-storage": "npm:^3.842.0"
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/cache": "workspace:^"
     "@prairielearn/config": "workspace:^"
@@ -4260,7 +4260,7 @@ __metadata:
     uuid: "npm:^11.1.0"
     vitest: "npm:^3.2.4"
     yargs-parser: "npm:^22.0.0"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -4293,7 +4293,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.67"
+    zod: "npm:^3.25.69"
   languageName: unknown
   linkType: soft
 
@@ -6080,10 +6080,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.17.19":
-  version: 4.17.19
-  resolution: "@types/lodash@npm:4.17.19"
-  checksum: 10c0/0d512e90a92c09b48ec0e46945876392d3ef60c0be7d023fdab22ecb0224a65ff4ed0b76c7acbf1c0152c27768aa4661ea7a1c3afb5b5ab13a50bda674a7c3f7
+"@types/lodash@npm:^4.17.20":
+  version: 4.17.20
+  resolution: "@types/lodash@npm:4.17.20"
+  checksum: 10c0/98cdd0faae22cbb8079a01a3bb65aa8f8c41143367486c1cbf5adc83f16c9272a2a5d2c1f541f61d0d73da543c16ee1d21cf2ef86cb93cd0cc0ac3bced6dd88f
   languageName: node
   linkType: hard
 
@@ -7075,17 +7075,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.43.0":
-  version: 1.43.0
-  resolution: "ace-builds@npm:1.43.0"
-  checksum: 10c0/df969c3d706272cc23fdb59b47b7ef04ee01cd6af11f90ab4a2dc244064a4120465d6a9dc4fd247fef77f9634f2b8dc0a81fae07fcf751b56b069013432e673b
+"ace-builds@npm:^1.43.1":
+  version: 1.43.1
+  resolution: "ace-builds@npm:1.43.1"
+  checksum: 10c0/c06bc475d7627e09bcd862d115a874a6d63bf4be4fc34d0bc19814d3c4ddce10007bf77a26a7efdd741a06a5e3efd1d14e7f36c209b952a77dd8a1d91a3212bf
   languageName: node
   linkType: hard
 
-"ace-code@npm:^1.43.0":
-  version: 1.43.0
-  resolution: "ace-code@npm:1.43.0"
-  checksum: 10c0/5a6fbf58fc2004744732ddb2d5490f5c97701bec0d11bb85e0d122fd27d6cbde53fe477c04bb0516fe63bf7f89d8739a47a4e49511d85160c77ae63b3987a6b1
+"ace-code@npm:^1.43.1":
+  version: 1.43.1
+  resolution: "ace-code@npm:1.43.1"
+  checksum: 10c0/ccf2d04d5020ef284932223680f69c5372568d389f804aacbcc4f215e7bef2b567fb70522593dc1c12158b78c847b67da0013ed51b74547d22b34c8fec1ce603
   languageName: node
   linkType: hard
 
@@ -16355,9 +16355,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stripe@npm:^18.2.1":
-  version: 18.2.1
-  resolution: "stripe@npm:18.2.1"
+"stripe@npm:^18.3.0":
+  version: 18.3.0
+  resolution: "stripe@npm:18.3.0"
   dependencies:
     qs: "npm:^6.11.0"
   peerDependencies:
@@ -16365,7 +16365,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/node":
       optional: true
-  checksum: 10c0/7edef67ca27bd4e84ac24eae4e10fa1d712392c08eec62aa6748c78241ebccc2a057651716a619fcaac1b70c5f08ba5fc5adf255d67462d5a441e3a96c0dc6c5
+  checksum: 10c0/ba8d048638c469b9938eee46f16ded4e7b2a4f48cf5e6d7b5a2f6e012249711e32d4b964d407179ef79cd7afbdb73f1a018ce6da14f20a8fd85d01bfca3224de
   languageName: node
   linkType: hard
 
@@ -17986,10 +17986,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.63, zod@npm:^3.25.67":
-  version: 3.25.67
-  resolution: "zod@npm:3.25.67"
-  checksum: 10c0/80a0cab3033272c4ab9312198081f0c4ea88e9673c059aa36dc32024906363729db54bdb78f3dc9d5529bd1601f74974d5a56c0a23e40c6f04a9270c9ff22336
+"zod@npm:^3.25.63, zod@npm:^3.25.69":
+  version: 3.25.69
+  resolution: "zod@npm:3.25.69"
+  checksum: 10c0/05381edd0485ddebbb0d35f9193747e186dd87a58fc4747f8d12c769a4eb0acc66403af153f478dc6f424d0778cf7c9b436bf304b0939cc1ffe225210c0c6d08
   languageName: node
   linkType: hard
 
