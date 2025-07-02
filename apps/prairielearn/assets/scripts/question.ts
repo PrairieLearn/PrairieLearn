@@ -33,7 +33,7 @@ onDocumentReady(() => {
   });
 
   document.addEventListener('show.bs.collapse', (e) => {
-    if (e.target?.classList.contains('js-submission-body')) {
+    if ((e.target as HTMLElement)?.classList.contains('js-submission-body')) {
       (e.target as HTMLElement)
         .closest('.card')
         ?.querySelector<HTMLDivElement>('.submission-header')
@@ -41,7 +41,7 @@ onDocumentReady(() => {
     }
   });
   document.addEventListener('hidden.bs.collapse', (e) => {
-    if (e.target?.classList.contains('js-submission-body')) {
+    if ((e.target as HTMLElement)?.classList.contains('js-submission-body')) {
       (e.target as HTMLElement)
         .closest('.card')
         ?.querySelector<HTMLDivElement>('.submission-header')
