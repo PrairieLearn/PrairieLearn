@@ -9,16 +9,16 @@
       {
         "comment": "Free response",
         "questions": [
-          { "id": "cos-sin-1", "manualPoints": 6},
-          { "id": "cosine-sine-2", "manualPoints": 6 },
+          { "id": "cos-sin-1", "manualPoints": 2},
+          { "id": "cosine-sine-2", "manualPoints": 4 },
           { "id": "piecewise-continuous_2", "manualPoints": 6 },
           { "id": "function-limit-1", "manualPoints": 5},
           { "id": "function-limit-2", "manualPoints": 5 },
           
           { "id": "derivative-1", "manualPoints": 5 },
-          { "id": "derivative-2", "manualPoints": 5 },
+          { "id": "derivative-2", "manualPoints": 6 },
           { "id": "derivative-3", "manualPoints": 5 },
-          { "id": "derivative-4", "manualPoints": 5 },
+          { "id": "derivative-4", "manualPoints": 4 },
           
           { "id": "implicit-differentiation", "manualPoints": 8 },
           
@@ -37,8 +37,8 @@
           
           { "id": "volume-of-solid", "manualPoints": 8 },
           
-          { "id": "derivative-ec", "manualPoints": 8 },
-          { "id": "car-approach", "manualPoints": 8 }
+          { "id": "derivative-ec", "manualPoints": 3 },
+          { "id": "car-approach", "manualPoints": 3 }
         ]
       }
     ]

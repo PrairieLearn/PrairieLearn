@@ -235,6 +235,7 @@ export async function generateSubmissions(
                 let col_found = false;
                 for (const rubric_item of rubric_items) {
                     if (rubric_item.description === col) {
+                        console.log('rubric_item', rubric_item);
                         pts_change += rubric_item.points;
                         selected_rubric_item_ids.push(rubric_item.id);
                         col_found = true;
@@ -245,6 +246,8 @@ export async function generateSubmissions(
                     throw new Error(`Rubric item with description "${col}" not found in rubric items for question ${question.qid}`);
                 }
             }
+
+            console.log('pts_change', pts_change);
 
             if (!instance_question.manual_rubric_id) {
                 throw new Error(`Instance question ${instance_question.instance_question_id} does not have a manual rubric id`);
@@ -257,8 +260,9 @@ export async function generateSubmissions(
                 throw new Error(`Instance question points not found for assessment instance ${new_assessment_instance_id}`);
             }
 
-            // const { modified_at_conflict, grading_job_id } =
-            await manualGrading.updateInstanceQuestionScore(
+            console.log('instance_question.max_points + pts_change', instance_question.max_points + pts_change);
+
+            const { modified_at_conflict, grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                 assessment.id,
                 instance_question.instance_question_id,
                 submission_id,
@@ -279,8 +283,12 @@ export async function generateSubmissions(
                 },
                 res.locals.authn_user.user_id,
             );
+
+            console.log('modified_at_conflict', modified_at_conflict, 'grading_job_id', grading_job_id);
+
+            console.log('instance question', instance_question)
             console.log('selected_rubric_item_ids', question.qid, selected_rubric_item_ids);
         }            
-        console.log('nameToSubmissionFolder: ', JSON.stringify(nameToSubmissionFolder, null, 2));
+        // console.log('nameToSubmissionFolder: ', JSON.stringify(nameToSubmissionFolder, null, 2));
     }
 }
