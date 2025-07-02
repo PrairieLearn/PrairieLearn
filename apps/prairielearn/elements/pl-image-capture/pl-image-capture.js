@@ -96,6 +96,7 @@
         retakeLocalCameraImageButton,
         confirmLocalCameraImageButton,
         cancelLocalCameraConfirmationButton,
+        useImageButton,
       });
 
       captureWithLocalCameraButton.addEventListener('click', () => {
@@ -743,6 +744,12 @@
         cropperHandle,
         cropperCanvas,
       });
+
+      if (!this.capturePreviewHeight) {
+        throw new Error(
+          'Capture preview height not set. Please ensure the capture preview image is loaded before starting crop/rotate.',
+        );
+      }
 
       cropperCanvas.style.height = this.capturePreviewHeight + 'px';
       cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
