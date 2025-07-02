@@ -231,6 +231,9 @@ export default tseslint.config([
   {
     files: ['exampleCourse/questions/**/question.html'],
     rules: {
+      // We prefer tags like `<img>` over `<img />`.
+      '@html-eslint/no-extra-spacing-attrs': 'error',
+      '@html-eslint/require-closing-tags': 'error',
       '@html-eslint/no-extra-spacing-text': 'off',
     },
     languageOptions: {

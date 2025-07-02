@@ -7,7 +7,7 @@
         <pl-3pointrod x1={{params.x1}} y1={{params.y1}}  x2={{params.x2}} y2={{params.y2}} x3={{params.x3}} y3={{params.y3}} label1="A" offsetx1="20" label2="B" offsety2="10" label3="C" offsety3="10"></pl-3pointrod>
         <pl-triangle x1={{params.xD}} y1={{params.yD}}  x2={{params.xE}} y2={{params.yE}} x3={{params.xF}} y3={{params.yF}}></pl-triangle>
         <pl-vector x1={{params.x2}} y1={{params.y2}} angle="90" anchor-is-tail="false" label="P" offsety="-80"></pl-vector>
-        <pl-arc-dimensions x1={{params.xD}} y1={{params.yD}} end-angle=0 start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10"></pl-arc-dimensions>
+        <pl-arc-dimensions x1={{params.xD}} y1={{params.yD}} end-angle="0" start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10"></pl-arc-dimensions>
         <pl-dimensions  x1={{params.x2}} y1={{params.y2}} width="{{params.a}}" angle="-180" dim-offset="50" label="a"></pl-dimensions>
         <pl-dimensions  x1={{params.x2}} y1={{params.y2}} width="{{params.b}}" angle="0" dim-offset="-50"  label="b"></pl-dimensions>
         <pl-dimensions  x1={{params.x1}} y1={{params.y1}} width="{{params.c}}" angle="-90" dim-offset="-30" label="c"></pl-dimensions>
@@ -34,7 +34,7 @@
 
     <pl-drawing-initial>
       <pl-3pointrod x1={{params.x1}} y1={{params.y1}}  x2={{params.x2}} y2={{params.y2}} x3={{params.x3}} y3={{params.y3}} label1="A" offsetx1="20" label2="B" offsety2="10" label3="C" offsety3="10"></pl-3pointrod>
-      <pl-arc-dimensions x1={{params.x3}} y1={{params.y3}} end-angle=0 start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10" radius=60 start-support-line="true" end-support-line="true"> </pl-arc-dimensions>
+      <pl-arc-dimensions x1={{params.x3}} y1={{params.y3}} end-angle="0" start-angle={{params.theta}} draw-start-arrow="true" label="\\theta" offsetx="10" radius="60" start-support-line="true" end-support-line="true"> </pl-arc-dimensions>
     </pl-drawing-initial>
 
     <pl-controls>
