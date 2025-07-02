@@ -1,20 +1,42 @@
+import clsx from 'clsx';
 import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
 
-import { AssessmentBadgeJsx } from '../../../components/AssessmentBadge.html.js';
+import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
 import {
-  AssessmentQuestionHeadersJsx,
-  AssessmentQuestionNumberJsx,
+  AssessmentQuestionHeaders,
+  AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.html.js';
 import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
 import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
 import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
-import type { Course } from '../../../lib/db-types.js';
+import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+
+function Title({
+  question,
+  hasCoursePermissionPreview,
+  urlPrefix,
+}: {
+  question: AssessmentQuestionRow;
+  hasCoursePermissionPreview: boolean;
+  urlPrefix: string;
+}) {
+  const title = (
+    <>
+      <AssessmentQuestionNumber question={question} />
+      {question.title}
+    </>
+  );
+  if (hasCoursePermissionPreview) {
+    return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
+  }
+  return title;
+}
 
 export function InstructorAssessmentQuestionsTable({
   course,
@@ -27,7 +49,7 @@ export function InstructorAssessmentQuestionsTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
 }: {
-  course: Course;
+  course: StaffCourse;
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   assessmentSetName: string;
@@ -38,7 +60,16 @@ export function InstructorAssessmentQuestionsTable({
   csrfToken: string;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
+  const [showResetModal, setShowResetModal] = useState(false);
 
+  const handleResetButtonClick = (questionId: string) => {
+    setResetAssessmentQuestionId(questionId);
+    setShowResetModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowResetModal(false);
+  };
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
     questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
@@ -70,19 +101,6 @@ export function InstructorAssessmentQuestionsTable({
     }
   }
 
-  function title(question: AssessmentQuestionRow) {
-    const title = (
-      <>
-        <AssessmentQuestionNumberJsx question={question} />
-        {question.title}
-      </>
-    );
-    if (hasCoursePermissionPreview) {
-      return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
-    }
-    return title;
-  }
-
   return (
     <>
       <div class="card mb-4">
@@ -107,17 +125,21 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th class="text-right">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {questions.map((question) => {
                 return (
                   <Fragment key={question.qid}>
-                    <AssessmentQuestionHeadersJsx question={question} nTableCols={nTableCols} />
+                    <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                     <tr>
                       <td>
-                        {title(question)}
+                        <Title
+                          question={question}
+                          hasCoursePermissionPreview={hasCoursePermissionPreview}
+                          urlPrefix={urlPrefix}
+                        />
                         <IssueBadgeJsx
                           urlPrefix={urlPrefix}
                           count={question.open_issue_count ?? 0}
@@ -153,11 +175,11 @@ export function InstructorAssessmentQuestionsTable({
                       <td>{question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol ? (
                         <td
-                          class={
+                          class={clsx(
                             question.assessment_question_advance_score_perc === 0
                               ? 'text-muted'
-                              : ''
-                          }
+                              : '',
+                          )}
                           data-testid="advance-score-perc"
                         >
                           {question.assessment_question_advance_score_perc}%
@@ -187,11 +209,11 @@ export function InstructorAssessmentQuestionsTable({
                             class="d-inline-block me-1"
                             key={`${question.qid}-${assessment.assessment_id}`}
                           >
-                            <AssessmentBadgeJsx urlPrefix={urlPrefix} assessment={assessment} />
+                            <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
                           </div>
                         ))}
                       </td>
-                      <td class="text-right">
+                      <td class="text-end">
                         <div class="dropdown js-question-actions">
                           <button
                             type="button"
@@ -209,7 +231,7 @@ export function InstructorAssessmentQuestionsTable({
                                 class="dropdown-item"
                                 data-bs-toggle="modal"
                                 data-bs-target="#resetQuestionVariantsModal"
-                                onClick={() => setResetAssessmentQuestionId(question.id)}
+                                onClick={() => handleResetButtonClick(question.id)}
                                 data-assessment-question-id={question.id}
                               >
                                 Reset question variants
@@ -233,6 +255,8 @@ export function InstructorAssessmentQuestionsTable({
       <ResetQuestionVariantsModal
         csrfToken={csrfToken}
         assessmentQuestionId={resetAssessmentQuestionId}
+        show={showResetModal}
+        onHide={handleModalClose}
       />
     </>
   );

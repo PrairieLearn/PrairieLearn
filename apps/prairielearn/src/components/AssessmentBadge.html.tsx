@@ -1,6 +1,6 @@
 import { renderHtml } from '../lib/preact-html.js';
 
-export function AssessmentBadgeJsx({
+export function AssessmentBadge({
   assessment,
   hideLink = false,
   urlPrefix,
@@ -38,7 +38,7 @@ export function AssessmentBadgeJsx({
     </a>
   );
 }
-export function AssessmentBadge({
+export function AssessmentBadgeHtml({
   assessment,
   hideLink = false,
   urlPrefix,
@@ -59,7 +59,7 @@ export function AssessmentBadge({
 )) {
   if (urlPrefix === undefined) {
     return renderHtml(
-      <AssessmentBadgeJsx
+      <AssessmentBadge
         assessment={assessment}
         hideLink={hideLink}
         plainUrlPrefix={plainUrlPrefix}
@@ -69,7 +69,7 @@ export function AssessmentBadge({
     ).toString();
   }
   return renderHtml(
-    <AssessmentBadgeJsx
+    <AssessmentBadge
       assessment={assessment}
       hideLink={hideLink}
       urlPrefix={urlPrefix ?? undefined}

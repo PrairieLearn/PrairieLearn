@@ -1,7 +1,7 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.html.js';
 import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
@@ -173,7 +173,7 @@ onDocumentReady(() => {
         (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
       )
       .map((assessment) =>
-        AssessmentBadge({ plainUrlPrefix, course_instance_id, assessment }).toString(),
+        AssessmentBadgeHtml({ plainUrlPrefix, course_instance_id, assessment }).toString(),
       )
       .join(' ');
   };
