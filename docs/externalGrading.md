@@ -63,7 +63,6 @@ External grading configuration is done on a per-question basis. All configuratio
 - `image`: The Docker image that should be used for the question. This can be any image specification that is understood by the `docker pull` command. This property is required.
 
 - `entrypoint`: The script or command line that will be run when your container starts. This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`). If this property is not provided, the default entrypoint of the Docker image will be used.
-
   - The `entrypoint` may also be provided with additional command line arguments. These may be provided either as a string (e.g., `"/path/to/entrypoint -h"`) or as an array, with each element corresponding to an argument (e.g., `["/path/to/entrypoint", "-h"]`).
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share a standard grading framework between many questions. This property is optional.
