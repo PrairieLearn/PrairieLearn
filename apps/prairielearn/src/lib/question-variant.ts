@@ -177,6 +177,10 @@ async function lockAssessmentInstanceForInstanceQuestion(
     { instance_question_id },
     IdSchema,
   );
+
+  console.log('assessment_instance_id', assessment_instance_id);
+
+
   if (assessment_instance_id == null) {
     throw new error.HttpStatusError(404, 'Instance question not found');
   }

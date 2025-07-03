@@ -1,0 +1,7 @@
+<question-panel>
+    <p>A ladder 10 feet long rests against a vertical wall. If the bottom of the ladder slides away from the wall at a rate of $\frac{1}{4}$ feet per second, how quickly (in radians per second) is <b>the angle between the ladder and the wall</b> increasing when the bottom of the ladder is 6 feet from the wall?</p>
+</question-panel>
+
+<p>Provide your final answer as the value of $\frac{d \theta}{dt}$, in $\frac{rad}{sec}$.</p>
+
+<pl-image-capture file-name="submission.jpeg"></pl-image-capture>

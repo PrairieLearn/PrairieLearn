@@ -1,0 +1,12 @@
+<question-panel>
+  <p>Find the absolute maximum and minimum values of the function</p>
+  <p>$f(x) = 2x^3-3x^2-12x+1$</p>
+  <p>on the interval $[-2, 3]$.</p>
+</question-panel>
+
+<p>
+  Ensure that your final answer contains the <b>absolute maximum value</b> and
+  <b>absolute minimum value</b> of the function. Show all intermediate steps.
+</p>
+
+<pl-image-capture file-name="8.jpeg"></pl-image-capture>

@@ -184,17 +184,17 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await selectClosestSubmissionInfo({
-        submission_id: submission.id,
-        assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
-        limit: 5,
-      });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
-      for (const example of example_submissions) {
-        gradedExampleInfo += `\n- ${example.instance_question_id}`;
-      }
-      job.info(gradedExampleInfo);
+      // const example_submissions = await selectClosestSubmissionInfo({
+      //   submission_id: submission.id,
+      //   assessment_question_id: assessment_question.id,
+      //   embedding: submission_embedding.embedding,
+      //   limit: 5,
+      // });
+      // let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
+      // for (const example of example_submissions) {
+      //   gradedExampleInfo += `\n- ${example.instance_question_id}`;
+      // }
+      // job.info(gradedExampleInfo);
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
@@ -202,7 +202,7 @@ export async function aiGrade({
         questionPrompt,
         submission_text,
         submitted_answer: submission.submitted_answer,
-        example_submissions,
+        example_submissions: [],
         rubric_items,
       });
 

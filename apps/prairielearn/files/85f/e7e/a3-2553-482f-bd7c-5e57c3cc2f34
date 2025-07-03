@@ -1,0 +1,10 @@
+<pl-question-panel>
+    <p>Consider the function $g(x) = 3^{8x}+ln(15x)-tan(x^2+1) $. Find its derivative $g'(x)$.</p>
+</pl-question-panel>
+
+<pl-image-capture file-name="f-x-graph.JPEG"></pl-image-capture>
+
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

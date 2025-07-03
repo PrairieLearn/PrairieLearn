@@ -36,6 +36,59 @@ onDocumentReady(() => {
 
   window.gradersList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+
+    if (data) {
+      // Compute the number of true positives, true negatives, false positive, and false negative
+      const confusionMatrix = {
+        truePositives: 0,
+        falsePositives: 0,
+        falseNegatives: 0,
+      }
+
+      for (const row of data) {
+        if (row.ai_grading_status === 'LatestRubric') {
+          if (row.rubric_similarity) {
+            for (const item of row.rubric_similarity) {
+              if (item.true_positive) {
+                confusionMatrix.truePositives++;
+              } 
+            }
+          }
+          if (row.rubric_difference) {
+            for (const difference of row.rubric_difference) {
+              if (difference.false_positive) {
+                confusionMatrix.falsePositives++;
+              } else {
+                confusionMatrix.falseNegatives++;
+              }
+            }
+          }
+        }
+      }
+      console.log('Confusion matrix', confusionMatrix);
+
+      const precision = confusionMatrix.truePositives / (confusionMatrix.truePositives + confusionMatrix.falsePositives);
+      const recall = confusionMatrix.truePositives / (confusionMatrix.truePositives + confusionMatrix.falseNegatives);
+      const f1score = 2 * (precision * recall) / (precision + recall);
+
+      // const meanAgreementSpan = document.getElementById('mean-agreement');
+      const f1ScoreSpan = document.getElementById('f1-score');
+      const precisionSpan = document.getElementById('precision');
+      const recallSpan = document.getElementById('recall');
+
+      if (f1ScoreSpan) {
+        f1ScoreSpan.textContent = f1score.toFixed(2);
+      }
+
+      if (precisionSpan) {
+        precisionSpan.textContent = precision.toFixed(2);
+      }
+
+      if (recallSpan) {
+        recallSpan.textContent = recall.toFixed(2);
+      } 
+    }
+
     const graders = data.flatMap((row) =>
       (row.ai_grading_status !== 'None'
         ? [generateAiGraderName(row.ai_grading_status)]

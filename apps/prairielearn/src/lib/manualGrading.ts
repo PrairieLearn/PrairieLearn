@@ -393,6 +393,8 @@ export async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
+    console.log('rubric id', rubric_id, 'rubric items', rubric_items?.map((item) => item.rubric_item_id) || []);
+
     const sum_rubric_item_points = _.sum(
       rubric_items?.map(
         (item) =>
@@ -401,12 +403,15 @@ export async function insertRubricGrading(
             0),
       ),
     );
+
     const computed_points =
       Math.min(
         Math.max(rubric_data.starting_points + sum_rubric_item_points, rubric_data.min_points),
         (rubric_data.replace_auto_points ? max_points : max_manual_points) +
           rubric_data.max_extra_points,
       ) + Number(adjust_points || 0);
+
+    console.log('rubric_data', rubric_item_data, rubric_data, sum_rubric_item_points, max_points, max_manual_points, adjust_points);
 
     const rubric_grading_id = await sqldb.queryRow(
       sql.insert_rubric_grading,
@@ -535,6 +540,9 @@ export async function updateInstanceQuestionScore(
         score?.manual_rubric_data?.applied_rubric_items || [],
         score?.manual_rubric_data?.adjust_points ?? 0,
       );
+
+      console.log('manual_rubric_grading', manual_rubric_grading);
+
       score.manual_points =
         manual_rubric_grading.computed_points -
         (manual_rubric_grading.replace_auto_points

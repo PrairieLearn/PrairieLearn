@@ -1,0 +1,6 @@
+<question-panel>
+  <p>Find the derivative of the function below.</p>
+</question-panel>
+
+<p>$g(x) = 3^{8x} + ln(15x)-tan(x^2+1)$</p>
+<pl-image-capture file-name="1b.jpeg"></pl-image-capture>
