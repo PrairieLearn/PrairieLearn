@@ -3597,7 +3597,7 @@ __metadata:
     fs-extra: "npm:^11.3.0"
     logform: "npm:^2.7.0"
     nodemon: "npm:^3.1.10"
-    shlex: "npm:^2.1.2"
+    shlex: "npm:^3.0.0"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
@@ -4063,7 +4063,7 @@ __metadata:
     selector-set: "npm:^1.1.5"
     serve-favicon: "npm:^2.5.1"
     set-cookie-parser: "npm:^2.7.1"
-    shlex: "npm:^2.1.2"
+    shlex: "npm:^3.0.0"
     showdown: "npm:^2.1.0"
     socket.io: "npm:^4.8.1"
     socket.io-adapter: "npm:^2.5.5"
@@ -4255,7 +4255,7 @@ __metadata:
     minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.10"
-    shlex: "npm:^2.1.2"
+    shlex: "npm:^3.0.0"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
@@ -15769,10 +15769,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shlex@npm:^2.1.2":
-  version: 2.1.2
-  resolution: "shlex@npm:2.1.2"
-  checksum: 10c0/f3f14f65311eba2f24a7d00bf3682b56c052c4088f3c3c94c6d1dcc46c1951fe662edcd85e62933095ce1a6987fe2fb56e1aedb18c2fbe593c23b1f1013390b4
+"shlex@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "shlex@npm:3.0.0"
+  checksum: 10c0/7f3b450c4d31a2cd91ec0523abe8dc5b34f8aa1e79189f3ccd73c4517935f45dcac23a6ba475c8ad75cbd490039098fa074b34d3ddcb0182c10273c6e5b44988
   languageName: node
   linkType: hard
 
