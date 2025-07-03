@@ -80,11 +80,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_trig = pl.get_boolean_attrib(
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
-        simplify_expr = pl.get_boolean_attrib(
-            element,
-            "display-simplified-expression",
-            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
-        )
         # Validate that the answer can be parsed before storing
         try:
             psu.convert_string_to_sympy(
