@@ -256,7 +256,7 @@ export function InstructorAssessmentQuestionsTable({
         csrfToken={csrfToken}
         assessmentQuestionId={resetAssessmentQuestionId}
         show={showResetModal}
-        onHide={handleModalClose}
+        onHide={() => setShowResetModal(false)}
       />
     </>
   );
