@@ -4224,7 +4224,9 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.34"
+    "@types/picomatch": "npm:^4.0.0"
     debounce: "npm:^2.2.0"
+    picomatch: "npm:^4.0.2"
     typescript: "npm:^5.8.3"
     vite: "npm:^7.0.0"
   languageName: unknown
@@ -6334,6 +6336,13 @@ __metadata:
     pg-protocol: "npm:*"
     pg-types: "npm:^2.2.0"
   checksum: 10c0/8d16660c9a4f050d6d5e391c59f9a62e9d377a2a6a7eb5865f8828082dbdfeab700fd707e585f42d67b29e796b32863aea5bd6d5cbb8ceda2d598da5d0c61693
+  languageName: node
+  linkType: hard
+
+"@types/picomatch@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "@types/picomatch@npm:4.0.0"
+  checksum: 10c0/6455234501d3829301cc7291d5322b1737fd96fae7f0617c3b3ec97a58c41a3a3f40df65117714e502c245f603184a4511883c74727b7a9f9957b3fec0777e97
   languageName: node
   linkType: hard
 

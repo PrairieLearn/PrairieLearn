@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { exit } from 'process';
 
 import debounce from 'debounce';
+import picomatch from 'picomatch';
 import type { ConfigEnv, Connect, Plugin, UserConfig, ViteDevServer } from 'vite';
 
 const env: ConfigEnv = { command: 'serve', mode: '' };
@@ -51,16 +52,29 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     });
   }
 
-  if (config.watchFileChanges) {
-    const debounceDelayMs = 500;
+  const extraWatchPaths = config.extraWatchPaths ?? [];
+  const extraWatchPathMatchers = extraWatchPaths.map((path) => picomatch(path));
+  server.watcher.add(extraWatchPaths);
 
-    server.watcher.on(
-      'change',
-      debounce(async () => {
-        await _loadApp(config);
-      }, debounceDelayMs),
-    );
-  }
+  const debouncedLoadApp = debounce(async () => await _loadApp(config), 500, { immediate: true });
+  const debouncedRestart = debounce(() => server.restart(), 500, { immediate: true });
+
+  // We'll manually react to changes in two cases:
+  //
+  // 1. If the file matches any of the extra watch paths, we'll immediately restart
+  //    the server. These files aren't part of Vite's module graph, so we can't rely
+  //    on any automatic reloading. This also means we need to restart the entire
+  //    server, as we can't just reload the module.
+  //
+  // 2. If we're configured to watch file changes, we'll reload the app (root) module.
+  //    This gives us a head start over waiting for the next request to trigger a reload.
+  server.watcher.on('change', (file) => {
+    if (extraWatchPathMatchers.some((matcher) => matcher(file))) {
+      debouncedRestart();
+    } else if (config.watchFileChanges) {
+      debouncedLoadApp();
+    }
+  });
 
   return async function (req: IncomingMessage, res: ServerResponse): Promise<void> {
     const app = await _loadApp(config);
@@ -91,6 +105,7 @@ interface VitePluginExpressConfig {
   exportName?: string;
   outputFormat?: ModuleFormat;
   watchFileChanges?: boolean;
+  extraWatchPaths?: string[];
 }
 
 declare interface ViteConfig extends UserConfig {
@@ -105,6 +120,7 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
     initAppOnBoot: cfg.initAppOnBoot ?? false,
     outputFormat: cfg.outputFormat ?? 'cjs',
     watchFileChanges: cfg.watchFileChanges ?? false,
+    extraWatchPaths: cfg.extraWatchPaths ?? [],
   };
 
   const plugins: Plugin[] = [
