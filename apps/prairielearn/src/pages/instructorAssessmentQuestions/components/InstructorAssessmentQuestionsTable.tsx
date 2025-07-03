@@ -67,9 +67,6 @@ export function InstructorAssessmentQuestionsTable({
     setShowResetModal(true);
   };
 
-  const handleModalClose = () => {
-    setShowResetModal(false);
-  };
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
     questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
