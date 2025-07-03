@@ -444,8 +444,7 @@
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className =
-        'js-capture-preview img-fluid rounded border bg-body-secondary w-100';
+      capturePreview.className = 'capture-preview img-fluid rounded border bg-body-secondary w-100';
 
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
@@ -858,6 +857,7 @@
       }
 
       this.cropper.getCropperImage().$resetTransform();
+      this.cropper.getCropperImage().$center('contain');
       this.cropper.getCropperSelection().$reset();
 
       this.baseRotationAngle = 0;
