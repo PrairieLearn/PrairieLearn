@@ -4224,7 +4224,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/node": "npm:^22.15.29"
+    "@types/node": "npm:^22.15.34"
     debounce: "npm:^2.2.0"
     typescript: "npm:^5.8.3"
     vite: "npm:^7.0.0"
