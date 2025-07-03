@@ -6,7 +6,7 @@ build-sequential:
 	@yarn turbo run --concurrency 1 build
 
 venv-setup:
-	@[ -f .venv/bin/python ] || uv venv --python-preference only-system --python 3.10 --seed .venv || \
+	@[ -f .venv/bin/python3 ] || uv venv --python-preference only-system --python 3.10 --seed .venv || \
 		python3 -m venv .venv
 
 python-deps: venv-setup
