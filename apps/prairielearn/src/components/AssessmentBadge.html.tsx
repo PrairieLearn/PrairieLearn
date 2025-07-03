@@ -38,6 +38,7 @@ export function AssessmentBadge({
     </a>
   );
 }
+
 export function AssessmentBadgeHtml({
   assessment,
   hideLink = false,
