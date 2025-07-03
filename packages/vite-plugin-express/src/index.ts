@@ -2,10 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { exit } from 'process';
 
 import debounce from 'debounce';
-import debug from 'debug';
 import type { ConfigEnv, Connect, Plugin, UserConfig, ViteDevServer } from 'vite';
-
-export const debugServer = createDebugger('vite:express-plugin:server');
 
 const env: ConfigEnv = { command: 'serve', mode: '' };
 
@@ -83,13 +80,6 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   };
 };
 
-function createDebugger(ns: string) {
-  const log = debug(ns);
-  return (msg: string, ...args: any[]) => {
-    log(msg, ...args);
-  };
-}
-
 const PLUGIN_NAME = 'vite-plugin-express';
 
 type InternalModuleFormat = 'amd' | 'cjs' | 'es' | 'iife' | 'system' | 'umd';
@@ -121,7 +111,7 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
     {
       name: PLUGIN_NAME,
       config: () => {
-        const plugincConfig: UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig } = {
+        const pluginConfig: UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig } = {
           build: {
             ssr: config.appPath,
             rollupOptions: {
@@ -140,7 +130,7 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
           VitePluginExpressConfig: config,
         };
 
-        return plugincConfig;
+        return pluginConfig;
       },
       configureServer: async (server) => {
         server.middlewares.use(await createMiddleware(server));

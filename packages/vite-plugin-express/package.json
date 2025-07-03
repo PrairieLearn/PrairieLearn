@@ -14,14 +14,11 @@
   },
   "dependencies": {
     "debounce": "^2.2.0",
-    "debug": "^4.4.1",
-    "express": "^4",
     "vite": "^7.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/debug": "^4.1.12",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.34",
     "typescript": "^5.8.3"
   }
 }

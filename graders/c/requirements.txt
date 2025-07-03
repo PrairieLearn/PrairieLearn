@@ -1,5 +1,5 @@
 clang==18.1.8 # Major version must match the version of clang installed in the Dockerfile
-matplotlib==3.10.1
+matplotlib==3.10.3
 numpy==1.26.4
-sympy==1.13.3
-lxml==5.4.0
+sympy==1.14.0
+lxml==6.0.0

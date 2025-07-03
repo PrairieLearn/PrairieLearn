@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres",
-  "version": "2.1.14",
+  "version": "2.1.15",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,22 +15,22 @@
   },
   "dependencies": {
     "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.17",
+    "@types/lodash": "^4.17.20",
     "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
-    "pg": "^8.16.0",
-    "pg-cursor": "^2.15.0",
-    "pg-pool": "^3.10.0",
-    "pg-protocol": "^1.10.0",
-    "zod": "^3.25.51"
+    "pg": "^8.16.3",
+    "pg-cursor": "^2.15.3",
+    "pg-pool": "^3.10.1",
+    "pg-protocol": "^1.10.3",
+    "zod": "^3.25.69"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/multipipe": "^3.0.5",
-    "@types/node": "^22.15.29",
-    "@vitest/coverage-v8": "^3.2.2",
-    "tsx": "^4.19.4",
+    "@types/node": "^22.15.34",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.2"
+    "vitest": "^3.2.4"
   }
 }

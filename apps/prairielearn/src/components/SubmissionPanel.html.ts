@@ -304,10 +304,10 @@ function SubmissionStatusBadge({
             (Math.abs(manualPoints) > 1 ? ' pts' : ' pt');
         const badgeType =
           manualPoints <= 0
-            ? 'badge-danger'
+            ? 'text-bg-danger'
             : manualPoints >= (assessment_question?.max_manual_points ?? 0)
-              ? 'badge-success'
-              : 'badge-warning';
+              ? 'text-bg-success'
+              : 'text-bg-warning';
         manualGradingBadge = html`
           <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
         `;

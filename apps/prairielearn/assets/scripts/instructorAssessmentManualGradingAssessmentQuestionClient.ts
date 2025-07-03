@@ -26,7 +26,6 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    aiGradingEnabled,
     aiGradingMode,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -293,35 +292,10 @@ onDocumentReady(() => {
             scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
           visible: !aiGradingMode,
         },
-        {
-          field: 'last_grader',
-          title: 'Graded by',
-          visible: !aiGradingMode,
-          filterControl: 'select',
-          filterCustomSearch: (text: string, value: string) => {
-            if (text === generateAiGraderName().toLowerCase()) {
-              return value.includes('js-custom-search-ai-grading');
-            }
-            return null;
-          },
-          formatter: (value: string, row: InstanceQuestionRow) =>
-            value
-              ? row.is_ai_graded
-                ? html`
-                    <span
-                      class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
-                    >
-                      ${generateAiGraderName()}
-                    </span>
-                  `.toString()
-                : row.last_grader_name
-              : '&mdash;',
-        },
-        aiGradingEnabled
+        aiGradingMode
           ? {
               field: 'ai_graded',
               title: 'Graded by',
-              visible: aiGradingMode,
               filterControl: 'select',
               formatter: (value: boolean, row: InstanceQuestionRow) => {
                 const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
@@ -354,8 +328,30 @@ onDocumentReady(() => {
                 }
               },
             }
-          : null,
-        aiGradingEnabled
+          : {
+              field: 'last_grader',
+              title: 'Graded by',
+              filterControl: 'select',
+              filterCustomSearch: (text: string, value: string) => {
+                if (text === generateAiGraderName().toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading');
+                }
+                return null;
+              },
+              formatter: (value: string, row: InstanceQuestionRow) =>
+                value
+                  ? row.is_ai_graded
+                    ? html`
+                        <span
+                          class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
+                        >
+                          ${generateAiGraderName()}
+                        </span>
+                      `.toString()
+                    : row.last_grader_name
+                  : '&mdash;',
+            },
+        aiGradingMode
           ? {
               field: 'rubric_difference',
               title: 'AI agreement',
