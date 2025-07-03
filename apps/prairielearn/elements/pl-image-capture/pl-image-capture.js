@@ -445,7 +445,8 @@
 
       const capturePreview = document.createElement('img');
       capturePreview.className =
-        'js-capture-preview img-fluid rounded border border-secondary w-100';
+        'js-capture-preview img-fluid rounded border bg-body-secondary w-100';
+
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
