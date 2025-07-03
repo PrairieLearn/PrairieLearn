@@ -4223,7 +4223,6 @@ __metadata:
   resolution: "@prairielearn/vite-plugin-express@workspace:packages/vite-plugin-express"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/debug": "npm:^4.1.12"
     "@types/node": "npm:^22.15.34"
     debounce: "npm:^2.2.0"
     typescript: "npm:^5.8.3"
