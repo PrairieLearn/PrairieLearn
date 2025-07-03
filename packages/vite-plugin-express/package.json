@@ -14,8 +14,6 @@
   },
   "dependencies": {
     "debounce": "^2.2.0",
-    "debug": "^4.4.1",
-    "express": "^4",
     "vite": "^7.0.0"
   },
   "devDependencies": {

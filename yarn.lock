@@ -4216,8 +4216,6 @@ __metadata:
     "@types/debug": "npm:^4.1.12"
     "@types/node": "npm:^22.15.29"
     debounce: "npm:^2.2.0"
-    debug: "npm:^4.4.1"
-    express: "npm:^4"
     typescript: "npm:^5.8.3"
     vite: "npm:^7.0.0"
   languageName: unknown
@@ -10064,7 +10062,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4, express@npm:^4.21.2":
+"express@npm:^4.21.2":
   version: 4.21.2
   resolution: "express@npm:4.21.2"
   dependencies:
