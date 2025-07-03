@@ -17,6 +17,7 @@ from typing import Any, Literal, TypedDict, TypeGuard, cast
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
+    evaluateFalse,
     implicit_multiplication_application,
     standard_transformations,
     stringify_expr,
@@ -430,7 +431,11 @@ def evaluate(
 
 
 def evaluate_with_source(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    simplify_expression: bool = True,
 ) -> tuple[sympy.Expr, str]:
     """Evaluate a SymPy expression string with a given set of locals.
 
@@ -485,6 +490,9 @@ def evaluate_with_source(
 
     ast_check_str(code, parsed_locals_to_eval)
 
+    if not simplify_expression:
+        code = compile(evaluateFalse(code), "<string>", "eval")
+
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
@@ -504,6 +512,7 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
@@ -518,6 +527,7 @@ def convert_string_to_sympy(
         allow_hidden: Whether to allow hidden variables (like pi and e).
         allow_complex: Whether to allow complex numbers (like i).
         allow_trig_functions: Whether to allow trigonometric functions.
+        simplify_expression: Whether to simplify the expression during conversion by evaluating it.
         custom_functions: A list of custom function names that are allowed in the expression.
         assumptions: A dictionary of assumptions for variables in the expression.
 
@@ -537,6 +547,7 @@ def convert_string_to_sympy(
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
     )[0]
@@ -549,6 +560,7 @@ def convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> tuple[sympy.Expr, str]:
@@ -635,7 +647,12 @@ def convert_string_to_sympy_with_source(
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)
+    return evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        simplify_expression=simplify_expression,
+    )
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
@@ -709,6 +726,7 @@ def json_to_sympy(
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
 ) -> sympy.Expr:
     """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
@@ -733,6 +751,7 @@ def json_to_sympy(
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
     )
