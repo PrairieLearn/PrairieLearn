@@ -73,9 +73,7 @@ export function AssessmentBadgeHtml({
     <AssessmentBadge
       assessment={assessment}
       hideLink={hideLink}
-      urlPrefix={urlPrefix ?? undefined}
-      plainUrlPrefix={plainUrlPrefix}
-      course_instance_id={course_instance_id}
+      urlPrefix={urlPrefix}
       publicURL={publicURL}
     />,
   ).toString();
