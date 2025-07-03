@@ -24,7 +24,6 @@ RUN PIP_NO_CACHE_DIR=1 make python-deps
 #
 # We copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-#
 COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
