@@ -9,6 +9,6 @@
 <pl-manual-grading-only>
     <p><b>Solution</b></p>
     
-    <p>$10cos(\pi)+4sin(-\pi/3) = 10(-1) + 4(\frac{-\sqrt{3}}{2})$</p>
-    <p>$10cos(\pi)+4sin(-\pi/3) = -10 + \frac{-4\sqrt{3}}{2} = -10 - 2\sqrt{3}$</p>
+    <p>$10(-1) + 4(\frac{-\sqrt{3}}{2})$</p>
+    <p>$-10 - 2\sqrt{3}$</p>
 </pl-manual-grading-only>
