@@ -123,13 +123,13 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
+    const gradingJobMapping = await selectGradingJobsInfo(all_instance_questions);
+
     const instance_questions = all_instance_questions.filter((instance_question) => {
       if (mode === 'human_graded') {
         // Things that have been graded by a human
-        return (
-          !instance_question.requires_manual_grading &&
-          instance_question.status !== 'unanswered' &&
-          !instance_question.is_ai_graded
+        return (gradingJobMapping[instance_question.id] ?? []).find(
+          (job) => job.grading_method === 'Manual',
         );
       } else if (mode === 'ungraded') {
         // Things that require grading
@@ -145,8 +145,6 @@ export async function aiGrade({
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
-
-    const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 
     let error_count = 0;
     // Grade each instance question
