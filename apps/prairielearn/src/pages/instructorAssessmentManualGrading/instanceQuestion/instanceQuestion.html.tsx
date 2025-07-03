@@ -101,7 +101,7 @@ export function InstanceQuestion({
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
-            <div class="card-header bg-info text-white">Grading</div>
+            <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
               ${GradingPanel({ resLocals, context: 'main', graders })}
             </div>

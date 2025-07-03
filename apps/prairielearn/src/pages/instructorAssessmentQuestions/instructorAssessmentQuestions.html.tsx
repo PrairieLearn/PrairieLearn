@@ -140,7 +140,7 @@ function AssessmentQuestionsTable({
             <th>Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
-            <th class="text-right">Actions</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -227,7 +227,7 @@ function AssessmentQuestionsTable({
                     AssessmentBadge({ urlPrefix, assessment }),
                   )}
                 </td>
-                <td class="text-right">
+                <td class="text-end">
                   <div class="dropdown js-question-actions">
                     <button
                       type="button"
