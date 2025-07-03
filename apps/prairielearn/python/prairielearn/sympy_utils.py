@@ -12,6 +12,7 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
+from types import CodeType
 from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
@@ -436,7 +437,7 @@ def evaluate_with_source(
     *,
     allow_complex: bool = False,
     simplify_expression: bool = True,
-) -> tuple[sympy.Expr, str]:
+) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
     Returns:
@@ -563,7 +564,7 @@ def convert_string_to_sympy_with_source(
     simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
-) -> tuple[sympy.Expr, str]:
+) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
