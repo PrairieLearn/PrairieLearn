@@ -169,7 +169,7 @@ export async function calculateAiGradingStats(
   return stats;
 }
 
-async function selectGradingJobsInfo<T extends { id: string }>(
+export async function selectGradingJobsInfo<T extends { id: string }>(
   instance_questions: T[],
 ): Promise<Record<string, GradingJobInfo[]>> {
   const grading_jobs = await queryRows(
