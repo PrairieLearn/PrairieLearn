@@ -107,7 +107,7 @@ If you develop code with VSCode, running these shouldn't be necessary, as we pro
 
 ## Updating dependencies
 
-If you switch branches, pull new code, or edit Python dependencies in the `images/plbase` directory, you will need to update the dependencies.
+If you switch branches, pull new code, or edit Python dependencies, you will need to update the dependencies.
 
 ```sh
 make deps
