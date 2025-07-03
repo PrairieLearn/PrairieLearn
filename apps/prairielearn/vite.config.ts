@@ -17,6 +17,7 @@ export default defineConfig({
       exportName: 'viteExpressApp',
       initAppOnBoot: true,
       watchFileChanges: true,
+      extraWatchPaths: ['**/*.sql'],
     }),
   ],
 });
