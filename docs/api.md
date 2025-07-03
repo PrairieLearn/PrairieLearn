@@ -1,6 +1,6 @@
 # API
 
-PrairieLearn contains a limited read-only API for use by instructors that allows programmatic access to assessments, assessment instances, and submissions.
+PrairieLearn contains a limited API for use by instructors that allows programmatic access to assessments, assessment instances, and submissions.
 
 ## API Authentication
 
@@ -10,6 +10,16 @@ Provide your token via the `Private-Token` header:
 
 ```sh
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+```
+
+## Endpoint HTTP methods
+
+API endpoints require either a [`GET` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET) or a [`POST` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST). A `GET` request retrieves information from PrairieLearn, such as gradebook information. A `POST` request asks PrairieLearn to perform an action, such as syncing a course GitHub repository. For `GET` requests, you can follow the format in the above example.
+
+Here is an example of using `curl` for a `POST` request:
+
+```sh
+curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
 ## Example access script
@@ -107,3 +117,21 @@ GET /pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assess
 ```text
 GET /pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id
 ```
+
+### Course sync
+
+#### Start a course sync
+
+```text
+POST /pl/api/v1/course/:course_id/sync
+```
+
+Returns a `job_sequence_id` that can be used to check on the sync job's status.
+
+#### Check course sync status
+
+```text
+GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
+```
+
+Returns the status and output of the sync job.
