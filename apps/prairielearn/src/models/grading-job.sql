@@ -96,6 +96,20 @@ WITH
       grading_job_data AS gjd
     RETURNING
       gj.*
+  ),
+  updated_instance_question AS (
+    -- If the variant is associated with an instance question, update its
+    -- status. This is a no-op for instructor and public variants.
+    UPDATE instance_questions AS iq
+    SET
+      status = 'grading',
+      modified_at = now()
+    FROM
+      new_grading_job AS gj
+      JOIN submissions AS s ON (s.id = gj.submission_id)
+      JOIN variants AS v ON (v.id = s.variant_id)
+    WHERE
+      iq.id = v.instance_question_id
   )
 SELECT
   gj.*,

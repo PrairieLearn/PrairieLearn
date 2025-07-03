@@ -151,7 +151,7 @@ convention = "google"
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
 # Issues rebuilding workspace
-"workspaces/jupyterlab-python/jupyter_server_config.py" = ["PLW1508"]
+"workspaces/jupyterlab-base/jupyter_server_config.py" = ["PLW1508"]
 
 [tool.ruff.lint.pydoclint]
 # Skip docstrings which fit on a single line.
