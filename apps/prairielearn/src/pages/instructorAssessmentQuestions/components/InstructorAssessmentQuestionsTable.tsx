@@ -51,7 +51,7 @@ export function InstructorAssessmentQuestionsTable({
 }: {
   course: StaffCourse;
   questions: AssessmentQuestionRow[];
-  assessmentType: string;
+  assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
   assessmentNumber: number;
   urlPrefix: string;
