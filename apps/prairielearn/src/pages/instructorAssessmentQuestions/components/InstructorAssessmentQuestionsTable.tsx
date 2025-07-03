@@ -1,6 +1,7 @@
 import clsx from 'clsx';
-import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
+
+import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
 import {
@@ -15,6 +16,7 @@ import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
 
+import { EditQuestionModal } from './EditQuestionModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -38,6 +40,61 @@ function Title({
   return title;
 }
 
+function EditModeButtons({
+  csrfToken,
+  origHash,
+  questions,
+  editMode,
+  setEditMode,
+}: {
+  csrfToken: string;
+  origHash: string;
+  questions: Record<string, any>;
+  editMode: boolean;
+  setEditMode: (editMode: boolean) => void;
+}) {
+  if (!editMode) {
+    return (
+      <button class="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
+        <i class="fa fa-edit" aria-hidden="true"></i> Edit questions
+      </button>
+    );
+  }
+  return (
+    <form method="POST">
+      <input type="hidden" name="__action" value="save_topics" />
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="orig_hash" value={origHash} />
+      <input type="hidden" name="topics" value={JSON.stringify(questions)} />
+      <span class="js-edit-mode-buttons">
+        <button class="btn btn-sm btn-light mx-1" type="submit">
+          <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+        </button>
+        <button class="btn btn-sm btn-light" type="button" onClick={() => window.location.reload()}>
+          Cancel
+        </button>
+      </span>
+    </form>
+  );
+}
+
+const emptyQuestion: AssessmentQuestionRow = {
+  qid: '',
+  course_id: '',
+  course_sharing_name: '',
+  question_id: '',
+  title: '',
+  topic: '',
+  tags: [],
+  max_auto_points: null,
+  max_manual_points: null,
+  points_list: null,
+  init_points: null,
+  assessment_question_advance_score_perc: 0,
+  mean_question_score: null,
+  number_submissions_hist: null,
+};
+
 export function InstructorAssessmentQuestionsTable({
   course,
   questions,
@@ -48,28 +105,57 @@ export function InstructorAssessmentQuestionsTable({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   csrfToken,
+  origHash,
 }: {
   course: StaffCourse;
   questions: AssessmentQuestionRow[];
-  assessmentType: string;
+  assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
   assessmentNumber: number;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
+  origHash: string;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedQuestion, setSelectedQuestion] = useState<AssessmentQuestionRow>(emptyQuestion);
+  const [questionState, setQuestionState] = useState<AssessmentQuestionRow[]>(questions);
 
   const handleResetButtonClick = (questionId: string) => {
     setResetAssessmentQuestionId(questionId);
     setShowResetModal(true);
   };
 
-  const handleModalClose = () => {
+  const handleResetModalClose = () => {
     setShowResetModal(false);
   };
+
+  const handleEditQuestion = (question) => {
+    setSelectedQuestion(question);
+    console.log(selectedQuestion);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+  };
+
+  const handleUpdateQuestion = (updatedQuestion: AssessmentQuestionRow) => {
+    console.log(updatedQuestion);
+    setQuestionState((prevState) =>
+      prevState.map((q) => (q.qid === updatedQuestion.qid ? updatedQuestion : q)),
+    );
+    handleCloseEditModal();
+  };
+
+  const handleDeleteQuestion = ({ qid }: { qid: string | null }) => {
+    setQuestionState((prevState) => prevState.filter((q) => q.qid !== qid));
+  };
+
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
     questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
@@ -108,11 +194,36 @@ export function InstructorAssessmentQuestionsTable({
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
+          <div class="ms-auto">
+            {hasCourseInstancePermissionEdit && origHash ? (
+              <EditModeButtons
+                csrfToken={csrfToken}
+                origHash={origHash}
+                questions={questions}
+                editMode={editMode}
+                setEditMode={setEditMode}
+              />
+            ) : (
+              ''
+            )}
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
+                {editMode ? (
+                  <>
+                    <th>
+                      <span class="visually-hidden">Edit</span>
+                    </th>
+                    <th>
+                      <span class="visually-hidden">Delete</span>
+                    </th>
+                  </>
+                ) : (
+                  ''
+                )}
                 <th>
                   <span class="visually-hidden">Name</span>
                 </th>
@@ -129,11 +240,39 @@ export function InstructorAssessmentQuestionsTable({
               </tr>
             </thead>
             <tbody>
-              {questions.map((question) => {
+              {questionState.map((question) => {
                 return (
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                     <tr>
+                      {editMode ? (
+                        <>
+                          <td class="align-content-center">
+                            <button
+                              class="btn btn-sm btn-secondary"
+                              type="button"
+                              onClick={() => handleEditQuestion(question)}
+                            >
+                              <i class="fa fa-edit" aria-hidden="true"></i>
+                            </button>
+                          </td>
+                          <td class="align-content-center">
+                            <button
+                              class="btn btn-sm btn-danger"
+                              type="button"
+                              onClick={() =>
+                                handleDeleteQuestion({
+                                  qid: question.qid,
+                                })
+                              }
+                            >
+                              <i class="fa fa-trash" aria-hidden="true"></i>
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        ''
+                      )}
                       <td>
                         <Title
                           question={question}
@@ -256,8 +395,17 @@ export function InstructorAssessmentQuestionsTable({
         csrfToken={csrfToken}
         assessmentQuestionId={resetAssessmentQuestionId}
         show={showResetModal}
-        onHide={handleModalClose}
+        onHide={handleResetModalClose}
       />
+      {editMode ? (
+        <EditQuestionModal
+          question={selectedQuestion}
+          showEditModal={showEditModal}
+          onHide={handleCloseEditModal}
+          handleUpdateQuestion={handleUpdateQuestion}
+          assessmentType={assessmentType}
+        />
+      ) : null}
     </>
   );
 }

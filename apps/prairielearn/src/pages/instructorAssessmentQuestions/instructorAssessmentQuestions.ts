@@ -1,8 +1,13 @@
+import * as path from 'path';
+
+import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
@@ -14,10 +19,28 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const questions = await selectAssessmentQuestions(res.locals.assessment.id);
+
+    const assessmentPath = path.join(
+      res.locals.course.path,
+      'courseInstances',
+      res.locals.course_instance.short_name,
+      'assessments',
+      res.locals.assessment.tid,
+      'infoAssessment.json',
+    );
+
+    const assessmentPathExists = await fs.pathExists(assessmentPath);
+
+    let origHash = '';
+    if (assessmentPathExists) {
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
+    }
+
     res.send(
       InstructorAssessmentQuestions({
         resLocals: res.locals,
         questions,
+        origHash,
       }),
     );
   }),

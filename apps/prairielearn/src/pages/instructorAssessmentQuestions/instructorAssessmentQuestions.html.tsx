@@ -9,9 +9,11 @@ import { InstructorAssessmentQuestionsTable } from './components/InstructorAsses
 export function InstructorAssessmentQuestions({
   resLocals,
   questions,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
+  origHash: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -40,13 +42,14 @@ export function InstructorAssessmentQuestions({
             questions={questions}
             urlPrefix={resLocals.urlPrefix}
             assessmentType={resLocals.assessment.type}
-            assessmentSetName={resLocals.assessment_set_name}
+            assessmentSetName={resLocals.assessment_set.name}
             assessmentNumber={resLocals.assessment.number}
             hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
             hasCourseInstancePermissionEdit={
               resLocals.authz_data.has_course_instance_permission_edit
             }
             csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
           />
         </Hydrate>
       </>
