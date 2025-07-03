@@ -1,0 +1,61 @@
+---
+description: Page Structure
+globs: **/*.html.ts,**/*.html.tsx
+alwaysApply: false
+---
+# Page Structure
+
+## Directory Organization
+Each web page should have its own directory with consistent naming:
+```
+pages/pageName/
+├── pageName.ts         # Main entry point (route handler)
+├── pageName.sql        # SQL queries (Yesql pattern)
+└── pageName.html.ts    # HTML template
+```
+
+## Route Handler (`pageName.ts`)
+- Use `express-async-handler` for async route handlers
+- Follow Post/Redirect/Get pattern for state modifications
+- Include CSRF protection and action identifiers
+- Example structure:
+```typescript
+import asyncHandler from 'express-async-handler';
+import { loadSqlEquiv } from '@prairielearn/postgres';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (req.body.__action === 'enroll') {
+      await queryAsync(sql.enroll, {
+        course_instance_id: req.body.course_instance_id,
+        user_id: res.locals.authn_user.user_id,
+      });
+      res.redirect(req.originalUrl);
+    }
+  }),
+);
+```
+
+## HTML Template (`pageName.html.ts`)
+
+- Legacy pages use the `@prairielearn/html` package with tagged template literals
+- Newer Preact pages use preact and jsx (`pageName.html.tsx`)
+- Server-side rendering only
+- Pass explicit typed properties to templates
+- Example structure:
+```typescript
+import { html } from '@prairielearn/html';
+
+export function pageTemplate(props: PageProps) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${props.__csrf_token}" />
+      <input type="hidden" name="__action" value="action_name" />
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  `;
+}
+```
