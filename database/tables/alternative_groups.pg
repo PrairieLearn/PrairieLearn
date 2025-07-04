@@ -9,6 +9,7 @@ columns
     json_has_alternatives: boolean
     number: integer
     number_choose: integer
+    question_params: jsonb default '{}'::jsonb
     zone_id: bigint not null
 
 indexes
