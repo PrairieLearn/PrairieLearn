@@ -143,10 +143,7 @@
 
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
-      const resetCropRotationButton = this.imageCaptureDiv.querySelector(
-        '.js-reset-crop-rotate-button',
-      );
-      const discardChangesButton = this.imageCaptureDiv.querySelector('.js-discard-changes-button');
+      const cancelCropRotateButton = this.imageCaptureDiv.querySelector('.js-cancel-crop-rotate-button');
 
       const rotateClockwiseButton = this.imageCaptureDiv.querySelector(
         '.js-rotate-clockwise-button',
@@ -161,8 +158,7 @@
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
-        resetCropRotationButton,
-        discardChangesButton,
+        cancelCropRotateButton,
         flipHorizontalButton,
         flipVerticalButton,
       });
@@ -195,12 +191,8 @@
         this.handleFlip(false);
       });
 
-      resetCropRotationButton.addEventListener('click', () => {
-        this.resetCropRotate();
-      });
-
-      discardChangesButton.addEventListener('click', () => {
-        this.discardChanges();
+      cancelCropRotateButton.addEventListener('click', () => {
+        this.cancelCropRotate();
       });
     }
 
@@ -388,7 +380,7 @@
     setLoadingCaptureState(uploadedImageContainer) {
       uploadedImageContainer.innerHTML = `
         <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center border-bottom w-100"
             style="height: 200px;"
         >
             <div class="spinning-wheel spinner-border">
@@ -444,7 +436,7 @@
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid rounded border bg-body-secondary w-100';
+      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100 border-bottom';
 
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
@@ -724,8 +716,11 @@
         ).value;
 
         this.cropper = new Cropper.default(
-          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
+          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`
         );
+        this.cropper.getCropperCanvas().scaleStep = 0;
+
+        this.lastTransformation = this.cropper.$getTransform();
       } else {
         // If the cropper already exists, update its image source to the original capture.
         this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
@@ -893,7 +888,8 @@
       this.openContainer('capture-preview');
     }
 
-    discardChanges() {
+    cancelCropRotate() {
+      this.resetCropRotate();
       this.openContainer('capture-preview');
     }
   }
