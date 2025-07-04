@@ -9,16 +9,25 @@ import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getAiQuestionGenerationCache,
+  getIntervalUsage,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
@@ -95,6 +104,26 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
+      const intervalCost = await getIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        res.send(
+          RateLimitExceeded({
+            // If the user has more tokens than the threshold of 100 tokens,
+            // they can shorten their message to avoid exceeding the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost >
+              config.costPerMillionPromptTokens * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -102,6 +131,14 @@ router.post(
         prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      addCompletionCostToIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+        promptTokens: result.promptTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
       });
 
       if (result.htmlResult) {

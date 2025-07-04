@@ -188,11 +188,11 @@ export function SampleQuestionDemo({
     : '';
 
   return (
-    <Card className="shadow">
+    <Card class="shadow">
       <CardHeader>
-        <div className="d-flex align-items-center gap-2">
-          <p className="mb-0">{prompt.name}</p>
-          <span className="badge rounded-pill bg-success me-3">Try me!</span>
+        <div class="d-flex align-items-center gap-2">
+          <p class="mb-0">{prompt.name}</p>
+          <span class="badge rounded-pill bg-success me-3">Try me!</span>
         </div>
       </CardHeader>
       <CardBody>
@@ -238,12 +238,12 @@ export function SampleQuestionDemo({
         )}
       </CardBody>
       <CardFooter>
-        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+        <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div className="flex-grow-1"></div>
-          <div className="d-flex align-items-center gap-2">
+          <div class="flex-grow-1"></div>
+          <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
-              <span className="text-nowrap">New variant</span>
+              <span class="text-nowrap">New variant</span>
             </Button>
 
             <Button onClick={handleGrade}>Grade</Button>
@@ -265,7 +265,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
     }
   });
   return (
-    <span className={`badge ${badgeType}`}>
+    <span class={`badge ${badgeType}`}>
       {Math.floor(grade)}
       {'%'}
     </span>
@@ -288,7 +288,7 @@ function NumericOrStringInput({
   onChange: (text: string) => void;
 }) {
   return (
-    <InputGroup className="mt-2">
+    <InputGroup class="mt-2">
       <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
         {answerLabel}
       </InputGroupText>
@@ -301,7 +301,7 @@ function NumericOrStringInput({
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
-          {answerUnits && <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
+          {answerUnits && <span class={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
           {grade !== null && <FeedbackBadge grade={grade} />}
         </InputGroupText>
       )}
@@ -323,7 +323,7 @@ function CheckboxOrRadioInput({
   onSelectOption: (option: string) => void;
 }) {
   return (
-    <div className="mt-2">
+    <div class="mt-2">
       {options.map((option) => (
         <FormCheck
           id={`check-${option.value}`}
@@ -336,7 +336,7 @@ function CheckboxOrRadioInput({
         />
       ))}
       {grade !== null && (
-        <div className="mt-2">
+        <div class="mt-2">
           <FeedbackBadge grade={grade} />
         </div>
       )}

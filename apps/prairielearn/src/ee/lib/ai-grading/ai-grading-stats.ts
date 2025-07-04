@@ -12,6 +12,12 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 
+import {
+  selectInstanceQuestionsForAssessmentQuestion,
+  selectRubricForGrading,
+} from './ai-grading-util.js';
+import type { WithAIGradingStats } from './types.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
   grading_job_id: IdSchema,
@@ -24,14 +30,17 @@ const GradingJobInfoSchema = z.object({
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
-export interface AIGradingStats {
-  last_human_grader: string | null;
-  ai_grading_status: 'Graded' | 'LatestRubric' | 'OutdatedRubric' | 'None';
-  point_difference: number | null;
-  rubric_difference: (RubricItem & { false_positive: boolean })[] | null;
+export interface AiGradingGeneralStats {
+  submission_point_count: number;
+  submission_rubric_count: number;
+  mean_error: number | null;
+  rubric_stats: {
+    // Keeping all information for a rubric item
+    // if we want to implement rubric modification here
+    rubric_item: RubricItem;
+    disagreement_count: number;
+  }[];
 }
-
-export type WithAIGradingStats<T> = T & AIGradingStats;
 
 /**
  * Fills in missing columns for manual grading assessment question page.
@@ -48,20 +57,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     DateFromISOString,
   );
 
-  const grading_jobs = await queryRows(
-    sql.select_ai_and_human_grading_jobs_and_rubric,
-    { instance_question_ids: instance_questions.map((iq) => iq.id) },
-    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
-  );
-  // Construct mapping from instance question id to grading job info
-  const gradingJobMapping = grading_jobs.reduce(
-    (acc, item) => {
-      acc[item.instance_question_id] ??= [];
-      acc[item.instance_question_id].push(item);
-      return acc;
-    },
-    {} as Record<string, GradingJobInfo[]>,
-  );
+  const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 
   const results: WithAIGradingStats<T>[] = [];
 
@@ -113,6 +109,116 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
   return results;
 }
 
+export async function calculateAiGradingStats(
+  assessment_question: AssessmentQuestion,
+): Promise<AiGradingGeneralStats> {
+  const instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+    assessment_question.id,
+  );
+  const rubric_items = await selectRubricForGrading(assessment_question.id);
+
+  const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
+
+  const testRubricResults: {
+    reference_items: Set<string>;
+    ai_items: Set<string>;
+  }[] = [];
+  const testPointResults: {
+    reference_points: number;
+    ai_points: number;
+  }[] = [];
+
+  for (const instance_question of instance_questions) {
+    const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
+
+    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+
+    if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+      testPointResults.push({
+        reference_points: manualGradingJob.manual_points,
+        ai_points: aiGradingJob.manual_points,
+      });
+    }
+    if (manualGradingJob?.rubric_items != null && aiGradingJob?.rubric_items != null) {
+      testRubricResults.push({
+        reference_items: new Set(manualGradingJob.rubric_items.map((item) => item.id)),
+        ai_items: new Set(aiGradingJob.rubric_items.map((item) => item.id)),
+      });
+    }
+  }
+
+  const stats: AiGradingGeneralStats = {
+    submission_point_count: testPointResults.length,
+    submission_rubric_count: testRubricResults.length,
+    mean_error: testPointResults.length
+      ? meanError(
+          testPointResults.map((item) => item.reference_points),
+          testPointResults.map((item) => item.ai_points),
+        )
+      : null,
+    rubric_stats: [],
+  };
+  for (const rubric_item of rubric_items) {
+    const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
+    stats.rubric_stats.push({
+      rubric_item,
+      disagreement_count,
+    });
+  }
+  return stats;
+}
+
+async function selectGradingJobsInfo<T extends { id: string }>(
+  instance_questions: T[],
+): Promise<Record<string, GradingJobInfo[]>> {
+  const grading_jobs = await queryRows(
+    sql.select_ai_and_human_grading_jobs_and_rubric,
+    { instance_question_ids: instance_questions.map((iq) => iq.id) },
+    GradingJobInfoSchema.extend({ instance_question_id: IdSchema }),
+  );
+  // Construct mapping from instance question id to grading job info
+  return grading_jobs.reduce(
+    (acc, item) => {
+      acc[item.instance_question_id] ??= [];
+      acc[item.instance_question_id].push(item);
+      return acc;
+    },
+    {} as Record<string, GradingJobInfo[]>,
+  );
+}
+
 function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boolean {
   return items.some((item) => item.id === itemToCheck.id);
+}
+
+export function rubricItemDisagreementCount(
+  testRubricResults: {
+    reference_items: Set<string>;
+    ai_items: Set<string>;
+  }[],
+  item: RubricItem,
+): number {
+  let disagreement = 0;
+  testRubricResults.forEach((test) => {
+    if (
+      (test.ai_items.has(item.id) && !test.reference_items.has(item.id)) ||
+      (!test.ai_items.has(item.id) && test.reference_items.has(item.id))
+    ) {
+      disagreement++;
+    }
+  });
+  return disagreement;
+}
+
+export function meanError(actual: number[], predicted: number[]): number {
+  if (actual.length !== predicted.length || actual.length === 0) {
+    throw new Error('Both arrays must have the same nonzero length.');
+  }
+
+  const n = actual.length;
+  const errors = actual.map((a, i) => Math.abs(a - predicted[i]));
+  const mean = errors.reduce((acc, val) => acc + val, 0) / n;
+
+  return Math.round(mean * 100) / 100;
 }

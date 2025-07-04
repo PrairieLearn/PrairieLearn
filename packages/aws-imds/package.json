@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "type": "module",
   "repository": {
     "type": "git",
@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "node-fetch": "^3.3.2",
-    "zod": "^3.25.51"
+    "zod": "^3.25.69"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.34",
     "typescript": "^5.8.3"
   }
 }
