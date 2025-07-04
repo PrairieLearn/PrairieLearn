@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { Pager } from '../../components/Pager.html.js';
@@ -306,7 +306,7 @@ function IssueRow({
           ? html`<span class="badge text-bg-info">Manually reported</span>`
           : html`<span class="badge text-bg-warning">Automatically reported</span>`}
         ${issue.assessment && issue.course_instance_id
-          ? AssessmentBadge({
+          ? AssessmentBadgeHtml({
               plainUrlPrefix,
               course_instance_id: issue.course_instance_id,
               hideLink: issue.hideAssessmentLink,
