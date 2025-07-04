@@ -1,4 +1,4 @@
-import { type AssessmentQuestionRow } from '../models/assessment-question.types.js';
+import type { AssessmentQuestionRow } from '../models/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -30,7 +30,7 @@ export function AssessmentQuestionHeaders({
       {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
         <tr>
           <td colspan={nTableCols}>
-            {question.alternative_group_number}.
+            {question.alternative_group_number}.{' '}
             {question.alternative_group_number_choose == null
               ? 'Choose all questions from:'
               : question.alternative_group_number_choose === 1

@@ -14,12 +14,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const questions = await selectAssessmentQuestions(res.locals.assessment.id);
-    res.send(
-      InstructorAssessmentQuestions({
-        resLocals: res.locals,
-        questions,
-      }),
-    );
+    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );
 
