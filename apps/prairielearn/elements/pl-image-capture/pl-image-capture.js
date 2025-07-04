@@ -390,7 +390,7 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user's most action was to capture an image externally,
+          // The user's most action was to capture an image externally, 
           // so we should switch to the capture preview container.
           if (this.selectedContainerName === 'crop-rotate') {
             this.revertToPreviousCropRotateState();
@@ -743,7 +743,7 @@
       cropRotateButton.classList.remove('d-none');
     }
 
-    startCropRotate() {
+    async startCropRotate() {
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -760,23 +760,9 @@
         ).value;
 
         this.cropper = new Cropper.default(
-          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
+          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`
         );
         this.cropper.getCropperCanvas().scaleStep = 0;
-
-        this.previousState = {
-          transformation: this.cropper.getCropperImage().$getTransform(),
-          selection: {
-            x: this.cropper.getCropperSelection().x,
-            y: this.cropper.getCropperSelection().y,
-            width: this.cropper.getCropperSelection().width,
-            height: this.cropper.getCropperSelection().height,
-          },
-          baseRotationAngle: 0,
-          offsetRotationAngle: 0,
-          flippedX: false,
-          flippedY: false,
-        };
       } else {
         // If the cropper already exists, update its image source to the original capture.
         this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
@@ -978,6 +964,7 @@
       }
 
       this.cropper.getCropperImage().$setTransform(...this.previousState.transformation);
+      
       this.cropper
         .getCropperSelection()
         .$change(
@@ -1007,8 +994,27 @@
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
-
-      this.revertToPreviousCropRotateState();
+      
+      if (this.previousState) {
+        this.revertToPreviousCropRotateState();
+      } else {
+        if (!this.previousState) {
+          const cropperSelection = this.cropper.getCropperSelection();
+          this.previousState = {
+            transformation: this.cropper.getCropperImage().$getTransform(),
+            selection: {
+              x: cropperSelection.x,
+              y: cropperSelection.y,
+              width: cropperSelection.width,
+              height: cropperSelection.height,
+            },
+            baseRotationAngle: 0,
+            offsetRotationAngle: 0,
+            flippedX: false,
+            flippedY: false,
+          };
+        }
+      }
       this.openContainer('capture-preview');
     }
   }
