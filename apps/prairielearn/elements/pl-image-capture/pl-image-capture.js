@@ -388,6 +388,15 @@
             popover.hide();
           }
         }
+
+        if (this.selectedContainerName !== 'capture-preview') {
+          // The user's most action was to capture an image externally, 
+          // so we should switch to the capture preview container.
+          if (this.selectedContainerName === 'crop-rotate') {
+            this.revertToPreviousCropRotateState();
+          }
+          this.openContainer('capture-preview');
+        }
       });
     }
 
@@ -963,7 +972,7 @@
       this.openContainer('capture-preview');
     }
 
-    cancelCropRotate() {
+    revertToPreviousCropRotateState() {
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
@@ -992,7 +1001,14 @@
       });
 
       rotationSlider.value = this.offsetRotationAngle;
+    }
 
+    cancelCropRotate() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      this.revertToPreviousCropRotateState();
       this.openContainer('capture-preview');
     }
   }
