@@ -390,7 +390,7 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user's most action was to capture an image externally, 
+          // The user's most action was to capture an image externally,
           // so we should switch to the capture preview container.
           if (this.selectedContainerName === 'crop-rotate') {
             this.revertToPreviousCropRotateState();
