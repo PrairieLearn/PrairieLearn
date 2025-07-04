@@ -1,4 +1,4 @@
-/* global QRCode, io, bootstrap */
+/* global QRCode, io, bootstrap, Cropper */
 
 (() => {
   class PLImageCapture {
@@ -31,7 +31,10 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
-      if (!options.editable) {
+      this.previousState = null;
+      this.selectedContainerName = 'capture-preview';
+
+      if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
@@ -47,6 +50,9 @@
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
+
+      this.createCropRotateListeners();
+      this.createSaveListeners();
     }
 
     createExternalCaptureListeners() {
@@ -85,6 +91,8 @@
         '.js-cancel-local-camera-confirmation-button',
       );
 
+      const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
+
       this.ensureElementsExist({
         captureWithLocalCameraButton,
         captureLocalCameraImageButton,
@@ -92,6 +100,7 @@
         retakeLocalCameraImageButton,
         confirmLocalCameraImageButton,
         cancelLocalCameraConfirmationButton,
+        applyChangesButton,
       });
 
       captureWithLocalCameraButton.addEventListener('click', () => {
@@ -118,6 +127,105 @@
       cancelLocalCameraConfirmationButton.addEventListener('click', () => {
         this.cancelConfirmationLocalCamera();
       });
+
+      applyChangesButton.addEventListener('click', () => {
+        this.confirmCropRotateChanges();
+      });
+    }
+
+    createCropRotateListeners() {
+      // Rotation angle, in degrees, set by clicking the clockwise and counterclockwise 90-degree rotation buttons.
+      this.baseRotationAngle = 0;
+
+      // Rotation angle, in degrees, set by the rotation slider.
+      // The sum of this and the base rotation angle gives the total rotation angle, which is applied to the image.
+      this.offsetRotationAngle = 0;
+
+      // Tracked to preserve flip transformations when the user rotates the image.
+      this.flippedX = false;
+      this.flippedY = false;
+
+      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+      const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
+      const cancelCropRotateButton = this.imageCaptureDiv.querySelector(
+        '.js-cancel-crop-rotate-button',
+      );
+
+      const rotateClockwiseButton = this.imageCaptureDiv.querySelector(
+        '.js-rotate-clockwise-button',
+      );
+      const rotateCounterclockwiseButton = this.imageCaptureDiv.querySelector(
+        '.js-rotate-counterclockwise-button',
+      );
+
+      const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
+      const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
+
+      this.ensureElementsExist({
+        cropRotateButton,
+        rotationSlider,
+        cancelCropRotateButton,
+        flipHorizontalButton,
+        flipVerticalButton,
+      });
+
+      cropRotateButton.addEventListener('click', () => {
+        this.startCropRotate();
+      });
+
+      rotationSlider.addEventListener('input', (event) => {
+        const newRotationAngle = parseFloat(event.target.value);
+        if (isNaN(newRotationAngle)) {
+          throw new Error('Invalid rotation angle');
+        }
+        this.setRotationOffset(newRotationAngle);
+      });
+
+      rotateClockwiseButton.addEventListener('click', () => {
+        this.handleRotate90Degrees(true);
+      });
+
+      rotateCounterclockwiseButton.addEventListener('click', () => {
+        this.handleRotate90Degrees(false);
+      });
+
+      flipHorizontalButton.addEventListener('click', () => {
+        this.handleFlip(true);
+      });
+
+      flipVerticalButton.addEventListener('click', () => {
+        this.handleFlip(false);
+      });
+
+      cancelCropRotateButton.addEventListener('click', () => {
+        this.cancelCropRotate();
+      });
+    }
+
+    saveChanges() {
+      if (this.selectedContainerName === 'crop-rotate') {
+        this.confirmCropRotateChanges();
+      } else if (this.selectedContainerName === 'local-camera-confirmation') {
+        this.confirmLocalCameraCapture();
+      }
+    }
+
+    createSaveListeners() {
+      const saveButton = document.querySelector('.question-save');
+      const saveAndGradeButton = document.querySelector('.question-grade');
+
+      if (saveButton) {
+        // Use mousedown to ensure that the changes are applied before the save action is triggered.
+        saveButton.addEventListener('mousedown', () => {
+          this.saveChanges();
+        });
+      }
+      if (saveAndGradeButton) {
+        // Use mousedown to ensure that the changes are applied before the save and grade action is triggered.
+        saveAndGradeButton.addEventListener('mousedown', () => {
+          this.saveChanges();
+        });
+      }
     }
 
     /**
@@ -128,9 +236,12 @@
      */
     openContainer(containerName) {
       if (
-        !['capture-preview', 'local-camera-capture', 'local-camera-confirmation'].includes(
-          containerName,
-        )
+        ![
+          'capture-preview',
+          'local-camera-capture',
+          'local-camera-confirmation',
+          'crop-rotate',
+        ].includes(containerName)
       ) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
@@ -150,10 +261,14 @@
         '.js-local-camera-confirmation-container',
       );
 
+      // Displays an interface for cropping and rotating the captured image.
+      const cropRotateContainer = this.imageCaptureDiv.querySelector('.js-crop-rotate-container');
+
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraConfirmationContainer,
+        cropRotateContainer,
       });
 
       // element corresponds to the container element. flex indicates if the container uses a flexbox layout when shown.
@@ -173,6 +288,11 @@
           element: localCameraConfirmationContainer,
           flex: true,
         },
+        {
+          name: 'crop-rotate',
+          element: cropRotateContainer,
+          flex: false,
+        },
       ];
 
       for (const container of containers) {
@@ -190,6 +310,8 @@
           }
         }
       }
+
+      this.selectedContainerName = containerName;
     }
 
     generateQrCode() {
@@ -266,6 +388,15 @@
             popover.hide();
           }
         }
+
+        if (this.selectedContainerName !== 'capture-preview') {
+          // The user's most action was to capture an image externally, 
+          // so we should switch to the capture preview container.
+          if (this.selectedContainerName === 'crop-rotate') {
+            this.revertToPreviousCropRotateState();
+          }
+          this.openContainer('capture-preview');
+        }
       });
     }
 
@@ -292,7 +423,7 @@
     setLoadingCaptureState(uploadedImageContainer) {
       uploadedImageContainer.innerHTML = `
         <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center rounded border w-100"
+            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center border-bottom w-100"
             style="height: 200px;"
         >
             <div class="spinning-wheel spinner-border">
@@ -338,7 +469,7 @@
       }
     }
 
-    loadCapturePreviewFromDataUrl(dataUrl) {
+    loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -348,30 +479,52 @@
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.id = 'capture-preview';
-      capturePreview.className = 'img-fluid rounded border bg-body-secondary w-100';
+      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100 border-bottom';
+
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
       uploadedImageContainer.innerHTML = '';
       uploadedImageContainer.appendChild(capturePreview);
 
+      if (originalCapture) {
+        capturePreview.addEventListener(
+          'load',
+          () => {
+            // This is used later to set the height of the crop/rotate container.
+            this.capturePreviewHeight = capturePreview.clientHeight;
+          },
+          { once: true },
+        );
+      }
+
       if (this.editable) {
         const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
         hiddenCaptureInput.value = dataUrl;
+
+        if (originalCapture) {
+          const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+            '.js-hidden-original-capture-input',
+          );
+          hiddenOriginalCaptureInput.value = dataUrl;
+          if (this.cropper) {
+            this.resetCropRotate();
+          }
+        }
+        this.showCropRotateButton();
       }
     }
 
     loadCapturePreviewFromBlob(blob) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        this.loadCapturePreviewFromDataUrl(event.target.result);
+        this.loadCapturePreviewFromDataUrl({ dataUrl: event.target.result });
       };
       reader.readAsDataURL(blob);
     }
 
     loadCapturePreview({ data, type }) {
-      this.loadCapturePreviewFromDataUrl(`data:${type};base64,${data}`);
+      this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
     }
 
     async startLocalCameraCapture() {
@@ -401,7 +554,9 @@
 
       this.openContainer('local-camera-capture');
 
-      localCameraErrorMessage.classList.add('d-none');
+      if (!localCameraErrorMessage.classList.contains('d-none')) {
+        localCameraErrorMessage.classList.add('d-none');
+      }
 
       try {
         // Stream the local camera video to the video element
@@ -504,7 +659,7 @@
         imagePreviewCanvas,
       });
 
-      this.loadCapturePreviewFromDataUrl(imagePreviewCanvas.toDataURL('image/jpeg'));
+      this.loadCapturePreviewFromDataUrl({ dataUrl: imagePreviewCanvas.toDataURL('image/jpeg') });
       this.closeConfirmationContainer();
     }
 
@@ -576,6 +731,291 @@
           );
         }
       }
+    }
+
+    showCropRotateButton() {
+      const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
+
+      if (!cropRotateButton) {
+        throw new Error('Crop/rotate button not found in image capture element');
+      }
+
+      cropRotateButton.classList.remove('d-none');
+    }
+
+    async startCropRotate() {
+      this.openContainer('crop-rotate');
+
+      if (!this.cropper) {
+        // Used by CropperJS to initialize the cropper instance.
+        const cropperImage = this.imageCaptureDiv.querySelector('.js-cropper-base-image');
+        this.ensureElementsExist({
+          cropperImage,
+        });
+
+        // Use the image capture prior to any crop or rotation as the cropper image source.
+        // That way, the user can bring any part of the original image cropped out while editing back into view.
+        cropperImage.src = this.imageCaptureDiv.querySelector(
+          '.js-hidden-original-capture-input',
+        ).value;
+
+        this.cropper = new Cropper.default(
+          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`
+        );
+        this.cropper.getCropperCanvas().scaleStep = 0;
+      } else {
+        // If the cropper already exists, update its image source to the original capture.
+        this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
+          '.js-hidden-original-capture-input',
+        ).value;
+      }
+
+      const cropperHandle = this.imageCaptureDiv.querySelector(
+        '.js-cropper-container cropper-handle[action="move"]',
+      );
+      const cropperCanvas = this.imageCaptureDiv.querySelector(
+        '.js-cropper-container cropper-canvas',
+      );
+
+      this.ensureElementsExist({
+        cropperHandle,
+        cropperCanvas,
+      });
+
+      if (!this.capturePreviewHeight) {
+        throw new Error(
+          'Capture preview height not set. Please ensure the capture preview image is loaded before starting crop/rotate.',
+        );
+      }
+
+      cropperCanvas.style.height = this.capturePreviewHeight + 'px';
+      cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
+    }
+
+    /**
+     * Sets the rotation offset angle for the cropper image.
+     * This angle is added to the base rotation angle to calculate the total rotation angle.
+     * @param {number} offsetRotationAngle The offset rotation angle in degrees.
+     */
+    setRotationOffset(offsetRotationAngle) {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      this.offsetRotationAngle = offsetRotationAngle;
+      this.updateImageRotationAngle();
+    }
+
+    /**
+     * Rotates the image by 90 degrees clockwise or counterclockwise.
+     * @param {boolean} clockwise If true, rotates the image 90 degrees clockwise.
+     * If false, rotates it 90 degrees counterclockwise.
+     */
+    handleRotate90Degrees(clockwise) {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      this.baseRotationAngle += clockwise ? 90 : -90;
+      this.updateImageRotationAngle();
+    }
+
+    /**
+     * Flips the image horizontally or vertically.
+     * @param {boolean} horizontal If true, flips the image horizontally. If false, flips it vertically.
+     */
+    handleFlip(horizontal) {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      if (horizontal) {
+        this.flippedX = !this.flippedX;
+      } else {
+        this.flippedY = !this.flippedY;
+      }
+
+      this.cropper.getCropperImage().$scale(
+        horizontal
+          ? -1 // Flip horizontally
+          : 1, // Leave the image horizontally unchanged
+        horizontal
+          ? 1 // Leave the image vertically unchanged
+          : -1, // Flip vertically
+      );
+    }
+
+    /**
+     * Updates the rotation angle of the cropper image using the base and offset rotation angles.
+     * Preserves existing scale and translation of the image.
+     */
+    updateImageRotationAngle() {
+      const totalRotationAngle = this.baseRotationAngle + this.offsetRotationAngle;
+      const rotationAngleRad = (totalRotationAngle * Math.PI) / 180;
+
+      const cos = Math.cos(rotationAngleRad);
+      const sin = Math.sin(rotationAngleRad);
+
+      const image = this.cropper.getCropperImage();
+      const transform = image.$getTransform();
+      if (!transform) {
+        throw new Error('Cropper image transform not found. Please start crop/rotate first.');
+      }
+
+      const [
+        prevHorizontalScale,
+        prevVerticalSkewAngle,
+        prevHorizontalSkewAngle,
+        prevVerticalScale,
+        prevHorizontalTranslation,
+        prevVerticalTranslation,
+      ] = transform;
+
+      // Extract the existing scale factors from the transformation matrix
+      const scaleX =
+        (this.flippedX ? -1 : 1) * Math.hypot(prevHorizontalScale, prevVerticalSkewAngle);
+      const scaleY =
+        (this.flippedY ? -1 : 1) * Math.hypot(prevHorizontalSkewAngle, prevVerticalScale);
+
+      // Apply the new rotation while preserving the existing scale and translation
+      image.$setTransform(
+        scaleX * cos,
+        scaleX * sin,
+        -scaleY * sin,
+        scaleY * cos,
+        prevHorizontalTranslation,
+        prevVerticalTranslation,
+      );
+    }
+
+    resetCropRotate() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      this.cropper.getCropperImage().$resetTransform();
+      this.cropper.getCropperImage().$center('contain');
+      this.cropper.getCropperSelection().$reset();
+
+      this.baseRotationAngle = 0;
+      this.offsetRotationAngle = 0;
+
+      this.flippedX = false;
+      this.flippedY = false;
+
+      const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
+
+      this.ensureElementsExist({
+        rotationSlider,
+      });
+
+      rotationSlider.value = 0;
+
+      this.previousState = {
+        transformation: this.cropper.getCropperImage().$getTransform(),
+        selection: {
+          x: this.cropper.getCropperSelection().x,
+          y: this.cropper.getCropperSelection().y,
+          width: this.cropper.getCropperSelection().width,
+          height: this.cropper.getCropperSelection().height,
+        },
+        baseRotationAngle: 0,
+        offsetRotationAngle: 0,
+        flippedX: false,
+        flippedY: false,
+      };
+    }
+
+    async confirmCropRotateChanges() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      // Obtain the data URL of the edited image.
+      const canvas = await this.cropper.getCropperSelection().$toCanvas();
+      const dataUrl = canvas.toDataURL('image/jpeg');
+
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl,
+        originalCapture: false,
+      });
+
+      this.previousState = {
+        transformation: this.cropper.getCropperImage().$getTransform(),
+        selection: {
+          x: this.cropper.getCropperSelection().x,
+          y: this.cropper.getCropperSelection().y,
+          width: this.cropper.getCropperSelection().width,
+          height: this.cropper.getCropperSelection().height,
+        },
+        baseRotationAngle: this.baseRotationAngle,
+        offsetRotationAngle: this.offsetRotationAngle,
+        flippedX: this.flippedX,
+        flippedY: this.flippedY,
+      };
+
+      // Close the crop/rotate container
+      this.openContainer('capture-preview');
+    }
+
+    revertToPreviousCropRotateState() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+
+      this.cropper.getCropperImage().$setTransform(...this.previousState.transformation);
+      
+      this.cropper
+        .getCropperSelection()
+        .$change(
+          this.previousState.selection.x,
+          this.previousState.selection.y,
+          this.previousState.selection.width,
+          this.previousState.selection.height,
+        );
+      this.cropper.getCropperImage().$center('contain');
+
+      this.baseRotationAngle = this.previousState.baseRotationAngle;
+      this.offsetRotationAngle = this.previousState.offsetRotationAngle;
+
+      this.flippedX = this.previousState.flippedX;
+      this.flippedY = this.previousState.flippedY;
+
+      const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
+
+      this.ensureElementsExist({
+        rotationSlider,
+      });
+
+      rotationSlider.value = this.offsetRotationAngle;
+    }
+
+    cancelCropRotate() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+      
+      if (this.previousState) {
+        this.revertToPreviousCropRotateState();
+      } else {
+        if (!this.previousState) {
+          const cropperSelection = this.cropper.getCropperSelection();
+          this.previousState = {
+            transformation: this.cropper.getCropperImage().$getTransform(),
+            selection: {
+              x: cropperSelection.x,
+              y: cropperSelection.y,
+              width: cropperSelection.width,
+              height: cropperSelection.height,
+            },
+            baseRotationAngle: 0,
+            offsetRotationAngle: 0,
+            flippedX: false,
+            flippedY: false,
+          };
+        }
+      }
+      this.openContainer('capture-preview');
     }
   }
 

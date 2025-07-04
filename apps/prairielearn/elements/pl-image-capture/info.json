@@ -2,6 +2,7 @@
   "controller": "pl-image-capture.py",
   "dependencies": {
     "nodeModulesScripts": [
+      "cropperjs/dist/cropper.min.js",
       "qrcode-svg/dist/qrcode.min.js",
       "socket.io-client/dist/socket.io.min.js"
     ],
