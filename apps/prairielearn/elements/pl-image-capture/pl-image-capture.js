@@ -31,7 +31,7 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
-      this.previousState = null;
+      this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
       if (!this.editable) {
@@ -134,14 +134,22 @@
     }
 
     createCropRotateListeners() {
-      // Rotation angle, in degrees, set by clicking the clockwise and counterclockwise 90-degree rotation buttons.
+      /**
+       * The cumulative "base" rotation (in degrees) applied by the 90 degree rotate buttons.
+       * Changes in +90/-90 degree increments when the user clicks the clockwise or counter-clockwise buttons.
+       */
       this.baseRotationAngle = 0;
 
-      // Rotation angle, in degrees, set by the rotation slider.
-      // The sum of this and the base rotation angle gives the total rotation angle. This is applied to the image.
+      /**
+       * The rotation offset (in degrees) set by the slider.
+       * Added to baseRotationAngle to compute the total rotation applied to the image.
+       */
       this.offsetRotationAngle = 0;
 
+      /** Whether or not the image is flipped horizontally */
       this.flippedX = false;
+
+      /** Whether or not the image is flipped vertically */
       this.flippedY = false;
 
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
@@ -220,13 +228,13 @@
       const saveAndGradeButton = document.querySelector('.question-grade');
 
       if (saveButton) {
-        // Use mousedown to apply the pending changes before the save action triggers.
+        // Using mousedown applies the pending changes before the save action triggers.
         saveButton.addEventListener('mousedown', () => {
           this.applyPendingChanges();
         });
       }
       if (saveAndGradeButton) {
-        // Use mousedown to apply the pending changes before the save and grade action triggers.
+        // Using mousedown applies the pending changes before the save and grade action triggers.
         saveAndGradeButton.addEventListener('mousedown', () => {
           this.applyPendingChanges();
         });
@@ -395,8 +403,9 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user's most action was to capture an image externally,
-          // so we should switch to the capture preview container.
+          // The user might upload an image while in the crop-rotate or local camera confirmation state.
+          // We discard any pending changes or captured images and show the capture preview, since
+          // the user's most recent action was to capture an image externally.
           if (this.selectedContainerName === 'crop-rotate') {
             this.revertToPreviousCropRotateState();
           }
@@ -548,12 +557,17 @@
 
       const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
 
+      const localCameraInstructions = this.imageCaptureDiv.querySelector(
+        '.js-local-camera-instructions',
+      );
+
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraErrorMessage,
         localCameraConfirmationContainer,
         localCameraVideo,
+        localCameraInstructions,
       });
 
       this.openContainer('local-camera-capture');
@@ -574,11 +588,14 @@
         if (captureLocalCameraImageButton) {
           // Allow the user to capture an image
           captureLocalCameraImageButton.removeAttribute('disabled');
+          localCameraInstructions.classList.remove('d-none');
         } else {
           throw new Error('Capture image button not found');
         }
       } catch (err) {
         localCameraErrorMessage.classList.remove('d-none');
+        localCameraInstructions.classList.add('d-none');
+
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           localCameraErrorMessage.textContent =
             'Give permission to access your camera to capture an image.';
@@ -912,13 +929,14 @@
 
       rotationSlider.value = 0;
 
-      this.previousState = {
+      const selection = this.cropper.getCropperSelection();
+      this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: this.cropper.getCropperSelection().x,
-          y: this.cropper.getCropperSelection().y,
-          width: this.cropper.getCropperSelection().width,
-          height: this.cropper.getCropperSelection().height,
+          x: selection.x,
+          y: selection.y,
+          width: selection.width,
+          height: selection.height,
         },
         baseRotationAngle: 0,
         offsetRotationAngle: 0,
@@ -933,7 +951,8 @@
       }
 
       // Obtain the data URL of the image selection.
-      const canvas = await this.cropper.getCropperSelection().$toCanvas();
+      const selection = this.cropper.getCropperSelection();
+      const canvas = await selection.$toCanvas();
       const dataUrl = canvas.toDataURL('image/jpeg');
 
       this.loadCapturePreviewFromDataUrl({
@@ -941,13 +960,13 @@
         originalCapture: false,
       });
 
-      this.previousState = {
+      this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: this.cropper.getCropperSelection().x,
-          y: this.cropper.getCropperSelection().y,
-          width: this.cropper.getCropperSelection().width,
-          height: this.cropper.getCropperSelection().height,
+          x: selection.x,
+          y: selection.y,
+          width: selection.width,
+          height: selection.height,
         },
         baseRotationAngle: this.baseRotationAngle,
         offsetRotationAngle: this.offsetRotationAngle,
@@ -963,28 +982,28 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      if (!this.previousState) {
+      if (!this.previousCropRotateState) {
         this.resetCropRotate();
         return;
       }
 
-      this.cropper.getCropperImage().$setTransform(...this.previousState.transformation);
+      this.cropper.getCropperImage().$setTransform(...this.previousCropRotateState.transformation);
 
       this.cropper
         .getCropperSelection()
         .$change(
-          this.previousState.selection.x,
-          this.previousState.selection.y,
-          this.previousState.selection.width,
-          this.previousState.selection.height,
+          this.previousCropRotateState.selection.x,
+          this.previousCropRotateState.selection.y,
+          this.previousCropRotateState.selection.width,
+          this.previousCropRotateState.selection.height,
         );
       this.cropper.getCropperImage().$center('contain');
 
-      this.baseRotationAngle = this.previousState.baseRotationAngle;
-      this.offsetRotationAngle = this.previousState.offsetRotationAngle;
+      this.baseRotationAngle = this.previousCropRotateState.baseRotationAngle;
+      this.offsetRotationAngle = this.previousCropRotateState.offsetRotationAngle;
 
-      this.flippedX = this.previousState.flippedX;
-      this.flippedY = this.previousState.flippedY;
+      this.flippedX = this.previousCropRotateState.flippedX;
+      this.flippedY = this.previousCropRotateState.flippedY;
 
       const rotationSlider = this.imageCaptureDiv.querySelector('.js-rotation-slider');
 
