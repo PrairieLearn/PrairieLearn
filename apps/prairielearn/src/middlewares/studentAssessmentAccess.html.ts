@@ -66,7 +66,7 @@ export function StudentAssessmentAccess({
                       ${AssessmentStatusDescription({
                         assessment_instance,
                         authz_result,
-                        extraClasses: 'col-md-6 col-sm-12 text-right',
+                        extraClasses: 'col-md-6 col-sm-12 text-end',
                       })}
                     </div>
                   `

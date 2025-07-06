@@ -178,7 +178,7 @@
                 iframe.onload = () => {
                   URL.revokeObjectURL(url);
                 };
-                iframe.closest('.embed-responsive').classList.remove('d-none');
+                iframe.closest('.js-file-preview-pdf-container').classList.remove('d-none');
               } else {
                 // We can't preview this file.
                 showInfoMessage('Content preview is not available for this type of file.');
