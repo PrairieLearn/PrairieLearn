@@ -100,7 +100,11 @@ onDocumentReady(() => {
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.remove('d-none');
 
-      uploadButton.classList.remove('d-none');
+      const imageUploaded = cameraInput?.files && cameraInput.files.length > 0;
+      if (imageUploaded) {
+        uploadButton.classList.remove('d-none');
+      }
+
       cameraInputLabel.classList.remove('d-none');
     } else {
       externalImageCaptureFormContainer.classList.add('d-none');
