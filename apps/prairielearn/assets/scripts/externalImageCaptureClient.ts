@@ -38,7 +38,7 @@ onDocumentReady(() => {
     changeState('failed');
     socket.disconnect();
   }, SOCKET_TIMEOUT_MS);
-  
+
   socket.emit(
     'joinExternalImageCapture',
     {

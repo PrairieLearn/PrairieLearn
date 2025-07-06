@@ -37,7 +37,10 @@ export function ExternalImageCapture({
           </div>
           <h1 class="d-flex align-items-center my-0">Loading...</h1>
         </div>
-        <div id="external-image-capture-uploading-container" class="d-none align-items-center gap-2">
+        <div
+          id="external-image-capture-uploading-container"
+          class="d-none align-items-center gap-2"
+        >
           <div class="spinning-wheel spinner-border">
             <span class="visually-hidden">Uploading...</span>
           </div>
