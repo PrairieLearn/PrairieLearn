@@ -41,6 +41,7 @@ onDocumentReady(() => {
       // Compute the number of true positives, true negatives, false positive, and false negative
       const confusionMatrix = {
         truePositives: 0,
+        trueNegatives: 0,
         falsePositives: 0,
         falseNegatives: 0,
       }
@@ -51,7 +52,9 @@ onDocumentReady(() => {
             for (const item of row.rubric_similarity) {
               if (item.true_positive) {
                 confusionMatrix.truePositives++;
-              } 
+              } else {
+                confusionMatrix.trueNegatives++;
+              }
             }
           }
           if (row.rubric_difference) {
@@ -69,7 +72,12 @@ onDocumentReady(() => {
 
       const precision = confusionMatrix.truePositives / (confusionMatrix.truePositives + confusionMatrix.falsePositives);
       const recall = confusionMatrix.truePositives / (confusionMatrix.truePositives + confusionMatrix.falseNegatives);
+
+      const precision_complement = confusionMatrix.trueNegatives / (confusionMatrix.trueNegatives + confusionMatrix.falsePositives);
+      const recall_complement = confusionMatrix.trueNegatives / (confusionMatrix.trueNegatives + confusionMatrix.falseNegatives);
+
       const f1score = 2 * (precision * recall) / (precision + recall);
+      const f1score_complement = 2 * (precision_complement * recall_complement) / (precision_complement + recall_complement);
 
       // const meanAgreementSpan = document.getElementById('mean-agreement');
       const f1ScoreSpan = document.getElementById('f1-score');
@@ -87,6 +95,22 @@ onDocumentReady(() => {
       if (recallSpan) {
         recallSpan.textContent = recall.toFixed(2);
       } 
+
+      const f1ScoreComplementSpan = document.getElementById('f1-score-complement');
+      const precisionComplementSpan = document.getElementById('precision-complement');
+      const recallComplementSpan = document.getElementById('recall-complement');
+
+      if (f1ScoreComplementSpan) {
+        f1ScoreComplementSpan.textContent = f1score_complement.toFixed(2);
+      }
+
+      if (precisionComplementSpan) {
+        precisionComplementSpan.textContent = precision_complement.toFixed(2);
+      }
+
+      if (recallComplementSpan) {
+        recallComplementSpan.textContent = recall_complement.toFixed(2);
+      }
     }
 
     const graders = data.flatMap((row) =>

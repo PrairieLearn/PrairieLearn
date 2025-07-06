@@ -11,10 +11,12 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
+import { selectRubricData } from '../../../lib/manualGrading.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
+  selectRubricGradingItems,
 } from './ai-grading-util.js';
 import type { WithAIGradingStats } from './types.js';
 
@@ -101,7 +103,13 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       const tpItems = manualItems
         .filter((item) => rubricListIncludes(aiItems, item))
         .map((item) => ({ ...item, true_positive: true }));
-      instance_question.rubric_similarity = tpItems;
+
+      const allRubricItems = await selectRubricForGrading(assessment_question.id)
+      const tnItems = allRubricItems
+        .filter((item) => !rubricListIncludes(manualItems, item) && !rubricListIncludes(aiItems, item))
+        .map((item) => ({ ...item, true_positive: false }));
+
+      instance_question.rubric_similarity = tpItems.concat(tnItems);
       
       const fpItems = aiItems
         .filter((item) => !rubricListIncludes(manualItems, item))
