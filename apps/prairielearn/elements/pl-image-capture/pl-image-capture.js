@@ -437,7 +437,7 @@
     setLoadingCaptureState(uploadedImageContainer) {
       uploadedImageContainer.innerHTML = `
         <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center border-bottom w-100"
+            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center w-100"
             style="height: 200px;"
         >
             <div class="spinning-wheel spinner-border">
@@ -493,7 +493,7 @@
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100 border-bottom';
+      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
 
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
@@ -952,8 +952,13 @@
 
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
-      const canvas = await selection.$toCanvas();
-      const dataUrl = canvas.toDataURL('image/jpeg');
+      let dataUrl;
+      try {
+        const canvas = await selection.$toCanvas();
+        dataUrl = canvas.toDataURL('image/jpeg');
+      } catch {
+        throw new Error('Failed to convert cropper selection to canvas');
+      }
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
