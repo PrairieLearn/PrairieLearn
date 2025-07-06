@@ -395,7 +395,7 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user's most action was to capture an image externally, 
+          // The user's most action was to capture an image externally,
           // so we should switch to the capture preview container.
           if (this.selectedContainerName === 'crop-rotate') {
             this.revertToPreviousCropRotateState();
@@ -760,7 +760,7 @@
         ).value;
 
         this.cropper = new Cropper.default(
-          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`
+          `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
         );
 
         // Disable zooming with the mouse wheel.
@@ -789,7 +789,6 @@
           'Capture preview height not set. Please ensure the capture preview image is loaded before starting crop/rotate.',
         );
       }
-
       cropperCanvas.style.height = this.capturePreviewHeight + 'px';
       cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
     }
@@ -964,8 +963,13 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
+      if (!this.previousState) {
+        this.resetCropRotate();
+        return;
+      }
+
       this.cropper.getCropperImage().$setTransform(...this.previousState.transformation);
-      
+
       this.cropper
         .getCropperSelection()
         .$change(
@@ -995,27 +999,8 @@
       if (!this.cropper) {
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
-      
-      if (this.previousState) {
-        this.revertToPreviousCropRotateState();
-      } else {
-        if (!this.previousState) {
-          const cropperSelection = this.cropper.getCropperSelection();
-          this.previousState = {
-            transformation: this.cropper.getCropperImage().$getTransform(),
-            selection: {
-              x: cropperSelection.x,
-              y: cropperSelection.y,
-              width: cropperSelection.width,
-              height: cropperSelection.height,
-            },
-            baseRotationAngle: 0,
-            offsetRotationAngle: 0,
-            flippedX: false,
-            flippedY: false,
-          };
-        }
-      }
+
+      this.revertToPreviousCropRotateState();
       this.openContainer('capture-preview');
     }
   }
