@@ -138,10 +138,9 @@
       this.baseRotationAngle = 0;
 
       // Rotation angle, in degrees, set by the rotation slider.
-      // The sum of this and the base rotation angle gives the total rotation angle, which is applied to the image.
+      // The sum of this and the base rotation angle gives the total rotation angle. This is applied to the image.
       this.offsetRotationAngle = 0;
 
-      // Tracked to preserve flip transformations when the user rotates the image.
       this.flippedX = false;
       this.flippedY = false;
 
@@ -165,6 +164,8 @@
         cropRotateButton,
         rotationSlider,
         cancelCropRotateButton,
+        rotateClockwiseButton,
+        rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
       });
@@ -202,7 +203,7 @@
       });
     }
 
-    saveChanges() {
+    applyPendingChanges() {
       if (this.selectedContainerName === 'crop-rotate') {
         this.confirmCropRotateChanges();
       } else if (this.selectedContainerName === 'local-camera-confirmation') {
@@ -210,20 +211,24 @@
       }
     }
 
+    /**
+     * When the user saves the image, automatically apply any pending crop/rotate edits
+     * or save the pending local camera capture if it exists.
+     */
     createSaveListeners() {
       const saveButton = document.querySelector('.question-save');
       const saveAndGradeButton = document.querySelector('.question-grade');
 
       if (saveButton) {
-        // Use mousedown to ensure that the changes are applied before the save action is triggered.
+        // Use mousedown to apply the pending changes before the save action triggers.
         saveButton.addEventListener('mousedown', () => {
-          this.saveChanges();
+          this.applyPendingChanges();
         });
       }
       if (saveAndGradeButton) {
-        // Use mousedown to ensure that the changes are applied before the save and grade action is triggered.
+        // Use mousedown to apply the pending changes before the save and grade action triggers.
         saveAndGradeButton.addEventListener('mousedown', () => {
-          this.saveChanges();
+          this.applyPendingChanges();
         });
       }
     }
@@ -491,7 +496,6 @@
         capturePreview.addEventListener(
           'load',
           () => {
-            // This is used later to set the height of the crop/rotate container.
             this.capturePreviewHeight = capturePreview.clientHeight;
           },
           { once: true },
@@ -554,9 +558,7 @@
 
       this.openContainer('local-camera-capture');
 
-      if (!localCameraErrorMessage.classList.contains('d-none')) {
-        localCameraErrorMessage.classList.add('d-none');
-      }
+      localCameraErrorMessage.classList.add('d-none');
 
       try {
         // Stream the local camera video to the video element
@@ -753,8 +755,6 @@
           cropperImage,
         });
 
-        // Use the image capture prior to any crop or rotation as the cropper image source.
-        // That way, the user can bring any part of the original image cropped out while editing back into view.
         cropperImage.src = this.imageCaptureDiv.querySelector(
           '.js-hidden-original-capture-input',
         ).value;
@@ -762,6 +762,8 @@
         this.cropper = new Cropper.default(
           `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`
         );
+
+        // Disable zooming with the mouse wheel.
         this.cropper.getCropperCanvas().scaleStep = 0;
       } else {
         // If the cropper already exists, update its image source to the original capture.
@@ -931,7 +933,7 @@
         throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
       }
 
-      // Obtain the data URL of the edited image.
+      // Obtain the data URL of the image selection.
       const canvas = await this.cropper.getCropperSelection().$toCanvas();
       const dataUrl = canvas.toDataURL('image/jpeg');
 
@@ -954,7 +956,6 @@
         flippedY: this.flippedY,
       };
 
-      // Close the crop/rotate container
       this.openContainer('capture-preview');
     }
 

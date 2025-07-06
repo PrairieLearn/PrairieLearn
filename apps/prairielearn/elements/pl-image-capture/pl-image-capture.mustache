@@ -9,7 +9,7 @@ $(function() {
     Image capture
   </div>
   <div 
-    class="js-capture-preview-container bg-light" 
+    class="js-capture-preview-container bg-light rounded-bottom"  
   >
     {{#editable}}
     <input
@@ -37,7 +37,7 @@ $(function() {
     </div>
 
     {{#editable}}
-    <div class="d-flex gap-2 flex-wrap p-2 justify-content-end">
+    <div class="d-flex gap-2 flex-wrap p-2 justify-content-end rounded-bottom">
       <button
         type="button"
         class="js-crop-rotate-button btn btn-secondary d-none"
@@ -95,22 +95,20 @@ $(function() {
     {{/editable}}
   </div>
   {{#editable}}
-  <div class="js-local-camera-capture-container d-none flex-column bg-light">
+  <div class="js-local-camera-capture-container d-none flex-column bg-light rounded-bottom">
     <div class="position-relative">
       <video
-        class="js-local-camera-video w-100 bg-body-secondary border-bottom"
+        class="js-local-camera-video d-block w-100 bg-body-secondary border-bottom"
         autoplay
         playsinline
-      >
-      </video>
-
+      ></video>
       <div
         class="js-local-camera-error-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2 d-none"
         style="pointer-events: none;"
       >
       </div>
     </div>
-    <div class="d-flex p-2 pt-0 gap-2 justify-content-end align-items-center flex-wrap">
+    <div class="d-flex p-2 gap-2 justify-content-end align-items-center flex-wrap">
       <p class="text-muted my-0 me-auto">
         Make sure your photo is clear, well-lit, and shows all your work legibly. 
         <br/>
@@ -136,23 +134,29 @@ $(function() {
       </div>
     </div>
   </div>
-  <div class="js-local-camera-confirmation-container d-none d-flex flex-column bg-light">
+  <div class="js-local-camera-confirmation-container d-none d-flex flex-column bg-light rounded-bottom">
     <canvas
       class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom"
       autoplay
       playsinline
     >
     </canvas>
-    <div class="d-flex gap-2 p-2 justify-content-end">
+    <div class="d-flex gap-2 p-2 justify-content-end align-items-center flex-wrap">
+      <p class="text-muted my-0 me-auto">
+        Make sure your photo is clear, well-lit, and shows all your work legibly. 
+        <br/>
+        Later, you can crop or rotate the image as needed.
+      </p>
       <button 
         type="button"
-        style=""
+        style="height: fit-content;"
         class="js-cancel-local-camera-confirmation-button btn btn-secondary"
       >
         Cancel
       </button>
       <button 
         type="button"
+        style="height: fit-content;"
         class="js-retake-local-camera-image-button btn btn-secondary"
       >
         <i class="bi bi-arrow-counterclockwise me-1"></i>
@@ -160,6 +164,7 @@ $(function() {
       </button>
       <button 
         type="button" 
+        style="height: fit-content;"
         class="js-confirm-local-camera-image-button btn btn-info"
       >
         <i class="bi bi-check2 me-1"></i>
@@ -167,7 +172,7 @@ $(function() {
       </button>
     </div>
   </div>
-  <div class="js-crop-rotate-container d-none bg-light">
+  <div class="js-crop-rotate-container d-none bg-light rounded-bottom">
     <div class="js-cropper-container">
       <img class="js-cropper-base-image w-100" alt="Picture" />
     </div>
