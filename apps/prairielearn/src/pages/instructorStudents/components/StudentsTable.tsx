@@ -103,6 +103,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
 
   // Keyboard navigation for grid
   const handleGridKeyDown = (e: KeyboardEvent, rowIdx: number, colIdx: number) => {
+    const rowLength = getVisibleCells(rows[rowIdx]).length;
     const adjacentCells: Record<KeyboardEvent['key'], { row: number; col: number }> = {
       ArrowDown: {
         row: Math.min(rows.length - 1, rowIdx + 1),
@@ -114,7 +115,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       },
       ArrowRight: {
         row: rowIdx,
-        col: Math.min(getVisibleCells(rows[rowIdx]).length - 1, colIdx + 1),
+        col: Math.min(rowLength - 1, colIdx + 1),
       },
       ArrowLeft: {
         row: rowIdx,
@@ -126,8 +127,25 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     if (!next) {
       return;
     }
-    e.preventDefault();
+
     setFocusedCell({ row: next.row, col: next.col });
+    // If we are on the leftmost column, we should allow left scrolling.
+    if (colIdx === 0 && e.key === 'ArrowLeft') {
+      return;
+    }
+
+    // If we are on the top row, we should allow up scrolling.
+    if (rowIdx === 0 && e.key === 'ArrowUp') {
+      return;
+    }
+
+    // If we are on the rightmost column, we should allow right scrolling.
+    if (colIdx === rowLength - 1 && e.key === 'ArrowRight') {
+      return;
+    }
+
+    // Otherwise, we should prevent the default behavior.
+    e.preventDefault();
   };
 
   // Focus the correct cell when focusedCell changes
@@ -138,11 +156,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       return;
     }
     cell.focus();
-    cell.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'nearest',
-    });
   }, [focusedCell]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
