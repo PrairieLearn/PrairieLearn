@@ -35,6 +35,9 @@ router.post(
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
+    if (!res.locals.lti11_enabled) {
+      throw new error.HttpStatusError(400, 'LTI 1.1 is not enabled.');
+    }
 
     if (req.body.__action === 'lti_new_cred') {
       await sqldb.queryAsync(sql.insert_cred, {

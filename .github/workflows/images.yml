@@ -29,7 +29,7 @@ jobs:
     uses: ./.github/workflows/image-builder.yml
     with:
       group: workspaces
-      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
+      images: prairielearn/workspace-desktop,prairielearn/workspace-jupyterlab-base,prairielearn/workspace-jupyterlab-python,prairielearn/workspace-jupyterlab-r,prairielearn/workspace-rstudio,prairielearn/workspace-vscode-base,prairielearn/workspace-vscode-cpp,prairielearn/workspace-vscode-java,prairielearn/workspace-vscode-python,prairielearn/workspace-xtermjs
     secrets: inherit
 
   build-grader-images:
@@ -46,7 +46,7 @@ jobs:
     uses: ./.github/workflows/image-builder.yml
     with:
       group: core
-      images: prairielearn/plbase,prairielearn/prairielearn,prairielearn/executor
+      images: prairielearn/prairielearn,prairielearn/executor
       cache_images: prairielearn/prairielearn
     secrets: inherit
 
@@ -84,7 +84,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           images: |
             prairielearn/workspace-desktop
+            prairielearn/workspace-jupyterlab-base
             prairielearn/workspace-jupyterlab-python
+            prairielearn/workspace-jupyterlab-r
             prairielearn/workspace-rstudio
             prairielearn/workspace-vscode-base
             prairielearn/workspace-vscode-cpp
@@ -95,6 +97,5 @@ jobs:
             prairielearn/grader-java
             prairielearn/grader-python
             prairielearn/grader-r
-            prairielearn/plbase
             prairielearn/prairielearn
             prairielearn/executor
