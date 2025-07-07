@@ -381,7 +381,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             role="status"
             aria-live="polite"
           >
-            <i class="bi bi-eye-slash fa-2x mb-2" aria-hidden="true"></i>
+            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true"></i>
             <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
           </div>
         </div>
@@ -400,7 +400,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           role="status"
           aria-live="polite"
         >
-          <i class="fa fa-search fa-2x mb-2" aria-hidden="true"></i>
+          <i class="bi bi-search display-4 mb-2" aria-hidden="true"></i>
           <p class="mb-0">No students found matching your search criteria.</p>
         </div>
       )}
