@@ -103,7 +103,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
 
   // Keyboard navigation for grid
   const handleGridKeyDown = (e: KeyboardEvent, rowIdx: number, colIdx: number) => {
-    const adjacentCells = {
+    const adjacentCells: Record<KeyboardEvent['key'], { row: number; col: number }> = {
       ArrowDown: {
         row: Math.min(rows.length - 1, rowIdx + 1),
         col: colIdx,
