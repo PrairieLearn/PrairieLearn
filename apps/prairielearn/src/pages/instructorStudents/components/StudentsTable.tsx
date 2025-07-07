@@ -223,7 +223,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           >
             <thead>
               {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id} role="row">
+                <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header, index) => {
                     const isPinned = header.column.getIsPinned();
                     const sortDirection = header.column.getIsSorted();
@@ -314,7 +314,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             </thead>
             <tbody>
               {before > 0 && (
-                <tr aria-hidden="true" role="row">
+                <tr aria-hidden="true">
                   <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
                 </tr>
               )}
@@ -324,11 +324,10 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                 const rowIdx = virtualRow.index;
 
                 return (
-                  <tr key={row.id} role="row">
+                  <tr key={row.id}>
                     {visibleCells.map((cell, colIdx) => (
                       <td
                         key={cell.id}
-                        role="gridcell"
                         // You can tab to the most-recently focused cell.
                         tabIndex={focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1}
                         // We store this so you can navigate around the grid.
@@ -358,7 +357,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                 );
               })}
               {after > 0 && (
-                <tr aria-hidden="true" role="row">
+                <tr aria-hidden="true">
                   <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
                 </tr>
               )}
