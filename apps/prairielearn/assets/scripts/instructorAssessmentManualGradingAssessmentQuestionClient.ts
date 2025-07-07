@@ -79,7 +79,18 @@ onDocumentReady(() => {
       const f1score = 2 * (precision * recall) / (precision + recall);
       const f1score_complement = 2 * (precision_complement * recall_complement) / (precision_complement + recall_complement);
 
-      // const meanAgreementSpan = document.getElementById('mean-agreement');
+      const meanAgreementSpan = document.getElementById('mean-agreement');
+      if (!meanAgreementSpan) {
+        console.warn('Could not find element with id "mean-agreement"');
+        return;
+      }
+      meanAgreementSpan.textContent = ((confusionMatrix.truePositives + confusionMatrix.trueNegatives) / (
+        confusionMatrix.truePositives +
+        confusionMatrix.trueNegatives +
+        confusionMatrix.falsePositives +
+        confusionMatrix.falseNegatives
+      ) * 100).toFixed(2) + '%';
+
       const f1ScoreSpan = document.getElementById('f1-score');
       const precisionSpan = document.getElementById('precision');
       const recallSpan = document.getElementById('recall');

@@ -8,8 +8,6 @@ $
 
 <pl-image-capture file-name="3b.jpg"></pl-image-capture> 
 
-<p><b>Solution:</b></p>
-
 <p><b>Compute the limit:</b> $\displaystyle \lim_{x\to0^+}\frac{2e^x+3}{1-e^x}$.  Here we must determine whether it diverges to $+\infty$ or $-\infty$.</p>
 
 <p><b>Step 1:</b> As $x\to0^+$, we have $e^x\to1^+$, so write $e^x=1+\delta$ with $\delta\to0^+$.</p>

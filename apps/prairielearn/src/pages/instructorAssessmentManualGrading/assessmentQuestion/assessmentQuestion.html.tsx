@@ -212,13 +212,14 @@ export function AssessmentQuestion({
         : ''}
 
       <p class="my-0">Mean agreement percentage: <span id="mean-agreement"></span></p>
+      <br />
       <p class="my-0">F1 score: <span id="f1-score"></span></p>
       <p class="my-0">Precision: <span id="precision"></span> </p>
       <p class="my-0">Recall: <span id="recall"></span> </p>
-
-      <p class="my-0">F1 score complement: <span id="f1-score-complement"></span></p>
-      <p class="my-0">Precision complement: <span id="precision-complement"></span> </p>
-      <p class="my-0">Recall complement: <span id="recall-complement"></span> </p>
+      <br />
+      <p class="my-0">Complement F1 score: <span id="f1-score-complement"></span></p>
+      <p class="my-0">Complement Precision: <span id="precision-complement"></span> </p>
+      <p class="my-0">Complement Recall: <span id="recall-complement"></span> </p>
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />

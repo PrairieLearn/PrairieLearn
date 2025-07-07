@@ -16,7 +16,6 @@
 <p>Show your work.</p>
 <pl-image-capture file-name="2.jpg"></pl-image-capture> 
 
-<!--<pl-manual-grading-only>-->
 <p><b>Solution</b></p>
 
 <p>Acquire the value of $f(0)$:</p>
@@ -34,4 +33,3 @@
 <p>A function is continuous at $x=0$ only if both one‐sided limits exist and equal $f(0)$. Here they disagree, so $f$ is not continuous (and hence not differentiable) at $x=0\,$.</p>
 
 <p>It is not necessary for the student's response to be verbose.</p>
-<!--</pl-manual-grading-only>-->

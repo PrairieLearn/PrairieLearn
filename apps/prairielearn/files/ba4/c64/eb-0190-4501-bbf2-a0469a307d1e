@@ -16,7 +16,6 @@
 <p>Show your work.</p>
 <pl-image-capture file-name="2.jpg"></pl-image-capture> 
 
-<!--<pl-manual-grading-only>-->
 <p><b>Solution</b></p>
 
 <p>Acquire the value of $f(0)$:</p>
@@ -31,7 +30,4 @@
 =2-3\cdot0=2$</p>
 <p>$24\neq2$, so $\displaystyle\lim_{x\to0}f(x)$ does not exist.</p>
 
-<p>A function is continuous at $x=0$ only if both one‐sided limits exist and equal $f(0)$. Here they disagree, so $f$ is not continuous (and hence not differentiable) at $x=0\,$.</p>
-
-<p>It is not necessary for the student's response to be verbose.</p>
-<!--</pl-manual-grading-only>-->
+<p>3. A function is continuous at $x=0$ only if both one‐sided limits exist and equal $f(0)$. Here they disagree, so $f$ is not continuous (and hence not differentiable) at $x=0\,$.</p>

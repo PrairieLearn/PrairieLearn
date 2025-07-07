@@ -3,7 +3,7 @@
 <p>$cos(arctan(1/5)) = ?$</p>
 <pl-image-capture file-name="1b.jpg"></pl-image-capture> 
 
-<pl-manual-grading-only>
+<!--<pl-manual-grading-only>-->
     <p><b>Solution</b></p>
     <p>$cos(arctan(1/5)) = ?$</p>
     <p>Let $\theta = arctan(\frac{1}{5}). $</p>
@@ -14,4 +14,4 @@
     <p>$hyp = \sqrt{26}$. Thus, $cos(\theta) = \frac{adj}{hyp} = \frac{5}{\sqrt{26}}$.</p>
     
     <p>The correct answer is $\frac{5}{\sqrt{26}}$.</p>
-</pl-manual-grading-only>
+<!--</pl-manual-grading-only>-->

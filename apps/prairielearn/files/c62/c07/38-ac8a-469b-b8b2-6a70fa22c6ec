@@ -7,11 +7,14 @@
     <p><b>Solution</b></p>
     <p>$cos(arctan(1/5)) = ?$</p>
     <p>Let $\theta = arctan(\frac{1}{5}). $</p>
-    <p>Then, $tan(\theta) = \frac{1}{5}$.</p>
+    <p>Then, $tan(\theta) = \frac{1}{5}$. $</p>
     
-    <p>The student should now set up a right triangle. The side opposite of theta should have length 1. The side adjacent to theta should have length 5. Theta may be any angle other than the right angle of the triangle. The hypotenuse should have length $\sqrt{26}$. </p>
+    <p>The student should now set up a right triangle. The side opposite of theta should have length 1. The side opposite of theta should have length 5. Theta should not be the right angle of the triangle. The hypotenuse should have length $\sqrt{26}$. </p>
     
     <p>$hyp = \sqrt{26}$. Thus, $cos(\theta) = \frac{adj}{hyp} = \frac{5}{\sqrt{26}}$.</p>
     
-    <p>The correct answer is $\frac{5}{\sqrt{26}}$.</p>
+    <p>The correct answer is $\frac{5}{\sqrt{26}}$./</p>
+    
+    
+    
 </pl-manual-grading-only>
