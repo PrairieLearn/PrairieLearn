@@ -43,13 +43,9 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
 }
 
 /**
- * Custom parser for SortingState: parses a TanStack Table sorting state from a URL query string.
- *
- * ```ts
- * // sort=col:asc
- * const sortingState = parseAsSortingState('sort');
- * // sortingState = [{ id: 'col', desc: false }]
- * ```
+ * Parses and serializes TanStack Table SortingState to/from a URL query string.
+ * Example: 'sort=col:asc' <-> [{ id: 'col', desc: false }]
+ * Used for reflecting table sort order in the URL.
  */
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {
@@ -82,6 +78,12 @@ export const parseAsSortingState = createParser<SortingState>({
   },
 });
 
+/**
+ * Returns a parser for TanStack Table VisibilityState for a given set of columns.
+ * Parses a comma-separated list of visible columns from a query string, e.g. 'a,b'.
+ * Serializes to a comma-separated list of visible columns, omitting if all are visible.
+ * Used for reflecting column visibility in the URL.
+ */
 export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
   return createParser<VisibilityState>({
     parse(queryValue: string) {
@@ -108,6 +110,11 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
   });
 }
 
+/**
+ * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
+ * Example: 'a,b' <-> { left: ['a', 'b'], right: [] }
+ * Used for reflecting pinned columns in the URL.
+ */
 export const parseAsColumnPinningState = createParser<ColumnPinningState>({
   parse(queryValue) {
     if (!queryValue) return { left: [], right: [] };
