@@ -114,8 +114,12 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
 
 /**
  * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
- * Example: 'a,b' <-> { left: ['a', 'b'], right: [] }
  * Used for reflecting pinned columns in the URL.
+ * 
+ * Right pins aren't supported; an empty array is always returned to allow
+ * this hook's value to be used directly in `state.columnPinning` in `useReactTable`.
+ * 
+ * Example: `a,b` <-> `{ left: ['a', 'b'], right: [] }`
  */
 export const parseAsColumnPinningState = createParser<ColumnPinningState>({
   parse(queryValue) {
