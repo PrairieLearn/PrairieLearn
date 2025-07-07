@@ -6,7 +6,7 @@ The PrairieLearn database is built with a series of consecutive "migrations". A 
 
 The database has a special `migrations` table that tracks with migrations have already been applied. This ensures that migrations are always applied exactly once.
 
-The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations.
+The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations (with `make update-database-description`) and the updates should be committed to git along with the migrations.
 
 ## Creating a migration
 
