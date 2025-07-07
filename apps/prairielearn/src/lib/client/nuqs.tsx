@@ -44,8 +44,9 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
 
 /**
  * Parses and serializes TanStack Table SortingState to/from a URL query string.
- * Example: 'sort=col:asc' <-> [{ id: 'col', desc: false }]
  * Used for reflecting table sort order in the URL.
+ * 
+ * Example: `sort=col:asc` <-> `[{ id: 'col', desc: false }]`
  */
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {
