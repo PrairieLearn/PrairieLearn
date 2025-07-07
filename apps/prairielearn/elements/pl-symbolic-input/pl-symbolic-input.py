@@ -125,7 +125,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    simplify_expr = pl.get_boolean_attrib(
+    simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     display_log_as_ln = pl.get_boolean_attrib(
@@ -174,14 +174,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_complex=allow_complex,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expr,
+                simplify_expression=simplify_expression,
             )
         else:
             a_sub_parsed = psu.json_to_sympy(
                 a_sub,
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expr,
+                simplify_expression=simplify_expression,
             )
 
         if display_log_as_ln:
@@ -304,7 +304,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
-    simplify_expr = pl.get_boolean_attrib(
+    simplify_expression = pl.get_boolean_attrib(
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
@@ -347,7 +347,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         assumptions=assumptions_dict,
         custom_functions=custom_functions,
-        simplify_expression=simplify_expr,
+        simplify_expression=simplify_expression,
     )
 
     # Make sure we can parse the json again
@@ -356,7 +356,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         # Convert safely to sympy
         psu.json_to_sympy(
-            a_sub_json, allow_complex=allow_complex, simplify_expression=simplify_expr
+            a_sub_json,
+            allow_complex=allow_complex,
+            simplify_expression=simplify_expression,
         )
 
         # Finally, store the result
