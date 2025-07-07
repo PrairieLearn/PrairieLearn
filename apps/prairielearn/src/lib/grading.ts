@@ -159,8 +159,6 @@ export async function insertSubmission({
       await sqldb.queryAsync(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
-        submission_id,
-        auth_user_id,
         delta,
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,

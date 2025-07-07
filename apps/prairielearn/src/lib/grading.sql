@@ -117,6 +117,38 @@ WITH
       modified_at = now()
     WHERE
       id = $variant_id
+  ),
+  canceled_jobs AS (
+    -- Cancel any outstanding grading jobs for the variant in previous
+    -- submissions. For student variants, this ensures that if a new submission
+    -- is made while a previous submission is still being graded, the previous
+    -- grading job will not affect the overall instance question grade and
+    -- status. For instructor preview and public preview variants, this is done
+    -- for consistency.
+    UPDATE grading_jobs AS gj
+    SET
+      grading_request_canceled_at = now(),
+      grading_request_canceled_by = $auth_user_id
+    FROM
+      submissions AS s
+    WHERE
+      s.variant_id = $variant_id
+      AND gj.submission_id = s.id
+      AND gj.graded_at IS NULL
+      AND gj.grading_requested_at IS NOT NULL
+      AND gj.grading_request_canceled_at IS NULL
+    RETURNING
+      gj.*
+  ),
+  canceled_job_submissions AS (
+    UPDATE submissions AS s
+    SET
+      grading_requested_at = NULL,
+      modified_at = now()
+    FROM
+      canceled_jobs AS cj
+    WHERE
+      s.id = cj.submission_id
   )
 INSERT INTO
   submissions (
@@ -171,38 +203,6 @@ WITH
       is_ai_graded = FALSE
     WHERE
       id = $instance_question_id
-  ),
-  canceled_jobs AS (
-    -- Cancel any outstanding grading jobs for the instance question in previous
-    -- submissions. This ensures that if a new submission is made while a
-    -- previous submission is still being graded, the previous grading job will
-    -- not affect the overall instance question grade and status.
-    UPDATE grading_jobs AS gj
-    SET
-      grading_request_canceled_at = now(),
-      grading_request_canceled_by = $auth_user_id
-    FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND gj.submission_id = s.id
-      AND gj.submission_id != $submission_id
-      AND gj.graded_at IS NULL
-      AND gj.grading_requested_at IS NOT NULL
-      AND gj.grading_request_canceled_at IS NULL
-    RETURNING
-      gj.*
-  ),
-  canceled_job_submissions AS (
-    UPDATE submissions AS s
-    SET
-      grading_requested_at = NULL,
-      modified_at = now()
-    FROM
-      canceled_jobs AS cj
-    WHERE
-      s.id = cj.submission_id
   )
 UPDATE assessment_instances
 SET
