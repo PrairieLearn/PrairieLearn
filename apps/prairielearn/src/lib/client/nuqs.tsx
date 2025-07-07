@@ -45,7 +45,7 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
 /**
  * Parses and serializes TanStack Table SortingState to/from a URL query string.
  * Used for reflecting table sort order in the URL.
- * 
+ *
  * Example: `sort=col:asc` <-> `[{ id: 'col', desc: false }]`
  */
 export const parseAsSortingState = createParser<SortingState>({
@@ -116,10 +116,10 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
 /**
  * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
  * Used for reflecting pinned columns in the URL.
- * 
+ *
  * Right pins aren't supported; an empty array is always returned to allow
  * this hook's value to be used directly in `state.columnPinning` in `useReactTable`.
- * 
+ *
  * Example: `a,b` <-> `{ left: ['a', 'b'], right: [] }`
  */
 export const parseAsColumnPinningState = createParser<ColumnPinningState>({
