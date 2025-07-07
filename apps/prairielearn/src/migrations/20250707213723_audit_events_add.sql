@@ -25,13 +25,13 @@ CREATE TABLE IF NOT EXISTS audit_events (
 -- Table-specific events
 CREATE INDEX IF NOT EXISTS audit_events_table_name_idx ON audit_events (table_name);
 
--- All events that affect a user
+-- Events that affect a user
 CREATE INDEX IF NOT EXISTS audit_events_subject_user_id_idx ON audit_events (subject_user_id);
 
 -- Specific types of events that affect a user
 CREATE INDEX IF NOT EXISTS audit_events_table_name_subject_user_id_idx ON audit_events (table_name, subject_user_id);
 
--- All events caused by a user
+-- Events caused by a user
 CREATE INDEX IF NOT EXISTS audit_events_agent_authn_user_id_idx ON audit_events (agent_authn_user_id);
 
 -- Add foreign key constraints
@@ -41,14 +41,10 @@ ADD CONSTRAINT audit_events_agent_user_id_fkey FOREIGN KEY (agent_user_id) REFER
 ADD CONSTRAINT audit_events_subject_course_id_fkey FOREIGN KEY (subject_course_id) REFERENCES pl_courses (id) ON UPDATE CASCADE ON DELETE SET NULL,
 ADD CONSTRAINT audit_events_subject_course_instance_id_fkey FOREIGN KEY (subject_course_instance_id) REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE SET NULL,
 ADD CONSTRAINT audit_events_subject_group_id_fkey FOREIGN KEY (subject_group_id) REFERENCES groups (id) ON UPDATE CASCADE ON DELETE SET NULL,
-ADD CONSTRAINT audit_events_subject_user_id_fkey FOREIGN KEY (subject_user_id) REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-ADD CONSTRAINT audit_events_subject_institution_id_fkey FOREIGN KEY (subject_institution_id) REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-ADD CONSTRAINT audit_events_subject_assessment_id_fkey FOREIGN KEY (subject_assessment_id) REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-ADD CONSTRAINT audit_events_subject_assessment_instance_id_fkey FOREIGN KEY (subject_assessment_instance_id) REFERENCES assessment_instances (id) ON UPDATE CASCADE ON DELETE SET NULL;
-
+ADD CONSTRAINT audit_events_subject_user_id_fkey FOREIGN KEY (subject_user_id) REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL,
+ADD CONSTRAINT audit_events_subject_institution_id_fkey FOREIGN KEY (subject_institution_id) REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL,
+ADD CONSTRAINT audit_events_subject_assessment_id_fkey FOREIGN KEY (subject_assessment_id) REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE SET NULL,
+ADD CONSTRAINT audit_events_subject_assessment_instance_id_fkey FOREIGN KEY (subject_assessment_instance_id) REFERENCES assessment_instances (id) ON UPDATE CASCADE ON DELETE SET NULL,
 ADD CONSTRAINT audit_events_subject_assessment_question_id_fkey FOREIGN KEY (subject_assessment_question_id) REFERENCES assessment_questions (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- Add comments for documentation
