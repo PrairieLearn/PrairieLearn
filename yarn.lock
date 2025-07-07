@@ -3659,8 +3659,8 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.15.34"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    isomorphic-dompurify: "npm:^2.25.0"
-    marked: "npm:^15.0.12"
+    isomorphic-dompurify: "npm:^2.26.0"
+    marked: "npm:^16.0.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
@@ -11523,7 +11523,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"isomorphic-dompurify@npm:^2.25.0":
+"isomorphic-dompurify@npm:^2.26.0":
   version: 2.26.0
   resolution: "isomorphic-dompurify@npm:2.26.0"
   dependencies:
@@ -12381,15 +12381,6 @@ __metadata:
   bin:
     marked: bin/marked.js
   checksum: 10c0/4713cceabdcd0b4de9a156d601a55ae7e9091cd89ba75d8283042ddbbedb7cd765e02445a80be01131aa24a79003346fc650d66bf4423f7aa186dcc46b403849
-  languageName: node
-  linkType: hard
-
-"marked@npm:^15.0.12":
-  version: 15.0.12
-  resolution: "marked@npm:15.0.12"
-  bin:
-    marked: bin/marked.js
-  checksum: 10c0/e09da211544b787ecfb25fed07af206060bf7cd6d9de6cb123f15c496a57f83b7aabea93340aaa94dae9c94e097ae129377cad6310abc16009590972e85f4212
   languageName: node
   linkType: hard
 

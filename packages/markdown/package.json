@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@prairielearn/marked-mathjax": "workspace:^",
-    "isomorphic-dompurify": "^2.25.0",
-    "marked": "^15.0.12",
+    "isomorphic-dompurify": "^2.26.0",
+    "marked": "^16.0.0",
     "mathjax": "^3.2.2"
   },
   "devDependencies": {
