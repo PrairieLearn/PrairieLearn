@@ -20,13 +20,20 @@ ADD COLUMN pending_uid TEXT;
 
 -- Make user_id nullable
 ALTER TABLE enrollments
-ALTER COLUMN user_id DROP NOT NULL;
-
--- Ensure user_id is a foreign key
-ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER COLUMN user_id
+DROP NOT NULL;
 
 -- Forbid impossible states: invited + lti_synced, blocked + lti_synced
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_no_invited_synced CHECK (NOT (status = 'invited' AND lti_synced)),
-ADD CONSTRAINT enrollments_no_blocked_synced CHECK (NOT (status = 'blocked' AND lti_synced)); 
+ADD CONSTRAINT enrollments_no_invited_synced CHECK (
+  NOT (
+    status = 'invited'
+    AND lti_synced
+  )
+),
+ADD CONSTRAINT enrollments_no_blocked_synced CHECK (
+  NOT (
+    status = 'blocked'
+    AND lti_synced
+  )
+);
