@@ -10,17 +10,11 @@ const Tooltip = (TooltipOriginal as any).default || TooltipOriginal;
 export interface FriendlyDateProps {
   date: Date;
   timezone: string;
-  options?: Parameters<typeof formatDateFriendly>[2];
   tooltip?: boolean;
 }
 
-export const FriendlyDate: FC<FriendlyDateProps> = ({
-  date,
-  timezone,
-  options,
-  tooltip = false,
-}) => {
-  const friendlyString = formatDateFriendly(date, timezone, options);
+export const FriendlyDate: FC<FriendlyDateProps> = ({ date, timezone, tooltip = false }) => {
+  const friendlyString = formatDateFriendly(date, timezone);
   const fullString = formatDate(date, timezone);
   if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
   return (
