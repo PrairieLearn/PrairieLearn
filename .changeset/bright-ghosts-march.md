@@ -2,4 +2,4 @@
 '@prairielearn/formatter': patch
 ---
 
-Add includeSec support for formatDateFriendly
+Don't display seconds for formatDateFriendly
