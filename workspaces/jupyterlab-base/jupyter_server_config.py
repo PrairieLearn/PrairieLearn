@@ -33,5 +33,9 @@ if "LAUNCH_FILE_NAME" in os.environ:
     drive = "RTC:" if enable_rtc else ""
     c.LabApp.default_url = f"/lab/tree/{drive}{os.environ['LAUNCH_FILE_NAME']}"
 
+# Used to hide the Python Kernel from R images
+if "HIDE_PYTHON_KERNEL" in os.environ:
+    c.KernelSpecManager.allowed_kernelspecs = {"ir"}
+
 c.FileContentsManager.delete_to_trash = False
 c.FileCheckpoints.checkpoint_dir = "/tmp/ipynb_checkpoints"
