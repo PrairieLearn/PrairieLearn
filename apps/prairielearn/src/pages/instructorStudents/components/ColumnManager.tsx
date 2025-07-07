@@ -1,5 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'preact/compat';
+import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
 import DropdownOriginal from 'react-bootstrap/cjs/Dropdown.js';
 import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger.js';
 import TooltipOriginal from 'react-bootstrap/cjs/Tooltip.js';
@@ -9,19 +10,20 @@ import type { StudentRow } from '../instructorStudents.shared.js';
 const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
 const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
+const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
 
 interface ColumnMenuItemProps {
   column: Column<StudentRow>;
   hidePinButton: boolean;
   onTogglePin: (columnId: string) => void;
-  onClearPinFocus: () => void;
+  onClearElementFocus: () => void;
 }
 
 function ColumnMenuItem({
   column,
   hidePinButton = false,
   onTogglePin,
-  onClearPinFocus,
+  onClearElementFocus,
 }: ColumnMenuItemProps) {
   const checkboxRef = useRef<HTMLInputElement>(null);
   const pinButtonRef = useRef<HTMLButtonElement>(null);
@@ -31,7 +33,7 @@ function ColumnMenuItem({
   const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    onClearPinFocus();
+    onClearElementFocus();
     switch (e.key) {
       // Support for arrow keys to move between menu items
       case 'ArrowRight':
@@ -125,7 +127,7 @@ function ColumnMenuItem({
 }
 
 export function ColumnManager({ table }: { table: Table<StudentRow> }) {
-  const [activePinButton, setActivePinButton] = useState<string | null>(null);
+  const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const handleTogglePin = (columnId: string) => {
     const currentLeft = table.getState().columnPinning?.left ?? [];
     const isPinned = currentLeft.includes(columnId);
@@ -138,33 +140,29 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
       newLeft = columnOrder.filter((id) => newPinned.includes(id));
     }
     table.setColumnPinning({ left: newLeft, right: [] });
-    setActivePinButton(columnId);
+    setActiveElementId(`${columnId}-pin`);
   };
 
   const isVisibilityChanged = Object.values(table.getState().columnVisibility).some((v) => !v);
   const isPinningChanged = (table.getState().columnPinning.left?.length ?? 0) > 0;
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
-  const handleReset = () => {
-    table.resetColumnVisibility();
-    table.resetColumnPinning();
-  };
-
   const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');
   const unpinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() !== 'left');
 
+  // When we use the pin or reset button, we want to refocus to another element.
   useEffect(() => {
-    if (activePinButton) {
-      const pinButton = document.getElementById(`${activePinButton}-pin`);
-      if (pinButton) {
-        (pinButton as HTMLElement).focus();
+    if (activeElementId) {
+      const element = document.getElementById(activeElementId);
+      if (element) {
+        (element as HTMLElement).focus();
       }
     }
-  }, [activePinButton]);
+  }, [activeElementId]);
 
   return (
     <Dropdown autoClose="outside">
-      <Dropdown.Toggle variant="outline-secondary">
+      <Dropdown.Toggle variant="outline-secondary" id="column-manager-button">
         <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
       </Dropdown.Toggle>
@@ -182,7 +180,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
                     column={column}
                     hidePinButton={index !== pinnedColumns.length - 1}
                     onTogglePin={handleTogglePin}
-                    onClearPinFocus={() => setActivePinButton(null)}
+                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}
@@ -200,7 +198,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
                     column={column}
                     hidePinButton={index !== 0}
                     onTogglePin={handleTogglePin}
-                    onClearPinFocus={() => setActivePinButton(null)}
+                    onClearElementFocus={() => setActiveElementId(null)}
                   />
                 );
               })}
@@ -210,15 +208,20 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
         )}
         {showResetButton && (
           <div class="px-2 py-1">
-            <button
-              type="button"
-              className="btn btn-sm w-100 btn-secondary"
-              onClick={handleReset}
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-100"
+              onClick={() => {
+                table.resetColumnVisibility();
+                table.resetColumnPinning();
+                setActiveElementId('column-manager-button');
+              }}
               aria-label="Reset all columns to default visibility and pinning"
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
               Reset view
-            </button>
+            </Button>
           </div>
         )}
       </Dropdown.Menu>
