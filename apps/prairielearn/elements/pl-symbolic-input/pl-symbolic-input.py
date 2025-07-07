@@ -80,6 +80,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_trig = pl.get_boolean_attrib(
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
+        simplify_expression = pl.get_boolean_attrib(
+            element,
+            "display-simplified-expression",
+            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+        )
         # Validate that the answer can be parsed before storing
         try:
             psu.convert_string_to_sympy(
@@ -88,6 +93,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         except psu.BaseSympyError as exc:
             raise ValueError(
@@ -263,12 +269,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         else:
             a_tru = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
 
         a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
