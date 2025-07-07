@@ -168,7 +168,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
       </div>
       <div class="card-body d-flex flex-column">
         <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-8 d-flex flex-row gap-2">
+          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
             <div class="input-group">
               <input
                 ref={searchInputRef}
@@ -205,7 +205,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
           </div>
         </div>
         <div class="flex-grow-1">
-          <StudentsTable table={table} timezone={timezone} />
+          <StudentsTable table={table} />
         </div>
       </div>
     </div>

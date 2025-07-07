@@ -1,9 +1,13 @@
-import { type Header, type SortDirection, type Table, flexRender } from '@tanstack/react-table';
+import {
+  type Header,
+  type Row,
+  type SortDirection,
+  type Table,
+  flexRender,
+} from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import { type JSX, type ThHTMLAttributes, useEffect, useRef } from 'preact/compat';
-
-import { formatDateFriendly } from '@prairielearn/formatter';
+import { type JSX, type ThHTMLAttributes, useEffect, useRef, useState } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -77,7 +81,7 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; timezone: string }) {
+export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
@@ -88,30 +92,58 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
     overscan: 10,
   });
 
-  // Handle keyboard navigation for table cells
-  const handleTableKeyDown = (e: KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-    const row = target.closest('tr');
-    if (!row || !tableRef.current) return;
+  // Track focused cell for grid navigation
+  const [focusedCell, setFocusedCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
 
-    const allRows = Array.from(tableRef.current.querySelectorAll('tr'));
-    const currentIndex = allRows.indexOf(row);
-    if (currentIndex === -1) return;
+  // Helper to get visible columns for a row
+  const getVisibleCells = (row: Row<StudentRow>) => [
+    ...row.getLeftVisibleCells(),
+    ...row.getCenterVisibleCells(),
+  ];
 
-    switch (e.key) {
-      case 'ArrowDown': {
-        e.preventDefault();
-        allRows[currentIndex + 1]?.focus();
-        break;
-      }
+  // Keyboard navigation for grid
+  const handleGridKeyDown = (e: KeyboardEvent, rowIdx: number, colIdx: number) => {
+    const adjacentCells = {
+      ArrowDown: {
+        row: Math.min(rows.length - 1, rowIdx + 1),
+        col: colIdx,
+      },
+      ArrowUp: {
+        row: Math.max(0, rowIdx - 1),
+        col: colIdx,
+      },
+      ArrowRight: {
+        row: rowIdx,
+        col: Math.min(getVisibleCells(rows[rowIdx]).length - 1, colIdx + 1),
+      },
+      ArrowLeft: {
+        row: rowIdx,
+        col: Math.max(0, colIdx - 1),
+      },
+    };
 
-      case 'ArrowUp': {
-        e.preventDefault();
-        allRows[currentIndex - 1]?.focus();
-        break;
-      }
+    const next = adjacentCells[e.key];
+    if (!next) {
+      return;
     }
+    e.preventDefault();
+    setFocusedCell({ row: next.row, col: next.col });
   };
+
+  // Focus the correct cell when focusedCell changes
+  useEffect(() => {
+    const selector = `[data-grid-cell-row="${focusedCell.row}"][data-grid-cell-col="${focusedCell.col}"]`;
+    const cell = tableRef.current?.querySelector(selector) as HTMLElement | null;
+    if (!cell) {
+      return;
+    }
+    cell.focus();
+    cell.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  }, [focusedCell]);
 
   const virtualRows = rowVirtualizer.getVirtualItems();
   const [before, after] =
@@ -173,13 +205,12 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
           <table
             class="table table-hover mb-0 border border-top-0"
             style={{ tableLayout: 'fixed' }}
-            onKeyDown={handleTableKeyDown}
             aria-label="Students table"
             role="grid"
           >
             <thead>
               {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
+                <tr key={headerGroup.id} role="row">
                   {headerGroup.headers.map((header, index) => {
                     const isPinned = header.column.getIsPinned();
                     const sortDirection = header.column.getIsSorted();
@@ -190,18 +221,12 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
                         : header.column.id;
 
                     const style: JSX.CSSProperties = {
-                      // If the cell is the last column, use whichever is larger:
-                      // 1. The remaining space
-                      // 2. The column width
                       width:
                         header.column.id === lastColumnId
                           ? `max(100%, ${header.getSize()}px)`
                           : header.getSize(),
                       position: 'sticky',
                       top: 0,
-                      // 2 - pinned header columns
-                      // 1 - unpinned header row
-                      // 0 - table body
                       zIndex: isPinned === 'left' ? 2 : 1,
                       left: isPinned === 'left' ? header.getStart() : undefined,
                       boxShadow:
@@ -214,6 +239,7 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
                         class={clsx(isPinned === 'left' && 'bg-light')}
                         style={style}
                         aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+                        role="columnheader"
                       >
                         <button
                           class="text-nowrap"
@@ -262,7 +288,6 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
                             </span>
                           )}
                         </button>
-                        {/* If the table is narrower than its container, don't show the resize handle for the last column. */}
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
                         index === headerGroup.headers.length - 1 ? null : (
@@ -276,80 +301,51 @@ export function StudentsTable({ table, timezone }: { table: Table<StudentRow>; t
             </thead>
             <tbody>
               {before > 0 && (
-                <tr aria-hidden="true">
+                <tr aria-hidden="true" role="row">
                   <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
                 </tr>
               )}
               {virtualRows.map((virtualRow) => {
                 const row = rows[virtualRow.index];
-                const student = row.original;
-
-                // TODO: Do we want to instead allow cells to get individual focus so we don't need to do this?
-                const ariaLabelPortions: Record<string, string | null> = {
-                  user_uid: student.user.uid,
-                  user_name: student.user.name,
-                  user_email: student.user.email,
-                  enrollment_created_at: student.enrollment.created_at
-                    ? formatDateFriendly(student.enrollment.created_at, timezone)
-                    : 'Unknown',
-                };
-                const studentLabel = row
-                  .getVisibleCells()
-                  .map((cell) => ariaLabelPortions[cell.column.id])
-                  .filter(Boolean)
-                  .join(', ');
+                const visibleCells = getVisibleCells(row);
+                const rowIdx = virtualRow.index;
 
                 return (
-                  <tr
-                    key={row.id}
-                    tabIndex={0}
-                    aria-label={studentLabel}
-                    style={{
-                      height: `${virtualRow.size}px`,
-                    }}
-                  >
-                    {row.getLeftVisibleCells().map((cell) => (
+                  <tr key={row.id} role="row">
+                    {visibleCells.map((cell, colIdx) => (
                       <td
                         key={cell.id}
-                        class="bg-light"
+                        role="gridcell"
+                        // You can tab to the most-recently focused cell.
+                        tabIndex={focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1}
+                        // We store this so you can navigate around the grid.
+                        data-grid-cell-row={rowIdx}
+                        data-grid-cell-col={colIdx}
                         style={{
                           width:
                             cell.column.id === lastColumnId
                               ? `max(100%, ${cell.column.getSize()}px)`
                               : cell.column.getSize(),
-                          position: 'sticky',
-                          left: cell.column.getStart(),
+                          position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
+                          left:
+                            cell.column.getIsPinned() === 'left'
+                              ? cell.column.getStart()
+                              : undefined,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}
+                        onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
+                        onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
-                    {row.getCenterVisibleCells().map((cell) => {
-                      return (
-                        <td
-                          key={cell.id}
-                          style={{
-                            width:
-                              cell.column.id === lastColumnId
-                                ? `max(100%, ${cell.column.getSize()}px)`
-                                : cell.column.getSize(),
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      );
-                    })}
                   </tr>
                 );
               })}
               {after > 0 && (
-                <tr aria-hidden="true">
+                <tr aria-hidden="true" role="row">
                   <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
                 </tr>
               )}
