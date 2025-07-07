@@ -308,7 +308,6 @@ function formatDateFriendlyParts(
  * @param param.timeFirst If true, the time is shown before the date (default false).
  * @param param.dateOnly If true, only the date is shown (default false).
  * @param param.timeOnly If true, only the time is shown (default false).
- * @param param.includeSec If true, the seconds are shown (default false).
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
