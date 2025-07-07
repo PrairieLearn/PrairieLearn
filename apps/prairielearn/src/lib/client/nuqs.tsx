@@ -105,7 +105,9 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
       return visible.join(',');
     },
     eq(a, b) {
-      return Object.keys(a).every((col) => a[col] === b[col]);
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      return aKeys.length === bKeys.length && aKeys.every((col) => a[col] === b[col]);
     },
   });
 }
