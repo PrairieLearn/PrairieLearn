@@ -521,7 +521,6 @@ export async function aiGrade({
         try {
           return await gradeInstanceQuestion(instance_question);
         } catch (err) {
-          job.error(err);
           return {
             success: false,
             logs: [
@@ -534,7 +533,6 @@ export async function aiGrade({
         }
       },
     );
-
 
     // Log the results of grading each instance question.
     for (const status of instance_question_grading_statuses) {
