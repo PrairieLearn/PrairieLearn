@@ -2,6 +2,7 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -44,6 +45,7 @@ export default tseslint.config([
       vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       '@prairielearn': prairielearn,
+      '@stylistic': stylistic,
     },
 
     languageOptions: {
@@ -84,10 +86,6 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
-
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      quotes: ['error', 'single', { avoidEscape: true }],
 
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
@@ -158,6 +156,65 @@ export default tseslint.config([
           args: 'after-used',
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+        },
+      ],
+
+      ...stylistic.configs.recommended.rules,
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+      '@stylistic/quote-props': ['error', 'as-needed', { keywords: false }],
+      '@stylistic/semi': ['error', 'always'],
+      '@stylistic/operator-linebreak': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/870
+      '@stylistic/multiline-ternary': 'off', // We don't enforce a specific style for ternary operators
+      '@stylistic/jsx-one-expression-per-line': 'off', // We don't enforce a specific style for JSX expressions
+      '@stylistic/jsx-curly-brace-presence': [
+        'error',
+        // We sometimes wrap a literal in curly braces for clarity. E.g. {Math.floor(grade)}{'%'}
+        { props: 'ignore', children: 'ignore', propElementValues: 'always' },
+      ],
+      '@stylistic/generator-star-spacing': ['error', 'before'],
+      '@stylistic/arrow-parens': ['error', 'always', { requireForBlockBody: true }],
+      '@stylistic/brace-style': ['error', '1tbs'],
+      '@stylistic/indent': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/845
+      '@stylistic/indent-binary-ops': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/676
+      '@stylistic/member-delimiter-style': [
+        'error',
+        {
+          multiline: {
+            delimiter: 'semi',
+            requireLast: true,
+          },
+          multilineDetection: 'brackets',
+          overrides: {
+            interface: {
+              multiline: {
+                delimiter: 'semi',
+                requireLast: true,
+              },
+            },
+          },
+          singleline: {
+            delimiter: 'semi',
+          },
+        },
+      ],
+      // We use comments stylistically sometimes, e.g. `/*****/` or `//////`
+      '@stylistic/spaced-comment': 'off',
+      '@stylistic/comma-dangle': [
+        'error',
+        {
+          arrays: 'always-multiline',
+          objects: 'always-multiline',
+          imports: 'always-multiline',
+          exports: 'always-multiline',
+          dynamicImports: 'ignore',
+          // Can't distinguish between function declarations and function calls yet
+          functions: 'ignore', // https://github.com/eslint-stylistic/eslint-stylistic/issues/516
+          importAttributes: 'always-multiline',
+          enums: 'always-multiline',
+          generics: 'always-multiline',
+          tuples: 'always-multiline',
         },
       ],
 

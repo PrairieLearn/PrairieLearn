@@ -206,6 +206,7 @@ function PLThreeJS(options) {
     if (glyph.o) {
       const outline = glyph._cachedOutline || (glyph._cachedOutline = glyph.o.split(' '));
 
+      // eslint-disable-next-line @stylistic/space-in-parens
       for (let i = 0, l = outline.length; i < l; ) {
         const action = outline[i++];
 

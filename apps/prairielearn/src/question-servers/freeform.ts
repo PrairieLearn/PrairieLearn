@@ -438,6 +438,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   // The following code is deliberately formatted as it is to aid in comprehension,
   // so we prevent Prettier from reformatting the code to span multiple lines.
   // prettier-ignore
+  /* eslint-disable @stylistic/no-multi-spaces */
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/
@@ -455,7 +456,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
              || checkProp('test_type',             'string',  ['test'],                             [])
