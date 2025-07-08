@@ -125,8 +125,13 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
-      // Use the recommended rules for react-you-might-not-need-an-effect
-      ...reactYouMightNotNeedAnEffect.configs.recommended.rules,
+      // Use the recommended rules for react-you-might-not-need-an-effect as errors.
+      ...Object.fromEntries(
+        Object.keys(reactYouMightNotNeedAnEffect.rules).map((ruleName) => [
+          reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
+          'error',
+        ]),
+      ),
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
