@@ -43,13 +43,10 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
 }
 
 /**
- * Custom parser for SortingState: parses a TanStack Table sorting state from a URL query string.
+ * Parses and serializes TanStack Table SortingState to/from a URL query string.
+ * Used for reflecting table sort order in the URL.
  *
- * ```ts
- * // sort=col:asc
- * const sortingState = parseAsSortingState('sort');
- * // sortingState = [{ id: 'col', desc: false }]
- * ```
+ * Example: `sort=col:asc` <-> `[{ id: 'col', desc: false }]`
  */
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {
@@ -82,6 +79,12 @@ export const parseAsSortingState = createParser<SortingState>({
   },
 });
 
+/**
+ * Returns a parser for TanStack Table VisibilityState for a given set of columns.
+ * Parses a comma-separated list of visible columns from a query string, e.g. 'a,b'.
+ * Serializes to a comma-separated list of visible columns, omitting if all are visible.
+ * Used for reflecting column visibility in the URL.
+ */
 export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
   return createParser<VisibilityState>({
     parse(queryValue: string) {
@@ -103,11 +106,22 @@ export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
       return visible.join(',');
     },
     eq(a, b) {
-      return Object.keys(a).every((col) => a[col] === b[col]);
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      return aKeys.length === bKeys.length && aKeys.every((col) => a[col] === b[col]);
     },
   });
 }
 
+/**
+ * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
+ * Used for reflecting pinned columns in the URL.
+ *
+ * Right pins aren't supported; an empty array is always returned to allow
+ * this hook's value to be used directly in `state.columnPinning` in `useReactTable`.
+ *
+ * Example: `a,b` <-> `{ left: ['a', 'b'], right: [] }`
+ */
 export const parseAsColumnPinningState = createParser<ColumnPinningState>({
   parse(queryValue) {
     if (!queryValue) return { left: [], right: [] };
