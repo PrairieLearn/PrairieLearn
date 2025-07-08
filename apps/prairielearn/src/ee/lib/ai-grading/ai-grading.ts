@@ -31,17 +31,16 @@ import {
   generateSubmissionEmbedding,
   insertAiGradingJob,
   parseAiRubricItems,
-  selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 50;
 
 /**
  * Grade instance questions using AI.
@@ -224,7 +223,7 @@ export async function aiGrade({
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
           // The AI will explain why it selected the rubric items it did.
-          feedback: z.string().optional(), 
+          feedback: z.string()
         });
         const completion = await openai.chat.completions.parse({
           messages,
@@ -239,8 +238,8 @@ export async function aiGrade({
           job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
           const response = completion.choices[0].message;
           job.info(`Raw response:\n${response.content}`);
-  
           if (response.parsed) {
+            console.log('AI grading response:', response.parsed);
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
@@ -260,7 +259,7 @@ export async function aiGrade({
                   {
                     // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
-                    feedback: { manual: '' },
+                    feedback: { manual: response?.parsed?.feedback ?? '' },
                   },
                   user_id,
                   true, // is_ai_graded
@@ -289,6 +288,7 @@ export async function aiGrade({
                 );
                 const score =
                   manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+                console.log('feedback', response?.parsed?.feedback);
                 const grading_job_id = await queryRow(
                   sql.insert_grading_job,
                   {
@@ -300,7 +300,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: manual_rubric_grading.computed_points,
                     manual_rubric_grading_id: manual_rubric_grading.id,
-                    feedback: null,
+                    feedback: { manual: response?.parsed?.feedback ?? ''},
                   },
                   IdSchema,
                 );
@@ -325,6 +325,7 @@ export async function aiGrade({
             return false;
           }
         } catch (err) {
+          console.error(err);
           job.error(`ERROR AI grading for ${instance_question.id}`);
           job.error(err);
           return false;

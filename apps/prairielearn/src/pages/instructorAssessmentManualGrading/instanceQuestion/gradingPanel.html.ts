@@ -45,6 +45,7 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || (disable ? 'Next' : 'Skip');
 
+  // Retrieve most recent AI grading job, if available
   return html`
     <form
       name="manual-grading-form"

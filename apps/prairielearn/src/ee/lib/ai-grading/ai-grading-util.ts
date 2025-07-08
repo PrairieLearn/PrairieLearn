@@ -243,7 +243,7 @@ function generateSubmissionMessage({
 
   message_content.push({
     type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object. Also, explain why you selected the rubric items you did, if any, in the feedback field, along with the associated error(s) that the student made.',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object. Also, explain why you selected the rubric items you did, if any, in the feedback field, along with the associated error(s) that the student made. Only use standard JSON-compatible characters in your feedback, such as alphanumeric characters, spaces, and punctuation. LaTex is acceptable. Do not use any special characters.',
   });
 
   return {
