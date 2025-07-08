@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 
 import * as async from 'async';
-import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -15,8 +14,7 @@ import {
   type Course,
   IdSchema,
   type InstanceQuestion,
-  type InstanceQuestion,
-  type Question,
+  type Question
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -152,8 +150,6 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
-    // Grade each instance question. The ith element of grading_successes contains whether or not grading the ith instance question succeeded.
-    const grading_successes = await async.mapLimit(instance_questions, PARALLEL_SUBMISSION_GRADING_LIMIT, async (instance_question: InstanceQuestion) => {
     const gradeInstanceQuestion = async (instance_question: InstanceQuestion) => {
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   
@@ -442,7 +438,7 @@ export async function aiGrade({
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
-  };
+  }
 
   if (executeSync) {
     await serverJob.execute(jobFunction);
