@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "workspace:^",
-    "commander": "^13.1.0",
+    "commander": "^14.0.0",
     "esbuild": "^0.25.5",
     "express-static-gzip": "^2.2.0",
     "fs-extra": "^11.3.0",

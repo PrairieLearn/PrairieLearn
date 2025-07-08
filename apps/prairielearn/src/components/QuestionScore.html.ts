@@ -189,7 +189,7 @@ export function QuestionScorePanelContent({
         ${!hasAutoAndManualPoints && assessment_question.max_points
           ? html`
               <tr>
-                <td colspan="2" class="text-right">
+                <td colspan="2" class="text-end">
                   <small>
                     ${!assessment_question.max_auto_points
                       ? 'Manually-graded question'
@@ -233,7 +233,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <div class="mb-3 text-right">
+        <div class="mb-3 text-end">
           <button type="submit" class="btn btn-sm btn-warning" name="__action" value="report_issue">
             Report error
           </button>
@@ -272,10 +272,10 @@ export function ExamQuestionStatus({
     `;
   }
 
-  const badge_color = {
+  const badge_color: Record<NonNullable<InstanceQuestion['status']>, string> = {
     unanswered: 'warning',
     invalid: 'danger',
-    grading: 'default',
+    grading: 'secondary',
     saved: 'info',
     complete: 'success',
     correct: 'success',
@@ -284,7 +284,7 @@ export function ExamQuestionStatus({
 
   return html`
     <span class="align-middle">
-      <span class="badge badge-${badge_color[instance_question.status ?? 'grading'] ?? 'default'}">
+      <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
         ${instance_question.status}
       </span>
 
@@ -345,8 +345,8 @@ export function QuestionVariantHistory({
       (variant, index) => html`
         <a
           class="badge ${currentVariantId != null && idsEqual(variant.id, currentVariantId)
-            ? 'badge-info'
-            : 'badge-secondary'} ${collapseClass}"
+            ? 'text-bg-info'
+            : 'text-bg-secondary'} ${collapseClass}"
           ${index < previousVariants.length - MAX_DISPLAYED_VARIANTS ? 'style="display: none"' : ''}
           href="${urlPrefix}/instance_question/${instanceQuestionId}/?variant_id=${variant.id}"
         >

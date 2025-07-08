@@ -444,17 +444,17 @@ export function QuestionFooterContent({
                     ${variantAttemptsTotal > 0
                       ? variantAttemptsLeft > 1
                         ? html`
-                            <small class="font-italic ms-2">
+                            <small class="fst-italic ms-2">
                               ${variantAttemptsLeft} attempts left
                             </small>
                           `
                         : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="font-italic ms-2">Last attempt</small>`
+                          ? html`<small class="fst-italic ms-2">Last attempt</small>`
                           : variantAttemptsLeft === 1
-                            ? html`<small class="font-italic ms-2">Single attempt</small>`
+                            ? html`<small class="fst-italic ms-2">Single attempt</small>`
                             : ''
                       : questionContext === 'student_homework'
-                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
+                        ? html`<small class="fst-italic ms-2">Unlimited attempts</small>`
                         : ''}
                   </button>
                 `
@@ -498,7 +498,7 @@ export function QuestionFooterContent({
                   `
                 : hasAttemptsOtherVariants
                   ? html`
-                      <small class="font-italic align-self-center">
+                      <small class="fst-italic align-self-center">
                         Additional attempts available with new variants
                       </small>
                       <button
@@ -568,7 +568,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
+                <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -583,7 +583,7 @@ function SubmitRateFooter({
             : ''}
         </span>
         <span class="d-flex align-self-center">
-          <small class="font-italic">
+          <small class="fst-italic">
             Can only be graded once every ${assessment_question.grade_rate_minutes}
             ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
           </small>
@@ -642,7 +642,7 @@ function AvailablePointsNotes({
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
   const additional = instance_question.points === 0 ? '' : 'additional';
   return html`
-    <small class="font-italic align-self-center text-right">
+    <small class="fst-italic align-self-center text-end">
       ${roundedPoints[0] === 1
         ? `1 ${additional} point available for this attempt`
         : `${roundedPoints[0]} ${additional} points available for this attempt`}
