@@ -326,8 +326,8 @@ function CheckboxOrRadioInput({
     <div class="mt-2">
       {options.map((option) => (
         <FormCheck
-          id={`check-${option.value}`}
           key={option.value}
+          id={`check-${option.value}`}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
           value={option.value}

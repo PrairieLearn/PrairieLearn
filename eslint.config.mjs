@@ -217,6 +217,18 @@ export default tseslint.config([
           tuples: 'always-multiline',
         },
       ],
+      '@stylistic/jsx-sort-props': [
+        'error',
+        {
+          shorthandLast: true,
+          multiline: 'ignore',
+          ignoreCase: true,
+          callbacksLast: true,
+          noSortAlphabetically: true,
+          reservedFirst: true,
+          locale: 'auto',
+        },
+      ],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
