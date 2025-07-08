@@ -1,6 +1,11 @@
 import type z from 'zod';
 
-import { CourseInstanceSchema, CourseSchema, UserSchema } from '../db-types.js';
+import {
+  AssessmentQuestionSchema,
+  CourseInstanceSchema,
+  CourseSchema,
+  UserSchema,
+} from '../db-types.js';
 
 export const StaffCourseSchema = CourseSchema.omit({
   yearly_enrollment_limit: true,
@@ -51,3 +56,8 @@ export type StaffUser = z.infer<typeof StaffUserSchema>;
 
 export const StudentUserSchema = StaffUserSchema.omit({ email: true, uin: true });
 export type StudentUser = z.infer<typeof StudentUserSchema>;
+
+// While there are not currently any changes to the structure between StaffAssessmentQuestionSchema
+// and AssessmentQuestionSchema, we are maintaining consistency with our naming conventions
+// for safe types.
+export const StaffAssessmentQuestionSchema = AssessmentQuestionSchema;

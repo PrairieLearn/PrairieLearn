@@ -1,12 +1,11 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+import { StaffAssessmentQuestionSchema } from '../lib/client/safe-db-types.js';
 import {
   AlternativeGroupSchema,
-  AssessmentQuestionSchema,
   AssessmentsFormatForQuestionSchema,
   IdSchema,
   QuestionSchema,
@@ -15,7 +14,7 @@ import {
   ZoneSchema,
 } from '../lib/db-types.js';
 
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
+export const AssessmentQuestionRowSchema = StaffAssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
   alternative_group_number: AlternativeGroupSchema.shape.number,
   alternative_group_size: z.number(),

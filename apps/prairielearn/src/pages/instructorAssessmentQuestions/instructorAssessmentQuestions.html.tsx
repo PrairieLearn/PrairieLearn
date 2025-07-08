@@ -1,7 +1,7 @@
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { StaffCourseSchema } from '../../lib/client/safe-db-types.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { Hydrate } from '../../lib/preact.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
@@ -14,6 +14,9 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
 }) {
+  const { authz_data, urlPrefix } = getPageContext(resLocals);
+  const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
+
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
@@ -29,17 +32,17 @@ export function InstructorAssessmentQuestions({
     content: (
       <>
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authz_data={authz_data}
           assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+          courseInstance={course_instance}
+          course={course}
+          urlPrefix={urlPrefix}
         />
         <Hydrate>
           <InstructorAssessmentQuestionsTable
-            course={StaffCourseSchema.parse(resLocals.course)}
+            course={course}
             questions={questions}
-            urlPrefix={resLocals.urlPrefix}
+            urlPrefix={urlPrefix}
             assessmentType={resLocals.assessment.type}
             assessmentSetName={resLocals.assessment_set.name}
             assessmentNumber={resLocals.assessment.number}
