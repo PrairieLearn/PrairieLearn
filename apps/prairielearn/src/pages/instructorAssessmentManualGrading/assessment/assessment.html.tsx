@@ -86,10 +86,11 @@ export function ManualGradingAssessment({
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white justify-content-between align-items-center d-flex">
+        <div class="card-header bg-primary text-white align-items-center d-flex w-100 gap-2">
           <h1>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
           </h1>
+          <div class="flex-1"></div>
           <button
             type="button"
             class="btn btn-sm btn-light grading-tag-button"
@@ -104,7 +105,7 @@ export function ManualGradingAssessment({
             name="export-statistics"
             onclick="$('#export-statistics').submit();"
           >
-            Export Statistics
+            Export statistics
           </button>
         </div>
 

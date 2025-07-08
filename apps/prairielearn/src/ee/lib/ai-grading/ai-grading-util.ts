@@ -36,7 +36,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'o4-mini';
 export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
