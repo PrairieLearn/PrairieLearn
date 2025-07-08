@@ -211,15 +211,17 @@ export function AssessmentQuestion({
           `
         : ''}
 
-      <p class="my-0">Mean agreement percentage: <span id="mean-agreement"></span></p>
-      <br />
-      <p class="my-0">F1 score: <span id="f1-score"></span></p>
-      <p class="my-0">Precision: <span id="precision"></span> </p>
-      <p class="my-0">Recall: <span id="recall"></span> </p>
-      <br />
-      <p class="my-0">Complement F1 score: <span id="f1-score-complement"></span></p>
-      <p class="my-0">Complement Precision: <span id="precision-complement"></span> </p>
-      <p class="my-0">Complement Recall: <span id="recall-complement"></span> </p>
+      <div class="card mb-3 p-3">
+        <p class="my-0"><b>Accuracy:</b> <span id="mean-agreement"></span></p>
+        <br />
+        <p class="my-0"><b>F1 score:</b> <span id="f1-score"></span></p>
+        <p class="my-0"><b>Precision:</b> <span id="precision"></span> </p>
+        <p class="my-0"><b>Recall:</b> <span id="recall"></span> </p>
+        <br />
+        <p class="my-0"><b>Complement F1 score:</b> <span id="f1-score-complement"></span></p>
+        <p class="my-0"><b>Complement Precision:</b> <span id="precision-complement"></span> </p>
+        <p class="my-0"><b>Complement Recall:</b> <span id="recall-complement"></span> </p>
+      </div>
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />

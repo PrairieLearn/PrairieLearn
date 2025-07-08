@@ -127,7 +127,8 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
-          mode: 'all'
+          mode: 'all',
+          executeSync: true
         });
       }
 
