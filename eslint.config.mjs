@@ -127,6 +127,7 @@ export default tseslint.config([
 
       // Use the recommended rules for react-hooks
       ...reactHooks.configs['recommended-latest'].rules,
+      'react-hooks/exhaustive-deps': 'error',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
