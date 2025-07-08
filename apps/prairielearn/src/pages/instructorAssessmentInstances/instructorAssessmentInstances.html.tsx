@@ -121,7 +121,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                               type="button"
                               class="dropdown-item"
                               data-bs-toggle="modal"
-                              data-bs-target="#closeAllAsseZssmentInstancesModal"
+                              data-bs-target="#closeAllAssessmentInstancesModal"
                             >
                               <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
                               instances
