@@ -752,12 +752,21 @@
       }
     }
 
+    /**
+     * Ensures that the cropper instance exists. Throws an error if not.
+     */
+    ensureCropperExists() {
+      if (!this.cropper) {
+        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
+      }
+    }
+
     showCropRotateButton() {
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
 
-      if (!cropRotateButton) {
-        throw new Error('Crop/rotate button not found in image capture element');
-      }
+      this.ensureElementsExist({
+        cropRotateButton,
+      });
 
       cropRotateButton.classList.remove('d-none');
     }
@@ -816,9 +825,7 @@
      * @param {number} offsetRotationAngle The offset rotation angle in degrees.
      */
     setRotationOffset(offsetRotationAngle) {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       this.offsetRotationAngle = offsetRotationAngle;
       this.updateImageRotationAngle();
@@ -830,9 +837,7 @@
      * If false, rotates it 90 degrees counterclockwise.
      */
     handleRotate90Degrees(clockwise) {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       this.baseRotationAngle += clockwise ? 90 : -90;
       this.updateImageRotationAngle();
@@ -843,9 +848,7 @@
      * @param {boolean} horizontal If true, flips the image horizontally. If false, flips it vertically.
      */
     handleFlip(horizontal) {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       if (horizontal) {
         this.flippedX = !this.flippedX;
@@ -868,17 +871,17 @@
      * Preserves existing scale and translation of the image.
      */
     updateImageRotationAngle() {
-      const totalRotationAngle = this.baseRotationAngle + this.offsetRotationAngle;
-      const rotationAngleRad = (totalRotationAngle * Math.PI) / 180;
-
-      const cos = Math.cos(rotationAngleRad);
-      const sin = Math.sin(rotationAngleRad);
-
       const image = this.cropper.getCropperImage();
       const transform = image.$getTransform();
       if (!transform) {
         throw new Error('Cropper image transform not found. Please start crop/rotate first.');
       }
+
+      const totalRotationAngle = this.baseRotationAngle + this.offsetRotationAngle;
+      const rotationAngleRad = (totalRotationAngle * Math.PI) / 180;
+
+      const cos = Math.cos(rotationAngleRad);
+      const sin = Math.sin(rotationAngleRad);
 
       const [
         prevHorizontalScale,
@@ -907,9 +910,7 @@
     }
 
     resetCropRotate() {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       this.cropper.getCropperImage().$resetTransform();
       this.cropper.getCropperImage().$center('contain');
@@ -946,9 +947,7 @@
     }
 
     async confirmCropRotateChanges() {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
@@ -983,9 +982,7 @@
     }
 
     revertToPreviousCropRotateState() {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       if (!this.previousCropRotateState) {
         this.resetCropRotate();
@@ -1020,9 +1017,7 @@
     }
 
     cancelCropRotate() {
-      if (!this.cropper) {
-        throw new Error('Cropper instance not initialized. Please start crop/rotate first.');
-      }
+      this.ensureCropperExists();
 
       this.revertToPreviousCropRotateState();
       this.openContainer('capture-preview');
