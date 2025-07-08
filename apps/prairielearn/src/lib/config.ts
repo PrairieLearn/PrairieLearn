@@ -233,6 +233,11 @@ export const ConfigSchema = z.object({
    */
   workerPingTimeoutMilliseconds: z.number().default(60_000),
   /**
+   * Set this to `true` to collect coverage data from the worker.
+   * Is used for gathering test coverage only.
+   */
+  workerCollectCoverage: z.boolean().default(false),
+  /**
    * Set this to hardcode the executor image. Note that if this is specified,
    * the provided value will be used verbatim - that is, the registry specified
    * by `cacheImageRegistry` will not be prepended. If you want to pull this image

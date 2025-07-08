@@ -34,9 +34,22 @@ from typing import Any
 import prairielearn.internal.zygote_utils as zu
 from prairielearn.internal import question_phases
 
+from coverage import Coverage
+
 saved_path = copy.copy(sys.path)
 
 drop_privileges = int(os.environ.get("DROP_PRIVILEGES", "0")) == 1
+
+cov = None
+collect_coverage = int(os.environ.get("COLLECT_COVERAGE", "0")) == 1
+if collect_coverage:
+    cov = Coverage(config_file=False)
+    cov._auto_save = True
+    # Register a signal handler to stop coverage when the process is terminated.
+    cov.config.sigterm = True
+    # Enable parallel coverage collection.
+    cov.config.parallel = True
+    cov.start()
 
 # If we're configured to drop privileges (that is, if we're running in a
 # Docker container), various tools like matplotlib and fontconfig will be
@@ -175,7 +188,7 @@ def worker_loop() -> None:
     #   element is used multiple times.
     # - This allows element code to maintain state across multiple calls. This is useful
     #   specifically for elements that want to maintain a cache of expensive-to-compute data.
-    mod_cache: dict[str, dict[str, Any]] = {}
+    mod_cache: dict[str, dict[str, Any] | types.ModuleType] = {}
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -239,7 +252,11 @@ def worker_loop() -> None:
                 # since it will immediately terminate the process - in our case, we don't
                 # care about graceful termination, we just want to get out of here as
                 # fast as possible.
-                os._exit(0)
+                if cov:
+                    # https://github.com/nedbat/coveragepy/issues/1941#issuecomment-2757718001
+                    sys.exit(0)
+                else:
+                    os._exit(0)
 
             if file.endswith(".js"):
                 # We've shoehorned legacy v2 questions into the v3 code caller
@@ -334,19 +351,37 @@ def worker_loop() -> None:
             if mod is None:
                 mod = {}
 
-                with open(file_path, encoding="utf-8") as inf:
-                    # Use `compile` to associate filename with code object, so the
-                    # filename appears in the traceback if there is an error:
-                    # https://stackoverflow.com/a/437857
-                    code = compile(inf.read(), file_path, "exec")
+                # with open(file_path, encoding="utf-8") as inf:
+                #     # Use `compile` to associate filename with code object, so the
+                #     # filename appears in the traceback if there is an error:
+                #     # https://stackoverflow.com/a/437857
+                #     code = compile(inf.read(), file_path, "exec")
 
-                exec(code, mod)
-                mod_cache[file_path] = mod
+                # exec(code, mod)
+                from importlib.machinery import SourceFileLoader
+                from importlib.util import module_from_spec, spec_from_loader
+
+                # import importlib
+                # with open("coverage.txt", "a", encoding="utf-8") as inf:
+                #     inf.write(f"importing {file_path}\n")
+                spec = spec_from_loader(
+                    "question", SourceFileLoader("question", file_path)
+                )
+                if not spec or not spec.loader:
+                    with open("error.txt", "w", encoding="utf-8") as inf:
+                        if spec is None:
+                            inf.write(f"spec is None for {file_path}\n")
+                        elif spec.loader is None:
+                            inf.write(f"spec.loader is None for {file_path}\n")
+                else:
+                    mod = module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    mod_cache[file_path] = mod
 
             # check whether we have the desired fcn in the module
-            if fcn in mod:
+            if hasattr(mod, fcn):
                 # get the desired function in the loaded module
-                method = mod[fcn]
+                method = getattr(mod, fcn)
 
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index

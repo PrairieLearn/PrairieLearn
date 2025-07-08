@@ -60,6 +60,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
     {
       create: async () => {
         const codeCallerOptions = {
+          collectCoverage: config.workerCollectCoverage,
           dropPrivileges: false,
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,

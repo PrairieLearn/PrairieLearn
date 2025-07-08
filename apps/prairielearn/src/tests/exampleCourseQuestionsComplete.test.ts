@@ -258,12 +258,14 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
   beforeAll(async function () {
     config.features['process-questions-in-server'] = false;
+    config.workerCollectCoverage = true;
     await helperServer.before()();
   });
 
   afterAll(async function () {
     await helperServer.after();
     config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
+    config.workerCollectCoverage = false;
   });
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {

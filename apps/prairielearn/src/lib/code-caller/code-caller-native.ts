@@ -43,6 +43,7 @@ type CodeCallerState =
 const debug = debugfn('prairielearn:code-caller-native');
 
 interface CodeCallerNativeOptions {
+  collectCoverage: boolean;
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
@@ -119,7 +120,7 @@ export class CodeCallerNative implements CodeCaller {
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
     const pythonExecutable = await run(async () => {
       for (const p of options.pythonVenvSearchPaths) {
-        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
+        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.13'));
         if (await fs.pathExists(venvPython)) return venvPython;
       }
 
@@ -363,6 +364,10 @@ export class CodeCallerNative implements CodeCaller {
       // This instructs the Python process to switch to a deprivileged user before
       // executing any user code.
       env.DROP_PRIVILEGES = '1';
+    }
+
+    if (this.options.collectCoverage) {
+      env.COLLECT_COVERAGE = '1';
     }
 
     const options: SpawnOptions = {
