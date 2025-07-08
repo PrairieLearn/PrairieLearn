@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { Modal } from '../../../components/Modal.html.js';
@@ -16,6 +15,9 @@ import type { User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
+// import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTable.html.js';
+import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTableV2.html.js';
+
 
 export function AssessmentQuestion({
   resLocals,
@@ -153,49 +155,7 @@ export function AssessmentQuestion({
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
             ${aiGradingStats.rubric_stats.length
-              ? html`
-                  <div class="card overflow-hidden mb-3">
-                    <div class="table-responsive">
-                      <table class="table table-sm" aria-label="AI grading rubric item stats">
-                        <thead>
-                          <tr class="table-light fw-bold">
-                            <td>Rubric item</td>
-                            <td>AI agreement</td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${aiGradingStats.rubric_stats.map(
-                            (item) =>
-                              html`<tr>
-                                <td>${item.rubric_item.description}</td>
-                                <td>
-                                  ${run(() => {
-                                    if (item.disagreement_count) {
-                                      return html`
-                                        <i class="bi bi-x-square-fill text-danger"></i>
-                                        <span class="text-muted">
-                                          (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
-                                          disagree)
-                                        </span>
-                                      `;
-                                    }
-
-                                    if (aiGradingStats.submission_rubric_count === 0) {
-                                      return html`&mdash;`;
-                                    }
-
-                                    return html`<i
-                                      class="bi bi-check-square-fill text-success"
-                                    ></i>`;
-                                  })}
-                                </td>
-                              </tr>`,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                `
+              ? AssessmentQuestionRubricTable(aiGradingStats)
               : html`
                   <div class="card mb-3">
                     <div class="card-body">
