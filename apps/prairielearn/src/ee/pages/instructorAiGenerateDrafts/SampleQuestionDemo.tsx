@@ -18,7 +18,7 @@ const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal
 const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
 const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
-import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
+import { useCallback, useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import {
@@ -66,7 +66,7 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleGenerateNewVariant = async () => {
+  const handleGenerateNewVariant = useCallback(async () => {
     // Clear the grade shown to the user
     setGrade(null);
 
@@ -79,7 +79,7 @@ export function SampleQuestionDemo({
     // Generate a new question variant
     const questionVariant = generateSampleQuestionVariant(promptId);
     setVariant(questionVariant);
-  };
+  }, [promptId]);
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
@@ -154,7 +154,7 @@ export function SampleQuestionDemo({
 
   useEffect(() => {
     handleGenerateNewVariant();
-  }, [promptId, handleGenerateNewVariant]);
+  }, [handleGenerateNewVariant]);
 
   // The correct answer to the problem, displayed to the user
   const answerText = variant
