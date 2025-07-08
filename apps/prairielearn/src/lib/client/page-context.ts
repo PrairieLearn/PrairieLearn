@@ -5,7 +5,6 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
-  brandWith,
 } from './safe-db-types.js';
 
 const PageContext = z.object({
@@ -48,9 +47,8 @@ const RawStudentCourseInstanceContextSchema = z.object({
     short_name: z.string(),
   }),
 });
-const StudentCourseInstanceContextSchema = brandWith<'StudentCourseInstanceContext'>()(
-  RawStudentCourseInstanceContextSchema,
-);
+export const StudentCourseInstanceContextSchema =
+  RawStudentCourseInstanceContextSchema.brand<'StudentCourseInstanceContext'>();
 
 export type StudentCourseInstanceContext = z.infer<typeof StudentCourseInstanceContextSchema>;
 
@@ -64,9 +62,8 @@ const RawStaffCourseInstanceContextSchema = z.object({
     short_name: z.string(),
   }),
 });
-const StaffCourseInstanceContextSchema = brandWith<'StaffCourseInstanceContext'>()(
-  RawStaffCourseInstanceContextSchema,
-);
+export const StaffCourseInstanceContextSchema =
+  RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();
 
 export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
 

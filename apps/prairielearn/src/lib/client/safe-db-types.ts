@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import {
   CourseInstanceSchema as RawCourseInstanceSchema,
@@ -6,20 +6,13 @@ import {
   UserSchema as RawUserSchema,
 } from '../db-types.js';
 
-type Branded<T, Brand> = T & { __brand: Brand };
-
-export function brandWith<Brand>() {
-  return <T extends z.ZodObject<any>>(schema: T) =>
-    schema.pipe(z.custom<Branded<z.infer<T>, Brand>>());
-}
-
 /** Courses */
 
 export const RawStaffCourseSchema = RawCourseSchema.omit({
   yearly_enrollment_limit: true,
   sharing_token: true,
 });
-export const StaffCourseSchema = brandWith<'StaffCourse'>()(RawStaffCourseSchema);
+export const StaffCourseSchema = RawStaffCourseSchema.brand<'StaffCourse'>();
 export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
 export const RawStudentCourseSchema = RawStaffCourseSchema.omit({
@@ -37,15 +30,14 @@ export const RawStudentCourseSchema = RawStaffCourseSchema.omit({
   sync_job_sequence_id: true,
   sync_warnings: true,
 });
-export const StudentCourseSchema = brandWith<'StudentCourse'>()(RawStudentCourseSchema);
+export const StudentCourseSchema = RawStudentCourseSchema.brand<'StudentCourse'>();
 export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
 /** Course Instances */
 
 export const RawStaffCourseInstanceSchema = RawCourseInstanceSchema;
-export const StaffCourseInstanceSchema = brandWith<'StaffCourseInstance'>()(
-  RawStaffCourseInstanceSchema,
-);
+export const StaffCourseInstanceSchema =
+  RawStaffCourseInstanceSchema.brand<'StaffCourseInstance'>();
 export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
 
 export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.omit({
@@ -57,9 +49,8 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.omit(
   sync_warnings: true,
   uuid: true,
 });
-export const StudentCourseInstanceSchema = brandWith<'StudentCourseInstance'>()(
-  RawStudentCourseInstanceSchema,
-);
+export const StudentCourseInstanceSchema =
+  RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 /** Users */
@@ -72,9 +63,9 @@ const RawStaffUserSchema = RawUserSchema.omit({
   stripe_customer_id: true,
   terms_accepted_at: true,
 });
-export const StaffUserSchema = brandWith<'StaffUser'>()(RawStaffUserSchema);
+export const StaffUserSchema = RawStaffUserSchema.brand<'StaffUser'>();
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 
-const _RawStudentUserSchema = RawStaffUserSchema.omit({ email: true, uin: true });
-export const StudentUserSchema = brandWith<'StudentUser'>()(_RawStudentUserSchema);
+const RawStudentUserSchema = RawStaffUserSchema.omit({ email: true, uin: true });
+export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;
