@@ -99,7 +99,7 @@ function SampleQuestionSelector({
           as="button"
           type="button"
           style={{ width: '100%' }}
-          class="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+          className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
         >
           {selectedQuestionName}
         </DropdownToggle>
