@@ -76,3 +76,28 @@ SELECT
   jsonb_build_object('open', i.open)
 FROM
   updated_issues AS i;
+
+-- BLOCK select_most_recent_submission_for_variant
+SELECT
+  *
+FROM 
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+WHERE
+  v.id = $variant_id
+ORDER BY
+  s.date DESC
+LIMIT
+  1;
+
+-- BLOCK select_most_recent_grading_job
+SELECT
+  * 
+FROM 
+  grading_jobs
+WHERE
+  submission_id = $submission_id
+ORDER BY
+  date DESC
+LIMIT
+  1;
