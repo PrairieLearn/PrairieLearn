@@ -37,6 +37,7 @@ import {
   selectLastVariantAndSubmission,
   selectRubricForGrading
 } from './ai-grading-util.js';
+import type { AIGradingLog } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -150,7 +151,14 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
-    const gradeInstanceQuestion = async (instance_question: InstanceQuestion) => {
+    const gradeInstanceQuestion = async (
+      instance_question: InstanceQuestion,
+    ): Promise<{
+      success: boolean;
+      logs: AIGradingLog[];
+    }> => {
+      const logs: AIGradingLog[] = [];
+
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   
       const locals = {
@@ -169,9 +177,19 @@ export async function aiGrade({
         locals,
       );
       if (render_question_results.courseIssues.length > 0) {
-        job.info(render_question_results.courseIssues.toString());
-        job.error('Errors occurred while AI grading, see output for details');
-        return false;
+        logs.push({
+          messageType: 'info',
+          message: render_question_results.courseIssues.toString(),
+        });
+        logs.push({
+          messageType: 'error',
+          message: 'Errors occurred while AI grading, see output for details',
+        });
+
+        return {
+          success: false,
+          logs,
+        };
       }
       const questionPrompt = render_question_results.data.questionHtml;
   
@@ -232,11 +250,26 @@ export async function aiGrade({
           temperature: OPEN_AI_TEMPERATURE,
         });
         try {
-          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`,
+          });
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`,
+          });
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used in total: ${completion.usage?.total_tokens ?? 0}`,
+          });
+
           const response = completion.choices[0].message;
-          job.info(`Raw response:\n${response.content}`);
+
+          logs.push({
+            messageType: 'info',
+            message: `Raw response:\n${response.content}`,
+          });
+
           if (response.parsed) {
             console.log('AI grading response:', response.parsed);
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
@@ -313,21 +346,47 @@ export async function aiGrade({
                 });
               });
             }
-  
-            job.info('AI rubric items:');
+
+            logs.push({
+              messageType: 'info',
+              message: 'AI rubric items:',
+            });
+
             for (const item of appliedRubricDescription) {
-              job.info(`- ${item}`);
+              logs.push({
+                messageType: 'info',
+                message: `- ${item}`,
+              });
             }
           } else if (response.refusal) {
-            job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(response.refusal);
-            return false;
+            logs.push({
+              messageType: 'error',
+              message: `ERROR AI grading for ${instance_question.id}`,
+            });
+            logs.push({
+              messageType: 'error',
+              message: response.refusal,
+            });
+
+            return {
+              success: false,
+              logs,
+            };
           }
         } catch (err) {
-          console.error(err);
-          job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(err);
-          return false;
+          logs.push({
+            messageType: 'error',
+            message: `ERROR AI grading for ${instance_question.id}`,
+          });
+          logs.push({
+            messageType: 'error',
+            message: err,
+          });
+
+          return {
+            success: false,
+            logs,
+          };
         }
       } else {
         const completion = await openai.chat.completions.parse({
@@ -338,11 +397,25 @@ export async function aiGrade({
           temperature: OPEN_AI_TEMPERATURE,
         });
         try {
-          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`,
+          });
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`,
+          });
+          logs.push({
+            messageType: 'info',
+            message: `Tokens used in total: ${completion.usage?.total_tokens ?? 0}`,
+          });
+
           const response = completion.choices[0].message;
-          job.info(`Raw response:\n${response.content}`);
+          logs.push({
+            messageType: 'info',
+            message: `Raw response:\n${response.content}`,
+          });
+
           if (response.parsed) {
             const score = response.parsed.score;
   
@@ -402,37 +475,83 @@ export async function aiGrade({
                 });
               });
             }
-  
-            job.info(`AI score: ${response.parsed.score}`);
+
+            logs.push({
+              messageType: 'info',
+              message: `AI score: ${response.parsed.score}`,
+            });
           } else if (response.refusal) {
-            job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(response.refusal);
-            return false;
+            logs.push({
+              messageType: 'error',
+              message: `ERROR AI grading for ${instance_question.id}`,
+            });
+            logs.push({
+              messageType: 'error',
+              message: response.refusal,
+            });
+
+            return {
+              success: false,
+              logs,
+            };
           }
         } catch (err) {
-          job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(err);
-          return false;
+          logs.push({
+            messageType: 'error',
+            message: `ERROR AI grading for ${instance_question.id}`,
+          });
+          logs.push({
+            messageType: 'error',
+            message: err,
+          });
+          return {
+            success: false,
+            logs,
+          };
         }
       }
-      return true;
+      return {
+        success: true,
+        logs,
+      };
     };
 
-    // Grade each instance question, and return an array indicating the success/failure of each grading operation.
-    const instance_question_grading_successes = await async.mapLimit(
+    // Grade each instance question and return an array containing if each grading operation succeeded and its logs.
+    const instance_question_grading_statuses = await async.mapLimit(
       instance_questions,
       PARALLEL_SUBMISSION_GRADING_LIMIT,
       async (instance_question: InstanceQuestion) => {
         try {
           return await gradeInstanceQuestion(instance_question);
         } catch (err) {
-          job.error(err);
-          return false;
+          return {
+            success: false,
+            logs: [
+              {
+                messageType: 'error',
+                message: err,
+              },
+            ],
+          };
         }
       },
     );
 
-    const error_count = instance_question_grading_successes.filter((success) => !success).length;
+
+    // Log the results of grading each instance question.
+    for (const status of instance_question_grading_statuses) {
+      for (const log of status.logs) {
+        if (log.messageType === 'info') {
+          job.info(log.message);
+        } else if (log.messageType === 'error') {
+          job.error(log.message);
+        }
+      }
+    }
+
+    const error_count = instance_question_grading_statuses.filter(
+      (status) => !status.success,
+    ).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
