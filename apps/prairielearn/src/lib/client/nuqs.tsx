@@ -1,4 +1,4 @@
-import type { SortingState } from '@tanstack/table-core';
+import type { ColumnPinningState, SortingState, VisibilityState } from '@tanstack/table-core';
 import { createParser } from 'nuqs';
 import {
   type unstable_AdapterInterface,
@@ -43,13 +43,10 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
 }
 
 /**
- * Custom parser for SortingState: parses a TanStack Table sorting state from a URL query string.
+ * Parses and serializes TanStack Table SortingState to/from a URL query string.
+ * Used for reflecting table sort order in the URL.
  *
- * ```ts
- * // sort=col:asc
- * const sortingState = parseAsSortingState('sort');
- * // sortingState = [{ id: 'col', desc: false }]
- * ```
+ * Example: `sort=col:asc` <-> `[{ id: 'col', desc: false }]`
  */
 export const parseAsSortingState = createParser<SortingState>({
   parse(queryValue) {
@@ -79,5 +76,69 @@ export const parseAsSortingState = createParser<SortingState>({
       a.length === b.length &&
       a.every((item, index) => item.id === b[index].id && item.desc === b[index].desc)
     );
+  },
+});
+
+/**
+ * Returns a parser for TanStack Table VisibilityState for a given set of columns.
+ * Parses a comma-separated list of visible columns from a query string, e.g. 'a,b'.
+ * Serializes to a comma-separated list of visible columns, omitting if all are visible.
+ * Used for reflecting column visibility in the URL.
+ */
+export function parseAsColumnVisibilityStateWithColumns(allColumns: string[]) {
+  return createParser<VisibilityState>({
+    parse(queryValue: string) {
+      const shown =
+        queryValue.length > 0
+          ? new Set(queryValue.split(',').filter(Boolean))
+          : new Set(allColumns);
+      const result: VisibilityState = {};
+      for (const col of allColumns) {
+        result[col] = shown.has(col);
+      }
+      return result;
+    },
+    serialize(value) {
+      if (!value) return '';
+      // Only output columns that are visible
+      const visible = allColumns.filter((col) => value[col]);
+      if (visible.length === allColumns.length) return '';
+      return visible.join(',');
+    },
+    eq(a, b) {
+      const aKeys = Object.keys(a);
+      const bKeys = Object.keys(b);
+      return aKeys.length === bKeys.length && aKeys.every((col) => a[col] === b[col]);
+    },
+  });
+}
+
+/**
+ * Parses and serializes TanStack Table ColumnPinningState to/from a URL query string.
+ * Used for reflecting pinned columns in the URL.
+ *
+ * Right pins aren't supported; an empty array is always returned to allow
+ * this hook's value to be used directly in `state.columnPinning` in `useReactTable`.
+ *
+ * Example: `a,b` <-> `{ left: ['a', 'b'], right: [] }`
+ */
+export const parseAsColumnPinningState = createParser<ColumnPinningState>({
+  parse(queryValue) {
+    if (!queryValue) return { left: [], right: [] };
+    // Format: col1,col2,col3 (all left-pinned columns)
+    return {
+      left: queryValue.split(',').filter(Boolean),
+      right: [],
+    };
+  },
+  serialize(value) {
+    if (!value || !value.left) return '';
+    return value.left.join(',');
+  },
+  eq(a, b) {
+    const aLeft = Array.isArray(a.left) ? a.left : [];
+    const bLeft = Array.isArray(b.left) ? b.left : [];
+    if (aLeft.length !== bLeft.length) return false;
+    return aLeft.every((v, i) => v === bLeft[i]);
   },
 });
