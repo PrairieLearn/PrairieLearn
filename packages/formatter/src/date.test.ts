@@ -272,15 +272,6 @@ describe('date formatting', () => {
     it('should handle a time with seconds', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 13, 34, 7));
-      assert.equal(
-        formatDateFriendly(date, 'UTC', { baseDate, includeSec: true }),
-        'today, 1:34:07pm (UTC)',
-      );
-    });
-
-    it('should handle a time with seconds (not shown)', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
-      const date = new Date(Date.UTC(2018, 0, 1, 13, 34, 7));
       assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 1:34pm (UTC)');
     });
 

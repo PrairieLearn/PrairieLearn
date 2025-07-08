@@ -222,7 +222,6 @@ function formatDateFriendlyParts(
   date: Date,
   timezone: string,
   baseDate: Date,
-  { includeSec = false }: { includeSec?: boolean } = {},
 ): { dateFormatted: string; timeFormatted: string; timezoneFormatted: string } {
   // compute the number of days from the base date (0 = today, 1 = tomorrow, etc.)
 
@@ -271,10 +270,8 @@ function formatDateFriendlyParts(
   let timeFormatted = '';
   if (parts.minute.value === '00' && parts.second.value === '00') {
     timeFormatted = `${parts.hour.value}`;
-  } else if (parts.second.value === '00' || !includeSec) {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}`;
   } else {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
+    timeFormatted = `${parts.hour.value}:${parts.minute.value}`;
   }
   // add the am/pm part
   timeFormatted = `${timeFormatted}${parts.dayPeriod.value.toLowerCase()}`;
@@ -311,7 +308,6 @@ function formatDateFriendlyParts(
  * @param param.timeFirst If true, the time is shown before the date (default false).
  * @param param.dateOnly If true, only the date is shown (default false).
  * @param param.timeOnly If true, only the time is shown (default false).
- * @param param.includeSec If true, the seconds are shown (default false).
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
@@ -323,21 +319,18 @@ export function formatDateFriendly(
     timeFirst = false,
     dateOnly = false,
     timeOnly = false,
-    includeSec = false,
   }: {
     baseDate?: Date;
     includeTz?: boolean;
     timeFirst?: boolean;
     dateOnly?: boolean;
     timeOnly?: boolean;
-    includeSec?: boolean;
   } = {},
 ): string {
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
     date,
     timezone,
     baseDate,
-    { includeSec },
   );
 
   let dateTimeFormatted = '';
@@ -384,16 +377,15 @@ export function formatDateRangeFriendly(
     includeTz = true,
     timeFirst = false,
     dateOnly = false,
-    includeSec = false,
   }: Parameters<typeof formatDateFriendly>[2] = {},
 ): string {
   const {
     dateFormatted: startDateFormatted,
     timeFormatted: startTimeFormatted,
     timezoneFormatted,
-  } = formatDateFriendlyParts(start, timezone, baseDate, { includeSec });
+  } = formatDateFriendlyParts(start, timezone, baseDate);
   const { dateFormatted: endDateFormatted, timeFormatted: endTimeFormatted } =
-    formatDateFriendlyParts(end, timezone, baseDate, { includeSec });
+    formatDateFriendlyParts(end, timezone, baseDate);
 
   let result: string | undefined;
   if (dateOnly) {
