@@ -431,7 +431,7 @@ export async function aiGrade({
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
-      job.error('Errors occurred while AI grading, see output for details');
+      job.fail('Errors occurred while AI grading, see output for details');
     }
   });
   return serverJob.jobSequenceId;
