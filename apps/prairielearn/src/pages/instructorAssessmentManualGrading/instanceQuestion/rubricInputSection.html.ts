@@ -1,14 +1,16 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import type { AssessmentQuestion, RubricGradingItem } from '../../../lib/db-types.js';
+import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
 import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
 
 export function RubricInputSection({
   resLocals,
   disable,
+  ai_rubric_items
 }: {
   resLocals: Record<string, any>;
   disable: boolean;
+  ai_rubric_items?: RubricItem[]
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
@@ -32,6 +34,7 @@ export function RubricInputSection({
     ${RubricItems({
       rubric_items: rubric_data.rubric_items,
       rubric_grading_items: rubric_grading?.rubric_items,
+      ai_rubric_items,
       assessment_question: resLocals.assessment_question,
       disable,
     })}
@@ -98,17 +101,24 @@ export function RubricInputSection({
 function RubricItems({
   rubric_items,
   rubric_grading_items,
+  ai_rubric_items,
   assessment_question,
   disable,
 }: {
   rubric_items: RubricData['rubric_items'][0][] | null | undefined;
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
+  ai_rubric_items?: RubricItem[];
   assessment_question: AssessmentQuestion;
   disable: boolean;
 }) {
+  const ai_checked_rubric_item_ids = new Set(
+    ai_rubric_items?.map((item) => item.id) || [],
+  );
+
   return rubric_items?.map((item) =>
     RubricItem({
       item,
+      ai_checked: ai_rubric_items ? ai_checked_rubric_item_ids.has(item.id) : undefined,
       item_grading: rubric_grading_items?.[item.id],
       assessment_question,
       disable,
@@ -119,17 +129,35 @@ function RubricItems({
 function RubricItem({
   item,
   item_grading,
+  ai_checked,
   assessment_question,
   disable,
 }: {
   item: RubricData['rubric_items'][0];
   item_grading: RubricGradingItem | undefined | null;
+  ai_checked?: boolean;
   assessment_question: AssessmentQuestion;
   disable: boolean;
 }) {
   return html`
     <div>
       <label class="js-selectable-rubric-item-label w-100">
+        ${ai_checked !== undefined ? (
+          html`
+            <input
+              type="checkbox"
+              name="rubric_item_selected_ai"
+              class="js-selectable-rubric-item"
+              value="${item.id}"
+              ${ai_checked ? 'checked' : ''}
+              disabled
+
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="AI grading"
+            />
+          `
+        ) : ''}
         <input
           type="checkbox"
           name="rubric_item_selected_manual"

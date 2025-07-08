@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -16,6 +16,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { AIGradingInfo } from '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
 import { Modal } from './Modal.html.js';
@@ -34,6 +35,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -43,6 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
+  aiGradingInfo?: AIGradingInfo
 }) {
   const {
     question,
@@ -101,6 +104,37 @@ export function QuestionContainer({
             `
           : ''
       }
+
+      ${aiGradingInfo ? (
+        html`
+          <div class="card mb-3 grading-block">
+            <div class="card-header bg-secondary text-white">
+              <h2>AI Grading Prompt</h2>
+            </div>
+            <div class="card-body">
+              ${aiGradingInfo.prompt?.map((item) => {
+                if (typeof item.content === 'string') {
+                  return unsafeHtml(item.content);
+                } else if (typeof item.content === 'object') {
+                  console.log('item.content', item.content);
+
+                  return item.content.map((contentItem) => {
+                      if (contentItem.type === 'text') {
+                        return html`<p>${contentItem.text}</p>`;
+                      } else if (contentItem.type === 'image_url') {
+                        return html`<img class="w-100" src="${contentItem.image_url.url}" />`;
+                      } else {
+                        return html``;
+                      }
+                    }) as HtmlValue[]
+                }
+              })}
+            </div>
+          </div>
+        `)
+       : ''}
+
+      
       ${submissions.length > 0
         ? html`
             ${SubmissionList({

@@ -6,7 +6,8 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { GradingJobSchema, IdSchema, SubmissionSchema } from '../../../lib/db-types.js';
+import { selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { AiGradingJobSchema, GradingJobSchema, IdSchema, SubmissionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -93,6 +94,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Instance question does not have any variants.');
     }
 
+    console.log('variants', variants);
+
+
     // Find the corresponding submission
     const submission = await sqldb.queryRow(
       sql.select_most_recent_submission_for_variant,
@@ -107,6 +111,7 @@ router.get(
     } 
 
     // Find the most recent grading job
+
     const grading_job = await sqldb.queryRow(
       sql.select_most_recent_grading_job,
       {
@@ -115,13 +120,30 @@ router.get(
       GradingJobSchema
     );
 
-    console.log('grading_job', grading_job);
+    const ai_grading_job = await sqldb.queryOptionalRow(
+      sql.select_ai_grading_job_for_grading_job, {
+        grading_job_id: grading_job?.id,
+      }, AiGradingJobSchema
+    );
+
+    const feedback = grading_job?.feedback?.manual ?? '';
+
+    const rubricGradingItems = await selectRubricGradingItems(
+      grading_job.manual_rubric_grading_id
+    );
+
+    console.log('rubricGradingItems', rubricGradingItems);
 
     res.send(
       InstanceQuestion({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        aiGradingInfo: {
+          feedback,
+          rubricGradingItems,
+          prompt: ai_grading_job?.prompt,
+        }
       }),
     );
   }),

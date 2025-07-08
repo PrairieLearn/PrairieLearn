@@ -81,6 +81,10 @@ export function ManualGradingAssessment({
         <input type="hidden" name="__action" value="ai_grade_assessment_all" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
+      <form method="POST" id="export-statistics">
+        <input type="hidden" name="__action" value="export_statistics" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white justify-content-between align-items-center d-flex">
           <h1>
@@ -93,6 +97,14 @@ export function ManualGradingAssessment({
             onclick="$('#ai-grading-all').submit();"
           >
             AI grade all questions
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="export-statistics"
+            onclick="$('#export-statistics').submit();"
+          >
+            Export Statistics
           </button>
         </div>
 

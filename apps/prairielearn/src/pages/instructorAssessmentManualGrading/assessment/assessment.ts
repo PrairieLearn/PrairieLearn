@@ -131,8 +131,10 @@ router.post(
           executeSync: true
         });
       }
-
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'export_statistics') {
+      // For each assessment question, compute the statistics present in the card below agreement/disagreement rate
+
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

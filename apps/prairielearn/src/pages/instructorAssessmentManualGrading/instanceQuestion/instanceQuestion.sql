@@ -79,7 +79,7 @@ FROM
 
 -- BLOCK select_most_recent_submission_for_variant
 SELECT
-  *
+  s.*
 FROM 
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -99,5 +99,15 @@ WHERE
   submission_id = $submission_id
 ORDER BY
   date DESC
+LIMIT
+  1;
+
+-- BLOCK select_ai_grading_job_for_grading_job
+SELECT
+  *
+FROM
+  ai_grading_jobs
+WHERE
+  grading_job_id = $grading_job_id
 LIMIT
   1;

@@ -7,6 +7,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
+import type { AIGradingInfo } from './instanceQuestion.html.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
 
 interface SubmissionOrGradingJob {
@@ -24,6 +25,7 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -35,6 +37,7 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
+  aiGradingInfo?: AIGradingInfo;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -84,7 +87,7 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable })
+            ? RubricInputSection({ resLocals, disable, ai_rubric_items: aiGradingInfo?.rubricGradingItems })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -95,7 +98,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
                 ${resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable })
+                  ? RubricInputSection({ resLocals, disable, ai_rubric_items: aiGradingInfo?.rubricGradingItems })
                   : ''}
               </li>
             `
@@ -118,6 +121,16 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
+        ${aiGradingInfo
+          ? html`
+            <li class="list-group-item">
+              <label>
+                <p class="mt-2">AI-generated feedback:</p>
+                <p>${aiGradingInfo.feedback}</p>
+              </label>
+            </li>
+            `
+            : ''}
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
               <li class="list-group-item">
