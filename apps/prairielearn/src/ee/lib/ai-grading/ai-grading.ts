@@ -513,7 +513,7 @@ export async function aiGrade({
       };
     };
 
-    // Grade each instance question and return an array containing if each grading operation succeeded and its logs.
+    // Grade each instance question and return an array containing the success status and logs of each grading operation.
     const instance_question_grading_statuses = await async.mapLimit(
       instance_questions,
       PARALLEL_SUBMISSION_GRADING_LIMIT,
