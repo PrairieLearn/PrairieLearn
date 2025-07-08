@@ -75,10 +75,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    correct_answer = pl.get_float_attrib(element, "correct-answer", None)
+    correct_answer = pl.get_string_attrib(element, "correct-answer", None)
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
+        if correct_answer.strip() != "":
+            correct_answer = pl.get_float_attrib(element, "correct-answer", None)
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -93,7 +95,7 @@ def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
-    if correct_answer is not None:
+    if correct_answer is not None and str(correct_answer).strip() != "":
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
         comparison = pl.get_enum_attrib(
@@ -294,9 +296,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             submitted_answer = pl.from_json(submitted_answer)
 
             html_params["suffix"] = suffix
-            html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
-                submitted_answer
-            )
+            if str(submitted_answer).strip() != "":
+                html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
+                    submitted_answer
+                )
+            else:
+                html_params["submitted_answer"] = ""
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
@@ -365,9 +370,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
 
-    res = pl.string_fraction_to_number(
-        submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
-    )
+    if allow_blank and submitted_answer.strip() == "":
+        res = ["", {"submitted_answers": ""}]
+    else:
+        res = pl.string_fraction_to_number(
+            submitted_answer,
+            allow_fractions=allow_fractions,
+            allow_complex=allow_complex,
+        )
     if res[0] is not None:
         _, newdata = res
         data["submitted_answers"][name] = newdata["submitted_answers"]
@@ -406,6 +416,19 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         submitted_answer_parsed: Any = pl.from_json(submitted_answer)
         feedback = ""
         is_correct = None
+
+        # Special cases: submitted or correct answer are the empty string
+        if str(correct_answer).strip() == "":
+            if str(submitted_answer).strip() == "":
+                return (True, None)
+            else:
+                return (False, "The correct answer was to leave this input blank.")
+        elif str(submitted_answer).strip() == "":
+            correct_answer_converted = np.float64(correct_answer)
+            return (
+                False,
+                f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank.",
+            )
 
         # Cast both submitted and true answers as np.float64, because...
         #
