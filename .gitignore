@@ -76,6 +76,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .coverage
+.coverage.*
 
 ### R
 .Rproj.user

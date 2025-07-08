@@ -193,6 +193,22 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
+      - name: Collect coverage
+        if: ${{ matrix.shardIndex == 1 }}
+        run: |
+          cd apps/prairielearn/src/lib/code-caller
+          coverage combine
+          coverage report
+
+      - name: Upload coverage report to Codecov
+        if: ${{ matrix.shardIndex == 1 }}
+        uses: codecov/codecov-action@v5.4.3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: apps/prairielearn/python
+          flags: python
+
   merge-native-test-reports:
     name: Native (merge test reports)
     if: ${{ !cancelled() }}
