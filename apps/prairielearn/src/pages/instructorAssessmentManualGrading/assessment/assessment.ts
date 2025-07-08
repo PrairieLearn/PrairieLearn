@@ -12,7 +12,11 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectQuestionById } from '../../../models/question.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
@@ -102,6 +106,31 @@ router.post(
           });
         }
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'ai_grade_assessment_all') {
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_questions = await selectAssessmentQuestions(assessment.id) as AssessmentQuestion[];
+      if (!assessment_questions) {
+        console.log(`No questions found for assessment ${assessment.id}`);
+        return;
+      }
+      for (let i = 0; i < assessment_questions.length; i++) {
+        const assessment_question = assessment_questions[i];
+        const question = await selectQuestionById(assessment_question.question_id);
+        
+        console.log(`AI grading question ${assessment_question.question_id} (${i + 1}/${assessment_questions.length})`);
+        await aiGrade({
+          question,
+          course: res.locals.course,
+          course_instance_id: assessment.course_instance_id,
+          assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all'
+        });
+      }
+
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
