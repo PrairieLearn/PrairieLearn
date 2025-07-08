@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS audit_events (
   table_name TEXT NOT NULL,
   agent_authn_user_id BIGINT NOT NULL,
   agent_user_id BIGINT NOT NULL,
-  agent_meta JSONB NOT NULL DEFAULT '{}'::jsonb,
   subject_institution_id BIGINT,
   subject_course_id BIGINT,
   subject_course_instance_id BIGINT,
@@ -15,7 +14,6 @@ CREATE TABLE IF NOT EXISTS audit_events (
   subject_assessment_question_id BIGINT,
   subject_group_id BIGINT,
   subject_user_id BIGINT,
-  subject_meta JSONB NOT NULL DEFAULT '{}'::jsonb,
   context JSONB NOT NULL DEFAULT '{}'::jsonb,
   old_row JSONB NOT NULL DEFAULT '{}'::jsonb,
   new_row JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -63,10 +61,6 @@ COMMENT ON COLUMN audit_events.table_name IS 'Name of the table that was affecte
 COMMENT ON COLUMN audit_events.agent_authn_user_id IS 'ID of the authenticated user who performed the action';
 
 COMMENT ON COLUMN audit_events.agent_user_id IS 'ID of the user who performed the action';
-
-COMMENT ON COLUMN audit_events.agent_meta IS 'Additional metadata about the agent who performed the action';
-
-COMMENT ON COLUMN audit_events.subject_meta IS 'Additional metadata about the subject that was affected';
 
 COMMENT ON COLUMN audit_events.context IS 'Additional context about the event';
 

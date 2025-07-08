@@ -2,7 +2,6 @@ columns
     action: text not null
     action_detail: text not null
     agent_authn_user_id: bigint not null
-    agent_meta: jsonb not null default '{}'::jsonb
     agent_user_id: bigint not null
     context: jsonb not null default '{}'::jsonb
     date: timestamp with time zone default CURRENT_TIMESTAMP
@@ -17,7 +16,6 @@ columns
     subject_course_instance_id: bigint
     subject_group_id: bigint
     subject_institution_id: bigint
-    subject_meta: jsonb not null default '{}'::jsonb
     subject_user_id: bigint
     table_name: text not null
 
