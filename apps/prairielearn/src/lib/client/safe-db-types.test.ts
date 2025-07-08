@@ -15,7 +15,7 @@ import {
 } from './safe-db-types.js';
 
 // Minimal valid data for each schema (with required fields only)
-const minimalStaffCourse: StaffCourse = {
+const minimalStaffCourse: Omit<StaffCourse, '__brand'> = {
   announcement_color: null,
   announcement_html: null,
   branch: 'main',
@@ -42,7 +42,7 @@ const minimalStaffCourse: StaffCourse = {
 };
 
 // StudentCourse omits many fields from StaffCourse
-const minimalStudentCourse: StudentCourse = {
+const minimalStudentCourse: Omit<StudentCourse, '__brand'> = {
   created_at: new Date(),
   deleted_at: null,
   display_timezone: 'UTC',
@@ -73,7 +73,7 @@ const minimalStaffCourseInstance = {
 };
 
 // StudentCourseInstance omits some fields from StaffCourseInstance
-const minimalStudentCourseInstance: StudentCourseInstance = {
+const minimalStudentCourseInstance: Omit<StudentCourseInstance, '__brand'> = {
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -84,7 +84,7 @@ const minimalStudentCourseInstance: StudentCourseInstance = {
   short_name: null,
 };
 
-const minimalStaffUser: StaffUser = {
+const minimalStaffUser: Omit<StaffUser, '__brand'> = {
   email: 'a@b.com',
   institution_id: '2',
   name: 'Test User',
@@ -95,7 +95,7 @@ const minimalStaffUser: StaffUser = {
 
 // StudentUser omits uin and email. We're building this type to reflect
 // information about one student that should be available to other students.
-const minimalStudentUser: StudentUser = {
+const minimalStudentUser: Omit<StudentUser, '__brand'> = {
   institution_id: '2',
   name: 'Test User',
   uid: 'u123@example.com',

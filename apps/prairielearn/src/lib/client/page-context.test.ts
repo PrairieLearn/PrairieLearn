@@ -57,7 +57,7 @@ describe('getPageContext', () => {
 });
 
 describe('getCourseInstanceContext', () => {
-  const mockStudentData: StudentCourseInstanceContext = {
+  const mockStudentData: Omit<StudentCourseInstanceContext, '__brand'> = {
     course_instance: {
       assessments_group_by: 'Set',
       course_id: '1',
@@ -80,7 +80,7 @@ describe('getCourseInstanceContext', () => {
       title: 'Example Student Course',
     },
   };
-  const mockInstructorData: StaffCourseInstanceContext = {
+  const mockInstructorData: Omit<StaffCourseInstanceContext, '__brand'> = {
     course_instance: {
       ...mockStudentData.course_instance,
       enrollment_limit: 10,

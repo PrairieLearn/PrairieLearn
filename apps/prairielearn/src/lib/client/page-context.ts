@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 import {
-  StaffCourseInstanceSchema,
-  StaffCourseSchema,
-  StudentCourseInstanceSchema,
-  StudentCourseSchema,
+  RawStaffCourseInstanceSchema,
+  RawStaffCourseSchema,
+  RawStudentCourseInstanceSchema,
+  RawStudentCourseSchema,
+  brandWith,
 } from './safe-db-types.js';
 
 const PageContext = z.object({
@@ -37,29 +38,35 @@ export function getPageContext(resLocals: Record<string, any>): PageContext {
 // about the data. Specifically, `short_name` will never be null for non-deleted courses
 // and course instances.
 
-const StudentCourseInstanceContextSchema = z.object({
+const RawStudentCourseInstanceContextSchema = z.object({
   course_instance: z.object({
-    ...StudentCourseInstanceSchema.shape,
+    ...RawStudentCourseInstanceSchema.shape,
     short_name: z.string(),
   }),
   course: z.object({
-    ...StudentCourseSchema.shape,
+    ...RawStudentCourseSchema.shape,
     short_name: z.string(),
   }),
 });
+const StudentCourseInstanceContextSchema = brandWith<'StudentCourseInstanceContext'>()(
+  RawStudentCourseInstanceContextSchema,
+);
 
 export type StudentCourseInstanceContext = z.infer<typeof StudentCourseInstanceContextSchema>;
 
-const StaffCourseInstanceContextSchema = z.object({
+const RawStaffCourseInstanceContextSchema = z.object({
   course_instance: z.object({
-    ...StaffCourseInstanceSchema.shape,
+    ...RawStaffCourseInstanceSchema.shape,
     short_name: z.string(),
   }),
   course: z.object({
-    ...StaffCourseSchema.shape,
+    ...RawStaffCourseSchema.shape,
     short_name: z.string(),
   }),
 });
+const StaffCourseInstanceContextSchema = brandWith<'StaffCourseInstanceContext'>()(
+  RawStaffCourseInstanceContextSchema,
+);
 
 export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
 
