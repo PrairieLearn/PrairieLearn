@@ -126,7 +126,7 @@ export default tseslint.config([
       'no-floating-promise/no-floating-promise': 'error',
 
       // Use the recommended rules for react-hooks
-      ...reactHooks.configs['recommended-latest'].rules,
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
 
       // Use the recommended rules for vitest
