@@ -84,7 +84,7 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     onMathjaxTypeset();
-  }, [variant?.question, prompt]);
+  }, [variant?.question, prompt, onMathjaxTypeset]);
 
   const handleGrade = () => {
     if (!variant) {
@@ -154,7 +154,7 @@ export function SampleQuestionDemo({
 
   useEffect(() => {
     handleGenerateNewVariant();
-  }, [promptId]);
+  }, [promptId, handleGenerateNewVariant]);
 
   // The correct answer to the problem, displayed to the user
   const answerText = variant

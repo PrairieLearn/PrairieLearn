@@ -6,6 +6,7 @@ import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
+import reactHooks from 'eslint-plugin-react-hooks';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -41,6 +42,7 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      'react-hooks': reactHooks,
       vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       '@prairielearn': prairielearn,
@@ -122,6 +124,9 @@ export default tseslint.config([
       ],
 
       'no-floating-promise/no-floating-promise': 'error',
+
+      // Use the recommended rules for react-hooks
+      ...reactHooks.configs['recommended-latest'].rules,
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
