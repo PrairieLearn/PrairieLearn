@@ -229,7 +229,6 @@ export function InstructorAssessmentQuestionsTable({
                                 data-bs-toggle="modal"
                                 data-bs-target="#resetQuestionVariantsModal"
                                 onClick={() => handleResetButtonClick(question.id)}
-                                data-assessment-question-id={question.id}
                               >
                                 Reset question variants
                               </button>
