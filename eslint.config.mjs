@@ -127,7 +127,6 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect
       ...reactYouMightNotNeedAnEffect.configs.recommended.rules,
-      'react-you-might-not-need-an-effect/no-manage-parent': 'off', // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/21
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,

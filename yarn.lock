@@ -9842,15 +9842,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-you-might-not-need-an-effect@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "eslint-plugin-react-you-might-not-need-an-effect@npm:0.3.1"
+"eslint-plugin-react-you-might-not-need-an-effect@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "eslint-plugin-react-you-might-not-need-an-effect@npm:0.3.2"
   dependencies:
     eslint-utils: "npm:^3.0.0"
     globals: "npm:^16.2.0"
   peerDependencies:
     eslint: ">=7.0.0"
-  checksum: 10c0/fd04eb380f3524278cc9717ed4579617e28f27913354076fde838aa096b1661c986e76ec39a4289971e4c8056f3c6f7e070d2d44f94a4a87240ab7c52980676f
+  checksum: 10c0/8caf9240766cda98245fe417256826851f2fb698cdd6daae375a22870d0affde378f502928b0ddb30f8ef1eeaa2835cf1efe1f0c7bee04cbd48a7dc4e13e8962
   languageName: node
   linkType: hard
 
@@ -14605,7 +14605,7 @@ __metadata:
     eslint-import-resolver-typescript: "npm:^4.4.4"
     eslint-plugin-import-x: "npm:^4.16.1"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
-    eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.3.1"
+    eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.3.2"
     eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     get-stream: "npm:^9.0.1"
     globby: "npm:^14.1.0"
