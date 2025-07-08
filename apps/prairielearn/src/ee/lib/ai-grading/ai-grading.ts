@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 
 import * as async from 'async';
+import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -13,6 +14,7 @@ import {
   type AssessmentQuestion,
   type Course,
   IdSchema,
+  type InstanceQuestion,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
@@ -152,6 +154,7 @@ export async function aiGrade({
 
     // Grade each instance question. The ith element of grading_successes contains whether or not grading the ith instance question succeeded.
     const grading_successes = await async.mapLimit(instance_questions, PARALLEL_SUBMISSION_GRADING_LIMIT, async (instance_question: InstanceQuestion) => {
+    const gradeInstanceQuestion = async (instance_question: InstanceQuestion) => {
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   
       const locals = {
@@ -171,8 +174,8 @@ export async function aiGrade({
       );
       if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
-        job.error('Error occurred');
-        job.fail('Errors occurred while AI grading, see output for details');
+        job.error('Errors occurred while AI grading, see output for details');
+        return false;
       }
       const questionPrompt = render_question_results.data.questionHtml;
   
@@ -417,9 +420,23 @@ export async function aiGrade({
         }
       }
       return true;
-    });
+    };
 
-    const error_count = grading_successes.filter((success) => !success).length;
+    // Grade each instance question, and return an array indicating the success/failure of each grading operation.
+    const instance_question_grading_successes = await async.mapLimit(
+      instance_questions,
+      PARALLEL_SUBMISSION_GRADING_LIMIT,
+      async (instance_question: InstanceQuestion) => {
+        try {
+          return await gradeInstanceQuestion(instance_question);
+        } catch (err) {
+          job.error(err);
+          return false;
+        }
+      },
+    );
+
+    const error_count = instance_question_grading_successes.filter((success) => !success).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
