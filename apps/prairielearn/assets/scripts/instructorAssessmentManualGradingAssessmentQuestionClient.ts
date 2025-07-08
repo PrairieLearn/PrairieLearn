@@ -39,7 +39,7 @@ onDocumentReady(() => {
     const graders = data.flatMap((row) =>
       (row.ai_grading_status !== 'None'
         ? [generateAiGraderName(row.ai_grading_status)]
-        : []
+        : ['Nobody']
       ).concat(row.last_human_grader ? [row.last_human_grader] : []),
     );
     const aiGraders = graders.filter(
@@ -51,10 +51,17 @@ onDocumentReady(() => {
     const humanGraders = graders.filter(
       (value) =>
         value !== generateAiGraderName('LatestRubric') &&
-        value !== generateAiGraderName('OutdatedRubric'),
+        value !== generateAiGraderName('OutdatedRubric') &&
+        value !== 'Nobody',
     );
     humanGraders.sort();
-    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
+    const noGraders = graders.filter((value) => value === 'Nobody');
+    return Object.fromEntries(
+      aiGraders
+        .concat(humanGraders)
+        .concat(noGraders)
+        .map((name) => [name, name]),
+    );
   };
 
   window.rubricItemsList = function () {
@@ -323,10 +330,13 @@ onDocumentReady(() => {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
                 } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else if (text === 'nobody') {
+                  return value.trim() === '';
                 } else {
                   return value.toLowerCase().includes(text);
                 }
               },
+              sortable: true,
             }
           : {
               field: 'last_grader',
@@ -429,6 +439,21 @@ onDocumentReady(() => {
           } else {
             // Make a appear in the end regardless of sort order
             return 1;
+          }
+        });
+      } else if (sortName === 'ai_graded') {
+        const aiGradingStatusOrder = { Graded: 3, LatestRubric: 2, OutdatedRubric: 1, None: 0 };
+        data.sort(function (a, b) {
+          if (
+            aiGradingStatusOrder[a.ai_grading_status] < aiGradingStatusOrder[b.ai_grading_status]
+          ) {
+            return order * -1;
+          } else if (
+            aiGradingStatusOrder[a.ai_grading_status] > aiGradingStatusOrder[b.ai_grading_status]
+          ) {
+            return order;
+          } else {
+            return Number((a.last_grader ?? '') < (b.last_grader ?? '')) * order * -1;
           }
         });
       } else {
