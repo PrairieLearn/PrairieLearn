@@ -198,7 +198,6 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-<<<<<<< HEAD
       // const example_submissions = await selectClosestSubmissionInfo({
       //   submission_id: submission.id,
       //   assessment_question_id: assessment_question.id,
@@ -210,19 +209,6 @@ export async function aiGrade({
       //   gradedExampleInfo += `\n- ${example.instance_question_id}`;
       // }
       // job.info(gradedExampleInfo);
-=======
-      const example_submissions = await selectClosestSubmissionInfo({
-        submission_id: submission.id,
-        assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
-        limit: 5,
-      });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
-      for (const example of example_submissions) {
-        gradedExampleInfo += `\n- ${example.instance_question_id}`;
-      }
-      logger.info(gradedExampleInfo);
->>>>>>> parallel-ai-grading
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
   
@@ -476,17 +462,6 @@ export async function aiGrade({
         try {
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err) {
-<<<<<<< HEAD
-          return {
-            success: false,
-            logs: [
-              {
-                messageType: 'error',
-                message: err,
-              },
-            ],
-          };
-=======
           logger.error(err);
         } finally {
           for (const log of logs) {
@@ -496,7 +471,6 @@ export async function aiGrade({
               job.error(log.message);
             }
           }
->>>>>>> parallel-ai-grading
         }
       },
     );
