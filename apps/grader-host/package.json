@@ -11,12 +11,12 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-auto-scaling": "^3.823.0",
-    "@aws-sdk/client-ecr": "^3.823.0",
-    "@aws-sdk/client-s3": "^3.823.0",
-    "@aws-sdk/client-sqs": "^3.823.0",
-    "@aws-sdk/credential-providers": "^3.823.0",
-    "@aws-sdk/lib-storage": "^3.823.0",
+    "@aws-sdk/client-auto-scaling": "^3.840.0",
+    "@aws-sdk/client-ecr": "^3.840.0",
+    "@aws-sdk/client-s3": "^3.842.0",
+    "@aws-sdk/client-sqs": "^3.840.0",
+    "@aws-sdk/credential-providers": "^3.840.0",
+    "@aws-sdk/lib-storage": "^3.842.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -27,27 +27,27 @@
     "@prairielearn/sentry": "workspace:^",
     "async": "^3.2.6",
     "byline": "^5.0.0",
-    "dockerode": "^4.0.6",
+    "dockerode": "^4.0.7",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
     "logform": "^2.7.0",
-    "shlex": "^2.1.2",
+    "shlex": "^3.0.0",
     "tmp-promise": "^3.0.3",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
-    "zod": "^3.25.51"
+    "zod": "^3.25.69"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/dockerode": "^3.3.39",
+    "@types/dockerode": "^3.3.42",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.34",
     "@types/tmp": "^0.2.6",
-    "@vitest/coverage-v8": "^3.2.2",
+    "@vitest/coverage-v8": "^3.2.4",
     "nodemon": "^3.1.10",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^3.2.2"
+    "vitest": "^3.2.4"
   }
 }

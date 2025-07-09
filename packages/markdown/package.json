@@ -30,12 +30,12 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/hast": "^3.0.4",
     "@types/mdast": "^4.0.4",
-    "@types/node": "^22.15.29",
+    "@types/node": "^22.15.34",
     "@types/unist": "^3.0.3",
-    "@vitest/coverage-v8": "^3.2.2",
+    "@vitest/coverage-v8": "^3.2.4",
     "mdast-util-math": "^3.0.0",
-    "tsx": "^4.19.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "vitest": "^3.2.2"
+    "vitest": "^3.2.4"
   }
 }

@@ -1,10 +1,26 @@
 <pl-question-panel>
 
   <p> You can use the element <code>pl-file-upload</code> when you want to manually grade answers from students,
-    or if you just want to have records of their solution process. Note that the expected file name must be provided.</p>
+    or if you just want to have records of their solution process. By default, only file names listed in 
+    <code>file-names</code> can be uploaded and all files in the list must be provided.</p>
 
   <pl-file-upload file-names="solution.txt"></pl-file-upload>
 
+  <p> Besides mandatory file names, <code>pl-file-upload</code> supports 3 other attributes to customize which files students can upload in a more fine-grained way:</p>
+  
+  <ul>
+    <li><code>optional-file-names</code> defines list of file names that students can (are not required to) upload.</li>
+    <li><code>file-patterns</code> defines list of file names that can include <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a> and therefore allow a range of different names. Exactly one file must be provided to match each pattern.</li>
+    <li><code>optional-file-patterns</code> defines another list of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a> that can include wildcards. For each pattern, any number of files may be uploaded.</li>
+  </ul> 
+
+  A single <code>pl-file-upload</code> element can use any combination of mandatory and optional file names and patterns. For example, the following element requires the upload of a Python file named "solution.py" and 2 additional Python files, and also allows an optional "explanation.txt" file and arbitrarily many additional Python files to be uploaded. 
+
+  <pl-file-upload file-names="solution.py" file-patterns="*.py,*.py" optional-file-names="explanation.txt" optional-file-patterns="*.py"></pl-file-upload>
+
+  <p> Patterns can be repeated as shown above, but we strongly discourage the use of overlapping patterns in the same attribute. Please refer to <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">the documentation</a> for a more detailed explanation on how the different file lists interact.</p>
+  <p> Note that we use multiple <code>pl-file-upload</code> elements here for illustrative purposes, but that using more than one for real questions
+  <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">is not recommended</a>.</p>
 </pl-question-panel>
 
 <pl-submission-panel>
