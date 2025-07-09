@@ -150,6 +150,13 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
+    /**
+     * Grade an individual instance question.
+     *
+     * TODO: As we bring AI grading into production and scale it up, this function will compete with
+     * all other question rendering operations. In the future, we should limit render concurrency
+     * to avoid overwhelming the rendering servers.
+     */
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
     ): Promise<{
