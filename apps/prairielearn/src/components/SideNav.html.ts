@@ -2,6 +2,8 @@ import clsx from 'clsx';
 
 import { type HtmlValue, html } from '@prairielearn/html';
 
+import { isEnterprise } from '../lib/license.js';
+
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.html.js';
@@ -23,6 +25,7 @@ interface SideNavTabInfo {
   urlSuffix: string | ((resLocals: Record<string, any>) => string);
   iconClasses: string;
   tabLabel: string;
+  tabTooltip?: string;
   htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
   renderCondition?: (resLocals: Record<string, any>) => boolean;
 }
@@ -52,7 +55,7 @@ const sideNavPagesTabs = {
       activeSubPages: ['instances'],
       urlSuffix: '/course_admin/instances',
       iconClasses: 'fas fa-chalkboard-teacher fa-fw',
-      tabLabel: 'Course Instances',
+      tabLabel: 'Course instances',
     },
     {
       activePages: ['course_admin', 'question'],
@@ -95,6 +98,7 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/file_view',
       iconClasses: 'fa fa-edit fa-fw',
       tabLabel: 'Files',
+      tabTooltip: 'Course files',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
@@ -103,6 +107,7 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/settings',
       iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
+      tabTooltip: 'Course settings',
     },
   ],
   instance_admin: [
@@ -128,14 +133,15 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/file_view',
       iconClasses: 'fa fa-edit fa-fw',
       tabLabel: 'Files',
+      tabTooltip: 'Course instance files',
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['lti13'],
+      activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag fa-fw',
-      tabLabel: 'LTI 1.3',
-      renderCondition: (resLocals) => resLocals.lti13_enabled,
+      tabLabel: 'Integrations',
+      renderCondition: () => isEnterprise(),
     },
     {
       activePages: ['instance_admin'],
@@ -143,6 +149,7 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog fa-fw',
       tabLabel: 'Settings',
+      tabTooltip: 'Course instance settings',
     },
   ],
 } satisfies Partial<Record<Exclude<NavPage, undefined>, SideNavTabInfo[]>>;
@@ -206,7 +213,7 @@ function CourseNav({
       <div id="course-dropdown" class="dropdown">
         <button
           type="button"
-          class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+          class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
           aria-label="Change course"
           aria-haspopup="true"
           aria-expanded="false"
@@ -264,7 +271,7 @@ function CourseInstanceNav({
         <div id="course-instance-dropdown" class="dropdown">
           <button
             type="button"
-            class="btn dropdown-toggle dropdown-menu-right border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
+            class="btn dropdown-toggle border border-gray bg-white w-100 d-flex justify-content-between align-items-center mb-2"
             aria-label="Change course instance"
             aria-haspopup="true"
             aria-expanded="false"
@@ -324,6 +331,7 @@ function SideNavLink({
     activeSubPages,
     iconClasses,
     tabLabel,
+    tabTooltip,
     htmlSuffix,
     renderCondition,
   } = tabInfo;
@@ -347,7 +355,7 @@ function SideNavLink({
       aria-current="${isActive ? 'page' : ''}"
       data-bs-toggle="${!sideNavExpanded ? 'tooltip' : ''}"
       data-bs-placement="right"
-      data-bs-title="${tabLabel}"
+      data-bs-title="${tabTooltip ?? tabLabel}"
     >
       <i class="icon flex-shrink-0 ${iconClasses}"></i>
       <span class="side-nav-link-text">${tabLabel}</span>

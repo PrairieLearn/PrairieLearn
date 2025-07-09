@@ -27,7 +27,8 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
+SympyMapT = dict[str, sympy.Basic | complex]
+SympyFunctionMapT = dict[str, Callable[..., Any]]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
@@ -67,21 +68,21 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
 class LocalsForEval(TypedDict):
     """A class with type signatures for the locals_for_eval dict"""
 
-    functions: SympyMapT
+    functions: SympyFunctionMapT
     variables: SympyMapT
-    helpers: SympyMapT
+    helpers: SympyFunctionMapT
 
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
-    helpers: SympyMapT
+    helpers: SympyFunctionMapT
     variables: SympyMapT
     hidden_variables: SympyMapT
     complex_variables: SympyMapT
     hidden_complex_variables: SympyMapT
-    functions: SympyMapT
-    trig_functions: SympyMapT
+    functions: SympyFunctionMapT
+    trig_functions: SympyFunctionMapT
 
     def __init__(self) -> None:
         self.helpers = {
@@ -257,11 +258,14 @@ class HasInvalidSymbolError(BaseSympyError):
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
-    functions: SympyMapT
+    functions: SympyFunctionMapT
     __parents: dict[int, ast.AST]
 
     def __init__(
-        self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
+        self,
+        whitelist: ASTWhiteListT,
+        variables: SympyMapT,
+        functions: SympyFunctionMapT,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
@@ -674,10 +678,13 @@ def sympy_to_json(
         reserved |= const.trig_functions.keys()
 
     # Apply substitutions for hidden variables
-    a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
+    a_sub = a.subs([
+        (val, sympy.symbols(key)) for key, val in const.hidden_variables.items()
+    ])
     if allow_complex:
         a_sub = a_sub.subs([
-            (val, key) for key, val in const.hidden_complex_variables.items()
+            (val, sympy.symbols(key))
+            for key, val in const.hidden_complex_variables.items()
         ])
 
     assumptions_dict = {

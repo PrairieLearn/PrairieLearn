@@ -110,12 +110,28 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
+  /** @type HTMLElement */
   const preview = this.element.find('.preview')[0];
+  let shadowRoot = preview.shadowRoot;
+  if (!shadowRoot) {
+    shadowRoot = preview.attachShadow({ mode: 'open' });
+    // MathJax includes assistive content that is not visible by default (i.e.,
+    // only readable by screen readers). The hiding of this content is found in
+    // a style tag in the head, but this tag is not applied to the shadow DOM by
+    // default, so we need to manually adopt the MathJax styles.
+    await MathJax.startup.promise;
+    const mjxStyles = document.getElementById('MJX-SVG-styles');
+    if (mjxStyles) {
+      const style = new CSSStyleSheet();
+      style.replaceSync(mjxStyles.textContent);
+      shadowRoot.adoptedStyleSheets.push(style);
+    }
+  }
   if (html_contents.trim().length === 0) {
-    preview.innerHTML = default_preview_text;
+    shadowRoot.innerHTML = default_preview_text;
   } else {
-    const sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
-    preview.innerHTML = sanitized_contents;
+    const sanitized_contents = DOMPurify.sanitize(html_contents);
+    shadowRoot.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
       sanitized_contents.includes('\\(') ||
@@ -123,7 +139,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise([preview]);
+      MathJax.typesetPromise(shadowRoot.children);
     }
   }
 };

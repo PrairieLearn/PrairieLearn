@@ -6,6 +6,7 @@ import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
+import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -43,6 +44,7 @@ export default tseslint.config([
       'no-floating-promise': noFloatingPromise,
       vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+      'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       '@prairielearn': prairielearn,
     },
 
@@ -123,6 +125,14 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
+      // Use the recommended rules for react-you-might-not-need-an-effect as errors.
+      ...Object.fromEntries(
+        Object.keys(reactYouMightNotNeedAnEffect.rules).map((ruleName) => [
+          reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
+          'error',
+        ]),
+      ),
+
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
 
@@ -157,6 +167,7 @@ export default tseslint.config([
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
 
