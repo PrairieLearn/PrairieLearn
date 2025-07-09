@@ -7,8 +7,8 @@ import { options } from '@prairielearn/preact-cjs';
 
 const oldVnode = options.vnode;
 options.vnode = (vnode: any) => {
-if (typeof vnode.type == 'function' && vnode.props?.class) {
-    vnode.props.className = vnode.props.class;
-}
-if (oldVnode) oldVnode(vnode);
+    if (typeof vnode.type == 'function' && vnode.props?.class) {
+        vnode.props.className = vnode.props.class;
+    }
+    if (oldVnode) oldVnode(vnode);
 }
