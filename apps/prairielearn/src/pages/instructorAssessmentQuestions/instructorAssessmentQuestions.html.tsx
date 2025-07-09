@@ -2,6 +2,7 @@ import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { Hydrate } from '../../lib/preact.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
@@ -34,13 +35,13 @@ export function InstructorAssessmentQuestions({
         <AssessmentSyncErrorsAndWarnings
           authz_data={authz_data}
           assessment={resLocals.assessment}
-          courseInstance={course_instance}
-          course={course}
+          courseInstance={course_instance as StaffCourseInstance}
+          course={course as StaffCourse}
           urlPrefix={urlPrefix}
         />
         <Hydrate>
           <InstructorAssessmentQuestionsTable
-            course={course}
+            course={course as StaffCourse}
             questions={questions}
             urlPrefix={urlPrefix}
             assessmentType={resLocals.assessment.type}
