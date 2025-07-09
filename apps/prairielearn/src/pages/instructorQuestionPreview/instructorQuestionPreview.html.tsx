@@ -115,7 +115,9 @@ export function InstructorQuestionPreview({
             ? html`
                 <div class="card mb-3 js-readme-card overflow-hidden">
                   <div class="card-header d-flex align-items-center collapsible-card-header">
-                    <h2 class="me-auto">README</h2>
+                    <h2 class="me-auto">
+                      README <span class="small text-muted">(not visible to students)</span>
+                    </h2>
                     <button
                       type="button"
                       class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap"
@@ -138,9 +140,6 @@ export function InstructorQuestionPreview({
                       class="pb-2 d-none justify-content-center bg-light js-expand-button-container"
                     >
                       <button type="button" class="btn btn-sm btn-link">Expand</button>
-                    </div>
-                    <div class="card-footer">
-                      <p class="mb-0 small">This README is not visible to students.</p>
                     </div>
                   </div>
                 </div>
