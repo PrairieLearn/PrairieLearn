@@ -2,6 +2,7 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -46,6 +47,7 @@ export default tseslint.config([
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       ...eslintReact.configs['recommended-typescript'].plugins,
       '@prairielearn': prairielearn,
+      '@stylistic': stylistic,
     },
 
     languageOptions: {
@@ -89,10 +91,6 @@ export default tseslint.config([
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
 
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      quotes: ['error', 'single', { avoidEscape: true }],
-
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
       'sort-imports': [
@@ -129,8 +127,8 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect as errors.
       ...Object.fromEntries(
-        Object.keys(reactYouMightNotNeedAnEffect.rules).map((ruleName) => [
-          reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
+        Object.keys(reactYouMightNotNeedAnEffect.rules ?? {}).map((ruleName) => [
+          reactYouMightNotNeedAnEffect.meta?.name + '/' + ruleName,
           'error',
         ]),
       ),
@@ -179,6 +177,48 @@ export default tseslint.config([
           varsIgnorePattern: '^_',
         },
       ],
+
+      '@stylistic/lines-between-class-members': [
+        'error',
+        'always',
+        { exceptAfterSingleLine: true },
+      ],
+      '@stylistic/no-tabs': 'error',
+      '@stylistic/jsx-tag-spacing': [
+        'error',
+        {
+          closingSlash: 'never',
+          beforeSelfClosing: 'always',
+          afterOpening: 'never',
+          beforeClosing: 'allow',
+        },
+      ],
+      '@stylistic/jsx-self-closing-comp': [
+        'error',
+        {
+          component: true,
+          html: true,
+        },
+      ],
+      '@stylistic/jsx-curly-brace-presence': [
+        'error',
+        { props: 'never', children: 'never', propElementValues: 'always' },
+      ],
+      '@stylistic/jsx-sort-props': [
+        'error',
+        {
+          callbacksLast: true,
+          ignoreCase: true,
+          locale: 'auto',
+          multiline: 'ignore',
+          noSortAlphabetically: true,
+          reservedFirst: true,
+          shorthandLast: true,
+        },
+      ],
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',

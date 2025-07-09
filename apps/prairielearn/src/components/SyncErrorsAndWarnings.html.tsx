@@ -145,7 +145,7 @@ function SyncErrorsAndWarnings({
             ''
           ) : (
             <a class="btn btn-primary" href={fileEditUrl}>
-              <i class="fa fa-edit"></i>
+              <i class="fa fa-edit" />
               <span class="d-none d-sm-inline">Edit {infoFileName} to fix this error</span>
             </a>
           )}
@@ -173,7 +173,7 @@ function SyncErrorsAndWarnings({
             ''
           ) : (
             <a class="btn btn-primary" href={fileEditUrl}>
-              <i class="fa fa-edit"></i>
+              <i class="fa fa-edit" />
               <span class="d-none d-sm-inline">Edit {infoFileName} to fix this warning</span>
             </a>
           )}

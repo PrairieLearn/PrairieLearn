@@ -163,6 +163,7 @@ export class Cache {
       }
     }
   }
+
   /**
    * Releases any connections associated with the cache.
    */
