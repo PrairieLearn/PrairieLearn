@@ -3,8 +3,8 @@ const Preact = require('original-preact');
 const oldVnode = Preact.options.vnode;
 
 /**
- * Sets VNode `className` prop to `class` value, ensuring React-based libraries incompatible with the
- * `class` prop, particularly react-bootstrap, receive and apply CSS classes correctly.
+ * Sets VNode `className` to `class`, enabling React-based libraries incompatible with the `class` prop,
+ * particularly the react-bootstrap library, to receive and apply CSS classes from `class`.
  */
 Preact.options.vnode = (vnode) => {
   // @ts-expect-error TS(2339): `class` exists at runtime
