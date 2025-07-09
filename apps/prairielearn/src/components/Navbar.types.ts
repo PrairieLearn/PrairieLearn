@@ -23,6 +23,7 @@ export type NavPage =
   | 'assessments'
   | 'gradebook'
   | 'assessment_instance'
+  | 'workspace'
   | 'effective'
   | 'lti13_course_navigation'
   | 'error'
