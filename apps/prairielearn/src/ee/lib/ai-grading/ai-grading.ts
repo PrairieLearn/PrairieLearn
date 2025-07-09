@@ -431,7 +431,7 @@ export async function aiGrade({
       return true;
     };
 
-    // Grade each instance question and return an array containing if each grading operation succeeded.
+    // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
       instance_questions,
       PARALLEL_SUBMISSION_GRADING_LIMIT,
