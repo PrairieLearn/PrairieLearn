@@ -50,6 +50,12 @@ export function PageLayout({
     hxExt?: string;
     /** Sets the html and body tag heights to 100% */
     fullHeight?: boolean;
+    /** Dataset attributes to add to the body tag. The "data-" prefix will be added, so do not include it. */
+    dataAttributes?: Record<string, string>;
+    /** Controls if the page should use enhanced navigation. */
+    enableEnhancedNav?: boolean;
+    /** Whether or not the navbar should be shown. */
+    enableNavbar?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -61,13 +67,16 @@ export function PageLayout({
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
   const paddingBottom = options.paddingBottom ?? true;
+  const enableEnhancedNav = options.enableEnhancedNav ?? true;
+  const dataAttributes = options.dataAttributes ?? {};
+  const enableNavbar = options.enableNavbar ?? true;
 
   const headContentString = asHtmlSafe(headContent);
   const preContentString = asHtmlSafe(preContent);
   const contentString = asHtmlSafe(content);
   const postContentString = asHtmlSafe(postContent);
 
-  if (resLocals.has_enhanced_navigation) {
+  if (resLocals.has_enhanced_navigation && enableEnhancedNav) {
     // The side navbar is only available if the user is in a page within a course or course instance.
     const sideNavEnabled =
       resLocals.course && navContext.type !== 'student' && navContext.type !== 'public';
@@ -122,6 +131,9 @@ export function PageLayout({
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${options.hxExt ?? ''}"
+          ${Object.entries(dataAttributes)
+            .map(([key, value]) => `data-${key}="${value}"`)
+            .join(' ')}
         >
           <div
             id="app-container"
@@ -136,16 +148,18 @@ export function PageLayout({
               'mobile-collapsed',
             )}"
           >
-            <div class="app-top-nav">
-              ${Navbar({
-                resLocals,
-                navPage: navContext.page,
-                navSubPage: navContext.subPage,
-                navbarType: navContext.type,
-                isInPageLayout: true,
-                sideNavEnabled,
-              })}
-            </div>
+            ${enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    isInPageLayout: true,
+                    sideNavEnabled,
+                  })}
+                </div>`
+              : ''}
             ${sideNavEnabled
               ? html`
                   <div class="app-side-nav bg-light border-end">
@@ -211,13 +225,18 @@ export function PageLayout({
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
           hx-ext="${options.hxExt ?? ''}"
+          ${Object.entries(dataAttributes)
+            .map(([key, value]) => `data-${key}="${value}"`)
+            .join(' ')}
         >
-          ${Navbar({
-            resLocals,
-            navPage: navContext.page,
-            navSubPage: navContext.subPage,
-            navbarType: navContext.type,
-          })}
+          ${enableNavbar
+            ? Navbar({
+                resLocals,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+                navbarType: navContext.type,
+              })
+            : ''}
           ${preContentString}
           <main
             id="content"

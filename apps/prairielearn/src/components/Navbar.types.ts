@@ -15,6 +15,7 @@ export type NavPage =
   | 'public_questions'
   | 'instance_admin'
   | 'course_admin'
+  | 'course_instance'
   | 'assessment'
   | 'question'
   | 'admin'
