@@ -9851,6 +9851,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eslint-plugin-react-you-might-not-need-an-effect@npm:^0.3.2":
+  version: 0.3.2
+  resolution: "eslint-plugin-react-you-might-not-need-an-effect@npm:0.3.2"
+  dependencies:
+    eslint-utils: "npm:^3.0.0"
+    globals: "npm:^16.2.0"
+  peerDependencies:
+    eslint: ">=7.0.0"
+  checksum: 10c0/8caf9240766cda98245fe417256826851f2fb698cdd6daae375a22870d0affde378f502928b0ddb30f8ef1eeaa2835cf1efe1f0c7bee04cbd48a7dc4e13e8962
+  languageName: node
+  linkType: hard
+
 "eslint-plugin-you-dont-need-lodash-underscore@npm:^6.14.0":
   version: 6.14.0
   resolution: "eslint-plugin-you-dont-need-lodash-underscore@npm:6.14.0"
@@ -9867,6 +9879,24 @@ __metadata:
     esrecurse: "npm:^4.3.0"
     estraverse: "npm:^5.2.0"
   checksum: 10c0/407f6c600204d0f3705bd557f81bd0189e69cd7996f408f8971ab5779c0af733d1af2f1412066b40ee1588b085874fc37a2333986c6521669cdbdd36ca5058e0
+  languageName: node
+  linkType: hard
+
+"eslint-utils@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "eslint-utils@npm:3.0.0"
+  dependencies:
+    eslint-visitor-keys: "npm:^2.0.0"
+  peerDependencies:
+    eslint: ">=5"
+  checksum: 10c0/45aa2b63667a8d9b474c98c28af908d0a592bed1a4568f3145cd49fb5d9510f545327ec95561625290313fe126e6d7bdfe3fdbdb6f432689fab6b9497d3bfb52
+  languageName: node
+  linkType: hard
+
+"eslint-visitor-keys@npm:^2.0.0":
+  version: 2.1.0
+  resolution: "eslint-visitor-keys@npm:2.1.0"
+  checksum: 10c0/9f0e3a2db751d84067d15977ac4b4472efd6b303e369e6ff241a99feac04da758f46d5add022c33d06b53596038dbae4b4aceb27c7e68b8dfc1055b35e495787
   languageName: node
   linkType: hard
 
@@ -10753,6 +10783,13 @@ __metadata:
   version: 14.0.0
   resolution: "globals@npm:14.0.0"
   checksum: 10c0/b96ff42620c9231ad468d4c58ff42afee7777ee1c963013ff8aabe095a451d0ceeb8dcd8ef4cbd64d2538cef45f787a78ba3a9574f4a634438963e334471302d
+  languageName: node
+  linkType: hard
+
+"globals@npm:^16.2.0":
+  version: 16.3.0
+  resolution: "globals@npm:16.3.0"
+  checksum: 10c0/c62dc20357d1c0bf2be4545d6c4141265d1a229bf1c3294955efb5b5ef611145391895e3f2729f8603809e81b30b516c33e6c2597573844449978606aad6eb38
   languageName: node
   linkType: hard
 
@@ -14578,6 +14615,7 @@ __metadata:
     eslint-plugin-import-x: "npm:^4.16.1"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
+    eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.3.2"
     eslint-plugin-you-dont-need-lodash-underscore: "npm:^6.14.0"
     get-stream: "npm:^9.0.1"
     globby: "npm:^14.1.0"
