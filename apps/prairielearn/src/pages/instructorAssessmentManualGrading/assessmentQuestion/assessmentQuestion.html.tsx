@@ -18,7 +18,6 @@ import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 // import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTable.html.js';
 import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTableV2.html.js';
 
-
 export function AssessmentQuestion({
   resLocals,
   courseStaff,

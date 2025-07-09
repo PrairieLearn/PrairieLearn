@@ -595,7 +595,7 @@ function addRubricItemRow() {
   if (!card) return;
   const table = card.querySelector('.js-rubric-items-table');
   if (!table) return;
-	
+
   const next_id = Number(table.dataset.nextNewId ?? 0) + 1;
   // const points = card.querySelector('.js-negative-grading')?.checked ? -1 : +1;
   const points = +1;
@@ -613,12 +613,12 @@ function addRubricItemRow() {
   }
   const rubricItemPoints = row.querySelector('.js-rubric-item-points');
   if (rubricItemPoints) {
-		rubricItemPoints.dataset.inputName = `rubric_item[new${next_id}][points]`;
-		rubricItemPoints.dataset.currentValue = `${points}`;
+    rubricItemPoints.dataset.inputName = `rubric_item[new${next_id}][points]`;
+    rubricItemPoints.dataset.currentValue = `${points}`;
   }
   const rubricItemDescription = row.querySelector('.js-rubric-item-description');
   if (rubricItemDescription) {
-		rubricItemDescription.dataset.inputName = `rubric_item[new${next_id}][description]`;
+    rubricItemDescription.dataset.inputName = `rubric_item[new${next_id}][description]`;
   }
   const rubricItemExplanation = row.querySelector('.js-rubric-item-explanation');
   if (rubricItemExplanation) {

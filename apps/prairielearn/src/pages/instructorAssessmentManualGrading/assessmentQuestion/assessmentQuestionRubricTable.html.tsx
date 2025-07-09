@@ -6,7 +6,7 @@ import { compiledScriptTag } from '../../../lib/assets.js';
 
 export function AssessmentQuestionRubricTable(aiGradingStats: AiGradingGeneralStats) {
   return html`
-  ${compiledScriptTag('instructorAssessmentManualGradingRubricEditing.js')}
+    ${compiledScriptTag('instructorAssessmentManualGradingRubricEditing.js')}
     <form method="POST">
       <div class="card overflow-hidden mb-3">
         <div class="table-responsive">
@@ -34,7 +34,11 @@ export function AssessmentQuestionRubricTable(aiGradingStats: AiGradingGeneralSt
           </table>
         </div>
         <div class="js-settings-points-warning-placeholder"></div>
-        <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button" style="width: 5rem;">
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary js-add-rubric-item-button"
+          style="width: 5rem;"
+        >
           Add item
         </button>
         <template class="js-new-row-rubric-item">
@@ -45,7 +49,9 @@ export function AssessmentQuestionRubricTable(aiGradingStats: AiGradingGeneralSt
           })}
         </template>
         <div class="text-end">
-          <button type="submit" class="btn btn-sm btn-primary" style="width: 10rem;">Save rubric</button>
+          <button type="submit" class="btn btn-sm btn-primary" style="width: 10rem;">
+            Save rubric
+          </button>
         </div>
       </div>
     </form>
