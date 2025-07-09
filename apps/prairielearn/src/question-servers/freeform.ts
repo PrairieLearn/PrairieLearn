@@ -438,7 +438,6 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   // The following code is deliberately formatted as it is to aid in comprehension,
   // so we prevent Prettier from reformatting the code to span multiple lines.
   // prettier-ignore
-  /* eslint-disable @stylistic/no-multi-spaces */
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/

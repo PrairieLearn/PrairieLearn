@@ -125,8 +125,8 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect as errors.
       ...Object.fromEntries(
-        Object.keys(reactYouMightNotNeedAnEffect.rules).map((ruleName) => [
-          reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
+        Object.keys(reactYouMightNotNeedAnEffect.rules ?? {}).map((ruleName) => [
+          reactYouMightNotNeedAnEffect.meta?.name + '/' + ruleName,
           'error',
         ]),
       ),
@@ -169,76 +169,47 @@ export default tseslint.config([
         },
       ],
 
-      ...stylistic.configs.recommended.rules,
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
-      '@stylistic/quote-props': ['error', 'as-needed', { keywords: false }],
-      '@stylistic/semi': ['error', 'always'],
-      '@stylistic/operator-linebreak': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/870
-      '@stylistic/multiline-ternary': 'off', // We don't enforce a specific style for ternary operators
-      '@stylistic/jsx-one-expression-per-line': 'off', // We don't enforce a specific style for JSX expressions
+      '@stylistic/lines-between-class-members': [
+        'error',
+        'always',
+        { exceptAfterSingleLine: true },
+      ],
+      '@stylistic/no-tabs': 'error',
+      '@stylistic/jsx-tag-spacing': [
+        'error',
+        {
+          closingSlash: 'never',
+          beforeSelfClosing: 'always',
+          afterOpening: 'never',
+          beforeClosing: 'allow',
+        },
+      ],
+      '@stylistic/jsx-self-closing-comp': [
+        'error',
+        {
+          component: true,
+          html: true,
+        },
+      ],
       '@stylistic/jsx-curly-brace-presence': [
         'error',
-        // We sometimes wrap a literal in curly braces for clarity. E.g. {Math.floor(grade)}{'%'}
-        { props: 'ignore', children: 'ignore', propElementValues: 'always' },
-      ],
-      '@stylistic/generator-star-spacing': ['error', 'before'],
-      '@stylistic/arrow-parens': ['error', 'always', { requireForBlockBody: true }],
-      '@stylistic/brace-style': ['error', '1tbs'],
-      '@stylistic/indent': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/845
-      '@stylistic/indent-binary-ops': 'off', // https://github.com/eslint-stylistic/eslint-stylistic/issues/676
-      '@stylistic/member-delimiter-style': [
-        'error',
-        {
-          multiline: {
-            delimiter: 'semi',
-            requireLast: true,
-          },
-          multilineDetection: 'brackets',
-          overrides: {
-            interface: {
-              multiline: {
-                delimiter: 'semi',
-                requireLast: true,
-              },
-            },
-          },
-          singleline: {
-            delimiter: 'semi',
-          },
-        },
-      ],
-      // We use comments stylistically sometimes, e.g. `/*****/` or `//////`
-      '@stylistic/spaced-comment': 'off',
-      '@stylistic/comma-dangle': [
-        'error',
-        {
-          arrays: 'always-multiline',
-          objects: 'always-multiline',
-          imports: 'always-multiline',
-          exports: 'always-multiline',
-          dynamicImports: 'ignore',
-          // Can't distinguish between function declarations and function calls yet
-          functions: 'ignore', // https://github.com/eslint-stylistic/eslint-stylistic/issues/516
-          importAttributes: 'always-multiline',
-          enums: 'always-multiline',
-          generics: 'always-multiline',
-          tuples: 'always-multiline',
-        },
+        { props: 'never', children: 'never', propElementValues: 'always' },
       ],
       '@stylistic/jsx-sort-props': [
         'error',
         {
-          shorthandLast: true,
-          multiline: 'ignore',
-          ignoreCase: true,
           callbacksLast: true,
+          ignoreCase: true,
+          locale: 'auto',
+          multiline: 'ignore',
           noSortAlphabetically: true,
           reservedFirst: true,
-          locale: 'auto',
+          shorthandLast: true,
         },
       ],
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',

@@ -240,7 +240,7 @@ export function SampleQuestionDemo({
       <CardFooter>
         <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div class="flex-grow-1"></div>
+          <div class="flex-grow-1" />
           <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
               <span class="text-nowrap">New variant</span>
@@ -264,12 +264,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return (
-    <span class={`badge ${badgeType}`}>
-      {Math.floor(grade)}
-      {'%'}
-    </span>
-  );
+  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
