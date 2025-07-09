@@ -135,10 +135,9 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect as errors.
       ...Object.fromEntries(
-        Object.keys(reactYouMightNotNeedAnEffect.rules).map((ruleName) => [
-          reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
-          'error',
-        ]),
+        Object.keys(reactYouMightNotNeedAnEffect.configs['recommended'].rules ?? {}).map(
+          (ruleName) => [ruleName, 'error'],
+        ),
       ),
 
       // Use the recommended rules for eslint-react as errors.
