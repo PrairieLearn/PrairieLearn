@@ -9,10 +9,9 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.html.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
@@ -34,7 +33,6 @@ import {
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
