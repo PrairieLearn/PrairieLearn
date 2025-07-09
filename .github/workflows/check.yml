@@ -134,8 +134,8 @@ jobs:
         run: make lint-d2
       - name: Check for warnings in documentation
         run: make build-docs
+      # Ran after the docs build, so we can lint the generated HTML.
       - name: Run the HTML linter
-        # Run after the docs build, so we can lint the generated HTML.
         run: make lint-html
       - name: Upload Python coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
@@ -166,11 +166,11 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'images/plbase/python-requirements.txt'
+          cache-dependency-glob: 'requirements.txt'
       - name: Install Python dependencies
         env:
           UV_SYSTEM_PYTHON: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
+        run: uv pip install -r requirements.txt
 
       - name: Run the Dockerfile linter
         run: make lint-docker
