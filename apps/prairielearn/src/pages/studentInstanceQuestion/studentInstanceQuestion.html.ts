@@ -35,7 +35,7 @@ export function StudentInstanceQuestion({
 
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.assessment.title,
+    pageTitle: '',
     navContext: {
       type: 'student',
       page: 'assessment_instance',
