@@ -1,4 +1,11 @@
-CREATE TYPE enum_enrollment_status AS ENUM ('invited', 'joined', 'removed', 'rejected', 'blocked');
+CREATE TYPE enum_enrollment_status AS ENUM(
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked'
+);
+
 ALTER TABLE enrollments
 ADD COLUMN status enum_enrollment_status NOT NULL DEFAULT 'joined';
 
@@ -31,6 +38,12 @@ ADD CONSTRAINT enrollments_user_id_null_only_if_invited CHECK (
 -- Require exactly one of user_id and pending_uid to be NULL.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
-  (user_id IS NULL AND pending_uid IS NOT NULL)
-  OR (user_id IS NOT NULL AND pending_uid IS NULL)
+  (
+    user_id IS NULL
+    AND pending_uid IS NOT NULL
+  )
+  OR (
+    user_id IS NOT NULL
+    AND pending_uid IS NULL
+  )
 );
