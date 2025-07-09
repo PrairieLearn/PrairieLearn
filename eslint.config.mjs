@@ -64,6 +64,7 @@ export default tseslint.config([
 
       ...eslintReact.configs['recommended-typescript'].settings,
       'react-x': {
+        ...eslintReact.configs['recommended-typescript'].settings['react-x'],
         // This is roughly the version that Preact's compat layer supports.
         version: '18.0.0',
       },
