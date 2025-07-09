@@ -110,9 +110,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'requirements.txt'
       - name: Install Python dependencies
-        env:
-          UV_SYSTEM_PYTHON: 1
-        run: uv pip install -r requirements.txt
+        run: make python-deps
 
       - name: Set up Node
         uses: actions/setup-node@v4
