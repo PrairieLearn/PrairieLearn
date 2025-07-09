@@ -112,6 +112,7 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
 
 async function prepareCodeCaller() {
   return await CodeCallerNative.create({
+    collectCoverage: false,
     dropPrivileges: true,
     questionTimeoutMilliseconds,
     pingTimeoutMilliseconds,
