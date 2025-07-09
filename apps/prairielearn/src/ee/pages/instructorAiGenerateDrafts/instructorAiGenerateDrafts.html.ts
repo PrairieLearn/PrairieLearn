@@ -33,7 +33,6 @@ export function InstructorAIGenerateDrafts({
     resLocals,
     pageTitle: resLocals.pageTitle,
     headContent: html`
-      ${compiledScriptTag('fixPreactClass.ts')}
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
       ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestions.tsx')}
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}

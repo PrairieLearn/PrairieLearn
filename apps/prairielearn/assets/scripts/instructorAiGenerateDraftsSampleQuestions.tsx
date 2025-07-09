@@ -31,8 +31,11 @@ import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDraft
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
+import { setPreactClassToClassName } from './lib/set-preact-class-to-classname.js';
 
 onDocumentReady(() => {
+  setPreactClassToClassName();
+
   const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
   render(<SampleQuestion />, sampleQuestions);
 });
