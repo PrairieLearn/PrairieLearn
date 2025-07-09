@@ -136,6 +136,9 @@ export function StudentAssessmentInstance({
 
   return PageLayout({
     resLocals,
+    // TODO: figure out title
+    // W1: Workshop from Summer 2020 — W1 — XC 101 |  PrairieLearn
+    // resLocals.instance_group?.name || resLocals.instance_user?.uid
     pageTitle: `${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}: ${resLocals.assessment.title}`,
     navContext: {
       type: 'student',
