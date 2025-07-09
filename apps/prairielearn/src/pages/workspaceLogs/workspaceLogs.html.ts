@@ -42,7 +42,7 @@ export function WorkspaceLogs({
       type: 'plain',
     },
     options: {
-      enableEnhancedNav: false
+      enableEnhancedNav: false,
     },
     content: html`
       <h1 class="mb-4">Workspace logs</h1>
@@ -73,7 +73,7 @@ export function WorkspaceLogs({
 
       <h2>History</h2>
       ${WorkspaceLogsTable({ workspaceLogs })}
-    `
+    `,
   });
 }
 

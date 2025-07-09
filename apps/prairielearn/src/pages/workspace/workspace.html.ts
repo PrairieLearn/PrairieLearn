@@ -47,7 +47,7 @@ export function Workspace({
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
       enableEnhancedNav: false,
-      enableNavbar: false
+      enableNavbar: false,
     },
     headContent: html`
       ${HeadContents({ resLocals, pageNote, pageTitle })}
@@ -70,8 +70,7 @@ export function Workspace({
         : ''}
     `,
     preContent: html`
-      ${RebootModal({ __csrf_token })} 
-      ${ResetModal({ __csrf_token })}
+      ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
       <nav class="navbar navbar-light navbar-expand-lg bg-info align-items-center">
         <div class="container-fluid">
           <div class="d-flex flex-column me-3">
@@ -103,8 +102,7 @@ export function Workspace({
           </button>
           <div class="collapse navbar-collapse" id="workspace-nav">
             <ul class="navbar-nav ms-auto">
-              ${resLocals.assessment?.type === 'Exam' &&
-              resLocals.assessment_instance_remaining_ms
+              ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
                 ? html` <li class="nav-item ms-2 my-1">
                     <div id="countdownProgress"></div>
                     <div class="text-white small">
@@ -167,10 +165,7 @@ export function Workspace({
       </nav>
     `,
     content: html`
-      <div
-        id="loading"
-        class="d-flex h-100 flex-grow justify-content-center align-items-center"
-      >
+      <div id="loading" class="d-flex h-100 flex-grow justify-content-center align-items-center">
         <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
         <span class="visually-hidden">Loading workspace &hellip;</span>
       </div>
@@ -191,7 +186,7 @@ export function Workspace({
         <p id="failed-message"></p>
       </div>
       <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
-    `
+    `,
   });
 }
 

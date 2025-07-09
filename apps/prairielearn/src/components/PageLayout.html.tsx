@@ -148,18 +148,18 @@ export function PageLayout({
               'mobile-collapsed',
             )}"
           >
-            ${enableNavbar ? (
-              html`<div class="app-top-nav">
-                ${Navbar({
-                  resLocals,
-                  navPage: navContext.page,
-                  navSubPage: navContext.subPage,
-                  navbarType: navContext.type,
-                  isInPageLayout: true,
-                  sideNavEnabled,
-                })}
-              </div>`
-            ) : ''}
+            ${enableNavbar
+              ? html`<div class="app-top-nav">
+                  ${Navbar({
+                    resLocals,
+                    navPage: navContext.page,
+                    navSubPage: navContext.subPage,
+                    navbarType: navContext.type,
+                    isInPageLayout: true,
+                    sideNavEnabled,
+                  })}
+                </div>`
+              : ''}
             ${sideNavEnabled
               ? html`
                   <div class="app-side-nav bg-light border-end">
@@ -229,12 +229,14 @@ export function PageLayout({
             .map(([key, value]) => `data-${key}="${value}"`)
             .join(' ')}
         >
-          ${enableNavbar ? Navbar({
-            resLocals,
-            navPage: navContext.page,
-            navSubPage: navContext.subPage,
-            navbarType: navContext.type,
-          }) : ''}
+          ${enableNavbar
+            ? Navbar({
+                resLocals,
+                navPage: navContext.page,
+                navSubPage: navContext.subPage,
+                navbarType: navContext.type,
+              })
+            : ''}
           ${preContentString}
           <main
             id="content"
