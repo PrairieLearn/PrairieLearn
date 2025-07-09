@@ -27,35 +27,6 @@ WITH
     WHERE
       s.id = $submission_id
   ),
-  canceled_jobs AS (
-    -- Cancel any outstanding grading jobs
-    UPDATE grading_jobs AS gj
-    SET
-      grading_request_canceled_at = now(),
-      grading_request_canceled_by = $authn_user_id
-    FROM
-      grading_job_data AS gjd
-      JOIN variants AS v ON (v.id = gjd.variant_id)
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      gj.submission_id = s.id
-      AND gj.graded_at IS NULL
-      AND gj.grading_requested_at IS NOT NULL
-      AND gj.grading_request_canceled_at IS NULL
-    RETURNING
-      gj.*
-  ),
-  canceled_job_submissions AS (
-    UPDATE submissions AS s
-    SET
-      grading_requested_at = NULL,
-      modified_at = now()
-    FROM
-      canceled_jobs
-    WHERE
-      s.id = canceled_jobs.submission_id
-      AND s.id != $submission_id
-  ),
   updated_submission AS (
     UPDATE submissions AS s
     SET
