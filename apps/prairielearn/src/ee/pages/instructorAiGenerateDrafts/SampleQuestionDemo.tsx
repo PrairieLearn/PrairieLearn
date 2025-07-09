@@ -64,7 +64,7 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleGenerateNewVariant = useCallback(async () => {
+  const handleGenerateNewVariant = () => {
     // Clear the grade shown to the user
     setGrade(null);
 
@@ -77,7 +77,7 @@ export function SampleQuestionDemo({
     // Generate a new question variant
     const questionVariant = generateSampleQuestionVariant(prompt.id);
     setVariant(questionVariant);
-  }, [prompt.id]);
+  };
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
