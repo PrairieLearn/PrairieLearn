@@ -65,6 +65,7 @@ function SampleQuestion() {
             onClickNext={handleClickNext}
           />
           <SampleQuestionDemo
+            key={selectedQuestion.id}
             promptId={selectedQuestion.id}
             prompt={selectedQuestion}
             onMathjaxTypeset={mathjaxTypeset}

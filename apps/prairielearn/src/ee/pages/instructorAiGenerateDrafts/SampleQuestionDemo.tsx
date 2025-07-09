@@ -39,7 +39,7 @@ export function SampleQuestionDemo({
   prompt: ExamplePrompt;
   onMathjaxTypeset: () => Promise<void>;
 }) {
-  const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
+  const [variant, setVariant] = useState(generateSampleQuestionVariant(promptId));
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -151,10 +151,6 @@ export function SampleQuestionDemo({
       );
     }
   };
-
-  useEffect(() => {
-    handleGenerateNewVariant();
-  }, [promptId]);
 
   // The correct answer to the problem, displayed to the user
   const answerText = variant
