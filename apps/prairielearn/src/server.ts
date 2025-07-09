@@ -78,6 +78,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { options } from 'preact';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -110,7 +111,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  * Creates the express application and sets up all PrairieLearn routes.
  * @return The express "app" object that was created.
  */
-export async function initExpress(): Promise<Express> {
+export async function initExpress(): Promise<Express> {  
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
