@@ -136,10 +136,7 @@ export function StudentAssessmentInstance({
 
   return PageLayout({
     resLocals,
-    // TODO: figure out title
-    // W1: Workshop from Summer 2020 — W1 — XC 101 |  PrairieLearn
-    // resLocals.instance_group?.name || resLocals.instance_user?.uid
-    pageTitle: `${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}: ${resLocals.assessment.title}`,
+    pageTitle: '', // Calculated automatically
     navContext: {
       type: 'student',
       page: 'assessment_instance',
@@ -162,16 +159,18 @@ export function StudentAssessmentInstance({
         : ''}
     `,
     preContent: html`
-      ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
-        ? ConfirmFinishModal({
-            instance_question_rows,
-            csrfToken: resLocals.__csrf_token,
-          })
-        : ''}
-      ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
-      ${userCanDeleteAssessmentInstance
-        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-        : ''}
+      <div class="foo">
+        ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
+          ? ConfirmFinishModal({
+              instance_question_rows,
+              csrfToken: resLocals.__csrf_token,
+            })
+          : ''}
+        ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
+      </div>
     `,
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
