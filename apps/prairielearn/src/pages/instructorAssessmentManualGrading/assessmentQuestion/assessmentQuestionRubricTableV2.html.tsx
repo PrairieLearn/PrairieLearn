@@ -8,10 +8,10 @@ export function AssessmentQuestionRubricTable(aiGradingStats: AiGradingGeneralSt
   return html`
     ${compiledScriptTag('instructorAssessmentManualGradingRubricEditingV2.js')}
     <form method="POST">
-      <div class="card overflow-hidden mb-3">
+      <div class="card overflow-hidden p-2 mb-3">
         <div class="table-responsive">
           <table
-            class="table table-sm border-bottom js-rubric-items-table"
+            class="table table-sm border-bottom mb-3 js-rubric-items-table"
             aria-label="Rubric items"
           >
             <thead>
@@ -37,7 +37,7 @@ export function AssessmentQuestionRubricTable(aiGradingStats: AiGradingGeneralSt
           </table>
         </div>
         <div class="js-settings-points-warning-placeholder"></div>
-        <div class="js-add-rubric-item-button-container p-2">
+        <div class="js-add-rubric-item-button-container">
           <button
             type="button"
             class="btn btn-sm btn-secondary js-add-rubric-item-button js-rubric-item-disable"
