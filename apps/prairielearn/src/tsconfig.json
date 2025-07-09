@@ -15,5 +15,5 @@
       "react-dom/*": ["./node_modules/preact/compat/*", "../../../node_modules/preact/compat/*"]
     }
   },
-  "include": ["**/*", "../assets/scripts/fixPreactClass.ts"]
+  "include": ["**/*"]
 }
