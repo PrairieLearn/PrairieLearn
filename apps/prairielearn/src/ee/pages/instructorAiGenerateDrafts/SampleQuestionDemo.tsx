@@ -1,22 +1,12 @@
-import ButtonOriginal from 'react-bootstrap/Button';
-import CardOriginal from 'react-bootstrap/Card';
-import CardBodyOriginal from 'react-bootstrap/CardBody';
-import CardFooterOriginal from 'react-bootstrap/CardFooter';
-import CardHeaderOriginal from 'react-bootstrap/CardHeader';
-import FormCheckOriginal from 'react-bootstrap/FormCheck';
-import FormControlOriginal from 'react-bootstrap/FormControl';
-import InputGroupOriginal from 'react-bootstrap/InputGroup';
-import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
-
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
-const Card = CardOriginal as unknown as typeof CardOriginal.default;
-const CardBody = CardBodyOriginal as unknown as typeof CardBodyOriginal.default;
-const CardHeader = CardHeaderOriginal as unknown as typeof CardHeaderOriginal.default;
-const CardFooter = CardFooterOriginal as unknown as typeof CardFooterOriginal.default;
-const FormCheck = FormCheckOriginal as unknown as typeof FormCheckOriginal.default;
-const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal.default;
-const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
-const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import CardBody from 'react-bootstrap/CardBody';
+import CardFooter from 'react-bootstrap/CardFooter';
+import CardHeader from 'react-bootstrap/CardHeader';
+import FormCheck from 'react-bootstrap/FormCheck';
+import FormControl from 'react-bootstrap/FormControl';
+import InputGroup from 'react-bootstrap/InputGroup';
+import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';

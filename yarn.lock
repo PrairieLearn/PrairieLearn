@@ -1206,12 +1206,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.24.7, @babel/runtime@npm:^7.26.0, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.6.3, @babel/runtime@npm:^7.8.7":
-  version: 7.27.0
-  resolution: "@babel/runtime@npm:7.27.0"
-  dependencies:
-    regenerator-runtime: "npm:^0.14.0"
-  checksum: 10c0/35091ea9de48bd7fd26fb177693d64f4d195eb58ab2b142b893b7f3fa0f1d7c677604d36499ae0621a3703f35ba0c6a8f6c572cc8f7dc0317213841e493cf663
+"@babel/runtime@npm:^7.24.7, @babel/runtime@npm:^7.26.0, @babel/runtime@npm:^7.26.7, @babel/runtime@npm:^7.27.0, @babel/runtime@npm:^7.27.1, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.6.3, @babel/runtime@npm:^7.8.7":
+  version: 7.27.6
+  resolution: "@babel/runtime@npm:7.27.6"
+  checksum: 10c0/89726be83f356f511dcdb74d3ea4d873a5f0cf0017d4530cb53aa27380c01ca102d573eff8b8b77815e624b1f8c24e7f0311834ad4fb632c90a770fda00bd4c8
   languageName: node
   linkType: hard
 
@@ -4052,7 +4050,7 @@ __metadata:
     quill: "npm:2.0.2"
     quilljs-markdown: "npm:^1.2.0"
     react: "npm:^19.0.0"
-    react-bootstrap: "npm:^2.10.10"
+    react-bootstrap: "npm:3.0.0-beta.2"
     react-dom: "npm:^19.0.0"
     remark-gfm: "npm:^4.0.1"
     remark-parse: "npm:^11.0.0"
@@ -4428,6 +4426,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@restart/hooks@npm:^0.6.2":
+  version: 0.6.2
+  resolution: "@restart/hooks@npm:0.6.2"
+  dependencies:
+    dequal: "npm:^2.0.3"
+  peerDependencies:
+    react: ">=16.8.0"
+  checksum: 10c0/0b492902d89c39acc6727cdba1088ca8a08d0a28c8dfff4732cbc6097f639f92aa8985df43dc94349bd09e1568e58baf01291cd6d2cecd239b22c7398b31ae46
+  languageName: node
+  linkType: hard
+
 "@restart/ui@npm:^1.9.4":
   version: 1.9.4
   resolution: "@restart/ui@npm:1.9.4"
@@ -4445,6 +4454,25 @@ __metadata:
     react: ">=16.14.0"
     react-dom: ">=16.14.0"
   checksum: 10c0/98370e9dc6af55810bd099963799dcbf371fe8518e815ff5066d424ad7ef93517b3fa3baf3d271d175600c40ca4bac06198a6fb85b09c20755af8e45027c51e3
+  languageName: node
+  linkType: hard
+
+"@restart/ui@npm:^2.0.0-beta.3":
+  version: 2.0.0-beta.5
+  resolution: "@restart/ui@npm:2.0.0-beta.5"
+  dependencies:
+    "@babel/runtime": "npm:^7.26.7"
+    "@popperjs/core": "npm:^2.11.8"
+    "@restart/hooks": "npm:^0.6.2"
+    "@types/warning": "npm:^3.0.3"
+    dequal: "npm:^2.0.3"
+    dom-helpers: "npm:^6.0.1"
+    uncontrollable: "npm:^9.0.0"
+    warning: "npm:^4.0.3"
+  peerDependencies:
+    react: ">=18.0.0"
+    react-dom: ">=18.0.0"
+  checksum: 10c0/5e40a8cb2a8e2212d0dcf20189c02f305bb598afe8f1e7d7507d1bab1a85878eca760cad7df84224a33691215dffb2fcc85a0a39d7e03a763c2c11ea8f29e20d
   languageName: node
   linkType: hard
 
@@ -6353,7 +6381,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-transition-group@npm:^4.4.6":
+"@types/react-transition-group@npm:^4.4.12, @types/react-transition-group@npm:^4.4.6":
   version: 4.4.12
   resolution: "@types/react-transition-group@npm:4.4.12"
   peerDependencies:
@@ -8461,7 +8489,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csstype@npm:^3.0.2":
+"csstype@npm:^3.0.2, csstype@npm:^3.1.3":
   version: 3.1.3
   resolution: "csstype@npm:3.1.3"
   checksum: 10c0/80c089d6f7e0c5b2bd83cf0539ab41474198579584fa10d86d0cafe0642202343cbc119e076a0b1aece191989477081415d66c9fefbf3c957fc2fc4b7009f248
@@ -9142,6 +9170,16 @@ __metadata:
     "@babel/runtime": "npm:^7.8.7"
     csstype: "npm:^3.0.2"
   checksum: 10c0/f735074d66dd759b36b158fa26e9d00c9388ee0e8c9b16af941c38f014a37fc80782de83afefd621681b19ac0501034b4f1c4a3bff5caa1b8667f0212b5e124c
+  languageName: node
+  linkType: hard
+
+"dom-helpers@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "dom-helpers@npm:6.0.1"
+  dependencies:
+    "@babel/runtime": "npm:^7.27.1"
+    csstype: "npm:^3.1.3"
+  checksum: 10c0/ff2d0741997a4423ca0c397cfb1ba1bd06efd842ec7ab76fc6207b20c51df086ec2da48edaa01f4d6a6ce63f50be31a0be614b84c6c40fd784d11837b34fda95
   languageName: node
   linkType: hard
 
@@ -15041,6 +15079,31 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-bootstrap@npm:3.0.0-beta.2":
+  version: 3.0.0-beta.2
+  resolution: "react-bootstrap@npm:3.0.0-beta.2"
+  dependencies:
+    "@babel/runtime": "npm:^7.27.0"
+    "@restart/hooks": "npm:^0.6.2"
+    "@restart/ui": "npm:^2.0.0-beta.3"
+    "@types/react-transition-group": "npm:^4.4.12"
+    clsx: "npm:^2.1.1"
+    dom-helpers: "npm:^5.2.1"
+    invariant: "npm:^2.2.4"
+    react-transition-group: "npm:^4.4.5"
+    uncontrollable: "npm:^9.0.0"
+    warning: "npm:^4.0.3"
+  peerDependencies:
+    "@types/react": ">=18.3.12"
+    react: ">=18.3.1"
+    react-dom: ">=18.3.1"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/325216edc2b23e515715ab8e2d948c1ad79f59d34c367488de0db5ab315af6f1dcb910a9753216ece1154c5dd210858554d003c83655d79f8a6b1be83ad6cab4
+  languageName: node
+  linkType: hard
+
 "react-bootstrap@npm:^2.10.10":
   version: 2.10.10
   resolution: "react-bootstrap@npm:2.10.10"
@@ -15208,13 +15271,6 @@ __metadata:
   version: 0.13.11
   resolution: "regenerator-runtime@npm:0.13.11"
   checksum: 10c0/12b069dc774001fbb0014f6a28f11c09ebfe3c0d984d88c9bced77fdb6fedbacbca434d24da9ae9371bfbf23f754869307fb51a4c98a8b8b18e5ef748677ca24
-  languageName: node
-  linkType: hard
-
-"regenerator-runtime@npm:^0.14.0":
-  version: 0.14.1
-  resolution: "regenerator-runtime@npm:0.14.1"
-  checksum: 10c0/1b16eb2c4bceb1665c89de70dcb64126a22bc8eb958feef3cd68fe11ac6d2a4899b5cd1b80b0774c7c03591dc57d16631a7f69d2daa2ec98100e2f29f7ec4cc4
   languageName: node
   linkType: hard
 
@@ -17038,6 +17094,15 @@ __metadata:
   peerDependencies:
     react: ">=16.14.0"
   checksum: 10c0/bc9db6c82f69ed0e5c6b4ab057fb963a84e81b134b57b04b72975d6283f8d488bc7e617114547dda9e329d2156e538dc268816f52f821c40c12f1a2e3f7c703a
+  languageName: node
+  linkType: hard
+
+"uncontrollable@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "uncontrollable@npm:9.0.0"
+  peerDependencies:
+    react: ">=16.14.0"
+  checksum: 10c0/e8db85b6b0c1fcdf59032c1a34548d88cf2d1696e2f0df795225b724ad4aca99231859eb844b99d91774cab1deb3a536212ee7a5d1767ff77e15cdcc64c2410b
   languageName: node
   linkType: hard
 
