@@ -18,12 +18,11 @@ const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal
 const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
 const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
-import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
+import { useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import {
   type ExamplePrompt,
-  type SampleQuestionVariant,
   type VariantOption,
   type examplePrompts,
   generateSampleQuestionVariant,
@@ -39,7 +38,7 @@ export function SampleQuestionDemo({
   prompt: ExamplePrompt;
   onMathjaxTypeset: () => Promise<void>;
 }) {
-  const [variant, setVariant] = useState(generateSampleQuestionVariant(promptId));
+  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(promptId));
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
