@@ -1,21 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import type z from 'zod';
 
 import {
-  type StaffCourse,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
-  type StaffUser,
   StaffUserSchema,
-  type StudentCourse,
-  type StudentCourseInstance,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
-  type StudentUser,
   StudentUserSchema,
 } from './safe-db-types.js';
 
 // Minimal valid data for each schema (with required fields only)
-const minimalStaffCourse: StaffCourse = {
+const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   announcement_color: null,
   announcement_html: null,
   branch: 'main',
@@ -42,7 +38,7 @@ const minimalStaffCourse: StaffCourse = {
 };
 
 // StudentCourse omits many fields from StaffCourse
-const minimalStudentCourse: StudentCourse = {
+const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
   created_at: new Date(),
   deleted_at: null,
   display_timezone: 'UTC',
@@ -54,7 +50,7 @@ const minimalStudentCourse: StudentCourse = {
   title: null,
 };
 
-const minimalStaffCourseInstance = {
+const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -73,7 +69,7 @@ const minimalStaffCourseInstance = {
 };
 
 // StudentCourseInstance omits some fields from StaffCourseInstance
-const minimalStudentCourseInstance: StudentCourseInstance = {
+const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> = {
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -84,7 +80,7 @@ const minimalStudentCourseInstance: StudentCourseInstance = {
   short_name: null,
 };
 
-const minimalStaffUser: StaffUser = {
+const minimalStaffUser: z.input<typeof StaffUserSchema> = {
   email: 'a@b.com',
   institution_id: '2',
   name: 'Test User',
@@ -95,7 +91,7 @@ const minimalStaffUser: StaffUser = {
 
 // StudentUser omits uin and email. We're building this type to reflect
 // information about one student that should be available to other students.
-const minimalStudentUser: StudentUser = {
+const minimalStudentUser: z.input<typeof StudentUserSchema> = {
   institution_id: '2',
   name: 'Test User',
   uid: 'u123@example.com',
