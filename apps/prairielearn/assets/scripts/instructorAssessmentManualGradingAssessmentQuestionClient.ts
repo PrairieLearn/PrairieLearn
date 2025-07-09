@@ -39,7 +39,7 @@ onDocumentReady(() => {
     const graders = data.flatMap((row) =>
       (row.ai_grading_status !== 'None'
         ? [generateAiGraderName(row.ai_grading_status)]
-        : ['Nobody']
+        : []
       ).concat(row.last_human_grader ? [row.last_human_grader] : []),
     );
     const aiGraders = graders.filter(
@@ -55,11 +55,10 @@ onDocumentReady(() => {
         value !== 'Nobody',
     );
     humanGraders.sort();
-    const noGraders = graders.filter((value) => value === 'Nobody');
     return Object.fromEntries(
       aiGraders
         .concat(humanGraders)
-        .concat(noGraders)
+        .concat(['Nobody'])
         .map((name) => [name, name]),
     );
   };
