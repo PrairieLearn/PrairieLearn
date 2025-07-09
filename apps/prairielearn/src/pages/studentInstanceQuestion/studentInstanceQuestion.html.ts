@@ -106,6 +106,7 @@ export function StudentInstanceQuestion({
               `
             : QuestionContainer({ resLocals, questionContext, questionCopyTargets })}
         </div>
+
         <div class="col-lg-3 col-sm-12">
           ${resLocals.assessment.type === 'Exam'
             ? html`
@@ -121,6 +122,7 @@ export function StudentInstanceQuestion({
                       </a>
                     </h2>
                   </div>
+
                   <div class="card-body">
                     <div class="d-flex justify-content-center">
                       <a
@@ -131,6 +133,7 @@ export function StudentInstanceQuestion({
                         Assessment overview
                       </a>
                     </div>
+
                     ${resLocals.assessment_instance.open &&
                     resLocals.assessment_instance_remaining_ms != null
                       ? html`

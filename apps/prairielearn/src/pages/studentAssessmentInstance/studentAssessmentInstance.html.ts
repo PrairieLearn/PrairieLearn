@@ -141,9 +141,6 @@ export function StudentAssessmentInstance({
       type: 'student',
       page: 'assessment_instance',
     },
-    options: {
-      fullWidth: true,
-    },
     headContent: html`
       ${resLocals.assessment.type === 'Exam'
         ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -183,6 +180,7 @@ export function StudentAssessmentInstance({
           </h1>
           ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
+
         <div class="card-body">
           ${!resLocals.assessment.allow_real_time_grading && resLocals.assessment_instance.open
             ? html`
@@ -253,6 +251,7 @@ export function StudentAssessmentInstance({
                 `
               : ''}
           </div>
+
           ${resLocals.assessment_instance.open && resLocals.assessment_instance_remaining_ms
             ? html`
                 <div class="alert alert-secondary mt-4" role="alert">
@@ -275,6 +274,7 @@ export function StudentAssessmentInstance({
               `
             : ''}
         </div>
+
         <table
           class="table table-sm table-hover"
           aria-label="Questions"
@@ -330,7 +330,7 @@ export function StudentAssessmentInstance({
                         <td class="text-center">
                           ${ExamQuestionStatus({
                             instance_question: instance_question_row,
-                            assessment_question: instance_question_row,
+                            assessment_question: instance_question_row, // Required fields are in instance_question
                           })}
                         </td>
                         ${resLocals.has_auto_grading_question &&
@@ -365,14 +365,14 @@ export function StudentAssessmentInstance({
                                     <td class="text-center">
                                       ${InstanceQuestionPoints({
                                         instance_question: instance_question_row,
-                                        assessment_question: instance_question_row,
+                                        assessment_question: instance_question_row, // Required fields are present in instance_question
                                         component: 'auto',
                                       })}
                                     </td>
                                     <td class="text-center">
                                       ${InstanceQuestionPoints({
                                         instance_question: instance_question_row,
-                                        assessment_question: instance_question_row,
+                                        assessment_question: instance_question_row, // Required fields are present in instance_question
                                         component: 'manual',
                                       })}
                                     </td>
@@ -381,7 +381,7 @@ export function StudentAssessmentInstance({
                               <td class="text-center">
                                 ${InstanceQuestionPoints({
                                   instance_question: instance_question_row,
-                                  assessment_question: instance_question_row,
+                                  assessment_question: instance_question_row, // Required fields are present in instance_question
                                   component: 'total',
                                 })}
                               </td>
@@ -411,9 +411,15 @@ export function StudentAssessmentInstance({
                                   if (!instance_question_row.max_auto_points) {
                                     return html`&mdash;`;
                                   }
+
+                                  // Compute the current "auto" value by subtracting the manual points.
+                                  // We use this because `current_value` doesn't account for manual points.
+                                  // We don't want to mislead the student into thinking that they can earn
+                                  // more points than they actually can.
                                   const currentAutoValue =
                                     (instance_question_row.current_value ?? 0) -
                                     (instance_question_row.max_manual_points ?? 0);
+
                                   return formatPoints(currentAutoValue);
                                 })}
                               </td>
@@ -432,14 +438,14 @@ export function StudentAssessmentInstance({
                               <td class="text-center">
                                 ${InstanceQuestionPoints({
                                   instance_question: instance_question_row,
-                                  assessment_question: instance_question_row,
+                                  assessment_question: instance_question_row, // Required fields are present in instance_question
                                   component: 'auto',
                                 })}
                               </td>
                               <td class="text-center">
                                 ${InstanceQuestionPoints({
                                   instance_question: instance_question_row,
-                                  assessment_question: instance_question_row,
+                                  assessment_question: instance_question_row, // Required fields are present in instance_question
                                   component: 'manual',
                                 })}
                               </td>
@@ -448,7 +454,7 @@ export function StudentAssessmentInstance({
                         <td class="text-center">
                           ${InstanceQuestionPoints({
                             instance_question: instance_question_row,
-                            assessment_question: instance_question_row,
+                            assessment_question: instance_question_row, // Required fields are present in instance_question
                             component: 'total',
                           })}
                         </td>
@@ -458,6 +464,7 @@ export function StudentAssessmentInstance({
             )}
           </tbody>
         </table>
+
         <div class="card-footer">
           ${resLocals.assessment.type === 'Exam' &&
           resLocals.assessment_instance.open &&
@@ -577,6 +584,7 @@ export function StudentAssessmentInstance({
             : ''}
         </div>
       </div>
+
       ${resLocals.assessment.allow_personal_notes
         ? PersonalNotesPanel({
             fileList: resLocals.file_list,
