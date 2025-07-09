@@ -13,8 +13,9 @@ indexes
     enrollments_course_instance_id_idx: USING btree (course_instance_id)
 
 check constraints
-    enrollments_no_blocked_synced: CHECK (NOT (status = 'blocked'::enum_enrollment_status AND lti_synced))
-    enrollments_no_invited_synced: CHECK (NOT (status = 'invited'::enum_enrollment_status AND lti_synced))
+    enrollments_exactly_one_null_user_id_pending_uid: CHECK (user_id IS NULL AND pending_uid IS NOT NULL OR user_id IS NOT NULL AND pending_uid IS NULL)
+    enrollments_impossible_synced: CHECK (NOT ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status, 'blocked'::enum_enrollment_status])) AND lti_synced))
+    enrollments_user_id_null_only_if_invited: CHECK ((user_id IS NULL) = (status = 'invited'::enum_enrollment_status))
 
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
