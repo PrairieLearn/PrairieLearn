@@ -4,7 +4,7 @@
   "title": "AI Grading",
   "set": "Homework",
   "number": "10",
-  "allowAccess": [{ "credit": 100 }],
+  "allowAccess": [],
   "zones": [
     {
       "questions": [
