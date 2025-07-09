@@ -35,7 +35,6 @@ export default tseslint.config([
   js.configs.recommended,
   tseslint.configs.stylistic,
   tseslint.configs.strict,
-  eslintReact.configs['recommended-typescript'],
   {
     extends: compat.extends('plugin:you-dont-need-lodash-underscore/all'),
 
@@ -45,6 +44,7 @@ export default tseslint.config([
       vitest,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
+      ...eslintReact.configs['recommended-typescript'].plugins,
       '@prairielearn': prairielearn,
     },
 
@@ -62,6 +62,7 @@ export default tseslint.config([
         node: true,
       },
 
+      ...eslintReact.configs['recommended-typescript'].settings,
       'react-x': {
         // This is roughly the version that Preact's compat layer supports.
         version: '18.0.0',
@@ -131,6 +132,13 @@ export default tseslint.config([
           reactYouMightNotNeedAnEffect.meta.name + '/' + ruleName,
           'error',
         ]),
+      ),
+
+      // Use the recommended rules for eslint-react as errors.
+      ...Object.fromEntries(
+        Object.entries(eslintReact.configs['recommended-typescript'].rules).map(
+          ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
+        ),
       ),
 
       // Use the recommended rules for vitest
