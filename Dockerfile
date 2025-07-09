@@ -2,6 +2,8 @@
 FROM amazonlinux:2023
 ARG CACHEBUST=2025-06-15-14-13-20
 
+ENV PATH="/.venv/bin:$PATH"
+
 WORKDIR /PrairieLearn
 
 COPY --parents scripts/pl-install.sh requirements.txt /PrairieLearn/
