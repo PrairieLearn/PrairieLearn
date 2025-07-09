@@ -51,8 +51,7 @@ onDocumentReady(() => {
     const humanGraders = graders.filter(
       (value) =>
         value !== generateAiGraderName('LatestRubric') &&
-        value !== generateAiGraderName('OutdatedRubric') &&
-        value !== 'Nobody',
+        value !== generateAiGraderName('OutdatedRubric'),
     );
     humanGraders.sort();
     return Object.fromEntries(
