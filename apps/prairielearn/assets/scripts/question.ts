@@ -25,6 +25,30 @@ onDocumentReady(() => {
     confirmOnUnload(questionForm);
   }
 
+  const markdownBody = document.querySelector<HTMLDivElement>('.markdown-body');
+  const revealFade = document.querySelector<HTMLDivElement>('.reveal-fade');
+  const expandButtonContainer = document.querySelector('.js-expand-button-container');
+  const expandButton = expandButtonContainer?.querySelector('button');
+
+  let readMeExpanded = false;
+
+  function expandReadMe() {
+    if (!markdownBody || readMeExpanded) return;
+    readMeExpanded = true;
+    revealFade?.remove();
+    expandButtonContainer?.remove();
+    markdownBody?.classList.remove('max-height');
+  }
+
+  expandButton?.addEventListener('click', expandReadMe);
+
+  if (markdownBody && markdownBody.scrollHeight > 150) {
+    markdownBody.classList.add('max-height');
+    revealFade?.classList.remove('d-none');
+    expandButtonContainer?.classList.remove('d-none');
+    expandButtonContainer?.classList.add('d-flex');
+  }
+
   setupDynamicObjects();
   disableOnSubmit();
 

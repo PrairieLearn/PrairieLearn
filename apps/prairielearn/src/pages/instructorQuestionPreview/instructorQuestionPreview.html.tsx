@@ -62,6 +62,20 @@ export function InstructorQuestionPreview({
         .markdown-body :last-child {
           margin-bottom: 0;
         }
+
+        .reveal-fade {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 6rem;
+          background: linear-gradient(to bottom, transparent, var(--bs-light));
+          pointer-events: none;
+        }
+
+        .max-height {
+          max-height: 150px;
+        }
       </style>
     `,
     preContent: html`
@@ -99,7 +113,7 @@ export function InstructorQuestionPreview({
         <div class="col-lg-9 col-sm-12">
           ${readmeHtml
             ? html`
-                <div class="card mb-3">
+                <div class="card mb-3 js-readme-card overflow-hidden">
                   <div class="card-header d-flex align-items-center collapsible-card-header">
                     <h2 class="me-auto">README</h2>
                     <button
@@ -114,7 +128,17 @@ export function InstructorQuestionPreview({
                     </button>
                   </div>
                   <div class="show js-collapsible-card-body" id="readme-card-body">
-                    <div class="card-body markdown-body">${unsafeHtml(readmeHtml)}</div>
+                    <div
+                      class="card-body position-relative markdown-body overflow-hidden max-height"
+                    >
+                      ${unsafeHtml(readmeHtml)}
+                      <div class="reveal-fade d-none"></div>
+                    </div>
+                    <div
+                      class="pb-2 d-none justify-content-center bg-light js-expand-button-container"
+                    >
+                      <button type="button" class="btn btn-sm btn-link">Expand</button>
+                    </div>
                     <div class="card-footer">
                       <p class="mb-0 small">This README is not visible to students.</p>
                     </div>
