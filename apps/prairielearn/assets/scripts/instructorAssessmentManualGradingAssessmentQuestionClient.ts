@@ -2,7 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRowWithAIGradingStats,
@@ -547,7 +547,7 @@ function scorebarFormatter(
   csrfToken: string,
 ) {
   return html`<div class="d-inline-block align-middle">
-      ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
+      ${score == null ? '' : ScorebarHtml(score, { minWidth: '10em' })}
     </div>
     ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
