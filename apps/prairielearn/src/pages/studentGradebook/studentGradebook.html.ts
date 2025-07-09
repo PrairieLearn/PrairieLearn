@@ -39,9 +39,6 @@ export function StudentGradebook({
       type: 'student',
       page: 'gradebook',
     },
-    options: {
-      fullWidth: true,
-    },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
