@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
+import { PageLayout } from '../../components/PageLayout.html.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
@@ -33,49 +34,47 @@ export function WorkspaceLogs({
     }
   });
 
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals, navbarType: 'plain' })}
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Workspace logs',
+    navContext: {
+      page: 'workspace',
+      type: 'plain',
+    },
+    options: {
+      enableEnhancedNav: false
+    },
+    content: html`
+      <h1 class="mb-4">Workspace logs</h1>
+      <h2>Versions</h2>
+      <div class="table-responsive">
+        <table class="table table-sm" aria-label="Workspace versions">
+          <thead>
+            <th>Version</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </thead>
+          <tbody>
+            ${uniqueVersions.map((version) => {
+              const logsUrl = `${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version.version}`;
+              return html`
+                <tr>
+                  <td>${version.version}</td>
+                  <td>${version.date_formatted}</td>
+                  <td>
+                    <a href="${logsUrl}"> View detailed logs </a>
+                  </td>
+                </tr>
+              `;
+            })}
+          </tbody>
+        </table>
+      </div>
 
-        <main id="content" class="container">
-          <h1 class="mb-4">Workspace logs</h1>
-
-          <h2>Versions</h2>
-          <div class="table-responsive">
-            <table class="table table-sm" aria-label="Workspace versions">
-              <thead>
-                <th>Version</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </thead>
-              <tbody>
-                ${uniqueVersions.map((version) => {
-                  const logsUrl = `${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version.version}`;
-                  return html`
-                    <tr>
-                      <td>${version.version}</td>
-                      <td>${version.date_formatted}</td>
-                      <td>
-                        <a href="${logsUrl}"> View detailed logs </a>
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <h2>History</h2>
-          ${WorkspaceLogsTable({ workspaceLogs })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+      <h2>History</h2>
+      ${WorkspaceLogsTable({ workspaceLogs })}
+    `
+  });
 }
 
 export function WorkspaceVersionLogs({
