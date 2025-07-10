@@ -10,14 +10,17 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
+import { loadQuestions } from '../../sync/course-db.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
@@ -25,15 +28,70 @@ const router = Router();
 
 const sql = loadSqlEquiv(import.meta.url);
 
+let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null = null;
+
 /**
- * Get a list of template question qids and titles that can be used as starting points for new questions.
+ * Get a list of template question from the example course. While it should
+ * typically be possible to retrieve these from the database, these are
+ * retrieved from the filesystem for the following reasons:
+ * 1. There is no guarantee that the example course will actually be synced in
+ *    the current environment. The local installation (dev or prod) may have
+ *    removed it from the sync process.
+ * 2. The synced example course may not be up-to-date with the source example
+ *    course questions, and we want to use the latest version.
+ * 3. The current method of identifying an example course is based on
+ *    information that may be forgeable by setting specific values in the course
+ *    info file, which could lead to a security vulnerability if we were to rely
+ *    on the database.
  */
-async function getTemplateCourseQuestionOptions(course_id: string) {
-  return await queryRows(
+async function getTemplateQuestionsExampleCourse() {
+  if (!config.devMode) {
+    if (cachedTemplateQuestionExampleCourse) {
+      return cachedTemplateQuestionExampleCourse;
+    }
+  }
+
+  const questions = await loadQuestions({
+    coursePath: EXAMPLE_COURSE_PATH,
+    // We don't actually care about sharing settings here, but we do use shared
+    // questions in the example course, so we'll flag sharing as enabled.
+    sharingEnabled: true,
+  });
+
+  const templateQuestions = Object.entries(questions)
+    .map(([qid, question]) => ({ qid, title: question?.data?.title }))
+    .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
+    qid: string;
+    title: string;
+  }[];
+
+  const sortedTemplateQuestionOptions = templateQuestions.sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  if (!config.devMode) {
+    cachedTemplateQuestionExampleCourse = sortedTemplateQuestionOptions;
+  }
+
+  return sortedTemplateQuestionOptions;
+}
+
+/**
+ * Get a list of template question qids and titles that can be used as starting
+ * points for new questions, both from the example course and course-specific
+ * templates.
+ */
+async function getTemplateQuestions(course_id: string) {
+  const exampleCourseTemplateQuestions = await getTemplateQuestionsExampleCourse();
+  const courseTemplateQuestions = await queryRows(
     sql.select_template_questions,
     { course_id },
-    z.object({ example_course: z.boolean(), qid: z.string(), title: z.string() }),
+    z.object({ qid: z.string(), title: z.string() }),
   );
+  return [
+    ...exampleCourseTemplateQuestions.map((q) => ({ example_course: true, ...q })),
+    ...courseTemplateQuestions.map((q) => ({ example_course: false, ...q })),
+  ];
 }
 
 router.get(
@@ -67,7 +125,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateCourseQuestionOptions(res.locals.course.id);
+    const templateQuestions = await getTemplateQuestions(res.locals.course.id);
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
