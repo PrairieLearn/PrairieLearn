@@ -7,9 +7,9 @@ const oldVnode = Preact.options.vnode;
  * particularly react-bootstrap, to receive and apply CSS classes from `class.`.
  */
 Preact.options.vnode = (vnode) => {
-  // @ts-expect-error TS(2339): `class` exists at runtime
+  // @ts-expect-error -- `class` exists at runtime
   if (typeof vnode.type === 'function' && vnode.props?.class) {
-    // @ts-expect-error TS(2339): `class` exists at runtime
+    // @ts-expect-error -- `class` exists at runtime
     vnode.props.className = vnode.props.class;
   }
   if (oldVnode) {
