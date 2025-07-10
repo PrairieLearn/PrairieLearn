@@ -1,0 +1,33 @@
+<p>Determine if the following function is continuous at $x = 0$. </p>
+<p>
+    $
+        $$
+        f(x)=\left\{
+        \begin{array}{ll}
+        23\cos(-4x)+1, & x\le 0,\\
+        2-3x          & x>0.
+        \end{array}
+        \right.
+        $$
+
+    $
+</p>
+
+<p>Show your work.</p>
+<pl-image-capture file-name="2.jpg"></pl-image-capture> 
+
+<p><b>Solution</b></p>
+
+<p>Acquire the value of $f(0)$: $f(0)=23\cos(0)+1=23\cdot1+1=24$</p>
+
+<p>Compute the one‐sided limits:  
+$\displaystyle\lim_{x\to0^-}f(x)
+=\lim_{x\to0^-}\bigl(23\cos(-4x)+1\bigr)
+=23\cos(0)+1=24$,  
+$\displaystyle\lim_{x\to0^+}f(x)
+=\lim_{x\to0^+}(2-3x)
+=2-3\cdot0=2$.  
+Since $24\neq2$, the one‐sided limits differ, so $\displaystyle\lim_{x\to0}f(x)$ does not exist.
+</p>
+
+<p>3. A function is continuous at $x=0$ only if both one‐sided limits exist and equal $f(0)$. Here they disagree, so $f$ is not continuous (and hence not differentiable) at $x=0\,$.</p>

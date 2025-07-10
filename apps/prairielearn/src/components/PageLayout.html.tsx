@@ -161,6 +161,8 @@ export function PageLayout({
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment &&
                 resLocals.course_instance &&
+                // student and public pages don't get the assesment switcher
+                sideNavEnabled &&
                 AssessmentNavigation({
                   courseInstanceId: resLocals.course_instance.id,
                   subPage: navContext.subPage,

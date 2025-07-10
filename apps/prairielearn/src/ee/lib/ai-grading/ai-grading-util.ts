@@ -36,7 +36,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'o4-mini';
 export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
@@ -243,7 +243,7 @@ function generateSubmissionMessage({
 
   message_content.push({
     type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object. Also, explain why you selected the rubric items you did, if any, in the feedback field, along with the associated error(s) that the student made. Only use standard JSON-compatible characters in your feedback, such as alphanumeric characters, spaces, and punctuation. LaTex is acceptable. Do not use any special characters. Include numbers of the relevant rubric items to your grading, and create a separate text block for each.',
   });
 
   return {

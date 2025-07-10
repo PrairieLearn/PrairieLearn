@@ -1,0 +1,22 @@
+<p>Evaluate each of the following limits. Show sufficient work to justify each answer. For infinite limits, you must clearly show whether the limit is $\infty$ or $-\infty$. </p>
+
+<p>
+$
+\lim_{x\to 0^{+}}\frac{2e^x+3}{1-e^x} = ?
+$
+</p>
+
+
+<pl-image-capture file-name="3b.jpg"></pl-image-capture> 
+
+<p>Compute \(L=\lim_{x\to0^+}\frac{2e^x+3}{1-e^x}\). As \(x\to0^+\), \(e^x\to1^+\), so the numerator and denominator behave as follows:</p>
+
+<p>Numerator: \(2e^x+3\to2\cdot1+3=5\).<br>
+Denominator: \(1-e^x\to1-1=0\).  To see the sign, write \(e^x=1+\delta\) with \(\delta>0\); then \(1-e^x=1-(1+\delta)=-\delta<0\), so \(1-e^x\to0^-\).</p>
+
+<p>Since the numerator approaches the positive constant \(5\) while the denominator approaches \(0\) from below, the fraction \(\frac{2e^x+3}{1-e^x}\to-\infty\).  Therefore,</p>
+
+<p>\(\displaystyle\lim_{x\to0^+}\frac{2e^x+3}{1-e^x}=-\infty\).</p>
+
+
+

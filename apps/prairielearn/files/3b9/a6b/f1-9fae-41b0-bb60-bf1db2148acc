@@ -1,0 +1,7 @@
+<question-panel>
+    <p>Evaluate the following limit. You must show all steps with proper notation and fully justify your answer.</p>
+</question-panel>
+
+<p>$ lim_{x \rightarrow \infty} {[x \cdot ln(1 + \frac{1}{x}]} $</p>
+
+<pl-image-capture file-name="submission.jpeg"></pl-image-capture>

@@ -1,14 +1,21 @@
-import type z from 'zod';
+import { type z } from 'zod';
 
-import { CourseInstanceSchema, CourseSchema, UserSchema } from '../db-types.js';
+import {
+  CourseInstanceSchema as RawCourseInstanceSchema,
+  CourseSchema as RawCourseSchema,
+  UserSchema as RawUserSchema,
+} from '../db-types.js';
 
-export const StaffCourseSchema = CourseSchema.omit({
+/** Courses */
+
+export const RawStaffCourseSchema = RawCourseSchema.omit({
   yearly_enrollment_limit: true,
   sharing_token: true,
 });
+export const StaffCourseSchema = RawStaffCourseSchema.brand<'StaffCourse'>();
 export type StaffCourse = z.infer<typeof StaffCourseSchema>;
 
-export const StudentCourseSchema = StaffCourseSchema.omit({
+export const RawStudentCourseSchema = RawStaffCourseSchema.omit({
   announcement_color: true,
   announcement_html: true,
   branch: true,
@@ -23,12 +30,17 @@ export const StudentCourseSchema = StaffCourseSchema.omit({
   sync_job_sequence_id: true,
   sync_warnings: true,
 });
+export const StudentCourseSchema = RawStudentCourseSchema.brand<'StudentCourse'>();
 export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
-export const StaffCourseInstanceSchema = CourseInstanceSchema;
+/** Course Instances */
+
+export const RawStaffCourseInstanceSchema = RawCourseInstanceSchema;
+export const StaffCourseInstanceSchema =
+  RawStaffCourseInstanceSchema.brand<'StaffCourseInstance'>();
 export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
 
-export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
+export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.omit({
   enrollment_limit: true,
   json_comment: true,
   share_source_publicly: true,
@@ -37,9 +49,13 @@ export const StudentCourseInstanceSchema = StaffCourseInstanceSchema.omit({
   sync_warnings: true,
   uuid: true,
 });
+export const StudentCourseInstanceSchema =
+  RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
-export const StaffUserSchema = UserSchema.omit({
+/** Users */
+
+const RawStaffUserSchema = RawUserSchema.omit({
   deleted_at: true,
   lti_context_id: true,
   lti_course_instance_id: true,
@@ -47,7 +63,9 @@ export const StaffUserSchema = UserSchema.omit({
   stripe_customer_id: true,
   terms_accepted_at: true,
 });
+export const StaffUserSchema = RawStaffUserSchema.brand<'StaffUser'>();
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 
-export const StudentUserSchema = StaffUserSchema.omit({ email: true, uin: true });
+const RawStudentUserSchema = RawStaffUserSchema.omit({ email: true, uin: true });
+export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;

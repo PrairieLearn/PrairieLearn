@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -12,7 +13,8 @@ import {
   type AssessmentQuestion,
   type Course,
   IdSchema,
-  type Question,
+  type InstanceQuestion,
+  type Question
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -29,15 +31,17 @@ import {
   generateSubmissionEmbedding,
   insertAiGradingJob,
   parseAiRubricItems,
-  selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricForGrading
 } from './ai-grading-util.js';
+import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 50;
 
 /**
  * Grade instance questions using AI.
@@ -55,6 +59,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  executeSync = false
 }: {
   question: Question;
   course: Course;
@@ -69,6 +74,7 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  executeSync?: boolean;
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -91,7 +97,7 @@ export async function aiGrade({
     description: 'Perform AI grading',
   });
 
-  serverJob.executeInBackground(async (job) => {
+  const jobFunction = async (job) => {
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
@@ -145,11 +151,19 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
-    let error_count = 0;
-    // Grade each instance question
-    for (const instance_question of instance_questions) {
+    /**
+     * Grade an individual instance question.
+     *
+     * TODO: As we bring AI grading into production and scale it up, this function will compete with
+     * all other question rendering operations. In the future, we should limit render concurrency
+     * to avoid overwhelming the rendering servers.
+     */
+    const gradeInstanceQuestion = async (
+      instance_question: InstanceQuestion,
+      logger: AIGradingLogger,
+    ) => {
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
-
+  
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
         questionRenderContext: 'ai_grading',
@@ -166,12 +180,12 @@ export async function aiGrade({
         locals,
       );
       if (render_question_results.courseIssues.length > 0) {
-        job.info(render_question_results.courseIssues.toString());
-        job.error('Error occurred');
-        job.fail('Errors occurred while AI grading, see output for details');
+        logger.info(render_question_results.courseIssues.toString());
+        logger.error('Errors occurred while AI grading, see output for details');
+        return false;
       }
       const questionPrompt = render_question_results.data.questionHtml;
-
+  
       let submission_embedding = await selectEmbeddingForSubmission(submission.id);
       if (!submission_embedding) {
         submission_embedding = await generateSubmissionEmbedding({
@@ -184,28 +198,28 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await selectClosestSubmissionInfo({
-        submission_id: submission.id,
-        assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
-        limit: 5,
-      });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
-      for (const example of example_submissions) {
-        gradedExampleInfo += `\n- ${example.instance_question_id}`;
-      }
-      job.info(gradedExampleInfo);
+      // const example_submissions = await selectClosestSubmissionInfo({
+      //   submission_id: submission.id,
+      //   assessment_question_id: assessment_question.id,
+      //   embedding: submission_embedding.embedding,
+      //   limit: 5,
+      // });
+      // let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
+      // for (const example of example_submissions) {
+      //   gradedExampleInfo += `\n- ${example.instance_question_id}`;
+      // }
+      // job.info(gradedExampleInfo);
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
-
+  
       const { messages } = await generatePrompt({
         questionPrompt,
         submission_text,
         submitted_answer: submission.submitted_answer,
-        example_submissions,
+        example_submissions: [],
         rubric_items,
       });
-
+  
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
@@ -213,11 +227,13 @@ export async function aiGrade({
           RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
               [item.description]: z.boolean(),
-            }),
+            })
           );
         }
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
+          // The AI will explain why it selected the rubric items it did.
+          feedback: z.string()
         });
         const completion = await openai.chat.completions.parse({
           messages,
@@ -227,13 +243,16 @@ export async function aiGrade({
           temperature: OPEN_AI_TEMPERATURE,
         });
         try {
-          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          logger.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+
           const response = completion.choices[0].message;
-          job.info(`Raw response:\n${response.content}`);
+
+          logger.info(`Raw response:\n${response.content}`);
 
           if (response.parsed) {
+            console.log('AI grading response:', response.parsed);
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
@@ -253,13 +272,13 @@ export async function aiGrade({
                   {
                     // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
-                    feedback: { manual: '' },
+                    feedback: { manual: response?.parsed?.feedback ?? '' },
                   },
                   user_id,
                   true, // is_ai_graded
                 );
                 assert(grading_job_id);
-
+  
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
@@ -282,6 +301,7 @@ export async function aiGrade({
                 );
                 const score =
                   manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+                console.log('feedback', response?.parsed?.feedback);
                 const grading_job_id = await queryRow(
                   sql.insert_grading_job,
                   {
@@ -293,7 +313,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: manual_rubric_grading.computed_points,
                     manual_rubric_grading_id: manual_rubric_grading.id,
-                    feedback: null,
+                    feedback: { manual: response?.parsed?.feedback ?? ''},
                   },
                   IdSchema,
                 );
@@ -308,19 +328,21 @@ export async function aiGrade({
               });
             }
 
-            job.info('AI rubric items:');
+            logger.info('AI rubric items:');
+
             for (const item of appliedRubricDescription) {
-              job.info(`- ${item}`);
+              logger.info(`- ${item}`);
             }
           } else if (response.refusal) {
-            job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(response.refusal);
-            error_count++;
+            logger.error(`ERROR AI grading for ${instance_question.id}`);
+            logger.error(response.refusal);
+
+            return false;
           }
         } catch (err) {
-          job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(err);
-          error_count++;
+          logger.error(`ERROR AI grading for ${instance_question.id}`);
+          logger.error(err);
+          return false;
         }
       } else {
         const completion = await openai.chat.completions.parse({
@@ -331,14 +353,16 @@ export async function aiGrade({
           temperature: OPEN_AI_TEMPERATURE,
         });
         try {
-          job.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          job.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          job.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
+          logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
+          logger.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+
           const response = completion.choices[0].message;
-          job.info(`Raw response:\n${response.content}`);
+          logger.info(`Raw response:\n${response.content}`);
+
           if (response.parsed) {
             const score = response.parsed.score;
-
+  
             if (instance_question.requires_manual_grading) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
@@ -356,7 +380,7 @@ export async function aiGrade({
                   true, // is_ai_graded
                 );
                 assert(grading_job_id);
-
+  
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
@@ -396,24 +420,74 @@ export async function aiGrade({
               });
             }
 
-            job.info(`AI score: ${response.parsed.score}`);
+            logger.info(`AI score: ${response.parsed.score}`);
           } else if (response.refusal) {
-            job.error(`ERROR AI grading for ${instance_question.id}`);
-            job.error(response.refusal);
-            error_count++;
+            logger.error(`ERROR AI grading for ${instance_question.id}`);
+            logger.error(response.refusal);
+
+            return false;
           }
         } catch (err) {
-          job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(err);
-          error_count++;
+          logger.error(`ERROR AI grading for ${instance_question.id}`);
+          logger.error(err);
+          return false;
         }
       }
-    }
+
+      return true;
+    };
+
+    // Grade each instance question and return an array indicating the success/failure of each grading operation.
+    const instance_question_grading_successes = await async.mapLimit(
+      instance_questions,
+      PARALLEL_SUBMISSION_GRADING_LIMIT,
+      async (instance_question: InstanceQuestion) => {
+        const logs: AIGradingLog[] = [];
+
+        const logger: AIGradingLogger = {
+          info: (msg: string) => {
+            logs.push({
+              messageType: 'info',
+              message: msg,
+            });
+          },
+          error: (msg: string) => {
+            logs.push({
+              messageType: 'error',
+              message: msg,
+            });
+          },
+        };
+
+        try {
+          return await gradeInstanceQuestion(instance_question, logger);
+        } catch (err) {
+          logger.error(err);
+        } finally {
+          for (const log of logs) {
+            if (log.messageType === 'info') {
+              job.info(log.message);
+            } else if (log.messageType === 'error') {
+              job.error(log.message);
+            }
+          }
+        }
+      },
+    );
+
+    const error_count = instance_question_grading_successes.filter((success) => !success).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
-  });
+  }
+
+  if (executeSync) {
+    await serverJob.execute(jobFunction);
+  } else {
+    serverJob.executeInBackground(jobFunction);
+  }
+
   return serverJob.jobSequenceId;
 }

@@ -80,7 +80,7 @@ BEGIN
     -- make a separate grading_job for re-grades.
     IF grading_job.graded_at IS NOT NULL THEN RETURN; END IF;
 
-    -- Bail out if there's a newer submission that we performed any grading on.
+    -- Bail out if there's a newer submission, regardless of grading status.
     -- This only applies to student questions - that is, where there's an
     -- associated instance question. This prevents a race condition where we
     -- grade submissions in a different order than how they were saved.
@@ -93,8 +93,7 @@ BEGIN
     WHERE
         iq.id = main.instance_question_id
         AND s.id != submission_id
-        AND s.date > submission_date
-        AND s.grading_requested_at IS NOT NULL;
+        AND s.date > submission_date;
 
     IF FOUND THEN RETURN; END IF;
 

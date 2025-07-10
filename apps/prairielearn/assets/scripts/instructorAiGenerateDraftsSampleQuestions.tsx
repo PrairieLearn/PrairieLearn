@@ -25,7 +25,7 @@ const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
-import { useState } from '@prairielearn/preact-cjs/hooks';
+import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
@@ -39,6 +39,7 @@ onDocumentReady(() => {
 
 function SampleQuestion() {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const onMathjaxTypeset = useCallback(mathjaxTypeset, []);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
@@ -65,9 +66,9 @@ function SampleQuestion() {
             onClickNext={handleClickNext}
           />
           <SampleQuestionDemo
-            promptId={selectedQuestion.id}
+            key={selectedQuestion.id}
             prompt={selectedQuestion}
-            onMathjaxTypeset={mathjaxTypeset}
+            onMathjaxTypeset={onMathjaxTypeset}
           />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>

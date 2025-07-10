@@ -1,0 +1,43 @@
+<p>Evaluate each of the following limits. Show sufficient work to justify each answer. For infinite limits, you must clearly show whether the limit is $\infty$ or $-\infty$. </p>
+
+<p>
+$
+\lim_{x\to 3}\frac{\sqrt{x^2 + 7}-4}{x-3} = ?
+$
+</p>
+
+
+<pl-image-capture file-name="3a.jpg"></pl-image-capture> 
+
+<p><b>Solution:</b></p>
+
+<p>Direct substitution gives  
+$\displaystyle\frac{\sqrt{3^2+7}-4}{3-3}=\frac{4-4}{0}=\frac{0}{0}$,  
+an indeterminate form.</p>
+
+<p>Multiply numerator and denominator by the conjugate $\sqrt{x^2+7}+4$:</p>
+<p>$$
+\frac{\sqrt{x^2+7}-4}{x-3}\;\cdot\;\frac{\sqrt{x^2+7}+4}{\sqrt{x^2+7}+4}
+=\frac{x^2+7-16}{(x-3)\bigl(\sqrt{x^2+7}+4\bigr)}
+=\frac{x^2-9}{(x-3)\bigl(\sqrt{x^2+7}+4\bigr)}.
+$$</p>
+
+<p>Factor $x^2-9=(x-3)(x+3)$ and cancel $(x-3)$:</p>
+<p>$$
+\frac{(x-3)(x+3)}{(x-3)\bigl(\sqrt{x^2+7}+4\bigr)}
+=\frac{x+3}{\sqrt{x^2+7}+4},\quad x\neq3.
+$$</p>
+
+<p>Now take the limit as $x\to3$:</p>
+<p>$$
+\lim_{x\to3}\frac{x+3}{\sqrt{x^2+7}+4}
+=\frac{3+3}{\sqrt{9+7}+4}
+=\frac{6}{4+4}
+=\frac{6}{8}
+=\frac{3}{4}.
+$$</p>
+
+<p>Therefore,  
+$$\lim_{x\to3}\frac{\sqrt{x^2+7}-4}{x-3}=\frac{3}{4}\,. $$
+</p>
+

@@ -1,0 +1,25 @@
+<p>Evaluate the following. Show your work. Your final answers must be fully simplified.</p>
+
+<p>$\int_{0}^{\frac{3\pi}{2}} {(cos(x)+3)}dx$</p>
+
+<pl-image-capture file-name="4c.jpg"></pl-image-capture> 
+
+<p><b>Solution:</b></p>
+
+<p>Split into two integrals:</p>
+
+<p>\[
+\int_{0}^{3\pi/2}\cos x\,dx \;+\;\int_{0}^{3\pi/2}3\,dx
+\]</p>
+
+<p>Antiderivatives: \(\sin x\) and \(3x\), so evaluate</p>
+
+<p>\[
+\bigl[\sin x+3x\bigr]_{0}^{3\pi/2}
+=\Bigl(\sin\!\tfrac{3\pi}{2}+3\cdot\tfrac{3\pi}{2}\Bigr)
+-\bigl(\sin0+0\bigr)
+=-1+\tfrac{9\pi}{2}
+\]</p>
+
+<p>Hence, \(\displaystyle\int_{0}^{3\pi/2}(\cos x+3)\,dx
+=\frac{9\pi}{2}-1.\)</p>

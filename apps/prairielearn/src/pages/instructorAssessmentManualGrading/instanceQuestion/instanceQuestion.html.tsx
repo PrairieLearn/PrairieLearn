@@ -9,7 +9,7 @@ import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, type RubricItem, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -20,6 +20,11 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
   grader_name: z.string().nullable(),
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
+export interface AIGradingInfo {
+  feedback: string;
+  rubricGradingItems: RubricItem[];
+  prompt: Record<string, any>[] | null;
+}
 
 export function InstanceQuestion({
   resLocals,
@@ -27,12 +32,14 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  aiGradingInfo?: AIGradingInfo; 
 }) {
   return PageLayout({
     resLocals: {
@@ -96,14 +103,14 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
+          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false, aiGradingInfo })}
         </div>
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({ resLocals, context: 'main', graders, aiGradingInfo })}
             </div>
           </div>
 

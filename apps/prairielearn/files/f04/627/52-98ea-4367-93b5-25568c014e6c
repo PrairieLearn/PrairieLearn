@@ -1,0 +1,20 @@
+{
+    "uuid": "4a465f9e-2a88-4bc3-9102-bc4b6b90e89e",
+    "type": "Exam",
+    "title": "MATH 220 Midterm 2",
+    "set": "Exam",
+    "number": "1",
+    "allowAccess": [],
+    "zones": [
+      {
+        "comment": "Free response",
+        "questions": [
+          { "id": "derivatives-of-functions", "manualPoints": 18},
+          { "id": "linearization", "manualPoints": 10 },
+          { "id": "mvt", "manualPoints": 8 },
+          { "id": "limit-evaluation", "manualPoints": 8},
+          { "id": "logarithmic-differentiation", "manualPoints": 8 }
+        ]
+      }
+    ]
+}
