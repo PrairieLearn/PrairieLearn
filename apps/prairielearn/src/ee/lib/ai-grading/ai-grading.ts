@@ -152,15 +152,8 @@ export async function aiGrade({
       const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
 
       const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-      const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
 
-      const should_update_score =
-        !manualGradingJob || // no manual grading job
-        (manualGradingJob &&
-          aiGradingJob &&
-          manualGradingJob.graded_at &&
-          aiGradingJob.graded_at &&
-          manualGradingJob.graded_at < aiGradingJob.graded_at); // exist more recent ai grading job
+      const should_update_score = !manualGradingJob;
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
