@@ -167,6 +167,8 @@ router.post(
         );
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
+      } else if (req.body.action === 'remove') {
+        params.base_time = 'null';
       }
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
