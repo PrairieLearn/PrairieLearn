@@ -17,5 +17,5 @@ export interface AIGradingLog {
 
 export interface AIGradingLogger {
   info(msg: string): void;
-  error(msg: string): void; 
+  error(msg: string): void;
 }
