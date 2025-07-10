@@ -374,7 +374,7 @@ export function formatDateFriendly(
     timeOnly?: boolean;
     maxPrecision?: TimePrecision;
     minPrecision?: TimePrecision;
-  },
+  } = {},
 ): string {
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
     date,
