@@ -823,7 +823,7 @@ const AuthzAssessmentAccessRuleSchema = z.object({
   start_date: z.union([z.string(), z.literal('—')]),
   end_date: z.union([z.string(), z.literal('—')]),
   mode: EnumModeSchema.nullable(),
-  active: z.union([z.literal(true), z.null()]),
+  active: z.boolean().nullable(),
 });
 
 // apps/prairielearn/src/sprocs/authz_assessment.sql
