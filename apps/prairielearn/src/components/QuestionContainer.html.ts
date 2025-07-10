@@ -418,7 +418,7 @@ export function QuestionFooterContent({
 
     return html`
       <div class="row">
-        <div class="col d-flex justify-content-between">
+        <div class="col d-flex justify-content-between flex-wrap gap-2">
           <span class="d-flex align-items-center">
             ${showSaveButton
               ? html`
