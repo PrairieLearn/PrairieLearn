@@ -156,6 +156,8 @@ export async function aiGrade({
      * TODO: As we bring AI grading into production and scale it up, this function will compete with
      * all other question rendering operations. In the future, we should limit render concurrency
      * to avoid overwhelming the rendering servers.
+     *
+     * @returns A boolean indicating whether grading was successful or not.
      */
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
