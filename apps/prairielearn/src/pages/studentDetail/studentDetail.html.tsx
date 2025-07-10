@@ -47,6 +47,12 @@ export function StudentDetail({
     window.location.href = `${courseInstanceUrl}/assessments`;
   };
 
+  const handleViewGradebookAsStudent = () => {
+    setCookieClient(['pl_requested_uid', 'pl2_requested_uid'], user.uid);
+    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+    window.location.href = `${courseInstanceUrl}/gradebook`;
+  };
+
   return (
     <div class="container-fluid">
       <div class="card mb-4">
@@ -92,11 +98,15 @@ export function StudentDetail({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h2 class="mb-0">Gradebook</h2>
+          <button type="button" class="btn btn-sm btn-light" onClick={handleViewGradebookAsStudent}>
+            <i class="fas fa-book me-1" aria-hidden="true"></i>
+            View Gradebook as Student
+          </button>
         </div>
 
         {gradebookRows.length === 0 ? (
           <div class="card-body">
-            <p class="text-muted">No gradebook entries found for this student.</p>
+            <div class="text-muted">No gradebook entries found.</div>
           </div>
         ) : (
           <table class="table table-sm table-hover" aria-label="Student Assessment Performance">
