@@ -41,7 +41,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
-  instance_user: UserSchema,
+  instance_user: UserSchema.nullable(),
   instance_role: z.string(),
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
