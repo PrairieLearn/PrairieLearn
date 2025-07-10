@@ -13,7 +13,6 @@ import {
   StudentAssessmentInstanceSchema,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
-  StudentCourseInstanceSchema,
 } from '../../lib/client/safe-db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -31,7 +30,6 @@ const StudentGradebookRowSchema = z.object({
   assessment: StudentAssessmentSchema,
   assessment_instance: StudentAssessmentInstanceSchema,
   assessment_set: StudentAssessmentSetSchema,
-  course_instance: StudentCourseInstanceSchema,
   show_closed_assessment_score: z.boolean(),
 });
 
