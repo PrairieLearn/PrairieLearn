@@ -64,7 +64,9 @@
     }
 
     saveDebounced = this.debounce(() => {
-      this.saveCropRotateChangesToHiddenInput();
+      if (this.selectedContainerName === 'crop-rotate') {
+        this.saveCropRotateChangesToHiddenInput();
+      }
     }, 200);
 
     createExternalCaptureListeners() {
