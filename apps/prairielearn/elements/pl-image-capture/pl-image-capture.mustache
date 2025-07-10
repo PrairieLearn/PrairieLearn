@@ -173,10 +173,11 @@ $(function() {
     </div>
     <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
       <div class="d-flex align-items-center gap-2">
-        <p class="text-muted text-nowrap mb-0 me-1">
+        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
           Rotation: 
         </p>
         <input 
+          id="rotation-slider-{{uuid}}"
           type="range" 
           class="js-rotation-slider form-range mx-2" 
           style="max-width: 200px;" 
@@ -184,7 +185,6 @@ $(function() {
           max="45" 
           step="1" 
           value="0"
-          aria-label="Rotation"
         />  
 
         <button 
