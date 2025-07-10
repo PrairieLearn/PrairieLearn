@@ -276,7 +276,7 @@ onDocumentReady(() => {
 
   startFromInput.addEventListener('change', () => {
     // If the startFromInput is set to 'example' or 'course', the
-    // templateQuestionInput should be visible and enabled Otherwise, it should
+    // templateQuestionInput should be visible and enabled; otherwise, it should
     // be hidden and disabled.
     const isTemplateSelected = ['example', 'course'].includes(startFromInput.value);
     templateQuestionInput.disabled = !isTemplateSelected;
