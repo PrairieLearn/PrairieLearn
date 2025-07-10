@@ -5,7 +5,7 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import jsxA11y from 'eslint-plugin-jsx-a11y';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
@@ -43,7 +43,7 @@ export default tseslint.config([
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
       vitest,
-      'jsx-a11y': jsxA11y,
+      'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       '@prairielearn': prairielearn,
     },
@@ -53,7 +53,7 @@ export default tseslint.config([
     },
 
     settings: {
-      'jsx-a11y': {
+      'jsx-a11y-x': {
         attributes: {
           for: ['for'],
         },
@@ -131,10 +131,10 @@ export default tseslint.config([
       'no-floating-promise/no-floating-promise': 'error',
 
       // Enable all jsx-a11y rules.
-      ...jsxA11y.configs.strict.rules,
-      'jsx-a11y/anchor-ambiguous-text': 'error',
-      'jsx-a11y/lang': 'error',
-      'jsx-a11y/no-aria-hidden-on-focusable': 'error',
+      ...jsxA11yX.configs.strict.rules,
+      'jsx-a11y-x/anchor-ambiguous-text': 'error',
+      'jsx-a11y-x/lang': 'error',
+      'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
