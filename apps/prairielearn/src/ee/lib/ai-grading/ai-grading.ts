@@ -21,6 +21,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   GradingResultSchema,
   OPEN_AI_MODEL,
@@ -122,13 +123,13 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
+    const gradingJobMapping = await selectGradingJobsInfo(all_instance_questions);
+
     const instance_questions = all_instance_questions.filter((instance_question) => {
       if (mode === 'human_graded') {
         // Things that have been graded by a human
-        return (
-          !instance_question.requires_manual_grading &&
-          instance_question.status !== 'unanswered' &&
-          !instance_question.is_ai_graded
+        return (gradingJobMapping[instance_question.id] ?? []).find(
+          (job) => job.grading_method === 'Manual',
         );
       } else if (mode === 'ungraded') {
         // Things that require grading
@@ -148,6 +149,11 @@ export async function aiGrade({
     let error_count = 0;
     // Grade each instance question
     for (const instance_question of instance_questions) {
+      const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
+
+      const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+
+      const should_update_score = !manualGradingJob;
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
@@ -237,7 +243,7 @@ export async function aiGrade({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            if (instance_question.requires_manual_grading) {
+            if (should_update_score) {
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -338,7 +344,7 @@ export async function aiGrade({
           if (response.parsed) {
             const score = response.parsed.score;
 
-            if (instance_question.requires_manual_grading) {
+            if (should_update_score) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
