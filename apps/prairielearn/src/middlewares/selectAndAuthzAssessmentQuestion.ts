@@ -16,7 +16,7 @@ const SelectAndAuthzAssessmentQuestionSchema = z.object({
 });
 
 export default asyncHandler(async (req, res, next) => {
-  const row = await sqldb.queryValidatedZeroOrOneRow(
+  const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_question_id: req.params.assessment_question_id,

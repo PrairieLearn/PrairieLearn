@@ -88,11 +88,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     );
   }
 
-  const row = await sqldb.queryValidatedZeroOrOneRow(
-    sql.select_authz_data,
-    params,
-    SelectAuthzDataSchema,
-  );
+  const row = await sqldb.queryOptionalRow(sql.select_authz_data, params, SelectAuthzDataSchema);
   if (row === null) {
     throw new HttpStatusError(403, 'Access denied');
   }
@@ -258,7 +254,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   // Verify requested UID
   if (req.cookies.pl2_requested_uid) {
-    const row = await sqldb.queryValidatedZeroOrOneRow(
+    const row = await sqldb.queryOptionalRow(
       sql.select_user,
       {
         uid: req.cookies.pl2_requested_uid,

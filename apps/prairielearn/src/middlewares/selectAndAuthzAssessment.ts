@@ -1,7 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import {
   AssessmentModuleSchema,
@@ -23,7 +23,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 });
 
 export default asyncHandler(async (req, res, next) => {
-  const row = await queryValidatedZeroOrOneRow(
+  const row = await queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_id: req.params.assessment_id,

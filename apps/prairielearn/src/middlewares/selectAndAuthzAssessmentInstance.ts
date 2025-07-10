@@ -38,7 +38,7 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
 });
 
 export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
-  const row = await sqldb.queryValidatedZeroOrOneRow(
+  const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_instance_id: req.params.assessment_instance_id,
