@@ -10,7 +10,6 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
