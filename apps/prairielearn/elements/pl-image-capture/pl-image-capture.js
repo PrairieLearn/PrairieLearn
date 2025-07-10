@@ -52,7 +52,7 @@
       }
 
       this.createCropRotateListeners();
-      this.createSaveListeners();
+      this.createApplyChangesListeners();
     }
 
     createExternalCaptureListeners() {
@@ -220,25 +220,15 @@
     }
 
     /**
-     * When the user saves the image, automatically apply any pending crop/rotate edits
-     * or save the pending local camera capture if it exists.
+     * When the user clicks Enter or Space, automatically apply pending
+     * crop/rotate edits or save the pending local camera capture if it exists.
      */
-    createSaveListeners() {
-      const saveButton = document.querySelector('.question-save');
-      const saveAndGradeButton = document.querySelector('.question-grade');
-
-      if (saveButton) {
-        // Using mousedown applies the pending changes before the save action triggers.
-        saveButton.addEventListener('mousedown', () => {
+    createApplyChangesListeners() {
+      document.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
           this.applyPendingChanges();
-        });
-      }
-      if (saveAndGradeButton) {
-        // Using mousedown applies the pending changes before the save and grade action triggers.
-        saveAndGradeButton.addEventListener('mousedown', () => {
-          this.applyPendingChanges();
-        });
-      }
+        }
+      });
     }
 
     /**
