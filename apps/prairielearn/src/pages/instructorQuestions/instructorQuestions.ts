@@ -3,11 +3,9 @@ import * as url from 'node:url';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { config } from '../../lib/config.js';
@@ -19,14 +17,12 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
-import { selectQuestionsForCourse } from '../../models/questions.js';
+import { type QuestionsPageData, selectQuestionsForCourse } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-
-const sql = loadSqlEquiv(import.meta.url);
 
 let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null = null;
 
@@ -81,16 +77,14 @@ async function getTemplateQuestionsExampleCourse() {
  * points for new questions, both from the example course and course-specific
  * templates.
  */
-async function getTemplateQuestions(course_id: string) {
+async function getTemplateQuestions(questions: QuestionsPageData[]) {
   const exampleCourseTemplateQuestions = await getTemplateQuestionsExampleCourse();
-  const courseTemplateQuestions = await queryRows(
-    sql.select_template_questions,
-    { course_id },
-    z.object({ qid: z.string(), title: z.string() }),
-  );
+  const courseTemplateQuestions = questions
+    .filter(({ qid }) => qid.startsWith('template/'))
+    .map(({ qid, title }) => ({ example_course: false, qid, title }));
   return [
     ...exampleCourseTemplateQuestions.map((q) => ({ example_course: true, ...q })),
-    ...courseTemplateQuestions.map((q) => ({ example_course: false, ...q })),
+    ...courseTemplateQuestions,
   ];
 }
 
@@ -125,7 +119,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateQuestions(res.locals.course.id);
+    const templateQuestions = await getTemplateQuestions(questions);
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
