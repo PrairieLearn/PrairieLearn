@@ -11,11 +11,13 @@ import {
 } from '../../lib/db-types.js';
 
 export const StudentGradebookRowSchema = z.object({
+  assessment_id: AssessmentSchema.shape.id,
   assessment_group_work: AssessmentSchema.shape.group_work,
   title: z.string(),
   assessment_set_heading: AssessmentSetSchema.shape.heading,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
+  assessment_instance_id: AssessmentInstanceSchema.shape.id,
   assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc,
   show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
   start_new_set: z.boolean(),
@@ -66,7 +68,7 @@ export function StudentGradebook({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <Fragment key={row.assessment_set_heading}>
+              <Fragment key={`${row.assessment_id}-${row.assessment_instance_id}`}>
                 {row.start_new_set && (
                   <tr>
                     <th colspan={3}>{row.assessment_set_heading}</th>
