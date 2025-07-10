@@ -30,7 +30,6 @@ function buildCsvFilename(locals: Record<string, any>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
-// Define new row schema for the new SQL structure
 const StudentGradebookRowSchema = z.object({
   assessment: StudentAssessmentSchema,
   assessment_instance: StudentAssessmentInstanceSchema,
@@ -66,7 +65,7 @@ function mapRow(
   raw: StudentGradebookRowRaw,
   prev: StudentGradebookRowRaw | null,
 ): StudentGradebookRow {
-  // Compute start_new_set: true if this is the first row or assessment_set.id differs from previous
+  // true if this is the first row or assessment_set.id differs from previous
   const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
