@@ -24,11 +24,11 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const InstanceQuestionInfoSchema = z.object({
   id: z.number(),
   prev_instance_question: z.object({
-    id: z.number(),
+    id: z.number().nullable(),
   }),
   next_instance_question: z.object({
-    id: z.number(),
-    sequence_locked: z.boolean(),
+    id: z.number().nullable(),
+    sequence_locked: z.boolean().nullable(),
   }),
   question_number: z.string(),
   advance_score_perc: z.number().nullable(),

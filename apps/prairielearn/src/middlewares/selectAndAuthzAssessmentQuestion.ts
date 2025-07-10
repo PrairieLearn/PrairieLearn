@@ -8,17 +8,10 @@ import { AssessmentQuestionSchema, QuestionSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/*
-  to_jsonb(aq) AS assessment_question,
-  to_jsonb(q) AS question,
-  admin_assessment_question_number (aq.id) as number_in_alternative_group,
-  COALESCE(oi.num_open_instances, 0) AS num_open_instances
-*/
-
 const SelectAndAuthzAssessmentQuestionSchema = z.object({
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,
-  number_in_alternative_group: z.number(),
+  number_in_alternative_group: z.string(),
   num_open_instances: z.number(),
 });
 

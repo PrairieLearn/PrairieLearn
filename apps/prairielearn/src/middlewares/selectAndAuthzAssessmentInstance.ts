@@ -27,7 +27,6 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema,
   instance_role: z.string(),
-  users_get_displayed_role: z.string(),
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   authz_result: AuthzAssessmentInstanceSchema,
