@@ -2,4 +2,4 @@
 '@prairielearn/formatter': patch
 ---
 
-Don't display seconds for formatDateFriendly
+Add `maxPrecision` and `minPrecision` options to `format*Friendly` functions.
