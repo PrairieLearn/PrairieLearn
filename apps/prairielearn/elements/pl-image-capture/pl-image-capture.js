@@ -55,20 +55,6 @@
       this.createApplyChangesListeners();
     }
 
-    debounce(fn, delay) {
-      let timeoutId;
-      return function(...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn.apply(this, args), delay);
-      };
-    }
-
-    saveDebounced = this.debounce(() => {
-      if (this.selectedContainerName === 'crop-rotate') {
-        this.saveCropRotateChangesToHiddenInput();
-      }
-    }, 200);
-
     createExternalCaptureListeners() {
       const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-mobile-device-button',
@@ -202,28 +188,28 @@
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
+        this.saveCropperSelectionToHiddenInputDebounced();
       });
-      rotationSlider.addEventListener('change', this.saveDebounced);
 
       rotateClockwiseButton.addEventListener('click', () => {
-        this.handleRotate90Degrees(true);     
+        this.handleRotate90Degrees(true);
+        this.saveCropperSelectionToHiddenInputDebounced();
       });
-      rotateClockwiseButton.addEventListener('click', this.saveDebounced);
-      
+
       rotateCounterclockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(false);
+        this.saveCropperSelectionToHiddenInputDebounced();
       });
-      rotateCounterclockwiseButton.addEventListener('click', this.saveDebounced);
 
       flipHorizontalButton.addEventListener('click', () => {
         this.handleFlip(true);
+        this.saveCropperSelectionToHiddenInputDebounced();
       });
-      flipHorizontalButton.addEventListener('click', this.saveDebounced);
 
       flipVerticalButton.addEventListener('click', () => {
         this.handleFlip(false);
+        this.saveCropperSelectionToHiddenInputDebounced();
       });
-      flipVerticalButton.addEventListener('click', this.saveDebounced);
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
@@ -492,6 +478,32 @@
       }
     }
 
+    setHiddenCaptureInputValue(dataUrl) {
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+
+      this.ensureElementsExist({
+        hiddenCaptureInput,
+      });
+
+      hiddenCaptureInput.value = dataUrl;
+    }
+
+    /**
+     * Sets the hidden capture input value to the current capture preview, which
+     * is the last captured image.
+     */
+    setHiddenCaptureInputToLastCapture() {
+      const capturePreviewImg = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreviewImg,
+      });
+
+      this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
+    }
+
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
@@ -521,9 +533,7 @@
       }
 
       if (this.editable) {
-        const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-        hiddenCaptureInput.value = dataUrl;
-        
+        this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
@@ -535,7 +545,7 @@
           }
         }
         this.showCropRotateButton();
-      } 
+      }
     }
 
     loadCapturePreviewFromBlob(blob) {
@@ -678,12 +688,7 @@
 
       this.deactivateVideoStream();
 
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      this.ensureElementsExist({
-        hiddenCaptureInput,
-      });
-
-      hiddenCaptureInput.value = localCameraImagePreviewCanvas.toDataURL('image/jpeg');
+      this.setHiddenCaptureInputValue(localCameraImagePreviewCanvas.toDataURL('image/jpeg'));
     }
 
     async confirmLocalCameraCapture() {
@@ -716,21 +721,7 @@
     }
 
     cancelLocalCameraCapture() {
-      // Set the hidden state to the last captured image.
-
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      
-      this.ensureElementsExist({
-        hiddenCaptureInput
-      });
-      
-      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
-
-      if (capturePreviewImg) {
-        hiddenCaptureInput.value = capturePreviewImg.src;
-      } else {
-        hiddenCaptureInput.value = '';
-      }
+      this.setHiddenCaptureInputToLastCapture();
 
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
@@ -772,12 +763,14 @@
 
       // Set the hidden state to the last captured image.
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      
+
       this.ensureElementsExist({
-        hiddenCaptureInput
+        hiddenCaptureInput,
       });
-      
-      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
+
+      const capturePreviewImg = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
 
       if (capturePreviewImg) {
         hiddenCaptureInput.value = capturePreviewImg.src;
@@ -855,7 +848,7 @@
       this.ensureElementsExist({
         cropperHandle,
         cropperCanvas,
-        cropperSelection
+        cropperSelection,
       });
 
       if (!this.capturePreviewHeight) {
@@ -996,12 +989,12 @@
       };
     }
 
-    /** 
+    /**
      * Saves the current crop and rotation changes to the hidden input field.
      * Ensures that pending crop/rotate changes or image captures are saved if the user
      * submits without confirming them.
      */
-    async saveCropRotateChangesToHiddenInput() {
+    async saveCropperSelectionToHiddenInput() {
       this.ensureCropperExists();
 
       // Obtain the data URL of the image selection.
@@ -1014,9 +1007,25 @@
         throw new Error('Failed to convert cropper selection to canvas');
       }
 
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      hiddenCaptureInput.value = dataUrl;
+      this.setHiddenCaptureInputValue(dataUrl);
     }
+
+    /**
+     * Debounces the save cropper selection function to prevent excessive calls while the user is making changes.
+     */
+    saveCropperSelectionToHiddenInputDebounced = () => {
+      let timeoutId;
+
+      return () => {
+        if (this.selectedContainerName !== 'crop-rotate') {
+          return;
+        }
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          this.applyPendingChanges();
+        }, 200);
+      };
+    };
 
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
@@ -1058,7 +1067,9 @@
 
       // Set the hidden state to the original capture.
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
+      const capturePreviewImg = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
 
       this.ensureElementsExist({
         hiddenCaptureInput,
@@ -1066,7 +1077,7 @@
       });
 
       hiddenCaptureInput.value = capturePreviewImg.src;
-      
+
       if (!this.previousCropRotateState) {
         this.resetCropRotate();
         return;
