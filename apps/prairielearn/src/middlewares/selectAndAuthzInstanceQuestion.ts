@@ -45,7 +45,10 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: z.string(),
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: InstanceQuestionSchema,
+  instance_question: z.object({
+    ...InstanceQuestionSchema.shape,
+    modified_at: z.string(),
+  }),
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,
