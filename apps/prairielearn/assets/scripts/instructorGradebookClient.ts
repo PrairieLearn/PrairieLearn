@@ -110,7 +110,12 @@ onDocumentReady(() => {
         title: 'Name',
         sortable: true,
         class: 'text-nowrap',
-        formatter: (name: string | null) => html`${name ?? ''}`.toString(),
+        formatter: (name: string | null, row: GradebookRow) => {
+          if (!name) return '';
+          return html`
+            <a href="${urlPrefix}/instance_admin/studentDetail/${row.user_id}"> ${name} </a>
+          `.toString();
+        },
       },
       {
         field: 'role',

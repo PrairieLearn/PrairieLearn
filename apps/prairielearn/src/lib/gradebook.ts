@@ -50,7 +50,7 @@ interface getGradebookRowsParams {
   user_id: string;
   authz_data: any;
   req_date: any;
-  auth: 'student' | 'staff';
+  auth: 'student' | 'instructor';
 }
 
 async function getGradebookRows(
@@ -58,7 +58,7 @@ async function getGradebookRows(
 ): Promise<StudentGradebookRow[]>;
 
 async function getGradebookRows(
-  params: getGradebookRowsParams & { auth: 'staff' },
+  params: getGradebookRowsParams & { auth: 'instructor' },
 ): Promise<StaffGradebookRow[]>;
 
 async function getGradebookRows({
@@ -98,7 +98,7 @@ async function getGradebookRowsCursor(
 ): Promise<CursorIterator<StudentGradebookRow>>;
 
 async function getGradebookRowsCursor(
-  params: getGradebookRowsParams & { auth: 'staff' },
+  params: getGradebookRowsParams & { auth: 'instructor' },
 ): Promise<CursorIterator<StaffGradebookRow>>;
 
 async function getGradebookRowsCursor({

@@ -15,13 +15,12 @@ export const UserDetailSchema = z.object({
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
 interface StudentDetailProps {
-  resLocals: Record<string, any>;
-  student: UserDetail;
   gradebookRows: StaffGradebookRow[];
+  student: UserDetail;
   urlPrefix: string;
 }
 
-export function StudentDetail({ student, gradebookRows, urlPrefix }: StudentDetailProps) {
+export function StudentDetail({ gradebookRows, student, urlPrefix }: StudentDetailProps) {
   const { user } = student;
 
   const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
@@ -40,7 +39,7 @@ export function StudentDetail({ student, gradebookRows, urlPrefix }: StudentDeta
     <div class="container-fluid">
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h1 class="mb-0">Student Details</h1>
+          <h1 class="mb-0">Details</h1>
         </div>
         <div class="card-body">
           <div class="row">
@@ -71,25 +70,17 @@ export function StudentDetail({ student, gradebookRows, urlPrefix }: StudentDeta
               </div>
             </div>
           )}
-          <div class="row mt-3">
-            <div class="col-md-12">
-              <a href={`${urlPrefix}/gradebook`} class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-table" aria-hidden="true"></i>
-                View Full Gradebook
-              </a>
-            </div>
-          </div>
         </div>
       </div>
 
       <div class="card mb-4">
-        <div class="card-header bg-secondary text-white d-flex align-items-center">
-          <h2 class="mb-0">Assessment Performance</h2>
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h2 class="mb-0">Gradebook</h2>
         </div>
 
         {gradebookRows.length === 0 ? (
           <div class="card-body">
-            <p class="text-muted">No assessments found for this student.</p>
+            <p class="text-muted">No gradebook entries found for this student.</p>
           </div>
         ) : (
           <table class="table table-sm table-hover" aria-label="Student Assessment Performance">
@@ -98,7 +89,7 @@ export function StudentDetail({ student, gradebookRows, urlPrefix }: StudentDeta
                 <th style="width: 1%">
                   <span class="visually-hidden">Label</span>
                 </th>
-                <th>Assessment</th>
+                <th></th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Points</th>
                 <th class="text-center">Actions</th>
@@ -108,9 +99,7 @@ export function StudentDetail({ student, gradebookRows, urlPrefix }: StudentDeta
               {Array.from(gradebookRowsBySet.entries()).map(([setHeading, setAssessments]) => (
                 <Fragment key={setHeading}>
                   <tr>
-                    <th colspan={5} class="table-active">
-                      {setHeading}
-                    </th>
+                    <th colspan={5}>{setHeading}</th>
                   </tr>
                   {setAssessments.map((row) => (
                     <tr key={row.assessment.id}>

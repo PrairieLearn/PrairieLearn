@@ -41,7 +41,7 @@ router.get(
       user_id: req.params.user_id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
-      auth: 'staff',
+      auth: 'instructor',
     });
 
     res.send(
@@ -51,15 +51,10 @@ router.get(
         navContext: {
           type: 'instructor',
           page: 'instance_admin',
-          subPage: 'students',
+          subPage: 'gradebook',
         },
         content: (
-          <StudentDetail
-            resLocals={res.locals}
-            student={student}
-            gradebookRows={gradebookRows}
-            urlPrefix={urlPrefix}
-          />
+          <StudentDetail gradebookRows={gradebookRows} student={student} urlPrefix={urlPrefix} />
         ),
       }),
     );
