@@ -10,18 +10,12 @@ import {
 } from '@prairielearn/postgres';
 
 import {
-  type StaffAssessment,
-  type StaffAssessmentInstance,
   StaffAssessmentInstanceSchema,
   StaffAssessmentSchema,
-  type StaffAssessmentSet,
   StaffAssessmentSetSchema,
   StaffCourseInstanceSchema,
-  type StudentAssessment,
-  type StudentAssessmentInstance,
   StudentAssessmentInstanceSchema,
   StudentAssessmentSchema,
-  type StudentAssessmentSet,
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
 } from './client/safe-db-types.js';
@@ -141,21 +135,14 @@ async function getGradebookRowsCursor({
   );
 }
 
-function computeTitle(
-  assessment: StudentAssessment | StaffAssessment,
-  assessment_instance: StudentAssessmentInstance | StaffAssessmentInstance,
-) {
+function computeTitle({ assessment, assessment_instance }: StudentGradebookRow) {
   if (assessment.multiple_instance) {
     return `${assessment.title} instance #${assessment_instance.number}`;
   }
   return assessment.title ?? '';
 }
 
-function computeLabel(
-  assessment: StudentAssessment | StaffAssessment,
-  assessment_instance: StudentAssessmentInstance | StaffAssessmentInstance,
-  assessment_set: StudentAssessmentSet | StaffAssessmentSet,
-) {
+function computeLabel({ assessment, assessment_instance, assessment_set }: StudentGradebookRow) {
   if (assessment.multiple_instance) {
     return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
   }

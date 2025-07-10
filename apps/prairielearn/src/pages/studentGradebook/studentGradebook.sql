@@ -3,7 +3,6 @@ SELECT
   to_jsonb(a.*) AS assessment,
   to_jsonb(ai.*) AS assessment_instance,
   to_jsonb(aset.*) AS assessment_set,
-  to_jsonb(ci.*) AS course_instance,
   aa.show_closed_assessment_score
 FROM
   assessment_instances AS ai

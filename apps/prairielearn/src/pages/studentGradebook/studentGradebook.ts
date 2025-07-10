@@ -35,10 +35,10 @@ function mapRow(
     assessment_id: raw.assessment.id,
     assessment_instance_id: raw.assessment_instance.id,
     assessment_group_work: raw.assessment.group_work ?? false,
-    title: computeTitle(raw.assessment, raw.assessment_instance),
+    title: computeTitle(raw),
     assessment_set_heading: raw.assessment_set.heading,
     assessment_set_color: raw.assessment_set.color,
-    label: computeLabel(raw.assessment, raw.assessment_instance, raw.assessment_set),
+    label: computeLabel(raw),
     assessment_instance_score_perc: raw.assessment_instance.score_perc,
     show_closed_assessment_score: raw.show_closed_assessment_score,
     start_new_set,
@@ -92,7 +92,7 @@ router.get(
       columns: ['Assessment', 'Set', 'Score'],
       transform(row: StudentGradebookRow) {
         return [
-          row.assessment.title,
+          computeTitle(row),
           row.assessment_set.heading,
           row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
         ];
