@@ -9,7 +9,7 @@ import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, type RubricGradingItem, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -27,12 +27,14 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  rubricGradingItems
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  rubricGradingItems: RubricGradingItem[]
 }) {
   return PageLayout({
     resLocals: {

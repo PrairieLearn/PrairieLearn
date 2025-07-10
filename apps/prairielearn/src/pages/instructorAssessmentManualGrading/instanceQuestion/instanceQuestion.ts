@@ -6,20 +6,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../../lib/db-types.js';
+import { selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { GradingJobSchema, IdSchema, type InstanceQuestion, SubmissionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
-import { selectAndAuthzVariant } from '../../../models/variant.js';
+import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../../models/variant.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
-  InstanceQuestion,
+  InstanceQuestion as InstanceQuestionHtml,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
@@ -78,11 +79,57 @@ router.get(
     const lastGrader = res.locals.instance_question.last_grader
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
+
+    const instance_question = res.locals.instance_question as InstanceQuestion;
+    if (instance_question == null) {
+      throw new error.HttpStatusError(404, 'Instance question not found');
+    }
+
+    // TODO: Just query one?
+    const variants = await selectVariantsByInstanceQuestion({
+      assessment_instance_id: instance_question.assessment_instance_id,
+      instance_question_id: instance_question.id
+    });
+    if (variants.length === 0) {
+      throw new error.HttpStatusError(404, 'Instance question does not have any variants.');
+    }
+
+    // Find the corresponding submission
+    const submission = await sqldb.queryRow(
+      sql.select_most_recent_submission_for_variant,
+      {
+        variant_id: variants[0].id,
+      },
+      SubmissionSchema
+    );
+
+    if (!submission) {
+      throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
+    } 
+
+    // Find the most recent grading job
+    const grading_job = await sqldb.queryRow(
+      sql.select_most_recent_grading_job,
+      {
+        submission_id: submission.id,
+      },
+      GradingJobSchema
+    );
+
+    if (!grading_job) {
+      throw new error.HttpStatusError(404, 'Instance question does not have a grading job.');
+    }
+
+    const rubricGradingItems = await selectRubricGradingItems(
+      grading_job.manual_rubric_grading_id
+    );
+    
     res.send(
-      InstanceQuestion({
+      InstanceQuestionHtml({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        rubricGradingItems
       }),
     );
   }),
