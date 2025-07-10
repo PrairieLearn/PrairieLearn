@@ -5,9 +5,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { getPageContext } from '../../lib/client/page-context.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { Hydrate } from '../../lib/preact.js';
+import { getCourseInstanceUrl } from '../../lib/url.js';
 
 import { StudentDetail, UserDetailSchema } from './studentDetail.html.js';
 
@@ -23,6 +24,8 @@ router.get(
 
     const pageContext = getPageContext(res.locals);
     const { urlPrefix } = pageContext;
+    const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
+    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext);
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -56,7 +59,12 @@ router.get(
         },
         content: (
           <Hydrate>
-            <StudentDetail gradebookRows={gradebookRows} student={student} urlPrefix={urlPrefix} />
+            <StudentDetail
+              gradebookRows={gradebookRows}
+              student={student}
+              urlPrefix={urlPrefix}
+              courseInstanceUrl={courseInstanceUrl}
+            />
           </Hydrate>
         ),
       }),

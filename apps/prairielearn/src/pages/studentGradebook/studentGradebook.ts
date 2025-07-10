@@ -7,13 +7,12 @@ import asyncHandler from 'express-async-handler';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 
+import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 import {
   type StudentGradebookRow,
   computeLabel,
   computeTitle,
-  getGradebookRows,
-  getGradebookRowsCursor,
-} from '../../lib/gradebook.js';
+} from '../../lib/gradebook.shared.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 

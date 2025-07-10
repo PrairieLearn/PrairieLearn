@@ -2,9 +2,9 @@ import { Fragment } from 'preact/jsx-runtime';
 import { z } from 'zod';
 
 import { Scorebar } from '../../components/Scorebar.js';
+import { setCookieClient } from '../../lib/client/cookie.js';
 import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
-import { type StaffGradebookRow, computeLabel } from '../../lib/gradebook.js';
-import { computeTitle } from '../../lib/gradebook.js';
+import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema,
@@ -18,9 +18,15 @@ interface StudentDetailProps {
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
   urlPrefix: string;
+  courseInstanceUrl: string;
 }
 
-export function StudentDetail({ gradebookRows, student, urlPrefix }: StudentDetailProps) {
+export function StudentDetail({
+  gradebookRows,
+  student,
+  urlPrefix,
+  courseInstanceUrl,
+}: StudentDetailProps) {
   const { user } = student;
 
   const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
@@ -35,11 +41,21 @@ export function StudentDetail({ gradebookRows, student, urlPrefix }: StudentDeta
     }
   });
 
+  const handleViewAsStudent = () => {
+    setCookieClient(['pl_requested_uid', 'pl2_requested_uid'], user.uid);
+    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+    window.location.href = `${courseInstanceUrl}/assessments`;
+  };
+
   return (
     <div class="container-fluid">
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1 class="mb-0">Details</h1>
+          <button type="button" class="btn btn-sm btn-light" onClick={handleViewAsStudent}>
+            <i class="fas fa-user-graduate me-1" aria-hidden="true"></i>
+            View as Student
+          </button>
         </div>
         <div class="card-body">
           <div class="row">
