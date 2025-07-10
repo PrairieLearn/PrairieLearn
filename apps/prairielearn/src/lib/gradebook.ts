@@ -135,14 +135,21 @@ async function getGradebookRowsCursor({
   );
 }
 
-function computeTitle({ assessment, assessment_instance }: StudentGradebookRow) {
+function computeTitle({
+  assessment,
+  assessment_instance,
+}: StudentGradebookRow | StaffGradebookRow) {
   if (assessment.multiple_instance) {
     return `${assessment.title} instance #${assessment_instance.number}`;
   }
   return assessment.title ?? '';
 }
 
-function computeLabel({ assessment, assessment_instance, assessment_set }: StudentGradebookRow) {
+function computeLabel({
+  assessment,
+  assessment_instance,
+  assessment_set,
+}: StudentGradebookRow | StaffGradebookRow) {
   if (assessment.multiple_instance) {
     return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
   }
