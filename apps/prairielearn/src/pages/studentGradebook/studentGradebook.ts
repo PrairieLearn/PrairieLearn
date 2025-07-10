@@ -1,3 +1,4 @@
+/* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -8,19 +9,19 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
 
+import {
+  type StudentAssessment,
+  type StudentAssessmentInstance,
+  StudentAssessmentInstanceSchema,
+  StudentAssessmentSchema,
+  type StudentAssessmentSet,
+  StudentAssessmentSetSchema,
+  StudentCourseInstanceSchema,
+} from '../../lib/client/safe-db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
-import {
-  StudentAssessmentInstanceSchema,
-  StudentAssessmentSchema,
-  StudentAssessmentSetSchema,
-  StudentCourseInstanceSchema,
-  type StudentAssessment,
-  type StudentAssessmentInstance,
-  type StudentAssessmentSet,
-} from '../../lib/client/safe-db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
