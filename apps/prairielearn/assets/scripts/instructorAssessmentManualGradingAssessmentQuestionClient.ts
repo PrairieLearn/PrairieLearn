@@ -442,19 +442,12 @@ onDocumentReady(() => {
       } else if (sortName === 'ai_graded') {
         const aiGradingStatusOrder = { Graded: 1, LatestRubric: 2, OutdatedRubric: 1, None: 0 };
         data.sort(function (a, b) {
-          if (
-            aiGradingStatusOrder[a.ai_grading_status] < aiGradingStatusOrder[b.ai_grading_status]
-          ) {
-            return order * -1;
-          } else if (
-            aiGradingStatusOrder[a.ai_grading_status] > aiGradingStatusOrder[b.ai_grading_status]
-          ) {
-            return order;
-          } else {
-            return (
-              ((a.last_human_grader ?? '') < (b.last_human_grader ?? '') ? 1 : -1) * order * -1
-            );
+          const aOrder = aiGradingStatusOrder[a.ai_grading_status];
+          const bOrder = aiGradingStatusOrder[b.ai_grading_status];
+          if (aOrder !== bOrder) {
+            return (aOrder - bOrder) * order;
           }
+          return (a.last_human_grader ?? '').localeCompare(b.last_human_grader ?? '') * order;
         });
       } else {
         (data as any[]).sort(function (a, b) {
