@@ -1,5 +1,6 @@
 -- BLOCK select_assessment_instances
 SELECT
+  a.id AS assessment_id,
   a.group_work AS assessment_group_work,
   CASE
     WHEN a.multiple_instance THEN a.title || ' instance #' || ai.number
@@ -11,6 +12,7 @@ SELECT
     WHEN a.multiple_instance THEN aset.abbreviation || a.number || '#' || ai.number
     ELSE aset.abbreviation || a.number
   END AS label,
+  ai.id AS assessment_instance_id,
   ai.score_perc AS assessment_instance_score_perc,
   aa.show_closed_assessment_score,
   (
