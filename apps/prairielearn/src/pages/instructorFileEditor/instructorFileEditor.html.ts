@@ -318,7 +318,7 @@ export function InstructorFileEditor({
                         <button
                           class="btn btn-primary"
                           type="button"
-                          onClick="window.location.reload()"
+                          onclick="window.location.reload()"
                         >
                           Choose their version (discard my changes)
                         </button>

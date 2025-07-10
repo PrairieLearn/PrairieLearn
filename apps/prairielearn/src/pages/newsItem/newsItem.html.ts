@@ -56,7 +56,9 @@ export function NewsItem({
       <aside>
         <p class="text-end small border-top mt-5 pt-3">
           Want to help make PrairieLearn better? It's open source and contributions are welcome
-          <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a>!
+          <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank" rel="noreferrer"
+            >on GitHub</a
+          >!
         </p>
       </aside>
     `,

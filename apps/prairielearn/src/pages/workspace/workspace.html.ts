@@ -178,7 +178,7 @@ export function Workspace({
             <h2>Workspace failed to load</h2>
             <p id="failed-message"></p>
           </div>
-          <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
+          <iframe id="workspace" class="d-none flex-grow h-100 border-0" title="Workspace"></iframe>
         </main>
       </body>
     </html>
