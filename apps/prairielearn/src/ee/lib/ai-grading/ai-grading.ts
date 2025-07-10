@@ -63,7 +63,7 @@ export async function aiGrade({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
-  mode: 'ungraded' | 'human_graded' | 'all' | 'selected';
+  mode: 'human_graded' | 'all' | 'selected';
   /**
    * Limit grading to the specified instance questions.
    * Only use when mode is 'selected'.
@@ -130,9 +130,6 @@ export async function aiGrade({
           instance_question.status !== 'unanswered' &&
           !instance_question.is_ai_graded
         );
-      } else if (mode === 'ungraded') {
-        // Things that require grading
-        return instance_question.requires_manual_grading;
       } else if (mode === 'all') {
         // Everything
         return true;
