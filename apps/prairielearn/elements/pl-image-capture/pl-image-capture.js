@@ -55,6 +55,18 @@
       this.createApplyChangesListeners();
     }
 
+    debounce(fn, delay) {
+      let timeoutId;
+      return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    saveDebounced = this.debounce(() => {
+      this.saveCropRotateChangesToHiddenInput();
+    }, 200);
+
     createExternalCaptureListeners() {
       const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-mobile-device-button',
@@ -189,22 +201,27 @@
         }
         this.setRotationOffset(newRotationAngle);
       });
+      rotationSlider.addEventListener('change', this.saveDebounced);
 
       rotateClockwiseButton.addEventListener('click', () => {
-        this.handleRotate90Degrees(true);
+        this.handleRotate90Degrees(true);     
       });
-
+      rotateClockwiseButton.addEventListener('click', this.saveDebounced);
+      
       rotateCounterclockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(false);
       });
+      rotateCounterclockwiseButton.addEventListener('click', this.saveDebounced);
 
       flipHorizontalButton.addEventListener('click', () => {
         this.handleFlip(true);
       });
+      flipHorizontalButton.addEventListener('click', this.saveDebounced);
 
       flipVerticalButton.addEventListener('click', () => {
         this.handleFlip(false);
       });
+      flipVerticalButton.addEventListener('click', this.saveDebounced);
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
@@ -791,13 +808,13 @@
       const cropperHandle = this.imageCaptureDiv.querySelector(
         '.js-cropper-container cropper-handle[action="move"]',
       );
-      const cropperCanvas = this.imageCaptureDiv.querySelector(
-        '.js-cropper-container cropper-canvas',
-      );
+      const cropperCanvas = this.cropper.getCropperCanvas();
+      const cropperSelection = this.cropper.getCropperSelection();
 
       this.ensureElementsExist({
         cropperHandle,
         cropperCanvas,
+        cropperSelection
       });
 
       if (!this.capturePreviewHeight) {
@@ -807,6 +824,8 @@
       }
       cropperCanvas.style.height = this.capturePreviewHeight + 'px';
       cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
+
+      cropperSelection.addEventListener('change', this.saveDebounced);
     }
 
     /**
@@ -934,6 +953,29 @@
         flippedX: false,
         flippedY: false,
       };
+    }
+
+    /** 
+     * Saves the current crop and rotation changes to the hidden input field.
+     * Ensures that pending crop/rotate changes or image captures are saved if the user
+     * submits without confirming them.
+     */
+    async saveCropRotateChangesToHiddenInput() {
+      console.log('Saving crop/rotate changes to hidden input...');
+      this.ensureCropperExists();
+
+      // Obtain the data URL of the image selection.
+      const selection = this.cropper.getCropperSelection();
+      let dataUrl;
+      try {
+        const canvas = await selection.$toCanvas();
+        dataUrl = canvas.toDataURL('image/jpeg');
+      } catch {
+        throw new Error('Failed to convert cropper selection to canvas');
+      }
+
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      hiddenCaptureInput.value = dataUrl;
     }
 
     async confirmCropRotateChanges() {
