@@ -1,28 +1,19 @@
 import { Fragment } from 'preact/jsx-runtime';
-import { z } from 'zod';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.js';
-import {
-  AssessmentAccessRuleSchema,
-  AssessmentInstanceSchema,
-  AssessmentSchema,
-  AssessmentSetSchema,
-} from '../../lib/db-types.js';
-
-export const StudentGradebookRowSchema = z.object({
-  assessment_id: AssessmentSchema.shape.id,
-  assessment_group_work: AssessmentSchema.shape.group_work,
-  title: z.string(),
-  assessment_set_heading: AssessmentSetSchema.shape.heading,
-  assessment_set_color: AssessmentSetSchema.shape.color,
-  label: z.string(),
-  assessment_instance_id: AssessmentInstanceSchema.shape.id,
-  assessment_instance_score_perc: AssessmentInstanceSchema.shape.score_perc,
-  show_closed_assessment_score: AssessmentAccessRuleSchema.shape.show_closed_assessment_score,
-  start_new_set: z.boolean(),
-});
-export type StudentGradebookRow = z.infer<typeof StudentGradebookRowSchema>;
+export interface StudentGradebookRow {
+  assessment_id: string;
+  assessment_instance_id: string;
+  assessment_group_work: boolean;
+  title: string;
+  assessment_set_heading: string;
+  assessment_set_color: string;
+  label: string;
+  assessment_instance_score_perc: number | null;
+  show_closed_assessment_score: boolean;
+  start_new_set: boolean;
+}
 
 export function StudentGradebook({
   resLocals,
