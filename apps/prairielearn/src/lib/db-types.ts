@@ -786,6 +786,70 @@ export const NewsItemSchema = z.object({
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
 
+// apps/prairielearn/src/sprocs/authz_course.sql
+export const PermissionsCourseSchema = z.object({
+  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+  has_course_permission_own: z.boolean(),
+  has_course_permission_edit: z.boolean(),
+  has_course_permission_view: z.boolean(),
+  has_course_permission_preview: z.boolean(),
+});
+export type PermissionsCourse = z.infer<typeof PermissionsCourseSchema>;
+
+// apps/prairielearn/src/sprocs/authz_course_instance.sql
+export const PermissionsCourseInstanceSchema = z.object({
+  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
+  has_course_instance_permission_view: z.boolean(),
+  has_course_instance_permission_edit: z.boolean(),
+  has_student_access: z.boolean(),
+  has_student_access_with_enrollment: z.boolean(),
+});
+export type PermissionsCourseInstance = z.infer<typeof PermissionsCourseInstanceSchema>;
+
+// apps/prairielearn/src/sprocs/check_assessment_access.sql
+const AuthzAssessmentAccessRuleSchema = z.object({
+  credit: z.union([z.string(), z.literal('None')]),
+  time_limit_min: z.union([z.string(), z.literal('—')]),
+  start_date: z.union([z.string(), z.literal('—')]),
+  end_date: z.union([z.string(), z.literal('—')]),
+  mode: EnumModeSchema,
+  active: z.boolean(),
+});
+
+// apps/prairielearn/src/sprocs/authz_assessment.sql
+export const AuthzAssessmentSchema = z.object({
+  authorized: z.boolean(),
+  exam_access_end: DateFromISOString.nullable(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  time_limit_min: z.number().nullable(),
+  password: z.string().nullable(),
+  mode: EnumModeSchema,
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  active: z.boolean(),
+  next_active_time: z.string().nullable(),
+  access_rules: z.array(AuthzAssessmentAccessRuleSchema),
+});
+
+// apps/prairielearn/src/sprocs/authz_assessment_instance.sql
+export const AuthzAssessmentInstanceSchema = z.object({
+  authorized: z.boolean(),
+  authorized_edit: z.boolean(),
+  exam_access_end: DateFromISOString.nullable(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  time_limit_min: z.number().nullable(),
+  time_limit_expired: z.boolean(),
+  password: z.string().nullable(),
+  mode: EnumModeSchema,
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  active: z.boolean(),
+  next_active_time: z.string().nullable(),
+  access_rules: z.array(AuthzAssessmentAccessRuleSchema),
+});
+
 export const PlanGrantSchema = z.object({
   course_instance_id: IdSchema.nullable(),
   created_at: DateFromISOString,
