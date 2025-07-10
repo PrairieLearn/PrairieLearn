@@ -54,7 +54,12 @@ onDocumentReady(() => {
         value !== generateAiGraderName('OutdatedRubric'),
     );
     humanGraders.sort();
-    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
+    return Object.fromEntries(
+      aiGraders
+        .concat(humanGraders)
+        .concat(['Nobody'])
+        .map((name) => [name, name]),
+    );
   };
 
   window.rubricItemsList = function () {
@@ -323,10 +328,13 @@ onDocumentReady(() => {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
                 } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else if (text === 'nobody') {
+                  return value.trim() === '';
                 } else {
                   return value.toLowerCase().includes(text);
                 }
               },
+              sortable: true,
             }
           : {
               field: 'last_grader',
@@ -430,6 +438,16 @@ onDocumentReady(() => {
             // Make a appear in the end regardless of sort order
             return 1;
           }
+        });
+      } else if (sortName === 'ai_graded') {
+        const aiGradingStatusOrder = { Graded: 1, LatestRubric: 2, OutdatedRubric: 1, None: 0 };
+        data.sort(function (a, b) {
+          const aOrder = aiGradingStatusOrder[a.ai_grading_status];
+          const bOrder = aiGradingStatusOrder[b.ai_grading_status];
+          if (aOrder !== bOrder) {
+            return (aOrder - bOrder) * order;
+          }
+          return (a.last_human_grader ?? '').localeCompare(b.last_human_grader ?? '') * order;
         });
       } else {
         (data as any[]).sort(function (a, b) {
