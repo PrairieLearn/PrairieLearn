@@ -53,7 +53,7 @@ export function InstructorAssessmentQuestionsTable({
   questions: AssessmentQuestionRow[];
   assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;

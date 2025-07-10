@@ -1,8 +1,8 @@
 import { type z } from 'zod';
 
 import {
-  AssessmentQuestionSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
+  AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
@@ -95,6 +95,10 @@ export const StudentAssessmentSetSchema =
   RawStudentAssessmentSetSchema.brand<'StudentAssessmentSet'>();
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
+/** Assessment Questions */
+
+export const StaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
+
 /** Courses */
 
 export const RawStaffCourseSchema = RawCourseSchema.pick({
@@ -182,8 +186,3 @@ const RawStudentUserSchema = RawStaffUserSchema.pick({
 });
 export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;
-
-// While there are not currently any changes to the structure between StaffAssessmentQuestionSchema
-// and AssessmentQuestionSchema, we are maintaining consistency with our naming conventions
-// for safe types.
-export const StaffAssessmentQuestionSchema = AssessmentQuestionSchema;
