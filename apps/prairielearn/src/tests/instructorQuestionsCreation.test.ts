@@ -250,8 +250,6 @@ describe('Creating a question', () => {
 
     assert.equal(createQuestionResponse.status, 200);
 
-    console.log(createQuestionResponse.$('main').html());
-
     assert.equal(
       createQuestionResponse.url,
       `${siteUrl}/pl/course_instance/1/instructor/question/5/preview`,
