@@ -9,8 +9,8 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
+import * as url from 'node:url';
 import * as util from 'node:util';
-import * as url from 'url';
 
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -574,16 +574,20 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzCourseOrInstance.js')).default,
   );
 
-  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
-  // or `autoEnroll` middlewares so that we can render it even when the student
-  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
   if (isEnterprise()) {
-    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
-    // below so that we can render it even when the student isn't enrolled in the
-    // course instance.
+    // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+    // or `autoEnroll` middlewares so that we can render it even when the student
+    // isn't enrolled in the course instance or doesn't have the necessary plan grants.
     app.use('/pl/course_instance/:course_instance_id(\\d+)/upgrade', [
       (await import('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade.js'))
         .default,
+    ]);
+
+    // This must come after `authzCourseOrInstance` but before the `requireLinkedLtiUser`
+    // middleware so that it can render it even if that middleware would otherwise
+    // forbid access.
+    app.use('/pl/course_instance/:course_instance_id(\\d+)/lti_linking_required', [
+      (await import('./ee/pages/linkedLtiUserRequired/linkedLtiUserRequired.js')).default,
     ]);
   }
 
@@ -591,6 +595,9 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
+    await enterpriseOnly(
+      async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
+    ),
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
