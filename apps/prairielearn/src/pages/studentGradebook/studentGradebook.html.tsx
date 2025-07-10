@@ -2,6 +2,7 @@ import { Fragment } from 'preact/jsx-runtime';
 
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.js';
+
 export interface StudentGradebookRow {
   assessment_id: string;
   assessment_instance_id: string;
