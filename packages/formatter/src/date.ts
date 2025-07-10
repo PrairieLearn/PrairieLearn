@@ -270,10 +270,8 @@ function formatDateFriendlyParts(
   let timeFormatted = '';
   if (parts.minute.value === '00' && parts.second.value === '00') {
     timeFormatted = `${parts.hour.value}`;
-  } else if (parts.second.value === '00') {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}`;
   } else {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
+    timeFormatted = `${parts.hour.value}:${parts.minute.value}`;
   }
   // add the am/pm part
   timeFormatted = `${timeFormatted}${parts.dayPeriod.value.toLowerCase()}`;
