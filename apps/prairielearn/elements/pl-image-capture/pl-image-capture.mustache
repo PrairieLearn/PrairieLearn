@@ -145,26 +145,28 @@ $(function() {
         <br/>
         Later, you can crop or rotate the image as needed.
       </p>
-      <button 
-        type="button"
-        class="js-cancel-local-camera-confirmation-button btn btn-secondary"
-      >
-        Cancel
-      </button>
-      <button 
-        type="button"
-        class="js-retake-local-camera-image-button btn btn-secondary"
-      >
-        <i class="bi bi-arrow-counterclockwise me-1"></i>
-        Retake
-      </button>
-      <button 
-        type="button" 
-        class="js-confirm-local-camera-image-button btn btn-info"
-      >
-        <i class="bi bi-check2 me-1"></i>
-        Use image
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <button 
+          type="button"
+          class="js-cancel-local-camera-confirmation-button btn btn-secondary"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button"
+          class="js-retake-local-camera-image-button btn btn-secondary"
+        >
+          <i class="bi bi-arrow-counterclockwise me-1"></i>
+          Retake
+        </button>
+        <button 
+          type="button" 
+          class="js-confirm-local-camera-image-button btn btn-info"
+        >
+          <i class="bi bi-check2 me-1"></i>
+          Use image
+        </button>
+      </div>
     </div>
   </div>
   <div class="js-crop-rotate-container d-none">
@@ -175,18 +177,19 @@ $(function() {
       <div class="d-flex align-items-center gap-2">
         <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
           Rotation: 
-        </p>
+        </label>
         <input 
           id="rotation-slider-{{uuid}}"
           type="range" 
           class="js-rotation-slider form-range mx-2" 
-          style="max-width: 200px;" 
+          style="max-width: 200px; min-width: 100px;" 
           min="-45" 
           max="45" 
           step="1" 
           value="0"
         />  
-
+      </div>
+      <div class="d-flex align-items-center gap-2">
         <button 
           type="button"
           class="js-rotate-clockwise-button btn btn-light border"
@@ -197,7 +200,6 @@ $(function() {
         >
           <i class="bi bi-arrow-clockwise"></i>
         </button>
-
         <button 
           type="button"
           class="js-rotate-counterclockwise-button btn btn-light border"
@@ -230,7 +232,7 @@ $(function() {
           <i class="bi bi-symmetry-horizontal"></i>
         </button>
       </div>
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
         <button 
           type="button"
           class="js-cancel-crop-rotate-button btn btn-secondary"
