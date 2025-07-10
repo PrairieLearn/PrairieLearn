@@ -7,6 +7,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
+import { Hydrate } from '../../lib/preact.js';
 
 import { StudentDetail, UserDetailSchema } from './studentDetail.html.js';
 
@@ -54,7 +55,9 @@ router.get(
           subPage: 'gradebook',
         },
         content: (
-          <StudentDetail gradebookRows={gradebookRows} student={student} urlPrefix={urlPrefix} />
+          <Hydrate>
+            <StudentDetail gradebookRows={gradebookRows} student={student} urlPrefix={urlPrefix} />
+          </Hydrate>
         ),
       }),
     );

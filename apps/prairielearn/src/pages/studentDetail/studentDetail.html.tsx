@@ -158,3 +158,5 @@ export function StudentDetail({ gradebookRows, student, urlPrefix }: StudentDeta
     </div>
   );
 }
+
+StudentDetail.displayName = 'StudentDetail';
