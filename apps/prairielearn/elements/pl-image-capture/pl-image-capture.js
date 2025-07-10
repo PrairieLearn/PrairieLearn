@@ -376,7 +376,7 @@
         },
       );
 
-      socket.on('externalImageCapture', (msg) => {
+      socket.on('externalImageCapture', async (msg) => {
         this.loadCapturePreview({
           data: msg.file_content,
           type: 'image/jpeg',
@@ -414,7 +414,7 @@
           // We discard any pending changes or captured images and show the capture preview, since
           // the user's most recent action was to capture an image externally.
           if (this.selectedContainerName === 'crop-rotate') {
-            this.revertToPreviousCropRotateState();
+            await this.revertToPreviousCropRotateState();
           }
           this.openContainer('capture-preview');
         }
@@ -532,7 +532,7 @@
           }
         }
         this.showCropRotateButton();
-      }
+      } 
     }
 
     loadCapturePreviewFromBlob(blob) {
@@ -1013,9 +1013,20 @@
       this.openContainer('capture-preview');
     }
 
-    revertToPreviousCropRotateState() {
+    async revertToPreviousCropRotateState() {
       this.ensureCropperExists();
 
+      // Set the hidden state to the original capture.
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
+
+      this.ensureElementsExist({
+        hiddenCaptureInput,
+        capturePreviewImg,
+      });
+
+      hiddenCaptureInput.value = capturePreviewImg.src;
+      
       if (!this.previousCropRotateState) {
         this.resetCropRotate();
         return;
@@ -1048,10 +1059,10 @@
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    cancelCropRotate() {
+    async cancelCropRotate() {
       this.ensureCropperExists();
 
-      this.revertToPreviousCropRotateState();
+      await this.revertToPreviousCropRotateState();
       this.openContainer('capture-preview');
     }
   }
