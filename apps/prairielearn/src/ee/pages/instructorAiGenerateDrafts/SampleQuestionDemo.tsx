@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import ButtonOriginal from 'react-bootstrap/Button';
 import CardOriginal from 'react-bootstrap/Card';
 import CardBodyOriginal from 'react-bootstrap/CardBody';
