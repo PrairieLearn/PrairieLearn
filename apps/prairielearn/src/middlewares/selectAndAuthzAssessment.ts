@@ -1,15 +1,16 @@
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
 
-import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 import {
-  AssessmentSetSchema,
   AssessmentModuleSchema,
   AssessmentSchema,
+  AssessmentSetSchema,
   AuthzAssessmentSchema,
 } from '../lib/db-types.js';
-import z from 'zod';
+
+import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

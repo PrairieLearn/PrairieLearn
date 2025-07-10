@@ -1,9 +1,10 @@
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+
 import { AssessmentQuestionSchema, QuestionSchema } from '../lib/db-types.js';
-import z from 'zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

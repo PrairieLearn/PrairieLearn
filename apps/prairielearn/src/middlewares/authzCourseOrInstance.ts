@@ -2,6 +2,7 @@ import { isValid, parseISO } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -9,20 +10,19 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
-import { features } from '../lib/features/index.js';
-import { idsEqual } from '../lib/id.js';
-import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 import {
   CourseInstanceSchema,
-  PermissionsCourseSchema,
   CourseSchema,
   EnumModeReasonSchema,
   EnumModeSchema,
   InstitutionSchema,
-  UserSchema,
   PermissionsCourseInstanceSchema,
+  PermissionsCourseSchema,
+  UserSchema,
 } from '../lib/db-types.js';
-import z from 'zod';
+import { features } from '../lib/features/index.js';
+import { idsEqual } from '../lib/id.js';
+import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');

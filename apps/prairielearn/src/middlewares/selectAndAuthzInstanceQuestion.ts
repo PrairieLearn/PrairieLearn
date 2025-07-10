@@ -1,23 +1,23 @@
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 import {
   AssessmentInstanceSchema,
-  AssessmentSchema,
   AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
   FileSchema,
   GroupSchema,
   InstanceQuestionSchema,
-  QuestionSchema,
-  AssessmentSetSchema,
   PermissionsCourseInstanceSchema,
+  QuestionSchema,
   UserSchema,
 } from '../lib/db-types.js';
-import z from 'zod';
+import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
