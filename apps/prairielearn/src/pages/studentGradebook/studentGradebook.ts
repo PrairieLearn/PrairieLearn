@@ -8,19 +8,19 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
 
-import {
-  type Assessment,
-  type AssessmentInstance,
-  AssessmentInstanceSchema,
-  AssessmentSchema,
-  type AssessmentSet,
-  AssessmentSetSchema,
-  CourseInstanceSchema,
-} from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
+import {
+  StudentAssessmentInstanceSchema,
+  StudentAssessmentSchema,
+  StudentAssessmentSetSchema,
+  StudentCourseInstanceSchema,
+  type StudentAssessment,
+  type StudentAssessmentInstance,
+  type StudentAssessmentSet,
+} from '../../lib/client/safe-db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -31,16 +31,19 @@ function buildCsvFilename(locals: Record<string, any>) {
 
 // Define new row schema for the new SQL structure
 const StudentGradebookRowSchema = z.object({
-  assessment: AssessmentSchema,
-  assessment_instance: AssessmentInstanceSchema,
-  assessment_set: AssessmentSetSchema,
-  course_instance: CourseInstanceSchema,
+  assessment: StudentAssessmentSchema,
+  assessment_instance: StudentAssessmentInstanceSchema,
+  assessment_set: StudentAssessmentSetSchema,
+  course_instance: StudentCourseInstanceSchema,
   show_closed_assessment_score: z.boolean(),
 });
 
 type StudentGradebookRowRaw = z.infer<typeof StudentGradebookRowSchema>;
 
-function computeTitle(assessment: Assessment, assessment_instance: AssessmentInstance) {
+function computeTitle(
+  assessment: StudentAssessment,
+  assessment_instance: StudentAssessmentInstance,
+) {
   if (assessment.multiple_instance) {
     return `${assessment.title} instance #${assessment_instance.number}`;
   }
@@ -48,9 +51,9 @@ function computeTitle(assessment: Assessment, assessment_instance: AssessmentIns
 }
 
 function computeLabel(
-  assessment: Assessment,
-  assessment_instance: AssessmentInstance,
-  assessment_set: AssessmentSet,
+  assessment: StudentAssessment,
+  assessment_instance: StudentAssessmentInstance,
+  assessment_set: StudentAssessmentSet,
 ) {
   if (assessment.multiple_instance) {
     return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
