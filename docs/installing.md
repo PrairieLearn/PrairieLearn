@@ -4,15 +4,15 @@ This page describes the procedure to install and run your course locally within 
 
 ## Why run PrairieLearn locally?
 
-PrairieLearn provides an online interface to create and update questions with a browser interface. While this interface is suitable for simpler questions, it is not designed to properly handle more complex cases such as:
+PrairieLearn provides an online interface to create and update questions with a browser interface. While this interface is suitable for simpler questions, it is not ideal for complex cases such as:
 
-- Questions using [code autograding](externalGrading.md);
-- Questions using [workspaces](workspaces/index.md);
-- Questions that involve a significant number of [images, documents and other files](clientServerFiles.md);
-- Questions using [custom Python libraries](questionRuntime/index.md#installing-libraries-in-your-course) in the generation and/or grading process;
-- Custom [elements](devElements.md) or [element extensions](elementExtensions.md).
+- Questions using [code autograding](externalGrading.md)
+- Questions using [workspaces](workspaces/index.md)
+- Questions that involve a significant number of [images, documents and other files](clientServerFiles.md)
+- Questions using [custom Python libraries](questionRuntime/index.md#installing-libraries-in-your-course) in the generation and/or grading process
+- Custom [elements](devElements.md) or [element extensions](elementExtensions.md)
 
-For such cases, using the course repository and maintaining/testing it in a local installation simplifies the process of updating the course content. Additionally, using this workflow allows instructors to test changes in the question code or assessment configuration without affecting the student experience. It also allows courses with several staff members to more easily collaborate and coordinate changes using [Git workflows](https://git-scm.com/book/en/v2/Distributed-Git-Distributed-Workflows) and [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+Using the course repository with a local installation simplifies the process of updating the course content. This workflow allows instructors to test changes in the question code or assessment configuration without affecting the student experience. It also helps courses with multiple staff members to collaborate and coordinate changes using [Git workflows](https://git-scm.com/book/en/v2/Distributed-Git-Distributed-Workflows) and [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
 
 ## Installation instructions
 
