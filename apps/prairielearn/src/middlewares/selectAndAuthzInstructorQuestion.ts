@@ -5,23 +5,28 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { QuestionSchema, TopicSchema } from '../lib/db-types.js';
+import {
+  QuestionSchema,
+  TopicSchema,
+  AssessmentsFormatForQuestionSchema,
+  TagsForQuestionSchema,
+} from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SelectAndAuthSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: z.array(z.string()),
-  open_issue_count: z.number(),
+  tags: TagsForQuestionSchema,
+  open_issue_count: z.string(),
 });
 
 const SelectAndAuthWithCourseInstanceSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: z.array(z.string()),
-  assessments: z.array(z.string()),
-  open_issue_count: z.number(),
+  tags: TagsForQuestionSchema,
+  assessments: AssessmentsFormatForQuestionSchema,
+  open_issue_count: z.string(),
 });
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {

@@ -48,7 +48,7 @@ const SelectAuthzDataSchema = z.object({
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
   institution: InstitutionSchema,
-  course_instance: CourseInstanceSchema,
+  course_instance: CourseInstanceSchema.nullable(),
   permissions_course: PermissionsCourseSchema,
   permissions_course_instance: PermissionsCourseInstanceSchema,
 });

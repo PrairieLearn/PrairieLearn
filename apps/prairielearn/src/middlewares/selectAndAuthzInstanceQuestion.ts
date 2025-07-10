@@ -10,10 +10,10 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  AuthzAssessmentInstanceSchema,
   FileSchema,
   GroupSchema,
   InstanceQuestionSchema,
-  PermissionsCourseInstanceSchema,
   QuestionSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -30,10 +30,10 @@ const InstanceQuestionInfoSchema = z.object({
     id: z.number(),
     sequence_locked: z.boolean(),
   }),
-  question_number: z.number(),
+  question_number: z.string(),
   advance_score_perc: z.number().nullable(),
   sequence_locked: z.boolean(),
-  instructor_question_number: z.number(),
+  instructor_question_number: z.string(),
 });
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
@@ -43,7 +43,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema,
   instance_role: z.string(),
-  instance_group: GroupSchema,
+  instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
   instance_question: InstanceQuestionSchema,
   instance_question_info: InstanceQuestionInfoSchema,
@@ -51,7 +51,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   question: QuestionSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: PermissionsCourseInstanceSchema,
+  authz_result: AuthzAssessmentInstanceSchema,
   assessment_instance_label: z.string(),
   file_list: z.array(FileSchema),
 });

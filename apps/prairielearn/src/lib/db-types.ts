@@ -20,6 +20,16 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
+// Result of tags_for_question sproc
+export const TagsForQuestionSchema = z.array(
+  z.object({
+    name: z.string(),
+    id: IdSchema,
+    color: z.string(),
+    description: z.string(),
+  }),
+);
+
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
 // *******************************************************************************
@@ -812,8 +822,8 @@ const AuthzAssessmentAccessRuleSchema = z.object({
   time_limit_min: z.union([z.string(), z.literal('—')]),
   start_date: z.union([z.string(), z.literal('—')]),
   end_date: z.union([z.string(), z.literal('—')]),
-  mode: EnumModeSchema,
-  active: z.boolean(),
+  mode: EnumModeSchema.nullable(),
+  active: z.union([z.literal(true), z.null()]),
 });
 
 // apps/prairielearn/src/sprocs/authz_assessment.sql
@@ -824,7 +834,7 @@ export const AuthzAssessmentSchema = z.object({
   credit_date_string: z.string().nullable(),
   time_limit_min: z.number().nullable(),
   password: z.string().nullable(),
-  mode: EnumModeSchema,
+  mode: EnumModeSchema.nullable(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
   active: z.boolean(),
@@ -842,7 +852,7 @@ export const AuthzAssessmentInstanceSchema = z.object({
   time_limit_min: z.number().nullable(),
   time_limit_expired: z.boolean(),
   password: z.string().nullable(),
-  mode: EnumModeSchema,
+  mode: EnumModeSchema.nullable(),
   show_closed_assessment: z.boolean(),
   show_closed_assessment_score: z.boolean(),
   active: z.boolean(),

@@ -7,7 +7,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SelectAssessmentsSchema = z.object({
   assessment_label: z.string(),
-  id: z.number(),
+  id: z.string(),
   title: z.string(),
 });
 
