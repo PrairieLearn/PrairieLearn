@@ -1375,6 +1375,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_start_from?: 'empty' | 'example' | 'course';
   private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
@@ -1383,6 +1384,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_start_from?: 'empty' | 'example' | 'course';
       template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
@@ -1396,6 +1398,7 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_start_from = params.template_start_from;
     this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
@@ -1461,12 +1464,15 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    if (this.template_qid) {
-      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+    if (this.template_start_from !== 'empty' && this.template_qid) {
+      const sourceQuestionsPath =
+        this.template_start_from === 'course'
+          ? questionsPath
+          : path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(sourceQuestionsPath, this.template_qid);
 
-      // Ensure that the template_qid folder path is fully contained in the example course questions directory
-      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+      // Ensure that the template_qid folder path is fully contained in the source course questions directory
+      if (!contains(sourceQuestionsPath, fromPath)) {
         throw new AugmentedError('Invalid folder path', {
           info: html`
             <p>The path of the template question folder</p>
@@ -1475,7 +1481,7 @@ export class QuestionAddEditor extends Editor {
             </div>
             <p>must be inside the root directory</p>
             <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+              <pre class="bg-dark text-white rounded p-2">${sourceQuestionsPath}</pre>
             </div>
           `,
         });

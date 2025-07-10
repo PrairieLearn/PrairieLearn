@@ -73,7 +73,7 @@ describe('Creating a question', () => {
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Question',
           qid: 'test-question',
-          start_from: 'Empty question',
+          start_from: 'empty',
         }),
       },
     );
@@ -99,7 +99,7 @@ describe('Creating a question', () => {
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
 
-  test.sequential('create a new template question', async () => {
+  test.sequential('create a new question from the example course templates', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
@@ -118,7 +118,7 @@ describe('Creating a question', () => {
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Random Graph',
           qid: 'test-random-graph',
-          start_from: 'Template',
+          start_from: 'example',
           template_qid: 'template/matrix-component-input/random-graph',
         }),
       },
@@ -132,7 +132,7 @@ describe('Creating a question', () => {
     );
   });
 
-  test.sequential('verify that the new template question has the correct info', async () => {
+  test.sequential('verify that the new question has the correct info', async () => {
     const questionLivePath = path.join(questionsLiveDir, 'test-random-graph');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
@@ -195,7 +195,7 @@ describe('Creating a question', () => {
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Question',
           qid: 'test-question',
-          start_from: 'Empty question',
+          start_from: 'empty',
         }),
       },
     );
@@ -234,7 +234,7 @@ describe('Creating a question', () => {
           __action: 'add_question',
           __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          start_from: 'Empty question',
+          start_from: 'empty',
         }),
       },
     );
@@ -288,7 +288,7 @@ describe('Creating a question', () => {
             orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
             title: 'New Test Question',
             qid: '../new-test-question',
-            start_from: 'Empty question',
+            start_from: 'empty',
           }),
         },
       );
@@ -317,7 +317,7 @@ describe('Creating a question', () => {
             orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
             title: 'New Test Question',
             qid: 'new-test-question',
-            start_from: 'Template',
+            start_from: 'example',
             template_qid: 'template/non-existent-template',
           }),
         },
@@ -351,7 +351,7 @@ describe('Creating a question', () => {
             orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
             title: 'New Test Question',
             qid: 'new-test-question',
-            start_from: 'Template',
+            start_from: 'example',
             template_qid: '../template/matrix-component-input/random-graph',
           }),
         },

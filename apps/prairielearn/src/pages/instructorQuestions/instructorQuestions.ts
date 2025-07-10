@@ -3,9 +3,11 @@ import * as url from 'node:url';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { config } from '../../lib/config.js';
@@ -13,55 +15,26 @@ import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
-import { loadQuestions } from '../../sync/course-db.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 
-let cachedTemplateQuestionOptions: { qid: string; title: string }[] | null = null;
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Get a list of template question qids and titles that can be used as starting points for new questions.
  */
-async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
-  if (!config.devMode) {
-    // Check if the template questions are cached
-    if (cachedTemplateQuestionOptions) {
-      return cachedTemplateQuestionOptions;
-    }
-  }
-
-  const questions = await loadQuestions({
-    coursePath: EXAMPLE_COURSE_PATH,
-    // We don't actually care about sharing settings here, but we do use shared
-    // questions in the example course, so we'll flag sharing as enabled.
-    sharingEnabled: true,
-  });
-
-  const templateQuestions: { qid: string; title: string }[] = [];
-
-  for (const [qid, question] of Object.entries(questions)) {
-    if (qid.startsWith('template/') && question?.data?.title) {
-      templateQuestions.push({ qid, title: question.data.title });
-    }
-  }
-
-  const sortedTemplateQuestionOptions = templateQuestions.sort((a, b) =>
-    a.title.localeCompare(b.title),
+async function getTemplateCourseQuestionOptions(course_id: string) {
+  return await queryRows(
+    sql.select_template_questions,
+    { course_id },
+    z.object({ example_course: z.boolean(), qid: z.string(), title: z.string() }),
   );
-
-  if (!config.devMode) {
-    // Cache the template questions
-    cachedTemplateQuestionOptions = sortedTemplateQuestionOptions;
-  }
-
-  return sortedTemplateQuestionOptions;
 }
 
 router.get(
@@ -95,7 +68,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateCourseQuestionOptions();
+    const templateQuestions = await getTemplateCourseQuestionOptions(res.locals.course.id);
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
@@ -185,7 +158,8 @@ router.post(
           `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-      if (req.body.start_from === 'Template' && !req.body.template_qid) {
+      const usesTemplate = ['example', 'course'].includes(req.body.start_from);
+      if (usesTemplate && !req.body.template_qid) {
         throw new error.HttpStatusError(400, 'template_qid is required');
       }
 
@@ -198,7 +172,8 @@ router.post(
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         qid: req.body.qid,
         title: req.body.title,
-        template_qid: req.body.start_from === 'Template' ? req.body.template_qid : undefined,
+        template_start_from: req.body.start_from,
+        template_qid: usesTemplate ? req.body.template_qid : undefined,
       });
 
       if (result.status === 'error') {
@@ -208,7 +183,7 @@ router.post(
 
       flash('success', 'Question created successfully.');
 
-      if (req.body.start_from === 'Template') {
+      if (usesTemplate) {
         res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/preview`);
       } else {
         res.redirect(

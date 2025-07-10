@@ -16,7 +16,7 @@ export const QuestionsPage = ({
   resLocals,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: { qid: string; title: string }[];
+  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
