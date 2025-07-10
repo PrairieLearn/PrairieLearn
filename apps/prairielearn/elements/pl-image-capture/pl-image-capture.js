@@ -523,6 +523,7 @@
       if (this.editable) {
         const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
         hiddenCaptureInput.value = dataUrl;
+        
 
         if (originalCapture) {
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
@@ -676,6 +677,13 @@
       this.openContainer('local-camera-confirmation');
 
       this.deactivateVideoStream();
+
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      this.ensureElementsExist({
+        hiddenCaptureInput,
+      });
+
+      hiddenCaptureInput.value = localCameraImagePreviewCanvas.toDataURL('image/jpeg');
     }
 
     async confirmLocalCameraCapture() {
@@ -708,6 +716,22 @@
     }
 
     cancelLocalCameraCapture() {
+      // Set the hidden state to the last captured image.
+
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      
+      this.ensureElementsExist({
+        hiddenCaptureInput
+      });
+      
+      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
+
+      if (capturePreviewImg) {
+        hiddenCaptureInput.value = capturePreviewImg.src;
+      } else {
+        hiddenCaptureInput.value = '';
+      }
+
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
       );
@@ -745,6 +769,21 @@
       });
 
       this.openContainer('capture-preview');
+
+      // Set the hidden state to the last captured image.
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      
+      this.ensureElementsExist({
+        hiddenCaptureInput
+      });
+      
+      const capturePreviewImg = this.imageCaptureDiv.querySelector('.js-uploaded-image-container .capture-preview');
+
+      if (capturePreviewImg) {
+        hiddenCaptureInput.value = capturePreviewImg.src;
+      } else {
+        hiddenCaptureInput.value = '';
+      }
     }
 
     /**
@@ -963,7 +1002,6 @@
      * submits without confirming them.
      */
     async saveCropRotateChangesToHiddenInput() {
-      console.log('Saving crop/rotate changes to hidden input...');
       this.ensureCropperExists();
 
       // Obtain the data URL of the image selection.
