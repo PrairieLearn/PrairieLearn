@@ -1,30 +1,9 @@
 -- BLOCK select_assessment_instances
 SELECT
-  a.id AS assessment_id,
-  a.group_work AS assessment_group_work,
-  CASE
-    WHEN a.multiple_instance THEN a.title || ' instance #' || ai.number
-    ELSE a.title
-  END AS title,
-  aset.heading AS assessment_set_heading,
-  aset.color AS assessment_set_color,
-  CASE
-    WHEN a.multiple_instance THEN aset.abbreviation || a.number || '#' || ai.number
-    ELSE aset.abbreviation || a.number
-  END AS label,
-  ai.id AS assessment_instance_id,
-  ai.score_perc AS assessment_instance_score_perc,
-  aa.show_closed_assessment_score,
-  (
-    lag(assessment_set_id) OVER (
-      PARTITION BY
-        aset.id
-      ORDER BY
-        a.order_by,
-        a.id,
-        ai.number
-    ) IS NULL
-  ) AS start_new_set
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ai.*) AS assessment_instance,
+  to_jsonb(aset.*) AS assessment_set,
+  aa.show_closed_assessment_score
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
