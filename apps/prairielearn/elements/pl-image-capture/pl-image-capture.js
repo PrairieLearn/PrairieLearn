@@ -231,6 +231,7 @@
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
           this.applyPendingChanges();
         }
       });
@@ -496,10 +497,6 @@
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .capture-preview',
       );
-
-      this.ensureElementsExist({
-        capturePreviewImg,
-      });
 
       this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
@@ -1017,11 +1014,13 @@
       let timeoutId;
 
       return () => {
+        console.log('Cropper selection changed, saving changes...');
         if (this.selectedContainerName !== 'crop-rotate') {
           return;
         }
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
+          console.log('Call function.')
           this.applyPendingChanges();
         }, 200);
       };
