@@ -64,7 +64,7 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleGenerateNewVariant = async () => {
+  const handleGenerateNewVariant = () => {
     // Clear the grade shown to the user
     setGrade(null);
 
