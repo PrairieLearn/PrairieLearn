@@ -3,7 +3,7 @@ const Preact = require('original-preact');
 const oldVnode = Preact.options.vnode;
 
 /**
- * Sets VNode `className` to `class`, enabling React-based libraries incompatible with the `class` prop, 
+ * Sets VNode `className` to `class`, enabling React-based libraries incompatible with the `class` prop,
  * particularly react-bootstrap, to receive and apply CSS classes from `class.`.
  */
 Preact.options.vnode = (vnode) => {
