@@ -16,7 +16,7 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/as
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
-
+import fs from 'fs';
 export function StudentInstanceQuestion({
   resLocals,
   userCanDeleteAssessmentInstance,
@@ -32,7 +32,11 @@ export function StudentInstanceQuestion({
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
-
+  // write resLocals to a file plus the current date and time
+  fs.writeFileSync(
+    `resLocals-${new Date().toISOString()}.json`,
+    JSON.stringify(resLocals, null, 2),
+  );
   return PageLayout({
     resLocals,
     pageTitle: '',
