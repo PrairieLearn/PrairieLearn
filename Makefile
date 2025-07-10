@@ -81,7 +81,7 @@ update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
-lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
+lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
@@ -105,6 +105,10 @@ lint-docker:
 	@hadolint ./graders/**/Dockerfile ./workspaces/**/Dockerfile ./images/**/Dockerfile Dockerfile
 lint-shell:
 	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
+lint-sql:
+	@sqlfluff lint
+lint-sql-migrations:
+	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 
