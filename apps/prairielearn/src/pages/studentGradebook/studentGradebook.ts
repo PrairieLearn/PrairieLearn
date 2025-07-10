@@ -53,7 +53,6 @@ function mapRow(
   raw: StudentGradebookRowRaw,
   prev: StudentGradebookRowRaw | null,
 ): StudentGradebookRow {
-  // true if this is the first row or assessment_set.id differs from previous
   const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
