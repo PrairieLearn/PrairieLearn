@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { type Issue, type User } from '../../../lib/db-types.js';
+import { DateFromISOString, type Issue, type User } from '../../../lib/db-types.js';
 
 import {
   AutoPointsSection,
@@ -62,7 +62,7 @@ export function GradingPanel({
       <input
         type="hidden"
         name="modified_at"
-        value="${resLocals.instance_question.modified_at.toISOString()}"
+        value="${DateFromISOString.parse(resLocals.instance_question.modified_at).toISOString()}"
       />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
