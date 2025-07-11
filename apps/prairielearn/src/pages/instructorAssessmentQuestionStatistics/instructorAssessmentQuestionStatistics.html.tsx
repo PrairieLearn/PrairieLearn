@@ -15,6 +15,7 @@ import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
+  TagSchema,
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
@@ -29,11 +30,14 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   qid: QuestionSchema.shape.qid,
   question_title: QuestionSchema.shape.title,
   topic: TopicSchema,
+  question_tags: z.array(TagSchema.shape.name),
   question_id: IdSchema,
   assessment_question_number: z.string(),
   alternative_group_number: AlternativeGroupSchema.shape.number,
+  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
   alternative_group_size: z.number(),
   zone_title: ZoneSchema.shape.title,
+  zone_number: ZoneSchema.shape.number,
   start_new_zone: z.boolean(),
   start_new_alternative_group: z.boolean(),
 });

@@ -66,10 +66,13 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
-  start_new_assessment_group: z.boolean(),
+  abbreviation: AssessmentSetSchema.shape.abbreviation,
+  name: AssessmentSetSchema.shape.name,
+  color: AssessmentSetSchema.shape.color,
+  label: z.string(),
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema,
-  label: z.string(),
+  start_new_assessment_group: z.boolean(),
   open_issue_count: z.coerce.number(),
 });
 export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
