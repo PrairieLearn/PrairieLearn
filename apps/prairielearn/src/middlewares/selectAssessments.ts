@@ -2,12 +2,13 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SelectAssessmentsSchema = z.strictObject({
   assessment_label: z.string(),
-  id: z.string(),
+  id: IdSchema,
   title: z.string(),
 });
 
