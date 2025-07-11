@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
@@ -146,11 +146,11 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(AssessmentQuestionHeaders({ question, nTableCols }))}
               <tr>
                 <td>
                   ${run(() => {
-                    const number = AssessmentQuestionNumber(question);
+                    const number = renderHtml(AssessmentQuestionNumber({ question }));
                     const issueBadge = IssueBadge({
                       urlPrefix,
                       count: question.open_issue_count ?? 0,
@@ -224,7 +224,7 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>
                   ${question.other_assessments?.map((assessment) =>
-                    AssessmentBadge({ urlPrefix, assessment }),
+                    AssessmentBadgeHtml({ urlPrefix, assessment }),
                   )}
                 </td>
                 <td class="text-end">

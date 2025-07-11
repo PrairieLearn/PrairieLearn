@@ -21,8 +21,7 @@ const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggl
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
 const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
 const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip =
-  TooltipOriginal as unknown as typeof TooltipOriginal.default as FunctionComponent<any>;
+const Tooltip = TooltipOriginal as unknown as FunctionComponent<any>;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { type FunctionComponent, render } from '@prairielearn/preact-cjs';
