@@ -225,6 +225,7 @@ describe('Database Schema Sync Test', () => {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
     const tables = Object.keys(data.tables);
+    const usedSchemas = new Set<string>();
     for (const tableName of tables) {
       // Skip PrairieTest tables
       if (tableName.startsWith('pt_')) {
@@ -235,6 +236,7 @@ describe('Database Schema Sync Test', () => {
       if (!schema) {
         throw new Error(`No schema found for table: ${tableName}`);
       }
+      usedSchemas.add(tableName);
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys(schema.shape);
       const extraColumns = _.difference(dbColumnNames, schemaKeys);
@@ -253,6 +255,13 @@ describe('Database Schema Sync Test', () => {
         //     missingColumnsDiff,
         // );
       }
+    }
+
+    const unusedSchemas = Object.keys(TABLE_SCHEMA_MAP).filter(
+      (schemaName) => !usedSchemas.has(schemaName),
+    );
+    if (unusedSchemas.length > 0) {
+      throw new Error(`Unused schemas: ${unusedSchemas.join(', ')}`);
     }
   });
 });
