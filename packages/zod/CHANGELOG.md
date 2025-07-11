@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.3.3
+
+### Patch Changes
+
+- 32e4f7b: Support passing in milliseconds into the IntervalSchema
+
 ## 1.3.2
 
 ### Patch Changes
