@@ -16,6 +16,7 @@ import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+import { HistMiniPreact } from '../../../components/HistMini.js';
 
 function Title({
   question,
@@ -190,15 +191,10 @@ export function InstructorAssessmentQuestionsTable({
                           : ''}
                       </td>
                       <td class="text-center">
-                        {question.number_submissions_hist ? (
-                          <div
-                            class="js-histmini"
-                            data-data={JSON.stringify(question.number_submissions_hist)}
-                            data-options={JSON.stringify({ width: 60, height: 20 })}
-                          ></div>
-                        ) : (
-                          ''
-                        )}
+                        <HistMiniPreact
+                          data={question.number_submissions_hist ?? []}
+                          options={{ width: 60, height: 20 }}
+                        />
                       </td>
                       <td>
                         {question.other_assessments?.map((assessment) => (
