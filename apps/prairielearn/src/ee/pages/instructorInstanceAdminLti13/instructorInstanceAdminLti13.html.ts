@@ -8,7 +8,7 @@ import { PageLayout } from '../../../components/PageLayout.html.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  type Lti13Assessments,
+  type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
@@ -97,7 +97,7 @@ export function InstructorInstanceAdminLti13({
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -216,7 +216,7 @@ function LinkedAssessments({
   resLocals: Record<string, any>;
   lms_name: string;
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessments[];
+  lineitems: Lti13Assessment[];
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -431,7 +431,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem(item: Lti13Assessments, timezone: string) {
+function LineItem(item: Lti13Assessment, timezone: string) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>

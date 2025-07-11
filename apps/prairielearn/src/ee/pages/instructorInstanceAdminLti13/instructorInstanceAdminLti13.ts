@@ -16,7 +16,7 @@ import {
 
 import {
   AssessmentSchema,
-  Lti13AssessmentsSchema,
+  Lti13AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
@@ -115,7 +115,7 @@ router.get(
     const lineitems = await queryRows(
       sql.select_lti13_assessments,
       { lti13_course_instance_id: instance.lti13_course_instance.id },
-      Lti13AssessmentsSchema,
+      Lti13AssessmentSchema,
     );
 
     res.send(
@@ -234,7 +234,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        Lti13AssessmentsSchema,
+        Lti13AssessmentSchema,
       );
 
       flash(

@@ -8,7 +8,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, LtiCredentialsSchema } from '../../lib/db-types.js';
+import { IdSchema, LtiCredentialSchema } from '../../lib/db-types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -49,7 +49,7 @@ router.post(
     const ltiResult = await sqldb.queryOptionalRow(
       sql.lookup_credential,
       { consumer_key: parameters.oauth_consumer_key },
-      LtiCredentialsSchema,
+      LtiCredentialSchema,
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
 
