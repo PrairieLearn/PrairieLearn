@@ -7,6 +7,7 @@ import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.html.js';
+import { HistMiniPreact } from '../../../components/HistMini.js';
 import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
 import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
@@ -16,7 +17,6 @@ import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
-import { HistMiniPreact } from '../../../components/HistMini.js';
 
 function Title({
   question,

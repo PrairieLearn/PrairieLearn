@@ -1,4 +1,6 @@
-import { Modal } from 'react-bootstrap';
+import ModalOriginal from 'react-bootstrap/Modal';
+
+const Modal = ModalOriginal as unknown as typeof ModalOriginal.default;
 
 export function ResetQuestionVariantsModal({
   csrfToken,
