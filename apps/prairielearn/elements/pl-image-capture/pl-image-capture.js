@@ -525,7 +525,6 @@
       }
 
       if (this.editable) {
-        console.log('Setting hidden capture input value');
         this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
@@ -1038,14 +1037,12 @@
      * Debounced by 200ms to avoid excessive updates while the user is making changes.
      */
     async saveCropperSelectionToHiddenInput() {
-      console.log('Save selection called!')
       if (this.selectedContainerName !== 'crop-rotate') {
         return;
       }
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
-      console.log('Save selection triggered!')
         await this.saveSelection();
       }, 200);
     }
@@ -1126,7 +1123,7 @@
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
-      
+
       await this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
