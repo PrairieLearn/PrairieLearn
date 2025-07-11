@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -635,7 +635,7 @@ function DeleteQuestionModal({
                   <li class="list-group-item">
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
-                      AssessmentBadge({
+                      AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
                         course_instance_id: a_with_q.course_instance_id,
                         assessment,
