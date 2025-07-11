@@ -1,24 +1,83 @@
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  AssessmentInstanceSchema,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  AuthzAssessmentInstanceSchema,
+  FileSchema,
+  GroupSchema,
+  InstanceQuestionSchema,
+  NextAllowedGradeSchema,
+  QuestionSchema,
+  UserSchema,
+} from '../lib/db-types.js';
 import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  const result = await sqldb.queryAsync(sql.select_and_auth, {
-    instance_question_id: req.params.instance_question_id,
-    assessment_id: req.params.assessment_id,
-    course_instance_id: res.locals.course_instance.id,
-    authz_data: res.locals.authz_data,
-    req_date: res.locals.req_date,
-  });
-  if ((result.rowCount ?? 0) === 0) throw new error.HttpStatusError(403, 'Access denied');
+const InstanceQuestionInfoSchema = z.object({
+  id: z.number(),
+  prev_instance_question: z.object({
+    id: z.number().nullable(),
+  }),
+  next_instance_question: z.object({
+    id: z.number().nullable(),
+    sequence_locked: z.boolean().nullable(),
+  }),
+  question_number: z.string(),
+  advance_score_perc: z.number().nullable(),
+  sequence_locked: z.boolean(),
+  instructor_question_number: z.string(),
+});
 
-  Object.assign(res.locals, result.rows[0]);
+const SelectAndAuthzInstanceQuestionSchema = z.strictObject({
+  assessment_instance: z.strictObject({
+    formatted_date: z.string(),
+    ...AssessmentInstanceSchema.shape,
+  }),
+  assessment_instance_remaining_ms: z.number().nullable(),
+  assessment_instance_time_limit_ms: z.number().nullable(),
+  assessment_instance_time_limit_expired: z.boolean(),
+  instance_user: z.strictObject(UserSchema.shape).nullable(),
+  instance_role: z.string(),
+  instance_group: z.strictObject(GroupSchema.shape).nullable(),
+  instance_group_uid_list: z.array(z.string()),
+  instance_question: z.strictObject({
+    ...NextAllowedGradeSchema.shape,
+    ...InstanceQuestionSchema.shape,
+  }),
+  instance_question_info: z.strictObject(InstanceQuestionInfoSchema.shape),
+  assessment_question: z.strictObject(AssessmentQuestionSchema.shape),
+  question: z.strictObject(QuestionSchema.shape),
+  assessment: z.strictObject(AssessmentSchema.shape),
+  assessment_set: z.strictObject(AssessmentSetSchema.shape),
+  authz_result: z.strictObject(AuthzAssessmentInstanceSchema.shape),
+  assessment_instance_label: z.string(),
+  file_list: z.array(z.strictObject(FileSchema.shape)),
+});
+
+export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
+  const row = await sqldb.queryOptionalRow(
+    sql.select_and_auth,
+    {
+      instance_question_id: req.params.instance_question_id,
+      assessment_id: req.params.assessment_id,
+      course_instance_id: res.locals.course_instance.id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+    },
+    SelectAndAuthzInstanceQuestionSchema,
+  );
+  if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  Object.assign(res.locals, row);
   if (res.locals.assessment.group_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(

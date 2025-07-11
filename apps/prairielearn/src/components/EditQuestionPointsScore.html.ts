@@ -21,7 +21,7 @@ export function EditQuestionPointsScoreButton({
   csrfToken,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
-  instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
+  instance_question: InstanceQuestion;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
@@ -57,7 +57,7 @@ function EditQuestionPointsScoreForm({
   csrfToken,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
-  instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
+  instance_question: InstanceQuestion;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
@@ -91,7 +91,11 @@ function EditQuestionPointsScoreForm({
       <input type="hidden" name="__action" value="edit_question_points" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="instance_question_id" value="${instance_question.id}" />
-      <input type="hidden" name="modified_at" value="${instance_question.modified_at.toString()}" />
+      <input
+        type="hidden"
+        name="modified_at"
+        value="${instance_question.modified_at.toISOString()}"
+      />
       <div class="mb-3">
         <div class="input-group">
           <input

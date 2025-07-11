@@ -59,7 +59,11 @@ export function GradingPanel({
       data-rubric-min-points="${resLocals.rubric_data?.min_points}"
     >
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      <input type="hidden" name="modified_at" value="${resLocals.instance_question.modified_at}" />
+      <input
+        type="hidden"
+        name="modified_at"
+        value="${resLocals.instance_question.modified_at.toISOString()}"
+      />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
         ${resLocals.assessment_question.max_points
