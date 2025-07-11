@@ -15,7 +15,6 @@ WITH
   )
 SELECT
   iq.*,
-  iq.modified_at AS modified_at,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,

@@ -8,7 +8,7 @@ import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPoin
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -235,7 +235,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Score</th>
                 <td class="align-middle" style="width: 20%;">
-                  ${Scorebar(resLocals.assessment_instance.score_perc)}
+                  ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
                 </td>
                 <td class="align-middle" style="width: 100%;">
                   ${resLocals.authz_data.has_course_instance_permission_edit
@@ -422,7 +422,7 @@ export function InstructorAssessmentInstance({
                         : ''}
                     </td>
                     <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
-                      ${Scorebar(instance_question.score_perc)}
+                      ${ScorebarHtml(instance_question.score_perc)}
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
