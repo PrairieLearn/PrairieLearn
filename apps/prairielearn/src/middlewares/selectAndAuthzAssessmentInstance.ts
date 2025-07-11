@@ -18,22 +18,22 @@ import {
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SelectAndAuthzAssessmentInstanceSchema = z.strictObject({
-  assessment_instance: z.object({
+  assessment_instance: z.strictObject({
     ...AssessmentInstanceSchema.shape,
     formatted_date: z.string(),
   }),
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
-  instance_user: UserSchema.nullable(),
+  instance_user: z.strictObject(UserSchema.shape).nullable(),
   instance_role: z.string(),
-  assessment: AssessmentSchema,
-  assessment_set: AssessmentSetSchema,
-  authz_result: AuthzAssessmentInstanceSchema,
+  assessment: z.strictObject(AssessmentSchema.shape),
+  assessment_set: z.strictObject(AssessmentSetSchema.shape),
+  authz_result: z.strictObject(AuthzAssessmentInstanceSchema.shape),
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
-  file_list: z.array(FileSchema),
-  instance_group: GroupSchema.nullable(),
+  file_list: z.array(z.strictObject(FileSchema.shape)),
+  instance_group: z.strictObject(GroupSchema.shape).nullable(),
   instance_group_uid_list: z.array(z.string()),
 });
 

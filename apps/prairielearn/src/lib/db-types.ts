@@ -11,7 +11,7 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 
 // Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
-  z.object({
+  z.strictObject({
     label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
@@ -22,7 +22,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
 
 // Result of tags_for_question sproc
 export const TagsForQuestionSchema = z.array(
-  z.object({
+  z.strictObject({
     name: z.string(),
     id: IdSchema,
     color: z.string(),
@@ -31,7 +31,7 @@ export const TagsForQuestionSchema = z.array(
 );
 
 // Result of instance_questions_next_allowed_grade sproc
-export const NextAllowedGradeSchema = z.object({
+export const NextAllowedGradeSchema = z.strictObject({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_interval: z.string(),

@@ -46,16 +46,16 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
 const SelectAuthzDataSchema = z.strictObject({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
-  course: CourseSchema,
-  institution: InstitutionSchema,
-  course_instance: CourseInstanceSchema.nullable(),
-  permissions_course: PermissionsCourseSchema,
-  permissions_course_instance: PermissionsCourseInstanceSchema,
+  course: z.strictObject(CourseSchema.shape),
+  institution: z.strictObject(InstitutionSchema.shape),
+  course_instance: z.strictObject(CourseInstanceSchema.shape).nullable(),
+  permissions_course: z.strictObject(PermissionsCourseSchema.shape),
+  permissions_course_instance: z.strictObject(PermissionsCourseInstanceSchema.shape),
 });
 
 const SelectUserSchema = z.strictObject({
-  user: UserSchema,
-  institution: InstitutionSchema,
+  user: z.strictObject(UserSchema.shape),
+  institution: z.strictObject(InstitutionSchema.shape),
   is_administrator: z.boolean(),
   is_instructor: z.boolean(),
 });

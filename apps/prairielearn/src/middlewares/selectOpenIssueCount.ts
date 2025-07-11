@@ -11,7 +11,7 @@ export default asyncHandler(async (req, res, next) => {
     {
       course_id: res.locals.course.id,
     },
-    z.object({
+    z.strictObject({
       count: z.number(),
     }),
   );

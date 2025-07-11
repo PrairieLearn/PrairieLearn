@@ -15,10 +15,10 @@ import { AccessDenied } from './selectAndAuthzAssessment.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const SelectAndAuthzAssessmentSchema = z.strictObject({
-  assessment: AssessmentSchema,
-  assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  authz_result: AuthzAssessmentSchema,
+  assessment: z.strictObject(AssessmentSchema.shape),
+  assessment_set: z.strictObject(AssessmentSetSchema.shape),
+  assessment_module: z.strictObject(AssessmentModuleSchema.shape),
+  authz_result: z.strictObject(AuthzAssessmentSchema.shape),
   assessment_label: z.string(),
 });
 
