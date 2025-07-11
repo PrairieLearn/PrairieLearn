@@ -1464,7 +1464,9 @@ export const WorkspaceHostLogSchema = z.object({
   date: DateFromISOString,
   id: IdSchema,
   message: z.string().nullable(),
-  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']).nullable(),
+  state: z
+    .enum(['launching', 'ready', 'draining', 'unhealthy', 'terminating', 'terminated'])
+    .nullable(),
   workspace_host_id: IdSchema,
   version: z.string(),
   workspace_id: IdSchema,
