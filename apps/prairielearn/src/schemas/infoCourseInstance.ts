@@ -8,6 +8,9 @@ const AccessRuleJsonSchema = z
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
       .describe('DEPRECATED -- do not use.')
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     uids: z
       .array(z.string())
@@ -38,14 +41,27 @@ export const CourseInstanceJsonSchema = z
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     longName: z.string().describe("The long name of this course instance (e.g., 'Spring 2015')."),
-    shortName: z.string().describe('DEPRECATED -- do not use.').optional(),
+    shortName: z
+      .string()
+      .describe('DEPRECATED -- do not use.')
+      .meta({
+        deprecated: true,
+      })
+      .optional(),
     timezone: z
       .string()
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
       .optional(),
-    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
+    allowIssueReporting: z
+      .boolean()
+      .describe('DEPRECATED -- do not use.')
+      .meta({
+        deprecated: true,
+      })
+      .optional()
+      .default(true),
     hideInEnrollPage: z
       .boolean()
       .describe(
@@ -53,7 +69,14 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
-    userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
+    userRoles: z
+      .object({})
+      .catchall(z.any())
+      .describe('DEPRECATED -- do not use.')
+      .meta({
+        deprecated: true,
+      })
+      .optional(),
     allowAccess: AccessControlJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
@@ -71,7 +94,10 @@ export const CourseInstanceJsonSchema = z
       .default(false),
   })
 
-  .describe('The specification file for a course instance.');
+  .describe('The specification file for a course instance.')
+  .meta({
+    title: 'Course instance information',
+  });
 
 export type CourseInstanceJson = z.infer<typeof CourseInstanceJsonSchema>;
 export type CourseInstanceJsonInput = z.input<typeof CourseInstanceJsonSchema>;

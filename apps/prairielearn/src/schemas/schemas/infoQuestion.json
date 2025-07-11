@@ -165,20 +165,20 @@
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .js file located in /public/javascripts.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this question from /node_modules.",
@@ -302,11 +302,11 @@
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         }
       }
     },

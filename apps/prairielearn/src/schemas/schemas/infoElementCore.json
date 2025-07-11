@@ -32,20 +32,20 @@
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .css file located in /public/stylesheets.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "coreScripts": {
           "description": "[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.",
           "type": "array",
+          "deprecated": true,
           "items": {
             "description": "A .js file located in /public/javascripts.",
             "type": "string"
-          },
-          "deprecated": true
+          }
         },
         "nodeModulesStyles": {
           "description": "The styles required by this element from /node_modules.",

@@ -127,20 +127,20 @@
     "canSubmit": {
       "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
       "type": "array",
+      "uniqueItems": true,
       "default": [],
       "items": {
         "type": "string"
-      },
-      "uniqueItems": true
+      }
     },
     "canView": {
       "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
       "type": "array",
+      "uniqueItems": true,
       "default": [],
       "items": {
         "type": "string"
-      },
-      "uniqueItems": true
+      }
     },
     "studentGroupCreate": {
       "description": "Whether students can create groups.",
@@ -237,8 +237,8 @@
         "role": {
           "description": "DEPRECATED -- do not use.",
           "type": "string",
-          "enum": ["Student", "TA", "Instructor"],
-          "deprecated": true
+          "deprecated": true,
+          "enum": ["Student", "TA", "Instructor"]
         },
         "uids": {
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
@@ -306,12 +306,12 @@
         },
         "comments": {
           "description": "DEPRECATED -- do not use.",
+          "deprecated": true,
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"
             }
-          ],
-          "deprecated": true
+          ]
         },
         "maxPoints": {
           "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
@@ -350,22 +350,20 @@
           "minimum": 0
         },
         "canSubmit": {
-          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
+          "uniqueItems": true,
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          }
         },
         "canView": {
-          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
           "type": "array",
+          "uniqueItems": true,
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true,
-          "default": []
+          }
         }
       }
     },
@@ -470,20 +468,20 @@
         "canSubmit": {
           "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
           "type": "array",
+          "uniqueItems": true,
           "default": [],
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true
+          }
         },
         "canView": {
           "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
           "type": "array",
+          "uniqueItems": true,
           "default": [],
           "items": {
             "type": "string"
-          },
-          "uniqueItems": true
+          }
         }
       }
     },

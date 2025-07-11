@@ -9,12 +9,18 @@ const DependencyJsonSchema = z
       .describe(
         '[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -72,6 +78,9 @@ export const ElementExtensionJsonSchema = z
       .optional(),
   })
 
-  .describe('Info files for v3 element extensions.');
+  .describe('Info files for v3 element extensions.')
+  .meta({
+    title: 'Element Extension Info',
+  });
 
 export type ElementExtensionJson = z.infer<typeof ElementExtensionJsonSchema>;

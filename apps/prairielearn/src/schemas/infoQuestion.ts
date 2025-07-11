@@ -10,12 +10,18 @@ export const QuestionDependencyJsonSchema = z
       .describe(
         '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -92,6 +98,9 @@ export const WorkspaceOptionsJsonSchema = z
       .describe(
         '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
   })
 
@@ -220,7 +229,10 @@ export const QuestionJsonSchema = z
       .optional(),
   })
 
-  .describe('Info files for questions.');
+  .describe('Info files for questions.')
+  .meta({
+    title: 'Question Info',
+  });
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;

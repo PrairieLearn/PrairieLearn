@@ -14,7 +14,10 @@ export const QuestionMultipleTrueFalseOptionsJsonSchema = z
       .describe('A list of false statements for the question. Each is an HTML string.'),
   })
 
-  .describe('Options for a MultipleTrueFalse question.');
+  .describe('Options for a MultipleTrueFalse question.')
+  .meta({
+    title: 'MultipleTrueFalse question options',
+  });
 
 export type QuestionMultipleTrueFalseOptionsJson = z.infer<
   typeof QuestionMultipleTrueFalseOptionsJsonSchema

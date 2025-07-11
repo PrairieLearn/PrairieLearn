@@ -14,6 +14,9 @@ export const NewsItemJsonSchema = z
     visible_to_students: z.boolean().describe('Whether the news item should be shown to students.'),
   })
 
-  .describe('Info files for news items.');
+  .describe('Info files for news items.')
+  .meta({
+    title: 'News Item Info',
+  });
 
 export type NewsItemJson = z.infer<typeof NewsItemJsonSchema>;

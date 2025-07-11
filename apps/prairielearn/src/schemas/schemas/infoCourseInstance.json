@@ -46,8 +46,8 @@
       "description": "DEPRECATED -- do not use.",
       "type": "object",
       "additionalProperties": {},
-      "properties": {},
-      "deprecated": true
+      "deprecated": true,
+      "properties": {}
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
@@ -67,8 +67,8 @@
           "role": {
             "description": "DEPRECATED -- do not use.",
             "type": "string",
-            "enum": ["Student", "TA", "Instructor", "Superuser"],
-            "deprecated": true
+            "deprecated": true,
+            "enum": ["Student", "TA", "Instructor", "Superuser"]
           },
           "uids": {
             "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",

@@ -1,12 +1,6 @@
-import { type ZodSchema, z } from 'zod';
+import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
-
-function uniqueArray<T extends ZodSchema>(schema: T) {
-  return z.array(schema).refine((items) => new Set(items).size === items.length, {
-    message: 'All items must be unique, no duplicate values allowed',
-  });
-}
 
 export const GroupRoleJsonSchema = z
   .object({
@@ -47,7 +41,13 @@ export const AssessmentAccessRuleJsonSchema = z
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
       .optional(),
-    role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
+    role: z
+      .enum(['Student', 'TA', 'Instructor'])
+      .describe('DEPRECATED -- do not use.')
+      .optional()
+      .meta({
+        deprecated: true,
+      }),
     uids: z
       .array(z.string())
       .describe(
@@ -209,18 +209,26 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional()
-    .default([]),
-  canView: uniqueArray(z.string())
+    .default([])
+    .meta({
+      uniqueItems: true,
+    }),
+  canView: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
     .optional()
-    .default([]),
+    .default([])
+    .meta({
+      uniqueItems: true,
+    }),
 }).meta({
   id: 'ZoneQuestionJsonSchema',
 });
@@ -235,7 +243,9 @@ export const ZoneAssessmentJsonSchema = z
       .optional(),
     comment: CommentJsonSchema.optional(),
     // Do we need to allow for additional keys?
-    comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
+    comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.').meta({
+      deprecated: true,
+    }),
     maxPoints: z
       .number()
       .describe(
@@ -265,16 +275,24 @@ export const ZoneAssessmentJsonSchema = z
         'Minimum amount of time (in minutes) between graded submissions to the same question.',
       )
       .optional(),
-    canSubmit: uniqueArray(z.string())
+    canSubmit: z
+      .array(z.string())
       .describe(
         'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
       )
-      .optional(),
-    canView: uniqueArray(z.string())
+      .optional()
+      .meta({
+        uniqueItems: true,
+      }),
+    canView: z
+      .array(z.string())
       .describe(
         'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
       )
-      .optional(),
+      .optional()
+      .meta({
+        uniqueItems: true,
+      }),
   })
   .meta({
     id: 'ZoneAssessmentJsonSchema',
@@ -384,18 +402,26 @@ export const AssessmentJsonSchema = z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
-    canSubmit: uniqueArray(z.string())
+    canSubmit: z
+      .array(z.string())
       .describe(
-        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+        'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
       )
       .optional()
-      .default([]),
-    canView: uniqueArray(z.string())
+      .default([])
+      .meta({
+        uniqueItems: true,
+      }),
+    canView: z
+      .array(z.string())
       .describe(
-        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+        'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
       )
       .optional()
-      .default([]),
+      .default([])
+      .meta({
+        uniqueItems: true,
+      }),
     studentGroupCreate: z
       .boolean()
       .describe('Whether students can create groups.')
@@ -439,7 +465,10 @@ export const AssessmentJsonSchema = z
       .default(false),
   })
 
-  .describe('Configuration data for an assessment.');
+  .describe('Configuration data for an assessment.')
+  .meta({
+    title: 'Assessment info',
+  });
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;

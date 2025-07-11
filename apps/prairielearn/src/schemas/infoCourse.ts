@@ -95,6 +95,9 @@ export const CourseOptionsJsonSchema = z
     useNewQuestionRenderer: z
       .boolean()
       .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     devModeFeatures: z
       .union([
@@ -156,7 +159,10 @@ export const CourseJsonSchema = z
       .optional(),
   })
 
-  .describe('The specification file for a course.');
+  .describe('The specification file for a course.')
+  .meta({
+    title: 'Course information',
+  });
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
 export type CourseJsonInput = z.input<typeof CourseJsonSchema>;

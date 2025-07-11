@@ -8,6 +8,9 @@ export const QuestionFileOptionsJsonSchema = z
     fileName: z.string().describe('Filename of the file to download').optional(),
   })
 
-  .describe('Options for a File question.');
+  .describe('Options for a File question.')
+  .meta({
+    title: 'File question options',
+  });
 
 export type QuestionFileOptionsJson = z.infer<typeof QuestionFileOptionsJsonSchema>;
