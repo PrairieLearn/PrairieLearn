@@ -188,27 +188,27 @@
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
-        this.saveCropperSelectionToHiddenInputDebounced();
+        this.saveCropperSelectionToHiddenInput();
       });
 
       rotateClockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(true);
-        this.saveCropperSelectionToHiddenInputDebounced();
+        this.saveCropperSelectionToHiddenInput();
       });
 
       rotateCounterclockwiseButton.addEventListener('click', () => {
         this.handleRotate90Degrees(false);
-        this.saveCropperSelectionToHiddenInputDebounced();
+        this.saveCropperSelectionToHiddenInput();
       });
 
       flipHorizontalButton.addEventListener('click', () => {
         this.handleFlip(true);
-        this.saveCropperSelectionToHiddenInputDebounced();
+        this.saveCropperSelectionToHiddenInput();
       });
 
       flipVerticalButton.addEventListener('click', () => {
         this.handleFlip(false);
-        this.saveCropperSelectionToHiddenInputDebounced();
+        this.saveCropperSelectionToHiddenInput();
       });
 
       cancelCropRotateButton.addEventListener('click', () => {
@@ -230,6 +230,7 @@
      */
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
+        console.log('Key pressed:', event.key);
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           this.applyPendingChanges();
@@ -402,10 +403,10 @@
           // The user might upload an image while in the crop-rotate or local camera confirmation state.
           // We discard any pending changes or captured images and show the capture preview, since
           // the user's most recent action was to capture an image externally.
+          this.openContainer('capture-preview');
           if (this.selectedContainerName === 'crop-rotate') {
             await this.revertToPreviousCropRotateState();
           }
-          this.openContainer('capture-preview');
         }
       });
     }
@@ -718,8 +719,6 @@
     }
 
     cancelLocalCameraCapture() {
-      this.setHiddenCaptureInputToLastCapture();
-
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
       );
@@ -737,6 +736,7 @@
       });
 
       this.openContainer('capture-preview');
+      this.setHiddenCaptureInputToLastCapture();
 
       localCameraErrorMessage.classList.add('d-none');
 
@@ -840,12 +840,10 @@
         '.js-cropper-container cropper-handle[action="move"]',
       );
       const cropperCanvas = this.cropper.getCropperCanvas();
-      const cropperSelection = this.cropper.getCropperSelection();
 
       this.ensureElementsExist({
         cropperHandle,
-        cropperCanvas,
-        cropperSelection,
+        cropperCanvas
       });
 
       if (!this.capturePreviewHeight) {
@@ -856,7 +854,37 @@
       cropperCanvas.style.height = this.capturePreviewHeight + 'px';
       cropperHandle.setAttribute('theme-color', 'rgba(0, 0, 0, 0)');
 
-      cropperSelection.addEventListener('change', this.saveDebounced);
+      this.addCropperSelectionChangeListener();
+    }
+
+    addCropperSelectionChangeListener() {
+      console.log('Add crop selection listener')
+      this.ensureCropperExists();
+
+      const cropperSelection = this.cropper.getCropperSelection();
+      
+      this.ensureElementsExist({
+        cropperSelection,
+      });
+
+      cropperSelection.addEventListener('change', () => {
+        this.saveCropperSelectionToHiddenInput();
+      });
+    }
+
+    removeCropperSelectionChangeListener() {
+      console.log('Remove crop selection listener')
+      this.ensureCropperExists();
+
+      const cropperSelection = this.cropper.getCropperSelection();
+      
+      this.ensureElementsExist({
+        cropperSelection,
+      });
+
+      cropperSelection.removeEventListener('change', () => {
+        this.saveCropperSelectionToHiddenInput();
+      });
     }
 
     /**
@@ -986,14 +1014,10 @@
       };
     }
 
-    /**
-     * Saves the current crop and rotation changes to the hidden input field.
-     * Ensures that pending crop/rotate changes or image captures are saved if the user
-     * submits without confirming them.
-     */
-    async saveCropperSelectionToHiddenInput() {
-      this.ensureCropperExists();
+    timeoutId = null;
 
+    async saveSelection() {
+      this.ensureCropperExists();
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
       let dataUrl;
@@ -1006,25 +1030,26 @@
 
       this.setHiddenCaptureInputValue(dataUrl);
     }
-
     /**
-     * Debounces the save cropper selection function to prevent excessive calls while the user is making changes.
+     * Saves the current crop and rotation changes to the hidden input field.
+     * Ensures that pending crop/rotate changes or image captures are saved if the user
+     * submits without confirming them.
+     * 
+     * Debounced by 200ms.
      */
-    saveCropperSelectionToHiddenInputDebounced = () => {
-      let timeoutId;
+    async saveCropperSelectionToHiddenInput() {
+      if (this.selectedContainerName !== 'crop-rotate') {
+        return;
+      } 
 
-      return () => {
-        console.log('Cropper selection changed, saving changes...');
-        if (this.selectedContainerName !== 'crop-rotate') {
-          return;
-        }
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          console.log('Call function.')
-          this.applyPendingChanges();
-        }, 200);
-      };
-    };
+      console.log('Cropper', this.cropper);
+      console.log('Save function called.')
+      clearTimeout(this.timeoutId);
+      this.timeoutId = setTimeout(async () => {
+        console.log('Save triggered.')
+        await this.saveSelection();
+      }, 200);
+    }
 
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
@@ -1058,25 +1083,16 @@
         flippedY: this.flippedY,
       };
 
+      this.removeCropperSelectionChangeListener();
+
       this.openContainer('capture-preview');
     }
 
     async revertToPreviousCropRotateState() {
       this.ensureCropperExists();
 
-      // Set the hidden state to the original capture.
-      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
-      const capturePreviewImg = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .capture-preview',
-      );
-
-      this.ensureElementsExist({
-        hiddenCaptureInput,
-        capturePreviewImg,
-      });
-
-      hiddenCaptureInput.value = capturePreviewImg.src;
-
+      this.setHiddenCaptureInputToLastCapture();
+      
       if (!this.previousCropRotateState) {
         this.resetCropRotate();
         return;
@@ -1112,8 +1128,13 @@
     async cancelCropRotate() {
       this.ensureCropperExists();
 
-      await this.revertToPreviousCropRotateState();
+      this.removeCropperSelectionChangeListener();
+      
       this.openContainer('capture-preview');
+
+      // revertToPreviousCropRotateState must come after setting the container to capture-preview because the
+      // rotation slider and buttons continuously update the hidden input value when in the crop-rotate container.
+      await this.revertToPreviousCropRotateState();
     }
   }
 
