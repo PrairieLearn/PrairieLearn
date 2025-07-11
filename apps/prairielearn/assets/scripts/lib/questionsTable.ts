@@ -173,7 +173,11 @@ onDocumentReady(() => {
         (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
       )
       .map((assessment) =>
-        AssessmentBadgeHtml({ plainUrlPrefix, course_instance_id, assessment }).toString(),
+        AssessmentBadgeHtml({
+          plainUrlPrefix,
+          course_instance_id,
+          assessment,
+        }).toString(),
       )
       .join(' ');
   };

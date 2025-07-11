@@ -88,15 +88,23 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
+<<<<<<<< HEAD:apps/prairielearn/src/pages/publicAssessmentQuestions/publicAssessmentQuestions.html.tsx
               ${renderHtml(
                 <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
               )}
+========
+              ${renderHtml(AssessmentQuestionHeaders({ question, nTableCols }))}
+>>>>>>>> convert-components-jsx:apps/prairielearn/src/pages/publicAssessmentQuestions/publicAssessmentQuestions.html.ts
               <tr>
                 <td>
                   <a
                     href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
                   >
+<<<<<<<< HEAD:apps/prairielearn/src/pages/publicAssessmentQuestions/publicAssessmentQuestions.html.tsx
                     ${renderHtml(<AssessmentQuestionNumber question={question} />)}${question.title}
+========
+                    ${renderHtml(AssessmentQuestionNumber({ question }))}${question.title}
+>>>>>>>> convert-components-jsx:apps/prairielearn/src/pages/publicAssessmentQuestions/publicAssessmentQuestions.html.ts
                   </a>
                 </td>
                 <td>@${question.course_sharing_name}/${question.qid}</td>
