@@ -855,10 +855,10 @@
       });
       // Store references to the listener functions for proper removal
       this.cropperSelectionChangeHandler = () => {
-        this.saveCropperSelectionToHiddenInput();
+        this.saveCropperSelectionToHiddenInputDebounce();
       };
       this.cropperImageTransformHandler = () => {
-        this.saveCropperSelectionToHiddenInput();
+        this.saveCropperSelectionToHiddenInputDebounce();
       };
 
       // Handles changes to the cropping of the image.
@@ -1014,8 +1014,12 @@
 
     timeoutId = null;
 
-    /** Helper function for saveCropperSelectionToHiddenInput. Use saveCropperSelectionToHiddenInput instead. */
-    async saveSelection() {
+    /**
+     * Saves the current crop and rotation changes to the hidden input field.
+     * Ensures that pending crop/rotate changes or image captures are saved if the user
+     * submits without confirming them.
+     */
+    async saveCropperSelectionToHiddenInput() {
       this.ensureCropperExists();
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
@@ -1029,6 +1033,7 @@
 
       this.setHiddenCaptureInputValue(dataUrl);
     }
+
     /**
      * Saves the current crop and rotation changes to the hidden input field.
      * Ensures that pending crop/rotate changes or image captures are saved if the user
@@ -1036,7 +1041,7 @@
      *
      * Debounced by 200ms to avoid excessive updates while the user is making changes.
      */
-    async saveCropperSelectionToHiddenInput() {
+    async saveCropperSelectionToHiddenInputDebounce() {
       if (this.selectedContainerName !== 'crop-rotate') {
         return;
       }
