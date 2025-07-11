@@ -8,13 +8,14 @@ import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPoin
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
-import { ScorebarHtml } from '../../components/Scorebar.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
   type ClientFingerprint,
+  DateFromISOString,
   IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
@@ -45,7 +46,7 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: z.string(),
+  modified_at: DateFromISOString,
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -234,7 +235,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Score</th>
                 <td class="align-middle" style="width: 20%;">
-                  ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
+                  ${Scorebar(resLocals.assessment_instance.score_perc)}
                 </td>
                 <td class="align-middle" style="width: 100%;">
                   ${resLocals.authz_data.has_course_instance_permission_edit
@@ -421,7 +422,7 @@ export function InstructorAssessmentInstance({
                         : ''}
                     </td>
                     <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
-                      ${ScorebarHtml(instance_question.score_perc)}
+                      ${Scorebar(instance_question.score_perc)}
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
