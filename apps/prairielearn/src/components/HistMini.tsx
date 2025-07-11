@@ -1,12 +1,6 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'preact/hooks';
 
-export function HistMini({
-  selector,
-  data = [],
-  options = {},
-}: {
-  selector: HTMLElement;
+interface HistMiniProps {
   data?: number[];
   options?: {
     width?: number;
@@ -17,7 +11,9 @@ export function HistMini({
     ymax?: number | 'auto';
     normalize?: boolean;
   };
-}) {
+}
+
+export function HistMiniHtml({ data = [], options = {} }: HistMiniProps) {
   const resolvedOptions = {
     width: 100,
     height: 40,
@@ -50,11 +46,8 @@ export function HistMini({
 
   d3.scaleOrdinal(d3.schemeCategory10);
 
-  console.log('selector', selector);
-
   const svg = d3
-    .select(selector)
-    .append('svg')
+    .create('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .attr('class', 'center-block statsPlot')
@@ -90,38 +83,21 @@ export function HistMini({
     .attr('y2', height)
     .attr('class', 'x axis');
 
-  console.log(svg);
-
-  return svg.node();
+  return svg.node()?.toString() ?? '';
 }
 
-export function HistMiniPreact({
-  data,
-  options,
-}: {
-  data?: number[];
-  options?: {
-    width?: number;
-    height?: number;
-    xmin?: number;
-    xmax?: number;
-    ymin?: number | 'auto';
-    ymax?: number | 'auto';
-    normalize?: boolean;
-  };
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.innerHTML = '';
-      HistMini({
-        selector: ref.current as HTMLElement,
-        data: data ?? [],
-        options: options ?? {},
-      });
-    }
-  }, [data, options]);
-
-  return <div className="histmini" ref={ref}></div>;
+export function HistMini({ data, options }: HistMiniProps) {
+  return (
+    <div className="histmini">
+      <svg
+        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+        dangerouslySetInnerHTML={{
+          __html: HistMiniHtml({
+            data: data ?? [],
+            options: options ?? {},
+          }),
+        }}
+      />
+    </div>
+  );
 }

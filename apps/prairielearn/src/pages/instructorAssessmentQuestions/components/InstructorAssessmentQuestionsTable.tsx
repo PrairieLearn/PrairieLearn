@@ -7,7 +7,7 @@ import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.html.js';
-import { HistMiniPreact } from '../../../components/HistMini.js';
+import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
 import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
 import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
@@ -191,7 +191,7 @@ export function InstructorAssessmentQuestionsTable({
                           : ''}
                       </td>
                       <td class="text-center">
-                        <HistMiniPreact
+                        <HistMini
                           data={question.number_submissions_hist ?? []}
                           options={{ width: 60, height: 20 }}
                         />
