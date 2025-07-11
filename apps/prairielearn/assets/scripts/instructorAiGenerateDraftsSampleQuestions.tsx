@@ -94,7 +94,7 @@ function SampleQuestionSelector({
     <div style={{ width: '100%' }} class="d-flex align-items-center gap-2 mb-3 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
-        onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
+        onSelect={(eventKey: string | null) => onSelectQuestionIndex(Number(eventKey))}
       >
         <DropdownToggle
           as="button"
