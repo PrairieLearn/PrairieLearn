@@ -43,7 +43,7 @@ const RubricDataSchema = RubricSchema.extend({
 export type RubricData = z.infer<typeof RubricDataSchema>;
 
 const RubricGradingDataSchema = RubricGradingSchema.extend({
-  rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
+  rubric_items: z.record(z.string(), RubricGradingItemSchema).nullable(),
 });
 export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
 

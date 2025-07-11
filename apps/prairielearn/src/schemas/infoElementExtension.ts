@@ -55,15 +55,15 @@ export const ElementExtensionJsonSchema = z
       .strictObject({
         comment: CommentJsonSchema.optional(),
         nodeModulesScripts: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .describe('The scripts required by this element from /node_modules as an importmap.')
           .optional(),
         clientFilesCourseScripts: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .describe('The styles required by this element from clientFilesCourse as an importmap.')
           .optional(),
         extensionScripts: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .describe("The scripts required by this extension from the extension's directory.")
           .optional(),
       })

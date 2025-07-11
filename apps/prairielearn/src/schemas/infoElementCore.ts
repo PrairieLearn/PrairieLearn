@@ -41,11 +41,11 @@ const DynamicDependencyJsonSchema = z
   .strictObject({
     comment: CommentJsonSchema.optional(),
     nodeModulesScripts: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('The scripts required by this element from /node_modules as an importmap.')
       .optional(),
     elementScripts: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe(
         "The scripts required by this element from the element's directory as an importmap.",
       )

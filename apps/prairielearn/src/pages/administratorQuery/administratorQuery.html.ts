@@ -12,7 +12,7 @@ import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),
   sql: z.string(),
-  params: z.record(z.any()),
+  params: z.record(z.string(), z.any()),
   authn_user_id: z.string(),
   error: z.string().optional().nullable(),
   result: AdministratorQueryResultSchema.nullable(),

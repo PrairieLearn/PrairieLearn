@@ -7,7 +7,7 @@ export const AdminQueryJsonSchema = z
     comment: CommentJsonSchema.optional(),
     description: z.string().describe('Brief one-line description of the query.'),
     resultFormats: z
-      .record(z.enum(['pre']))
+      .record(z.string(), z.enum(['pre']))
       .describe('Custom formats for result columns.')
       .optional(),
     params: z

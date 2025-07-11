@@ -52,6 +52,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
   id: '1',
   institution_id: '2',
   short_name: null,
+  options: {},
   template_course: false,
   title: null,
 };

@@ -610,6 +610,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
 }
 
 const ProgressDetailsSchema = z.record(
+  z.string(),
   z.object({
     current: z.number(),
     total: z.number(),

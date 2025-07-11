@@ -1,5 +1,5 @@
 import { type JSONSchemaType } from 'ajv';
-import { type ZodType, type ZodTypeDef } from 'zod';
+import { type ZodType } from 'zod';
 import {
   type JsonSchema7Type,
   type Options,
