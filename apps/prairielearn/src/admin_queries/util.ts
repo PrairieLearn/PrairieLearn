@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { queryAsync } from '@prairielearn/postgres';
 
 export const AdministratorQueryResultSchema = z.object({
-  rows: z.record(z.any()).array(),
+  rows: z.record(z.string(), z.any()).array(),
   columns: z.string().array(),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;

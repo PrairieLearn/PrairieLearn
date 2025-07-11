@@ -43,19 +43,17 @@ const RubricDataSchema = RubricSchema.extend({
 export type RubricData = z.infer<typeof RubricDataSchema>;
 
 const RubricGradingDataSchema = RubricGradingSchema.extend({
-  rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
+  rubric_items: z.record(z.string(), RubricGradingItemSchema).nullable(),
 });
 export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
 
 const PartialScoresSchema = z
   .record(
     z.string(),
-    z
-      .object({
-        score: z.coerce.number().nullish(),
-        weight: z.coerce.number().nullish(),
-      })
-      .passthrough(),
+    z.looseObject({
+      score: z.coerce.number().nullish(),
+      weight: z.coerce.number().nullish(),
+    }),
   )
   .nullable();
 
