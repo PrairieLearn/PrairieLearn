@@ -1032,6 +1032,7 @@
 
       this.setHiddenCaptureInputValue(dataUrl);
     }
+
     /**
      * Saves the current crop and rotation changes to the hidden input field.
      * Ensures that pending crop/rotate changes or image captures are saved if the user
