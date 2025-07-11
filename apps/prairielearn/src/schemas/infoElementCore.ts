@@ -34,7 +34,6 @@ const DependencyJsonSchema = z
       .describe("The scripts required by this element from the element's directory.")
       .optional(),
   })
-
   .describe("The element's client-side dependencies.");
 
 const DynamicDependencyJsonSchema = z

@@ -7,8 +7,11 @@
   "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -88,8 +91,11 @@
       "required": ["image"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "enabled": {
           "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
@@ -123,7 +129,9 @@
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "enableNetworking": {
           "description": "Whether the grading containers should have network access. Access is disabled by default.",
@@ -135,6 +143,9 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         }
       }
@@ -145,8 +156,11 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "coreStyles": {
           "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
@@ -223,8 +237,11 @@
       "required": ["image", "port", "home"],
       "properties": {
         "comment": {
-          "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "image": {
           "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
@@ -232,7 +249,9 @@
         },
         "port": {
           "description": "The port number used in the Docker image.",
-          "type": "integer"
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
         },
         "home": {
           "description": "The home directory of the workspace container.",
@@ -275,6 +294,9 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
           }
         },
         "syncIgnore": {
@@ -308,12 +330,14 @@
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
+      "id": "CommentJsonSchema",
       "anyOf": [
         {
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",

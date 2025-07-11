@@ -28,7 +28,10 @@ export const GroupRoleJsonSchema = z
   })
   .describe(
     'A custom role for use in group assessments that allows control over certain permissions.',
-  );
+  )
+  .meta({
+    id: 'GroupRoleJsonSchema',
+  });
 
 export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
@@ -91,7 +94,10 @@ export const AssessmentAccessRuleJsonSchema = z
 
   .describe(
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
-  );
+  )
+  .meta({
+    id: 'AssessmentAccessRuleJsonSchema',
+  });
 
 export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
 
@@ -99,29 +105,44 @@ export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
   .describe('A single point value.')
-  .default(0);
+  .default(0)
+  .meta({
+    id: 'PointsSingleJsonSchema',
+  });
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
   .min(1)
-  .describe('An array of point values.');
+  .describe('An array of point values.')
+  .meta({
+    id: 'PointsListJsonSchema',
+  });
 
 export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
-  .describe('Question ID (directory name of the question).');
+  .describe('Question ID (directory name of the question).')
+  .meta({
+    id: 'QuestionIdJsonSchema',
+  });
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
   .default(false)
-  .describe('Whether to force this question to be awarded maximum points on a regrade.');
+  .describe('Whether to force this question to be awarded maximum points on a regrade.')
+  .meta({
+    id: 'ForceMaxPointsJsonSchema',
+  });
 
 export const AdvanceScorePercJsonSchema = z
   .number()
   .gte(0)
   .lte(100)
-  .describe('Minimum score percentage to unlock access to subsequent questions.');
+  .describe('Minimum score percentage to unlock access to subsequent questions.')
+  .meta({
+    id: 'AdvanceScorePercJsonSchema',
+  });
 
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
@@ -150,6 +171,8 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+}).meta({
+  id: 'QuestionAlternativeJsonSchema',
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -198,56 +221,64 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     )
     .optional()
     .default([]),
+}).meta({
+  id: 'ZoneQuestionJsonSchema',
 });
 
-export const ZoneAssessmentJsonSchema = z.object({
-  title: z
-    .string()
-    .describe('Zone title, displayed to the students at the top of the question list for the zone.')
-    .optional(),
-  comment: CommentJsonSchema.optional(),
-  // Do we need to allow for additional keys?
-  comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
-  maxPoints: z
-    .number()
-    .describe(
-      'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
-    )
-    .optional(),
-  numberChoose: z
-    .number()
-    .int()
-    .gte(0)
-    .describe('Number of questions to choose from this zone.')
-    .optional(),
-  bestQuestions: z
-    .number()
-    .int()
-    .gte(0)
-    .describe(
-      'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
-    )
-    .optional(),
-  questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
-  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
-  gradeRateMinutes: z
-    .number()
-    .gte(0)
-    .describe(
-      'Minimum amount of time (in minutes) between graded submissions to the same question.',
-    )
-    .optional(),
-  canSubmit: uniqueArray(z.string())
-    .describe(
-      'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
-    )
-    .optional(),
-  canView: uniqueArray(z.string())
-    .describe(
-      'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
-    )
-    .optional(),
-});
+export const ZoneAssessmentJsonSchema = z
+  .object({
+    title: z
+      .string()
+      .describe(
+        'Zone title, displayed to the students at the top of the question list for the zone.',
+      )
+      .optional(),
+    comment: CommentJsonSchema.optional(),
+    // Do we need to allow for additional keys?
+    comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
+    maxPoints: z
+      .number()
+      .describe(
+        'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
+      )
+      .optional(),
+    numberChoose: z
+      .number()
+      .int()
+      .gte(0)
+      .describe('Number of questions to choose from this zone.')
+      .optional(),
+    bestQuestions: z
+      .number()
+      .int()
+      .gte(0)
+      .describe(
+        'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
+      )
+      .optional(),
+    questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
+    advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+    gradeRateMinutes: z
+      .number()
+      .gte(0)
+      .describe(
+        'Minimum amount of time (in minutes) between graded submissions to the same question.',
+      )
+      .optional(),
+    canSubmit: uniqueArray(z.string())
+      .describe(
+        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+      )
+      .optional(),
+    canView: uniqueArray(z.string())
+      .describe(
+        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+      )
+      .optional(),
+  })
+  .meta({
+    id: 'ZoneAssessmentJsonSchema',
+  });
 
 export const AssessmentJsonSchema = z
   .strictObject({

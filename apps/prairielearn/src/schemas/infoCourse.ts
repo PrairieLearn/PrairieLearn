@@ -35,7 +35,10 @@ export const ColorJsonSchema = z
     'gray2',
     'gray3',
   ])
-  .describe('A color name.');
+  .describe('A color name.')
+  .meta({
+    id: 'ColorJsonSchema',
+  });
 
 export type ColorJson = z.infer<typeof ColorJsonSchema>;
 export const TopicJsonSchema = z
