@@ -358,6 +358,9 @@
       );
 
       socket.on('externalImageCapture', async (msg) => {
+        if (this.selectedContainerName === 'crop-rotate') {
+          this.removeCropperChangeListeners();
+        }
         this.loadCapturePreview({
           data: msg.file_content,
           type: 'image/jpeg',
@@ -394,10 +397,10 @@
           // The user might upload an image while in the crop-rotate or local camera confirmation state.
           // We discard any pending changes or captured images and show the capture preview, since
           // the user's most recent action was to capture an image externally.
-          this.openContainer('capture-preview');
           if (this.selectedContainerName === 'crop-rotate') {
             await this.revertToPreviousCropRotateState();
           }
+          this.openContainer('capture-preview');
         }
       });
     }
@@ -522,6 +525,7 @@
       }
 
       if (this.editable) {
+        console.log('Setting hidden capture input value');
         this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
@@ -1034,12 +1038,14 @@
      * Debounced by 200ms to avoid excessive updates while the user is making changes.
      */
     async saveCropperSelectionToHiddenInput() {
+      console.log('Save selection called!')
       if (this.selectedContainerName !== 'crop-rotate') {
         return;
       }
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
+      console.log('Save selection triggered!')
         await this.saveSelection();
       }, 200);
     }
@@ -1084,8 +1090,6 @@
     async revertToPreviousCropRotateState() {
       this.ensureCropperExists();
 
-      this.setHiddenCaptureInputToCapturePreview();
-
       if (!this.previousCropRotateState) {
         this.resetCropRotate();
         return;
@@ -1122,12 +1126,11 @@
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
+      
+      await this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
-
-      // revertToPreviousCropRotateState must come after setting the container to capture-preview because the
-      // rotation slider and buttons continuously update the hidden input value when in the crop-rotate container.
-      await this.revertToPreviousCropRotateState();
+      this.setHiddenCaptureInputToCapturePreview();
     }
   }
 
