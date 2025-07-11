@@ -11,7 +11,7 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 
 // Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
-  z.object({
+  z.strictObject({
     label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
@@ -47,13 +47,13 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
-export const AdministratorSchema = z.object({
+export const AdministratorSchema = z.strictObject({
   id: IdSchema,
   user_id: IdSchema,
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
-export const AiGradingJobSchema = z.object({
+export const AiGradingJobSchema = z.strictObject({
   completion: z.any(),
   completion_tokens: z.number(),
   course_id: IdSchema,
@@ -68,7 +68,7 @@ export const AiGradingJobSchema = z.object({
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
-export const AlternativeGroupSchema = z.object({
+export const AlternativeGroupSchema = z.strictObject({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
   id: IdSchema,
@@ -83,7 +83,7 @@ export const AlternativeGroupSchema = z.object({
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
 
-export const AssessmentSchema = z.object({
+export const AssessmentSchema = z.strictObject({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_real_time_grading: z.boolean().nullable(),
@@ -143,7 +143,7 @@ export const AssessmentSchema = z.object({
 });
 export type Assessment = z.infer<typeof AssessmentSchema>;
 
-export const AssessmentAccessRuleSchema = z.object({
+export const AssessmentAccessRuleSchema = z.strictObject({
   active: z.boolean(),
   assessment_id: IdSchema,
   credit: z.number().nullable(),
@@ -163,7 +163,7 @@ export const AssessmentAccessRuleSchema = z.object({
 });
 export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
 
-export const AssessmentInstanceSchema = z.object({
+export const AssessmentInstanceSchema = z.strictObject({
   assessment_id: IdSchema,
   auth_user_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),
@@ -189,7 +189,7 @@ export const AssessmentInstanceSchema = z.object({
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
 
-export const AssessmentModuleSchema = z.object({
+export const AssessmentModuleSchema = z.strictObject({
   id: IdSchema,
   course_id: IdSchema,
   name: z.string(),
@@ -199,7 +199,7 @@ export const AssessmentModuleSchema = z.object({
 });
 export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
-export const AssessmentQuestionSchema = z.object({
+export const AssessmentQuestionSchema = z.strictObject({
   advance_score_perc: z.number().nullable(),
   ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
@@ -253,7 +253,7 @@ export const AssessmentQuestionSchema = z.object({
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
 
-export const AssessmentQuestionRolePermissionsSchema = z.object({
+export const AssessmentQuestionRolePermissionsSchema = z.strictObject({
   assessment_question_id: IdSchema,
   can_submit: z.boolean().nullable(),
   can_view: z.boolean().nullable(),
@@ -263,7 +263,7 @@ export type AssessmentQuestionRolePermissions = z.infer<
   typeof AssessmentQuestionRolePermissionsSchema
 >;
 
-export const AssessmentSetSchema = z.object({
+export const AssessmentSetSchema = z.strictObject({
   abbreviation: z.string(),
   color: z.string(),
   course_id: IdSchema,
@@ -276,7 +276,7 @@ export const AssessmentSetSchema = z.object({
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
-export const AuditLogSchema = z.object({
+export const AuditLogSchema = z.strictObject({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
   column_name: z.string().nullable(),
@@ -295,13 +295,13 @@ export const AuditLogSchema = z.object({
 });
 export type AuditLog = z.infer<typeof AuditLogSchema>;
 
-export const AuthnProviderSchema = z.object({
+export const AuthnProviderSchema = z.strictObject({
   id: IdSchema,
   name: z.string().nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
-export const ClientFingerprintSchema = z.object({
+export const ClientFingerprintSchema = z.strictObject({
   accept_language: z.string().nullable(),
   created_at: DateFromISOString,
   id: IdSchema,
@@ -312,7 +312,7 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
-export const CourseSchema = z.object({
+export const CourseSchema = z.strictObject({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
   branch: z.string(),
@@ -321,6 +321,7 @@ export const CourseSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  draft_number: z.number(),
   example_course: z.boolean(),
   id: IdSchema,
   institution_id: IdSchema,
@@ -341,7 +342,7 @@ export const CourseSchema = z.object({
 });
 export type Course = z.infer<typeof CourseSchema>;
 
-export const CourseInstanceSchema = z.object({
+export const CourseInstanceSchema = z.strictObject({
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -360,7 +361,7 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
-export const CourseInstanceAccessRuleSchema = z.object({
+export const CourseInstanceAccessRuleSchema = z.strictObject({
   course_instance_id: IdSchema,
   end_date: DateFromISOString.nullable(),
   id: IdSchema,
@@ -372,7 +373,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
-export const CourseInstancePermissionSchema = z.object({
+export const CourseInstancePermissionSchema = z.strictObject({
   course_instance_id: IdSchema,
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
   course_permission_id: IdSchema,
@@ -380,14 +381,14 @@ export const CourseInstancePermissionSchema = z.object({
 });
 export type CourseInstancePermission = z.infer<typeof CourseInstancePermissionSchema>;
 
-export const CourseInstanceRequiredPlanSchema = z.object({
+export const CourseInstanceRequiredPlanSchema = z.strictObject({
   course_instance_id: IdSchema,
   id: IdSchema,
   plan_name: z.enum(['basic', 'compute', 'everything']),
 });
 export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPlanSchema>;
 
-export const CoursePermissionSchema = z.object({
+export const CoursePermissionSchema = z.strictObject({
   course_id: IdSchema,
   course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
   id: IdSchema,
@@ -395,7 +396,7 @@ export const CoursePermissionSchema = z.object({
 });
 export type CoursePermission = z.infer<typeof CoursePermissionSchema>;
 
-export const CourseRequestSchema = z.object({
+export const CourseRequestSchema = z.strictObject({
   approved_by: IdSchema.nullable(),
   approved_status: z.enum(['pending', 'approved', 'denied', 'creating', 'failed']),
   created_at: DateFromISOString,
@@ -412,7 +413,7 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
-export const DraftQuestionMetadataSchema = z.object({
+export const DraftQuestionMetadataSchema = z.strictObject({
   created_at: DateFromISOString,
   created_by: IdSchema.nullable(),
   id: IdSchema,
@@ -421,7 +422,7 @@ export const DraftQuestionMetadataSchema = z.object({
 });
 export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 
-export const EnrollmentSchema = z.object({
+export const EnrollmentSchema = z.strictObject({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
@@ -429,7 +430,7 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const FileSchema = z.object({
+export const FileSchema = z.strictObject({
   assessment_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema.nullable(),
   created_at: DateFromISOString,
@@ -446,7 +447,7 @@ export const FileSchema = z.object({
 });
 export type File = z.infer<typeof FileSchema>;
 
-export const FileEditSchema = z.object({
+export const FileEditSchema = z.strictObject({
   course_id: IdSchema,
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -462,7 +463,7 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
-export const AiQuestionGenerationPromptSchema = z.object({
+export const AiQuestionGenerationPromptSchema = z.strictObject({
   completion: z.any(),
   system_prompt: z.string().nullable(),
   errors: z.array(z.string()),
@@ -485,7 +486,7 @@ export const AiQuestionGenerationPromptSchema = z.object({
 
 export type AiQuestionGenerationPrompt = z.infer<typeof AiQuestionGenerationPromptSchema>;
 
-export const FileTransferSchema = z.object({
+export const FileTransferSchema = z.strictObject({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   from_course_id: IdSchema,
@@ -498,7 +499,7 @@ export const FileTransferSchema = z.object({
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
 
-export const GradingJobSchema = z.object({
+export const GradingJobSchema = z.strictObject({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),
   correct: z.boolean().nullable(),
@@ -528,7 +529,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
-export const GroupSchema = z.object({
+export const GroupSchema = z.strictObject({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
@@ -539,7 +540,7 @@ export const GroupSchema = z.object({
 });
 export type Group = z.infer<typeof GroupSchema>;
 
-export const GroupConfigSchema = z.object({
+export const GroupConfigSchema = z.strictObject({
   assessment_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
   date: DateFromISOString,
@@ -556,7 +557,7 @@ export const GroupConfigSchema = z.object({
 });
 export type GroupConfig = z.infer<typeof GroupConfigSchema>;
 
-export const GroupRoleSchema = z.object({
+export const GroupRoleSchema = z.strictObject({
   assessment_id: IdSchema.nullable(),
   can_assign_roles: z.boolean().nullable(),
   id: IdSchema,
@@ -566,14 +567,14 @@ export const GroupRoleSchema = z.object({
 });
 export type GroupRole = z.infer<typeof GroupRoleSchema>;
 
-export const GroupUserSchema = z.object({
+export const GroupUserSchema = z.strictObject({
   group_config_id: IdSchema,
   group_id: IdSchema,
   user_id: IdSchema,
 });
 export type GroupUser = z.infer<typeof GroupUserSchema>;
 
-export const GroupUserRoleSchema = z.object({
+export const GroupUserRoleSchema = z.strictObject({
   group_id: IdSchema,
   group_role_id: IdSchema,
   id: IdSchema,
@@ -581,7 +582,7 @@ export const GroupUserRoleSchema = z.object({
 });
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
-export const InstanceQuestionSchema = z.object({
+export const InstanceQuestionSchema = z.strictObject({
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),
@@ -624,7 +625,7 @@ export const InstanceQuestionSchema = z.object({
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
 
-export const InstitutionSchema = z.object({
+export const InstitutionSchema = z.strictObject({
   course_instance_enrollment_limit: z.number(),
   default_authn_provider_id: IdSchema.nullable(),
   display_timezone: z.string(),
@@ -636,14 +637,14 @@ export const InstitutionSchema = z.object({
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
-export const InstitutionAdministratorSchema = z.object({
+export const InstitutionAdministratorSchema = z.strictObject({
   id: IdSchema,
   institution_id: IdSchema,
   user_id: IdSchema,
 });
 export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;
 
-export const IssueSchema = z.object({
+export const IssueSchema = z.strictObject({
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   course_caused: z.boolean().nullable(),
@@ -664,7 +665,7 @@ export const IssueSchema = z.object({
 });
 export type Issue = z.infer<typeof IssueSchema>;
 
-export const JobSchema = z.object({
+export const JobSchema = z.strictObject({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -694,7 +695,7 @@ export const JobSchema = z.object({
 });
 export type Job = z.infer<typeof JobSchema>;
 
-export const JobSequenceSchema = z.object({
+export const JobSequenceSchema = z.strictObject({
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   course_id: IdSchema.nullable(),
@@ -712,7 +713,7 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
-export const Lti13AssessmentsSchema = z.object({
+export const Lti13AssessmentsSchema = z.strictObject({
   assessment_id: IdSchema,
   id: IdSchema,
   last_activity: DateFromISOString,
@@ -722,7 +723,7 @@ export const Lti13AssessmentsSchema = z.object({
 });
 export type Lti13Assessments = z.infer<typeof Lti13AssessmentsSchema>;
 
-export const Lti13CourseInstanceSchema = z.object({
+export const Lti13CourseInstanceSchema = z.strictObject({
   context_id: z.string(),
   context_label: z.string().nullable(),
   context_title: z.string().nullable(),
@@ -736,7 +737,7 @@ export const Lti13CourseInstanceSchema = z.object({
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
-export const Lti13InstanceSchema = z.object({
+export const Lti13InstanceSchema = z.strictObject({
   access_token_expires_at: DateFromISOString.nullable(),
   access_tokenset: z.any().nullable(),
   client_params: z.any().nullable(),
@@ -757,14 +758,14 @@ export const Lti13InstanceSchema = z.object({
 });
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
-export const Lti13UserSchema = z.object({
+export const Lti13UserSchema = z.strictObject({
   lti13_instance_id: IdSchema,
   sub: z.string(),
   user_id: IdSchema,
 });
 export type Lti13User = z.infer<typeof Lti13UserSchema>;
 
-export const LtiCredentialsSchema = z.object({
+export const LtiCredentialsSchema = z.strictObject({
   consumer_key: z.string().nullable(),
   course_instance_id: z.string().nullable(),
   created_at: DateFromISOString.nullable(),
@@ -774,7 +775,7 @@ export const LtiCredentialsSchema = z.object({
 });
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
 
-export const NewsItemSchema = z.object({
+export const NewsItemSchema = z.strictObject({
   author: z.string().nullable(),
   date: DateFromISOString,
   directory: z.string(),
@@ -786,7 +787,7 @@ export const NewsItemSchema = z.object({
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
 
-export const PlanGrantSchema = z.object({
+export const PlanGrantSchema = z.strictObject({
   course_instance_id: IdSchema.nullable(),
   created_at: DateFromISOString,
   id: IdSchema,
@@ -797,7 +798,7 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
-export const QueryRunSchema = z.object({
+export const QueryRunSchema = z.strictObject({
   authn_user_id: IdSchema,
   date: DateFromISOString,
   error: z.string().nullable(),
@@ -809,7 +810,7 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
-export const QuestionGenerationContextEmbeddingSchema = z.object({
+export const QuestionGenerationContextEmbeddingSchema = z.strictObject({
   id: IdSchema,
   doc_text: z.string(),
   doc_path: z.string(),
@@ -817,7 +818,7 @@ export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
 });
 
-export const QuestionSchema = z.object({
+export const QuestionSchema = z.strictObject({
   client_files: z.array(z.string()).nullable(),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -872,7 +873,7 @@ export const QuestionSchema = z.object({
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
-export const RubricSchema = z.object({
+export const RubricSchema = z.strictObject({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   id: IdSchema,
@@ -884,7 +885,7 @@ export const RubricSchema = z.object({
 });
 export type Rubric = z.infer<typeof RubricSchema>;
 
-export const RubricGradingSchema = z.object({
+export const RubricGradingSchema = z.strictObject({
   adjust_points: z.number(),
   computed_points: z.number(),
   id: IdSchema,
@@ -895,7 +896,7 @@ export const RubricGradingSchema = z.object({
 });
 export type RubricGrading = z.infer<typeof RubricGradingSchema>;
 
-export const RubricGradingItemSchema = z.object({
+export const RubricGradingItemSchema = z.strictObject({
   description: z.string(),
   id: IdSchema,
   points: z.number(),
@@ -905,7 +906,7 @@ export const RubricGradingItemSchema = z.object({
 });
 export type RubricGradingItem = z.infer<typeof RubricGradingItemSchema>;
 
-export const RubricItemSchema = z.object({
+export const RubricItemSchema = z.strictObject({
   always_show_to_students: z.boolean(),
   deleted_at: DateFromISOString.nullable(),
   description: z.string(),
@@ -919,7 +920,7 @@ export const RubricItemSchema = z.object({
 });
 export type RubricItem = z.infer<typeof RubricItemSchema>;
 
-export const SamlProviderSchema = z.object({
+export const SamlProviderSchema = z.strictObject({
   certificate: z.string(),
   email_attribute: z.string().nullable(),
   id: IdSchema,
@@ -937,14 +938,14 @@ export const SamlProviderSchema = z.object({
 });
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
-export const SharingSetSchema = z.object({
+export const SharingSetSchema = z.strictObject({
   course_id: IdSchema,
   id: IdSchema,
   name: z.string().nullable(),
 });
 export type SharingSet = z.infer<typeof SharingSetSchema>;
 
-export const StripeCheckoutSessionSchema = z.object({
+export const StripeCheckoutSessionSchema = z.strictObject({
   agent_user_id: IdSchema,
   completed_at: DateFromISOString.nullable(),
   course_instance_id: IdSchema.nullable(),
@@ -958,7 +959,7 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
-export const SubmissionGradingContextEmbeddingSchema = z.object({
+export const SubmissionGradingContextEmbeddingSchema = z.strictObject({
   id: IdSchema,
   embedding: z.string(),
   submission_id: IdSchema,
@@ -971,7 +972,7 @@ export type SubmissionGradingContextEmbedding = z.infer<
   typeof SubmissionGradingContextEmbeddingSchema
 >;
 
-export const SubmissionSchema = z.object({
+export const SubmissionSchema = z.strictObject({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
   client_fingerprint_id: IdSchema.nullable(),
@@ -1001,7 +1002,7 @@ export const SubmissionSchema = z.object({
 });
 export type Submission = z.infer<typeof SubmissionSchema>;
 
-export const TagSchema = z.object({
+export const TagSchema = z.strictObject({
   color: z.string(),
   course_id: IdSchema,
   description: z.string(),
@@ -1013,7 +1014,7 @@ export const TagSchema = z.object({
 });
 export type Tag = z.infer<typeof TagSchema>;
 
-export const TopicSchema = z.object({
+export const TopicSchema = z.strictObject({
   color: z.string(),
   course_id: IdSchema,
   description: z.string(),
@@ -1025,7 +1026,7 @@ export const TopicSchema = z.object({
 });
 export type Topic = z.infer<typeof TopicSchema>;
 
-export const UserSchema = z.object({
+export const UserSchema = z.strictObject({
   deleted_at: DateFromISOString.nullable(),
   email: z.string().nullable(),
   institution_id: IdSchema,
@@ -1041,7 +1042,7 @@ export const UserSchema = z.object({
 });
 export type User = z.infer<typeof UserSchema>;
 
-export const UserSessionSchema = z.object({
+export const UserSessionSchema = z.strictObject({
   id: IdSchema,
   session_id: z.string(),
   created_at: DateFromISOString,
@@ -1052,7 +1053,7 @@ export const UserSessionSchema = z.object({
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
-export const VariantSchema = z.object({
+export const VariantSchema = z.strictObject({
   authn_user_id: IdSchema,
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
@@ -1079,7 +1080,7 @@ export const VariantSchema = z.object({
 });
 export type Variant = z.infer<typeof VariantSchema>;
 
-export const WorkspaceSchema = z.object({
+export const WorkspaceSchema = z.strictObject({
   created_at: DateFromISOString,
   disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
   heartbeat_at: DateFromISOString.nullable(),
@@ -1103,7 +1104,7 @@ export const WorkspaceSchema = z.object({
 });
 export type Workspace = z.infer<typeof WorkspaceSchema>;
 
-export const WorkspaceHostSchema = z.object({
+export const WorkspaceHostSchema = z.strictObject({
   hostname: z.string().nullable(),
   id: IdSchema,
   instance_id: z.string(),
@@ -1120,7 +1121,7 @@ export const WorkspaceHostSchema = z.object({
 });
 export type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
 
-export const WorkspaceLogSchema = z.object({
+export const WorkspaceLogSchema = z.strictObject({
   date: DateFromISOString.nullable(),
   id: IdSchema,
   message: z.string().nullable(),
@@ -1130,7 +1131,7 @@ export const WorkspaceLogSchema = z.object({
 });
 export type WorkspaceLog = z.infer<typeof WorkspaceLogSchema>;
 
-export const ZoneSchema = z.object({
+export const ZoneSchema = z.strictObject({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
   best_questions: z.number().nullable(),
