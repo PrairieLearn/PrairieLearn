@@ -850,16 +850,19 @@
         cropperSelection,
         cropperImage,
       });
+      // Store references to the listener functions for proper removal
+      this.cropperSelectionChangeHandler = () => {
+        this.saveCropperSelectionToHiddenInput();
+      };
+      this.cropperImageTransformHandler = () => {
+        this.saveCropperSelectionToHiddenInput();
+      };
 
       // Handles changes to the cropping of the image.
-      cropperSelection.addEventListener('change', () => {
-        this.saveCropperSelectionToHiddenInput();
-      });
+      cropperSelection.addEventListener('change', this.cropperSelectionChangeHandler);
 
       // Handles rotation and flipping of the image.
-      cropperImage.addEventListener('transform', () => {
-        this.saveCropperSelectionToHiddenInput();
-      });
+      cropperImage.addEventListener('transform', this.cropperImageTransformHandler);
     }
 
     /** Remove the cropper change listeners that update the hidden input field. */
@@ -874,13 +877,9 @@
         cropperImage,
       });
 
-      cropperSelection.removeEventListener('change', () => {
-        this.saveCropperSelectionToHiddenInput();
-      });
+      cropperSelection.removeEventListener('change', this.cropperSelectionChangeHandler);
 
-      cropperImage.removeEventListener('transform', () => {
-        this.saveCropperSelectionToHiddenInput();
-      });
+      cropperImage.removeEventListener('transform', this.cropperImageTransformHandler);
     }
 
     /**
