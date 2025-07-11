@@ -206,12 +206,12 @@ describe('Database Schema Sync Test', () => {
       if (schema === undefined) {
         throw new Error(`No schema found for table: ${tableName}`);
       }
+      usedSchemas.add(tableName);
       // Skip tables that are not in the schema map
       if (schema === null) {
         continue;
       }
 
-      usedSchemas.add(tableName);
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys(schema.shape);
       const extraColumns = _.difference(dbColumnNames, schemaKeys);
