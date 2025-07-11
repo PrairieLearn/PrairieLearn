@@ -1018,7 +1018,7 @@
      * Helper function for saveCropperSelectionToHiddenInput to implement debounce.
      * Do not use this function; use saveCropperSelectionToHiddenInput instead.
      */
-    async saveSelection() {
+    async saveCropperSelectionToHiddenInputHelper() {
       this.ensureCropperExists();
       // Obtain the data URL of the image selection.
       const selection = this.cropper.getCropperSelection();
@@ -1047,7 +1047,7 @@
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
-        await this.saveSelection();
+        await this.saveCropperSelectionToHiddenInputHelper();
       }, 200);
     }
 
