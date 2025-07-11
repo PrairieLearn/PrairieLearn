@@ -32,10 +32,7 @@ const detailedSubmissionColumns = {
   true_answer: true,
 } as const;
 
-export const SubmissionBasicSchema = SubmissionSchema.omit({
-  ...detailedSubmissionColumns,
-  grading_method: true,
-}).extend({
+export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
