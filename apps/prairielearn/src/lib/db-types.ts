@@ -336,6 +336,7 @@ export const CourseSchema = z.object({
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
+  draft_number: z.number(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   example_course: z.boolean(),

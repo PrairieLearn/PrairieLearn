@@ -38,7 +38,10 @@ const InstanceQuestionInfoSchema = z.object({
 });
 
 const SelectAndAuthzInstanceQuestionSchema = z.strictObject({
-  assessment_instance: z.strictObject(AssessmentInstanceSchema.shape),
+  assessment_instance: z.strictObject({
+    formatted_date: z.string(),
+    ...AssessmentInstanceSchema.shape,
+  }),
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
