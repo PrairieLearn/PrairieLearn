@@ -24,6 +24,7 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
+  ai_selected_rubric_item_ids,
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -35,6 +36,7 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
+  ai_selected_rubric_item_ids?: string[];
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -83,7 +85,7 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable })
+            ? RubricInputSection({ resLocals, disable, ai_selected_rubric_item_ids })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -94,7 +96,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
                 ${resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable })
+                  ? RubricInputSection({ resLocals, disable, ai_selected_rubric_item_ids })
                   : ''}
               </li>
             `

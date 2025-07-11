@@ -6,15 +6,19 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { GradingJobSchema, IdSchema, type InstanceQuestion, SubmissionSchema } from '../../../lib/db-types.js';
+import {
+  selectLastSubmissionId,
+  selectRubricGradingItems,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { GradingJobSchema, IdSchema, type InstanceQuestion } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
-import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../../models/variant.js';
+import { selectAndAuthzVariant } from '../../../models/variant.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
@@ -85,51 +89,54 @@ router.get(
       throw new error.HttpStatusError(404, 'Instance question not found');
     }
 
-    // TODO: Just query one?
-    const variants = await selectVariantsByInstanceQuestion({
-      assessment_instance_id: instance_question.assessment_instance_id,
-      instance_question_id: instance_question.id
-    });
-    if (variants.length === 0) {
-      throw new error.HttpStatusError(404, 'Instance question does not have any variants.');
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+    let aiGradingInfo: {
+      feedback: string | null;
+      selectedRubricItemIds: string[];
+      prompt: Record<string, any>[] | null;
+    } | null = null;
+
+    if (aiGradingEnabled) {
+      const submission_id = await selectLastSubmissionId(instance_question.id);
+      const grading_job = await sqldb.queryRow(
+        sql.select_most_recent_grading_job,
+        {
+          submission_id,
+        },
+        GradingJobSchema,
+      );
+
+      if (grading_job) {
+        const selectedRubricItems = await selectRubricGradingItems(
+          grading_job.manual_rubric_grading_id,
+        );
+
+        const feedbackAndPromptForSubmission = await sqldb.queryRow(
+          sql.select_ai_grading_feedback_and_prompt_for_submission,
+          {
+            submission_id,
+          },
+          z.object({
+            feedback: z.string().nullable(),
+            prompt: z.array(z.record(z.string(), z.any())).nullable(),
+          }),
+        );
+
+        aiGradingInfo = {
+          feedback: feedbackAndPromptForSubmission.feedback,
+          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+          prompt: feedbackAndPromptForSubmission.prompt,
+        };
+      }
     }
 
-    // Find the corresponding submission
-    const submission = await sqldb.queryRow(
-      sql.select_most_recent_submission_for_variant,
-      {
-        variant_id: variants[0].id,
-      },
-      SubmissionSchema
-    );
-
-    if (!submission) {
-      throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
-    } 
-
-    // Find the most recent grading job
-    const grading_job = await sqldb.queryRow(
-      sql.select_most_recent_grading_job,
-      {
-        submission_id: submission.id,
-      },
-      GradingJobSchema
-    );
-
-    if (!grading_job) {
-      throw new error.HttpStatusError(404, 'Instance question does not have a grading job.');
-    }
-
-    const rubricGradingItems = await selectRubricGradingItems(
-      grading_job.manual_rubric_grading_id
-    );
-    
     res.send(
       InstanceQuestionHtml({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        rubricGradingItems
+        aiGradingInfo,
       }),
     );
   }),
@@ -175,7 +182,10 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const gradingPanel = GradingPanel({
+        ...locals,
+        context: 'main',
+      }).toString();
       const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {

@@ -9,7 +9,7 @@ import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DateFromISOString, GradingJobSchema, type RubricGradingItem, type User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -27,14 +27,22 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
-  rubricGradingItems
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
-  rubricGradingItems: RubricGradingItem[]
+  /**
+   * If null, AI grading information (feedback, prompt, etc.) will not be shown at all.
+   * If aiGradingInfo is specified, but a property/properties are null, those properties will not be shown.
+   */
+  aiGradingInfo: {
+    feedback: string | null;
+    selectedRubricItemIds: string[];
+    prompt: Record<string, any>[] | null;
+  } | null;
 }) {
   return PageLayout({
     resLocals: {
@@ -105,7 +113,12 @@ export function InstanceQuestion({
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({
+                resLocals,
+                context: 'main',
+                graders,
+                ai_selected_rubric_item_ids: aiGradingInfo?.selectedRubricItemIds,
+              })}
             </div>
           </div>
 
