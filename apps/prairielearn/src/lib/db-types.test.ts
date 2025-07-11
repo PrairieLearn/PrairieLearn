@@ -1,14 +1,12 @@
 import _ from 'lodash';
 import { afterAll, beforeAll, describe, it } from 'vitest';
-import { type z } from 'zod';
+import { z } from 'zod';
 
 import { describeDatabase } from '@prairielearn/postgres-tools';
 
 import * as helperDb from '../tests/helperDb.js';
 
 import {
-  AccessLogSchema,
-  AccessTokenSchema,
   AdministratorSchema,
   AiGradingJobSchema,
   AiQuestionGenerationPromptSchema,
@@ -19,89 +17,58 @@ import {
   AssessmentQuestionRolePermissionsSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
-  AssessmentScoreLogSchema,
   AssessmentSetSchema,
-  AssessmentStateLogSchema,
   AuditLogSchema,
   AuthnProviderSchema,
-  BatchedMigrationJobSchema,
-  BatchedMigrationSchema,
-  ChunkSchema,
   ClientFingerprintSchema,
   CourseInstanceAccessRuleSchema,
   CourseInstancePermissionSchema,
   CourseInstanceRequiredPlanSchema,
   CourseInstanceSchema,
-  CourseInstanceUsageSchema,
   CoursePermissionSchema,
   CourseRequestSchema,
   CourseSchema,
-  CronJobSchema,
-  CurrentPageSchema,
   DraftQuestionMetadataSchema,
   EnrollmentSchema,
-  ExamModeNetworkSchema,
-  ExamSchema,
-  FeatureGrantSchema,
   FileEditSchema,
   FileSchema,
   FileTransferSchema,
-  GlueCourseSchema,
-  GraderLoadSchema,
   GradingJobSchema,
   GroupConfigSchema,
-  GroupLogSchema,
   GroupRoleSchema,
   GroupSchema,
   GroupUserRoleSchema,
   GroupUserSchema,
   InstanceQuestionSchema,
   InstitutionAdministratorSchema,
-  InstitutionAuthnProviderSchema,
   InstitutionSchema,
   IssueSchema,
   JobSchema,
   JobSequenceSchema,
-  LastAccessSchema,
   Lti13AssessmentsSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
   Lti13UserSchema,
   LtiCredentialsSchema,
-  LtiLinkSchema,
-  LtiOutcomeSchema,
-  MigrationSchema,
-  NamedLockSchema,
-  NewsItemNotificationSchema,
   NewsItemSchema,
-  PageViewLogSchema,
   PlanGrantSchema,
   QueryRunSchema,
   QuestionGenerationContextEmbeddingSchema,
   QuestionSchema,
-  QuestionScoreLogSchema,
-  QuestionTagSchema,
-  ReservationSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
   RubricItemSchema,
   RubricSchema,
   SamlProviderSchema,
-  ServerLoadSchema,
-  SharingSetCourseSchema,
-  SharingSetQuestionSchema,
   SharingSetSchema,
   StripeCheckoutSessionSchema,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   TagSchema,
-  TimeSeriesSchema,
   TopicSchema,
   UserSchema,
   UserSessionSchema,
   VariantSchema,
-  VariantViewLogSchema,
-  WorkspaceHostLogSchema,
   WorkspaceHostSchema,
   WorkspaceLogSchema,
   WorkspaceSchema,
@@ -109,9 +76,9 @@ import {
 } from './db-types.js';
 
 // Mapping from database table names to their corresponding Zod schemas
-const TABLE_SCHEMA_MAP: Record<string, z.ZodObject<any>> = {
-  access_logs: AccessLogSchema,
-  access_tokens: AccessTokenSchema,
+const TABLE_SCHEMA_MAP: Record<string, z.ZodObject<any> | null> = {
+  access_logs: null,
+  access_tokens: null,
   administrators: AdministratorSchema,
   ai_grading_jobs: AiGradingJobSchema,
   ai_question_generation_prompts: AiQuestionGenerationPromptSchema,
@@ -122,91 +89,94 @@ const TABLE_SCHEMA_MAP: Record<string, z.ZodObject<any>> = {
   assessment_modules: AssessmentModuleSchema,
   assessment_questions: AssessmentQuestionSchema,
   assessment_question_role_permissions: AssessmentQuestionRolePermissionsSchema,
-  assessment_score_logs: AssessmentScoreLogSchema,
+  assessment_score_logs: null,
   assessment_sets: AssessmentSetSchema,
-  assessment_state_logs: AssessmentStateLogSchema,
+  assessment_state_logs: null,
   audit_logs: AuditLogSchema,
   authn_providers: AuthnProviderSchema,
-  batched_migration_jobs: BatchedMigrationJobSchema,
-  batched_migrations: BatchedMigrationSchema,
+  batched_migration_jobs: null,
+  batched_migrations: null,
   client_fingerprints: ClientFingerprintSchema,
-  chunks: ChunkSchema,
-  courses: GlueCourseSchema,
+  chunks: null,
+  courses: null,
   course_instances: CourseInstanceSchema,
   course_instance_access_rules: CourseInstanceAccessRuleSchema,
   course_instance_permissions: CourseInstancePermissionSchema,
   course_instance_required_plans: CourseInstanceRequiredPlanSchema,
-  course_instance_usages: CourseInstanceUsageSchema,
+  course_instance_usages: null,
   course_permissions: CoursePermissionSchema,
   course_requests: CourseRequestSchema,
-  cron_jobs: CronJobSchema,
-  current_pages: CurrentPageSchema,
+  cron_jobs: null,
+  current_pages: null,
   draft_question_metadata: DraftQuestionMetadataSchema,
   enrollments: EnrollmentSchema,
-  exam_mode_networks: ExamModeNetworkSchema,
-  exams: ExamSchema,
-  feature_grants: FeatureGrantSchema,
+  exam_mode_networks: null,
+  exams: null,
+  feature_grants: null,
   files: FileSchema,
   file_edits: FileEditSchema,
   file_transfers: FileTransferSchema,
-  grader_loads: GraderLoadSchema,
+  grader_loads: null,
   grading_jobs: GradingJobSchema,
   groups: GroupSchema,
   group_configs: GroupConfigSchema,
-  group_logs: GroupLogSchema,
+  group_logs: null,
   group_roles: GroupRoleSchema,
   group_users: GroupUserSchema,
   group_user_roles: GroupUserRoleSchema,
   instance_questions: InstanceQuestionSchema,
   institutions: InstitutionSchema,
   institution_administrators: InstitutionAdministratorSchema,
-  institution_authn_providers: InstitutionAuthnProviderSchema,
+  institution_authn_providers: null,
   issues: IssueSchema,
   jobs: JobSchema,
   job_sequences: JobSequenceSchema,
-  last_accesses: LastAccessSchema,
+  last_accesses: null,
   lti13_assessments: Lti13AssessmentsSchema,
   lti13_course_instances: Lti13CourseInstanceSchema,
   lti13_instances: Lti13InstanceSchema,
   lti13_users: Lti13UserSchema,
   lti_credentials: LtiCredentialsSchema,
-  lti_links: LtiLinkSchema,
-  lti_outcomes: LtiOutcomeSchema,
-  migrations: MigrationSchema,
-  named_locks: NamedLockSchema,
+  lti_links: null,
+  lti_outcomes: null,
+  migrations: null,
+  named_locks: null,
   news_items: NewsItemSchema,
-  news_item_notifications: NewsItemNotificationSchema,
-  page_view_logs: PageViewLogSchema,
+  news_item_notifications: null,
+  page_view_logs: null,
   pl_courses: CourseSchema,
   plan_grants: PlanGrantSchema,
-  query_runs: QueryRunSchema,
+  query_runs: QueryRunSchema.extend({
+    // TODO: replace with a deprecated column once we use Zod 4
+    sql: z.string().nullable(),
+  }),
   question_generation_context_embeddings: QuestionGenerationContextEmbeddingSchema,
   questions: QuestionSchema,
-  question_score_logs: QuestionScoreLogSchema,
-  question_tags: QuestionTagSchema,
-  reservations: ReservationSchema,
-  server_loads: ServerLoadSchema,
+  question_score_logs: null,
+  question_tags: null,
+  reservations: null,
+  server_loads: null,
   rubrics: RubricSchema,
   rubric_gradings: RubricGradingSchema,
   rubric_grading_items: RubricGradingItemSchema,
   rubric_items: RubricItemSchema,
   saml_providers: SamlProviderSchema,
   sharing_sets: SharingSetSchema,
-  sharing_set_courses: SharingSetCourseSchema,
-  sharing_set_questions: SharingSetQuestionSchema,
+  sharing_set_courses: null,
+  sharing_set_questions: null,
   stripe_checkout_sessions: StripeCheckoutSessionSchema,
   submission_grading_context_embeddings: SubmissionGradingContextEmbeddingSchema,
   submissions: SubmissionSchema,
-  time_series: TimeSeriesSchema,
+  time_series: null,
   tags: TagSchema,
   topics: TopicSchema,
   users: UserSchema,
   user_sessions: UserSessionSchema,
   variants: VariantSchema,
-  variant_view_logs: VariantViewLogSchema,
+  variant_view_logs: null,
   workspaces: WorkspaceSchema,
   workspace_hosts: WorkspaceHostSchema,
-  workspace_host_logs: WorkspaceHostLogSchema,
+  workspace_host_logs: null,
   workspace_logs: WorkspaceLogSchema,
   zones: ZoneSchema,
 };
@@ -233,9 +203,14 @@ describe('Database Schema Sync Test', () => {
       }
 
       const schema = TABLE_SCHEMA_MAP[tableName];
-      if (!schema) {
+      if (schema === undefined) {
         throw new Error(`No schema found for table: ${tableName}`);
       }
+      // Skip tables that are not in the schema map
+      if (schema === null) {
+        continue;
+      }
+
       usedSchemas.add(tableName);
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys(schema.shape);
@@ -243,17 +218,15 @@ describe('Database Schema Sync Test', () => {
       const missingColumns = _.difference(schemaKeys, dbColumnNames);
 
       if (extraColumns.length > 0 || missingColumns.length > 0) {
-        continue;
-        // TODO: enable this
-        // const extraColumnsDiff = extraColumns.map((column) => `+ ${column}`).join('\n');
-        // const missingColumnsDiff = missingColumns.map((column) => `- ${column}`).join('\n');
-        // // throw an error with the diff
-        // throw new Error(
-        //   `Database columns for table '${tableName}' do not match Zod schema keys.\n` +
-        //     extraColumnsDiff +
-        //     '\n' +
-        //     missingColumnsDiff,
-        // );
+        const extraColumnsDiff = extraColumns.map((column) => `+ ${column}`).join('\n');
+        const missingColumnsDiff = missingColumns.map((column) => `- ${column}`).join('\n');
+        // throw an error with the diff
+        throw new Error(
+          `Database columns for table '${tableName}' do not match Zod schema keys.\n` +
+            extraColumnsDiff +
+            '\n' +
+            missingColumnsDiff,
+        );
       }
     }
 
