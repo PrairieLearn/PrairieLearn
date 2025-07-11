@@ -43,7 +43,7 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
   });
 }
 
-const SelectAuthzDataSchema = z.object({
+const SelectAuthzDataSchema = z.strictObject({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
@@ -53,7 +53,7 @@ const SelectAuthzDataSchema = z.object({
   permissions_course_instance: PermissionsCourseInstanceSchema,
 });
 
-const SelectUserSchema = z.object({
+const SelectUserSchema = z.strictObject({
   user: UserSchema,
   institution: InstitutionSchema,
   is_administrator: z.boolean(),

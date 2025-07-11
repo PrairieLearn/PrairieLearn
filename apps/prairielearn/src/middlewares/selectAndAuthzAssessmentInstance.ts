@@ -17,7 +17,7 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAndAuthzAssessmentInstanceSchema = z.object({
+const SelectAndAuthzAssessmentInstanceSchema = z.strictObject({
   assessment_instance: z.object({
     ...AssessmentInstanceSchema.shape,
     formatted_date: z.string(),

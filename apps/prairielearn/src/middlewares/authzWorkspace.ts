@@ -17,7 +17,7 @@ import { checkStudentAssessmentAccess } from './studentAssessmentAccess.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAuthDataFromWorkspaceSchema = z.object({
+const SelectAuthDataFromWorkspaceSchema = z.strictObject({
   variant_id: IdSchema,
   question_id: IdSchema,
   instance_question_id: IdSchema.nullable(),

@@ -14,6 +14,7 @@ import {
   FileSchema,
   GroupSchema,
   InstanceQuestionSchema,
+  NextAllowedGradeSchema,
   QuestionSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -36,7 +37,7 @@ const InstanceQuestionInfoSchema = z.object({
   instructor_question_number: z.string(),
 });
 
-const SelectAndAuthzInstanceQuestionSchema = z.object({
+const SelectAndAuthzInstanceQuestionSchema = z.strictObject({
   assessment_instance: AssessmentInstanceSchema,
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
@@ -45,7 +46,10 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: z.string(),
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: InstanceQuestionSchema,
+  instance_question: z.strictObject({
+    ...NextAllowedGradeSchema.shape,
+    ...InstanceQuestionSchema.shape,
+  }),
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,

@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAssessmentsSchema = z.object({
+const SelectAssessmentsSchema = z.strictObject({
   assessment_label: z.string(),
   id: z.string(),
   title: z.string(),
