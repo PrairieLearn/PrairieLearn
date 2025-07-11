@@ -68,8 +68,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     else:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
-    # Test conversion, but leave as string so proper value is shown on answer panel
-    if correct_answer is not None and not isinstance(correct_answer, int):
+    if correct_answer.strip() == "":
+        data["correct_answers"][name] = ""
+    elif correct_answer is not None and not isinstance(correct_answer, int):
+        # Test conversion, but leave as string so proper value is shown on answer panel
         try:
             int(str(correct_answer), base)
         except Exception as exc:
@@ -224,6 +226,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
@@ -240,9 +243,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
-            a_sub = str(
-                pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-            )
+            a_sub = blank_value
         else:
             opts = {
                 "format_error": True,
@@ -251,11 +252,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "default_base": base in (BASE_DEFAULT, 0),
                 "zero_base": base == 0,
             }
-
             data["format_errors"][name] = chevron.render(template, opts).strip()
             data["submitted_answers"][name] = None
             return
 
+    # Handle blank case
+    if a_sub.strip() == "":
+        data["submitted_answers"][name] = ""
+        return
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
     if a_sub_parsed is None:
@@ -291,7 +295,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     a_tru_parsed = (
-        pl.string_to_integer(a_tru, base) if isinstance(a_tru, str) else int(a_tru)
+        (pl.string_to_integer(a_tru, base) if isinstance(a_tru, str) else int(a_tru))
+        if a_tru != ""
+        else a_tru
     )
 
     def grade_function(a_sub: Any) -> tuple[bool, None]:
@@ -300,7 +306,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         a_sub = pl.from_json(a_sub)
         # The representation of the submitted_answer is always stored in base 10
         # by the parse function
-        a_sub_parsed = int(a_sub)
+        a_sub_parsed = int(a_sub) if a_sub != "" else a_sub
 
         return a_tru_parsed == a_sub_parsed, None
 

@@ -77,18 +77,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
         # Validate that the answer can be parsed before storing
-        try:
-            psu.convert_string_to_sympy(
-                a_true,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-            )
-        except psu.BaseSympyError as exc:
-            raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from exc
+        if a_true.strip() != "":
+            try:
+                psu.convert_string_to_sympy(
+                    a_true,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
+        else:
+            a_true = ""
 
         data["correct_answers"][name] = a_true
 
@@ -157,21 +160,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_sub = data["submitted_answers"][name]
 
         if isinstance(a_sub, str):
-            # this is for backward-compatibility
-            a_sub_parsed = psu.convert_string_to_sympy(
-                a_sub,
-                variables,
-                allow_complex=allow_complex,
-                custom_functions=custom_functions,
-                allow_trig_functions=allow_trig,
-            )
+            if a_sub.strip() == "":
+                a_sub_parsed = ""
+            else:
+                # this is for backward-compatibility
+                a_sub_parsed = psu.convert_string_to_sympy(
+                    a_sub,
+                    variables,
+                    allow_complex=allow_complex,
+                    custom_functions=custom_functions,
+                    allow_trig_functions=allow_trig,
+                ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_sub_parsed = psu.json_to_sympy(
                 a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
-            )
-        a_sub_converted = sympy.latex(
-            a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        )
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+        a_sub_converted = sympy.latex(a_sub_parsed)
+
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -238,20 +243,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return ""
 
         elif isinstance(a_tru, str):
-            # this is so instructors can specify the true answer simply as a string
-            a_tru = psu.convert_string_to_sympy(
-                a_tru,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-            )
+            # blank case
+            if a_tru != "":
+                # this is so instructors can specify the true answer simply as a string
+                a_tru = psu.convert_string_to_sympy(
+                    a_tru,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_tru = psu.json_to_sympy(
                 a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
-            )
-
-        a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         html_params = {
             "answer": True,
             "label": label,
@@ -286,13 +291,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name, None)
-    if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
-    if not a_sub:
+    if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
 
+    if a_sub.strip() == "":
+        if allow_blank:
+            a_sub = blank_value
+            if a_sub.strip() == "":  # Handle blank case
+                data["submitted_answers"][name] = ""
+                return
+        else:
+            data["format_errors"][name] = "No submitted answer."
+            data["submitted_answers"][name] = None
+            return
     error_msg = psu.validate_string_as_sympy(
         a_sub,
         variables,
@@ -362,20 +375,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    # Parse true answer
-    if isinstance(a_tru, str):
-        # this is so instructors can specify the true answer simply as a string
-        a_tru_sympy = psu.convert_string_to_sympy(
-            a_tru,
-            variables,
-            allow_complex=allow_complex,
-            allow_trig_functions=allow_trig,
-            custom_functions=custom_functions,
-        )
-    else:
-        a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
-
     def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
+        # Special case: submitted answer or correct answer is the empty string
+        if str(a_tru) == "":
+            if str(a_sub) == "":
+                return True, None
+            else:
+                return False, None
+        elif str(a_sub) == "":
+            return False, None
+
+        # Parse true answer
+        if isinstance(a_tru, str):
+            # this is so instructors can specify the true answer simply as a string
+            a_tru_sympy = psu.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
+
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility
