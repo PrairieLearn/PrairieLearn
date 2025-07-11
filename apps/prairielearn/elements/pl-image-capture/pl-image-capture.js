@@ -1012,6 +1012,7 @@
 
     timeoutId = null;
 
+    /** Helper function for saveCropperSelectionToHiddenInput. Use saveCropperSelectionToHiddenInput instead. */
     async saveSelection() {
       this.ensureCropperExists();
       // Obtain the data URL of the image selection.
@@ -1031,7 +1032,7 @@
      * Ensures that pending crop/rotate changes or image captures are saved if the user
      * submits without confirming them.
      *
-     * Debounced by 200ms.
+     * Debounced by 200ms to avoid excessive updates while the user is making changes.
      */
     async saveCropperSelectionToHiddenInput() {
       if (this.selectedContainerName !== 'crop-rotate') {
