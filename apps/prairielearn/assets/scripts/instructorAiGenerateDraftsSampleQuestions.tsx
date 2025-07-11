@@ -21,10 +21,11 @@ const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggl
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
 const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
 const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
+const Tooltip =
+  TooltipOriginal as unknown as typeof TooltipOriginal.default as FunctionComponent<any>;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { render } from '@prairielearn/preact-cjs';
+import { type FunctionComponent, render } from '@prairielearn/preact-cjs';
 import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
