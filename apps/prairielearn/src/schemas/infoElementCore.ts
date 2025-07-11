@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 const DependencyJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
@@ -34,11 +34,11 @@ const DependencyJsonSchema = z
       .describe("The scripts required by this element from the element's directory.")
       .optional(),
   })
-  .strict()
+
   .describe("The element's client-side dependencies.");
 
 const DynamicDependencyJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     nodeModulesScripts: z
       .record(z.string())
@@ -51,11 +51,11 @@ const DynamicDependencyJsonSchema = z
       )
       .optional(),
   })
-  .strict()
+
   .describe("The element's client-side dynamic dependencies.");
 
 export const ElementCoreJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     controller: z.string().describe("The name of the element's controller file."),
     dependencies: DependencyJsonSchema.optional(),
@@ -65,7 +65,7 @@ export const ElementCoreJsonSchema = z
       .describe('Any additional names to give this element, i.e. for backwards compatibility.')
       .optional(),
   })
-  .strict()
+
   .describe('Info files for v3 elements.');
 
 export type ElementCoreJson = z.infer<typeof ElementCoreJsonSchema>;

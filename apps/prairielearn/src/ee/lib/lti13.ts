@@ -153,7 +153,7 @@ export const Lti13ClaimBaseSchema = z.object({
 });
 
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
-export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
+export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.extend(
   z.object({
     'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
     'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
@@ -165,7 +165,7 @@ export const Lti13ResourceLinkRequestSchema = Lti13ClaimBaseSchema.merge(
 );
 
 // https://www.imsglobal.org/spec/lti-dl/v2p0#message-claims
-export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.merge(
+export const Lti13DeepLinkingRequestSchema = Lti13ClaimBaseSchema.extend(
   z.object({
     'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiDeepLinkingRequest'),
     'https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings': z.object({

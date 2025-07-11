@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 export const NewsItemJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -13,7 +13,7 @@ export const NewsItemJsonSchema = z
     author: z.string().describe('The author of the news item.').optional(),
     visible_to_students: z.boolean().describe('Whether the news item should be shown to students.'),
   })
-  .strict()
+
   .describe('Info files for news items.');
 
 export type NewsItemJson = z.infer<typeof NewsItemJsonSchema>;

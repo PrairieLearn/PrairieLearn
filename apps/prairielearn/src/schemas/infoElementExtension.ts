@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 const DependencyJsonSchema = z
-  .object({
+  .strictObject({
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -41,18 +41,18 @@ const DependencyJsonSchema = z
       .describe("The scripts required by this extension from the extension's directory.")
       .optional(),
   })
-  .strict()
+
   .describe("The extension's client-side dependencies.");
 
 export const ElementExtensionJsonSchema = z
-  .object({
+  .strictObject({
     controller: z
       .string()
       .describe("The name of the extension's Python controller file.")
       .optional(),
     dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: z
-      .object({
+      .strictObject({
         comment: CommentJsonSchema.optional(),
         nodeModulesScripts: z
           .record(z.string())
@@ -67,11 +67,11 @@ export const ElementExtensionJsonSchema = z
           .describe("The scripts required by this extension from the extension's directory.")
           .optional(),
       })
-      .strict()
+
       .describe("The element's client-side dynamic dependencies.")
       .optional(),
   })
-  .strict()
+
   .describe('Info files for v3 element extensions.');
 
 export type ElementExtensionJson = z.infer<typeof ElementExtensionJsonSchema>;

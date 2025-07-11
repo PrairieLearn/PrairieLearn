@@ -37,23 +37,21 @@ export const ConfigSchema = z.object({
       z.boolean(),
       // A subset of the options that can be provided to the `TLSSocket` constructor.
       // https://node-postgres.com/features/ssl
-      z
-        .object({
-          rejectUnauthorized: z.boolean().default(true),
-          ca: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-          key: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-          cert: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-        })
-        .strict(),
+      z.strictObject({
+        rejectUnauthorized: z.boolean().default(true),
+        ca: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+        key: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+        cert: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+      }),
     ])
     .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),

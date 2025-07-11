@@ -50,12 +50,10 @@ export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
 const PartialScoresSchema = z
   .record(
     z.string(),
-    z
-      .object({
-        score: z.coerce.number().nullish(),
-        weight: z.coerce.number().nullish(),
-      })
-      .passthrough(),
+    z.looseObject({
+      score: z.coerce.number().nullish(),
+      weight: z.coerce.number().nullish(),
+    }),
   )
   .nullable();
 

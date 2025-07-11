@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionDependencyJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
@@ -42,18 +42,18 @@ export const QuestionDependencyJsonSchema = z
       .describe('The scripts required by this question from clientFilesQuestion.')
       .optional(),
   })
-  .strict()
+
   .describe("The question's client-side dependencies.");
 
 export const WorkspaceOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     image: z
       .string()
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.number().int().describe('The port number used in the Docker image.'),
+    port: z.int().describe('The port number used in the Docker image.'),
     home: z.string().describe('The home directory of the workspace container.'),
     args: z
       .union([z.string(), z.array(z.string())])
@@ -94,11 +94,11 @@ export const WorkspaceOptionsJsonSchema = z
       )
       .optional(),
   })
-  .strict()
+
   .describe('Options for workspace questions.');
 
 export const ExternalGradingOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
@@ -144,11 +144,11 @@ export const ExternalGradingOptionsJsonSchema = z
       .describe('Environment variables to set inside the grading container.')
       .optional(),
   })
-  .strict()
+
   .describe('Options for externally graded questions.');
 
 export const QuestionJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -219,7 +219,7 @@ export const QuestionJsonSchema = z
       .describe("Whether this questions's source code is publicly shared.")
       .optional(),
   })
-  .strict()
+
   .describe('Info files for questions.');
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;

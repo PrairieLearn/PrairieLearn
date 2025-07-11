@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionCheckboxOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     text: z.string().describe('The question HTML text that comes before the options.'),
     correctAnswers: z
@@ -31,7 +31,7 @@ export const QuestionCheckboxOptionsJsonSchema = z
       .describe('The maximum number of correct answers in the list of possible answers.')
       .optional(),
   })
-  .strict()
+
   .describe('Options for a Checkbox question.');
 
 export type QuestionCheckboxOptionsJson = z.infer<typeof QuestionCheckboxOptionsJsonSchema>;
