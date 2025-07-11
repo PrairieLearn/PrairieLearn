@@ -4,7 +4,7 @@ This page describes the procedure to install and run your course locally within 
 
 ## Why run PrairieLearn locally?
 
-PrairieLearn provides an online interface to create and update questions with a browser interface. While this interface is suitable for simpler questions, it is not ideal for complex cases such as:
+PrairieLearn provides the ability to create and update questions with a browser interface. While this interface is suitable for simpler questions, it is not ideal for complex cases such as:
 
 - Questions using [code autograding](externalGrading.md)
 - Questions using [workspaces](workspaces/index.md)
