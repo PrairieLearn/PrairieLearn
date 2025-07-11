@@ -30,7 +30,7 @@ import {
 } from './questionOptionsMultipleTrueFalse.js';
 import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
-const prairielearnZodToJsonSchema = (schema: ZodType<any>) => {
+export const prairielearnZodToJsonSchema = (schema: ZodType<any>) => {
   const jsonSchema = z.toJSONSchema(schema, {
     target: 'draft-7',
     unrepresentable: 'throw',
