@@ -1043,7 +1043,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            action: 'unlimited',
+            action: 'remove',
             time_add: '0',
             reopen_closed: 'on',
           }).toString(),
