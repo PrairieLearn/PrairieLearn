@@ -7,17 +7,25 @@ import {
   AssessmentQuestionNumber,
 } from '../../components/AssessmentQuestions.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import {
+  getAssessmentContext,
+  getCourseInstanceContext,
+  getPageContext,
+} from '../../lib/client/page-context.js';
+import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import type { Course } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import { Hydrate } from '../../lib/preact.js';
 import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
+
+import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -26,6 +34,10 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
 }) {
+  const { authz_data, urlPrefix } = getPageContext(resLocals);
+  const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
+  const { assessment, assessment_set } = getAssessmentContext(resLocals);
+
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
@@ -38,60 +50,36 @@ export function InstructorAssessmentQuestions({
     options: {
       fullWidth: true,
     },
-    content: html`
-      ${renderHtml(
+    content: (
+      <>
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
-        </div>
-        ${AssessmentQuestionsTable({
-          course: resLocals.course,
-          questions,
-          assessmentType: resLocals.assessment.type,
-          urlPrefix: resLocals.urlPrefix,
-          hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
-          hasCourseInstancePermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
-        })}
-      </div>
-    `,
-    postContent: html`
-      ${Modal({
-        id: 'resetQuestionVariantsModal',
-        title: 'Confirm reset question variants',
-        body: html`
-          <p>
-            Are your sure you want to reset all current variants of this question?
-            <strong>All ungraded attempts will be lost.</strong>
-          </p>
-          <p>Students will receive a new variant the next time they view this question.</p>
-        `,
-        footer: html`
-          <input type="hidden" name="__action" value="reset_question_variants" />
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <input
-            type="hidden"
-            name="unsafe_assessment_question_id"
-            class="js-assessment-question-id"
-            value=""
+          authz_data={authz_data}
+          assessment={assessment}
+          courseInstance={course_instance as StaffCourseInstance}
+          course={course as StaffCourse}
+          urlPrefix={urlPrefix}
+        />
+        <Hydrate>
+          <InstructorAssessmentQuestionsTable
+            course={course as StaffCourse}
+            questions={questions}
+            urlPrefix={urlPrefix}
+            assessmentType={assessment.type}
+            assessmentSetName={assessment_set.name}
+            assessmentNumber={assessment.number}
+            hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
+            csrfToken={resLocals.__csrf_token}
           />
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger">Reset question variants</button>
-        `,
-      })}
-    `,
+        </Hydrate>
+      </>
+    ),
   });
 }
 
-function AssessmentQuestionsTable({
+export function AssessmentQuestionsTable({
   course,
   questions,
   urlPrefix,
