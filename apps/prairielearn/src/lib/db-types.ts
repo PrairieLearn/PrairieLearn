@@ -504,6 +504,8 @@ export const GradingJobSchema = z.strictObject({
   auto_points: z.number().nullable(),
   correct: z.boolean().nullable(),
   date: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  deleted_by: IdSchema.nullable(),
   feedback: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
@@ -759,6 +761,7 @@ export const Lti13InstanceSchema = z.strictObject({
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
 export const Lti13UserSchema = z.strictObject({
+  id: IdSchema,
   lti13_instance_id: IdSchema,
   sub: z.string(),
   user_id: IdSchema,
@@ -807,6 +810,7 @@ export const QueryRunSchema = z.strictObject({
   params: z.record(z.string(), z.any()).nullable(),
   result: z.record(z.string(), z.any()).nullable(),
   // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
+  sql: z.string().nullable(),
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
@@ -940,6 +944,7 @@ export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
 export const SharingSetSchema = z.strictObject({
   course_id: IdSchema,
+  description: z.string().nullable(),
   id: IdSchema,
   name: z.string().nullable(),
 });
@@ -984,6 +989,7 @@ export const SubmissionSchema = z.strictObject({
   format_errors: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
+  grading_method: EnumGradingMethodSchema.nullable(),
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   is_ai_graded: z.boolean(),
@@ -994,6 +1000,7 @@ export const SubmissionSchema = z.strictObject({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
+  regradable: z.boolean().default(false),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -1043,13 +1050,14 @@ export const UserSchema = z.strictObject({
 export type User = z.infer<typeof UserSchema>;
 
 export const UserSessionSchema = z.strictObject({
-  id: IdSchema,
-  session_id: z.string(),
   created_at: DateFromISOString,
-  updated_at: DateFromISOString,
-  expires_at: DateFromISOString,
-  user_id: IdSchema.nullable(),
   data: z.any(),
+  expires_at: DateFromISOString,
+  id: IdSchema,
+  revoked_at: DateFromISOString.nullable(),
+  session_id: z.string(),
+  updated_at: DateFromISOString,
+  user_id: IdSchema.nullable(),
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
@@ -1058,6 +1066,7 @@ export const VariantSchema = z.strictObject({
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),
+  client_fingerprint_id: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),

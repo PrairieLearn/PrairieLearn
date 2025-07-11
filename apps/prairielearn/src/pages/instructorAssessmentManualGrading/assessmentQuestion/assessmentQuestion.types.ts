@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/types.js';
-import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../../lib/db-types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -12,6 +16,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
+  iq_stable_order: IdSchema,
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
