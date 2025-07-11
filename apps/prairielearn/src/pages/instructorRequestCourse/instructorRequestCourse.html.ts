@@ -224,8 +224,29 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             <label class="form-label" for="cr-ghuser">GitHub Username (optional)</label>
             <input type="text" class="form-control" name="cr-ghuser" id="cr-ghuser" />
             <small class="form-text text-muted">
-              Providing your GitHub username will allow you to edit course content offline. You do
-              not need to provide this if you would like to use the online web editor.
+              Providing your GitHub username will grant you access to your course's GitHub
+              repository. This access allows you to edit your code in a
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/installing/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >local installation of PrairieLearn</a
+              >, and to grant access to other instructors or TAs to do the same. You do not need to
+              provide this if you would like to exclusively use the online web editor. You are
+              encouraged to provide it if you are planning complex questions such as those using
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >code autograding</a
+              >
+              or
+              <a
+                href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >workspaces</a
+              >, even if you don't yet have use for a local installation.
             </small>
           </div>
           <div class="mb-3">
