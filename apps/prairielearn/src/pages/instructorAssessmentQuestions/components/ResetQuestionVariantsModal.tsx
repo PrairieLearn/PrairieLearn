@@ -1,4 +1,4 @@
-import ModalOriginal from 'react-bootstrap/Modal';
+import ModalOriginal from 'react-bootstrap/cjs/Modal.js';
 
 const Modal = ModalOriginal as unknown as typeof ModalOriginal.default;
 
