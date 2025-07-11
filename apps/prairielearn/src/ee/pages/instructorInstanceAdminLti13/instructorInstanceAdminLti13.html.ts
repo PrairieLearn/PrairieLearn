@@ -123,13 +123,15 @@ export function InstructorInstanceAdminLti13({
               <div class="dropdown mb-2">
                 <button
                   type="button"
-                  class="btn dropdown-toggle border border-gray"
+                  class="btn dropdown-toggle border border-gray w-100 text-start pe-4"
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  <span class="d-inline-block text-wrap w-100">
+                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  </span>
                 </button>
                 <div class="dropdown-menu">
                   ${instances.map((i) => {
