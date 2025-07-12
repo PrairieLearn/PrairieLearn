@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
@@ -95,12 +96,12 @@ router.get(
       feedback: string | null;
       showAiManualComparison: boolean;
       selectedRubricItemIds: string[];
-      prompt: Record<string, any>[] | null;
+      prompt: ChatCompletionMessageParam[] | null;
     } | null = null;
 
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
-      const grading_job = await sqldb.queryRow(
+      const grading_job = await sqldb.queryOptionalRow(
         sql.select_most_recent_grading_job,
         {
           submission_id,
@@ -119,20 +120,20 @@ router.get(
             grading_job_id: grading_job.id,
           },
           z.array(z.record(z.string(), z.any())).nullable(),
-        );
+        ) as ChatCompletionMessageParam[] | null;
 
-        const ai_grading_available = await sqldb.queryRow(
+        const ai_grading_available = await sqldb.queryOptionalRow(
           sql.select_ai_grading_available_for_submission,
           { submission_id },
           z.boolean()
-        );
+        ) ?? false;
 
-        const manual_grading_available = await sqldb.queryRow(
+        const manual_grading_available = await sqldb.queryOptionalRow(
           sql.select_manual_grading_available_for_submission,
           { submission_id },
           z.boolean()
-        );
-        
+        ) ?? false;
+
         aiGradingInfo = {
           feedback: grading_job?.feedback?.manual ?? null,
           showAiManualComparison: ai_grading_available && manual_grading_available,

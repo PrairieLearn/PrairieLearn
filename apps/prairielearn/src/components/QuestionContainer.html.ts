@@ -1,5 +1,7 @@
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+
 import { EncodedData } from '@prairielearn/browser-utils';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -34,6 +36,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
+  aiGradingPrompt
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -43,6 +46,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
+  aiGradingPrompt?: ChatCompletionMessageParam[] | null;
 }) {
   const {
     question,
@@ -101,6 +105,40 @@ export function QuestionContainer({
             `
           : ''
       }
+
+      ${(
+        (questionContext === 'instructor' || questionContext === 'manual_grading') && 
+        aiGradingPrompt
+      ) ? (
+        html`
+          <div class="card mb-3 grading-block">
+            <div class="card-header bg-secondary text-white">
+              <h2>AI Grading Prompt</h2>
+            </div>
+            <div class="card-body">
+              ${aiGradingPrompt?.map((item) => {
+                if (!item.content) {
+                  return '';
+                }
+                if (typeof item.content === 'string') {
+                  return unsafeHtml(item.content);
+                } else if (typeof item.content === 'object') {
+                  return item.content.map((contentItem) => {
+                      if (contentItem.type === 'text') {
+                        return html`<p>${contentItem.text}</p>`;
+                      } else if (contentItem.type === 'image_url') {
+                        return html`<img class="w-100" src="${contentItem.image_url.url}" />`;
+                      } else {
+                        return html``;
+                      }
+                    }) as HtmlValue[]
+                }
+              })}
+            </div>
+          </div>
+        `)
+       : ''}
+
       ${submissions.length > 0
         ? html`
             ${SubmissionList({

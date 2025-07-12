@@ -1,3 +1,4 @@
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
@@ -42,7 +43,7 @@ export function InstanceQuestion({
     feedback: string | null;
     showAiManualComparison: boolean;
     selectedRubricItemIds: string[];
-    prompt: Record<string, any>[] | null;
+    prompt: ChatCompletionMessageParam[] | null;
   } | null;
 }) {
   return PageLayout({
@@ -107,7 +108,12 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
+          ${QuestionContainer({ 
+            resLocals, 
+            questionContext: 'manual_grading', 
+            showFooter: false, 
+            aiGradingPrompt: aiGradingInfo?.prompt 
+          })}
         </div>
 
         <div class="col-lg-4 col-12">
