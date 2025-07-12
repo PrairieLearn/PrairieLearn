@@ -31,7 +31,16 @@ export function ExternalImageCapture({
         data-variant-token="${resLocals.variantToken}"
         data-file-name="${fileName}"
       >
-        <div id="external-image-capture-loading-container" class="d-none align-items-center gap-2">
+        <div id="external-image-capture-loading-container" class="d-flex align-items-center gap-2">
+          <div class="spinning-wheel spinner-border">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <h1 class="d-flex align-items-center my-0">Loading...</h1>
+        </div>
+        <div
+          id="external-image-capture-uploading-container"
+          class="d-none align-items-center gap-2"
+        >
           <div class="spinning-wheel spinner-border">
             <span class="visually-hidden">Uploading...</span>
           </div>
@@ -51,7 +60,7 @@ export function ExternalImageCapture({
           </h1>
           <p>An error occured during the submission of your file.</p>
         </div>
-        <div id="external-image-capture-form-container" class="pb-4">
+        <div id="external-image-capture-form-container" class="d-none pb-4">
           <div id="form-items">
             <h1>Capture image</h1>
 
