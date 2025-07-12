@@ -40,6 +40,7 @@ export function InstanceQuestion({
    */
   aiGradingInfo: {
     feedback: string | null;
+    showAiManualComparison: boolean;
     selectedRubricItemIds: string[];
     prompt: Record<string, any>[] | null;
   } | null;
@@ -117,7 +118,8 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                ai_selected_rubric_item_ids: aiGradingInfo?.selectedRubricItemIds,
+                ai_feedback: aiGradingInfo?.feedback,
+                ai_selected_rubric_item_ids: aiGradingInfo?.showAiManualComparison ? aiGradingInfo?.selectedRubricItemIds : undefined
               })}
             </div>
           </div>

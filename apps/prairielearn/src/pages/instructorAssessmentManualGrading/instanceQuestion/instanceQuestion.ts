@@ -24,7 +24,7 @@ import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
-  InstanceQuestion as InstanceQuestionHtml,
+  InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
@@ -93,6 +93,7 @@ router.get(
 
     let aiGradingInfo: {
       feedback: string | null;
+      showAiManualComparison: boolean;
       selectedRubricItemIds: string[];
       prompt: Record<string, any>[] | null;
     } | null = null;
@@ -112,27 +113,37 @@ router.get(
           grading_job.manual_rubric_grading_id,
         );
 
-        const feedbackAndPromptForSubmission = await sqldb.queryRow(
-          sql.select_ai_grading_feedback_and_prompt_for_submission,
+        const prompt_for_grading_job = await sqldb.queryOptionalRow(
+          sql.select_prompt_for_grading_job,
           {
-            submission_id,
+            grading_job_id: grading_job.id,
           },
-          z.object({
-            feedback: z.string().nullable(),
-            prompt: z.array(z.record(z.string(), z.any())).nullable(),
-          }),
+          z.array(z.record(z.string(), z.any())).nullable(),
         );
 
+        const ai_grading_available = await sqldb.queryRow(
+          sql.select_ai_grading_available_for_submission,
+          { submission_id },
+          z.boolean()
+        );
+
+        const manual_grading_available = await sqldb.queryRow(
+          sql.select_manual_grading_available_for_submission,
+          { submission_id },
+          z.boolean()
+        );
+        
         aiGradingInfo = {
-          feedback: feedbackAndPromptForSubmission.feedback,
+          feedback: grading_job?.feedback?.manual ?? null,
+          showAiManualComparison: ai_grading_available && manual_grading_available,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-          prompt: feedbackAndPromptForSubmission.prompt,
+          prompt: prompt_for_grading_job ?? null,
         };
       }
     }
 
     res.send(
-      InstanceQuestionHtml({
+      InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,

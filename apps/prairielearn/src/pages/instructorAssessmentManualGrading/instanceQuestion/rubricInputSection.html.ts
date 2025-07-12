@@ -16,6 +16,8 @@ export function RubricInputSection({
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
 
+  console.log('resLocals.submission', resLocals.submission);
+
   return html`
     <style>
       .js-selectable-rubric-item-label {
@@ -114,17 +116,34 @@ function RubricItems({
   const ai_selected_rubric_item_ids_set = ai_selected_rubric_item_ids
     ? new Set(ai_selected_rubric_item_ids)
     : null;
-  return rubric_items?.map((item) =>
-    RubricItem({
-      item,
-      item_grading: rubric_grading_items?.[item.id],
-      assessment_question,
-      disable,
-      ai_checked: ai_selected_rubric_item_ids_set
-        ? ai_selected_rubric_item_ids_set.has(item.id)
-        : undefined,
-    }),
-  );
+
+  return html`
+    <div class="d-flex align-items-center gap-2 text-secondary mb-1">
+      <div 
+        data-bs-toggle="tooltip"
+        data-bs-title="AI grading"
+      >
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div 
+        data-bs-toggle="tooltip"
+        data-bs-title="Manual grading"
+      >
+        <i class="fa-solid fa-list-check"></i>
+      </div>
+    </div>
+    ${rubric_items ? rubric_items.map((item) =>
+      RubricItem({
+        item,
+        item_grading: rubric_grading_items?.[item.id],
+        assessment_question,
+        disable,
+        ai_checked: ai_selected_rubric_item_ids_set
+          ? ai_selected_rubric_item_ids_set.has(item.id)
+          : undefined,
+      }),
+    ) : ''}
+  `;
 }
 
 function RubricItem({
@@ -147,6 +166,7 @@ function RubricItem({
           ? html`
               <input
                 type="checkbox"
+                style="margin-left: 3px; margin-right: 8px;"
                 name="rubric_item_selected_ai"
                 class="js-selectable-rubric-item"
                 value="${item.id}"
@@ -154,14 +174,14 @@ function RubricItem({
                 disabled
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
-                title="AI grading"
+                title="${ai_checked ? 'Selected by AI' : 'Not selected by AI'}"
               />
             `
           : ''}
         <input
           type="checkbox"
           name="rubric_item_selected_manual"
-          class="js-selectable-rubric-item"
+          class="js-selectable-rubric-item me-2"
           value="${item.id}"
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
