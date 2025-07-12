@@ -110,10 +110,7 @@ router.post(
         params: queryParams,
         authn_user_id: res.locals.authn_user.user_id,
         error,
-        // While rowCount is not used in the frontend, it used to be required,
-        // so it is included in the result object for backwards compatibility if
-        // a newer query run is viewed in an older version of this page.
-        result: result ? { ...result, rowCount: result.rows.length } : null,
+        result,
       },
       IdSchema,
     );
