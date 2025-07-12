@@ -23,7 +23,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
 export const JsonCommentSchema = z.union([
   z.string(),
   z.array(z.any()),
-  z.record(z.union([z.string(), z.number()]), z.any()),
+  z.record(z.string(), z.any()),
 ]);
 
 // *******************************************************************************
@@ -838,10 +838,10 @@ export const QuestionSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_external_grading_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.union([z.string(), z.number()]), z.any())])
+    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
     .nullable(),
   json_workspace_comment: z
-    .union([z.string(), z.array(z.any()), z.record(z.union([z.string(), z.number()]), z.any())])
+    .union([z.string(), z.array(z.any()), z.record(z.string(), z.any())])
     .nullable(),
   draft: z.boolean(),
   number: z.number().nullable(),

@@ -16,13 +16,10 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const ZodStringToJson = z.preprocess(
-  (val) => {
-    if (val === '' || val == null) return {};
-    return JSON.parse(String(val));
-  },
-  z.record(z.union([z.string(), z.number()]), z.any()).nullable(),
-);
+const ZodStringToJson = z.preprocess((val) => {
+  if (val === '' || val == null) return {};
+  return JSON.parse(String(val));
+}, z.record(z.string(), z.any()).nullable());
 
 const SubmissionCsvRowSchema = z.object({
   UID: z.string(),
