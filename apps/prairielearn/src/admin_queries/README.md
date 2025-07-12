@@ -19,7 +19,7 @@ export default async function (params: {
   /* types */
 }): Promise<AdministratorQueryResult> {
   // Perform some actions, including potentially running SQL queries
-  // Return a array of column names and an array of row objects
+  // Return an array of column names and an array of row objects
   return { columns, rows };
 }
 ```
