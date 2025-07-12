@@ -4,6 +4,7 @@ import type { AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 
 export interface AdministratorQuery extends AdministratorQuerySpecs {
+  error?: any;
   filePrefix: string;
 }
 
@@ -37,11 +38,21 @@ export function AdministratorQueries({
                 (query) => html`
                   <tr>
                     <td>
-                      <a href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}">
-                        <code>${query.filePrefix}</code>
-                      </a>
+                      ${query.error
+                        ? html`<code>${query.filePrefix}</code>`
+                        : html`
+                            <a
+                              href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}"
+                            >
+                              <code>${query.filePrefix}</code>
+                            </a>
+                          `}
                     </td>
-                    <td>${query.description}</td>
+                    <td>
+                      ${query.error
+                        ? html`<span class="text-danger">${query.error}</span>`
+                        : query.description}
+                    </td>
                   </tr>
                 `,
               )}

@@ -19,8 +19,9 @@ router.get(
     const queries: AdministratorQuery[] = await Promise.all(
       moduleList.map(async (f) => {
         const filePrefix = f.replace(/\.[tj]s$/, '');
-        console.log({ f, filePrefix });
-        const module = await loadAdminQueryModule(filePrefix);
+        const module = await loadAdminQueryModule(filePrefix).catch((error) => ({
+          specs: { description: `Error loading query ${filePrefix}`, error: error.message },
+        }));
         return { ...module.specs, filePrefix };
       }),
     );

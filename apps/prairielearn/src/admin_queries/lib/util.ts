@@ -46,12 +46,21 @@ export async function loadAdminQueryModule(query: string): Promise<{
   if (!query.endsWith('.js')) query += '.js';
 
   const modulePath = path.join('..', query);
+  let module: {
+    specs: AdministratorQuerySpecs;
+    default: (params: Record<string, any>) => Promise<AdministratorQueryResult>;
+  };
   try {
-    const module = await import(modulePath);
-    AdministratorQuerySpecsSchema.parse(module.specs);
-    return module;
+    module = await import(modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
-    throw new Error(`Query module not found: ${query}`);
+    throw new Error(`Query module ${query} could not be imported`);
   }
+  try {
+    AdministratorQuerySpecsSchema.parse(module.specs);
+  } catch (err) {
+    logger.error(`Failed to parse specs for query ${query}:`, err);
+    throw new Error(`Query module ${query} does not provide valid specs object`);
+  }
+  return module;
 }
