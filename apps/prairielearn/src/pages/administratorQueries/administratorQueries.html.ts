@@ -1,26 +1,9 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
+import type { AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 
-export const AdministratorQueryJsonParamsSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  default: z.string().optional(),
-  comment: z.string().optional(),
-});
-export type AdministratorQueryJsonParams = z.infer<typeof AdministratorQueryJsonParamsSchema>;
-
-export const AdministratorQueryJsonSchema = z.object({
-  description: z.string(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
-  comment: z.string().optional(),
-  params: z.array(AdministratorQueryJsonParamsSchema).optional(),
-});
-type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
-
-export interface AdministratorQuery extends AdministratorQueryJson {
+export interface AdministratorQuery extends AdministratorQuerySpecs {
   filePrefix: string;
 }
 
