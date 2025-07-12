@@ -47,7 +47,6 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
-// Null exports for unmapped schemas (auto-generated for test coverage)
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
 
