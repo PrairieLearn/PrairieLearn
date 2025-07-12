@@ -90,6 +90,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-duplicate-imports': 'error',
 
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
