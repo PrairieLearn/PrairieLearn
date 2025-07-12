@@ -174,7 +174,7 @@ export async function generatePrompt({
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
-function generateSubmissionMessage({
+export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
 }: {
@@ -255,12 +255,16 @@ function generateSubmissionMessage({
 export async function generateSubmissionEmbedding({
   course,
   question,
+  questionPrompt,
+  submitted_answer,
   instance_question,
   urlPrefix,
   openai,
 }: {
   question: Question;
   course: Course;
+  questionPrompt: string;
+  submitted_answer: Record<string, any> | null;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
@@ -281,7 +285,69 @@ export async function generateSubmissionEmbedding({
     question_course,
     locals,
   );
-  const submission_text = render_submission_results.data.submissionHtmls[0];
+  let submission_text = render_submission_results.data.submissionHtmls[0];
+
+  let contains_image_capture = false;
+  const $submission_html = cheerio.load(submission_text);
+
+  $submission_html
+    .root()
+    .find('img[data-image-capture-uuid]')
+    .contents()
+    .each((_, node) => {
+      if ($submission_html(node).data('image-capture-uuid')) {
+        contains_image_capture = true;
+      }
+    });
+
+  if (contains_image_capture) {
+    // 1. Extract the text and images within the submission HTML. With this, create a prompt to ask the AI, 
+    //    - Summarize the submission text and any images.
+    //    - Explain the student's errors.
+    //    - Explain the reasoning for selecting each rubric item
+    // 2. Add this to the submission HTML, and add it to the prompt for embedding. 
+
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'user',
+        content: `Question: \n${questionPrompt}`,
+      },
+      generateSubmissionMessage({
+        submission_text,
+        submitted_answer
+      }),
+      {
+        role: 'user',
+        content: 'Given the student\'s submission, perform the following tasks:\n' +
+          '1. Extract the text of the student submission. For images, extract the text as closely as possible without attempting to correct it and describe any handwritten non-textual content, particularly information that would be relevant to the rubric/grading of the question. Place into the response_transcription field.\n' +
+          '2. Explain the student\'s errors. Place into the errors field.\n' +
+          '3. Explain the reasoning for selecting each rubric item. Place into the rubric_reasoning field.\n'
+      }
+    ];
+
+    const imageCaptureDescriptionResponses = z.object({
+      response_transcription: z.string(),
+      errors: z.string(),
+      rubric_reasoning: z.string(),
+    });
+
+    const completion = await openai.chat.completions.create({
+      messages,
+      model: OPEN_AI_MODEL,
+      user: `course_${course.id}`,
+      temperature: OPEN_AI_TEMPERATURE
+    });
+
+    const response = imageCaptureDescriptionResponses.parse(completion.choices[0].message.content);
+
+    // Add the extracted information to the submission HTML.
+    submission_text = `
+      ${response.response_transcription}
+      ${response.errors}
+      ${response.rubric_reasoning}
+    `;
+  }
+
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
@@ -296,6 +362,7 @@ export async function generateSubmissionEmbedding({
   );
   return new_submission_embedding;
 }
+
 
 export function parseAiRubricItems({
   ai_rubric_items,
