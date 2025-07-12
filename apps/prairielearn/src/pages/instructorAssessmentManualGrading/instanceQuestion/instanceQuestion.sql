@@ -104,7 +104,7 @@ LIMIT
   1;
 
 -- BLOCK select_ai_grading_available_for_submission
-SELECT 
+SELECT
   EXISTS (
     SELECT
       1

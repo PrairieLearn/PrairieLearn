@@ -119,30 +119,26 @@ function RubricItems({
 
   return html`
     <div class="d-flex align-items-center gap-2 text-secondary mb-1">
-      <div 
-        data-bs-toggle="tooltip"
-        data-bs-title="AI grading"
-      >
+      <div data-bs-toggle="tooltip" data-bs-title="AI grading">
         <i class="fa-solid fa-robot"></i>
       </div>
-      <div 
-        data-bs-toggle="tooltip"
-        data-bs-title="Manual grading"
-      >
+      <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
         <i class="fa-solid fa-list-check"></i>
       </div>
     </div>
-    ${rubric_items ? rubric_items.map((item) =>
-      RubricItem({
-        item,
-        item_grading: rubric_grading_items?.[item.id],
-        assessment_question,
-        disable,
-        ai_checked: ai_selected_rubric_item_ids_set
-          ? ai_selected_rubric_item_ids_set.has(item.id)
-          : undefined,
-      }),
-    ) : ''}
+    ${rubric_items
+      ? rubric_items.map((item) =>
+          RubricItem({
+            item,
+            item_grading: rubric_grading_items?.[item.id],
+            assessment_question,
+            disable,
+            ai_checked: ai_selected_rubric_item_ids_set
+              ? ai_selected_rubric_item_ids_set.has(item.id)
+              : undefined,
+          }),
+        )
+      : ''}
   `;
 }
 

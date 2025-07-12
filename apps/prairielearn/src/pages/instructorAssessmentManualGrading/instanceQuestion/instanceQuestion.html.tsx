@@ -108,11 +108,11 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ 
-            resLocals, 
-            questionContext: 'manual_grading', 
-            showFooter: false, 
-            aiGradingPrompt: aiGradingInfo?.prompt 
+          ${QuestionContainer({
+            resLocals,
+            questionContext: 'manual_grading',
+            showFooter: false,
+            aiGradingPrompt: aiGradingInfo?.prompt,
           })}
         </div>
 
@@ -125,7 +125,9 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 ai_feedback: aiGradingInfo?.feedback,
-                ai_selected_rubric_item_ids: aiGradingInfo?.showAiManualComparison ? aiGradingInfo?.selectedRubricItemIds : undefined
+                ai_selected_rubric_item_ids: aiGradingInfo?.showAiManualComparison
+                  ? aiGradingInfo?.selectedRubricItemIds
+                  : undefined,
               })}
             </div>
           </div>

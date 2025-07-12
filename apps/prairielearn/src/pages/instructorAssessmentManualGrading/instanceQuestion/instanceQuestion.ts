@@ -114,25 +114,27 @@ router.get(
           grading_job.manual_rubric_grading_id,
         );
 
-        const prompt_for_grading_job = await sqldb.queryOptionalRow(
+        const prompt_for_grading_job = (await sqldb.queryOptionalRow(
           sql.select_prompt_for_grading_job,
           {
             grading_job_id: grading_job.id,
           },
           z.array(z.record(z.string(), z.any())).nullable(),
-        ) as ChatCompletionMessageParam[] | null;
+        )) as ChatCompletionMessageParam[] | null;
 
-        const ai_grading_available = await sqldb.queryOptionalRow(
-          sql.select_ai_grading_available_for_submission,
-          { submission_id },
-          z.boolean()
-        ) ?? false;
+        const ai_grading_available =
+          (await sqldb.queryOptionalRow(
+            sql.select_ai_grading_available_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
 
-        const manual_grading_available = await sqldb.queryOptionalRow(
-          sql.select_manual_grading_available_for_submission,
-          { submission_id },
-          z.boolean()
-        ) ?? false;
+        const manual_grading_available =
+          (await sqldb.queryOptionalRow(
+            sql.select_manual_grading_available_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
 
         aiGradingInfo = {
           feedback: grading_job?.feedback?.manual ?? null,

@@ -229,7 +229,7 @@ export async function aiGrade({
         }
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
-          feedback: z.string()
+          feedback: z.string(),
         });
         const completion = await openai.chat.completions.parse({
           messages,
@@ -257,7 +257,10 @@ export async function aiGrade({
             });
 
             logger.info('Feedback:' + response.parsed?.feedback);
-            logger.info('instance_question.requires_manual_grading: ' + instance_question.requires_manual_grading);
+            logger.info(
+              'instance_question.requires_manual_grading: ' +
+                instance_question.requires_manual_grading,
+            );
 
             if (instance_question.requires_manual_grading) {
               logger.info('Manual grading required');

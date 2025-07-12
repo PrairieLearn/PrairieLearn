@@ -37,7 +37,7 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
-  /** 
+  /**
    * ai_feedback is undefined if AI grading was not used, and null if AI grading was used, but no AI feedback was generated.
    */
   ai_feedback?: string | null;
@@ -126,14 +126,14 @@ ${submission.feedback?.manual}</textarea
         </li>
         ${ai_feedback !== undefined
           ? html`
-            <li class="list-group-item overflow-y-auto" style="max-height: 500px;">
-              <label>
-                <p class="mt-2">AI-generated feedback:</p>
-                <p>${ai_feedback || 'No feedback available.'}</p>
-              </label>
-            </li>
+              <li class="list-group-item overflow-y-auto" style="max-height: 500px;">
+                <label>
+                  <p class="mt-2">AI-generated feedback:</p>
+                  <p>${ai_feedback || 'No feedback available.'}</p>
+                </label>
+              </li>
             `
-            : ''}
+          : ''}
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
               <li class="list-group-item">
