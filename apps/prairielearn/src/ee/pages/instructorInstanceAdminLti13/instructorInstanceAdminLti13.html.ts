@@ -13,13 +13,16 @@ import {
 } from '../../../lib/db-types.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
-export const AssessmentRowSchema = AssessmentSchema.extend(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }).shape,
-).extend({
+export const AssessmentRowSchema = z.object({
+  ...AssessmentSchema.shape,
+  abbreviation: AssessmentSetSchema.shape.abbreviation,
+  name: AssessmentSetSchema.shape.name,
+  color: AssessmentSetSchema.shape.color,
   start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
   label: z.string(),
 });
+
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 export function InstructorInstanceAdminLti13NoInstances({

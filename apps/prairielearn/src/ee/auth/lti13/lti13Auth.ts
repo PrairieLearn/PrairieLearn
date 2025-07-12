@@ -199,13 +199,13 @@ export default router;
 //
 // Schema to validate OIDC, LTI
 //
-const OIDCAuthResponseSchema = z.object({
+const OIDCAuthResponseSchema = z.looseObject({
   state: z.string(),
   id_token: z.string(),
   // also has utf8, authenticity_token, lti_storage_target
 });
 
-const OIDCLaunchFlowSchema = z.object({
+const OIDCLaunchFlowSchema = z.looseObject({
   iss: z.string(),
   login_hint: z.string(),
   lti_message_hint: z.string().optional(),
@@ -220,7 +220,7 @@ const OIDCLaunchFlowSchema = z.object({
 //
 async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-  z.looseObject(OIDCAuthResponseSchema).parse(req.body);
+  OIDCAuthResponseSchema.parse(req.body);
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   return new Promise((resolve, reject) => {
@@ -254,7 +254,7 @@ async function authenticate(req: Request, res: Response): Promise<any> {
 async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 
-  const parameters = z.looseObject(OIDCLaunchFlowSchema).parse({ ...req.body, ...req.query });
+  const parameters = OIDCLaunchFlowSchema.parse({ ...req.body, ...req.query });
 
   // If the authentication request is coming from an iframe, intercept the parameters
   // and offer a small form to open in a new window.
