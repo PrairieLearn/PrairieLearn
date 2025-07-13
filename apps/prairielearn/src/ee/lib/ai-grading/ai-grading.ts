@@ -27,6 +27,7 @@ import {
   GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
+  deleteEmbeddingForSubmission,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -34,15 +35,15 @@ import {
   selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const NUM_REFERENCE_SAMPLES = 10;
 
 /**
  * Grade instance questions using AI.
@@ -106,6 +107,10 @@ export async function aiGrade({
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
+
+    let i = 0;
+    const reference_submission_ids: number[] = [];
+
     for (const instance_question of all_instance_questions) {
       // Only checking for instance questions that can be used as RAG data.
       // They should be graded last by a human.
@@ -114,6 +119,13 @@ export async function aiGrade({
       }
 
       const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
+
+      if (i < NUM_REFERENCE_SAMPLES) {
+        // For the first NUM_REFERENCE_SAMPLES submissions, we always generate a new embedding.
+        // This is to ensure that we have a good set of reference samples for RAG.
+        reference_submission_ids.push(parseInt(submission.id));
+      }
+
       const submission_embedding = await selectEmbeddingForSubmission(submission.id);
       
       if (!submission_embedding) {
@@ -127,6 +139,7 @@ export async function aiGrade({
         });
         newEmbeddingsCount++;
       }
+      i++;
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
@@ -149,6 +162,8 @@ export async function aiGrade({
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
+
+    job.info('Allowed samples for RAG: ' + reference_submission_ids.join(', '));
 
     /**
      * Grade an individual instance question.
@@ -187,16 +202,23 @@ export async function aiGrade({
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
+
+      // TODO: Temporary change -- for testing purposes, we will always generate a new embedding. 
+
       let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (!submission_embedding) {
-        submission_embedding = await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          openai,
-        });
+      if (submission_embedding) {
+        // remove the existing embedding
+        deleteEmbeddingForSubmission(submission.id);
       }
+      submission_embedding = await generateSubmissionEmbedding({
+        course,
+        question,
+        questionPrompt,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
+      });
       const submission_text = submission_embedding.submission_text;
 
       const example_submissions = await selectClosestSubmissionInfo({
@@ -204,6 +226,7 @@ export async function aiGrade({
         assessment_question_id: assessment_question.id,
         embedding: submission_embedding.embedding,
         limit: 5,
+        submission_ids_allowed: reference_submission_ids
       });
       let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
@@ -436,7 +459,7 @@ export async function aiGrade({
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
-      instance_questions,
+      instance_questions.slice(NUM_REFERENCE_SAMPLES),
       PARALLEL_SUBMISSION_GRADING_LIMIT,
       async (instance_question: InstanceQuestion) => {
         const logs: AIGradingLog[] = [];

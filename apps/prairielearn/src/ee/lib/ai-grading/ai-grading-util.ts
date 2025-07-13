@@ -263,7 +263,8 @@ export async function generateSubmissionEmbedding({
 }: {
   question: Question;
   course: Course;
-  questionPrompt: string;
+  /** The rendered HTML content of the question. */
+  questionPrompt?: string;
   submitted_answer: Record<string, any> | null;
   instance_question: InstanceQuestion;
   urlPrefix: string;
@@ -307,11 +308,7 @@ export async function generateSubmissionEmbedding({
     //    - Explain the reasoning for selecting each rubric item
     // 2. Add this to the submission HTML, and add it to the prompt for embedding. 
 
-    const messages: ChatCompletionMessageParam[] = [
-      {
-        role: 'user',
-        content: `Question: \n${questionPrompt}`,
-      },
+    let messages: ChatCompletionMessageParam[] = [
       generateSubmissionMessage({
         submission_text,
         submitted_answer
@@ -324,6 +321,16 @@ export async function generateSubmissionEmbedding({
           '3. Explain the reasoning for selecting each rubric item. Place into the rubric_reasoning field.\n'
       }
     ];
+
+    if (questionPrompt) {
+      messages = [
+        {
+          role: 'user',
+          content: `Question: \n${questionPrompt}`,
+        },
+        ...messages
+      ];
+    }
 
     const imageCaptureDescriptionResponses = z.object({
       response_transcription: z.string(),
@@ -468,12 +475,17 @@ export async function selectClosestSubmissionInfo({
   assessment_question_id,
   embedding,
   limit,
+  submission_ids_allowed = [],
 }: {
   submission_id: string;
   assessment_question_id: string;
   embedding: string;
   limit: number;
+  submission_ids_allowed?: number[]
 }): Promise<GradedExample[]> {
+
+  console.log('submission_ids_allowed', submission_ids_allowed);
+
   return await queryRows(
     sql.select_closest_submission_info,
     {
@@ -481,6 +493,7 @@ export async function selectClosestSubmissionInfo({
       assessment_question_id,
       embedding,
       limit,
+      submission_ids_allowed,
     },
     GradedExampleSchema,
   );
@@ -510,4 +523,10 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteEmbeddingForSubmission(
+  submission_id: string,
+): Promise<void> {
+  await queryAsync(sql.delete_embedding_for_submission, { submission_id });
 }
