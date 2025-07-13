@@ -36,6 +36,106 @@ onDocumentReady(() => {
 
   window.gradersList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+
+    if (data) {
+      // Compute the number of true positives, true negatives, false positive, and false negative
+      const confusionMatrix = {
+        truePositives: 0,
+        trueNegatives: 0,
+        falsePositives: 0,
+        falseNegatives: 0,
+      };
+
+      for (const row of data) {
+        if (row.ai_grading_status === 'LatestRubric') {
+          if (row.rubric_similarity) {
+            for (const item of row.rubric_similarity) {
+              if (item.true_positive) {
+                confusionMatrix.truePositives++;
+              } else {
+                confusionMatrix.trueNegatives++;
+              }
+            }
+          }
+          if (row.rubric_difference) {
+            for (const difference of row.rubric_difference) {
+              if (difference.false_positive) {
+                confusionMatrix.falsePositives++;
+              } else {
+                confusionMatrix.falseNegatives++;
+              }
+            }
+          }
+        }
+      }
+
+      const precision =
+        confusionMatrix.truePositives /
+        (confusionMatrix.truePositives + confusionMatrix.falsePositives);
+      const recall =
+        confusionMatrix.truePositives /
+        (confusionMatrix.truePositives + confusionMatrix.falseNegatives);
+
+      const precision_complement =
+        confusionMatrix.trueNegatives /
+        (confusionMatrix.trueNegatives + confusionMatrix.falsePositives);
+      const recall_complement =
+        confusionMatrix.trueNegatives /
+        (confusionMatrix.trueNegatives + confusionMatrix.falseNegatives);
+
+      const f1score = (2 * (precision * recall)) / (precision + recall);
+      const f1score_complement =
+        (2 * (precision_complement * recall_complement)) /
+        (precision_complement + recall_complement);
+
+      const meanAgreementSpan = document.getElementById('mean-agreement');
+      if (!meanAgreementSpan) {
+        console.warn('Could not find element with id "mean-agreement"');
+        return;
+      }
+      meanAgreementSpan.textContent =
+        (
+          ((confusionMatrix.truePositives + confusionMatrix.trueNegatives) /
+            (confusionMatrix.truePositives +
+              confusionMatrix.trueNegatives +
+              confusionMatrix.falsePositives +
+              confusionMatrix.falseNegatives)) *
+          100
+        ).toFixed(2) + '%';
+
+      const f1ScoreSpan = document.getElementById('f1-score');
+      const precisionSpan = document.getElementById('precision');
+      const recallSpan = document.getElementById('recall');
+
+      if (f1ScoreSpan) {
+        f1ScoreSpan.textContent = f1score.toFixed(2);
+      }
+
+      if (precisionSpan) {
+        precisionSpan.textContent = precision.toFixed(2);
+      }
+
+      if (recallSpan) {
+        recallSpan.textContent = recall.toFixed(2);
+      }
+
+      const f1ScoreComplementSpan = document.getElementById('f1-score-complement');
+      const precisionComplementSpan = document.getElementById('precision-complement');
+      const recallComplementSpan = document.getElementById('recall-complement');
+
+      if (f1ScoreComplementSpan) {
+        f1ScoreComplementSpan.textContent = f1score_complement.toFixed(2);
+      }
+
+      if (precisionComplementSpan) {
+        precisionComplementSpan.textContent = precision_complement.toFixed(2);
+      }
+
+      if (recallComplementSpan) {
+        recallComplementSpan.textContent = recall_complement.toFixed(2);
+      }
+    }
+
     const graders = data.flatMap((row) =>
       (row.ai_grading_status !== 'None'
         ? [generateAiGraderName(row.ai_grading_status)]
