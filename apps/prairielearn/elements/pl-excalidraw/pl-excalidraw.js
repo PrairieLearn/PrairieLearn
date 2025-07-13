@@ -46,7 +46,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
       setUnsaved(false);
     }, 250);
     return () => clearTimeout(autoSave);
-  }, [setHiddenInput, lib, sceneVer]);
+  }, [setHiddenInput, metadata.read_only, lib, sceneVer]);
 
   const props = {
     name: sketchName,

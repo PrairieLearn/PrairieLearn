@@ -15,10 +15,10 @@ import Docker from 'dockerode';
 import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { type Entry } from 'fast-glob';
+import minimist from 'minimist';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
@@ -150,7 +150,7 @@ async
       // If a config file was specified on the command line, we'll use that
       // instead of the default locations.
 
-      const argv = yargsParser(process.argv.slice(2));
+      const argv = minimist(process.argv.slice(2));
       if ('config' in argv) {
         configPaths = [argv['config']];
       }

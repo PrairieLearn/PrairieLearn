@@ -5,7 +5,7 @@ export function AssessmentBadge({
   hideLink = false,
   urlPrefix,
   plainUrlPrefix,
-  course_instance_id,
+  courseInstanceId,
   publicURL = false,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
@@ -15,19 +15,19 @@ export function AssessmentBadge({
   | {
       urlPrefix: string;
       plainUrlPrefix?: undefined;
-      course_instance_id?: undefined;
+      courseInstanceId?: undefined;
     }
-  | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
+  | { urlPrefix?: undefined; plainUrlPrefix: string; courseInstanceId: string }
 )) {
   if (hideLink) {
     return <span class={`badge color-${assessment.color}`}>{assessment.label}</span>;
   }
 
   if (publicURL) {
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}`;
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${courseInstanceId}`;
   } else if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
-    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
+    urlPrefix = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor`;
   }
   return (
     <a
@@ -38,6 +38,7 @@ export function AssessmentBadge({
     </a>
   );
 }
+
 export function AssessmentBadgeHtml({
   assessment,
   hideLink = false,
@@ -63,19 +64,17 @@ export function AssessmentBadgeHtml({
         assessment={assessment}
         hideLink={hideLink}
         plainUrlPrefix={plainUrlPrefix}
-        course_instance_id={course_instance_id}
+        courseInstanceId={course_instance_id}
         publicURL={publicURL}
       />,
-    ).toString();
+    );
   }
   return renderHtml(
     <AssessmentBadge
       assessment={assessment}
       hideLink={hideLink}
-      urlPrefix={urlPrefix ?? undefined}
-      plainUrlPrefix={plainUrlPrefix}
-      course_instance_id={course_instance_id}
+      urlPrefix={urlPrefix}
       publicURL={publicURL}
     />,
-  ).toString();
+  );
 }

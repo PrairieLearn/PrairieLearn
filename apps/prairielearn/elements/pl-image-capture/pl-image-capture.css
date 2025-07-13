@@ -1,0 +1,4 @@
+#capture-preview {
+  object-fit: contain;
+  max-height: max(60vh, 600px);
+}

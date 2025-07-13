@@ -1,8 +1,14 @@
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import {
+  getAssessmentContext,
+  getCourseInstanceContext,
+  getPageContext,
+} from '../../lib/client/page-context.js';
+import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { Hydrate } from '../../lib/preact.js';
-import type { AssessmentQuestionRow } from '../../models/assessment-question.types.js';
+import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
@@ -15,6 +21,10 @@ export function InstructorAssessmentQuestions({
   questions: AssessmentQuestionRow[];
   origHash: string | null;
 }) {
+  const { authz_data, urlPrefix } = getPageContext(resLocals);
+  const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
+  const { assessment, assessment_set } = getAssessmentContext(resLocals);
+
   return PageLayout({
     resLocals,
     pageTitle: 'Questions',
@@ -30,20 +40,20 @@ export function InstructorAssessmentQuestions({
     content: (
       <>
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
+          authz_data={authz_data}
+          assessment={assessment}
+          courseInstance={course_instance as StaffCourseInstance}
+          course={course as StaffCourse}
+          urlPrefix={urlPrefix}
         />
         <Hydrate>
           <InstructorAssessmentQuestionsTable
-            course={resLocals.course}
+            course={course as StaffCourse}
             questions={questions}
-            urlPrefix={resLocals.urlPrefix}
-            assessmentType={resLocals.assessment.type}
-            assessmentSetName={resLocals.assessment_set.name}
-            assessmentNumber={resLocals.assessment.number}
+            urlPrefix={urlPrefix}
+            assessmentType={assessment.type}
+            assessmentSetName={assessment_set.name}
+            assessmentNumber={assessment.number}
             hasCoursePermissionPreview={resLocals.authz_data.has_course_permission_preview}
             hasCourseInstancePermissionEdit={
               resLocals.authz_data.has_course_instance_permission_edit

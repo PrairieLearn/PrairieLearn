@@ -3,7 +3,7 @@ import { Fragment } from 'preact/jsx-runtime';
 
 import { useState } from '@prairielearn/preact-cjs/hooks';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
+import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
@@ -14,7 +14,7 @@ import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
 import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { AssessmentQuestionRow } from '../../../models/assessment-question.types.js';
+import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
@@ -111,7 +111,7 @@ export function InstructorAssessmentQuestionsTable({
   questions: AssessmentQuestionRow[];
   assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
@@ -183,7 +183,7 @@ export function InstructorAssessmentQuestionsTable({
         return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
       }
     } else {
-      return '&mdash';
+      return '—';
     }
   }
 
@@ -371,7 +371,6 @@ export function InstructorAssessmentQuestionsTable({
                                 data-bs-toggle="modal"
                                 data-bs-target="#resetQuestionVariantsModal"
                                 onClick={() => handleResetButtonClick(question.id)}
-                                data-assessment-question-id={question.id}
                               >
                                 Reset question variants
                               </button>
@@ -395,7 +394,7 @@ export function InstructorAssessmentQuestionsTable({
         csrfToken={csrfToken}
         assessmentQuestionId={resetAssessmentQuestionId}
         show={showResetModal}
-        onHide={handleResetModalClose}
+        onHide={() => setShowResetModal(false)}
       />
       {editMode ? (
         <EditQuestionModal

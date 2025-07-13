@@ -79,6 +79,7 @@ export function IssueBadge({
       <IssueBadgeJsx count={count} className={className} suppressLink={suppressLink} />,
     );
   }
+
   return renderHtml(
     <IssueBadgeJsx
       count={count}

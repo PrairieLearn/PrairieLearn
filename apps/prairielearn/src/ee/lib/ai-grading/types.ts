@@ -8,3 +8,13 @@ export interface AIGradingStats {
 }
 
 export type WithAIGradingStats<T> = T & AIGradingStats;
+
+export interface AIGradingLog {
+  messageType: 'info' | 'error';
+  message: string;
+}
+
+export interface AIGradingLogger {
+  info(msg: string): void;
+  error(msg: string): void;
+}

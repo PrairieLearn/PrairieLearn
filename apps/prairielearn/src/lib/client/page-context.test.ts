@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import type z from 'zod';
 
 import {
-  type StaffCourseInstanceContext,
-  type StudentCourseInstanceContext,
+  type StaffCourseInstanceContextSchema,
+  type StudentCourseInstanceContextSchema,
   getCourseInstanceContext,
   getPageContext,
 } from './page-context.js';
@@ -57,7 +58,7 @@ describe('getPageContext', () => {
 });
 
 describe('getCourseInstanceContext', () => {
-  const mockStudentData: StudentCourseInstanceContext = {
+  const mockStudentData: z.input<typeof StudentCourseInstanceContextSchema> = {
     course_instance: {
       assessments_group_by: 'Set',
       course_id: '1',
@@ -80,7 +81,7 @@ describe('getCourseInstanceContext', () => {
       title: 'Example Student Course',
     },
   };
-  const mockInstructorData: StaffCourseInstanceContext = {
+  const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
       ...mockStudentData.course_instance,
       enrollment_limit: 10,

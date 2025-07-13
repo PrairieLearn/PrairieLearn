@@ -5,6 +5,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import type { StatusMessage } from '../../src/lib/externalImageCaptureSocket.types.js';
 
 const MAX_IMAGE_SIDE_LENGTH = 1000;
+const SOCKET_TIMEOUT_MS = 10 * 1000; // 10 seconds
 
 onDocumentReady(() => {
   const cameraInput = document.querySelector<HTMLInputElement>('#camera-input');
@@ -32,9 +33,35 @@ onDocumentReady(() => {
     throw new Error('Required elements not found in the document');
   }
 
-  function changeState(state: 'form' | 'loading' | 'success' | 'failed') {
+  const socket = io('/external-image-capture');
+  const timeout = setTimeout(() => {
+    changeState('failed');
+    socket.disconnect();
+  }, SOCKET_TIMEOUT_MS);
+
+  socket.emit(
+    'joinExternalImageCapture',
+    {
+      variant_id: externalImageCaptureForm.dataset.variantId,
+      variant_token: externalImageCaptureForm.dataset.variantToken,
+      file_name: externalImageCaptureForm.dataset.fileName,
+    },
+    (msg: StatusMessage) => {
+      if (!msg) {
+        changeState('failed');
+        throw new Error('Failed to join external image capture room');
+      }
+      clearTimeout(timeout);
+      changeState('form');
+    },
+  );
+
+  function changeState(state: 'loading' | 'form' | 'uploading' | 'success' | 'failed') {
     const externalImageCaptureLoadingContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-loading-container',
+    );
+    const externalImageCaptureUploadingContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-uploading-container',
     );
     const externalImageCaptureFormContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-form-container',
@@ -55,6 +82,7 @@ onDocumentReady(() => {
 
     if (
       !externalImageCaptureLoadingContainer ||
+      !externalImageCaptureUploadingContainer ||
       !externalImageCaptureFormContainer ||
       !formItems ||
       !externalImageCaptureSuccessContainer ||
@@ -72,7 +100,11 @@ onDocumentReady(() => {
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.remove('d-none');
 
-      uploadButton.classList.remove('d-none');
+      const imageUploaded = cameraInput?.files && cameraInput.files.length > 0;
+      if (imageUploaded) {
+        uploadButton.classList.remove('d-none');
+      }
+
       cameraInputLabel.classList.remove('d-none');
     } else {
       externalImageCaptureFormContainer.classList.add('d-none');
@@ -82,6 +114,12 @@ onDocumentReady(() => {
       externalImageCaptureLoadingContainer.classList.replace('d-none', 'd-flex');
     } else {
       externalImageCaptureLoadingContainer.classList.replace('d-flex', 'd-none');
+    }
+
+    if (state === 'uploading') {
+      externalImageCaptureUploadingContainer.classList.replace('d-none', 'd-flex');
+    } else {
+      externalImageCaptureUploadingContainer.classList.replace('d-flex', 'd-none');
     }
 
     if (state === 'success') {
@@ -133,33 +171,10 @@ onDocumentReady(() => {
       throw new Error('External image capture form not found in the document');
     }
 
-    const variant_id = externalImageCaptureForm.dataset.variantId;
-    const file_name = externalImageCaptureForm.dataset.fileName;
-    const variant_token = externalImageCaptureForm.dataset.variantToken;
-
-    const socket = io('/external-image-capture');
-
-    socket.emit(
-      'joinExternalImageCapture',
-      {
-        variant_id,
-        variant_token,
-        file_name,
-      },
-      (msg: StatusMessage) => {
-        if (!msg) {
-          changeState('failed');
-          throw new Error('Failed to join external image capture room');
-        }
-      },
-    );
-
-    const timeoutMs = 10 * 1000; // 10 seconds
-
     const timeout = setTimeout(() => {
       changeState('failed');
       socket.disconnect();
-    }, timeoutMs);
+    }, SOCKET_TIMEOUT_MS);
 
     socket.on('externalImageCaptureAck', (msg: StatusMessage) => {
       clearTimeout(timeout);
@@ -244,7 +259,7 @@ onDocumentReady(() => {
   });
 
   externalImageCaptureForm.addEventListener('submit', () => {
-    changeState('loading');
+    changeState('uploading');
     listenForImageCaptureAcknowledgement();
   });
 
