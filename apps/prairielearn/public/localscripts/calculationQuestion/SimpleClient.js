@@ -294,13 +294,13 @@ define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], functi
 
   var SubmissionView = Backbone.View.extend({
     initialize: function () {
-      (this.questionDataModel = this.options.questionDataModel),
-        (this.appModel = this.options.appModel),
-        (this.template = this.options.template),
-        (this.params = this.options.params),
-        (this.submittedAnswer = this.options.submittedAnswer),
-        (this.feedback = this.options.feedback),
-        (this.rivetsBindingsActive = false);
+      this.questionDataModel = this.options.questionDataModel;
+      this.appModel = this.options.appModel;
+      this.template = this.options.template;
+      this.params = this.options.params;
+      this.submittedAnswer = this.options.submittedAnswer;
+      this.feedback = this.options.feedback;
+      this.rivetsBindingsActive = false;
       this.render();
     },
 

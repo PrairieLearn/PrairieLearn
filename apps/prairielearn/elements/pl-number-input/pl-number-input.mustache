@@ -16,9 +16,10 @@
           size="{{size}}"
           {{^editable}}disabled{{/editable}}
           {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-          aria-describedby="pl-number-input-{{uuid}}-suffix"
-          aria-labelledby="pl-number-input-{{uuid}}-label"
           placeholder="{{placeholder}}"
+          {{#suffix}}aria-describedby="pl-number-input-{{uuid}}-suffix"{{/suffix}}
+          {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+          {{^aria_label}}{{#label}}aria-labelledby="pl-number-input-{{uuid}}-label"{{/label}}{{/aria_label}}
         />
 
         {{#suffix}}

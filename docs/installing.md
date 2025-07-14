@@ -2,6 +2,18 @@
 
 This page describes the procedure to install and run your course locally within Docker. You can develop course content locally following the instructions below, or using the [in-browser tools](getStarted.md).
 
+## Why run PrairieLearn locally?
+
+PrairieLearn provides the ability to create and update questions with a browser interface. While this interface is suitable for simpler questions, it is not ideal for complex cases such as:
+
+- Questions using [code autograding](externalGrading.md)
+- Questions using [workspaces](workspaces/index.md)
+- Questions that involve a significant number of [images, documents and other files](clientServerFiles.md)
+- Questions using [custom Python libraries](questionRuntime/index.md#installing-libraries-in-your-course) in the generation and/or grading process
+- Custom [elements](devElements.md) or [element extensions](elementExtensions.md)
+
+Using the course repository with a local installation simplifies the process of updating the course content. This workflow allows instructors to test changes in the question code or assessment configuration without affecting the student experience. It also supports collaboration and coordination in courses with multiple staff members using [Git workflows](https://git-scm.com/book/en/v2/Distributed-Git-Distributed-Workflows) and [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
+
 ## Installation instructions
 
 Regardless of which operating system you are using, you will need to install the appropriate version of [Docker Desktop](https://www.docker.com/products/docker-desktop/).
@@ -86,6 +98,10 @@ docker run -it --rm -p 3000:3000 \
 
     - PrairieLearn needs a way of starting up Docker containers on the host machine from within another Docker container. This is achieved by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows it to run "sibling" containers.
     - PrairieLearn needs to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to either `/grade` in the grading container or the home directory in the workspace container. This is achieved by mounting a directory on the host machine to `/jobs` in the PrairieLearn container, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
+
+### Development
+
+If you want to contribute improvements or features to PrairieLearn, you will need to start up PrairieLearn differently. See the [local installation](./dev-guide/installingLocal.md) documentation for more details.
 
 #### Troubleshooting the --add-host option and network timeouts
 

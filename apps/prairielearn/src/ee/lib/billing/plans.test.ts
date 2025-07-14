@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperDb from '../../../tests/helperDb.js';
 import * as helperServer from '../../../tests/helperServer.js';
@@ -16,8 +16,8 @@ import {
 } from './plans.js';
 
 describe('plans', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   describe('reconcilePlanGrantsForInstitution', () => {
     it('persists updates', async () => {

@@ -39,7 +39,7 @@ FROM
   course_instances
 WHERE
   short_name = $short_name
-  AND course_id = $sharing_course_id;
+  AND course_id = $course_id;
 
 -- BLOCK select_assessment
 SELECT

@@ -25,6 +25,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
       start_date: accessRule.startDate ?? null,
       end_date: accessRule.endDate ?? null,
       institution: accessRule.institution ?? null,
+      comment: accessRule.comment,
     }));
 
   return {
@@ -34,6 +35,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
+    comment: JSON.stringify(courseInstance.comment),
+    share_source_publicly: courseInstance.shareSourcePublicly || false,
   };
 }
 

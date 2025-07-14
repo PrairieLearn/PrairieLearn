@@ -1,17 +1,33 @@
+import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ParsedChatCompletion,
+} from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type Course,
+  IdSchema,
   type InstanceQuestion,
+  InstanceQuestionSchema,
   type Question,
   type RubricItem,
   RubricItemSchema,
+  type Submission,
   type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
+  type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -21,7 +37,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
-export const API_TEMPERATURE = 0.2;
+export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -60,23 +76,19 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
 export async function generatePrompt({
   questionPrompt,
   submission_text,
+  submitted_answer,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
   submission_text: string;
+  submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
 }): Promise<{
-  messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  messages: ChatCompletionMessageParam[];
 }> {
-  const messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[] = [];
+  const messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -127,13 +139,7 @@ export async function generatePrompt({
       // or the rubric may have changed significantly since the example was graded.
       // We'll show whatever items were selected anyways, since it'll likely
       // still be useful context to the LLM.
-      const rubric_grading_items = await queryRows(
-        sql.select_rubric_grading_items,
-        {
-          manual_rubric_grading_id: example.manual_rubric_grading_id,
-        },
-        RubricItemSchema,
-      );
+      const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
         rubric_grading_info += `description: ${item.description}\n`;
@@ -155,12 +161,103 @@ export async function generatePrompt({
   }
 
   // Student response
-  messages.push({
-    role: 'user',
-    content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
-  });
+  messages.push(
+    generateSubmissionMessage({
+      submission_text,
+      submitted_answer,
+    }),
+  );
 
   return { messages };
+}
+
+/**
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ */
+function generateSubmissionMessage({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): ChatCompletionMessageParam {
+  const message_content: ChatCompletionContentPart[] = [];
+
+  message_content.push({
+    type: 'text',
+    text: 'The student submitted the following response: \n<response>\n',
+  });
+
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
+  // to the message content to construct an AI-readable version of the submission.
+
+  const $submission_html = cheerio.load(submission_text);
+  let submissionTextSegment = '';
+
+  $submission_html
+    .root()
+    .find('body')
+    .contents()
+    .each((_, node) => {
+      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      if (imageCaptureUUID) {
+        if (submissionTextSegment) {
+          // Push and reset the current text segment before adding the image.
+          message_content.push({
+            type: 'text',
+            text: submissionTextSegment,
+          });
+          submissionTextSegment = '';
+        }
+
+        const options = $submission_html(node).data('options') as Record<string, string>;
+        const submittedImageName = options.submitted_file_name;
+        if (!submittedImageName) {
+          // If no submitted filename is available, no image was captured.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${options.file_name} was not captured.`,
+          });
+          return;
+        }
+
+        // submitted_answer contains the base-64 encoded image data for the image capture.
+
+        if (!submitted_answer) {
+          throw new Error('No submitted answers found.');
+        }
+
+        if (!submitted_answer[submittedImageName]) {
+          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        }
+
+        message_content.push({
+          type: 'image_url',
+          image_url: {
+            url: submitted_answer[submittedImageName],
+          },
+        });
+      } else {
+        submissionTextSegment += $submission_html(node).text();
+      }
+    });
+
+  if (submissionTextSegment) {
+    message_content.push({
+      type: 'text',
+      text: submissionTextSegment,
+    });
+  }
+
+  message_content.push({
+    type: 'text',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+  });
+
+  return {
+    role: 'user',
+    content: message_content,
+  } satisfies ChatCompletionMessageParam;
 }
 
 export async function generateSubmissionEmbedding({
@@ -177,11 +274,7 @@ export async function generateSubmissionEmbedding({
   openai: OpenAI;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
-  const { variant, submission } = await queryRow(
-    sql.select_last_variant_and_submission,
-    { instance_question_id: instance_question.id },
-    SubmissionVariantSchema,
-  );
+  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     questionRenderContext: 'ai_grading',
@@ -248,52 +341,114 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export function pearsonCorrelation(x: number[], y: number[]): number {
-  if (x.length !== y.length || x.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = x.length;
-  const sumX = x.reduce((acc, val) => acc + val, 0);
-  const sumY = y.reduce((acc, val) => acc + val, 0);
-  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
-  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
-  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
-
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
-
-  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
+export async function selectInstanceQuestionsForAssessmentQuestion(
+  assessment_question_id: string,
+): Promise<InstanceQuestion[]> {
+  return await queryRows(
+    sql.select_instance_questions_for_assessment_question,
+    {
+      assessment_question_id,
+    },
+    InstanceQuestionSchema,
+  );
 }
 
-export function rootMeanSquaredError(actual: number[], predicted: number[]): number {
-  if (actual.length !== predicted.length || actual.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = actual.length;
-  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
-  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
-
-  return Math.round(Math.sqrt(meanSquaredError) * 100) / 100;
+export async function selectRubricGradingItems(
+  manual_rubric_grading_id: string | null,
+): Promise<RubricItem[]> {
+  return await queryRows(
+    sql.select_rubric_grading_items,
+    {
+      manual_rubric_grading_id,
+    },
+    RubricItemSchema,
+  );
 }
 
-export function rubricItemAccuracy(
-  testRubricResults: {
-    reference_items: Set<string>;
-    ai_items: Set<string>;
-  }[],
-  item: RubricItem,
-): number {
-  let match = 0;
-  testRubricResults.forEach((test) => {
-    if (
-      (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
-      (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
-    ) {
-      match++;
-    }
+export async function insertAiGradingJob({
+  grading_job_id,
+  job_sequence_id,
+  prompt,
+  completion,
+  course_id,
+  course_instance_id,
+}: {
+  grading_job_id: string;
+  job_sequence_id: string;
+  prompt: ChatCompletionMessageParam[];
+  completion: ParsedChatCompletion<any>;
+  course_id: string;
+  course_instance_id?: string;
+}): Promise<void> {
+  await queryAsync(sql.insert_ai_grading_job, {
+    grading_job_id,
+    job_sequence_id,
+    prompt: JSON.stringify(prompt),
+    completion,
+    model: OPEN_AI_MODEL,
+    prompt_tokens: completion.usage?.prompt_tokens ?? 0,
+    completion_tokens: completion.usage?.completion_tokens ?? 0,
+    cost: calculateApiCost(completion.usage),
+    course_id,
+    course_instance_id,
   });
-  const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
-  return accuracy;
+}
+
+export async function selectLastVariantAndSubmission(
+  instance_question_id: string,
+): Promise<{ variant: Variant; submission: Submission }> {
+  return await queryRow(
+    sql.select_last_variant_and_submission,
+    { instance_question_id },
+    SubmissionVariantSchema,
+  );
+}
+
+export async function selectClosestSubmissionInfo({
+  submission_id,
+  assessment_question_id,
+  embedding,
+  limit,
+}: {
+  submission_id: string;
+  assessment_question_id: string;
+  embedding: string;
+  limit: number;
+}): Promise<GradedExample[]> {
+  return await queryRows(
+    sql.select_closest_submission_info,
+    {
+      submission_id,
+      assessment_question_id,
+      embedding,
+      limit,
+    },
+    GradedExampleSchema,
+  );
+}
+
+export async function selectRubricForGrading(
+  assessment_question_id: string,
+): Promise<RubricItem[]> {
+  return await queryRows(
+    sql.select_rubric_for_grading,
+    {
+      assessment_question_id,
+    },
+    RubricItemSchema,
+  );
+}
+
+export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
+  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+}
+
+export async function selectEmbeddingForSubmission(
+  submission_id: string,
+): Promise<SubmissionGradingContextEmbedding | null> {
+  return await queryOptionalRow(
+    sql.select_embedding_for_submission,
+    { submission_id },
+    SubmissionGradingContextEmbeddingSchema,
+  );
 }

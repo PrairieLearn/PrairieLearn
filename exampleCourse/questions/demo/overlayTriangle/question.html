@@ -32,7 +32,7 @@
         $${{params.a}}$$
         {{/params.display_a}}
         {{^params.display_a}}
-        <pl-number-input answers-name="a" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Bottom edge of triangle" answers-name="a" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_a}}
     </pl-location>
     <pl-location left="{{params.b_x}}" top="{{params.b_y}}">
@@ -40,7 +40,7 @@
         $${{params.b}}$$
         {{/params.display_b}}
         {{^params.display_b}}
-        <pl-number-input answers-name="b" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Right edge of triangle" answers-name="b" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_b}}
     </pl-location>
     <pl-location left="{{params.c_x}}" top="{{params.c_y}}">
@@ -48,7 +48,7 @@
         $${{params.c}}$$
         {{/params.display_c}}
         {{^params.display_c}}
-        <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
+        <pl-number-input aria-label="Hypotenuse of triangle" answers-name="c" show-help-text="false" show-placeholder="false" size="3"></pl-number-input>
         {{/params.display_c}}
     </pl-location>
 </pl-overlay>

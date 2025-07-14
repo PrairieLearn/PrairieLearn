@@ -6,12 +6,15 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
 import {
   type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
+  DateFromISOString,
   IdSchema,
   QuestionSchema,
   VariantSchema,
@@ -305,12 +308,6 @@ export async function gradeAssessmentInstance(
   await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
 }
 
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
-
 const InstancesToGradeSchema = z.object({
   assessment_instance_id: IdSchema,
   instance_number: z.number(),
@@ -335,11 +332,8 @@ export async function gradeAllAssessmentInstances(
   overrideGradeRate: boolean,
 ): Promise<string> {
   debug('gradeAllAssessmentInstances()');
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -594,5 +588,13 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
+}
+
+export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return await sqldb.queryRow(
+    sql.select_assessment_instance_last_submission_date,
+    { assessment_instance_id },
+    DateFromISOString.nullable(),
   );
 }

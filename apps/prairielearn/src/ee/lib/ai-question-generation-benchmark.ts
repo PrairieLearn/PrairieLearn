@@ -375,7 +375,7 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const completion = await client.beta.chat.completions.parse({
+  const completion = await client.chat.completions.parse({
     model: MODEL_NAME,
     messages: [
       { role: 'system', content: systemPrompt },

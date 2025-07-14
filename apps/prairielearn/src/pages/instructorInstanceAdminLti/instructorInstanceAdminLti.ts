@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -8,7 +8,7 @@ import { getCourseOwners } from '../../lib/course.js';
 
 import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -34,6 +34,9 @@ router.post(
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
+    }
+    if (!res.locals.lti11_enabled) {
+      throw new error.HttpStatusError(400, 'LTI 1.1 is not enabled.');
     }
 
     if (req.body.__action === 'lti_new_cred') {

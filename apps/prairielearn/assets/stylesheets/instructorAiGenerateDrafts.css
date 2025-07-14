@@ -1,0 +1,4 @@
+/* If the answer label contains MathJax, remove unnecessary padding from the MathJax container */
+#answer-label > mjx-container {
+  margin: 0;
+}

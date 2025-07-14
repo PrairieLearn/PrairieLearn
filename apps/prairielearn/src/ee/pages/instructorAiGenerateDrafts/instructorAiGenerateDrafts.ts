@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -8,16 +8,26 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import { features } from '../../../lib/features/index.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getAiQuestionGenerationCache,
+  getIntervalUsage,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
+
+const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
@@ -31,6 +41,15 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
   }
 }
 
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
+      throw new error.HttpStatusError(403, 'Feature not enabled');
+    }
+    next();
+  }),
+);
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -42,7 +61,12 @@ router.get(
       DraftMetadataWithQidSchema,
     );
 
-    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+    res.send(
+      InstructorAIGenerateDrafts({
+        resLocals: res.locals,
+        drafts,
+      }),
+    );
   }),
 );
 
@@ -67,16 +91,39 @@ router.post(
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
 
-    if (!config.openAiApiKey || !config.openAiOrganization) {
+    if (
+      !config.aiQuestionGenerationOpenAiApiKey ||
+      !config.aiQuestionGenerationOpenAiOrganization
+    ) {
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
     const client = new OpenAI({
-      apiKey: config.openAiApiKey,
-      organization: config.openAiOrganization,
+      apiKey: config.aiQuestionGenerationOpenAiApiKey,
+      organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'generate_question') {
+      const intervalCost = await getIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        res.send(
+          RateLimitExceeded({
+            // If the user has more tokens than the threshold of 100 tokens,
+            // they can shorten their message to avoid exceeding the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost >
+              config.costPerMillionPromptTokens * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -84,6 +131,14 @@ router.post(
         prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      addCompletionCostToIntervalUsage({
+        aiQuestionGenerationCache,
+        userId: res.locals.authn_user.user_id,
+        promptTokens: result.promptTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
       });
 
       if (result.htmlResult) {

@@ -6,7 +6,7 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type AssessmentJson } from '../../schemas/index.js';
+import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
@@ -80,6 +80,7 @@ function getParamsForAssessment(
         show_closed_assessment: accessRule.showClosedAssessment ?? true,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
         active: accessRule.active ?? true,
+        comment: accessRule.comment,
       };
     });
 
@@ -94,6 +95,7 @@ function getParamsForAssessment(
       grade_rate_minutes: zone.gradeRateMinutes,
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
+      comment: zone.comment,
     };
   });
 
@@ -121,6 +123,7 @@ function getParamsForAssessment(
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
+        comment?: CommentJson;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
@@ -141,6 +144,7 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            comment: alternative.comment,
           };
         });
       } else if (question.id) {
@@ -159,6 +163,11 @@ function getParamsForAssessment(
             jsonGradeRateMinutes: question.gradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
+            // If a question has alternatives, the comment is stored on the alternative
+            // group, since each alternative can have its own comment. If this is
+            // just a single question with no alternatives, the comment is stored on
+            // the assessment question itself.
+            comment: question.alternatives ? undefined : question.comment,
           },
         ];
       }
@@ -226,6 +235,7 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
+          comment: alternative.comment,
         };
       });
 
@@ -238,6 +248,9 @@ function getParamsForAssessment(
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
         questions,
+        // If the question doesn't have any alternatives, we store the comment
+        // on the assessment question itself, not the alternative group.
+        comment: question.alternatives ? question.comment : undefined,
       };
     });
   });
@@ -263,6 +276,7 @@ function getParamsForAssessment(
     allow_real_time_grading: allowRealTimeGrading,
     allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
+    honor_code: assessment.honorCode,
     auto_close: assessment.autoClose ?? true,
     max_points: assessment.maxPoints,
     max_bonus_points: assessment.maxBonusPoints,
@@ -273,10 +287,12 @@ function getParamsForAssessment(
     group_work: !!assessment.groupWork,
     group_max_size: assessment.groupMaxSize || null,
     group_min_size: assessment.groupMinSize || null,
-    student_group_create: !!assessment.studentGroupCreate,
-    student_group_join: !!assessment.studentGroupJoin,
-    student_group_leave: !!assessment.studentGroupLeave,
+    student_group_create: assessment.studentGroupCreate ?? false,
+    student_group_choose_name: assessment.studentGroupChooseName ?? true,
+    student_group_join: assessment.studentGroupJoin ?? false,
+    student_group_leave: assessment.studentGroupLeave ?? false,
     advance_score_perc: assessment.advanceScorePerc,
+    comment: assessment.comment,
     has_roles: !!assessment.groupRoles,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,

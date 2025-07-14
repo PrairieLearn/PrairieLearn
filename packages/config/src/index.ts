@@ -88,7 +88,7 @@ export function makeImdsConfigSource(): ConfigSource {
 
 export class ConfigLoader<Schema extends z.ZodTypeAny> {
   private readonly schema: Schema;
-  private readonly resolvedConfig: z.infer<Schema>;
+  private resolvedConfig: z.infer<Schema>;
 
   constructor(schema: Schema) {
     this.schema = schema;
@@ -110,6 +110,10 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
 
     const parsedConfig = this.schema.parse(config);
     _.mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
+  }
+
+  reset() {
+    this.resolvedConfig = this.schema.parse({});
   }
 
   get config() {

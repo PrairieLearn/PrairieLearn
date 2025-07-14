@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { Modal } from '../../../components/Modal.html.js';
 import { PageLayout } from '../../../components/PageLayout.html.js';
+import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
 // We show all draft questions, even those without associated metadata, because we
@@ -18,29 +19,6 @@ export const DraftMetadataWithQidSchema = z.object({
   uid: z.string().nullable(),
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
-
-const examplePrompts = [
-  {
-    id: 'Select median of 5 random numbers',
-    prompt:
-      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
-  },
-  {
-    id: 'Multiply random integers',
-    prompt:
-      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
-  },
-  {
-    id: 'Answer to Ultimate Question',
-    prompt:
-      'Write a question asking "What Is The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
-  },
-  {
-    id: 'Calculate Projectile Distance',
-    prompt:
-      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
-  },
-];
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -56,6 +34,9 @@ export function InstructorAIGenerateDrafts({
     pageTitle: resLocals.pageTitle,
     headContent: html`
       ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
+      ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestions.tsx')}
+      ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
+      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
           position: absolute;
@@ -83,11 +64,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div
-        id="add-question-card"
-        class="card mb-5 mx-auto overflow-hidden"
-        style="max-width: 700px"
-      >
+      <div class="card mb-5 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
@@ -112,43 +89,7 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
-              <div class="form-text form-muted">
-                <em>
-                  Example: A toy car is pushed off a table with height h at speed v0. Assume
-                  acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
-                  selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4 m/s.
-                  How long does it take for the car to reach the ground?
-                </em>
-              </div>
             </div>
-
-            ${
-              // We think this will mostly be useful in local dev or for
-              // global admins who will want to iterate rapidly and don't
-              // want to retype a whole prompt each time. For actual users,
-              // we think this will mostly be confusing if we show it.
-              resLocals.is_administrator
-                ? html`
-                    <hr />
-
-                    <div class="mb-3">
-                      <label for="user-prompt-example" class="form-label">
-                        Or choose an example prompt:
-                      </label>
-                      <select id="user-prompt-example" class="form-select">
-                        <option value=""></option>
-                        ${examplePrompts.map(
-                          (question) =>
-                            html`<option value="${question.id}" data-prompt="${question.prompt}">
-                              ${question.id}
-                            </option>`,
-                        )}
-                      </select>
-                    </div>
-                  `
-                : ''
-            }
-
             <button type="submit" class="btn btn-primary w-100">
               <span
                 class="spinner-grow spinner-grow-sm d-none me-1"
@@ -163,8 +104,8 @@ export function InstructorAIGenerateDrafts({
             <div class="text-muted small text-center mt-2">
               AI can make mistakes. Review the generated question.
             </div>
-
             <div id="generation-results"></div>
+            <div id="sample-questions" class="mt-2"></div>
           </form>
         </div>
       </div>
@@ -241,6 +182,25 @@ export function GenerationFailure({
 
       <p>The LLM did not generate any question file.</p>
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+}
+
+export function RateLimitExceeded({
+  canShortenMessage = false,
+}: {
+  /**
+   * If true, shows that the user should shorten their message to stay under the rate limit.
+   */
+  canShortenMessage: boolean;
+}): string {
+  return html`
+    <div id="generation-results">
+      <div class="alert alert-danger mt-2 mb-0">
+        ${canShortenMessage
+          ? 'Your prompt is too long. Please shorten it and try again.'
+          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
+      </div>
     </div>
   `.toString();
 }

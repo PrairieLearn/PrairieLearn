@@ -1,5 +1,4 @@
 import './lib/clipboardPopover.js';
-import './lib/changeIdButton.js';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
@@ -12,6 +11,8 @@ onDocumentReady(function () {
     'form[name="edit-assessment-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const honorCodeCheckbox = document.querySelector<HTMLInputElement>('#require_honor_code');
+  const honorCodeInput = document.querySelector<HTMLTextAreaElement>('#honor_code_group');
 
   function validateId() {
     const newValue = tidField.value;
@@ -29,4 +30,12 @@ onDocumentReady(function () {
 
   if (!assessmentSettingsForm || !saveButton) return;
   saveButtonEnabling(assessmentSettingsForm, saveButton);
+
+  honorCodeCheckbox?.addEventListener('change', function () {
+    if (this.checked) {
+      honorCodeInput?.removeAttribute('hidden');
+    } else {
+      honorCodeInput?.setAttribute('hidden', 'true');
+    }
+  });
 });

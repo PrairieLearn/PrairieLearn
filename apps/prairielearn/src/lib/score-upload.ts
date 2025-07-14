@@ -6,18 +6,14 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { IdSchema } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 /**
  * Update question instance scores from a CSV file.
@@ -39,11 +35,8 @@ export async function uploadInstanceQuestionScores(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -163,11 +156,8 @@ export async function uploadAssessmentInstanceScores(
   if (csvFile == null) {
     throw new Error('No CSV file uploaded');
   }
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,

@@ -1,5 +1,5 @@
 {{#render_button}}
-<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}"><img /></button>
+<button type="button" name="{{button_class}}" class="btn btn-primary pl-drawing-button" opts="{{{ options }}}" title="{{button_class}}"><img src=""></button>
 {{/render_button}}
 
 {{#render_element}}
@@ -23,9 +23,16 @@
 </span>
 {{/parse_error}}
 {{^parse_error}}
-<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax">
+<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax mb-3">
     <div>
-        <canvas width="{{width}}" height="{{height}}"> </canvas>
+        <canvas
+            width="{{width}}"
+            height="{{height}}"
+            {{#preview_mode}}role="img"{{/preview_mode}}
+            {{#aria_description}}aria-description="{{aria_description}}"{{/aria_description}}
+            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        >
+        </canvas>
         {{#show_tolerance}}
             <div><small>({{{ tolerance }}})</small></div>
         {{/show_tolerance}}

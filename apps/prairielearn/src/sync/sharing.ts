@@ -207,9 +207,7 @@ export function checkInvalidSharedAssessments(
             continue;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharePublicly) {
-            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
-            // not copy the questions into the destination course
+          if (!infoJson?.data?.sharePublicly && !infoJson?.data?.shareSourcePublicly) {
             invalidSharedAssessments.add(tid);
           }
         }
@@ -224,6 +222,33 @@ export function checkInvalidSharedAssessments(
     );
   }
   return existInvalidSharedAssessment;
+}
+
+export function checkInvalidSharedCourseInstances(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedCourseInstances = new Set<string>();
+
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
+
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment?.data?.shareSourcePublicly) {
+        invalidSharedCourseInstances.add(courseInstance.courseInstance.data?.longName);
+      }
+    }
+  }
+
+  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
+  if (existInvalidSharedCourseInstance) {
+    logger.error(
+      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
+    );
+  }
+  return existInvalidSharedCourseInstance;
 }
 
 export function checkInvalidDraftQuestionSharing(

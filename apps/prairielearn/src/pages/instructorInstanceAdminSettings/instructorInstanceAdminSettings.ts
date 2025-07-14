@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -11,7 +11,6 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { IdSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -24,10 +23,11 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -41,6 +41,10 @@ router.get(
     const host = getCanonicalHost(req);
     const studentLink = new URL(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
+      host,
+    ).href;
+    const publicLink = new URL(
+      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessments`,
       host,
     ).href;
     const availableTimezones = await getCanonicalTimezones([
@@ -68,6 +72,7 @@ router.get(
         resLocals: res.locals,
         shortNames,
         studentLink,
+        publicLink,
         infoCourseInstancePath,
         availableTimezones,
         origHash,
@@ -81,8 +86,12 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_course_instance') {
+      const courseInstancesPath = path.join(res.locals.course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
         locals: res.locals as any,
+        from_course: res.locals.course,
+        from_path: path.join(courseInstancesPath, res.locals.course_instance.short_name),
+        course_instance: res.locals.course_instance,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -93,11 +102,10 @@ router.post(
         return;
       }
 
-      const courseInstanceID = await sqldb.queryRow(
-        sql.select_course_instance_id_from_uuid,
-        { uuid: editor.uuid, course_id: res.locals.course.id },
-        IdSchema,
-      );
+      const courseInstance = await selectCourseInstanceByUuid({
+        uuid: editor.uuid,
+        course_id: res.locals.course.id,
+      });
 
       flash(
         'success',
@@ -106,7 +114,7 @@ router.post(
       res.redirect(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
-          courseInstanceID +
+          courseInstance.id +
           '/instructor/instance_admin/settings',
       );
     } else if (req.body.__action === 'delete_course_instance') {

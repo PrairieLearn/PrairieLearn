@@ -1,9 +1,9 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +12,6 @@ import type {
   AssessmentJsonInput,
   CourseInstanceJsonInput,
   CourseJsonInput,
-  CourseOptionsJson,
   QuestionJsonInput,
   TagJsonInput,
   TopicJsonInput,
@@ -157,7 +156,9 @@ const course = {
       description: 'Another test tag',
     },
   ] as TagJsonInput[],
-  options: undefined as CourseOptionsJson | undefined,
+  sharingSets: undefined as CourseJsonInput['sharingSets'],
+  options: undefined as CourseJsonInput['options'],
+  comment: undefined as CourseJsonInput['comment'],
 } satisfies CourseJsonInput;
 
 const questions: Record<string, QuestionJsonInput> = {

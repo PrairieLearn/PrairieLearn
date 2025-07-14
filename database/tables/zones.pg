@@ -5,6 +5,7 @@ columns
     id: bigint not null default nextval('zones_id_seq'::regclass)
     json_can_submit: text[]
     json_can_view: text[]
+    json_comment: jsonb
     json_grade_rate_minutes: double precision
     max_points: double precision
     number: integer

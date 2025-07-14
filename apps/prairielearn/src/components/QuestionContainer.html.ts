@@ -3,6 +3,7 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
@@ -32,6 +33,7 @@ export function QuestionContainer({
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
+  questionCopyTargets = null,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -40,6 +42,7 @@ export function QuestionContainer({
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
   const {
     question,
@@ -77,6 +80,7 @@ export function QuestionContainer({
                 showFooter,
                 manualGradingPreviewUrl,
                 aiGradingPreviewUrl,
+                questionCopyTargets,
               })}
             </form>
           `
@@ -90,7 +94,7 @@ export function QuestionContainer({
                 <div class="card-header bg-secondary text-white">
                   <h2>Correct answer</h2>
                 </div>
-                <div class="card-body answer-body">
+                <div class="card-body overflow-x-auto answer-body">
                   ${showTrueAnswer ? unsafeHtml(answerHtml) : ''}
                 </div>
               </div>
@@ -140,7 +144,7 @@ export function QuestionContainer({
           `
         : ''}
     </div>
-    ${CopyQuestionModal({ resLocals })}
+    ${CopyQuestionModal({ resLocals, questionCopyTargets })}
   `;
 }
 
@@ -204,7 +208,7 @@ export function IssuePanel({
                 </tr>
                 <tr>
                   <th>Student message:</th>
-                  <td>${issue.student_message}</td>
+                  <td style="white-space: pre-wrap;">${issue.student_message}</td>
                 </tr>
                 <tr>
                   <th>Instructor message:</th>
@@ -215,7 +219,7 @@ export function IssuePanel({
               ? html`
                   <tr>
                     <th>Student message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                   <tr>
                     <th>Instructor message:</th>
@@ -225,7 +229,7 @@ export function IssuePanel({
               : html`
                   <tr>
                     <th>Message:</th>
-                    <td>${issue.student_message}</td>
+                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
                   </tr>
                 `}
           <tr>
@@ -414,7 +418,7 @@ export function QuestionFooterContent({
 
     return html`
       <div class="row">
-        <div class="col d-flex justify-content-between">
+        <div class="col d-flex justify-content-between flex-wrap gap-2">
           <span class="d-flex align-items-center">
             ${showSaveButton
               ? html`
@@ -440,17 +444,17 @@ export function QuestionFooterContent({
                     ${variantAttemptsTotal > 0
                       ? variantAttemptsLeft > 1
                         ? html`
-                            <small class="font-italic ms-2">
+                            <small class="fst-italic ms-2">
                               ${variantAttemptsLeft} attempts left
                             </small>
                           `
                         : variantAttemptsLeft === 1 && variantAttemptsTotal > 1
-                          ? html`<small class="font-italic ms-2">Last attempt</small>`
+                          ? html`<small class="fst-italic ms-2">Last attempt</small>`
                           : variantAttemptsLeft === 1
-                            ? html`<small class="font-italic ms-2">Single attempt</small>`
+                            ? html`<small class="fst-italic ms-2">Single attempt</small>`
                             : ''
                       : questionContext === 'student_homework'
-                        ? html`<small class="font-italic ms-2">Unlimited attempts</small>`
+                        ? html`<small class="fst-italic ms-2">Unlimited attempts</small>`
                         : ''}
                   </button>
                 `
@@ -494,7 +498,7 @@ export function QuestionFooterContent({
                   `
                 : hasAttemptsOtherVariants
                   ? html`
-                      <small class="font-italic align-self-center">
+                      <small class="fst-italic align-self-center">
                         Additional attempts available with new variants
                       </small>
                       <button
@@ -564,7 +568,7 @@ function SubmitRateFooter({
         <span class="d-flex">
           ${disableGradeButton
             ? html`
-                <small class="font-italic ms-2 mt-1 submission-suspended-msg">
+                <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
                   <div id="submission-suspended-progress" class="border border-info"></div>
                 </small>
@@ -579,7 +583,7 @@ function SubmitRateFooter({
             : ''}
         </span>
         <span class="d-flex align-self-center">
-          <small class="font-italic">
+          <small class="fst-italic">
             Can only be graded once every ${assessment_question.grade_rate_minutes}
             ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
           </small>
@@ -638,7 +642,7 @@ function AvailablePointsNotes({
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
   const additional = instance_question.points === 0 ? '' : 'additional';
   return html`
-    <small class="font-italic align-self-center text-right">
+    <small class="fst-italic align-self-center text-end">
       ${roundedPoints[0] === 1
         ? `1 ${additional} point available for this attempt`
         : `${roundedPoints[0]} ${additional} points available for this attempt`}
@@ -664,6 +668,7 @@ function QuestionPanel({
   showFooter,
   manualGradingPreviewUrl,
   aiGradingPreviewUrl,
+  questionCopyTargets,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -671,14 +676,15 @@ function QuestionPanel({
   showFooter: boolean;
   manualGradingPreviewUrl?: string;
   aiGradingPreviewUrl?: string;
+  questionCopyTargets?: CopyTarget[] | null;
 }) {
-  const { question, questionHtml, question_copy_targets, course, instance_question_info } =
-    resLocals;
-  // Show even when question_copy_targets is empty.
+  const { question, questionHtml, course, instance_question_info } = resLocals;
+  // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
+
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
-    question_copy_targets != null &&
+    questionCopyTargets != null &&
     (course.template_course || (question.share_source_publicly && questionContext === 'public')) &&
     questionContext !== 'manual_grading';
 
@@ -745,7 +751,7 @@ function QuestionPanel({
           </div>
         </div>
       </div>
-      <div class="card-body question-body">
+      <div class="card-body overflow-x-auto question-body">
         ${questionRenderContext === 'ai_grading'
           ? AiGradingHtmlPreview(questionHtml)
           : unsafeHtml(questionHtml)}
@@ -797,16 +803,22 @@ function SubmissionList({
   );
 }
 
-function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
-  const { question_copy_targets, question, course } = resLocals;
-  if (question_copy_targets == null) return '';
+function CopyQuestionModal({
+  questionCopyTargets,
+  resLocals,
+}: {
+  questionCopyTargets: CopyTarget[] | null;
+  resLocals: Record<string, any>;
+}) {
+  const { question, course } = resLocals;
+  if (questionCopyTargets == null) return '';
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
-    formAction: question_copy_targets[0]?.copy_url ?? '',
+    formAction: questionCopyTargets[0]?.copy_url ?? '',
     formClass: 'js-copy-question-form',
     body:
-      question_copy_targets.length === 0
+      questionCopyTargets.length === 0
         ? html`
             <p>
               You can't copy this question because you don't have editor permissions in any courses.
@@ -820,7 +832,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               Select one of your courses to copy this question.
             </p>
             <select class="form-select" name="to_course_id" required>
-              ${question_copy_targets.map(
+              ${questionCopyTargets.map(
                 (course, index) => html`
                   <option
                     value="${course.id}"
@@ -838,12 +850,12 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
       <input
         type="hidden"
         name="__csrf_token"
-        value="${question_copy_targets[0]?.__csrf_token ?? ''}"
+        value="${questionCopyTargets[0]?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${question_copy_targets?.length > 0
+      ${questionCopyTargets?.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
               Copy question

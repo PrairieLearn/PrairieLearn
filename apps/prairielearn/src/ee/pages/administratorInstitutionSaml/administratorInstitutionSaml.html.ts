@@ -40,7 +40,7 @@ export function AdministratorInstitutionSaml({
       page: 'administrator_institution',
       subPage: 'saml',
     },
-    preContent: [DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })],
+    preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
       ${hasSamlProvider && !hasEnabledSaml
         ? html`

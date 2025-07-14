@@ -93,9 +93,13 @@
       "default": true
     },
     "requireHonorCode": {
-      "description": "Requires the student to accept an honor code before starting exam assessments.",
+      "description": "Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.",
       "type": "boolean",
       "default": true
+    },
+    "honorCode": {
+      "description": "Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.",
+      "type": "string"
     },
     "groupWork": {
       "description": "Whether the assessment will support group work.",
@@ -140,6 +144,11 @@
       "type": "boolean",
       "default": false
     },
+    "studentGroupChooseName": {
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
+      "type": "boolean",
+      "default": true
+    },
     "studentGroupJoin": {
       "description": "Whether students can join groups.",
       "type": "boolean",
@@ -164,7 +173,7 @@
       "type": "string"
     },
     "shareSourcePublicly": {
-      "description": "If true, the assessment's source code is shared publicly.",
+      "description": "If true, the assessment's JSON configuration and question list are available for others to view and copy.",
       "type": "boolean",
       "default": false
     }

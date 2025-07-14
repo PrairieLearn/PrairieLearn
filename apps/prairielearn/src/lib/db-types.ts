@@ -20,9 +20,14 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
+
+export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
+export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
@@ -67,6 +72,7 @@ export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   json_can_view: z.string().array().nullable(),
   json_can_submit: z.string().array().nullable(),
@@ -98,7 +104,9 @@ export const AssessmentSchema = z.object({
   duration_stat_threshold_seconds: z.number().array(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
+  honor_code: z.string().nullable(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   json_can_view: z.string().array().nullable(),
   json_can_submit: z.string().array().nullable(),
@@ -142,6 +150,7 @@ export const AssessmentAccessRuleSchema = z.object({
   end_date: DateFromISOString.nullable(),
   exam_uuid: z.string().nullable(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   mode: EnumModeSchema.nullable(),
   number: z.number(),
   password: z.string().nullable(),
@@ -192,6 +201,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
@@ -214,6 +224,7 @@ export const AssessmentQuestionSchema = z.object({
   incremental_submission_score_array_averages: z.array(z.number()).nullable(),
   incremental_submission_score_array_variances: z.array(z.number()).nullable(),
   init_points: z.number().nullable(),
+  json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   last_submission_score_hist: z.array(z.number()).nullable(),
   last_submission_score_variance: z.number().nullable(),
@@ -258,6 +269,7 @@ export const AssessmentSetSchema = z.object({
   course_id: IdSchema,
   heading: z.string(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   implicit: z.boolean(),
   name: z.string(),
   number: z.number(),
@@ -312,6 +324,7 @@ export const CourseSchema = z.object({
   example_course: z.boolean(),
   id: IdSchema,
   institution_id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   options: z.any(),
   path: z.string(),
   repository: z.string().nullable(),
@@ -336,7 +349,9 @@ export const CourseInstanceSchema = z.object({
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -350,6 +365,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
   end_date: DateFromISOString.nullable(),
   id: IdSchema,
   institution: z.string().nullable(),
+  json_comment: JsonCommentSchema.nullable(),
   number: z.number().nullable(),
   start_date: DateFromISOString.nullable(),
   uids: z.string().array().nullable(),
@@ -477,7 +493,7 @@ export const FileTransferSchema = z.object({
   id: IdSchema,
   storage_filename: z.string(),
   to_course_id: IdSchema,
-  transfer_type: z.enum(['CopyQuestion']),
+  transfer_type: z.enum(['CopyQuestion', 'CopyCourseInstance']),
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
@@ -533,6 +549,7 @@ export const GroupConfigSchema = z.object({
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
   name: z.string().nullable(),
+  student_authz_choose_name: z.boolean(),
   student_authz_create: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
   student_authz_join: z.boolean().nullable(),
@@ -788,7 +805,6 @@ export const QueryRunSchema = z.object({
   name: z.string(),
   params: z.record(z.string(), z.any()).nullable(),
   result: z.record(z.string(), z.any()).nullable(),
-  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
@@ -813,8 +829,13 @@ export const QuestionSchema = z.object({
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
-  grading_method: z.enum(['Internal', 'External', 'Manual']),
+  grading_method: EnumGradingMethodSchema,
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
+  json_external_grading_comment: z
+    .union([z.string(), z.array(z.any()), z.record(z.any())])
+    .nullable(),
+  json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.any())]).nullable(),
   draft: z.boolean(),
   number: z.number().nullable(),
   options: z.any().nullable(),
@@ -966,6 +987,7 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
+  modified_at: DateFromISOString,
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -983,6 +1005,7 @@ export const TagSchema = z.object({
   course_id: IdSchema,
   description: z.string(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   implicit: z.boolean(),
   name: z.string(),
   number: z.number().nullable(),
@@ -995,6 +1018,7 @@ export const TopicSchema = z.object({
   description: z.string(),
   id: IdSchema,
   implicit: z.boolean(),
+  json_comment: JsonCommentSchema.nullable(),
   name: z.string(),
   number: z.number().nullable(),
 });
@@ -1040,6 +1064,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
+  modified_at: DateFromISOString,
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),
@@ -1109,6 +1134,7 @@ export const ZoneSchema = z.object({
   assessment_id: IdSchema,
   best_questions: z.number().nullable(),
   id: IdSchema,
+  json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   json_can_view: z.string().array().nullable(),
   json_can_submit: z.string().array().nullable(),

@@ -1,10 +1,10 @@
 FROM prairielearn/workspace-vscode-base:latest
-ARG CACHEBUST=2025-04-15-14-15-50
+ARG CACHEBUST=2025-06-15-14-13-20
 
 # Run the rest of the build commands in a bash shell in login mode so that
 # conda/mamba shell hooks will work. This also allows images derived from
 # this one to add "RUN pip install" commands without trouble. To complete
-# this setup, we also must run mamba init with --system after mamba is
+# this setup, we also must run conda init with --system after conda is
 # installed, as a separate step below.
 SHELL ["/bin/bash", "-lc"]
 
@@ -19,7 +19,7 @@ RUN arch="$(uname -m)" \
     && chmod +x "Miniforge3-Linux-${arch}.sh" \
     && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
     # Install conda and mamba hooks for future interactive bash sessions:
-    && /home/coder/conda/bin/mamba init bash \
+    && /home/coder/conda/bin/conda init bash \
     # Activate hooks in the current noninteractive session:
     && . "/home/coder/conda/etc/profile.d/conda.sh" \
     && . "/home/coder/conda/etc/profile.d/mamba.sh" \
@@ -34,12 +34,12 @@ RUN arch="$(uname -m)" \
     && mamba clean --all --yes --quiet \
     && pip cache purge
 
-# Also add mamba init to /etc/profile.d/ so that noninteractive login shells
+# Also add conda init to /etc/profile.d/ so that noninteractive login shells
 # can use "pip install" (e.g. during additional Docker RUN commands). This is
 # necessary because the bash hook installed with "init bash" above will only
 # activate for interactive shells.
 USER 0
-RUN /home/coder/conda/bin/mamba init --system
+RUN /home/coder/conda/bin/conda init --system
 
 # After installing Python we install some VS Code extensions.
 USER coder

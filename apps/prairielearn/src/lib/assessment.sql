@@ -392,19 +392,6 @@ SELECT
 FROM
   updated_assessment_instance;
 
--- BLOCK select_assessment_info
-SELECT
-  assessment_label (a, aset),
-  ci.id AS course_instance_id,
-  c.id AS course_id
-FROM
-  assessments AS a
-  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-WHERE
-  a.id = $assessment_id;
-
 -- BLOCK select_instances_to_grade
 SELECT
   ai.id AS assessment_instance_id,
@@ -1091,8 +1078,41 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
+        -- TODO: we want to show logs for grading job soft-deletions too.
         AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
+    )
+    UNION
+    (
+      SELECT
+        3.8 AS event_order,
+        'AI grading results deleted'::TEXT AS event_name,
+        'red2'::TEXT AS event_color,
+        gj.deleted_at AS date,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        gj.id AS submission_id,
+        gj.id AS log_id,
+        NULL::BIGINT AS client_fingerprint_id,
+        NULL::JSONB AS data
+      FROM
+        grading_jobs AS gj
+        JOIN submissions AS s ON (s.id = gj.submission_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        -- Show the user that actually deleted the grading job, if available.
+        LEFT JOIN users AS u ON (u.user_id = gj.deleted_by)
+      WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+        AND gj.grading_method IN ('AI')
+        AND gj.deleted_at IS NOT NULL
     )
     UNION
     (
@@ -1778,3 +1798,13 @@ FROM
   deleted_assessment_instances AS ai
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id);
+
+-- BLOCK select_assessment_instance_last_submission_date
+SELECT
+  max(s.date)
+FROM
+  submissions AS s
+  JOIN variants AS v ON (v.id = s.variant_id)
+  JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id;
