@@ -294,7 +294,7 @@ function NumericOrStringInput({
         value={userInputResponse}
         type="text"
         placeholder={placeholder}
-        onChange={(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        onChange={(e) => onChange(e.currentTarget.value)}
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
