@@ -24,9 +24,10 @@ BUILDER_NAME = "prairielearn-builder"
 # A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
 BASE_IMAGE_MAPPING = {
     # Core images.
-    "prairielearn/prairielearn": "prairielearn/plbase",
     "prairielearn/executor": "prairielearn/prairielearn",
     # Workspace images.
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
@@ -51,9 +52,6 @@ def get_image_path(image: str) -> str:
     if image.startswith("grader-"):
         image = image[len("grader-") :]
         return f"graders/{image}"
-
-    if image == "plbase":
-        return "images/plbase"
 
     if image == "executor":
         return "images/executor"

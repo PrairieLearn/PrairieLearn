@@ -6,9 +6,12 @@ import * as error from '@prairielearn/error';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
-import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import {
+  selectCourseInstanceIsPublic,
+  selectOptionalCourseInstanceById,
+} from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
+import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
 import { PublicAssessments } from './publicAssessments.html.js';
 
@@ -41,13 +44,16 @@ router.get(
     const rows = await selectAssessments({
       course_instance_id: courseInstance.id,
     });
+    const questionsForCopy = await selectQuestionsForCourseInstanceCopy(courseInstance.id);
 
     res.send(
       PublicAssessments({
         resLocals: res.locals,
         rows,
+        course,
         courseInstance,
         courseInstanceCopyTargets,
+        questionsForCopy,
       }),
     );
   }),

@@ -2,7 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRowWithAIGradingStats,
@@ -26,7 +26,6 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    aiGradingEnabled,
     aiGradingMode,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,7 +54,12 @@ onDocumentReady(() => {
         value !== generateAiGraderName('OutdatedRubric'),
     );
     humanGraders.sort();
-    return Object.fromEntries(aiGraders.concat(humanGraders).map((name) => [name, name]));
+    return Object.fromEntries(
+      aiGraders
+        .concat(humanGraders)
+        .concat(['Nobody'])
+        .map((name) => [name, name]),
+    );
   };
 
   window.rubricItemsList = function () {
@@ -293,35 +297,10 @@ onDocumentReady(() => {
             scorebarFormatter(score, row, hasCourseInstancePermissionEdit, urlPrefix, csrfToken),
           visible: !aiGradingMode,
         },
-        {
-          field: 'last_grader',
-          title: 'Graded by',
-          visible: !aiGradingMode,
-          filterControl: 'select',
-          filterCustomSearch: (text: string, value: string) => {
-            if (text === generateAiGraderName().toLowerCase()) {
-              return value.includes('js-custom-search-ai-grading');
-            }
-            return null;
-          },
-          formatter: (value: string, row: InstanceQuestionRow) =>
-            value
-              ? row.is_ai_graded
-                ? html`
-                    <span
-                      class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
-                    >
-                      ${generateAiGraderName()}
-                    </span>
-                  `.toString()
-                : row.last_grader_name
-              : '&mdash;',
-        },
-        aiGradingEnabled
+        aiGradingMode
           ? {
               field: 'ai_graded',
               title: 'Graded by',
-              visible: aiGradingMode,
               filterControl: 'select',
               formatter: (value: boolean, row: InstanceQuestionRow) => {
                 const showPlus = row.ai_grading_status !== 'None' && row.last_human_grader;
@@ -349,13 +328,38 @@ onDocumentReady(() => {
                   return value.includes('js-custom-search-ai-grading-latest-rubric');
                 } else if (text === generateAiGraderName('OutdatedRubric').toLowerCase()) {
                   return value.includes('js-custom-search-ai-grading-nonlatest-rubric');
+                } else if (text === 'nobody') {
+                  return value.trim() === '';
                 } else {
                   return value.toLowerCase().includes(text);
                 }
               },
+              sortable: true,
             }
-          : null,
-        aiGradingEnabled
+          : {
+              field: 'last_grader',
+              title: 'Graded by',
+              filterControl: 'select',
+              filterCustomSearch: (text: string, value: string) => {
+                if (text === generateAiGraderName().toLowerCase()) {
+                  return value.includes('js-custom-search-ai-grading');
+                }
+                return null;
+              },
+              formatter: (value: string, row: InstanceQuestionRow) =>
+                value
+                  ? row.is_ai_graded
+                    ? html`
+                        <span
+                          class="badge rounded-pill text-bg-light border js-custom-search-ai-grading"
+                        >
+                          ${generateAiGraderName()}
+                        </span>
+                      `.toString()
+                    : row.last_grader_name
+                  : '&mdash;',
+            },
+        aiGradingMode
           ? {
               field: 'rubric_difference',
               title: 'AI agreement',
@@ -434,6 +438,16 @@ onDocumentReady(() => {
             // Make a appear in the end regardless of sort order
             return 1;
           }
+        });
+      } else if (sortName === 'ai_graded') {
+        const aiGradingStatusOrder = { Graded: 1, LatestRubric: 2, OutdatedRubric: 1, None: 0 };
+        data.sort(function (a, b) {
+          const aOrder = aiGradingStatusOrder[a.ai_grading_status];
+          const bOrder = aiGradingStatusOrder[b.ai_grading_status];
+          if (aOrder !== bOrder) {
+            return (aOrder - bOrder) * order;
+          }
+          return (a.last_human_grader ?? '').localeCompare(b.last_human_grader ?? '') * order;
         });
       } else {
         (data as any[]).sort(function (a, b) {
@@ -551,7 +565,7 @@ function scorebarFormatter(
   csrfToken: string,
 ) {
   return html`<div class="d-inline-block align-middle">
-      ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
+      ${score == null ? '' : ScorebarHtml(score, { minWidth: '10em' })}
     </div>
     ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({
