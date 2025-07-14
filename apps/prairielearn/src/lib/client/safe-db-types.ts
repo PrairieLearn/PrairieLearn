@@ -97,7 +97,9 @@ export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
 /** Assessment Questions */
 
-export const StaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
+export const StaffAssessmentQuestionSchema =
+  RawAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
+export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
 
 /** Courses */
 

@@ -95,9 +95,11 @@ const RawStaffAssessmentContextSchema = z.object({
   }),
   assessment_set: RawStaffAssessmentSetSchema,
 });
+const StaffAssessmentContextSchema =
+  RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();
 
-export function getAssessmentContext(
-  resLocals: Record<string, any>,
-): z.infer<typeof RawStaffAssessmentContextSchema> {
-  return RawStaffAssessmentContextSchema.parse(resLocals);
+export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
+
+export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
+  return StaffAssessmentContextSchema.parse(resLocals);
 }
