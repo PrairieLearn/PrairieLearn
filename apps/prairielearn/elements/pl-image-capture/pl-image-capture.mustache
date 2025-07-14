@@ -4,7 +4,12 @@ $(function() {
 });
 </script>
 
-<div id="image-capture-{{uuid}}" class="image-capture-card card mb-3 bg-light" data-options="{{image_capture_options_json}}">
+<div 
+  id="image-capture-{{uuid}}" 
+  class="image-capture-card card mb-3 bg-light" 
+  data-options="{{image_capture_options_json}}" 
+  data-image-capture-uuid="{{uuid}}"
+>
   <div class="card-header">
     Image capture
   </div>
