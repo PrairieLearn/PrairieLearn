@@ -1,3 +1,4 @@
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
@@ -27,12 +28,23 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  /**
+   * If null, AI grading information (feedback, prompt, etc.) will not be shown at all.
+   * If aiGradingInfo is specified, but a property/properties are null, those properties will not be shown.
+   */
+  aiGradingInfo: {
+    feedback: string | null;
+    showAiManualComparison: boolean;
+    selectedRubricItemIds: string[];
+    prompt: ChatCompletionMessageParam[] | null;
+  } | null;
 }) {
   return PageLayout({
     resLocals: {
@@ -96,14 +108,27 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
+          ${QuestionContainer({
+            resLocals,
+            questionContext: 'manual_grading',
+            showFooter: false,
+            aiGradingPrompt: aiGradingInfo?.prompt,
+          })}
         </div>
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({
+                resLocals,
+                context: 'main',
+                graders,
+                ai_feedback: aiGradingInfo?.feedback,
+                ai_selected_rubric_item_ids: aiGradingInfo?.showAiManualComparison
+                  ? aiGradingInfo?.selectedRubricItemIds
+                  : undefined,
+              })}
             </div>
           </div>
 
