@@ -210,6 +210,9 @@ export async function aiGrade({
         // remove the existing embedding
         deleteEmbeddingForSubmission(submission.id);
       }
+
+      console.log('Create new submission embedding for', submission.id);
+
       submission_embedding = await generateSubmissionEmbedding({
         course,
         question,

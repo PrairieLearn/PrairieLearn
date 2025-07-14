@@ -329,6 +329,8 @@ export async function generateSubmissionEmbedding({
           '3. Explain the reasoning for selecting each rubric item. Place into the rubric_reasoning field.\n'
       }
     ];
+    console.log('messages', messages);
+
 
     if (questionPrompt) {
       messages = [
