@@ -15,8 +15,9 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-export const InstanceQuestionRowWithAIGradingStatsSchema = InstanceQuestionRowSchema.extend({
-  ai_grading_stats: AIGradingStatsSchema,
+export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
+  ...InstanceQuestionRowSchema.shape,
+  ...AIGradingStatsSchema.shape,
 });
 
 export type InstanceQuestionRowWithAIGradingStats = z.infer<
