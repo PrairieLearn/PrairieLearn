@@ -23,6 +23,8 @@ export type ExamplePrompt = {
     }
 );
 
+export type ExamplePromptWithId = ExamplePrompt & { id: keyof typeof examplePrompts };
+
 export const examplePrompts = {
   'cities-in-random-country': {
     name: 'Identify cities in a random country',
@@ -109,7 +111,7 @@ export const examplePrompts = {
 export const examplePromptsArray = Object.entries(examplePrompts).map(([id, prompt]) => ({
   id: id as keyof typeof examplePrompts,
   ...prompt,
-}));
+})) satisfies ExamplePromptWithId[];
 
 export interface VariantOption {
   letter?: string;
