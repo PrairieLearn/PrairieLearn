@@ -851,9 +851,6 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
-// The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
-export const QueryRunSchemaDeprecated = QueryRunSchema.extend({ sql: z.string() });
-
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   id: IdSchema,
   doc_text: z.string(),

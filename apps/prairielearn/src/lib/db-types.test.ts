@@ -12,7 +12,7 @@ const schemaNameOverrides = {
   courses: 'CourseGlueSchema',
   pl_courses: 'CourseSchema',
   last_accesses: 'LastAccessSchema',
-  query_runs: 'QueryRunSchemaDeprecated',
+  query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
 };
 
