@@ -36,28 +36,39 @@ export function InsufficientCoursePermissionsCard({
   courseOwners,
   pageTitle,
   requiredPermissions,
+  hasCoursePermissionOwn,
+  urlPrefix,
 }: {
   courseOwners: User[];
   pageTitle: string;
   requiredPermissions: string;
+  hasCoursePermissionOwn?: boolean;
+  urlPrefix?: string;
 }) {
   return html`<div class="card mb-4">
-    <div class="card-header bg-danger text-white">
+    <div class="card-header bg-warning text-black">
       <h1>${pageTitle}</h1>
     </div>
     <div class="card-body">
       <h2>Insufficient permissions</h2>
       <p>You must have at least &quot;${requiredPermissions}&quot; permissions for this course.</p>
-      ${courseOwners.length > 0
+      ${hasCoursePermissionOwn
         ? html`
-            <p>Contact one of the below course owners to request access.</p>
-            <ul>
-              ${courseOwners.map(
-                (owner) => html` <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li> `,
-              )}
-            </ul>
+            <p>
+              You can grant yourself access to student data on the course's
+              <a href="${urlPrefix}/course_admin/staff">Staff tab</a>.
+            </p>
           `
-        : ''}
+        : courseOwners.length > 0
+          ? html`
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+                ${courseOwners.map(
+                  (owner) => html`<li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>`,
+                )}
+              </ul>
+            `
+          : ''}
     </div>
   </div>`;
 }
