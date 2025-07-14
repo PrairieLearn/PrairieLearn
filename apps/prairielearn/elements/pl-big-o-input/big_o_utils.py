@@ -29,10 +29,15 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
     "Incorrect, your answer has unnecessary lower order terms."
 )
 
+INCORRECT_BLANK_FEEDBACK = "Incorrect, your answer is blank."
+
 
 def grade_o_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
+    if a_true == "" or a_sub == "":
+        return grade_blank_expression(a_true, a_sub)
+
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
@@ -74,6 +79,9 @@ def grade_o_expression(
 def grade_theta_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
+    if a_true == "" or a_sub == "":
+        return grade_blank_expression(a_true, a_sub)
+
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
@@ -116,6 +124,9 @@ def grade_theta_expression(
 def grade_omega_expression(
     a_true: str, a_sub: str, variables: list[str]
 ) -> tuple[float, str]:
+    if a_true == "" or a_sub == "":
+        return grade_blank_expression(a_true, a_sub)
+
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
@@ -152,3 +163,11 @@ def grade_omega_expression(
         return (0.5, CONSTANT_FACTORS_FEEDBACK)
     except TypeError:
         return (0.0, TYPE_ERROR_FEEDBACK)
+
+
+def grade_blank_expression(a_true: str, a_sub: str):
+    if a_true == "" and a_sub == "":
+        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
+    if a_true == "":
+        return (0, INCORRECT_FEEDBACK)
+    return (0, INCORRECT_BLANK_FEEDBACK)

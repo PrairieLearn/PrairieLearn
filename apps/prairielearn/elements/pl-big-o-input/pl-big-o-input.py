@@ -80,14 +80,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
-        try:
-            psu.convert_string_to_sympy(
-                a_true, variables, allow_complex=False, allow_trig_functions=False
-            )
-        except psu.BaseSympyError as exc:
-            raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from exc
+        if a_true.strip() == "":
+            a_true = ""
+        else:
+            try:
+                psu.convert_string_to_sympy(
+                    a_true, variables, allow_complex=False, allow_trig_functions=False
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
 
         data["correct_answers"][name] = a_true
 
@@ -135,13 +138,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     a_sub = None
 
     if parse_error is None and name in data["submitted_answers"]:
+        a_sub = data["submitted_answers"][name]
         a_sub = sympy.latex(
             psu.convert_string_to_sympy(
-                data["submitted_answers"][name],
+                a_sub,
                 variables,
                 allow_complex=False,
                 allow_trig_functions=False,
             )
+            if a_sub != ""
+            else ""
         )
     elif name not in data["submitted_answers"]:
         missing_input = True
@@ -212,9 +218,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = psu.convert_string_to_sympy(
-            a_tru, variables, allow_complex=False, allow_trig_functions=False
-        )
+        if a_tru != "":
+            a_tru = psu.convert_string_to_sympy(
+                a_tru, variables, allow_complex=False, allow_trig_functions=False
+            )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),
@@ -239,7 +246,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     a_sub = data["submitted_answers"].get(name)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
         a_sub = blank_value
-    if not a_sub:
+        if a_sub.strip() == "":
+            a_sub = ""
+            data["submitted_answers"][name] = a_sub
+            return
+    if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return

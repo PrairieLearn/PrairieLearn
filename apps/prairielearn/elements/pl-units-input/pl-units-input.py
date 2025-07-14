@@ -100,7 +100,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if correct_answer_html is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"Duplicate correct_answers variable name: {name}")
-        data["correct_answers"][name] = correct_answer_html
+        if correct_answer_html.strip() == "":
+            data["correct_answers"][name] = ""
+        else:
+            data["correct_answers"][name] = correct_answer_html
 
     correct_answer = data["correct_answers"].get(name)
 
@@ -139,13 +142,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
             )
 
-        correct_answer_parsed = ureg.Quantity(correct_answer)
+        if correct_answer != "":
+            correct_answer_parsed = ureg.Quantity(correct_answer)
 
-        if not correct_answer_parsed.check(parsed_atol.dimensionality):
-            raise ValueError(
-                f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
-                f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
-            )
+            if not correct_answer_parsed.check(parsed_atol.dimensionality):
+                raise ValueError(
+                    f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
+                    f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
+                )
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
@@ -259,10 +263,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_sub is None:
                 raise ValueError("submitted answer is None")
 
-            a_sub_parsed = ureg.Quantity(a_sub)
-            html_params["a_sub"] = prepare_display_string(
-                a_sub_parsed, custom_format, grading_mode
-            )
+            if a_sub == "":
+                html_params["a_sub"] = a_sub
+            else:
+                a_sub_parsed = ureg.Quantity(a_sub)
+                html_params["a_sub"] = prepare_display_string(
+                    a_sub_parsed, custom_format, grading_mode
+                )
             html_params["suffix"] = suffix
             html_params["raw_submitted_answer"] = raw_submitted_answer
 
@@ -297,13 +304,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if a_tru is None:
             return ""
-
-        a_tru_parsed = ureg.Quantity(a_tru)
+        if a_tru != "":
+            a_tru_parsed = ureg.Quantity(a_tru)
+            a_tru = prepare_display_string(a_tru_parsed, custom_format, grading_mode)
 
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
+            "a_tru": a_tru,
             "suffix": suffix,
         }
 
@@ -330,17 +338,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # checks for blank answer
-    if not a_sub:
+    if a_sub.strip() == "":
         if allow_blank:
-            data["submitted_answers"][name] = pl.get_string_attrib(
-                element, "blank-value"
-            )
+            a_sub = pl.get_string_attrib(element, "blank-value")
+            if a_sub.strip() == "":
+                a_sub = ""
+            data["submitted_answers"][name] = a_sub
         else:
             data["format_errors"][name] = (
                 "Invalid format. The submitted answer was left blank."
             )
             data["submitted_answers"][name] = None
-
         return
 
     ureg = pl.get_unit_registry()
@@ -398,12 +406,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     a_tru = data["correct_answers"].get(name, None)
     if a_tru is None:
         return
+    a_sub = data["submitted_answers"].get(name, None)
 
     # Store cache on system. Needed to prevent slow grading / parsing times
     # due to object creation
     ureg = pl.get_unit_registry()
 
-    if grading_mode is GradingMode.ONLY_UNITS:
+    if a_sub == "" or a_tru == "":
+        grading_fn = uu.get_blank_grading_function(correct_ans=a_tru)
+    elif grading_mode is GradingMode.ONLY_UNITS:
         grading_fn = uu.get_only_units_grading_fn(ureg=ureg, correct_ans=a_tru)
     elif grading_mode is GradingMode.EXACT_UNITS:
         grading_fn = uu.get_exact_units_grading_fn(
