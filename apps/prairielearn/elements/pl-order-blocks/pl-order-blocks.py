@@ -152,8 +152,41 @@ def solve_problem(
         assert_never(grading_method)
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
-    element = lxml.html.fragment_fromstring(element_html)
+class QuestionAttributes(TypedDict):
+    answer_name: str
+    check_indentation: bool
+    grading_method: GradingMethodType
+    feedback_type: FeedbackType
+    code_language: str
+
+
+def get_pl_order_blocks_attributes(
+    element: lxml.html.HtmlElement,
+) -> QuestionAttributes:
+    return {
+        "answer_name": pl.get_string_attrib(element, "answers-name"),
+        "check_indentation": pl.get_boolean_attrib(
+            element, "indentation", INDENTION_DEFAULT
+        ),
+        "grading_method": pl.get_enum_attrib(
+            element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
+        ),
+        "feedback_type": pl.get_enum_attrib(
+            element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+        ),
+        "format_type": pl.get_enum_attrib(
+            element, "format", FormatType, FormatType.DEFAULT
+        ),
+        "code_language": pl.get_string_attrib(element, "code-language", None),
+    }
+
+
+def validate_pl_order_blocks_attributes(
+    element: lxml.html.HtmlElement,
+    data: pl.QuestionData,
+    attribs: QuestionAttributes,
+) -> None:
+    pl.check_answers_names(data, attribs["answer_name"])
 
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -175,22 +208,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "code-language",
         "allow-blank",
     ]
-
     pl.check_attribs(
         element, required_attribs=required_attribs, optional_attribs=optional_attribs
     )
-    answer_name = pl.get_string_attrib(element, "answers-name")
-    pl.check_answers_names(data, answer_name)
-
-    check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
-    grading_method = pl.get_enum_attrib(
-        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-    )
-    feedback_type = pl.get_enum_attrib(
-        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
-    )
-
-    if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
+    if attribs["grading_method"] not in LCS_GRADABLE_TYPES and pl.has_attrib(
         element, "partial-credit"
     ):
         raise ValueError(
@@ -198,154 +219,203 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     if (
-        grading_method is not GradingMethodType.DAG
-        and grading_method is not GradingMethodType.RANKING
-        and feedback_type is not FeedbackType.NONE
+        attribs["grading_method"] is not GradingMethodType.DAG
+        and attribs["grading_method"] is not GradingMethodType.RANKING
+        and attribs["feedback_type"] is not FeedbackType.NONE
     ):
         raise ValueError(
-            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+            f"feedback type {attribs['feedback_type'].value} is not available with the {attribs['grading_method'].value} grading-method."
         )
 
-    format_type = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-    code_language = pl.get_string_attrib(element, "code-language", None)
-    if format_type is FormatType.DEFAULT and code_language is not None:
+    if (
+        attribs["format_type"] is FormatType.DEFAULT
+        and attribs["code_language"] is not None
+    ):
         raise ValueError('code-language attribute may only be used with format="code"')
+
+
+class AnswerAttributes(TypedDict):
+    correct: bool
+    ranking: int
+    indent: int
+    tag: str
+    depends: list[str]
+    inner_html: str
+    distractor_feedback: str
+    ordering_feedback: str
+    distractor_for: str
+
+
+def get_pl_answer_attributes(
+    element: lxml.html.HtmlElement,
+) -> AnswerAttributes:
+    tag, depends = get_graph_info(element)
+    return {
+        "is_correct": pl.get_boolean_attrib(
+            element, "correct", PL_ANSWER_CORRECT_DEFAULT
+        ),
+        "answer_indent": pl.get_integer_attrib(
+            element, "indent", ANSWER_INDENT_DEFAULT
+        ),
+        "tag": tag,
+        "depends": depends,
+        "inner_html": pl.inner_html(element),
+        "ranking": pl.get_integer_attrib(element, "ranking", -1),
+        "distractor_feedback": pl.get_string_attrib(
+            element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
+        ),
+        "ordering_feedback": pl.get_string_attrib(
+            element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
+        ),
+        "distractor_for": pl.get_string_attrib(
+            element, "distractor-for", DISTRACTOR_FOR_DEFAULT
+        ),
+    }
+
+
+def validate_pl_answer_attributes(
+    element: lxml.html.HtmlElement,
+    answer_attribs: OrderBlocksAnswerData,
+    question_attribs: QuestionAttributes,
+    used_tags: set,
+):
+    if element.tag != "pl-answer":
+        raise ValueError(
+            "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
+                Any html tags nested inside <pl-block-group> must be <pl-answer>"
+        )
+
+    if question_attribs["grading_method"] is GradingMethodType.EXTERNAL:
+        pl.check_attribs(element, required_attribs=[], optional_attribs=["correct"])
+    elif question_attribs["grading_method"] in [
+        GradingMethodType.UNORDERED,
+        GradingMethodType.ORDERED,
+    ]:
+        pl.check_attribs(
+            element,
+            required_attribs=[],
+            optional_attribs=["correct", "indent", "distractor-feedback"],
+        )
+    elif question_attribs["grading_method"] is GradingMethodType.RANKING:
+        pl.check_attribs(
+            element,
+            required_attribs=[],
+            optional_attribs=[
+                "correct",
+                "tag",
+                "ranking",
+                "indent",
+                "distractor-feedback",
+                "distractor-for",
+                "ordering-feedback",
+            ],
+        )
+    elif question_attribs["grading_method"] is GradingMethodType.DAG:
+        pl.check_attribs(
+            element,
+            required_attribs=[],
+            optional_attribs=[
+                "correct",
+                "tag",
+                "depends",
+                "comment",
+                "indent",
+                "distractor-feedback",
+                "distractor-for",
+                "ordering-feedback",
+            ],
+        )
+    if answer_attribs["distractor_for"] is not None and answer_attribs["is_correct"]:
+        raise ValueError(
+            "The distractor-for attribute may only be used on blocks with correct=false."
+        )
+
+    if (
+        answer_attribs["ordering_feedback"] is not None
+        and not answer_attribs["is_correct"]
+    ):
+        raise ValueError(
+            "The ordering-feedback attribute may only be used on blocks with correct=true."
+        )
+
+    if SPEC_CHAR.intersection(answer_attribs["tag"]):
+        raise ValueError(
+            f'<pl-answer tag="{answer_attribs["tag"]}"> tag attribute may not contain special characters: "{SPEC_CHAR_STR}"'
+        )
+
+    if answer_attribs["is_correct"]:
+        if answer_attribs["tag"] in used_tags:
+            raise ValueError(
+                f'Tag "{answer_attribs["tag"]}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
+            )
+        used_tags.add(answer_attribs["tag"])
+
+    if (
+        question_attribs["check_indentation"] is False
+        and answer_attribs["answer_indent"] is not None
+    ):
+        raise ValueError(
+            "<pl-answer> should not specify indentation if indentation is disabled."
+        )
+
+    if question_attribs["format_type"] is FormatType.CODE:
+        answer_attribs["inner_html"] = (
+            "<pl-code"
+            + (
+                ' language="' + question_attribs["code_language"] + '"'
+                if question_attribs["code_language"]
+                else ""
+            )
+            + ">"
+            + answer_attribs["inner_html"]
+            + "</pl-code>"
+        )
+
+
+def prepare(html: str, data: pl.QuestionData) -> None:
+    html_element = lxml.html.fragment_fromstring(html)
+
+    question_attribs = get_pl_order_blocks_attributes(html_element)
+    validate_pl_order_blocks_attributes(html_element, data, question_attribs)
 
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
     used_tags = set()
 
     def prepare_tag(
-        html_tags: lxml.html.HtmlElement,
+        html_tag: lxml.html.HtmlElement,
         index: int,
         group_info: GroupInfo,
     ) -> None:
-        if html_tags.tag != "pl-answer":
-            raise ValueError(
-                "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
-                Any html tags nested inside <pl-block-group> must be <pl-answer>"
-            )
-
-        if grading_method is GradingMethodType.EXTERNAL:
-            pl.check_attribs(
-                html_tags, required_attribs=[], optional_attribs=["correct"]
-            )
-        elif grading_method in [GradingMethodType.UNORDERED, GradingMethodType.ORDERED]:
-            pl.check_attribs(
-                html_tags,
-                required_attribs=[],
-                optional_attribs=["correct", "indent", "distractor-feedback"],
-            )
-        elif grading_method is GradingMethodType.RANKING:
-            pl.check_attribs(
-                html_tags,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "tag",
-                    "ranking",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.DAG:
-            pl.check_attribs(
-                html_tags,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "tag",
-                    "depends",
-                    "comment",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                ],
-            )
-
-        is_correct = pl.get_boolean_attrib(
-            html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
+        answer_attribs = get_pl_answer_attributes(html_tag)
+        validate_pl_answer_attributes(
+            html_tag, answer_attribs, question_attribs, used_tags
         )
-        answer_indent = pl.get_integer_attrib(
-            html_tags, "indent", ANSWER_INDENT_DEFAULT
-        )
-        inner_html = pl.inner_html(html_tags)
-        ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
-        distractor_feedback = pl.get_string_attrib(
-            html_tags, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
-        )
-        ordering_feedback = pl.get_string_attrib(
-            html_tags, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
-        )
-
-        distractor_for = pl.get_string_attrib(
-            html_tags, "distractor-for", DISTRACTOR_FOR_DEFAULT
-        )
-
-        if distractor_for is not None and is_correct:
-            raise ValueError(
-                "The distractor-for attribute may only be used on blocks with correct=false."
-            )
-
-        if ordering_feedback is not None and not is_correct:
-            raise ValueError(
-                "The ordering-feedback attribute may only be used on blocks with correct=true."
-            )
-
-        tag, depends = get_graph_info(html_tags)
-        if SPEC_CHAR.intersection(tag):
-            raise ValueError(
-                f'<pl-answer tag="{tag}"> tag attribute may not contain special characters: "{SPEC_CHAR_STR}"'
-            )
-
-        if is_correct:
-            if tag in used_tags:
-                raise ValueError(
-                    f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
-                )
-            used_tags.add(tag)
-
-        if check_indentation is False and answer_indent is not None:
-            raise ValueError(
-                "<pl-answer> should not specify indentation if indentation is disabled."
-            )
-
-        if format_type is FormatType.CODE:
-            inner_html = (
-                "<pl-code"
-                + (' language="' + code_language + '"' if code_language else "")
-                + ">"
-                + inner_html
-                + "</pl-code>"
-            )
 
         answer_data_dict: OrderBlocksAnswerData = {
-            "inner_html": inner_html,
-            "indent": answer_indent,
-            "ranking": ranking,
+            "inner_html": answer_attribs["inner_html"],
+            "indent": answer_attribs["answer_indent"],
+            "ranking": answer_attribs["ranking"],
             "index": index,
-            "tag": tag,
-            "distractor_for": distractor_for,
-            "depends": depends,  # only used with DAG grader
+            "tag": answer_attribs["tag"],
+            "distractor_for": answer_attribs["distractor_for"],
+            "depends": answer_attribs["depends"],  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
-            "distractor_feedback": distractor_feedback,
-            "ordering_feedback": ordering_feedback,
+            "distractor_feedback": answer_attribs["distractor_feedback"],
+            "ordering_feedback": answer_attribs["ordering_feedback"],
             "uuid": pl.get_uuid(),
         }
-        if is_correct:
+        if answer_attribs["is_correct"]:
             correct_answers.append(answer_data_dict)
         else:
             incorrect_answers.append(answer_data_dict)
 
-    index = 0
-    for html_tags in element:  # iterate through the html tags inside pl-order-blocks
+    index = 0  # iterate through the html tags inside pl-order-blocks
+    for html_tags in html_element:
         if isinstance(html_tags, _Comment):
             continue
         if html_tags.tag == "pl-block-group":
-            if grading_method is not GradingMethodType.DAG:
+            if question_attribs["grading_method"] is not GradingMethodType.DAG:
                 raise ValueError(
                     'Block groups only supported in the "dag" grading mode.'
                 )
@@ -368,15 +438,18 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1
 
-    if grading_method is not GradingMethodType.EXTERNAL and len(correct_answers) == 0:
+    if (
+        question_attribs["grading_method"] is not GradingMethodType.EXTERNAL
+        and len(correct_answers) == 0
+    ):
         raise ValueError("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
     max_incorrect = pl.get_integer_attrib(
-        element, "max-incorrect", all_incorrect_answers
+        html_element, "max-incorrect", all_incorrect_answers
     )
     min_incorrect = pl.get_integer_attrib(
-        element, "min-incorrect", all_incorrect_answers
+        html_element, "min-incorrect", all_incorrect_answers
     )
 
     if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
@@ -398,7 +471,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
     source_blocks_order = pl.get_enum_attrib(
-        element,
+        html_element,
         "source-blocks-order",
         SourceBlocksOrderType,
         SOURCE_BLOCKS_ORDER_DEFAULT,
@@ -441,18 +514,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         for distractor in distractors:
             distractor["distractor_bin"] = distractor_bin
 
-    data["params"][answer_name] = all_blocks
-    data["correct_answers"][answer_name] = correct_answers
+    data["params"][question_attribs["answer_name"]] = all_blocks
+    data["correct_answers"][question_attribs["answer_name"]] = correct_answers
 
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
     # isn't we need to change it into a solution before displaying it as such
     data_copy = deepcopy(data)
-    data_copy["submitted_answers"] = {answer_name: deepcopy(correct_answers)}
+    data_copy["submitted_answers"] = {
+        question_attribs["answer_name"]: deepcopy(correct_answers)
+    }
     data_copy["partial_scores"] = {}
-    grade(element_html, data_copy)
-    if data_copy["partial_scores"][answer_name]["score"] != 1:
-        data["correct_answers"][answer_name] = solve_problem(
-            correct_answers, grading_method
+    grade(html, data_copy)
+    if data_copy["partial_scores"][question_attribs["answer_name"]]["score"] != 1:
+        data["correct_answers"][question_attribs["answer_name"]] = solve_problem(
+            correct_answers, question_attribs["grading_method"]
         )
 
 

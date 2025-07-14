@@ -1,5 +1,10 @@
 import pytest
-from dag_checker import dag_to_nx, grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import (
+    dag_to_nx,
+    grade_dag,
+    lcs_partial_credit,
+    solve_dag,
+)
 
 problem_1_dag = {
     "1": [],
@@ -139,6 +144,29 @@ problem_3_dag = {
 problem_3_groups = {"1": None, "2": "g1", "3": "g1", "4": "g2", "5": "g2", "6": None}
 
 
+problem_4_named_paths = {}
+problem_4_cycle = {"1": [["2"], []], "2": [["1"], []], "3": [["2"], ["1"]]}
+
+problem_5_named_paths = {}
+problem_5_sum = {
+    "1": [],
+    "2": ["1"],
+    "3": ["2"],
+    "4": ["2"],
+    "5": [["1"], ["2"]],
+    "6": [["3", "4"], ["5"]],
+}
+
+problem_6_named_paths = {"40": "path1:", "41": "path2:", "50": "path1:", "51": "path2:"}
+problem_6_named_paths = {
+    "1": [],
+    "2": [],
+    "3": [],
+    "4": [["2"], ["1"]],
+    "5": [["4"], ["3", "4"]],
+}
+
+
 def test_problem_validation() -> None:
     dag_to_nx(problem_1_dag, problem_1_groups)
     dag_to_nx(problem_2_dag, problem_2_groups)
@@ -160,3 +188,7 @@ def test_solve_dag() -> None:
     for depends_graph, group_belonging in problems:
         solution = solve_dag(depends_graph, group_belonging)
         assert len(solution) == grade_dag(solution, depends_graph, group_belonging)[0]
+
+
+def test_solve_mdag() -> None:
+    problems = []
