@@ -84,7 +84,16 @@ const emptyQuestion: AssessmentQuestionRow = {
   course_sharing_name: '',
   question_id: '',
   title: '',
-  topic: '',
+  topic: {
+    number: null,
+    id: '',
+    json_comment: '',
+    course_id: '',
+    color: '',
+    description: '',
+    implicit: false,
+    name: '',
+  },
   tags: [],
   max_auto_points: null,
   max_manual_points: null,
@@ -106,6 +115,7 @@ export function InstructorAssessmentQuestionsTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
   origHash,
+  editorEnabled,
 }: {
   course: StaffCourse;
   questions: AssessmentQuestionRow[];
@@ -117,6 +127,7 @@ export function InstructorAssessmentQuestionsTable({
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
   origHash: string;
+  editorEnabled: boolean;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -195,7 +206,7 @@ export function InstructorAssessmentQuestionsTable({
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
           <div class="ms-auto">
-            {hasCourseInstancePermissionEdit && origHash ? (
+            {editorEnabled && hasCourseInstancePermissionEdit && origHash ? (
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}

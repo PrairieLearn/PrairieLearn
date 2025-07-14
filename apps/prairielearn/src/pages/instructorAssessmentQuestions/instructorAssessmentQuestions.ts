@@ -8,6 +8,7 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { features } from '../../lib/features/index.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
@@ -36,11 +37,17 @@ router.get(
       origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
     }
 
+    const editorEnabled = await features.enabledFromLocals(
+      'assessment-questions-editor',
+      res.locals,
+    );
+
     res.send(
       InstructorAssessmentQuestions({
         resLocals: res.locals,
         questions,
         origHash,
+        editorEnabled,
       }),
     );
   }),

@@ -16,10 +16,12 @@ export function InstructorAssessmentQuestions({
   resLocals,
   questions,
   origHash,
+  editorEnabled,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
-  origHash: string | null;
+  origHash: string;
+  editorEnabled: boolean;
 }) {
   const { authz_data, urlPrefix } = getPageContext(resLocals);
   const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
@@ -60,6 +62,7 @@ export function InstructorAssessmentQuestions({
             }
             csrfToken={resLocals.__csrf_token}
             origHash={origHash}
+            editorEnabled={editorEnabled}
           />
         </Hydrate>
       </>
