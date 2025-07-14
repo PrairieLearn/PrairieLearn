@@ -11,8 +11,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import type { User } from '../lib/db-types.js';
-import { GroupRoleSchema, QuestionSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, QuestionSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
