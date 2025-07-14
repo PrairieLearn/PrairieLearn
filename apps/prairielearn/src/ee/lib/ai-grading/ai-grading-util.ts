@@ -212,6 +212,14 @@ export function generateSubmissionMessage({
 
         const options = $submission_html(node).data('options') as Record<string, string>;
         const submittedImageName = options.submitted_file_name;
+        if (!submittedImageName) {
+          // If no submitted filename is available, no image was captured.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${options.file_name} was not captured.`,
+          });
+          return;
+        }
 
         // submitted_answer contains the base-64 encoded image data for the image capture.
 
