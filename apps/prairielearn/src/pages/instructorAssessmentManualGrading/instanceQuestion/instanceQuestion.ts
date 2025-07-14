@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../../lib/db-types.js';
+import {
+  selectLastSubmissionId,
+  selectRubricGradingItems,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { GradingJobSchema, IdSchema, type InstanceQuestion } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -19,7 +25,7 @@ import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
-  InstanceQuestion,
+  InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
@@ -78,11 +84,73 @@ router.get(
     const lastGrader = res.locals.instance_question.last_grader
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
+
+    const instance_question = res.locals.instance_question as InstanceQuestion;
+    if (instance_question == null) {
+      throw new error.HttpStatusError(404, 'Instance question not found');
+    }
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+    let aiGradingInfo: {
+      feedback: string | null;
+      showAiManualComparison: boolean;
+      selectedRubricItemIds: string[];
+      prompt: ChatCompletionMessageParam[] | null;
+    } | null = null;
+
+    if (aiGradingEnabled) {
+      const submission_id = await selectLastSubmissionId(instance_question.id);
+      const grading_job = await sqldb.queryOptionalRow(
+        sql.select_most_recent_grading_job,
+        {
+          submission_id,
+        },
+        GradingJobSchema,
+      );
+
+      if (grading_job) {
+        const selectedRubricItems = await selectRubricGradingItems(
+          grading_job.manual_rubric_grading_id,
+        );
+
+        const prompt_for_grading_job = (await sqldb.queryOptionalRow(
+          sql.select_prompt_for_grading_job,
+          {
+            grading_job_id: grading_job.id,
+          },
+          z.array(z.record(z.string(), z.any())).nullable(),
+        )) as ChatCompletionMessageParam[] | null;
+
+        const ai_grading_available =
+          (await sqldb.queryOptionalRow(
+            sql.select_ai_grading_available_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
+
+        const manual_grading_available =
+          (await sqldb.queryOptionalRow(
+            sql.select_manual_grading_available_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
+
+        aiGradingInfo = {
+          feedback: grading_job?.feedback?.manual ?? null,
+          showAiManualComparison: ai_grading_available && manual_grading_available,
+          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+          prompt: prompt_for_grading_job ?? null,
+        };
+      }
+    }
+
     res.send(
-      InstanceQuestion({
+      InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        aiGradingInfo,
       }),
     );
   }),
@@ -128,7 +196,10 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const gradingPanel = GradingPanel({
+        ...locals,
+        context: 'main',
+      }).toString();
       const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {

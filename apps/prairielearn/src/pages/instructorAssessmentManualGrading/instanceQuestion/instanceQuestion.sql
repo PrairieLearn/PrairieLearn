@@ -76,3 +76,55 @@ SELECT
   jsonb_build_object('open', i.open)
 FROM
   updated_issues AS i;
+
+-- BLOCK select_most_recent_grading_job
+SELECT
+  *
+FROM
+  grading_jobs
+WHERE
+  submission_id = $submission_id
+  AND grading_method = 'AI'
+ORDER BY
+  date DESC
+LIMIT
+  1;
+
+-- BLOCK select_prompt_for_grading_job
+SELECT
+  agj.prompt
+FROM
+  grading_jobs as gj
+  JOIN ai_grading_jobs as agj ON (agj.grading_job_id = gj.id)
+WHERE
+  gj.id = $grading_job_id
+  AND gj.grading_method = 'AI'
+  AND gj.deleted_at IS NULL
+LIMIT
+  1;
+
+-- BLOCK select_ai_grading_available_for_submission
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      grading_jobs AS gj
+    WHERE
+      gj.submission_id = $submission_id
+      AND gj.grading_method = 'AI'
+      AND gj.deleted_at IS NULL
+  );
+
+-- BLOCK select_manual_grading_available_for_submission
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      grading_jobs AS gj
+    WHERE
+      gj.submission_id = $submission_id
+      AND gj.grading_method = 'Manual'
+      AND gj.deleted_at IS NULL
+  );
