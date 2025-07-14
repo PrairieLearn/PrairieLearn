@@ -20,6 +20,7 @@ declare global {
 }
 
 onDocumentReady(() => {
+  console.log('onDocumentReady');
   const {
     hasCourseInstancePermissionEdit,
     urlPrefix,
@@ -82,19 +83,15 @@ onDocumentReady(() => {
 
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
-    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) => {
+    responseHandler: ({ instance_questions }: { instance_questions: InstanceQuestionRow[] }) => {
       // Add a stable, user-friendly index that is used to identify an instance
       // question anonymously but retain its value in case of sorting/filters
-      const instance_questions: InstanceQuestionRowWithIndex[] = res.instance_questions.map(
-        (row, index) => {
-          return {
-            ...InstanceQuestionRowSchema.parse(row),
-            index,
-          };
-        },
-      );
-
-      return instance_questions;
+      return instance_questions.map((row, index) => ({
+        // Re-parse the row to ensure that date strings are parsed correctly
+        // typeof JSON.parse(JSON.stringify(new Date())) === 'string'
+        ...InstanceQuestionRowSchema.parse(row),
+        index,
+      }));
     },
     escape: true,
     uniqueId: 'id',
