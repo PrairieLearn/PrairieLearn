@@ -1,3 +1,5 @@
+* @PrairieLearn/core
+
 /apps/prairielearn/elements/pl-big-o-input @eliotwrobson
 /apps/prairielearn/elements/pl-card @tdy
 /apps/prairielearn/elements/pl-dataframe @eliotwrobson
