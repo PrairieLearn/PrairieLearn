@@ -4,12 +4,12 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import type {
-  InstanceQuestionRowWithAIGradingStats,
-  InstanceQuestionTableData,
+import {
+  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
+  InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
+  type InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
-type InstanceQuestionRow = InstanceQuestionRowWithAIGradingStats;
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 
 declare global {
@@ -82,10 +82,20 @@ onDocumentReady(() => {
 
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
-    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
+    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) => {
       // Add a stable, user-friendly index that is used to identify an instance
       // question anonymously but retain its value in case of sorting/filters
-      res.instance_questions.map((row, index) => ({ ...row, index })),
+      const instance_questions: InstanceQuestionRowWithIndex[] = res.instance_questions.map(
+        (row, index) => {
+          return {
+            ...InstanceQuestionRowSchema.parse(row),
+            index,
+          };
+        },
+      );
+
+      return instance_questions;
+    },
     escape: true,
     uniqueId: 'id',
     idField: 'id',
