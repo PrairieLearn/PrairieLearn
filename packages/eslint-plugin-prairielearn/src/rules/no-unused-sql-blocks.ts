@@ -40,7 +40,6 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     if (!fs.existsSync(sqlFile)) return {};
     const tsContent = fs.readFileSync(context.filename, 'utf8');
     const sqlContent = fs.readFileSync(sqlFile, 'utf8');
-    const firstLineLength = sqlContent.indexOf('\n');
 
     const usedBlocks = extractSqlBlockReferences(tsContent);
     const definedBlocks = extractSqlBlockDefinitions(sqlContent);
@@ -54,7 +53,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
             node,
             loc: {
               start: { line: 1, column: 1 },
-              end: { line: 1, column: firstLineLength },
+              end: { line: 2, column: 0 },
             },
             messageId: 'unusedSqlBlock',
             data: { block, sqlFile: path.basename(sqlFile) },
