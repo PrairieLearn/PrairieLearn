@@ -236,7 +236,7 @@ router.post(
           res.locals.assessment.id,
           res.locals.instance_question.id,
           body.submission_id,
-          body.modified_at,
+          body.modified_at, // check_modified_at
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
