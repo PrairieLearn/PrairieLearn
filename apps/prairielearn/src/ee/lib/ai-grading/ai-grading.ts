@@ -111,6 +111,15 @@ export async function aiGrade({
     let i = 0;
     const reference_submission_ids: number[] = [];
 
+    // NOTE: This breaks MCQ autograding
+    // - Generate embeddings for each instance question
+    // - Cluster them into k=20 clusters
+
+    for (const instance_question of all_instance_questions) {
+      
+    }
+
+
     for (const instance_question of all_instance_questions) {
       // Only checking for instance questions that can be used as RAG data.
       // They should be graded last by a human.
@@ -119,12 +128,6 @@ export async function aiGrade({
       }
 
       const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
-
-      if (i < NUM_REFERENCE_SAMPLES) {
-        // For the first NUM_REFERENCE_SAMPLES submissions, we always generate a new embedding.
-        // This is to ensure that we have a good set of reference samples for RAG.
-        reference_submission_ids.push(parseInt(submission.id));
-      }
 
       const submission_embedding = await selectEmbeddingForSubmission(submission.id);
       
