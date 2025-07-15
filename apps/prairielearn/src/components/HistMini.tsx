@@ -1,12 +1,7 @@
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'preact/hooks';
 
-export function HistMini({
-  selector,
-  data = [],
-  options = {},
-}: {
-  selector: HTMLElement;
+interface HistMiniProps {
   data?: number[];
   options?: {
     width?: number;
@@ -17,7 +12,13 @@ export function HistMini({
     ymax?: number | 'auto';
     normalize?: boolean;
   };
-}) {
+}
+
+export function HistMiniHtml({
+  selector,
+  data = [],
+  options = {},
+}: HistMiniProps & { selector: HTMLElement }) {
   const resolvedOptions = {
     width: 100,
     height: 40,
@@ -95,27 +96,15 @@ export function HistMini({
   return svg.node();
 }
 
-export function HistMiniPreact({
-  data,
-  options,
-}: {
-  data?: number[];
-  options?: {
-    width?: number;
-    height?: number;
-    xmin?: number;
-    xmax?: number;
-    ymin?: number | 'auto';
-    ymax?: number | 'auto';
-    normalize?: boolean;
-  };
-}) {
+export function HistMini({ data, options }: HistMiniProps) {
+  // For this to work on the server, we need to use a ref.
+  // d3.create() is not supported on the server.
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (ref.current) {
       ref.current.innerHTML = '';
-      HistMini({
+      HistMiniHtml({
         selector: ref.current as HTMLElement,
         data: data ?? [],
         options: options ?? {},
