@@ -96,7 +96,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-    if data["correct_answers"][name] == "" and (not allow_blank and blank_value == ""):
+    if data["correct_answers"][name] == "" and (not allow_blank or blank_value == ""):
         raise ValueError(
             "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
         )

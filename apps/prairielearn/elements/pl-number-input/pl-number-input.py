@@ -83,13 +83,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
         if correct_answer.strip() != "":
             correct_answer = pl.get_float_attrib(element, "correct-answer", None)
-        else:
+        elif allow_blank and blank_value == "":
             data["correct_answers"][name] = ""
-
-    if data["correct_answers"][name] == "" and (not allow_blank or not blank_value):
-        raise ValueError(
-            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
-        )
+        else:
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
     if custom_format is not None:
@@ -377,24 +376,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-
-    if allow_blank and submitted_answer.strip() == "":
-        res = ["", {"submitted_answers": ""}]
+        data["submitted_answers"][name] = ""
     else:
         res = pl.string_fraction_to_number(
             submitted_answer,
             allow_fractions=allow_fractions,
             allow_complex=allow_complex,
         )
-    if res[0] is not None:
-        _, newdata = res
-        data["submitted_answers"][name] = newdata["submitted_answers"]
-    else:
-        _, newdata = res
-        data["format_errors"][name] = get_format_string(
-            allow_complex, allow_fractions, newdata["format_errors"]
-        )
-        data["submitted_answers"][name] = None
+        if res[0] is not None:
+            _, newdata = res
+            data["submitted_answers"][name] = newdata["submitted_answers"]
+        else:
+            _, newdata = res
+            data["format_errors"][name] = get_format_string(
+                allow_complex, allow_fractions, newdata["format_errors"]
+            )
+            data["submitted_answers"][name] = None
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
