@@ -276,12 +276,15 @@ function formatDateFriendlyParts(
   const minIndex = precisionOrder.indexOf(minPrecision);
 
   /**
+   *    The maximum precision must be unit larger than or equal to the minimum precision, otherwise the rules will contradict each other. 
+   * 
    *     V min/max > | h | m | s
    *     h           | X | X | X
    *     m           | I | X | X
    *     s           | I | I | X
    *
-   * I - impossible
+   * X - valid configuration
+   * I - invalid configuration
    */
 
   if (maxIndex < minIndex) {
