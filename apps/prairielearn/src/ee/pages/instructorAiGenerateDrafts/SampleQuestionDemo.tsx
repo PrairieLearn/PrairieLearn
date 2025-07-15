@@ -185,7 +185,7 @@ export function SampleQuestionDemo({
     : '';
 
   return (
-    <Card class="shadow" ref={cardRef}>
+    <Card ref={cardRef} class="shadow">
       <CardHeader>
         <div class="d-flex align-items-center gap-2">
           <p class="mb-0">{prompt.name}</p>
