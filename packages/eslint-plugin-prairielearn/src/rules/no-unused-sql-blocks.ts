@@ -28,7 +28,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     type: 'problem',
     messages: {
       unusedSqlBlock:
-        'SQL blocks "{{block}}" in "{{sqlFile}}" is not used in this file and should be deleted.',
+        'SQL block "{{block}}" in "{{sqlFile}}" is not used in this file and should be deleted.',
     },
     schema: [],
   },
