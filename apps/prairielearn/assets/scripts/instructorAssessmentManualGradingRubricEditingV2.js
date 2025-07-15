@@ -103,12 +103,6 @@ function resetInstructorGradingPanel() {
     adjustHeightFromContent(input);
   });
 
-  document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
-    button.addEventListener('click', function () {
-      $('.js-rubric-settings-modal').modal('show');
-    }),
-  );
-
   document
     .querySelectorAll('.js-selectable-rubric-item')
     .forEach((item) => item.addEventListener('change', computePointsFromRubric));
@@ -159,7 +153,7 @@ function resetInstructorGradingPanel() {
   updateSettingsPointValues();
 
   document
-    .querySelectorAll('.js-rubric-settings-modal form')
+    .querySelectorAll('.js-rubric-settings-card form')
     .forEach((form) => form.addEventListener('submit', submitSettings));
 
   document.querySelectorAll('.js-disable-rubric-button').forEach((button) =>
@@ -192,7 +186,7 @@ function adjustHeightFromContent(element) {
 }
 
 function updateSettingsPointValues() {
-  const form = document.querySelector('.js-rubric-settings-modal form');
+  const form = document.querySelector('.js-rubric-settings-card form');
   if (!form) return;
   const selected = form.querySelector('.js-replace-auto-points-input:checked');
   const points = Number((selected ?? form).dataset.maxPoints);
@@ -214,7 +208,7 @@ function updateSettingsPointValues() {
 }
 
 function checkRubricItemTotals() {
-  const form = document.querySelector('.js-rubric-settings-modal form');
+  const form = document.querySelector('.js-rubric-settings-card form');
   if (!form) return;
   const startingPoints = Number(form.querySelector('[name="starting_points"]:checked')?.value ?? 0);
   const [totalPositive, totalNegative] = Array.from(form.querySelectorAll('.js-rubric-item-points'))
@@ -576,7 +570,7 @@ function addRubricItemRow() {
   const points = +1;
   table.dataset.nextNewId = `${next_id}`;
 
-  // Create a new row based on the template element in the modal
+  // Create a new row based on the template element in the card
   const templateRow = card.querySelector('.js-new-row-rubric-item');
   const row = templateRow?.content.firstElementChild?.cloneNode(true);
   if (!row || !(row instanceof HTMLTableRowElement)) return;

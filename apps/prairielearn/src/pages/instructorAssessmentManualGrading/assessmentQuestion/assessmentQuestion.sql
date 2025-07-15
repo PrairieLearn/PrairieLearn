@@ -247,3 +247,51 @@ SELECT
 FROM
   updated_instance_questions AS uiq
   LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (mriqmgj.instance_question_id = uiq.id);
+
+-- BLOCK select_rubric_data
+WITH
+  submission_count_per_rubric_item AS (
+    SELECT
+      rgi.rubric_item_id,
+      COUNT(DISTINCT iq.id) AS num_submissions
+    FROM
+      instance_questions iq
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN rubric_gradings rg ON (
+        rg.id = s.manual_rubric_grading_id
+        AND rg.rubric_id = $rubric_id
+      )
+      JOIN rubric_grading_items rgi ON (rgi.rubric_grading_id = rg.id)
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+    GROUP BY
+      rgi.rubric_item_id
+  ),
+  rubric_items_data AS (
+    SELECT
+      JSONB_AGG(
+        TO_JSONB(ri) || JSONB_BUILD_OBJECT(
+          'num_submissions',
+          COALESCE(scpri.num_submissions, 0)
+        )
+        ORDER BY
+          ri.number,
+          ri.id
+      ) AS items_data
+    FROM
+      rubric_items AS ri
+      LEFT JOIN submission_count_per_rubric_item AS scpri ON (scpri.rubric_item_id = ri.id)
+    WHERE
+      ri.rubric_id = $rubric_id
+      AND ri.deleted_at IS NULL
+  )
+SELECT
+  r.*,
+  rid.items_data AS rubric_items
+FROM
+  rubrics r
+  LEFT JOIN rubric_items_data rid ON (TRUE)
+WHERE
+  r.id = $rubric_id
+AND r.deleted_at IS NULL;

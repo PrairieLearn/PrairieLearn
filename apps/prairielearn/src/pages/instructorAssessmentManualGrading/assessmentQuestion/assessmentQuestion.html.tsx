@@ -12,6 +12,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
@@ -24,12 +25,14 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
+  rubric_data,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
+  rubric_data: RubricData | undefined | null;
 }) {
   const {
     number_in_alternative_group,
@@ -154,7 +157,14 @@ export function AssessmentQuestion({
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
             ${aiGradingStats.rubric_stats.length
-              ? AssessmentQuestionRubricTable(aiGradingStats)
+              ? AssessmentQuestionRubricTable(
+                  assessment_question,
+                  rubric_data,
+                  resLocals.__csrf_token,
+                  aiGradingEnabled,
+                  aiGradingMode,
+                  aiGradingStats,
+                )
               : html`
                   <div class="card mb-3">
                     <div class="card-body">
