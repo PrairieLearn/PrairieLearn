@@ -219,7 +219,7 @@ export function formatDateWithinRange(
  * @param date The date to format.
  * @param timezone The time zone to use for formatting.
  * @param baseDate The base date to use for comparison.
- * @param maxPrecision Never show smaller units than the max precision.
+ * @param maxPrecision Only show units as large or larger than the max precision.
  * @param minPrecision Always show that unit and larger, potentially showing smaller units.
  */
 function formatDateFriendlyParts(
