@@ -253,7 +253,6 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
         mode: run(() => {
-          if (req.body.__action === 'ai_grade_assessment') return 'ungraded';
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);

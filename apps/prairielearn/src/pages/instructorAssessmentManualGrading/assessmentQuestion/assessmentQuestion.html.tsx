@@ -140,10 +140,6 @@ export function AssessmentQuestion({
 
       ${aiGradingEnabled && aiGradingMode
         ? html`
-            <form method="POST" id="ai-grading">
-              <input type="hidden" name="__action" value="ai_grade_assessment" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
             <form method="POST" id="ai-grading-graded">
               <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -260,13 +256,6 @@ export function AssessmentQuestion({
                         <i class="bi bi-stars" aria-hidden="true"></i> AI grading
                       </button>
                       <div class="dropdown-menu dropdown-menu-end">
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          onclick="$('#ai-grading').submit();"
-                        >
-                          Grade all ungraded
-                        </button>
                         <button
                           class="dropdown-item"
                           type="button"
