@@ -15,7 +15,6 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
   type ClientFingerprint,
-  DateFromISOString,
   IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
@@ -46,7 +45,6 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: DateFromISOString,
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
