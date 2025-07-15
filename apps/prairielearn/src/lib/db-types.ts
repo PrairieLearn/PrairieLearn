@@ -1034,7 +1034,6 @@ export const SubmissionSchema = z.strictObject({
   format_errors: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
-  grading_method: EnumGradingMethodSchema.nullable(),
   grading_requested_at: DateFromISOString.nullable(),
   id: IdSchema,
   is_ai_graded: z.boolean(),
@@ -1097,14 +1096,14 @@ export const UserSchema = z.strictObject({
 export type User = z.infer<typeof UserSchema>;
 
 export const UserSessionSchema = z.strictObject({
+  id: IdSchema,
+  session_id: z.string(),
   created_at: DateFromISOString,
   revoked_at: DateFromISOString.nullable(),
   updated_at: DateFromISOString,
   expires_at: DateFromISOString,
   user_id: IdSchema.nullable(),
   data: z.any(),
-  id: IdSchema,
-  session_id: z.string(),
 });
 export type UserSession = z.infer<typeof UserSessionSchema>;
 
