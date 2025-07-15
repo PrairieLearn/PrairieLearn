@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import {
+  RawStaffAssessmentSchema,
+  RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
@@ -85,4 +87,19 @@ export function getCourseInstanceContext(
     return StudentCourseInstanceContextSchema.parse(resLocals);
   }
   return StaffCourseInstanceContextSchema.parse(resLocals);
+}
+
+const RawStaffAssessmentContextSchema = z.object({
+  assessment: RawStaffAssessmentSchema.extend({
+    type: z.enum(['Exam', 'Homework']),
+  }),
+  assessment_set: RawStaffAssessmentSetSchema,
+});
+const StaffAssessmentContextSchema =
+  RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();
+
+export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
+
+export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
+  return StaffAssessmentContextSchema.parse(resLocals);
 }
