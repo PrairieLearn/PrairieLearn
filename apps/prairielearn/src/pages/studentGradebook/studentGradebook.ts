@@ -117,7 +117,7 @@ router.get(
     const stringifier = stringifyStream<StudentGradebookRowRaw>({
       header: true,
       columns: ['Assessment', 'Set', 'Score'],
-      transform(row: StudentGradebookRowRaw) {
+      transform(row) {
         return [
           computeTitle(row),
           row.assessment_set.heading,
