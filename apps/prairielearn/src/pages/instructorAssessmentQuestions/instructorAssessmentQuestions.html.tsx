@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.html.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,

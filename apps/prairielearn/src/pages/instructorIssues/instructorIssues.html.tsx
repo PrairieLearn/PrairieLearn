@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { Pager } from '../../components/Pager.html.js';

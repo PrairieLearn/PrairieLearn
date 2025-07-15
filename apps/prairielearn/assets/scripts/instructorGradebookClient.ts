@@ -1,7 +1,7 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.html.js';
 import {
   type AssessmentInstanceScoreResult,
   type GradebookRow,
