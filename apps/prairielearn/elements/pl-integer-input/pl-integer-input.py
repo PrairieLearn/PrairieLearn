@@ -68,8 +68,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     else:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
-    if correct_answer.strip() == "":
-        data["correct_answers"][name] = ""
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    if str(correct_answer).strip() == "":
+        if allow_blank and blank_value == "":
+            data["correct_answers"][name] = ""
+        else:
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
     elif correct_answer is not None and not isinstance(correct_answer, int):
         # Test conversion, but leave as string so proper value is shown on answer panel
         try:

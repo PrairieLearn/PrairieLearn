@@ -76,12 +76,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_answers_names(data, name)
 
     correct_answer = pl.get_string_attrib(element, "correct-answer", None)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
         if correct_answer.strip() != "":
             correct_answer = pl.get_float_attrib(element, "correct-answer", None)
-        data["correct_answers"][name] = correct_answer
+        else:
+            data["correct_answers"][name] = ""
+
+    if data["correct_answers"][name] == "" and (not allow_blank or not blank_value):
+        raise ValueError(
+            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+        )
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
     if custom_format is not None:

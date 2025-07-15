@@ -76,6 +76,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_trig = pl.get_boolean_attrib(
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        blank_value = pl.get_string_attrib(
+            element, "blank-value", str(BLANK_VALUE_DEFAULT)
+        )
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
             try:
@@ -90,8 +94,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 raise ValueError(
                     f'Parsing correct answer "{a_true}" for "{name}" failed.'
                 ) from exc
-        else:
+        elif allow_blank and blank_value == "":
             a_true = ""
+        else:
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
 
         data["correct_answers"][name] = a_true
 

@@ -29,6 +29,7 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = ""
 COMPARISON_DEFAULT = uu.ComparisonType.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = "1e-8"
@@ -85,10 +86,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    if allow_blank and not pl.has_attrib(element, "blank-value"):
-        raise ValueError(
-            'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
-        )
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
@@ -97,6 +94,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
 
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
     if correct_answer_html is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"Duplicate correct_answers variable name: {name}")
@@ -106,6 +104,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             data["correct_answers"][name] = correct_answer_html
 
     correct_answer = data["correct_answers"].get(name)
+
+    if correct_answer == "" and (not allow_blank or not blank_value == ""):
+        raise ValueError(
+            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+        )
 
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
@@ -340,7 +343,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # checks for blank answer
     if a_sub.strip() == "":
         if allow_blank:
-            a_sub = pl.get_string_attrib(element, "blank-value")
+            a_sub = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
             if a_sub.strip() == "":
                 a_sub = ""
             data["submitted_answers"][name] = a_sub
