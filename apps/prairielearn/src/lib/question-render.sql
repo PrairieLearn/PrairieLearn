@@ -57,7 +57,6 @@ SELECT
   s.duration,
   s.gradable,
   s.graded_at,
-  s.grading_method,
   s.grading_requested_at,
   s.id,
   s.is_ai_graded,
