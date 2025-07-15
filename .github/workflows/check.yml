@@ -32,8 +32,9 @@ jobs:
 
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
-
+          sudo curl -fsSL  --header "Authorization: Bearer $GITHUB_TOKEN" https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -97,9 +98,11 @@ jobs:
 
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo curl -fsSL --header "Authorization: Bearer $GITHUB_TOKEN" https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
           sudo apt-get install -y shellcheck
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
