@@ -49,6 +49,8 @@ function computeLabel({ assessment, assessment_instance, assessment_set }: Stude
   return `${assessment_set.abbreviation}${assessment.number}`;
 }
 
+// TODO: The student gradebook should be refactored to use the new data model, rather than the old SQL data model.
+// This was done to avoid substantial changes to the gradebook code, while still allowing for reuse of the gradebook SQL query.
 function mapRow(
   raw: StudentGradebookRowRaw,
   prev: StudentGradebookRowRaw | null,
