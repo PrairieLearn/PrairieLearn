@@ -85,12 +85,7 @@ router.get(
       },
       StudentGradebookRowSchema,
     );
-    let prev: StudentGradebookRowRaw | null = null;
-    const rows = rawRows.map((row) => {
-      const mapped = mapRow(row, prev);
-      prev = row;
-      return mapped;
-    });
+    const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
     res.send(
       StudentGradebook({
         resLocals: res.locals,
