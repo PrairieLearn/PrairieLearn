@@ -7,7 +7,7 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
@@ -637,7 +637,7 @@ onDocumentReady(() => {
   }
 
   function scorebarFormatter(score: number | null) {
-    return Scorebar(score).toString();
+    return ScorebarHtml(score).toString();
   }
 
   function listFormatter(list: string[]) {
