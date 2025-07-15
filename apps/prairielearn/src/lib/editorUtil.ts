@@ -1,3 +1,5 @@
+/* eslint-disable @prairielearn/no-unused-sql-blocks */
+
 import * as path from 'path';
 
 import * as sqldb from '@prairielearn/postgres';
