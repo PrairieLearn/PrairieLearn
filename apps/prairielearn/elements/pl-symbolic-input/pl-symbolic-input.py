@@ -183,7 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             a_sub_parsed = psu.json_to_sympy(
                 a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
             ).subs(sympy.I, sympy.Symbol(imaginary_unit))
-        a_sub_converted = sympy.latex(a_sub_parsed)
+        a_sub_converted = "" if a_sub_parsed == "" else sympy.latex(a_sub_parsed)
 
     elif name not in data["submitted_answers"]:
         missing_input = True
