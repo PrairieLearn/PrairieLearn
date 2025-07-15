@@ -13,7 +13,7 @@ function useExpressAdapterContext(): unstable_AdapterInterface {
   const context = React.useContext(AdapterContext);
 
   return {
-    searchParams: new URLSearchParams(context as any),
+    searchParams: new URLSearchParams(context),
     // This will never be called on the server, so it can be a no-op.
     updateUrl: () => {},
   };
