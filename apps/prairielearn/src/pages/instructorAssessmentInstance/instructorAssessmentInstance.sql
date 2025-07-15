@@ -50,10 +50,7 @@ WHERE
 -- BLOCK select_instance_questions
 SELECT
   iq.*,
-  -- Convert modified_at to a text representation suitable for
-  -- PostgreSQL so it can be properly interpreted when a grade
-  -- update POST is received back.
-  CAST(iq.modified_at AS TEXT) AS modified_at,
+  iq.modified_at AS modified_at,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
   z.id AS zone_id,
   z.title AS zone_title,

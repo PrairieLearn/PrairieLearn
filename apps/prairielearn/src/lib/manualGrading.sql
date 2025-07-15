@@ -377,7 +377,7 @@ SELECT
   iq.manual_points,
   s.manual_rubric_grading_id,
   $check_modified_at::TIMESTAMPTZ IS NOT NULL
-  AND $check_modified_at != iq.modified_at AS modified_at_conflict
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
