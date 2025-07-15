@@ -1,5 +1,5 @@
 import './lib/htmx';
-import 'htmx.org/dist/ext/loading-states.js';
+import 'htmx-ext-loading-states/dist/loading-states.js';
 
 import CookiesModule from 'js-cookie';
 

@@ -238,7 +238,7 @@ export function SubmissionPanel({
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}
         >
-          <div class="card-body submission-body">
+          <div class="card-body overflow-x-auto submission-body">
             ${submissionHtml == null
               ? html`
                   <div class="spinner-border" role="status">
@@ -304,10 +304,10 @@ function SubmissionStatusBadge({
             (Math.abs(manualPoints) > 1 ? ' pts' : ' pt');
         const badgeType =
           manualPoints <= 0
-            ? 'badge-danger'
+            ? 'text-bg-danger'
             : manualPoints >= (assessment_question?.max_manual_points ?? 0)
-              ? 'badge-success'
-              : 'badge-warning';
+              ? 'text-bg-success'
+              : 'text-bg-warning';
         manualGradingBadge = html`
           <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
         `;

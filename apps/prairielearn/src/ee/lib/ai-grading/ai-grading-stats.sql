@@ -55,6 +55,7 @@ WITH
       JOIN grading_jobs AS gj ON ls.submission_id = gj.submission_id
     WHERE
       gj.grading_method IN ('Manual', 'AI')
+      AND gj.deleted_at IS NULL
   ),
   rubric_grading_to_items AS (
     SELECT

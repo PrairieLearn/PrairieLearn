@@ -1,0 +1,21 @@
+{
+  "uuid": "F158CCF4-48F8-42F9-BBE6-C761210EA540",
+  "title": "Workspace demo: JupyterLab (Python)",
+  "topic": "Workspace",
+  "tags": ["su20", "tyang15", "mfsilva", "nnytko2"],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-python",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": ["Workbook.ipynb"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "timeout": 20
+  }
+}

@@ -805,7 +805,6 @@ export const QueryRunSchema = z.object({
   name: z.string(),
   params: z.record(z.string(), z.any()).nullable(),
   result: z.record(z.string(), z.any()).nullable(),
-  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
@@ -988,7 +987,7 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
-  modified_at: DateFromISOString.nullable(),
+  modified_at: DateFromISOString,
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
@@ -1065,7 +1064,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
-  modified_at: DateFromISOString.nullable(),
+  modified_at: DateFromISOString,
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),
