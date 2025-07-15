@@ -1,4 +1,3 @@
-/* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -26,6 +25,7 @@ function buildCsvFilename(locals: Record<string, any>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
+/* This page is server-side rendered, so it doesn't matter if this schema uses types from safe-db-types. */
 const StudentGradebookRowSchema = z.object({
   assessment: StudentAssessmentSchema,
   assessment_instance: StudentAssessmentInstanceSchema,
