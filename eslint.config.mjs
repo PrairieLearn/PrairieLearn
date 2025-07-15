@@ -163,6 +163,7 @@ export default tseslint.config([
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
+      '@prairielearn/no-unused-sql-blocks': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 

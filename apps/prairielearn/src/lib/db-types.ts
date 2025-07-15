@@ -352,9 +352,6 @@ export const CourseSchema = z.strictObject({
 });
 export type Course = z.infer<typeof CourseSchema>;
 
-// courses table
-export const CourseGlueSchema = null;
-
 export const CourseInstanceSchema = z.strictObject({
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,

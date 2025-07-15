@@ -9,7 +9,8 @@ import * as helperDb from '../tests/helperDb.js';
 import * as DbSchemas from './db-types.js';
 
 const schemaNameOverrides = {
-  courses: 'CourseGlueSchema',
+  // https://github.com/PrairieLearn/PrairieLearn/issues/12428
+  courses: null,
   pl_courses: 'CourseSchema',
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
@@ -45,7 +46,7 @@ describe('Database Schema Sync Test', () => {
     await helperDb.after();
   });
 
-  it('Should match Zod schema keys', async () => {
+  it('matches Zod schema keys', async () => {
     // Test each table-schema pair
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
@@ -58,13 +59,20 @@ describe('Database Schema Sync Test', () => {
       }
 
       const schemaName = tableNameToSchemaName(tableName);
+      // A null schema name means that the schema should be ignored.
+      if (schemaName === null) {
+        usedSchemas.add(tableName);
+        continue;
+      }
+
       const schema = DbSchemas[schemaName as keyof typeof DbSchemas];
       if (schema === undefined) {
         throw new Error(`No schema mapping for table: ${tableName}`);
       }
-
       usedSchemas.add(schemaName);
-      // Skip tables that are marked as 'null'
+
+      // Skip tables that are marked as 'null'. These mean that the table currently doesn't have a schema,
+      // but we may want to add one in the future as needed.
       if (schema === null) {
         continue;
       }

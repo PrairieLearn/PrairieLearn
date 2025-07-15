@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { WithAIGradingStats } from '../../../ee/lib/ai-grading/types.js';
+import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -20,7 +20,14 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-export type InstanceQuestionRowWithAIGradingStats = WithAIGradingStats<InstanceQuestionRow>;
+export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
+  ...InstanceQuestionRowSchema.shape,
+  ...AIGradingStatsSchema.shape,
+});
+
+export type InstanceQuestionRowWithAIGradingStats = z.infer<
+  typeof InstanceQuestionRowWithAIGradingStatsSchema
+>;
 
 export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
