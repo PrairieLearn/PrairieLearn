@@ -9,6 +9,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';
@@ -84,17 +85,37 @@ function getPackageVersion(packageName: string): string {
 
     // Get the resolved path to the package entrypoint, which will look something
     // like `/absolute/path/to/node_modules/package-name/index.js`.
-    const pkgPath = require.resolve(packageName);
+    const pkgJsonPath = run(() => {
+      try {
+        const pkgPath = require.resolve(packageName);
 
-    // Strip off everything after the last `/node_modules/`, then append the
-    // package name.
-    const nodeModulesToken = '/node_modules/';
-    const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
-    const pkgJsonPath = path.resolve(
-      pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
-      packageName,
-      'package.json',
-    );
+        // Strip off everything after the last `/node_modules/`, then append the
+        // package name.
+        const nodeModulesToken = '/node_modules/';
+        const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
+        return path.resolve(
+          pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
+          packageName,
+          'package.json',
+        );
+      } catch (err) {
+        // Some packages (namely `cropperjs`) have invalid `package.json` files
+        // that refer to non-existent files. In this case, we can still try to
+        // recover from things by using the path that couldn't be resolved.
+        //
+        // In this case, `err.path` should point to the root of the package.
+        if (err.code === 'MODULE_NOT_FOUND' && err.path) {
+          // Check if the path is a directory
+          if (fs.lstatSync(err.path).isDirectory()) {
+            return path.resolve(err.path, 'package.json');
+          } else {
+            return path.resolve(path.dirname(err.path), 'package.json');
+          }
+        }
+
+        throw err;
+      }
+    });
 
     const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
     return pkgJson.version;
