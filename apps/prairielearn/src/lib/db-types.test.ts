@@ -45,7 +45,7 @@ describe('Database Schema Sync Test', () => {
     await helperDb.after();
   });
 
-  it('Should match Zod schema keys', async () => {
+  it('matches Zod schema keys', async () => {
     // Test each table-schema pair
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
