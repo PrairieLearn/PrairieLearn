@@ -21,11 +21,10 @@ const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggl
 const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
 const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
 const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip =
-  TooltipOriginal as unknown as typeof TooltipOriginal.default as FunctionComponent<any>;
+const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { type FunctionComponent, render } from '@prairielearn/preact-cjs';
+import { render } from '@prairielearn/preact-cjs';
 import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
@@ -95,7 +94,7 @@ function SampleQuestionSelector({
     <div style={{ width: '100%' }} class="d-flex align-items-center gap-2 mb-3 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
-        onSelect={(eventKey: string | null) => onSelectQuestionIndex(Number(eventKey))}
+        onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
       >
         <DropdownToggle
           as="button"
