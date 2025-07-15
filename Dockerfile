@@ -4,11 +4,17 @@ ARG CACHEBUST=2025-06-15-14-13-20
 
 WORKDIR /PrairieLearn
 
-COPY --parents scripts/pl-install.sh requirements.txt /PrairieLearn/
+COPY --parents scripts/pl-install.sh /PrairieLearn/
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 
-ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
+# Ensures that running Python in the container will use the correct Python version.
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
+
+# We copy `requirements.txt` and the `Makefile` since we need to install Python dependencies.
+COPY --parents requirements.txt Makefile /PrairieLearn/
+
+RUN PIP_NO_CACHE_DIR=1 make python-deps
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.
