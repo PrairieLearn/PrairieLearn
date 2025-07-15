@@ -460,38 +460,48 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         # Parse correct answer based on type
         if isinstance(a_tru, str):
-            a_tru = psu.convert_string_to_sympy(
-                a_tru,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-            )
+            if a_tru.strip() == "":
+                a_tru = ""
+            else:
+                a_tru = psu.convert_string_to_sympy(
+                    a_tru,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                )
         else:
             a_tru = psu.json_to_sympy(
                 a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
 
-        # Substitute in imaginary unit symbol
-        a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
+        if a_tru != "":
+            # Substitute in imaginary unit symbol
+            a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
 
     if result == "correct":
-        correct_answers = [
-            a_tru_str,
-            f"{a_tru_str} + 0",
-        ]
-        if allow_complex:
-            correct_answers.append(f"2j + {a_tru_str} - 3j + j")
-        if allow_trig:
-            correct_answers.append(f"cos(0) * ( {a_tru_str} )")
+        if a_tru_str == "":
+            data["raw_submitted_answers"][name] = ""
+        else:
+            correct_answers = [
+                a_tru_str,
+                f"{a_tru_str} + 0",
+            ]
+            if allow_complex:
+                correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+            if allow_trig:
+                correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
-        data["raw_submitted_answers"][name] = random.choice(correct_answers)
+            data["raw_submitted_answers"][name] = random.choice(correct_answers)
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        data["raw_submitted_answers"][name] = (
-            f"{a_tru_str} + {random.randint(1, 100):d}"
-        )
+        if a_tru_str == "":
+            data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
+        else:
+            data["raw_submitted_answers"][name] = (
+                f"{a_tru_str} + {random.randint(1, 100):d}"
+            )
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":
