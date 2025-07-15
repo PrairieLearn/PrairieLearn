@@ -291,7 +291,7 @@ function formatDateFriendlyParts(
     throw new Error('maxPrecision must be an equal or smaller unit than minPrecision.');
   }
 
-  /**
+  /** Examples:
    * min=h, max=h: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0AM
    * min=h, max=m: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0:01AM
    * min=h, max=s: 0:00:00AM -> 0AM, 0:00:01AM -> 0:00:01AM, 0:01:01AM -> 0:01:01AM
