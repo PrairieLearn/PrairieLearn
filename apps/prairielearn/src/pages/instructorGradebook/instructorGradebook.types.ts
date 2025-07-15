@@ -39,7 +39,7 @@ export const GradebookRowSchema = z.object({
   user_name: UserSchema.shape.name,
   role: z.enum(['Staff', 'Student', 'None']),
   scores: z.record(
-    AssessmentSchema.shape.id,
+    z.string(),
     z.object({
       score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
       assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),

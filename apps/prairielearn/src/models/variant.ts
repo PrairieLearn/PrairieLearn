@@ -28,10 +28,9 @@ const sql = loadSqlEquiv(import.meta.url);
 // we'll only select and return them. Variants can contain quite a bit of
 // data in `params` and such, so this reduces the amount of useless data that
 // flows over the wire.
-export const SimpleVariantWithScoreSchema = VariantSchema.pick({
-  id: true,
-  open: true,
-}).extend({
+export const SimpleVariantWithScoreSchema = z.object({
+  id: VariantSchema.shape.id,
+  open: VariantSchema.shape.open,
   // Since only variants assigned to instance questions are returned, this is never null.
   instance_question_id: IdSchema,
   max_submission_score: SubmissionSchema.shape.score.unwrap(),

@@ -69,8 +69,17 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   graded_at_formatted: z.string().nullable(),
   correct: z.enum(['TRUE', 'FALSE']).nullable(),
   feedback: SubmissionSchema.shape.feedback,
-  rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
-    .extend({ items: RubricGradingItemSchema.pick({ description: true, points: true }).array() })
+  rubric_grading: z
+    .object({
+      computed_points: RubricGradingSchema.shape.computed_points,
+      adjust_points: RubricGradingSchema.shape.adjust_points,
+      items: z.array(
+        z.object({
+          description: RubricGradingItemSchema.shape.description,
+          points: RubricGradingItemSchema.shape.points,
+        }),
+      ),
+    })
     .nullable(),
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),

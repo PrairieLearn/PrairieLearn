@@ -220,14 +220,9 @@ export async function aiGrade({
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
-        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
-        for (const item of rubric_items) {
-          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
-            z.object({
-              [item.description]: z.boolean(),
-            }),
-          );
-        }
+        const RubricGradingItemsSchema = z.object(
+          Object.fromEntries(rubric_items.map((item) => [item.description, z.boolean()])),
+        );
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
         });

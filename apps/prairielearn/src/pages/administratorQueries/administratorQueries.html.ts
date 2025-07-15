@@ -14,7 +14,7 @@ export type AdministratorQueryJsonParams = z.infer<typeof AdministratorQueryJson
 
 export const AdministratorQueryJsonSchema = z.object({
   description: z.string(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
+  resultFormats: z.record(z.string(), z.enum(['pre'])).optional(),
   comment: z.string().optional(),
   params: z.array(AdministratorQueryJsonParamsSchema).optional(),
 });

@@ -19,7 +19,7 @@ export const createQuestion = privateProcedure
       qid: z.string().optional(),
       title: z.string().optional(),
       template_qid: z.string().optional(),
-      files: z.record(z.string()).optional(),
+      files: z.record(z.string(), z.string()).optional(),
       is_draft: z.boolean().optional(),
     }),
   )

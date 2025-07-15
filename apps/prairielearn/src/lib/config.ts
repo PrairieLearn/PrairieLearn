@@ -37,23 +37,21 @@ export const ConfigSchema = z.object({
       z.boolean(),
       // A subset of the options that can be provided to the `TLSSocket` constructor.
       // https://node-postgres.com/features/ssl
-      z
-        .object({
-          rejectUnauthorized: z.boolean().default(true),
-          ca: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-          key: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-          cert: z
-            .string()
-            .nullish()
-            .transform((x) => x ?? undefined),
-        })
-        .strict(),
+      z.strictObject({
+        rejectUnauthorized: z.boolean().default(true),
+        ca: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+        key: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+        cert: z
+          .string()
+          .nullish()
+          .transform((x) => x ?? undefined),
+      }),
     ])
     .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
@@ -269,7 +267,7 @@ export const ConfigSchema = z.object({
   /**
    * This is populated by `lib/aws.js` later.
    */
-  awsServiceGlobalOptions: z.record(z.unknown()).default({}),
+  awsServiceGlobalOptions: z.record(z.string(), z.unknown()).default({}),
   hasShib: z.boolean().default(false),
   hideShibLogin: z.boolean().default(false),
   shibLinkText: z.string().default('Sign in with Illinois'),
