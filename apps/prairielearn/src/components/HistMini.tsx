@@ -1,6 +1,12 @@
 import * as d3 from 'd3';
+import { useEffect, useRef } from 'preact/hooks';
 
-interface HistMiniProps {
+export function HistMini({
+  selector,
+  data = [],
+  options = {},
+}: {
+  selector: HTMLElement;
   data?: number[];
   options?: {
     width?: number;
@@ -11,9 +17,7 @@ interface HistMiniProps {
     ymax?: number | 'auto';
     normalize?: boolean;
   };
-}
-
-export function HistMiniHtml({ data = [], options = {} }: HistMiniProps) {
+}) {
   const resolvedOptions = {
     width: 100,
     height: 40,
@@ -46,8 +50,11 @@ export function HistMiniHtml({ data = [], options = {} }: HistMiniProps) {
 
   d3.scaleOrdinal(d3.schemeCategory10);
 
+  console.log('selector', selector);
+
   const svg = d3
-    .create('svg')
+    .select(selector)
+    .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
     .attr('class', 'center-block statsPlot')
@@ -83,21 +90,38 @@ export function HistMiniHtml({ data = [], options = {} }: HistMiniProps) {
     .attr('y2', height)
     .attr('class', 'x axis');
 
-  return svg.node()?.toString() ?? '';
+  console.log(svg);
+
+  return svg.node();
 }
 
-export function HistMini({ data, options }: HistMiniProps) {
-  return (
-    <div className="histmini">
-      <svg
-        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-        dangerouslySetInnerHTML={{
-          __html: HistMiniHtml({
-            data: data ?? [],
-            options: options ?? {},
-          }),
-        }}
-      />
-    </div>
-  );
+export function HistMiniPreact({
+  data,
+  options,
+}: {
+  data?: number[];
+  options?: {
+    width?: number;
+    height?: number;
+    xmin?: number;
+    xmax?: number;
+    ymin?: number | 'auto';
+    ymax?: number | 'auto';
+    normalize?: boolean;
+  };
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = '';
+      HistMini({
+        selector: ref.current as HTMLElement,
+        data: data ?? [],
+        options: options ?? {},
+      });
+    }
+  }, [data, options]);
+
+  return <div className="histmini" ref={ref}></div>;
 }
