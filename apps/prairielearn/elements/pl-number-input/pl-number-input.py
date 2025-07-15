@@ -84,11 +84,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if correct_answer.strip() != "":
             correct_answer = pl.get_float_attrib(element, "correct-answer", None)
         elif allow_blank and blank_value == "":
-            data["correct_answers"][name] = ""
+            correct_answer = ""
         else:
             raise ValueError(
                 "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
             )
+        data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
     if custom_format is not None:
