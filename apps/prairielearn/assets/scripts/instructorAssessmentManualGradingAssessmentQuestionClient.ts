@@ -20,7 +20,6 @@ declare global {
 }
 
 onDocumentReady(() => {
-  console.log('onDocumentReady');
   const {
     hasCourseInstancePermissionEdit,
     urlPrefix,
