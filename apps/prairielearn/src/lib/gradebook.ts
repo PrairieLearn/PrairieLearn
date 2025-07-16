@@ -81,7 +81,6 @@ async function getGradebookRowsCursor({
 }: getGradebookRowsParams): Promise<
   CursorIterator<StudentGradebookRow> | CursorIterator<StaffGradebookRow>
 > {
-  const sql = loadSqlEquiv(import.meta.url);
   if (auth === 'student') {
     return await queryValidatedCursor(
       sql.select_assessment_instances,
