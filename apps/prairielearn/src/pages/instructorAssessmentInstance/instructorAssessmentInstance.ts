@@ -190,7 +190,7 @@ router.post(
         res.locals.assessment.id,
         req.body.instance_question_id,
         null, // submission_id
-        new Date(req.body.modified_at),
+        new Date(req.body.modified_at), // check_modified_at
         {
           points: req.body.points,
           manual_points: req.body.manual_points,
