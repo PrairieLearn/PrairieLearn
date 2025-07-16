@@ -4,14 +4,6 @@ severity: error
 language: TypeScript
 rule:
   any:
-    # - all:
-    #     - kind: call_expression
-    #     - has:
-    #         field: function
-    #         any:
-    #           - pattern: queryCursor
-    #           - pattern: sqldb.queryCursor
-    #     - pattern: $FUNC($$$ARGS)
     - all:
         - kind: call_expression
         - has:
