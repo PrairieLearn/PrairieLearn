@@ -282,6 +282,30 @@ export const AssessmentSetSchema = z.object({
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
+export const AuditEventSchema = z.object({
+  action: z.string(),
+  action_detail: z.string(),
+  agent_authn_user_id: IdSchema,
+  agent_user_id: IdSchema,
+  context: JsonCommentSchema,
+  date: DateFromISOString,
+  id: IdSchema,
+  new_row: JsonCommentSchema,
+  old_row: JsonCommentSchema,
+  row_id: IdSchema,
+  subject_assessment_id: IdSchema.nullable(),
+  subject_assessment_instance_id: IdSchema.nullable(),
+  subject_assessment_question_id: IdSchema.nullable(),
+  subject_course_id: IdSchema.nullable(),
+  subject_course_instance_id: IdSchema.nullable(),
+  subject_group_id: IdSchema.nullable(),
+  subject_institution_id: IdSchema.nullable(),
+  subject_user_id: IdSchema.nullable(),
+  table_name: z.string(),
+});
+export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
+// This table is getting deprecated in favor of the audit_event table.
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
