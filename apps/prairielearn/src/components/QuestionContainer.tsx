@@ -17,7 +17,7 @@ import type {
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
-import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.html.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';

@@ -18,7 +18,7 @@ import {
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
-import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.html.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
