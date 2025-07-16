@@ -112,7 +112,13 @@ lint-sql-migrations:
 lint-actions:
 	@actionlint
 
+# Runs additional third-party formatters
+format-all: format-js format-python format-sql
+
 format: format-js format-python
+format-sql:
+	@sqlfluff fix
+
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
