@@ -8,7 +8,7 @@ import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -241,7 +241,7 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
         : row.score_stat_number > 0
           ? html`
               <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-                ${Scorebar(Math.round(row.score_stat_mean))}
+                ${ScorebarHtml(Math.round(row.score_stat_mean))}
               </div>
             `
           : html`&mdash;`}
