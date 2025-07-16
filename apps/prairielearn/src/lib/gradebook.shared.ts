@@ -1,32 +1,32 @@
 import z from 'zod';
 
 import {
-  StaffAssessmentInstanceSchema,
-  StaffAssessmentSchema,
-  StaffAssessmentSetSchema,
-  StaffCourseInstanceSchema,
-  StudentAssessmentInstanceSchema,
-  StudentAssessmentSchema,
-  StudentAssessmentSetSchema,
-  StudentCourseInstanceSchema,
+  RawStaffAssessmentInstanceSchema,
+  RawStaffAssessmentSchema,
+  RawStaffAssessmentSetSchema,
+  RawStaffCourseInstanceSchema,
+  RawStudentAssessmentInstanceSchema,
+  RawStudentAssessmentSchema,
+  RawStudentAssessmentSetSchema,
+  RawStudentCourseInstanceSchema,
 } from './client/safe-db-types.js';
 
 const StudentGradebookRowSchema = z
   .object({
-    assessment: StudentAssessmentSchema,
-    assessment_instance: StudentAssessmentInstanceSchema,
-    assessment_set: StudentAssessmentSetSchema,
-    course_instance: StudentCourseInstanceSchema,
+    assessment: RawStudentAssessmentSchema,
+    assessment_instance: RawStudentAssessmentInstanceSchema,
+    assessment_set: RawStudentAssessmentSetSchema,
+    course_instance: RawStudentCourseInstanceSchema,
     show_closed_assessment_score: z.boolean(),
   })
   .brand('StudentGradebookRow');
 
 const StaffGradebookRowSchema = z
   .object({
-    assessment: StaffAssessmentSchema,
-    assessment_instance: StaffAssessmentInstanceSchema,
-    assessment_set: StaffAssessmentSetSchema,
-    course_instance: StaffCourseInstanceSchema,
+    assessment: RawStaffAssessmentSchema,
+    assessment_instance: RawStaffAssessmentInstanceSchema,
+    assessment_set: RawStaffAssessmentSetSchema,
+    course_instance: RawStaffCourseInstanceSchema,
     show_closed_assessment_score: z.boolean(),
   })
   .brand('StaffGradebookRow');
