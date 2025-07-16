@@ -3,20 +3,22 @@ import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 import {
-  type StudentGradebookRow,
-  computeLabel,
-  computeTitle,
-} from '../../lib/gradebook.shared.js';
+  StudentAssessmentInstanceSchema,
+  StudentAssessmentSchema,
+  StudentAssessmentSetSchema,
+} from '../../lib/client/safe-db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentGradebook, type StudentGradebookTableRow } from './studentGradebook.html.js';
+import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
+import { queryRows, queryValidatedCursor } from '@prairielearn/postgres';
+import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 
 const router = Router();
 
@@ -24,11 +26,36 @@ function buildCsvFilename(locals: Record<string, any>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
+/* This page is server-side rendered, so it doesn't matter if this schema uses types from safe-db-types. */
+const StudentGradebookRowSchema = z.object({
+  assessment: StudentAssessmentSchema,
+  assessment_instance: StudentAssessmentInstanceSchema,
+  assessment_set: StudentAssessmentSetSchema,
+  show_closed_assessment_score: z.boolean(),
+});
+
+type StudentGradebookRowRaw = z.infer<typeof StudentGradebookRowSchema>;
+
+function computeTitle({ assessment, assessment_instance }: StudentGradebookRowRaw) {
+  if (assessment.multiple_instance) {
+    return `${assessment.title} instance #${assessment_instance.number}`;
+  }
+  return assessment.title ?? '';
+}
+
+function computeLabel({ assessment, assessment_instance, assessment_set }: StudentGradebookRowRaw) {
+  if (assessment.multiple_instance) {
+    return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
+  }
+  return `${assessment_set.abbreviation}${assessment.number}`;
+}
+
+// TODO: The student gradebook should be refactored to use the new data model, rather than the old SQL data model.
+// This was done to avoid substantial changes to the gradebook code, while still allowing for reuse of the gradebook SQL query.
 function mapRow(
-  raw: StudentGradebookRow,
-  prev: StudentGradebookRow | null,
-): StudentGradebookTableRow {
-  // true if this is the first row or assessment_set.id differs from previous
+  raw: StudentGradebookRowRaw,
+  prev: StudentGradebookRowRaw | null,
+): StudentGradebookRow {
   const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
@@ -56,12 +83,7 @@ router.get(
       req_date: res.locals.req_date,
       auth: 'student',
     });
-    let prev: StudentGradebookRow | null = null;
-    const rows = rawRows.map((row) => {
-      const mapped = mapRow(row, prev);
-      prev = row;
-      return mapped;
-    });
+    const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
     res.send(
       StudentGradebook({
         resLocals: res.locals,
@@ -86,10 +108,11 @@ router.get(
       req_date: res.locals.req_date,
       auth: 'student',
     });
-    const stringifier = stringifyStream<StudentGradebookRow>({
+
+    const stringifier = stringifyStream<StudentGradebookRowRaw>({
       header: true,
       columns: ['Assessment', 'Set', 'Score'],
-      transform(row: StudentGradebookRow) {
+      transform(row) {
         return [
           computeTitle(row),
           row.assessment_set.heading,

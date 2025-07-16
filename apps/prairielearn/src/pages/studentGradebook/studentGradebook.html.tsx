@@ -3,7 +3,7 @@ import { Fragment } from 'preact/jsx-runtime';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { Scorebar } from '../../components/Scorebar.js';
 
-export interface StudentGradebookTableRow {
+export interface StudentGradebookRow {
   assessment_id: string;
   assessment_instance_id: string;
   assessment_group_work: boolean;
@@ -22,7 +22,7 @@ export function StudentGradebook({
   csvFilename,
 }: {
   resLocals: Record<string, any>;
-  rows: StudentGradebookTableRow[];
+  rows: StudentGradebookRow[];
   csvFilename: string;
 }) {
   return PageLayout({
