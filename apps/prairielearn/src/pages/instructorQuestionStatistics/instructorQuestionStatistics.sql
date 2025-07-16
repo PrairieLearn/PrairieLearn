@@ -9,16 +9,6 @@ SELECT
   a.course_instance_id,
   q.qid,
   q.title AS question_title,
-  top.name AS question_topic,
-  (
-    SELECT
-      COALESCE(JSONB_AGG(tg.name), '[]'::jsonb) AS tags
-    FROM
-      question_tags AS qt
-      JOIN tags AS tg ON (tg.id = qt.tag_id)
-    WHERE
-      q.id = qt.question_id
-  ) AS question_tags,
   admin_assessment_question_number (aq.id) as assessment_question_number,
   aq.*
 FROM

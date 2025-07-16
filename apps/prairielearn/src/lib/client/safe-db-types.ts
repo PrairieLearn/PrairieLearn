@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import {
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
@@ -10,7 +10,7 @@ import {
 } from '../db-types.js';
 
 /** Assessments */
-export const RawStaffAssessmentSchema = z.object(RawAssessmentSchema.shape);
+export const RawStaffAssessmentSchema = RawAssessmentSchema;
 export const StaffAssessmentSchema = RawStaffAssessmentSchema.brand<'StaffAssessment'>();
 export type StaffAssessment = z.infer<typeof StaffAssessmentSchema>;
 
@@ -44,7 +44,7 @@ export type StudentAssessment = z.infer<typeof StudentAssessmentSchema>;
 
 /** Assessment Instances */
 
-export const RawStaffAssessmentInstanceSchema = z.object(RawAssessmentInstanceSchema.shape);
+export const RawStaffAssessmentInstanceSchema = RawAssessmentInstanceSchema;
 export const StaffAssessmentInstanceSchema =
   RawStaffAssessmentInstanceSchema.brand<'StaffAssessmentInstance'>();
 export type StaffAssessmentInstance = z.infer<typeof StaffAssessmentInstanceSchema>;
@@ -76,7 +76,7 @@ export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstance
 
 /** Assessment Sets */
 
-export const RawStaffAssessmentSetSchema = z.object(RawAssessmentSetSchema.shape);
+export const RawStaffAssessmentSetSchema = RawAssessmentSetSchema;
 export const StaffAssessmentSetSchema = RawStaffAssessmentSetSchema.brand<'StaffAssessmentSet'>();
 export type StaffAssessmentSet = z.infer<typeof StaffAssessmentSetSchema>;
 
@@ -96,7 +96,7 @@ export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
 /** Courses */
 
-export const RawStaffCourseSchema = z.object(RawCourseSchema.shape).pick({
+export const RawStaffCourseSchema = RawCourseSchema.pick({
   announcement_color: true,
   announcement_html: true,
   branch: true,
@@ -141,7 +141,7 @@ export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
 /** Course Instances */
 
-export const RawStaffCourseInstanceSchema = z.object(RawCourseInstanceSchema.shape);
+export const RawStaffCourseInstanceSchema = RawCourseInstanceSchema;
 export const StaffCourseInstanceSchema =
   RawStaffCourseInstanceSchema.brand<'StaffCourseInstance'>();
 export type StaffCourseInstance = z.infer<typeof StaffCourseInstanceSchema>;
@@ -162,7 +162,7 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 /** Users */
 
-const RawStaffUserSchema = z.object(RawUserSchema.shape).pick({
+const RawStaffUserSchema = RawUserSchema.pick({
   email: true,
   institution_id: true,
   name: true,

@@ -64,32 +64,8 @@ SELECT
       ai.assessment_id = a.id
       AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
   ) AS needs_statistics_update,
-  aset.abbreviation,
-  aset.name,
-  aset.color,
-  (aset.abbreviation || a.number) as label,
   to_jsonb(aset) as assessment_set,
   to_jsonb(am) as assessment_module,
-  (
-    LAG(
-      CASE
-        WHEN ci.assessments_group_by = 'Set' THEN aset.id
-        ELSE am.id
-      END
-    ) OVER (
-      PARTITION BY
-        (
-          CASE
-            WHEN ci.assessments_group_by = 'Set' THEN aset.id
-            ELSE am.id
-          END
-        )
-      ORDER BY
-        aset.number,
-        a.order_by,
-        a.id
-    ) IS NULL
-  ) AS start_new_assessment_group,
   coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
   assessments AS a

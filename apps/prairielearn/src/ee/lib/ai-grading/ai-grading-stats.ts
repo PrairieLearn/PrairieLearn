@@ -8,7 +8,6 @@ import { DateFromISOString } from '@prairielearn/zod';
 import {
   type AssessmentQuestion,
   IdSchema,
-  RubricGradingItemSchema,
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
@@ -20,20 +19,14 @@ import {
 import type { WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const RubricGradingToItemSchema = z.object({
-  rubric_grading_id: RubricGradingItemSchema.shape.rubric_grading_id,
-  ...RubricItemSchema.shape,
-});
-
 const GradingJobInfoSchema = z.object({
   grading_job_id: IdSchema,
-  grading_method: z.enum(['Manual', 'AI']),
   graded_at: DateFromISOString.nullable(),
+  grading_method: z.enum(['Manual', 'AI']),
   manual_points: z.number().nullable(),
   manual_rubric_grading_id: IdSchema.nullable(),
   grader_name: z.string(),
-  rubric_items: z.array(RubricGradingToItemSchema),
+  rubric_items: z.array(RubricItemSchema),
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
