@@ -89,8 +89,10 @@ def execute_code(
         _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = extract_ipynb_contents(f, ipynb_key)
+            fake_student_filename = "submission.py"
         else:
             str_student = f.read()
+            fake_student_filename = fname_student
     str_student = "\n".join(filter(bool, (str_leading, str_student, str_trailing)))
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
@@ -189,10 +191,10 @@ def execute_code(
     # code that we're going to execute, since it doesn't include the leading
     # and trailing code. We'll manually construct a `linecache` entry for it
     # so that the traceback will show the correct code for each line.
-    populate_linecache(fname_student, str_student)
+    populate_linecache(fake_student_filename, str_student)
 
     try:
-        code_student = compile(str_student, fname_student, "exec")
+        code_student = compile(str_student, fake_student_filename, "exec")
         exec(code_student, student_globals)
         err = None
     except Exception:
