@@ -4,15 +4,25 @@ severity: error
 language: TypeScript
 rule:
   any:
+    # - all:
+    #     - kind: call_expression
+    #     - has:
+    #         field: function
+    #         any:
+    #           - pattern: queryCursor
+    #           - pattern: sqldb.queryCursor
+    #     - pattern: $FUNC($$$ARGS)
     - all:
         - kind: call_expression
         - has:
             field: function
             any:
-              - pattern: queryCursor
               - pattern: queryRows
+              - pattern: sqldb.queryRows
               - pattern: queryRow
+              - pattern: sqldb.queryRow
               - pattern: queryOptionalRow
+              - pattern: sqldb.queryOptionalRow
         - pattern: $FUNC($A, $B)
     - all:
         - kind: variable_declarator
@@ -30,8 +40,11 @@ rule:
                     - has:
                         field: function
                         any:
+                          - pattern: sqldb.queryOneRowAsync
                           - pattern: queryOneRowAsync
+                          - pattern: sqldb.queryZeroOrOneRowAsync
                           - pattern: queryZeroOrOneRowAsync
+                          - pattern: sqldb.queryAsync
                           - pattern: queryAsync
 constraints:
   B:
