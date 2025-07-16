@@ -1,4 +1,3 @@
-/* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
@@ -17,7 +16,6 @@ import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
-import { queryRows, queryValidatedCursor } from '@prairielearn/postgres';
 import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 
 const router = Router();
