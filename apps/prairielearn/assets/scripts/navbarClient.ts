@@ -5,42 +5,43 @@ import CookiesModule from 'js-cookie';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+// Keep in sync with src/lib/client/cookies.ts
 const COOKIE_EXPIRATION_DAYS = 30;
+
+// Old cookies did not have a domain.
+const OldCookies = CookiesModule.withAttributes({
+  path: '/',
+  expires: COOKIE_EXPIRATION_DAYS,
+  secure: location.protocol === 'https:',
+});
+
+// New cookies do have a domain.
+const Cookies = CookiesModule.withAttributes({
+  path: '/',
+  expires: COOKIE_EXPIRATION_DAYS,
+  domain:
+    document.querySelector('meta[name="cookie-domain"]')?.getAttribute('content') ?? undefined,
+  secure: location.protocol === 'https:',
+});
+
+type OldAndNewCookieNames = [string, string];
+
+function setCookie(names: OldAndNewCookieNames, value: string) {
+  OldCookies.set(names[0], value);
+  Cookies.set(names[1], value);
+}
+
+// When removing cookies, we need to remove the cookies both with and without
+// an explicit domain.
+function removeCookie(names: OldAndNewCookieNames) {
+  OldCookies.remove(names[0]);
+  Cookies.remove(names[1]);
+}
 
 onDocumentReady(() => {
   const usernameNav = document.getElementById('username-nav');
   // The navbar is not present in some pages (e.g., workspace pages), in that case we do nothing.
   if (!usernameNav) return;
-
-  // Old cookies did not have a domain.
-  const OldCookies = CookiesModule.withAttributes({
-    path: '/',
-    expires: COOKIE_EXPIRATION_DAYS,
-    secure: location.protocol === 'https:',
-  });
-
-  // New cookies do have a domain.
-  const Cookies = CookiesModule.withAttributes({
-    path: '/',
-    expires: COOKIE_EXPIRATION_DAYS,
-    domain:
-      document.querySelector('meta[name="cookie-domain"]')?.getAttribute('content') ?? undefined,
-    secure: location.protocol === 'https:',
-  });
-
-  type OldAndNewCookieNames = [string, string];
-
-  function setCookie(names: OldAndNewCookieNames, value: string) {
-    OldCookies.set(names[0], value);
-    Cookies.set(names[1], value);
-  }
-
-  // When removing cookies, we need to remove the cookies both with and without
-  // an explicit domain.
-  function removeCookie(names: OldAndNewCookieNames) {
-    OldCookies.remove(names[0]);
-    Cookies.remove(names[1]);
-  }
 
   const accessAsAdministrator = usernameNav.dataset.accessAsAdministrator === 'true';
   const viewType = usernameNav.dataset.viewType;
