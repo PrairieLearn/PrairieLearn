@@ -3,8 +3,8 @@ import CookiesModule from 'js-cookie';
 // Keep in sync with assets/scripts/navbarClient.ts
 const COOKIE_EXPIRATION_DAYS = 30;
 
-let OldCookies: Cookies.CookieAttributes | undefined;
-let Cookies: Cookies.CookieAttributes | undefined;
+let OldCookies: Cookies.CookiesStatic<string> | undefined;
+let Cookies: Cookies.CookiesStatic<string> | undefined;
 
 // Allows for server-side rendering.
 if (typeof location !== 'undefined') {
