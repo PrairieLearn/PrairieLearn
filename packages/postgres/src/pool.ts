@@ -737,6 +737,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link queryAsync} that parses the resulting rows with the
    * given Zod schema. Returns only the rows of the query.
+   *
+   * @deprecated Use {@link queryRows} instead.
    */
   async queryValidatedRows<Model extends z.ZodTypeAny>(
     query: string,
@@ -750,6 +752,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
    * the given Zod schema. Returns only a single row of the query.
+   *
+   * @deprecated Use {@link queryRow} instead.
    */
   async queryValidatedOneRow<Model extends z.ZodTypeAny>(
     query: string,
@@ -763,6 +767,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
    * (if any) with the given Zod schema. Returns either a single row or `null`.
+   *
+   * @deprecated Use {@link queryOptionalRow} instead.
    */
   async queryValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
@@ -781,6 +787,8 @@ export class PostgresPool {
    * Wrapper around {@link queryAsync} that validates that only one column is
    * returned and parses the data in it with the given Zod schema. Returns only
    * the single column of the query as an array.
+   *
+   * @deprecated Use {@link queryRows} instead.
    */
   async queryValidatedSingleColumnRows<Model extends z.ZodTypeAny>(
     query: string,
@@ -800,6 +808,8 @@ export class PostgresPool {
    * Wrapper around {@link queryOneRowAsync} that validates that only one column
    * is returned and parses the data in it with the given Zod schema. Returns
    * only the single entry.
+   *
+   * @deprecated Use {@link queryRow} instead.
    */
   async queryValidatedSingleColumnOneRow<Model extends z.ZodTypeAny>(
     query: string,
@@ -818,6 +828,8 @@ export class PostgresPool {
    * Wrapper around {@link queryZeroOrOneRowAsync} that validates that only one
    * column is returned and parses the data in it (if any) with the given Zod
    * schema. Returns either the single row of the query or `null`.
+   *
+   * @deprecated Use {@link queryOptionalRow} instead.
    */
   async queryValidatedSingleColumnZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
@@ -839,6 +851,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link callAsync} that parses the resulting rows with the
    * given Zod schema. Returns only the rows.
+   *
+   * @deprecated Use {@link callRows} instead.
    */
   async callValidatedRows<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -852,6 +866,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link callOneRowAsync} that parses the resulting rows with
    * the given Zod schema. Returns only a single row.
+   *
+   * @deprecated Use {@link callRow} instead.
    */
   async callValidatedOneRow<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -865,6 +881,8 @@ export class PostgresPool {
   /**
    * Wrapper around {@link callZeroOrOneRowAsync} that parses the resulting row
    * (if any) with the given Zod schema. Returns at most a single row.
+   *
+   * @deprecated Use {@link callOptionalRow} instead.
    */
   async callValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -885,6 +903,10 @@ export class PostgresPool {
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model>[]>;
+  /**
+   * Wrapper around {@link queryAsync} that parses the resulting rows with the
+   * given Zod schema. Returns only the rows of the query.
+   */
   async queryRows<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
@@ -908,6 +930,11 @@ export class PostgresPool {
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model>>;
+  /**
+   * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
+   * the given Zod schema. If the query doesn't return exactly one row, an error
+   * is thrown.
+   */
   async queryRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
@@ -933,6 +960,11 @@ export class PostgresPool {
     params: QueryParams,
     model: Model,
   ): Promise<z.infer<Model> | null>;
+  /**
+   * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
+   * (if any) with the given Zod schema. Returns either null or a single row, and
+   * errors otherwise.
+   */
   async queryOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: QueryParams | Model,
