@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
 
 import {
   StudentAssessmentInstanceSchema,
@@ -17,8 +16,8 @@ import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
+import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 function buildCsvFilename(locals: Record<string, any>) {
@@ -75,16 +74,13 @@ router.use(logPageView('studentGradebook'));
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const rawRows = await queryRows(
-      sql.select_assessment_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        user_id: res.locals.user.user_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-      },
-      StudentGradebookRowSchema,
-    );
+    const rawRows = await getGradebookRows({
+      course_instance_id: res.locals.course_instance.id,
+      user_id: res.locals.user.user_id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+      auth: 'student',
+    });
     const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
     res.send(
       StudentGradebook({
@@ -103,16 +99,13 @@ router.get(
       throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
 
-    const cursor = await queryValidatedCursor(
-      sql.select_assessment_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        user_id: res.locals.user.user_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-      },
-      StudentGradebookRowSchema,
-    );
+    const cursor = await getGradebookRowsCursor({
+      course_instance_id: res.locals.course_instance.id,
+      user_id: res.locals.user.user_id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+      auth: 'student',
+    });
 
     const stringifier = stringifyStream<StudentGradebookRowRaw>({
       header: true,
