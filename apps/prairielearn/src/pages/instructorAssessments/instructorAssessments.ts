@@ -156,7 +156,7 @@ router.get(
             res.locals.course.short_name,
             res.locals.course_instance.short_name,
             record.name,
-            record.assessment_number,
+            record.number, // assessment number
             record.label,
             record.title,
             record.tid,
