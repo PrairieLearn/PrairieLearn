@@ -216,11 +216,14 @@ export function formatDateWithinRange(
  * - '3:34pm'
  * - '3:34:17pm'
  *
+ * maxPrecision must be an equal or smaller unit than minPrecision.
+ *
  * @param date The date to format.
  * @param timezone The time zone to use for formatting.
  * @param baseDate The base date to use for comparison.
  * @param maxPrecision Only show units as large or larger than the max precision.
  * @param minPrecision Always show that unit and larger, potentially showing smaller units.
+ *
  */
 function formatDateFriendlyParts(
   date: Date,
@@ -276,12 +279,18 @@ function formatDateFriendlyParts(
   const minIndex = precisionOrder.indexOf(minPrecision);
 
   /**
-   *    The maximum precision must be unit larger than or equal to the minimum precision, otherwise the rules will contradict each other. 
-   * 
-   *     V min/max > | h | m | s
-   *     h           | X | X | X
-   *     m           | I | X | X
-   *     s           | I | I | X
+   * The maximum precision must be a unit smaller than or equal to the minimum precision, otherwise the rules will contradict each other.
+   *
+   * If max is a larger unit than min, e.g. max = hour, min = minute, then by "min"
+   * we must display minute and smaller but by "max" we can display hour and larger, which is a contradiction.
+   *
+   * If min is a larger unit than max, e.g. max = minute, min = hour, then by "min" we must display
+   * hour and smaller and by "max" we can display minutes and larger. These do not contradict each other.
+   *
+   *  V min/max > | h | m | s
+   *  h           | X | X | X
+   *  m           | I | X | X
+   *  s           | I | I | X
    *
    * X - valid configuration
    * I - invalid configuration
