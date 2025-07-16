@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,

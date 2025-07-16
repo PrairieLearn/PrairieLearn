@@ -1,10 +1,10 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
-import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+import { AssessmentBadge } from '../../../src/components/AssessmentBadge.js';
+import { SyncProblemButton } from '../../../src/components/SyncProblemButton.js';
+import { TagBadgeList } from '../../../src/components/TagBadge.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 

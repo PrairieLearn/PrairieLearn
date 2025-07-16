@@ -1,6 +1,6 @@
 import { Fragment } from 'preact/jsx-runtime';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
 
 export interface StudentGradebookRow {
