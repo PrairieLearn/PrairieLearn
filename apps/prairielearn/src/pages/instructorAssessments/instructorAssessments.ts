@@ -13,7 +13,6 @@ import {
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
 import {
-  type Assessment,
   type AssessmentModule,
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -22,7 +21,11 @@ import {
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectAssessments, selectAssessmentsCursor } from '../../models/assessment.js';
+import {
+  type AssessmentRow,
+  selectAssessments,
+  selectAssessmentsCursor,
+} from '../../models/assessment.js';
 
 import { AssessmentStats, InstructorAssessments } from './instructorAssessments.html.js';
 
@@ -117,7 +120,7 @@ router.get(
         course_instance_id: res.locals.course_instance.id,
       });
 
-      const stringifier = stringifyStream<Assessment>({
+      const stringifier = stringifyStream<AssessmentRow>({
         header: true,
         columns: [
           'Course',

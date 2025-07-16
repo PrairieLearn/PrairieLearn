@@ -65,6 +65,7 @@ SELECT
       AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
   ) AS needs_statistics_update,
   (aset.abbreviation || a.number) as label,
+  aset.name,
   to_jsonb(aset) as assessment_set,
   to_jsonb(am) as assessment_module,
   (

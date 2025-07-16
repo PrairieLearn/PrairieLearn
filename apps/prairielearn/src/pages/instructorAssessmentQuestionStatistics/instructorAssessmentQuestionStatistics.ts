@@ -13,10 +13,10 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import type { AssessmentQuestionStatsRow } from '../instructorQuestionStatistics/instructorQuestionStatistics.html.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
+  type AssessmentQuestionStatsRow,
   AssessmentQuestionStatsRowSchema,
   InstructorAssessmentQuestionStatistics,
 } from './instructorAssessmentQuestionStatistics.html.js';
