@@ -13,6 +13,7 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import type { AssessmentQuestionStatsRow } from '../instructorQuestionStatistics/instructorQuestionStatistics.html.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
@@ -79,11 +80,15 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryCursor(sql.questions, {
-        assessment_id: res.locals.assessment.id,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.questions,
+        {
+          assessment_id: res.locals.assessment.id,
+        },
+        AssessmentQuestionStatsRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentQuestionStatsRow>({
         header: true,
         columns: [
           'Course',

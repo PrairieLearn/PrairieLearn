@@ -13,6 +13,7 @@ import {
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
 import {
+  type Assessment,
   type AssessmentModule,
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -116,7 +117,7 @@ router.get(
         course_instance_id: res.locals.course_instance.id,
       });
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<Assessment>({
         header: true,
         columns: [
           'Course',

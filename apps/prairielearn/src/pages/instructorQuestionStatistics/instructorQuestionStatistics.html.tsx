@@ -30,7 +30,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   question_title: QuestionSchema.shape.title,
   assessment_question_number: z.string(),
 });
-type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
+export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorQuestionStatistics({
   questionStatsCsvFilename,
