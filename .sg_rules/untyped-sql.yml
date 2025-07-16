@@ -1,0 +1,25 @@
+id: untyped-sql
+message: You are using the untyped version of queryRows.
+severity: error
+language: TypeScript
+rule:
+  any:
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: name
+            kind: identifier
+            pattern: $VAR_NAME
+        - has:
+            field: value
+            any:
+              - kind: await_expression
+                has:
+                  all:
+                    - kind: call_expression
+                    - has:
+                        field: function
+                        any:
+                          - pattern: queryOneRowAsync
+                          - pattern: queryZeroOrOneRowAsync
+                          - pattern: queryAsync
