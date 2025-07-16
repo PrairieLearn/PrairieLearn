@@ -1,5 +1,6 @@
 import { filesize } from 'filesize';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../../../lib/config.js';
@@ -55,6 +56,20 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           class="needs-validation"
           data-max-points="${resLocals.assessment_question.max_points}"
         >
+        
+          ${EncodedData(
+            {
+              jobSequenceId: jobSequence.id,
+              token: jobSequence.token,
+              jobCount: jobSequence.jobs.length,
+              jobs: jobSequence.jobs.map((job) => ({
+                id: job.id,
+                status: job.status,
+                token: job.token,
+              })),
+            },
+            'job-sequence-results-data',
+          )}
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />

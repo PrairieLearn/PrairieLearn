@@ -272,7 +272,6 @@ function resetRubricExportFormListeners() {
           points: parseFloat(value.points),
         });
       }
-      rubricData.rubric_items = rubricData.rubric_items.sort((a, b) => a.order - b.order);
     }
 
     // Export the rubric settings as a JSON file
@@ -283,10 +282,10 @@ function resetRubricExportFormListeners() {
     a.href = url;
 
     const exportFileName =
-      `${rubricSettings.course_short_name}__${rubricSettings.course_instance_short_name}__${rubricSettings.assessment_tid}__${rubricSettings.question_qid}__rubric_settings.json`.replace(
+      `${rubricSettings.course_short_name}__${rubricSettings.course_instance_short_name}__${rubricSettings.assessment_tid}__${rubricSettings.question_qid}__rubric_settings`.replace(
         /[^a-zA-Z0-9_-]/g,
-        '_',
-      );
+        '_'
+      ) + '.json';
 
     a.download = exportFileName;
     document.body.appendChild(a);
