@@ -1086,8 +1086,8 @@ WITH
     (
       SELECT
         3.8 AS event_order,
-        'AI grading results deleted'::TEXT AS event_name,
-        'red2'::TEXT AS event_color,
+        'AI grading results deleted'::text AS event_name,
+        'red2'::text AS event_color,
         gj.deleted_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -1098,8 +1098,8 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
-        NULL::JSONB AS data
+        NULL::bigint AS client_fingerprint_id,
+        NULL::jsonb AS data
       FROM
         grading_jobs AS gj
         JOIN submissions AS s ON (s.id = gj.submission_id)
