@@ -22,5 +22,5 @@ export function getSearchParams(req: Request): URLSearchParams {
 export function getCourseInstanceUrl(
   context: StudentCourseInstanceContext | StaffCourseInstanceContext,
 ): string {
-  return `${config.urlPrefix}/course_instance/${context.course_instance.id}`;
+  return `/pl/course_instance/${context.course_instance.id}`;
 }
