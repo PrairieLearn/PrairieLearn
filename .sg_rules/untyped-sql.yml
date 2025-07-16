@@ -1,9 +1,19 @@
 id: untyped-sql
-message: You are using the untyped version of queryRows.
+message: You are using an untyped version of a database query.
 severity: error
 language: TypeScript
 rule:
   any:
+    - all:
+        - kind: call_expression
+        - has:
+            field: function
+            any:
+              - pattern: queryCursor
+              - pattern: queryRows
+              - pattern: queryRow
+              - pattern: queryOptionalRow
+        - pattern: $FUNC($A, $B)
     - all:
         - kind: variable_declarator
         - has:
@@ -23,3 +33,10 @@ rule:
                           - pattern: queryOneRowAsync
                           - pattern: queryZeroOrOneRowAsync
                           - pattern: queryAsync
+constraints:
+  B:
+    all:
+      - not:
+          regex: 'z\..*'
+      - not:
+          regex: '.*Schema'
