@@ -56,13 +56,7 @@ function resetRubricImportFormListeners() {
     });
 
     importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
-      const fileUploadMaxBytesField = rubricSettingsForm.querySelector(
-        'input[name="file_upload_max_bytes"]',
-      );
-
-      ensureElementsExist({
-        fileUploadMaxBytesField,
-      });
+      const { file_upload_max_bytes } = decodeData('assessment-info');
 
       event.preventDefault();
 
@@ -74,10 +68,9 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      const fileUploadMaxBytes = parseInt(fileUploadMaxBytesField.value);
-      if (fileData.size > fileUploadMaxBytes) {
+      if (fileData.size > file_upload_max_bytes) {
         alert(
-          `File size exceeds the maximum limit of ${fileUploadMaxBytes} bytes. Please choose a smaller file.`,
+          `File size exceeds the maximum limit of ${file_upload_max_bytes} bytes. Please choose a smaller file.`,
         );
         return;
       }
@@ -230,9 +223,9 @@ function resetRubricExportFormListeners() {
       min_points: parseFloat(min_points),
       replace_auto_points: replace_auto_points === 'true',
       starting_points: parseFloat(starting_points),
-      max_points: parseFloat(max_points),
-      max_manual_points: parseFloat(max_manual_points),
-      max_auto_points: parseFloat(max_auto_points),
+      max_points,
+      max_manual_points,
+      max_auto_points,
       rubric_items: [],
     };
 
@@ -248,6 +241,9 @@ function resetRubricExportFormListeners() {
       const rubricItems = rubricSettingsParsed.rubric_item;
       for (const key of Object.keys(rubricItems)) {
         const value = rubricItems[key];
+
+        console.log('Rubric data', rubricData);
+
         rubricData.rubric_items.push({
           always_show_to_students: value.always_show_to_students === 'true',
           description: value.description,
