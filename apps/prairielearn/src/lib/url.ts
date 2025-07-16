@@ -19,7 +19,7 @@ export function getSearchParams(req: Request): URLSearchParams {
   return new URL(req.originalUrl, getCanonicalHost(req)).searchParams;
 }
 
-export function getCourseInstanceUrl(
+export function getStudentCourseInstanceUrl(
   context: StudentCourseInstanceContext | StaffCourseInstanceContext,
 ): string {
   return `/pl/course_instance/${context.course_instance.id}`;
