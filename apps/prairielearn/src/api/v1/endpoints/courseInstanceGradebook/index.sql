@@ -16,7 +16,7 @@ WITH
       a.deleted_at IS NULL
       AND a.course_instance_id = $course_instance_id
   ),
-  assessment_instances_with_groups as (
+  assessment_instances_with_groups AS (
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
