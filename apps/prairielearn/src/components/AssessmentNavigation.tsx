@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import type { Assessment, AssessmentSet } from '../lib/db-types.js';
 
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 import type { NavSubPage } from './Navbar.types.js';
 
 /**

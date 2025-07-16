@@ -19,7 +19,7 @@ import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {

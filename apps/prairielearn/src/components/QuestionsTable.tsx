@@ -6,7 +6,7 @@ import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
