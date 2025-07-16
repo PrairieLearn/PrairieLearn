@@ -4,10 +4,11 @@ import type { Socket } from 'net';
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type * as httpProxyMiddleware from 'http-proxy-middleware';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryOneRowAsync, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
+import { queryOneRowAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { LocalCache } from '../lib/local-cache.js';
@@ -130,16 +131,17 @@ export function makeWorkspaceProxyMiddleware() {
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = match[1];
-      const result = await queryZeroOrOneRowAsync(
+      const result = await queryOptionalRow(
         "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
         { workspace_id },
+        z.object({ hostname: z.string() }),
       );
 
-      if (result.rows.length === 0) {
+      if (result === null) {
         throw new HttpStatusError(404, 'Workspace is not running');
       }
 
-      return `http://${result.rows[0].hostname}/`;
+      return `http://${result.hostname}/`;
     },
     on: {
       proxyReq: (proxyReq) => {

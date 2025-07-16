@@ -6,7 +6,13 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
@@ -103,11 +109,15 @@ router.post(
   '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_key') {
-      const keystoreJson = await queryAsync(sql.select_keystore, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-      });
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
+      const keystoreJson = await queryOptionalRow(
+        sql.select_keystore,
+        {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+        },
+        z.object({ keystore: z.any() }),
+      );
+      const keystore = await jose.JWK.asKeyStore(keystoreJson?.keystore || []);
 
       const kid = new Date().toUTCString();
       // RSA256 minimum keysize of 2048 bits
@@ -134,11 +144,15 @@ router.post(
       flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
-      const keystoreJson = await queryAsync(sql.select_keystore, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-      });
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
+      const keystoreJson = await queryOptionalRow(
+        sql.select_keystore,
+        {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+        },
+        z.object({ keystore: z.any() }),
+      );
+      const keystore = await jose.JWK.asKeyStore(keystoreJson?.keystore || []);
 
       const key = keystore.get(req.body.kid);
 

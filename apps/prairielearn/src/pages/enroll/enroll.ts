@@ -4,13 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryOneRowAsync,
-  queryRow,
-  queryRows,
-  queryZeroOrOneRowAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
@@ -34,10 +28,17 @@ router.get('/', [
   forbidAccessInExamMode,
   asyncHandler(async (req, res) => {
     if (res.locals.authn_provider_name === 'LTI') {
-      const result = await queryOneRowAsync(sql.lti_course_instance_lookup, {
-        course_instance_id: res.locals.authn_user.lti_course_instance_id,
-      });
-      res.send(EnrollLtiMessage({ ltiInfo: result.rows[0], resLocals: res.locals }));
+      const result = await queryRow(
+        sql.lti_course_instance_lookup,
+        {
+          course_instance_id: res.locals.authn_user.lti_course_instance_id,
+        },
+        z.object({
+          plc_short_name: z.string(),
+          ci_long_name: z.string(),
+        }),
+      );
+      res.send(EnrollLtiMessage({ ltiInfo: result, resLocals: res.locals }));
       return;
     }
 
