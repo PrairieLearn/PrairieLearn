@@ -268,6 +268,7 @@ function resetRubricExportFormListeners() {
         });
       }
     }
+    rubricData.rubric_items.sort((a, b) => a.order - b.order);
 
     // Export the rubric settings as a JSON file
     const blob = new Blob([JSON.stringify(rubricData, null, 2)], { type: 'application/json' });
