@@ -33,6 +33,7 @@ jobs:
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
