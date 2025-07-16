@@ -56,51 +56,39 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           class="needs-validation"
           data-max-points="${resLocals.assessment_question.max_points}"
         >
-        
-          ${EncodedData(
-            {
-              jobSequenceId: jobSequence.id,
-              token: jobSequence.token,
-              jobCount: jobSequence.jobs.length,
-              jobs: jobSequence.jobs.map((job) => ({
-                id: job.id,
-                status: job.status,
-                token: job.token,
-              })),
-            },
-            'job-sequence-results-data',
-          )}
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
           <input type="hidden" name="use_rubric" value="true" />
 
-          <input type="hidden" name="course_short_name" value="${resLocals.course.short_name}" />
-          <input
-            type="hidden"
-            name="course_instance_short_name"
-            value="${resLocals.course_instance.short_name}"
-          />
-          <input type="hidden" name="assessment_tid" value="${resLocals.assessment.tid}" />
-          <input type="hidden" name="question_qid" value="${resLocals.question.qid}" />
-
-          <input
-            type="hidden"
-            name="max_points"
-            value="${resLocals.assessment_question.max_points}"
-          />
-          <input
-            type="hidden"
-            name="max_auto_points"
-            value="${resLocals.assessment_question.max_auto_points}"
-          />
-          <input
-            type="hidden"
-            name="max_manual_points"
-            value="${resLocals.assessment_question.max_manual_points}"
-          />
-
-          <input type="hidden" name="file_upload_max_bytes" value="${config.fileUploadMaxBytes}" />
+          ${EncodedData<{
+            course_short_name: string;
+            course_instance_short_name: string;
+            assessment_tid: string;
+            question_qid: string;
+          }>(
+            {
+              course_short_name: resLocals.course.short_name,
+              course_instance_short_name: resLocals.course_instance.short_name,
+              assessment_tid: resLocals.assessment.tid,
+              question_qid: resLocals.question.qid,
+            },
+            'assessment-info',
+          )}
+          ${EncodedData<{
+            max_points: number | null;
+            max_auto_points: number | null;
+            max_manual_points: number | null;
+            file_upload_max_bytes: number;
+          }>(
+            {
+              max_points: resLocals.assessment_question.max_points,
+              max_auto_points: resLocals.assessment_question.max_auto_points,
+              max_manual_points: resLocals.assessment_question.max_manual_points,
+              file_upload_max_bytes: config.fileUploadMaxBytes,
+            },
+            'rubric-points-info',
+          )}
 
           <div class="modal-content">
             <div class="modal-header bg-info">

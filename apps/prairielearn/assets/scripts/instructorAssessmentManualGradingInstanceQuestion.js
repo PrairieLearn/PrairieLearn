@@ -1,6 +1,8 @@
 import ClipboardJS from 'clipboard';
 import qs from 'qs';
 
+import { decodeData } from '@prairielearn/browser-utils';
+
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 $(() => {
@@ -116,8 +118,7 @@ function resetRubricImportFormListeners() {
           return;
         }
 
-        const rubricSettingsData = new FormData(rubricSettingsForm);
-        const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
+        const rubricPointsInfo = decodeData('rubric-points-info');
 
         // This factor scales the imported rubric point values to ensure that they
         // are correctly aligned with the point values of the recipient question.
@@ -126,7 +127,7 @@ function resetRubricImportFormListeners() {
         if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
           // If the rubric does not use auto points, or if it replaces auto points,
           // then the scale factor is based on max_points (the total point gs of the rubric)
-          const maxPoints = parseFloat(rubricSettings.max_points) ?? 0;
+          const maxPoints = parseFloat(rubricPointsInfo.max_points) ?? 0;
 
           if (maxPoints > 0 && parsedData.max_points) {
             scaleFactor = maxPoints / parsedData.max_points;
@@ -135,7 +136,7 @@ function resetRubricImportFormListeners() {
           // If the rubric uses auto points and does not replace them, it
           // applies only to the manual points of the assessment question.
           // Therefore, we base the scale factor on max_manual_points.
-          const maxManualPoints = parseFloat(rubricSettings.max_manual_points) ?? 0;
+          const maxManualPoints = parseFloat(rubricPointsInfo.max_manual_points) ?? 0;
 
           if (maxManualPoints > 0 && parsedData.max_manual_points) {
             scaleFactor = maxManualPoints / parsedData.max_manual_points;
@@ -220,15 +221,9 @@ function resetRubricExportFormListeners() {
     const rubricSettingsData = new FormData(rubricSettingsForm);
     const rubricSettings = Object.fromEntries(rubricSettingsData.entries());
 
-    const {
-      max_extra_points,
-      min_points,
-      replace_auto_points,
-      starting_points,
-      max_points,
-      max_manual_points,
-      max_auto_points,
-    } = rubricSettings;
+    const { max_extra_points, min_points, replace_auto_points, starting_points } = rubricSettings;
+
+    const { max_points, max_auto_points, max_manual_points } = decodeData('rubric-points-info');
 
     const rubricData = {
       max_extra_points: parseFloat(max_extra_points),
@@ -281,10 +276,13 @@ function resetRubricExportFormListeners() {
 
     a.href = url;
 
+    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } =
+      decodeData('assessment-info');
+
     const exportFileName =
-      `${rubricSettings.course_short_name}__${rubricSettings.course_instance_short_name}__${rubricSettings.assessment_tid}__${rubricSettings.question_qid}__rubric_settings`.replace(
+      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replace(
         /[^a-zA-Z0-9_-]/g,
-        '_'
+        '_',
       ) + '.json';
 
     a.download = exportFileName;
