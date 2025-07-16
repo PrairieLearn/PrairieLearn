@@ -4,8 +4,8 @@ import TooltipOriginal from 'react-bootstrap/cjs/Tooltip.js';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
 
-const OverlayTrigger = (OverlayTriggerOriginal as any).default || OverlayTriggerOriginal;
-const Tooltip = (TooltipOriginal as any).default || TooltipOriginal;
+const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
+const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 export interface FriendlyDateProps {
   date: Date;
@@ -26,7 +26,11 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   const fullString = formatDate(date, timezone, fullOptions);
   if (!tooltip) return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>;
   return (
-    <OverlayTrigger placement="top" delay={{ show: 100 }} overlay={<Tooltip>{fullString}</Tooltip>}>
+    <OverlayTrigger
+      placement="top"
+      delay={{ show: 100, hide: 100 }}
+      overlay={<Tooltip>{fullString}</Tooltip>}
+    >
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{friendlyString}</span>
     </OverlayTrigger>
   );
