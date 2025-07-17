@@ -536,11 +536,6 @@ export class PostgresPool {
   }
 
   /**
-   * Calls the given function with the specified parameters.
-   */
-  call = callbackify(this.callAsync);
-
-  /**
    * Calls the given function with the specified parameters. Errors if the
    * function does not return exactly one row.
    */
@@ -557,12 +552,6 @@ export class PostgresPool {
     debug('callOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function does not return exactly one row.
-   */
-  callOneRow = callbackify(this.callOneRowAsync);
 
   /**
    * Calls the given function with the specified parameters. Errors if the
@@ -583,12 +572,6 @@ export class PostgresPool {
   }
 
   /**
-   * Calls the given function with the specified parameters. Errors if the
-   * function returns more than one row.
-   */
-  callZeroOrOneRow = callbackify(this.callZeroOrOneRowAsync);
-
-  /**
    * Calls a function with the specified parameters using a specific client.
    */
   async callWithClientAsync(
@@ -604,11 +587,6 @@ export class PostgresPool {
     debug('callWithClient() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
-   */
-  callWithClient = callbackify(this.callWithClientAsync);
 
   /**
    * Calls a function with the specified parameters using a specific client.
@@ -634,12 +612,6 @@ export class PostgresPool {
 
   /**
    * Calls a function with the specified parameters using a specific client.
-   * Errors if the function does not return exactly one row.
-   */
-  callWithClientOneRow = callbackify(this.callWithClientOneRowAsync);
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
    * Errors if the function returns more than one row.
    */
   async callWithClientZeroOrOneRowAsync(
@@ -659,12 +631,6 @@ export class PostgresPool {
     debug('callWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Calls a function with the specified parameters using a specific client.
-   * Errors if the function returns more than one row.
-   */
-  callWithClientZeroOrOneRow = callbackify(this.callWithClientZeroOrOneRowAsync);
 
   async queryRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
   async queryRows<Model extends z.ZodTypeAny>(
