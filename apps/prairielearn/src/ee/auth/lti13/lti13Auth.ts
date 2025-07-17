@@ -49,6 +49,14 @@ router.post(
 
     const inStateTest = req.body.state.endsWith(STATE_TEST);
 
+    // Enforce that at least one of uid_attribute or uin_attribute must be configured
+    if (!lti13_instance.uid_attribute && !lti13_instance.uin_attribute) {
+      throw new HttpStatusError(
+        500,
+        'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+      );
+    }
+
     // UIN checking, if attribute defined value must be present
     let uin: string | null = null;
     if (lti13_instance.uin_attribute) {
@@ -78,26 +86,10 @@ router.post(
           );
         }
       }
-    } else if (!uin) {
-      // If we have neither a UIN or a UID, try to find the user by their LTI 1.3 sub.
-      // If that also fails, we're in a weird state and something is almost certainly misconfigured.
-      const userBySub = await selectOptionalUserByLti13Sub({
-        lti13_instance_id: lti13_instance.id,
-        sub: ltiClaim.get('sub'),
-      });
-
-      if (userBySub) {
-        uid = userBySub.uid;
-      } else {
-        // We have neither a UIN, a UID, nor an existing user with this sub
-        throw new HttpStatusError(
-          500,
-          'Missing UID and UIN data from LTI 1.3 login, and no existing user found with this LTI 1.3 sub',
-        );
-      }
     } else {
-      // If there's no configured `uid_attribute`, we can't use the LTI 1.3
-      // auth flow to create a user. Instead, there are two things that can happen:
+      // If there's no configured `uid_attribute`, we must have a `uin_attribute`
+      // (enforced above) and we can't use the LTI 1.3 auth flow to create a user directly.
+      // Instead, there are two things that can happen:
       //
       // - The user could have already authenticated before via SAML or another
       //   auth provider. In this case, we'll look them up by UIN/institution_id.
@@ -108,8 +100,16 @@ router.post(
       //   check that the UINs match, create the user, and then add the LTI 1.3
       //   `sub` to the user.
 
+      // Since we don't have a uid_attribute, we must have a uin_attribute and need the UIN
+      if (!uin && !inStateTest) {
+        throw new HttpStatusError(
+          500,
+          `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
+        );
+      }
+
       const user = await selectOptionalUserByUin({
-        uin,
+        uin: uin as string, // We know uin is not null at this point due to the check above
         institution_id: lti13_instance.institution_id,
       });
 
