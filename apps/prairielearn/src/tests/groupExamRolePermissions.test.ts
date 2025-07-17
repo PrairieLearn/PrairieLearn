@@ -144,7 +144,6 @@ async function getQuestionUrl(
     { assessment_instance_id: assessmentInstanceId, question_id: questionId },
     IdSchema,
   );
-  assert.isDefined(id);
   return `${courseInstanceUrl}/instance_question/${id}`;
 }
 
