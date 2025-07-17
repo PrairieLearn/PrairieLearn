@@ -5,6 +5,7 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
@@ -44,6 +45,7 @@ export default tseslint.config([
       'no-floating-promise': noFloatingPromise,
       'react-hooks': reactHooks,
       vitest,
+      'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       ...eslintReact.configs['recommended-typescript'].plugins,
@@ -55,6 +57,11 @@ export default tseslint.config([
     },
 
     settings: {
+      'jsx-a11y-x': {
+        attributes: {
+          for: ['for'],
+        },
+      },
       'import-x/parsers': {
         '@typescript-eslint/parser': ['.ts', '.js'],
       },
@@ -130,6 +137,12 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
+      // Enable all jsx-a11y rules.
+      ...jsxA11yX.configs.strict.rules,
+      'jsx-a11y-x/anchor-ambiguous-text': 'error',
+      'jsx-a11y-x/lang': 'error',
+      'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+
       // Use the recommended rules for react-hooks
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
@@ -163,6 +176,7 @@ export default tseslint.config([
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
+      '@prairielearn/no-unused-sql-blocks': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
