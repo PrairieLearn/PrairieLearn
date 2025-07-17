@@ -223,7 +223,7 @@ router.post(
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         qid: req.body.qid,
         title: req.body.title,
-        template_start_from: req.body.start_from,
+        template_source: req.body.start_from,
         template_qid: usesTemplate ? req.body.template_qid : undefined,
       });
 

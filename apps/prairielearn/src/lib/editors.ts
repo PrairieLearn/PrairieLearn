@@ -1375,7 +1375,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
-  private template_start_from?: 'empty' | 'example' | 'course';
+  private template_source?: 'empty' | 'example' | 'course';
   private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
@@ -1384,7 +1384,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
-      template_start_from?: 'empty' | 'example' | 'course';
+      template_source?: 'empty' | 'example' | 'course';
       template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
@@ -1398,7 +1398,7 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.qid = params.qid;
     this.title = params.title;
-    this.template_start_from = params.template_start_from;
+    this.template_source = params.template_source;
     this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
@@ -1464,9 +1464,9 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    if (this.template_start_from !== 'empty' && this.template_qid) {
+    if (this.template_source !== 'empty' && this.template_qid) {
       const sourceQuestionsPath =
-        this.template_start_from === 'course'
+        this.template_source === 'course'
           ? questionsPath
           : path.join(EXAMPLE_COURSE_PATH, 'questions');
       const fromPath = path.join(sourceQuestionsPath, this.template_qid);
