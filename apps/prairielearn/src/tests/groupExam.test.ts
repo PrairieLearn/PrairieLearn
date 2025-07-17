@@ -157,7 +157,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
     });
 
     test.sequential('second assessment group config in database is correct', async function () {
-      const result = await queryRow(
+      const assessmentId = await queryRow(
         sql.select_group_exam_by_tid,
         {
           assessment_tid: GROUP_EXAM_2_TID,

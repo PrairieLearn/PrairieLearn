@@ -12,6 +12,7 @@ import { queryOneRowAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { LocalCache } from '../lib/local-cache.js';
+import { WorkspaceSchema } from '../lib/db-types.js';
 
 const WORKSPACE_CONTAINER_PATH_REGEXP = /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/;
 
@@ -131,17 +132,17 @@ export function makeWorkspaceProxyMiddleware() {
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = match[1];
-      const result = await queryOptionalRow(
+      const hostname = await queryOptionalRow(
         "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
         { workspace_id },
-        z.object({ hostname: z.string() }),
+        WorkspaceSchema.shape.hostname,
       );
 
-      if (result === null) {
+      if (hostname === null) {
         throw new HttpStatusError(404, 'Workspace is not running');
       }
 
-      return `http://${result.hostname}/`;
+      return `http://${hostname}/`;
     },
     on: {
       proxyReq: (proxyReq) => {
