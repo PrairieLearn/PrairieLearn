@@ -317,7 +317,7 @@ function CreateQuestionModal({
           aria-describedby="start_from_help"
         >
           <option value="empty">Empty question</option>
-          <option value="example">Standard template</option>
+          <option value="example">Starter template</option>
           ${templateQuestions.some(({ example_course }) => !example_course)
             ? html`<option value="course">Course-specific template</option>`
             : ''}
