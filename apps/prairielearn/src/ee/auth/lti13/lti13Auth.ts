@@ -11,9 +11,11 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
 import { setCookie } from '../../../lib/cookie.js';
+import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
@@ -22,8 +24,6 @@ import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/l
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
-import type { Lti13Instance } from '../../../lib/db-types.js';
-import { run } from '@prairielearn/run';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -103,9 +103,9 @@ router.post(
       return;
     }
 
-    let { uin, uid, name, email } = getClaimUserAttributes({ lti13_instance, claim: ltiClaim });
+    const { uin, uid, name, email } = getClaimUserAttributes({ lti13_instance, claim: ltiClaim });
 
-    let resolvedUid = await run(async () => {
+    const resolvedUid = await run(async () => {
       if (lti13_instance.uid_attribute) {
         if (!uid) {
           // Canvas Student View does not include a uid but has a deterministic role, nicer error message
