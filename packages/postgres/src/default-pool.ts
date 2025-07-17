@@ -90,12 +90,16 @@ export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
+ *
+ * @deprecated Use {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 export const queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query
  * returns more than one row.
+ *
+ * @deprecated Use {@link queryOptionalRow} instead.
  */
 export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
 export const call = defaultPool.call.bind(defaultPool);
@@ -107,12 +111,16 @@ export const callOneRow = defaultPool.callOneRow.bind(defaultPool);
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function does not return exactly one row.
+ *
+ * @deprecated Use {@link callRow} instead.
  */
 export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
 export const callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function returns more than one row.
+ *
+ * @deprecated Use {@link callOptionalRow} instead.
  */
 export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
 export const callWithClient = defaultPool.callWithClient.bind(defaultPool);
