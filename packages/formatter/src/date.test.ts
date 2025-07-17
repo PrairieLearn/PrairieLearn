@@ -621,7 +621,7 @@ describe('date formatting', () => {
         );
       });
 
-      it('should handle two different dates in CDT without the timezone', () => {
+      it('should handle two different dates in CST without the timezone', () => {
         const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
         const start = new Date(Date.UTC(2018, 0, 1, 0, 34, 0));
         const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));

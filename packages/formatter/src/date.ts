@@ -274,7 +274,7 @@ function formatDateFriendlyParts(
     dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}, ${parts.year.value}`;
   }
 
-  const precisionOrder: TimePrecision[] = ['hour', 'minute', 'second'];
+  const precisionOrder: TimePrecision[] = ['second', 'minute', 'hour'];
   const maxIndex = precisionOrder.indexOf(maxPrecision);
   const minIndex = precisionOrder.indexOf(minPrecision);
 
@@ -296,7 +296,8 @@ function formatDateFriendlyParts(
    * I - invalid configuration
    */
 
-  if (maxIndex < minIndex) {
+  // A higher index corresponds to a larger unit, so if maxIndex is larger than minIndex, then the rules contradict each other.
+  if (maxIndex > minIndex) {
     throw new Error('maxPrecision must be an equal or smaller unit than minPrecision.');
   }
 
