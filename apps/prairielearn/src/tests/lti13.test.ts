@@ -591,4 +591,102 @@ describe('LTI 1.3', () => {
       assert.equal(res.url, targetLinkUri);
     });
   });
+
+  describe('LTI 1.3 instance without UID or UIN attributes (sub-only matching)', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
+    const fetchWithCookies = fetchCookie(fetch);
+
+    test.sequential('create third LTI 1.3 instance without UID or UIN attributes', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          // Intentionally leave both UID and UIN attributes blank to test sub-only matching
+          uid_attribute: '',
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
+
+    test.sequential('login with existing sub should succeed', async () => {
+      // First, we need to manually create the LTI user association for instance 3
+      // In a real-world scenario, this would happen when a user first authenticates with instance 3
+      // but for this test, we'll simulate that the user already has an association
+      const existingUser = await selectOptionalUserByUid('test-user-2@example.com');
+      assert.ok(existingUser, 'User should exist from previous tests');
+
+      // Create the LTI user association for instance 3
+      await queryAsync(
+        'INSERT INTO lti13_users (user_id, lti13_instance_id, sub) VALUES ($1, $2, $3)',
+        [existingUser.user_id, '3', USER_WITHOUT_UID_SUB]
+      );
+
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Test User 2',
+          email: 'test-user-2@example.com',
+          uin: '987654321', // This won't be used since uin_attribute is empty
+          sub: USER_WITHOUT_UID_SUB, // Use the same sub from the previous test
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+        targetLinkUri,
+      });
+
+      const res = await executor.login();
+      assert.equal(res.status, 200);
+
+      // Assert that the login succeeded and redirected to the target
+      assert.equal(res.url, targetLinkUri);
+
+      // Verify that the existing LTI 1.3 entry for this instance still exists
+      const ltiUser = await queryOptionalRow(
+        'SELECT * FROM lti13_users WHERE user_id = $user_id AND lti13_instance_id = $instance_id',
+        { user_id: existingUser.user_id, instance_id: '3' },
+        Lti13UserSchema,
+      );
+      assert.ok(ltiUser);
+      assert.equal(ltiUser.sub, USER_WITHOUT_UID_SUB);
+      assert.equal(ltiUser.lti13_instance_id, '3');
+    });
+
+    test.sequential('login with non-existing sub should fail with helpful error', async () => {
+      // Use a completely new session to test the error case
+      const newFetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
+      const nonExistentSub = '99999999-9999-9999-9999-999999999999';
+      
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Non-existent User',
+          email: 'nonexistent@example.com',
+          uin: '000000000', // This won't be used since uin_attribute is empty
+          sub: nonExistentSub, // Use a sub that doesn't exist in the system
+        },
+        fetchWithCookies: newFetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+        targetLinkUri,
+      });
+
+      const res = await executor.login();
+      assert.equal(res.status, 500);
+
+      // The error response should contain our new helpful error message
+      const responseText = await res.text();
+      assert.include(responseText, 'Missing UID and UIN data from LTI 1.3 login, and no existing user found with this LTI 1.3 sub');
+    });
+  });
 });

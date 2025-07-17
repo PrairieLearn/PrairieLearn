@@ -18,7 +18,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin } from '../../../models/user.js';
 import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
-import { updateLti13UserSub } from '../../models/lti13-user.js';
+import { updateLti13UserSub, selectOptionalUserByLti13Sub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
@@ -79,9 +79,22 @@ router.post(
         }
       }
     } else if (!uin) {
-      // If we have neither a UIN or a UID, we're in a weird state and something
-      // is almost certainly misconfigured. We'll just bail.
-      throw new HttpStatusError(500, 'Missing both UID and UIN data from LTI 1.3 login');
+      // If we have neither a UIN or a UID, try to find the user by their LTI 1.3 sub.
+      // If that also fails, we're in a weird state and something is almost certainly misconfigured.
+      const userBySub = await selectOptionalUserByLti13Sub({
+        lti13_instance_id: lti13_instance.id,
+        sub: ltiClaim.get('sub'),
+      });
+
+      if (userBySub) {
+        uid = userBySub.uid;
+      } else {
+        // We have neither a UIN, a UID, nor an existing user with this sub
+        throw new HttpStatusError(
+          500,
+          'Missing UID and UIN data from LTI 1.3 login, and no existing user found with this LTI 1.3 sub',
+        );
+      }
     } else {
       // If there's no configured `uid_attribute`, we can't use the LTI 1.3
       // auth flow to create a user. Instead, there are two things that can happen:
@@ -103,22 +116,33 @@ router.post(
       if (user) {
         uid = user.uid;
       } else {
-        // Remember the user's details for after auth.
-        req.session.lti13_pending_uin = uin;
-        req.session.lti13_pending_sub = ltiClaim.get('sub');
-        req.session.lti13_pending_instance_id = lti13_instance.id;
+        // User not found by UIN, try to find by LTI 1.3 sub
+        const userBySub = await selectOptionalUserByLti13Sub({
+          lti13_instance_id: lti13_instance.id,
+          sub: ltiClaim.get('sub'),
+        });
 
-        // Remember where the user was headed so we can redirect them after auth.
-        if (ltiClaim.target_link_uri) {
-          setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
+        if (userBySub) {
+          uid = userBySub.uid;
+        } else {
+          // Remember the user's details for after auth.
+          req.session.lti13_pending_uin = uin;
+          req.session.lti13_pending_sub = ltiClaim.get('sub');
+          req.session.lti13_pending_instance_id = lti13_instance.id;
+
+          // Remember where the user was headed so we can redirect them after auth.
+          if (ltiClaim.target_link_uri) {
+            setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], ltiClaim.target_link_uri);
+          }
+
+          throw new HttpRedirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
         }
-
-        throw new HttpRedirect(`/pl/lti13_instance/${lti13_instance.id}/auth/auth_required`);
       }
     }
 
-    // Now that we're clear of UID handling, we'll validate the UIN.
-    if (!uin && !inStateTest) {
+    // Now that we're clear of UID handling, we'll validate the UIN if it's required.
+    // UIN is only required if a uin_attribute is configured for this instance.
+    if (!uin && !inStateTest && lti13_instance.uin_attribute) {
       throw new HttpStatusError(
         500,
         `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
