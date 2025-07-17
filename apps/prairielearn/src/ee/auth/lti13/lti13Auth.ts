@@ -18,7 +18,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin } from '../../../models/user.js';
 import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
-import { updateLti13UserSub, selectOptionalUserByLti13Sub } from '../../models/lti13-user.js';
+import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
