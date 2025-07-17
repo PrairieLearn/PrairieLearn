@@ -12,7 +12,6 @@ import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { switchUserAndLoadAssessment } from './utils/group.js';
-import z from 'zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -157,10 +156,9 @@ async function prepareGroup() {
     {
       assessment_tid: GROUP_WORK_ASSESSMENT_TID,
     },
-    z.object({ id: IdSchema }),
+    IdSchema,
   );
-  const assessmentId = assessmentResult.id;
-  assert.isDefined(assessmentId);
+  const assessmentId = assessmentResult;
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
   // Generate three users
@@ -247,14 +245,13 @@ async function prepareGroup() {
   $ = cheerio.load(await response.text());
 
   // Check there is now one assessment instance in database
-  const assessmentInstancesResult = await queryRows(
+  const assessmentInstancesResult = await queryRow(
     sql.select_all_assessment_instance,
     [],
     AssessmentInstanceSchema,
   );
-  assert.lengthOf(assessmentInstancesResult, 1);
-  assert.equal(assessmentInstancesResult[0].group_id, '1');
-  const assessmentInstanceId = assessmentInstancesResult[0].id;
+  assert.equal(assessmentInstancesResult.group_id, '1');
+  const assessmentInstanceId = assessmentInstancesResult.id;
 
   return {
     assessmentInstanceUrl: courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId,
