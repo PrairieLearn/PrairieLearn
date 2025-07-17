@@ -130,30 +130,3 @@ def test_get_pl_order_blocks_attributes_failure(
     element = lxml.html.fromstring(input_str)
     with pytest.raises(ValueError):
         pl_order_blocks.get_pl_order_blocks_attribs(element)
-
-
-@pytest.mark.parametrize(
-    ("input_str", "expected_output"),
-    [
-        (
-            """<pl-answer correct=\"true\" ranking=\"1\" indent=\"0\">def my_sum(first, second):</pl-answer>""",
-            {
-                "correct": bool,
-                "ranking": int,
-                "indent": int,
-                "tag": str,
-                "depends": list[str],
-                "inner_html": str,
-                "distractor_feedback": str,
-                "ordering_feedback": str,
-                "distractor_for": str,
-            },
-        ),
-    ],
-)
-def test_get_pl_answer_attributes(
-    input_str: str, expected_output: pl_order_blocks.PLAnswerAttribs
-) -> None:
-    element = lxml.html.fromstring(input_str)
-    with pytest.raises(ValueError):
-        pl_order_blocks.get_pl_answer_attribs(element)
