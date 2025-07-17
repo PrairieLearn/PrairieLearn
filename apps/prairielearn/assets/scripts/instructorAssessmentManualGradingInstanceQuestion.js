@@ -56,7 +56,7 @@ function resetRubricImportFormListeners() {
     });
 
     importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
-      const { file_upload_max_bytes } = decodeData('assessment-info');
+      const { file_upload_max_bytes } = decodeData('rubric-settings-data');
 
       event.preventDefault();
 
@@ -111,7 +111,7 @@ function resetRubricImportFormListeners() {
           return;
         }
 
-        const rubricPointsInfo = decodeData('rubric-points-info');
+        const rubricPointsInfo = decodeData('rubric-settings-data');
 
         // This factor scales the imported rubric point values to ensure that they
         // are correctly aligned with the point values of the recipient question.
@@ -216,7 +216,7 @@ function resetRubricExportFormListeners() {
 
     const { max_extra_points, min_points, replace_auto_points, starting_points } = rubricSettings;
 
-    const { max_points, max_auto_points, max_manual_points } = decodeData('rubric-points-info');
+    const { max_points, max_auto_points, max_manual_points } = decodeData('rubric-settings-data');
 
     const rubricData = {
       max_extra_points: parseFloat(max_extra_points),
@@ -239,10 +239,11 @@ function resetRubricExportFormListeners() {
 
     if (rubricSettingsParsed.rubric_item) {
       const rubricItems = rubricSettingsParsed.rubric_item;
+
+      console.log('rubricItems:', rubricItems);
+
       for (const key of Object.keys(rubricItems)) {
         const value = rubricItems[key];
-
-        console.log('Rubric data', rubricData);
 
         rubricData.rubric_items.push({
           always_show_to_students: value.always_show_to_students === 'true',
@@ -274,7 +275,7 @@ function resetRubricExportFormListeners() {
     a.href = url;
 
     const { course_short_name, course_instance_short_name, assessment_tid, question_qid } =
-      decodeData('assessment-info');
+      decodeData('rubric-settings-data');
 
     const exportFileName =
       `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replace(

@@ -66,6 +66,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
             course_instance_short_name: string;
             assessment_tid: string;
             question_qid: string;
+
+            max_points: number | null;
+            max_auto_points: number | null;
+            max_manual_points: number | null;
+
             file_upload_max_bytes: number;
           }>(
             {
@@ -73,21 +78,14 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
               course_instance_short_name: resLocals.course_instance.short_name,
               assessment_tid: resLocals.assessment.tid,
               question_qid: resLocals.question.qid,
-              file_upload_max_bytes: config.fileUploadMaxBytes,
-            },
-            'assessment-info',
-          )}
-          ${EncodedData<{
-            max_points: number | null;
-            max_auto_points: number | null;
-            max_manual_points: number | null;
-          }>(
-            {
+
               max_points: resLocals.assessment_question.max_points,
               max_auto_points: resLocals.assessment_question.max_auto_points,
               max_manual_points: resLocals.assessment_question.max_manual_points,
+
+              file_upload_max_bytes: config.fileUploadMaxBytes,
             },
-            'rubric-points-info',
+            'rubric-settings-data',
           )}
 
           <div class="modal-content">
