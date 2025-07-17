@@ -153,10 +153,12 @@ function resetRubricImportFormListeners() {
 
         // If starting_points = 0, then the imported rubric uses positive grading.
         const positiveGrading = parsedData.starting_points === 0;
+
         startingPointsOptions.forEach((option) => {
-          // The option with value 0 corresponds to positive grading. It is checked
-          // when the imported rubric uses positive grading.
-          option.checked = option.value === '0' && positiveGrading;
+          // The option with value 0 corresponds to positive grading.
+          // When the imported rubric uses positive grading, it should be checked.
+          // Otherwise, the other option, which corresponds to negative grading, should be checked.
+          option.checked = positiveGrading ? option.value === '0' : option.value !== '0';
         });
 
         const replaceAutoPointsOptions = rubricSettingsForm.querySelectorAll(
