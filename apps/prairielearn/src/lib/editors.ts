@@ -34,6 +34,8 @@ import * as b64Util from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
+  AssessmentSchema,
+  CourseInstanceSchema,
   type Assessment,
   type Course,
   type CourseInstance,
@@ -952,10 +954,16 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const result = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      {
+        course_id: this.course.id,
+      },
+      z.object({
+        long_name: CourseInstanceSchema.shape.long_name,
+      }),
+    );
+    const oldNamesLong = result.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1285,10 +1293,16 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const result = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      {
+        course_id: this.course.id,
+      },
+      z.object({
+        long_name: CourseInstanceSchema.shape.long_name,
+      }),
+    );
+    const oldNamesLong = result.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1739,10 +1753,17 @@ export class QuestionRenameEditor extends Editor {
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-      question_id: this.question.id,
-    });
-    const assessments = result.rows;
+    const result = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      {
+        question_id: this.question.id,
+      },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+    const assessments = result;
 
     const pathsToAdd = [oldPath, newPath];
 

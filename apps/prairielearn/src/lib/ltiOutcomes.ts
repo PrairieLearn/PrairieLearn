@@ -8,6 +8,8 @@ import * as xml2js from 'xml2js';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import z from 'zod';
+import { AssessmentInstanceSchema, LtiCredentialSchema, LtiOutcomeSchema } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const parser = new xml2js.Parser({ explicitArray: false });
@@ -54,12 +56,18 @@ function xmlReplaceResult(sourcedId: string, score: number, identifier: string) 
 export async function updateScore(assessment_instance_id: string) {
   if (assessment_instance_id == null) return;
 
-  const scoreResult = await sqldb.queryZeroOrOneRowAsync(sql.get_score, {
-    ai_id: assessment_instance_id,
-  });
-  if (scoreResult.rowCount === 0) return null;
-
-  const info = scoreResult.rows[0];
+  const info = await sqldb.queryOptionalRow(
+    sql.get_score,
+    {
+      ai_id: assessment_instance_id,
+    },
+    z.object({
+      ...AssessmentInstanceSchema.shape,
+      ...LtiOutcomeSchema.shape,
+      ...LtiCredentialSchema.shape,
+    }),
+  );
+  if (info === null) return null;
 
   let score = info.score_perc / 100;
   if (score > 1) {

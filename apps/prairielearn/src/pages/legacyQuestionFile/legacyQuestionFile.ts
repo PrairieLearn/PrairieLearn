@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import * as filePaths from '../../lib/file-paths.js';
+import z from 'zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -16,11 +17,17 @@ router.get(
     const question = res.locals.question;
     const course = res.locals.course;
     const filename = req.params.filename;
-    const result = await sqldb.queryOneRowAsync(sql.check_client_files, {
-      question_id: question.id,
-      filename,
-    });
-    if (!result.rows[0].access_allowed) {
+    const result = await sqldb.queryRow(
+      sql.check_client_files,
+      {
+        question_id: question.id,
+        filename,
+      },
+      z.object({
+        access_allowed: z.boolean(),
+      }),
+    );
+    if (!result.access_allowed) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
 

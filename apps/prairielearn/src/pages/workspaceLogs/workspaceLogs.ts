@@ -14,6 +14,8 @@ import {
   WorkspaceLogs,
   WorkspaceVersionLogs,
 } from './workspaceLogs.html.js';
+import z from 'zod';
+import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -53,11 +55,19 @@ async function loadLogsForWorkspaceVersion(
   if (!config.workspaceLogsS3Bucket) return null;
 
   // Get the current workspace version.
-  const workspaceRes = await sqldb.queryOneRowAsync(sql.select_workspace, {
-    workspace_id: workspaceId,
-    version,
-  });
-  const workspace = workspaceRes.rows[0];
+  const workspace = await sqldb.queryRow(
+    sql.select_workspace,
+    {
+      workspace_id: workspaceId,
+      version,
+    },
+    z.object({
+      is_current_version: z.boolean(),
+      hostname: WorkspaceHostSchema.shape.hostname,
+      state: WorkspaceSchema.shape.state,
+      version: WorkspaceSchema.shape.version,
+    }),
+  );
 
   const logParts: string[] = [];
 

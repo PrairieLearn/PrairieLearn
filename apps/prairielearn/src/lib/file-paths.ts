@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { APP_ROOT_PATH } from './paths.js';
+import { QuestionSchema } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
@@ -61,15 +62,15 @@ export async function questionFilePath(
       course_id: question.course_id,
       directory: question.template_directory,
     };
-    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question, params);
-    if (result.rowCount === 0) {
+    const result = await sqldb.queryOptionalRow(sql.select_question, params, QuestionSchema);
+    if (result === null) {
       throw new error.HttpStatusError(
         500,
         `Could not find template question "${question.template_directory}" from question "${question.directory}"`,
       );
     }
 
-    const templateQuestion = result.rows[0];
+    const templateQuestion = result;
     return await questionFilePath(
       filename,
       templateQuestion.directory,
