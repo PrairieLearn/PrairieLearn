@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 
 import * as async from 'async';
-import kmeans, { type KMeans } from 'kmeans-ts';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -23,6 +22,8 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
+
+import { Clusters } from '@kanaries/ml';
 
 import {
   GradingResultSchema,
@@ -110,31 +111,66 @@ export async function aiGrade({
     let newEmbeddingsCount = 0;
 
     let i = 0;
-    const reference_submission_ids: number[] = [];
 
     // NOTE: This breaks MCQ autograding
     // - Generate embeddings for each instance question
     // - Cluster them into k=20 clusters
+    job.info('Generate embeddings to find the reference submissions.');
+    const embeddings: number[][] = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
 
-    const embeddings: number[][]= [];
-    for (const instance_question of all_instance_questions) {
-      const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
-      const {new_submission_embedding, embedding} = await generateSubmissionEmbedding({
-          course,
-          question,
-          submitted_answer: submission.submitted_answer,
-          instance_question,
-          urlPrefix,
-          openai,
+      await deleteEmbeddingForSubmission(submission.id);
+
+      const { embedding } = await generateSubmissionEmbedding({
+        course,
+        question,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
       });
 
-      embeddings.push(embedding);
+      return embedding;
+    });
+
+    const kmeans = new Clusters.KMeans(20, 0.05);
+    const result = kmeans.fitPredict(embeddings);
+
+    let representedClusters: Set<number> = new Set();
+    let representativeSamples: InstanceQuestion[] = [];
+    let reference_submission_ids: string[] = [];
+    for (let i = 0; i < result.length; i++) {
+      const cluster = result[i];
+      if (representedClusters.has(cluster)) {
+        continue;
+      }
+      representativeSamples.push(all_instance_questions[i]);
+
+      const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
+
+      reference_submission_ids.push(submission.id);
+      representedClusters.add(cluster);
     }
-    var kmeans: KMeans = kmeans(embeddings, 4, 'kmeans');
-    console.log('kmeansResult', kmeansResult); 
 
-    return '';
+    // Generate rubric item aware embeddings for the representative samples.
+    // This simulates an instructor grading the representative samples.
+    job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.')
 
+    await async.eachLimit(representativeSamples, 50, async (instance_question: InstanceQuestion) => {
+      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+
+      await deleteEmbeddingForSubmission(submission.id);
+      await generateSubmissionEmbedding({
+        course,
+        question,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
+        graderFeedbackAvailable: true
+      });
+    });
+    
     for (const instance_question of all_instance_questions) {
       // Only checking for instance questions that can be used as RAG data.
       // They should be graded last by a human.
@@ -223,15 +259,15 @@ export async function aiGrade({
 
       // TODO: Temporary change -- for testing purposes, we will always generate a new embedding. 
 
-      let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (submission_embedding) {
+      let submission_embedding_original = await selectEmbeddingForSubmission(submission.id);
+      if (submission_embedding_original) {
         // remove the existing embedding
         deleteEmbeddingForSubmission(submission.id);
       }
 
       console.log('Create new submission embedding for', submission.id);
 
-      submission_embedding = await generateSubmissionEmbedding({
+      const submission_embedding = await generateSubmissionEmbedding({
         course,
         question,
         questionPrompt,
@@ -242,13 +278,20 @@ export async function aiGrade({
       });
       const submission_text = submission_embedding.submission_text;
 
+      console.log('submission_embedding.new_submission_embedding.embedding', submission_embedding.new_submission_embedding.embedding);
+
       const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
+        embedding: submission_embedding.new_submission_embedding.embedding,
         limit: 5,
-        submission_ids_allowed: reference_submission_ids
+        submission_ids_allowed: reference_submission_ids.map(id => parseInt(id))
       });
+
+      console.log('reference_submission_ids', reference_submission_ids);
+
+      console.log('example_submissions', example_submissions);
+
       let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
@@ -491,8 +534,12 @@ export async function aiGrade({
     };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
+    job.info('Grading instance questions with AI...');
+
     const instance_question_grading_successes = await async.mapLimit(
-      instance_questions.slice(NUM_REFERENCE_SAMPLES),
+      instance_questions.filter(
+        iq => !reference_submission_ids.includes(iq.id)
+      ),
       PARALLEL_SUBMISSION_GRADING_LIMIT,
       async (instance_question: InstanceQuestion) => {
         const logs: AIGradingLog[] = [];
