@@ -561,12 +561,6 @@ export class PostgresPool {
   }
 
   /**
-   * Executes a query with the specified parameters. Errors if the query does
-   * not return exactly one row.
-   */
-  queryOneRow = callbackify(this.queryOneRowAsync);
-
-  /**
    * Executes a query with the specified parameters. Errors if the query
    * returns more than one row.
    */
@@ -583,12 +577,6 @@ export class PostgresPool {
     debug('queryZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Executes a query with the specified parameters. Errors if the query
-   * returns more than one row.
-   */
-  queryZeroOrOneRow = callbackify(this.queryZeroOrOneRowAsync);
 
   /**
    * Calls the given function with the specified parameters.

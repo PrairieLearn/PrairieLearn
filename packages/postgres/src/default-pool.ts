@@ -84,20 +84,17 @@ export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defa
 export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
+ *
+ * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
-/**
- * @deprecated Use {@link queryRow} instead.
- */
-export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead.
+ * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
-export const queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query
  * returns more than one row.
@@ -105,7 +102,7 @@ export const queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool)
  * @deprecated Use {@link queryOptionalRow} instead.
  */
 export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-export const call = defaultPool.call.bind(defaultPool);
+// export const call = defaultPool.call.bind(defaultPool);
 /**
  * Calls the given function with the specified parameters.
  */
