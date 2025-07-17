@@ -277,7 +277,7 @@ export async function generateSubmissionEmbedding({
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
-}): Promise<SubmissionGradingContextEmbedding> {
+}): Promise<{new_submission_embedding: SubmissionGradingContextEmbedding, embedding: number[]}> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
@@ -377,7 +377,7 @@ export async function generateSubmissionEmbedding({
     },
     SubmissionGradingContextEmbeddingSchema,
   );
-  return new_submission_embedding;
+  return {new_submission_embedding, embedding};
 }
 
 

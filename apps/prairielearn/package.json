@@ -136,6 +136,7 @@
     "js-cookie": "^3.0.5",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",
+    "kmeans-ts": "^1.0.4",
     "lodash": "^4.17.21",
     "loopbench": "^2.0.0",
     "lru-cache": "^11.1.0",

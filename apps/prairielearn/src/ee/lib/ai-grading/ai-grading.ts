@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 
 import * as async from 'async';
+import kmeans, { type KMeans } from 'kmeans-ts';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -115,10 +116,24 @@ export async function aiGrade({
     // - Generate embeddings for each instance question
     // - Cluster them into k=20 clusters
 
+    const embeddings: number[][]= [];
     for (const instance_question of all_instance_questions) {
-      
-    }
+      const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
+      const {new_submission_embedding, embedding} = await generateSubmissionEmbedding({
+          course,
+          question,
+          submitted_answer: submission.submitted_answer,
+          instance_question,
+          urlPrefix,
+          openai,
+      });
 
+      embeddings.push(embedding);
+    }
+    var kmeans: KMeans = kmeans(embeddings, 4, 'kmeans');
+    console.log('kmeansResult', kmeansResult); 
+
+    return '';
 
     for (const instance_question of all_instance_questions) {
       // Only checking for instance questions that can be used as RAG data.

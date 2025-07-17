@@ -4135,6 +4135,7 @@ __metadata:
     jsdom: "npm:^26.1.0"
     json-stringify-safe: "npm:^5.0.1"
     klaw: "npm:^4.1.0"
+    kmeans-ts: "npm:^1.0.4"
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.1.0"
@@ -12310,6 +12311,13 @@ __metadata:
   version: 4.1.5
   resolution: "kleur@npm:4.1.5"
   checksum: 10c0/e9de6cb49657b6fa70ba2d1448fd3d691a5c4370d8f7bbf1c2f64c24d461270f2117e1b0afe8cb3114f13bbd8e51de158c2a224953960331904e636a5e4c0f2a
+  languageName: node
+  linkType: hard
+
+"kmeans-ts@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "kmeans-ts@npm:1.0.4"
+  checksum: 10c0/4f425e65951a16e9f70c1455fa743bb8e8d78ff88cbb181bf66abf37046696c9aca2f26ec69bfa6ca89d7966169a14764453e2f36d86b0d5279f20d47cabe212
   languageName: node
   linkType: hard
 
