@@ -689,11 +689,111 @@ describe('LTI 1.3', () => {
     });
   });
 
+  describe('LTI 1.3 instance that provides UIDs but not UINs', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
+    const fetchWithCookies = fetchCookie(fetch);
+
+    test.sequential('create LTI 1.3 instance with UID but no UIN attribute', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          // Has UID attribute but no UIN attribute
+          uid_attribute: 'email',
+          uin_attribute: '', // Intentionally left blank - no UIN lookup possible
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
+
+    test.sequential('should update UID when user is found by LTI sub but has different UID', async () => {
+      // Create a user with an initial UID using dev login
+      const initialUid = 'old-uid-no-uin@example.com';
+      const newUid = 'new-uid-no-uin@example.com';
+      const testSub = 'uid-update-test-sub-no-uin-67890';
+
+      const createUserRes = await fetchCheerio(`${siteUrl}/pl/login`);
+      const createUserLoginRes = await fetchWithCookies(`${siteUrl}/pl/login`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: createUserRes.$('input[name=__csrf_token]').val() as string,
+          __action: 'dev_login',
+          uid: initialUid,
+          name: 'UID Update Test User No UIN',
+          email: 'uid-update-test-no-uin@example.com',
+          uin: '888777666',
+        }),
+      });
+      assert.equal(createUserLoginRes.status, 200);
+
+      // Verify user was created with initial UID
+      const initialUser = await selectOptionalUserByUid(initialUid);
+      assert.ok(initialUser, 'Initial user should be created');
+      assert.equal(initialUser.uid, initialUid);
+
+      // Manually create LTI user association with this user and sub for the new instance (has UID but no UIN attribute)
+      await queryAsync(
+        'INSERT INTO lti13_users (user_id, lti13_instance_id, sub) VALUES ($1, $2, $3)',
+        [initialUser.user_id, '4', testSub], // Using instance 4 (should be the instance we just created)
+      );
+
+      // Now perform LTI login with the same sub but a different UID (email)
+      // Using instance 4 which has UID attribute but no UIN attribute
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'UID Update Test User No UIN',
+          email: newUid, // This is the new UID that should replace the old one
+          uin: '888777666',
+          sub: testSub, // Same sub as the existing user
+        },
+        fetchWithCookies: fetchCookie(fetch), // Use fresh cookies for new session
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        targetLinkUri,
+      });
+
+      const loginResult = await executor.login();
+      assert.equal(loginResult.status, 200);
+      assert.equal(loginResult.url, targetLinkUri);
+
+      // Check what actually happened - verify UID updating worked
+      const updatedUser = await selectOptionalUserByUid(newUid);
+      const oldUser = await selectOptionalUserByUid(initialUid);
+
+      // The test should verify that UID updating worked correctly through LTI sub lookup
+      // This tests the specific case where UIN lookup is not available, so the system
+      // must rely on the LTI sub lookup and the updateUserUid function
+      if (!updatedUser) {
+        throw new Error('UID updating test failed: No user found with new UID - UID updating may be disabled');
+      }
+      if (oldUser) {
+        throw new Error('UID updating test failed: Old UID still exists - UID was not updated');
+      }
+      if (updatedUser.user_id !== initialUser.user_id) {
+        throw new Error('UID updating test failed: Different user IDs - a new user was created instead of updating the existing one');
+      }
+
+      // If we get here, UID updating worked correctly through the LTI sub lookup mechanism
+      assert.ok(updatedUser, 'User should exist with new UID');
+      assert.equal(updatedUser.user_id, initialUser.user_id, 'Should be the same user');
+      assert.equal(updatedUser.uid, newUid, 'UID should be updated');
+      assert.isNull(oldUser, 'Old UID should no longer exist');
+    });
+  });
+
   describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
     // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
 
-    test.sequential('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
+    test.sequential('create fifth LTI 1.3 instance without UID or UIN attributes', async () => {
       await createLti13Instance({
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
@@ -712,7 +812,7 @@ describe('LTI 1.3', () => {
     });
 
     test.sequential('login should fail with misconfiguration error', async () => {
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/5/course_navigation`;
 
       const executor = await makeLoginExecutor({
         user: {
@@ -724,8 +824,8 @@ describe('LTI 1.3', () => {
         fetchWithCookies,
         oidcProviderPort,
         keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        loginUrl: `${siteUrl}/pl/lti13_instance/5/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/5/auth/callback`,
         targetLinkUri,
       });
 
