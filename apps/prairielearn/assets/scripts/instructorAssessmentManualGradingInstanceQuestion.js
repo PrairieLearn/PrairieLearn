@@ -240,20 +240,29 @@ function resetRubricExportFormListeners() {
     if (rubricSettingsParsed.rubric_item) {
       const rubricItems = rubricSettingsParsed.rubric_item;
 
-      console.log('rubricItems:', rubricItems);
-
       for (const key of Object.keys(rubricItems)) {
         const value = rubricItems[key];
 
         rubricData.rubric_items.push({
           always_show_to_students: value.always_show_to_students === 'true',
+          /**
+           * The description input field is always available, so its value can always be accessed directly.
+           */
           description: value.description,
+          /**
+           * The explanation input field is available only when the user clicks its edit button.
+           * When it is not available, we retrieve it from its edit button's data attribute.
+           */
           explanation:
             value.explanation ??
             document
               .querySelector(`[data-input-name="rubric_item[${key}][explanation]"]`)
               ?.getAttribute('data-current-value') ??
             '',
+          /**
+           * The grader note input field is available only when the user clicks its edit button.
+           * When it is not available, we retrieve it from its edit button's data attribute.
+           */
           grader_note:
             value.grader_note ??
             document
