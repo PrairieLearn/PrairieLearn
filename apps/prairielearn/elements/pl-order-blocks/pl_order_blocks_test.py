@@ -82,7 +82,7 @@ pl_order_blocks = importlib.import_module("pl-order-blocks")
         ),
     ],
 )
-def test_get_pl_order_blocks_attributes(
+def test_get_pl_order_blocks_attribs(
     input_str: str, expected_output: pl_order_blocks.PLOrderBlocksAttribs
 ) -> None:
     element = lxml.html.fromstring(input_str)
@@ -124,7 +124,49 @@ def test_get_pl_order_blocks_attributes(
         ),
     ],
 )
-def test_get_pl_order_blocks_attributes_failure(
+def test_get_pl_order_blocks_attribs_failure(
+    input_str: str, expected_output: pl_order_blocks.PLOrderBlocksAttribs
+) -> None:
+    element = lxml.html.fromstring(input_str)
+    with pytest.raises(ValueError):
+        pl_order_blocks.get_pl_order_blocks_attribs(element)
+
+
+@pytest.mark.parametrize(
+    ("input_str", "expected_output"),
+    [
+        (
+            """<pl-order-blocks
+                  indentation=\"true\"
+                  partial-credit=\"none\"
+                  feedback=\"none\">
+                  <pl-answer correct=\"true\" ranking=\"1\" indent=\"0\">def my_sum(first, second):</pl-answer>
+                  <pl-answer correct=\"true\" ranking=\"2\" indent=\"1\">return first + second</pl-answer>
+                </pl-order-blocks>""",
+            {
+                "answer_name": "test1",
+                "weight": None,
+                "grading_method": pl_order_blocks.GradingMethodType.RANKING,
+                "allow_blank": pl_order_blocks.ALLOW_BLANK_DEFAULT,
+                "file_name": pl_order_blocks.FILE_NAME_DEFAULT,
+                "source_blocks_order": pl_order_blocks.SOURCE_BLOCKS_ORDER_DEFAULT,
+                "indentation": True,
+                "max_incorrect": None,
+                "min_incorrect": None,
+                "source_header": pl_order_blocks.SOURCE_HEADER_DEFAULT,
+                "solution_header": pl_order_blocks.SOLUTION_HEADER_DEFAULT,
+                "solution_placement": pl_order_blocks.SOLUTION_PLACEMENT_DEFAULT,
+                "max_indent": pl_order_blocks.MAX_INDENTION_DEFAULT,
+                "partial_credit_type": pl_order_blocks.PARTIAL_CREDIT_DEFAULT,
+                "feedback_type": pl_order_blocks.FeedbackType.NONE,
+                "format_type": pl_order_blocks.FormatType.DEFAULT,
+                "code_language": None,
+                "inline": False,
+            },
+        ),
+    ],
+)
+def test_get_pl_group_blocks_attribs(
     input_str: str, expected_output: pl_order_blocks.PLOrderBlocksAttribs
 ) -> None:
     element = lxml.html.fromstring(input_str)
