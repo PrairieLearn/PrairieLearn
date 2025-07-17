@@ -17,24 +17,9 @@ import {
 import { ensureEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-async function selectOrInsertUser(
-  uid_email: string,
-  name: string,
-  uin: string | null = null,
-): Promise<string> {
-  const { user_id } = await sqldb.callRow(
-    'users_select_or_insert',
-    [uid_email, name, uin, uid_email, 'dev'],
-    z.object({
-      user_id: z.string(),
-      // There are other columns, but we don't need them for this test.
-    }),
-  );
-  return user_id;
-}
 
 describe('effective user', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -67,21 +52,26 @@ describe('effective user', { timeout: 60_000 }, function () {
   let studentId: string;
 
   beforeAll(async function () {
-    institutionAdminId = await selectOrInsertUser(
-      'institution-admin@example.com',
-      'Institution Admin',
-    );
+    const institutionAdmin = await getOrCreateUser({
+      uid: 'institution-admin@example.com',
+      name: 'Institution Admin',
+      uin: null,
+      email: 'institution-admin@example.com',
+    });
+    institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
       authn_user_id: '1',
     });
 
-    instructorId = await selectOrInsertUser(
-      'instructor@example.com',
-      'Instructor User',
-      '100000000',
-    );
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
+    instructorId = instructor.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -89,7 +79,13 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    staffId = await selectOrInsertUser('staff@example.com', 'Staff Three');
+    const staff = await getOrCreateUser({
+      uid: 'staff@example.com',
+      name: 'Staff Three',
+      uin: null,
+      email: 'staff@example.com',
+    });
+    staffId = staff.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'staff@example.com',
@@ -97,7 +93,13 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '2',
     });
 
-    studentId = await selectOrInsertUser('student@example.com', 'Student User', '000000001');
+    const student = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+      email: 'student@example.com',
+    });
+    studentId = student.user_id;
     await ensureEnrollment({
       user_id: studentId,
       course_instance_id: '1',
