@@ -291,15 +291,6 @@ export class PostgresPool {
   }
 
   /**
-   * Gets a new client from the connection pool.
-   */
-  getClient(callback: (error: Error | null, client?: pg.PoolClient, done?: () => void) => void) {
-    this.getClientAsync()
-      .then((client) => callback(null, client, client.release))
-      .catch((err) => callback(err));
-  }
-
-  /**
    * Performs a query with the given client.
    */
   async queryWithClientAsync(
@@ -320,11 +311,6 @@ export class PostgresPool {
       throw enhanceError(err, sql, params);
     }
   }
-
-  /**
-   * Performs a query with the given client.
-   */
-  queryWithClient = callbackify(this.queryWithClientAsync);
 
   /**
    * Performs a query with the given client. Errors if the query returns more
@@ -353,12 +339,6 @@ export class PostgresPool {
    * Performs a query with the given client. Errors if the query returns more
    * than one row.
    */
-  queryWithClientOneRow = callbackify(this.queryWithClientOneRowAsync);
-
-  /**
-   * Performs a query with the given client. Errors if the query returns more
-   * than one row.
-   */
   async queryWithClientZeroOrOneRowAsync(
     client: pg.PoolClient,
     sql: string,
@@ -377,12 +357,6 @@ export class PostgresPool {
     debug('queryWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
   }
-
-  /**
-   * Performs a query with the given client. Errors if the query returns more
-   * than one row.
-   */
-  queryWithClientZeroOrOneRow = callbackify(this.queryWithClientZeroOrOneRowAsync);
 
   /**
    * Rolls back the current transaction for the given client.
@@ -404,21 +378,6 @@ export class PostgresPool {
       // problems might happen.
       client.release(err);
     }
-  }
-
-  /**
-   * Rolls back the current transaction for the given client.
-   */
-  rollbackWithClient(
-    client: pg.PoolClient,
-    _done: (release?: any) => void,
-    callback: (err: Error | null) => void,
-  ) {
-    // Note that we can't use `util.callbackify` here because this function
-    // has an additional unused `done` parameter for backwards compatibility.
-    this.rollbackWithClientAsync(client)
-      .then(() => callback(null))
-      .catch((err) => callback(err));
   }
 
   /**
@@ -463,21 +422,6 @@ export class PostgresPool {
         }
       }
     }
-  }
-
-  /**
-   * Commits the transaction if err is null, otherwise rollbacks the transaction.
-   * Also releases the client.
-   */
-  endTransaction(
-    client: pg.PoolClient,
-    _done: (rollback?: any) => void,
-    err: Error | null | undefined,
-    callback: (error: Error | null) => void,
-  ): void {
-    this.endTransactionAsync(client, err)
-      .then(() => callback(null))
-      .catch((error) => callback(error));
   }
 
   /**

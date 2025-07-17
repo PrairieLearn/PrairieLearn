@@ -37,22 +37,16 @@ export const closeAsync = defaultPool.closeAsync.bind(defaultPool);
  */
 export const getClientAsync = defaultPool.getClientAsync.bind(defaultPool);
 
-export const getClient = defaultPool.getClient.bind(defaultPool);
-export const queryWithClient = defaultPool.queryWithClient.bind(defaultPool);
-
 /**
  * Performs a query with the given client.
  */
 export const queryWithClientAsync = defaultPool.queryWithClientAsync.bind(defaultPool);
-export const queryWithClientOneRow = defaultPool.queryWithClientOneRow.bind(defaultPool);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
  */
 export const queryWithClientOneRowAsync = defaultPool.queryWithClientOneRowAsync.bind(defaultPool);
-export const queryWithClientZeroOrOneRow =
-  defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
@@ -64,14 +58,12 @@ export const queryWithClientZeroOrOneRowAsync =
  * Rolls back the current transaction for the given client.
  */
 export const rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
-export const rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
 export const beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
 /**
  * Commits the transaction if err is null, otherwise rollbacks the transaction.
  * Also releases the client.
  */
 export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
-export const endTransaction = defaultPool.endTransaction.bind(defaultPool);
 /**
  * Runs the specified function inside of a transaction. The function will
  * receive a database client as an argument, but it can also make queries
