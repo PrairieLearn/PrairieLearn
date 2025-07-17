@@ -6,13 +6,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
@@ -150,9 +144,9 @@ router.post(
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           institution_id: req.params.institution_id,
         },
-        z.object({ keystore: z.any() }),
+        z.any(),
       );
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.keystore || []);
+      const keystore = await jose.JWK.asKeyStore(keystoreJson || []);
 
       const key = keystore.get(req.body.kid);
 

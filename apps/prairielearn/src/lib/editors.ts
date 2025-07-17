@@ -954,16 +954,13 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryRows(
+    const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
       {
         course_id: this.course.id,
       },
-      z.object({
-        long_name: CourseInstanceSchema.shape.long_name,
-      }),
+      CourseInstanceSchema.shape.long_name,
     );
-    const oldNamesLong = result.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1293,16 +1290,13 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryRows(
+    const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
       {
         course_id: this.course.id,
       },
-      z.object({
-        long_name: CourseInstanceSchema.shape.long_name,
-      }),
+      CourseInstanceSchema.shape.long_name,
     );
-    const oldNamesLong = result.map((row) => row.long_name);
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
