@@ -592,63 +592,11 @@ describe('LTI 1.3', () => {
     });
   });
 
-  describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
-    // We need to share this across all tests here, as we need to maintain the same session.
-    const fetchWithCookies = fetchCookie(fetch);
-
-    test.sequential('create third LTI 1.3 instance without UID or UIN attributes', async () => {
-      await createLti13Instance({
-        issuer_params: {
-          issuer: `http://localhost:${oidcProviderPort}`,
-          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
-          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
-          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
-        },
-        attributes: {
-          // Intentionally leave both UID and UIN attributes blank to test misconfiguration error
-          uid_attribute: '',
-          uin_attribute: '',
-          email_attribute: 'email',
-          name_attribute: 'name',
-        },
-      });
-    });
-
-    test.sequential('login should fail with misconfiguration error', async () => {
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
-
-      const executor = await makeLoginExecutor({
-        user: {
-          name: 'Test User',
-          email: 'test-user@example.com',
-          uin: '123456789',
-          sub: USER_SUB,
-        },
-        fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-        targetLinkUri,
-      });
-
-      const res = await executor.login();
-      assert.equal(res.status, 500);
-
-      // The error response should contain our misconfiguration error message
-      const responseText = await res.text();
-      assert.include(
-        responseText,
-        'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
-      );
-    });
-  });
-
   describe('LTI 1.3 instance with only UIN attribute (sub-only matching)', () => {
     // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
 
-    test.sequential('create fourth LTI 1.3 instance with only UIN attribute', async () => {
+    test.sequential('create third LTI 1.3 instance with only UIN attribute', async () => {
       await createLti13Instance({
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
@@ -673,13 +621,13 @@ describe('LTI 1.3', () => {
       const existingUser = await selectOptionalUserByUid('test-user-2@example.com');
       assert.ok(existingUser, 'User should exist from previous tests');
 
-      // Create the LTI user association for instance 4
+      // Create the LTI user association for instance 3
       await queryAsync(
         'INSERT INTO lti13_users (user_id, lti13_instance_id, sub) VALUES ($1, $2, $3)',
-        [existingUser.user_id, '4', USER_WITHOUT_UID_SUB],
+        [existingUser.user_id, '3', USER_WITHOUT_UID_SUB],
       );
 
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
       const executor = await makeLoginExecutor({
         user: {
           name: 'Test User 2',
@@ -690,8 +638,8 @@ describe('LTI 1.3', () => {
         fetchWithCookies,
         oidcProviderPort,
         keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
         targetLinkUri,
       });
 
@@ -704,18 +652,18 @@ describe('LTI 1.3', () => {
       // Verify that the existing LTI 1.3 entry for this instance still exists
       const ltiUser = await queryOptionalRow(
         'SELECT * FROM lti13_users WHERE user_id = $user_id AND lti13_instance_id = $instance_id',
-        { user_id: existingUser.user_id, instance_id: '4' },
+        { user_id: existingUser.user_id, instance_id: '3' },
         Lti13UserSchema,
       );
       assert.ok(ltiUser);
       assert.equal(ltiUser.sub, USER_WITHOUT_UID_SUB);
-      assert.equal(ltiUser.lti13_instance_id, '4');
+      assert.equal(ltiUser.lti13_instance_id, '3');
     });
 
     test.sequential('login with non-existing sub should force auth flow', async () => {
       // Use a completely new session to test the auth flow case
       const newFetchWithCookies = fetchCookie(fetch);
-      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
       const nonExistentSub = '99999999-9999-9999-9999-999999999999';
 
       const executor = await makeLoginExecutor({
@@ -728,8 +676,8 @@ describe('LTI 1.3', () => {
         fetchWithCookies: newFetchWithCookies,
         oidcProviderPort,
         keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
         targetLinkUri,
       });
 
@@ -737,7 +685,59 @@ describe('LTI 1.3', () => {
       assert.equal(res.status, 200);
 
       // Should be redirected to the auth_required page since no user exists with this UIN or sub
-      assert.equal(res.url, `${siteUrl}/pl/lti13_instance/4/auth/auth_required`);
+      assert.equal(res.url, `${siteUrl}/pl/lti13_instance/3/auth/auth_required`);
+    });
+  });
+
+  describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
+    const fetchWithCookies = fetchCookie(fetch);
+
+    test.sequential('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          // Intentionally leave both UID and UIN attributes blank to test misconfiguration error
+          uid_attribute: '',
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
+
+    test.sequential('login should fail with misconfiguration error', async () => {
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Test User',
+          email: 'test-user@example.com',
+          uin: '123456789',
+          sub: USER_SUB,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        targetLinkUri,
+      });
+
+      const res = await executor.login();
+      assert.equal(res.status, 500);
+
+      // The error response should contain our misconfiguration error message
+      const responseText = await res.text();
+      assert.include(
+        responseText,
+        'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+      );
     });
   });
 });
