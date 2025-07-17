@@ -5,7 +5,10 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -34,15 +37,18 @@ export default tseslint.config([
   js.configs.recommended,
   tseslint.configs.stylistic,
   tseslint.configs.strict,
-  eslintReact.configs['recommended-typescript'],
   {
     extends: compat.extends('plugin:you-dont-need-lodash-underscore/all'),
 
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      'react-hooks': reactHooks,
       vitest,
+      'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+      'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
+      ...eslintReact.configs['recommended-typescript'].plugins,
       '@prairielearn': prairielearn,
     },
 
@@ -51,6 +57,11 @@ export default tseslint.config([
     },
 
     settings: {
+      'jsx-a11y-x': {
+        attributes: {
+          for: ['for'],
+        },
+      },
       'import-x/parsers': {
         '@typescript-eslint/parser': ['.ts', '.js'],
       },
@@ -60,7 +71,9 @@ export default tseslint.config([
         node: true,
       },
 
+      ...eslintReact.configs['recommended-typescript'].settings,
       'react-x': {
+        ...eslintReact.configs['recommended-typescript'].settings['react-x'],
         // This is roughly the version that Preact's compat layer supports.
         version: '18.0.0',
       },
@@ -84,6 +97,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-duplicate-imports': 'error',
 
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
@@ -123,6 +137,30 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
+      // Enable all jsx-a11y rules.
+      ...jsxA11yX.configs.strict.rules,
+      'jsx-a11y-x/anchor-ambiguous-text': 'error',
+      'jsx-a11y-x/lang': 'error',
+      'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+
+      // Use the recommended rules for react-hooks
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+
+      // Use the recommended rules for react-you-might-not-need-an-effect as errors.
+      ...Object.fromEntries(
+        Object.keys(reactYouMightNotNeedAnEffect.configs['recommended'].rules ?? {}).map(
+          (ruleName) => [ruleName, 'error'],
+        ),
+      ),
+
+      // Use the recommended rules for eslint-react as errors.
+      ...Object.fromEntries(
+        Object.entries(eslintReact.configs['recommended-typescript'].rules).map(
+          ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
+        ),
+      ),
+
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
 
@@ -138,6 +176,7 @@ export default tseslint.config([
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
+      '@prairielearn/no-unused-sql-blocks': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
@@ -157,6 +196,7 @@ export default tseslint.config([
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
 

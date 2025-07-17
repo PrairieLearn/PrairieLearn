@@ -20,9 +20,14 @@ body:has(div.app-container) {
   height: 100%;
   width: 100%;
   transition: 300ms;
+  /**
+   * The width of the sidebar is set to 25ch, which is dependent on the font size.
+   * This should ensure that the sidebar is wide enough to accommodate its content,
+   * while also being responsive to changes in font size.
+   */
   grid-template:
     'top-nav top-nav' auto
-    'side-nav content' 1fr / 300px 1fr;
+    'side-nav content' 1fr / 25ch 1fr;
 }
 
 .app-top-nav {
@@ -83,7 +88,7 @@ body:has(div.app-container) {
   width: 4px;
   position: absolute;
   left: -0.5rem;
-  background-color: var(--bs-secondary);
+  background-color: var(--bs-primary);
   border-top-right-radius: 0.25rem;
   border-bottom-right-radius: 0.25rem;
 }
@@ -140,7 +145,7 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled.collapsed {
     grid-template:
       'top-nav top-nav' auto
-      'side-nav content' 1fr / 50px 1fr;
+      'side-nav content' 1fr / 60px 1fr;
   }
 
   .app-container.side-nav-enabled.collapsed #course-dropdown {
@@ -149,11 +154,6 @@ body:has(div.app-container) {
 
   .app-container.side-nav-enabled.collapsed #course-instance-dropdown {
     display: none;
-  }
-
-  .app-container.side-nav-enabled.collapsed .app-side-nav {
-    padding: 0.5rem 0;
-    padding-top: 0.3rem;
   }
 
   .app-container.side-nav-enabled.collapsed .side-nav-group {
@@ -207,7 +207,8 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled.collapsed #side-nav-toggler {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0rem;
+    width: 100%;
   }
 
   .app-container.side-nav-enabled.mobile-collapsed .app-side-nav {
@@ -238,8 +239,11 @@ body:has(div.app-container) {
   }
 
   .app-container.side-nav-enabled {
-    display: block;
+    /* Use flexbox to ensure that app-main fills the entire space of app-container. */
+    display: flex;
+    flex-direction: column;
     transition: none;
+    --navbar-height: 3.5rem;
   }
 
   .app-container.side-nav-enabled #side-nav-toggler {
@@ -258,12 +262,14 @@ body:has(div.app-container) {
     display: block;
     position: absolute;
     padding-top: 1rem;
-    top: 56px;
+    top: var(--navbar-height);
     left: 0;
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    min-height: 100vh;
+    min-height: calc(
+      100vh - var(--navbar-height)
+    ); /* Subtract from 100vh to account for the navbar */
     will-change: transform; /* Performance optimization */
   }
 
@@ -271,18 +277,34 @@ body:has(div.app-container) {
     transition: transform 300ms;
   }
 
+  .app-container.side-nav-enabled #side-nav-mobile-toggler {
+    height: 2.5rem;
+  }
+
+  .app-container.side-nav-enabled .navbar {
+    height: var(--navbar-height);
+  }
+
   .app-container.side-nav-enabled #course-nav {
     display: block;
     position: absolute;
-    top: 48px;
+    top: calc(
+      var(--navbar-height) - 0.5rem
+    ); /* Subtract 0.5rem to account for the top padding of the parent div of course-nav. */
     left: 0;
     width: 100%;
     height: fit-content;
-    min-height: 100vh;
+    min-height: calc(
+      100vh - var(--navbar-height)
+    ); /* Subtract from 100vh to account for the navbar */
     z-index: 999;
     background-color: rgba(var(--bs-dark-rgb));
     padding: 1rem 0.5rem;
     will-change: transform; /* Performance optimization */
+  }
+
+  .app-container.side-nav-enabled #course-nav-toggler {
+    height: 2.5rem;
   }
 
   .app-container.side-nav-enabled.animate #course-nav {
@@ -301,7 +323,7 @@ body:has(div.app-container) {
   *  either nav is open. */
   .app-container.side-nav-enabled:has(#course-nav:not(.mobile-collapsed)) .app-main,
   .app-container.side-nav-enabled:not(.mobile-collapsed) .app-main {
-    height: 100%;
+    height: calc(100vh - var(--navbar-height)); /* Subtract from 100vh to account for the navbar */
     overflow-y: hidden;
   }
 

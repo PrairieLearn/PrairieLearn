@@ -25,7 +25,8 @@
         { "id": "element/fileEditor", "points": 2, "maxPoints": 10 },
         { "id": "element/fileUpload", "points": 2 },
         { "id": "element/codeDocumentation", "points": 2, "maxPoints": 10 },
-        { "id": "element/excalidraw", "manualPoints": 2 }
+        { "id": "element/excalidraw", "manualPoints": 2 },
+        { "id": "element/imageCapture", "manualPoints": 2 }
       ]
     },
     {
