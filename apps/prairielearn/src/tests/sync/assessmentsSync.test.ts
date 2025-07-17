@@ -10,7 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import {
   AlternativeGroupSchema,
-  AssessmentQuestionRolePermissionsSchema,
+  AssessmentQuestionRolePermissionSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
   GroupRoleSchema,
@@ -1391,7 +1391,7 @@ describe('Assessment syncing', () => {
 
     const syncedPermissions = await util.dumpTableWithSchema(
       'assessment_question_role_permissions',
-      AssessmentQuestionRolePermissionsSchema,
+      AssessmentQuestionRolePermissionSchema,
     );
     assert.lengthOf(syncedPermissions, 2);
 

@@ -38,14 +38,6 @@ FROM
 WHERE
   project = $project;
 
--- BLOCK update_migration
-UPDATE migrations
-SET
-  filename = $filename,
-  timestamp = $timestamp
-WHERE
-  id = $id;
-
 -- BLOCK insert_migration
 INSERT INTO
   migrations (filename, timestamp, project, applied_at)

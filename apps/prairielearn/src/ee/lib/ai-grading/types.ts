@@ -1,12 +1,16 @@
-import type { RubricItem } from '../../../lib/db-types.js';
+import { z } from 'zod';
 
-export interface AIGradingStats {
-  last_human_grader: string | null;
-  ai_grading_status: 'Graded' | 'LatestRubric' | 'OutdatedRubric' | 'None';
-  point_difference: number | null;
-  rubric_difference: (RubricItem & { false_positive: boolean })[] | null;
-  rubric_similarity: (RubricItem & { true_positive: boolean })[] | null;
-}
+import { RubricItemSchema } from '../../../lib/db-types.js';
+
+export const AIGradingStatsSchema = z.object({
+  last_human_grader: z.string().nullable(),
+  ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
+  point_difference: z.number().nullable(),
+  rubric_difference: z.array(RubricItemSchema.extend({ false_positive: z.boolean() })).nullable(),
+  rubric_similarity: z.array(RubricItemSchema.extend({ true_positive: z.boolean() })).nullable(),
+});
+
+type AIGradingStats = z.infer<typeof AIGradingStatsSchema>;
 
 export type WithAIGradingStats<T> = T & AIGradingStats;
 
