@@ -18,7 +18,7 @@ SELECT
   -- Convert modified_at to a text representation suitable for
   -- PostgreSQL so it can be properly interpreted when a grade
   -- update POST is received back.
-  CAST(iq.modified_at AS TEXT) AS modified_at,
+  CAST(iq.modified_at AS text) AS modified_at,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
@@ -63,7 +63,7 @@ SET
   END
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::BIGINT[]);
+  AND iq.id = ANY ($instance_question_ids::bigint[]);
 
 -- BLOCK toggle_ai_grading_mode
 UPDATE assessment_questions

@@ -7,7 +7,7 @@ CREATE FUNCTION
         question_id bigint,
         course_instance_id bigint,
         skip_assessment_id bigint DEFAULT NULL
-    ) RETURNS JSONB
+    ) RETURNS jsonb
 AS $$
 SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(

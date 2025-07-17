@@ -13,7 +13,7 @@ FROM
 WHERE
   ni.visible_to_students
   OR an.user_id IS NOT NULL
-  OR $all_items::BOOLEAN
+  OR $all_items::boolean
 ORDER BY
   ni.date DESC,
   ni.order_by DESC,
