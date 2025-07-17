@@ -190,7 +190,9 @@ def execute_code(
     # The file at path `fname_student` doesn't actually correspond to the
     # code that we're going to execute, since it doesn't include the leading
     # and trailing code. We'll manually construct a `linecache` entry for it
-    # so that the traceback will show the correct code for each line.
+    # so that the traceback will show the correct code for each line. For
+    # notebooks, this name does not match a real file, so that students see
+    # a pointer to the original source of the code in the traceback.
     populate_linecache(traceback_fname_student, str_student)
 
     try:
