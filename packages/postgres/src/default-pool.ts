@@ -86,6 +86,9 @@ export const query = defaultPool.query.bind(defaultPool);
  * Executes a query with the specified parameters.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
+/**
+ * @deprecated Use {@link queryRow} instead.
+ */
 export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
@@ -107,40 +110,6 @@ export const call = defaultPool.call.bind(defaultPool);
  * Calls the given function with the specified parameters.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
-export const callOneRow = defaultPool.callOneRow.bind(defaultPool);
-/**
- * Calls the given function with the specified parameters. Errors if the
- * function does not return exactly one row.
- *
- * @deprecated Use {@link callRow} instead.
- */
-export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
-export const callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
-/**
- * Calls the given function with the specified parameters. Errors if the
- * function returns more than one row.
- *
- * @deprecated Use {@link callOptionalRow} instead.
- */
-export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
-export const callWithClient = defaultPool.callWithClient.bind(defaultPool);
-/**
- * Calls a function with the specified parameters using a specific client.
- */
-export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
-export const callWithClientOneRow = defaultPool.callWithClientOneRow.bind(defaultPool);
-/**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function does not return exactly one row.
- */
-export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
-export const callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
-/**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function returns more than one row.
- */
-export const callWithClientZeroOrOneRowAsync =
-  defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 /**
  * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
@@ -165,6 +134,8 @@ export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defa
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
+ *
+ * @deprecated Use {@link queryValidatedCursor} instead.
  */
 export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**

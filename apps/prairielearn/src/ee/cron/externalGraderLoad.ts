@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import z from 'zod/v3';
 
 export async function run() {
   if (!config.runningInEc2) return;
@@ -23,8 +24,50 @@ async function getLoadStats() {
     config.externalGradingCurrentCapacityFactor,
     config.externalGradingHistoryCapacityFactor,
   ];
-  const result = await sqldb.callOneRowAsync('grader_loads_current', params);
-  return result.rows[0];
+  const result = await sqldb.callRow(
+    'grader_loads_current',
+    params,
+    z.object({
+      instance_count: z.number().int(),
+      instance_count_launching: z.number().int(),
+      instance_count_in_service: z.number().int(),
+      instance_count_abandoning_launch: z.number().int(),
+      instance_count_unhealthy: z.number().int(),
+      current_jobs: z.number().int(),
+      max_jobs: z.number().int(),
+      load_perc: z.number(),
+      ungraded_jobs: z.number().int(),
+      ungraded_jobs_in_submit: z.number().int(),
+      ungraded_jobs_in_queue: z.number().int(),
+      ungraded_jobs_in_prepare: z.number().int(),
+      ungraded_jobs_in_run: z.number().int(),
+      ungraded_jobs_in_report: z.number().int(),
+      age_of_oldest_job_sec: z.number(),
+      age_of_oldest_job_in_submit_sec: z.number(),
+      age_of_oldest_job_in_queue_sec: z.number(),
+      age_of_oldest_job_in_prepare_sec: z.number(),
+      age_of_oldest_job_in_run_sec: z.number(),
+      age_of_oldest_job_in_report_sec: z.number(),
+      history_jobs: z.number().int(),
+      current_users: z.number().int(),
+      grading_jobs_per_user: z.number(),
+      average_grading_jobs_per_user: z.number(),
+      history_grading_jobs_per_user: z.number(),
+      predicted_jobs_by_current_users: z.number(),
+      predicted_jobs_by_history_users: z.number(),
+      jobs_per_instance: z.number(),
+      desired_instances_by_ungraded_jobs: z.number(),
+      desired_instances_by_current_jobs: z.number(),
+      desired_instances_by_history_jobs: z.number(),
+      desired_instances_by_current_users: z.number(),
+      desired_instances_by_history_users: z.number(),
+      desired_instances_current: z.number().int(),
+      desired_instances_history: z.number().int(),
+      desired_instances: z.number().int(),
+      timestamp_formatted: z.string(),
+    }),
+  );
+  return result;
 }
 
 async function sendStatsToCloudWatch(stats) {
