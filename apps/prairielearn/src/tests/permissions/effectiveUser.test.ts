@@ -20,9 +20,21 @@ import * as helperServer from '../helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const UserWithIdSchema = z.object({
-  user_id: z.string(),
-});
+async function selectOrInsertUser(
+  uid_email: string,
+  name: string,
+  uin: string | null = null,
+): Promise<string> {
+  const { user_id } = await sqldb.callRow(
+    'users_select_or_insert',
+    [uid_email, name, uin, uid_email, 'dev'],
+    z.object({
+      user_id: z.string(),
+      // There are other columns, but we don't need them for this test.
+    }),
+  );
+  return user_id;
+}
 
 describe('effective user', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -55,30 +67,21 @@ describe('effective user', { timeout: 60_000 }, function () {
   let studentId: string;
 
   beforeAll(async function () {
-    const institutionAdmin = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      [
-        'institution-admin@example.com',
-        'Institution Admin',
-        null,
-        'institution-admin@example.com',
-        'dev',
-      ],
-      UserWithIdSchema,
+    institutionAdminId = await selectOrInsertUser(
+      'institution-admin@example.com',
+      'Institution Admin',
     );
-    institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
       authn_user_id: '1',
     });
 
-    const instructor = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
-      UserWithIdSchema,
+    instructorId = await selectOrInsertUser(
+      'instructor@example.com',
+      'Instructor User',
+      '100000000',
     );
-    instructorId = instructor.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -86,12 +89,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    const staff = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['staff@example.com', 'Staff Three', null, 'staff@example.com', 'dev'],
-      UserWithIdSchema,
-    );
-    staffId = staff.user_id;
+    staffId = await selectOrInsertUser('staff@example.com', 'Staff Three');
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'staff@example.com',
@@ -99,12 +97,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '2',
     });
 
-    const student = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
-      UserWithIdSchema,
-    );
-    studentId = student.user_id;
+    studentId = await selectOrInsertUser('student@example.com', 'Student User', '000000001');
     await ensureEnrollment({
       user_id: studentId,
       course_instance_id: '1',

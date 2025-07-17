@@ -6,12 +6,12 @@ import {
   loadSqlEquiv,
   queryAsync,
   queryOneRowAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
+  queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { GroupRoleSchema, QuestionSchema, type User } from '../lib/db-types.js';
+import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -32,10 +32,6 @@ const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
-
-const QuestionIdSchema = QuestionSchema.pick({
-  id: true,
-});
 
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
@@ -143,16 +139,13 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const result = await queryValidatedOneRow(
+  const id = await queryRow(
     sql.select_instance_questions,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: questionId,
-    },
-    QuestionIdSchema,
+    { assessment_instance_id: assessmentInstanceId, question_id: questionId },
+    IdSchema,
   );
-  assert.isDefined(result.id);
-  return courseInstanceUrl + '/instance_question/' + result.id;
+  assert.isDefined(id);
+  return `${courseInstanceUrl}/instance_question/${id}`;
 }
 
 /**
@@ -173,11 +166,9 @@ async function prepareGroup() {
   const studentUsers = await generateThreeStudentUsers();
 
   // Get group roles
-  const groupRoles = await queryValidatedRows(
+  const groupRoles = await queryRows(
     sql.select_assessment_group_roles,
-    {
-      assessment_id: assessmentId,
-    },
+    { assessment_id: assessmentId },
     GroupRoleSchema.pick({
       id: true,
       role_name: true,
