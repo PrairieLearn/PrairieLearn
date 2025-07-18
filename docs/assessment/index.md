@@ -294,19 +294,21 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
+  "studentGroupChooseName": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+| Attribute                | Type    | Default | Description                                                                                                |
+| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
+| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
+| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
+| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
+| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
@@ -579,6 +581,12 @@ To disable real-time grading for an assessment, add `"allowRealTimeGrading": fal
 
 An assessment without real-time grading will not show any score information during the exam. However, if a [time limit](../accessControl/index.md#time-limits) is used then when it runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../accessControl/index.md#showinghiding-closed-assessments).
 
+??? note
+
+    When real-time grading is disabled, submissions will still be parsed, and students will be informed of invalid submissions when they click the "Save" button. This includes any element-specific validation (e.g., checking for blank answers, or checking if numeric inputs have numeric values), as well as [question-specific custom parse functionality](../question/server.md#step-4-parse). As usual, invalid submissions do not count towards limited attempts.
+
+    Students will not be prevented from completing the assessment with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission. However, invalid submissions will not trigger any auto-grading process, and will by default cause the student to get a zero on the whole question (even if there are elements in the submission with valid answers). Manual grading is still available for these submissions.
+
 Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
 
 Here is the assessment page for a normal exam with real-time grading enabled:
@@ -662,6 +670,16 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
 
 ## Linking to assessments
 

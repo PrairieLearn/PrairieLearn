@@ -63,7 +63,6 @@ External grading configuration is done on a per-question basis. All configuratio
 - `image`: The Docker image that should be used for the question. This can be any image specification that is understood by the `docker pull` command. This property is required.
 
 - `entrypoint`: The script or command line that will be run when your container starts. This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`). If this property is not provided, the default entrypoint of the Docker image will be used.
-
   - The `entrypoint` may also be provided with additional command line arguments. These may be provided either as a string (e.g., `"/path/to/entrypoint -h"`) or as an array, with each element corresponding to an argument (e.g., `["/path/to/entrypoint", "-h"]`).
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share a standard grading framework between many questions. This property is optional.
@@ -239,7 +238,7 @@ Plots or images can be added to either individual test cases or to the main outp
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
 
-A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`, and relevant documentation [here](python-grader/index.md).
+A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`. See the [grader documentation](python-grader/index.md) for more details.
 
 ## Writing questions
 
@@ -266,6 +265,6 @@ For a working example of this, see [the implementation of `pl-file-upload`](http
 
 ## Running locally for development
 
-In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](installing.md#support-for-external-graders-and-workspaces).
+In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](installing.md#support-for-external-graders-and-workspaces).
 
 When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs`. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.

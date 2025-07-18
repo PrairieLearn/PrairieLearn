@@ -1,5 +1,4 @@
 import * as async from 'async';
-import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -7,20 +6,20 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.js';
 import {
   type QuestionContext,
   type QuestionRenderContext,
 } from '../components/QuestionContainer.types.js';
-import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
+import { QuestionNavSideButton } from '../components/QuestionNavigation.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  type SubmissionForRender,
   SubmissionPanel,
-} from '../components/SubmissionPanel.html.js';
-import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
+} from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -159,6 +158,7 @@ interface QuestionUrls {
   clientFilesCourseUrl: string;
   clientFilesQuestionGeneratedFileUrl: string;
   baseUrl: string;
+  externalImageCaptureUrl: string | null;
   workspaceUrl?: string;
 }
 
@@ -201,6 +201,9 @@ export function buildQuestionUrls(
       clientFilesQuestionGeneratedFileUrl:
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + questionUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   } else {
     // student question pages
@@ -221,6 +224,9 @@ export function buildQuestionUrls(
       clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
       clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + iqUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   }
 
@@ -858,15 +864,4 @@ export async function renderPanelsForSubmission({
     },
   ]);
   return panels;
-}
-
-/**
- * Expose the renderer in use to the client so that we can easily see
- * which renderer was used for a given request.
- */
-export function setRendererHeader(res: Response) {
-  const renderer = res.locals.question_renderer;
-  if (renderer) {
-    res.set('X-PrairieLearn-Question-Renderer', renderer);
-  }
 }

@@ -442,7 +442,6 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         check_pl_answer_attribs(html_tag, order_blocks_attribs)
         answer_attribs = get_pl_answer_attribs(html_tag)
         validate_pl_answer_attribs(answer_attribs, order_blocks_attribs, used_tags)
-
         answer_data_dict: OrderBlocksAnswerData = {
             "inner_html": answer_attribs["inner_html"],
             "indent": answer_attribs["indent"],
@@ -1012,13 +1011,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
-                block["badge_type"] = "badge-success"
+                block["badge_type"] = "text-bg-success"
                 block["icon"] = "fa-check"
                 block["distractor_feedback"] = ""
                 block["ordering_feedback"] = ""
 
             if first_wrong is not None:
-                student_answer[first_wrong]["badge_type"] = "badge-danger"
+                student_answer[first_wrong]["badge_type"] = "text-bg-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
                 if feedback_type is not FeedbackType.FIRST_WRONG_VERBOSE:
                     student_answer[first_wrong]["distractor_feedback"] = ""

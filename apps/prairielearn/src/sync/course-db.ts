@@ -212,9 +212,20 @@ export interface CourseData {
  */
 export async function loadFullCourse(
   courseId: string | null,
-  courseDir: string,
+  coursePath: string,
 ): Promise<CourseData> {
-  const questions = await loadQuestions(courseDir);
+  const sharingEnabled = await run(async () => {
+    // If the course ID is null, the feature can't possibly be enabled.
+    if (courseId == null) return false;
+
+    const institution = await selectInstitutionForCourse({ course_id: courseId });
+    return await features.enabled('question-sharing', {
+      institution_id: institution.id,
+      course_id: courseId,
+    });
+  });
+
+  const questions = await loadQuestions({ coursePath, sharingEnabled });
   const tagsInUse = new Set<string>();
 
   for (const question of Object.values(questions)) {
@@ -225,11 +236,11 @@ export async function loadFullCourse(
     }
   }
 
-  const courseInstanceInfos = await loadCourseInstances(courseDir);
+  const courseInstanceInfos = await loadCourseInstances({ coursePath, sharingEnabled });
   const courseInstances: Record<string, CourseInstanceData> = {};
   const assessmentSetsInUse = new Set<string>();
 
-  for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
+  for (const [courseInstanceDirectory, courseInstance] of Object.entries(courseInstanceInfos)) {
     // Check if the course instance is "expired". A course instance is considered
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
@@ -240,12 +251,13 @@ export async function loadFullCourse(
       return endDate && isPast(endDate);
     });
 
-    const assessments = await loadAssessments(
-      courseDir,
-      courseInstanceId,
+    const assessments = await loadAssessments({
+      coursePath,
+      courseInstanceDirectory,
       courseInstanceExpired,
       questions,
-    );
+      sharingEnabled,
+    });
 
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
@@ -253,7 +265,7 @@ export async function loadFullCourse(
       }
     }
 
-    courseInstances[courseInstanceId] = {
+    courseInstances[courseInstanceDirectory] = {
       courseInstance,
       assessments,
     };
@@ -261,9 +273,10 @@ export async function loadFullCourse(
 
   const courseInfo = await loadCourseInfo({
     courseId,
-    coursePath: courseDir,
+    coursePath,
     assessmentSetsInUse,
     tagsInUse,
+    sharingEnabled,
   });
 
   return {
@@ -485,11 +498,13 @@ export async function loadCourseInfo({
   coursePath,
   assessmentSetsInUse,
   tagsInUse,
+  sharingEnabled,
 }: {
   courseId: string | null;
   coursePath: string;
   assessmentSetsInUse: Set<string>;
   tagsInUse: Set<string>;
+  sharingEnabled: boolean;
 }): Promise<InfoFile<CourseJson>> {
   const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
     coursePath,
@@ -509,6 +524,13 @@ export async function loadCourseInfo({
   // Reassign to a non-null type.
   const loadedData = maybeNullLoadedData;
   const info = maybeNullLoadedData.data;
+
+  if (config.checkSharingOnSync && !sharingEnabled && info.sharingSets) {
+    infofile.addError(
+      loadedData,
+      '"sharingSets" cannot be used because sharing is not enabled for this course.',
+    );
+  }
 
   /**
    * Used to retrieve fields such as "assessmentSets" and "topics".
@@ -642,7 +664,6 @@ export async function loadCourseInfo({
     topics,
     sharingSets,
     options: {
-      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
     comment: info.comment,
@@ -917,11 +938,31 @@ function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
   return warnings;
 }
 
-async function validateQuestion(
-  question: QuestionJson,
-): Promise<{ warnings: string[]; errors: string[] }> {
+async function validateQuestion({
+  question,
+  sharingEnabled,
+}: {
+  question: QuestionJson;
+  sharingEnabled: boolean;
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
+
+  if (config.checkSharingOnSync && !sharingEnabled) {
+    if (question.sharingSets) {
+      errors.push('"sharingSets" cannot be used because sharing is not enabled for this course');
+    }
+
+    if (question.sharePublicly) {
+      errors.push('"sharePublicly" cannot be used because sharing is not enabled for this course');
+    }
+
+    if (question.shareSourcePublicly) {
+      errors.push(
+        '"shareSourcePublicly" cannot be used because sharing is not enabled for this course',
+      );
+    }
+  }
 
   if (question.type && question.options) {
     try {
@@ -955,13 +996,25 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-async function validateAssessment(
-  assessment: AssessmentJson,
-  questions: Record<string, InfoFile<QuestionJson>>,
-  courseInstanceExpired: boolean,
-): Promise<{ warnings: string[]; errors: string[] }> {
+async function validateAssessment({
+  assessment,
+  questions,
+  sharingEnabled,
+  courseInstanceExpired,
+}: {
+  assessment: AssessmentJson;
+  questions: Record<string, InfoFile<QuestionJson>>;
+  sharingEnabled: boolean;
+  courseInstanceExpired: boolean;
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
+
+  if (config.checkSharingOnSync && !sharingEnabled && assessment.shareSourcePublicly) {
+    errors.push(
+      '"shareSourcePublicly" cannot be used because sharing is not enabled for this course',
+    );
+  }
 
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
@@ -974,6 +1027,14 @@ async function validateAssessment(
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
       errors.push('"multipleInstance" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.requireHonorCode) {
+      errors.push('"requireHonorCode" cannot be used for Homework-type assessments');
+    }
+
+    if (assessment.honorCode) {
+      errors.push('"honorCode" cannot be used for Homework-type assessments');
     }
   }
 
@@ -1258,11 +1319,21 @@ async function validateAssessment(
   return { warnings, errors };
 }
 
-async function validateCourseInstance(
-  courseInstance: CourseInstanceJson,
-): Promise<{ warnings: string[]; errors: string[] }> {
+async function validateCourseInstance({
+  courseInstance,
+  sharingEnabled,
+}: {
+  courseInstance: CourseInstanceJson;
+  sharingEnabled: boolean;
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
+
+  if (config.checkSharingOnSync && !sharingEnabled && courseInstance.shareSourcePublicly) {
+    errors.push(
+      '"shareSourcePublicly" cannot be used because sharing is not enabled for this course instance',
+    );
+  }
 
   if ('allowIssueReporting' in courseInstance) {
     if (courseInstance.allowIssueReporting) {
@@ -1316,16 +1387,20 @@ async function validateCourseInstance(
 /**
  * Loads all questions in a course directory.
  */
-export async function loadQuestions(
-  coursePath: string,
-): Promise<Record<string, InfoFile<QuestionJson>>> {
+export async function loadQuestions({
+  coursePath,
+  sharingEnabled,
+}: {
+  coursePath: string;
+  sharingEnabled: boolean;
+}): Promise<Record<string, InfoFile<QuestionJson>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
     infoFilename: 'info.json',
     defaultInfo: DEFAULT_QUESTION_INFO,
     schema: schemas.infoQuestion,
-    validate: validateQuestion,
+    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1345,16 +1420,21 @@ export async function loadQuestions(
 /**
  * Loads all course instances in a course directory.
  */
-export async function loadCourseInstances(
-  coursePath: string,
-): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
+export async function loadCourseInstances({
+  coursePath,
+  sharingEnabled,
+}: {
+  coursePath: string;
+  sharingEnabled: boolean;
+}): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
     infoFilename: 'infoCourseInstance.json',
     defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
     schema: schemas.infoCourseInstance,
-    validate: validateCourseInstance,
+    validate: (courseInstance: CourseInstanceJson) =>
+      validateCourseInstance({ courseInstance, sharingEnabled }),
     recursive: true,
   });
   checkDuplicateUUIDs(
@@ -1367,13 +1447,20 @@ export async function loadCourseInstances(
 /**
  * Loads all assessments in a course instance.
  */
-export async function loadAssessments(
-  coursePath: string,
-  courseInstance: string,
-  courseInstanceExpired: boolean,
-  questions: Record<string, InfoFile<QuestionJson>>,
-): Promise<Record<string, InfoFile<AssessmentJson>>> {
-  const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
+export async function loadAssessments({
+  coursePath,
+  courseInstanceDirectory,
+  courseInstanceExpired,
+  questions,
+  sharingEnabled,
+}: {
+  coursePath: string;
+  courseInstanceDirectory: string;
+  courseInstanceExpired: boolean;
+  questions: Record<string, InfoFile<QuestionJson>>;
+  sharingEnabled: boolean;
+}): Promise<Record<string, InfoFile<AssessmentJson>>> {
+  const assessmentsPath = path.join('courseInstances', courseInstanceDirectory, 'assessments');
   const assessments = await loadInfoForDirectory({
     coursePath,
     directory: assessmentsPath,
@@ -1381,7 +1468,7 @@ export async function loadAssessments(
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
     validate: (assessment: AssessmentJson) =>
-      validateAssessment(assessment, questions, courseInstanceExpired),
+      validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
     recursive: true,
   });
   checkDuplicateUUIDs(

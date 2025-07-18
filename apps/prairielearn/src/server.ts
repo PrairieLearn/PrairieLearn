@@ -23,14 +23,15 @@ import express, {
   type Request,
   type RequestHandler,
   type Response,
+  Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -48,7 +49,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
-import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
@@ -58,6 +58,7 @@ import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
+import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
@@ -77,15 +78,15 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
-const argv = yargsParser(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
+    --config <filename>                 Use the specified configuration file
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -151,7 +152,7 @@ export async function initExpress(): Promise<Express> {
     },
   });
 
-  const sessionRouter = express.Router();
+  const sessionRouter = Router();
   sessionRouter.use(sessionMiddleware);
   sessionRouter.use(flashMiddleware());
   sessionRouter.use((req, res, next) => {
@@ -173,7 +174,7 @@ export async function initExpress(): Promise<Express> {
   });
 
   // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api'], sessionRouter));
+  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -211,6 +212,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
     upload.single('file'),
   );
+
+  app.post(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -259,7 +266,19 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
 
@@ -270,7 +289,7 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = express.Router();
+  const workspaceAuthRouter = Router();
   workspaceAuthRouter.use([
     // We use a short-lived cookie to cache a successful
     // authn/authz for a specific workspace. We run the following
@@ -432,7 +451,7 @@ export async function initExpress(): Promise<Express> {
 
   // Set and check `res.locals.__csrf_token`. We exclude API routes as those
   // don't require CSRF protection (and in fact can't have it at all).
-  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+  app.use(excludeRoutes(['/pl/api/'], (await import('./middlewares/csrfToken.js')).default));
 
   app.use((await import('./middlewares/logRequest.js')).default);
 
@@ -490,6 +509,13 @@ export async function initExpress(): Promise<Express> {
       (await import('./middlewares/authzCourseOrInstance.js')).default,
       (await import('./pages/navbarCourseInstanceSwitcher/navbarCourseInstanceSwitcher.js'))
         .default,
+    ],
+  );
+  app.use(
+    '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
+    [
+      (await import('./middlewares/authzCourseOrInstance.js')).default,
+      (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );
 
@@ -751,6 +777,15 @@ export async function initExpress(): Promise<Express> {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
+
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor',
+    asyncHandler(async (req, res, next) => {
+      res.locals.lti11_enabled =
+        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
+      next();
+    }),
+  );
 
   // single assessment
   app.use(
@@ -1049,6 +1084,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/grading_job',
@@ -1120,15 +1159,20 @@ export async function initExpress(): Promise<Express> {
       )
     ).default,
   );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1172,9 +1216,6 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
       next();
     }),
   );
@@ -1383,6 +1424,11 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
@@ -1486,6 +1532,12 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
+
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
@@ -1569,15 +1621,20 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
-    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
-      .default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
-    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
-  );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+      (
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
+      ).default,
+    );
+    app.use(
+      '/pl/course/:course_id(\\d+)/ai_generate_question_drafts',
+      (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+    );
+  }
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/syncs',
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
@@ -1626,6 +1683,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+  // Also not a page, like above. This route is used to initiate the transfer of a public course instance
+  app.use(
+    '/pl/course/:course_id(\\d+)/copy_public_course_instance',
+    (
+      await import(
+        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
+      )
+    ).default,
   );
 
   // Global client files
@@ -1709,6 +1775,12 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
   );
   app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
+      publicQuestionPreview: true,
+    }),
+  );
+  app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
   );
@@ -1725,6 +1797,10 @@ export async function initExpress(): Promise<Express> {
       publicQuestionEndpoint: true,
       coreElements: false,
     }),
+  );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
   );
   app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/questions`);
@@ -2373,6 +2449,7 @@ if (esMain(import.meta) && config.startServer) {
 
     externalGradingSocket.init();
     externalGrader.init();
+    externalImageCaptureSocket.init();
 
     await workspace.init();
     serverJobs.init();

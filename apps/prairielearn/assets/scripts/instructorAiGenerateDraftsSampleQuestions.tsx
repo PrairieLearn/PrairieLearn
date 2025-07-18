@@ -25,7 +25,7 @@ const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
-import { useState } from '@prairielearn/preact-cjs/hooks';
+import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
@@ -39,6 +39,7 @@ onDocumentReady(() => {
 
 function SampleQuestion() {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const onMathjaxTypeset = useCallback(mathjaxTypeset, []);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
@@ -65,9 +66,9 @@ function SampleQuestion() {
             onClickNext={handleClickNext}
           />
           <SampleQuestionDemo
-            promptId={selectedQuestion.id}
+            key={selectedQuestion.id}
             prompt={selectedQuestion}
-            onMathjaxTypeset={mathjaxTypeset}
+            onMathjaxTypeset={onMathjaxTypeset}
           />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
@@ -90,7 +91,7 @@ function SampleQuestionSelector({
   onClickNext: () => void;
 }) {
   return (
-    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <div style={{ width: '100%' }} class="d-flex align-items-center gap-2 mb-3 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
         onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
@@ -99,7 +100,7 @@ function SampleQuestionSelector({
           as="button"
           type="button"
           style={{ width: '100%' }}
-          className="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
+          class="btn dropdown-toggle border border-gray d-flex justify-content-between align-items-center bg-white"
         >
           {selectedQuestionName}
         </DropdownToggle>
@@ -115,7 +116,7 @@ function SampleQuestionSelector({
           ))}
         </DropdownMenu>
       </Dropdown>
-      <div className="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2">
         <Button onClick={onClickPrevious} disabled={selectedQuestionIndex === 0}>
           Previous
         </Button>
@@ -138,7 +139,7 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
 
   return (
     <>
-      <p className="fw-bold mb-1 mt-3">Prompt</p>
+      <p class="fw-bold mb-1 mt-3">Prompt</p>
       <p>{prompt}</p>
       <OverlayTrigger
         placement="top"

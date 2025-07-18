@@ -3,9 +3,8 @@ import TomSelect from 'tom-select';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import './lib/changeIdButton.js';
-import { TagBadge } from '../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../src/components/TopicBadge.html.js';
+import { TagBadge } from '../../src/components/TagBadge.js';
+import { TopicBadge } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
@@ -25,28 +24,13 @@ onDocumentReady(() => {
   const workspaceImageInput = document.querySelector<HTMLInputElement>('#workspace_image');
   const workspacePortInput = document.querySelector<HTMLInputElement>('#workspace_port');
   const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
-  const workspaceGradedFilesInput =
-    document.querySelector<HTMLInputElement>('#workspace_graded_files');
-  const workspaceArgsInput = document.querySelector<HTMLInputElement>('#workspace_args');
   const workspaceEnvironmentInput =
     document.querySelector<HTMLInputElement>('#workspace_environment');
-  const workspaceEnableNetworkingCheckbox = document.querySelector<HTMLInputElement>(
-    '#workspace_enable_networking',
-  );
-  const workspaceRewriteUrlCheckbox =
-    document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
 
-  function validateWorkspaceOptions() {
-    if (
-      workspaceImageInput?.value ||
-      workspacePortInput?.value ||
-      workspaceHomeInput?.value ||
-      workspaceGradedFilesInput?.value ||
-      workspaceArgsInput?.value ||
-      (workspaceEnvironmentInput?.value !== '{}' && workspaceEnvironmentInput?.value !== '') ||
-      workspaceEnableNetworkingCheckbox?.checked ||
-      workspaceRewriteUrlCheckbox?.checked
-    ) {
+  let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
+
+  function updateWorkspaceOptionsValidation() {
+    if (workspaceOptionsShown) {
       workspaceImageInput?.setAttribute('required', 'true');
       workspacePortInput?.setAttribute('required', 'true');
       workspaceHomeInput?.setAttribute('required', 'true');
@@ -126,16 +110,19 @@ onDocumentReady(() => {
     }
   });
 
-  if (!questionSettingsForm || !saveButton) return;
-  saveButtonEnabling(questionSettingsForm, saveButton);
+  if (questionSettingsForm && saveButton) {
+    saveButtonEnabling(questionSettingsForm, saveButton);
+  }
 
+  updateWorkspaceOptionsValidation();
   showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
+    workspaceOptionsShown = true;
+    updateWorkspaceOptionsValidation();
   });
 
-  questionSettingsForm.addEventListener('submit', (e) => {
-    validateWorkspaceOptions();
+  questionSettingsForm?.addEventListener('submit', (e) => {
     if (!questionSettingsForm.checkValidity()) {
       e.preventDefault();
       questionSettingsForm.reportValidity();

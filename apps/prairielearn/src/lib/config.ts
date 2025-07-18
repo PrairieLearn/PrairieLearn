@@ -10,7 +10,21 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-const ConfigSchema = z.object({
+export const DEV_MODE = process.env.NODE_ENV !== 'production';
+
+export const STANDARD_COURSE_DIRS = [
+  '/course',
+  '/course2',
+  '/course3',
+  '/course4',
+  '/course5',
+  '/course6',
+  '/course7',
+  '/course8',
+  '/course9',
+];
+
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -45,19 +59,7 @@ const ConfigSchema = z.object({
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
-    .default([
-      '/course',
-      '/course2',
-      '/course3',
-      '/course4',
-      '/course5',
-      '/course6',
-      '/course7',
-      '/course8',
-      '/course9',
-      EXAMPLE_COURSE_PATH,
-      TEST_COURSE_PATH,
-    ]),
+    .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
@@ -70,6 +72,13 @@ const ConfigSchema = z.object({
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
+  /**
+   * Used when nonVolatileCacheType is set to redis. If configured, should
+   * not evict data when facing memory pressure. The instance should be
+   * appropriately sized such that it will not run out of memory during
+   * normal usage.
+   */
+  nonVolatileRedisUrl: z.string().nullable().default(null),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -106,7 +115,7 @@ const ConfigSchema = z.object({
   sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
-    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+    .default(DEV_MODE ? 'lax' : 'none'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -302,6 +311,7 @@ const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
@@ -325,7 +335,7 @@ const ConfigSchema = z.object({
   workspaceLogsS3Bucket: z
     .string()
     .nullable()
-    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
+    .default(DEV_MODE ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -477,7 +487,7 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
+  devMode: z.boolean().default(DEV_MODE),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
   /** The reply URL registered in AAD for your app. */
@@ -549,6 +559,11 @@ const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  /**
+   * The hourly spending rate limit for AI question generation, in US dollars.
+   * Accounts for both input and output tokens.
+   */
+  aiQuestionGenerationRateLimitDollars: z.number().default(1),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
@@ -569,6 +584,12 @@ const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
+  /**
+   * For the GPT-4o model as of 16 June 2025, in US dollars.
+   * Prices obtained from https://openai.com/api/pricing/.
+   */
+  costPerMillionPromptTokens: z.number().default(2.5),
+  costPerMillionCompletionTokens: z.number().default(10),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -599,7 +620,7 @@ export async function loadConfig(paths: string[]) {
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here
   // after the config has been completely loaded.
-  if (process.env.NODE_ENV === 'production') {
+  if (!DEV_MODE) {
     if (!config.cookieDomain) {
       throw new Error('cookieDomain must be set in production environments');
     }
@@ -612,6 +633,10 @@ export async function loadConfig(paths: string[]) {
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

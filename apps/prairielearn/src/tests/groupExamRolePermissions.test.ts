@@ -1,18 +1,17 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import {
   loadSqlEquiv,
   queryAsync,
   queryOneRowAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
+  queryRow,
+  queryRows,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import type { User } from '../lib/db-types.js';
-import { GroupRoleSchema, QuestionSchema } from '../lib/db-types.js';
+import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -34,10 +33,6 @@ const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
 
-const QuestionIdSchema = QuestionSchema.pick({
-  id: true,
-});
-
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
@@ -48,7 +43,7 @@ async function generateThreeStudentUsers() {
  * Creates a new group in the given assessment as the user with the given CSRF token
  */
 async function createGroup(
-  groupName: string,
+  group_name: string,
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
@@ -57,7 +52,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName,
+      group_name,
     }),
   });
   assert.isOk(res.ok);
@@ -144,16 +139,12 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const result = await queryValidatedOneRow(
+  const id = await queryRow(
     sql.select_instance_questions,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: questionId,
-    },
-    QuestionIdSchema,
+    { assessment_instance_id: assessmentInstanceId, question_id: questionId },
+    IdSchema,
   );
-  assert.isDefined(result.id);
-  return courseInstanceUrl + '/instance_question/' + result.id;
+  return `${courseInstanceUrl}/instance_question/${id}`;
 }
 
 /**
@@ -174,11 +165,9 @@ async function prepareGroup() {
   const studentUsers = await generateThreeStudentUsers();
 
   // Get group roles
-  const groupRoles = await queryValidatedRows(
+  const groupRoles = await queryRows(
     sql.select_assessment_group_roles,
-    {
-      assessment_id: assessmentId,
-    },
+    { assessment_id: assessmentId },
     GroupRoleSchema.pick({
       id: true,
       role_name: true,
@@ -277,21 +266,19 @@ async function prepareGroup() {
 }
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
-  describe('valid group role configuration tests', function () {
-    this.timeout(20000);
+  describe('valid group role configuration tests', { timeout: 20_000 }, function () {
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    afterAll(helperServer.after);
+
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('enforces correct permissions during valid group role configuration', async function () {
@@ -428,21 +415,19 @@ describe('Assessment instance with group roles & permissions - Exam', function (
     });
   });
 
-  describe('invalid role configuration tests', function () {
-    this.timeout(20000);
+  describe('invalid role configuration tests', { timeout: 20_000 }, function () {
+    beforeAll(helperServer.before(TEST_COURSE_PATH));
 
-    before('set up testing server', helperServer.before(TEST_COURSE_PATH));
-    before('set authenticated user', function (callback) {
+    beforeAll(function () {
       storedConfig.authUid = config.authUid;
       storedConfig.authName = config.authName;
       storedConfig.authUin = config.authUin;
-      callback(null);
     });
 
-    after('shut down testing server', helperServer.after);
-    after('unset authenticated user', function (callback) {
+    afterAll(helperServer.after);
+
+    afterAll(function () {
       Object.assign(config, storedConfig);
-      callback(null);
     });
 
     it('shows correct errors during invalid group role configuration', async function () {

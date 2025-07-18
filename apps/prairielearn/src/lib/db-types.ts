@@ -47,6 +47,9 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
+export const AccessLogSchema = null;
+export const AccessTokenSchema = null;
+
 export const AdministratorSchema = z.object({
   id: IdSchema,
   user_id: IdSchema,
@@ -83,6 +86,9 @@ export const AlternativeGroupSchema = z.object({
 });
 export type AlternativeGroup = z.infer<typeof AlternativeGroupSchema>;
 
+export const AssessmentScoreLogSchema = null;
+export const AssessmentStateLogSchema = null;
+
 export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
@@ -104,6 +110,7 @@ export const AssessmentSchema = z.object({
   duration_stat_threshold_seconds: z.number().array(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
+  honor_code: z.string().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
@@ -200,6 +207,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
+  ai_grading_mode: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
@@ -251,14 +259,14 @@ export const AssessmentQuestionSchema = z.object({
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
 
-export const AssessmentQuestionRolePermissionsSchema = z.object({
+export const AssessmentQuestionRolePermissionSchema = z.object({
   assessment_question_id: IdSchema,
   can_submit: z.boolean().nullable(),
   can_view: z.boolean().nullable(),
   group_role_id: IdSchema,
 });
-export type AssessmentQuestionRolePermissions = z.infer<
-  typeof AssessmentQuestionRolePermissionsSchema
+export type AssessmentQuestionRolePermission = z.infer<
+  typeof AssessmentQuestionRolePermissionSchema
 >;
 
 export const AssessmentSetSchema = z.object({
@@ -299,6 +307,10 @@ export const AuthnProviderSchema = z.object({
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
+export const BatchedMigrationJobSchema = null;
+export const BatchedMigrationSchema = null;
+export const ChunkSchema = null;
+
 export const ClientFingerprintSchema = z.object({
   accept_language: z.string().nullable(),
   created_at: DateFromISOString,
@@ -310,6 +322,7 @@ export const ClientFingerprintSchema = z.object({
 });
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
+// pl_courses table
 export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
@@ -319,6 +332,7 @@ export const CourseSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  draft_number: z.number(),
   example_course: z.boolean(),
   id: IdSchema,
   institution_id: IdSchema,
@@ -349,6 +363,7 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -384,6 +399,8 @@ export const CourseInstanceRequiredPlanSchema = z.object({
 });
 export type CourseInstanceRequiredPlan = z.infer<typeof CourseInstanceRequiredPlanSchema>;
 
+export const CourseInstanceUsageSchema = null;
+
 export const CoursePermissionSchema = z.object({
   course_id: IdSchema,
   course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']).nullable(),
@@ -409,6 +426,9 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
+export const CronJobSchema = null;
+export const CurrentPageSchema = null;
+
 export const DraftQuestionMetadataSchema = z.object({
   created_at: DateFromISOString,
   created_by: IdSchema.nullable(),
@@ -425,6 +445,10 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
+
+export const ExamModeNetworkSchema = null;
+export const ExamSchema = null;
+export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
   assessment_id: IdSchema.nullable(),
@@ -490,16 +514,20 @@ export const FileTransferSchema = z.object({
   id: IdSchema,
   storage_filename: z.string(),
   to_course_id: IdSchema,
-  transfer_type: z.enum(['CopyQuestion']),
+  transfer_type: z.enum(['CopyQuestion', 'CopyCourseInstance']),
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
+
+export const GraderLoadSchema = null;
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),
   correct: z.boolean().nullable(),
   date: DateFromISOString.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  deleted_by: IdSchema.nullable(),
   feedback: z.record(z.string(), z.any()).nullable(),
   gradable: z.boolean().nullable(),
   graded_at: DateFromISOString.nullable(),
@@ -546,11 +574,14 @@ export const GroupConfigSchema = z.object({
   maximum: z.number().nullable(),
   minimum: z.number().nullable(),
   name: z.string().nullable(),
+  student_authz_choose_name: z.boolean(),
   student_authz_create: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
   student_authz_join: z.boolean().nullable(),
 });
 export type GroupConfig = z.infer<typeof GroupConfigSchema>;
+
+export const GroupLogSchema = null;
 
 export const GroupRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
@@ -619,6 +650,8 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const InstitutionAuthnProviderSchema = null;
 
 export const InstitutionSchema = z.object({
   course_instance_enrollment_limit: z.number(),
@@ -708,7 +741,9 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
-export const Lti13AssessmentsSchema = z.object({
+export const LastAccessSchema = null;
+
+export const Lti13AssessmentSchema = z.object({
   assessment_id: IdSchema,
   id: IdSchema,
   last_activity: DateFromISOString,
@@ -716,7 +751,7 @@ export const Lti13AssessmentsSchema = z.object({
   lineitem: z.record(z.string(), z.any()),
   lti13_course_instance_id: IdSchema,
 });
-export type Lti13Assessments = z.infer<typeof Lti13AssessmentsSchema>;
+export type Lti13Assessment = z.infer<typeof Lti13AssessmentSchema>;
 
 export const Lti13CourseInstanceSchema = z.object({
   context_id: z.string(),
@@ -754,13 +789,14 @@ export const Lti13InstanceSchema = z.object({
 export type Lti13Instance = z.infer<typeof Lti13InstanceSchema>;
 
 export const Lti13UserSchema = z.object({
+  id: IdSchema,
   lti13_instance_id: IdSchema,
   sub: z.string(),
   user_id: IdSchema,
 });
 export type Lti13User = z.infer<typeof Lti13UserSchema>;
 
-export const LtiCredentialsSchema = z.object({
+export const LtiCredentialSchema = z.object({
   consumer_key: z.string().nullable(),
   course_instance_id: z.string().nullable(),
   created_at: DateFromISOString.nullable(),
@@ -768,7 +804,12 @@ export const LtiCredentialsSchema = z.object({
   id: IdSchema,
   secret: z.string().nullable(),
 });
-export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
+export type LtiCredential = z.infer<typeof LtiCredentialSchema>;
+
+export const LtiLinkSchema = null;
+export const LtiOutcomeSchema = null;
+export const MigrationSchema = null;
+export const NamedLockSchema = null;
 
 export const NewsItemSchema = z.object({
   author: z.string().nullable(),
@@ -781,6 +822,9 @@ export const NewsItemSchema = z.object({
   visible_to_students: z.boolean(),
 });
 export type NewsItem = z.infer<typeof NewsItemSchema>;
+
+export const NewsItemNotificationSchema = null;
+export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
   course_instance_id: IdSchema.nullable(),
@@ -801,7 +845,6 @@ export const QueryRunSchema = z.object({
   name: z.string(),
   params: z.record(z.string(), z.any()).nullable(),
   result: z.record(z.string(), z.any()).nullable(),
-  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
@@ -868,6 +911,10 @@ export const QuestionSchema = z.object({
 });
 export type Question = z.infer<typeof QuestionSchema>;
 
+export const QuestionScoreLogSchema = null;
+export const QuestionTagSchema = null;
+export const ReservationSchema = null;
+
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -933,12 +980,18 @@ export const SamlProviderSchema = z.object({
 });
 export type SamlProvider = z.infer<typeof SamlProviderSchema>;
 
+export const ServerLoadSchema = null;
+
 export const SharingSetSchema = z.object({
   course_id: IdSchema,
+  description: z.string().nullable(),
   id: IdSchema,
   name: z.string().nullable(),
 });
 export type SharingSet = z.infer<typeof SharingSetSchema>;
+
+export const SharingSetCourseSchema = null;
+export const SharingSetQuestionSchema = null;
 
 export const StripeCheckoutSessionSchema = z.object({
   agent_user_id: IdSchema,
@@ -984,10 +1037,12 @@ export const SubmissionSchema = z.object({
   is_ai_graded: z.boolean(),
   manual_rubric_grading_id: IdSchema.nullable(),
   mode: EnumModeSchema.nullable(),
+  modified_at: DateFromISOString,
   override_score: z.number().nullable(),
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
+  regradable: z.boolean().default(false),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -1007,6 +1062,8 @@ export const TagSchema = z.object({
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
+
+export const TimeSeriesSchema = null;
 
 export const TopicSchema = z.object({
   color: z.string(),
@@ -1040,6 +1097,7 @@ export const UserSessionSchema = z.object({
   id: IdSchema,
   session_id: z.string(),
   created_at: DateFromISOString,
+  revoked_at: DateFromISOString.nullable(),
   updated_at: DateFromISOString,
   expires_at: DateFromISOString,
   user_id: IdSchema.nullable(),
@@ -1052,6 +1110,7 @@ export const VariantSchema = z.object({
   broken: z.boolean().nullable(),
   broken_at: DateFromISOString.nullable(),
   broken_by: IdSchema.nullable(),
+  client_fingerprint_id: IdSchema.nullable(),
   course_id: IdSchema,
   course_instance_id: IdSchema.nullable(),
   date: DateFromISOString.nullable(),
@@ -1060,6 +1119,7 @@ export const VariantSchema = z.object({
   group_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id: IdSchema.nullable(),
+  modified_at: DateFromISOString,
   num_tries: z.number(),
   number: z.number().nullable(),
   open: z.boolean().nullable(),
@@ -1072,6 +1132,8 @@ export const VariantSchema = z.object({
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;
+
+export const VariantViewLogSchema = null;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
@@ -1113,6 +1175,8 @@ export const WorkspaceHostSchema = z.object({
   unhealthy_reason: z.string().nullable(),
 });
 export type WorkspaceHost = z.infer<typeof WorkspaceHostSchema>;
+
+export const WorkspaceHostLogSchema = null;
 
 export const WorkspaceLogSchema = z.object({
   date: DateFromISOString.nullable(),

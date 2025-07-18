@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Modal } from '../../components/Modal.js';
+import { Navbar } from '../../components/Navbar.js';
+import { PageLayout } from '../../components/PageLayout.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -31,7 +31,7 @@ export function Enroll({
       type: 'plain',
       page: 'enroll',
     },
-    headContent: [compiledScriptTag('enrollClient.ts')],
+    headContent: compiledScriptTag('enrollClient.ts'),
     preContent: html`
       ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
       ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}

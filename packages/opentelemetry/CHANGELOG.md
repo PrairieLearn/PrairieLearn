@@ -1,5 +1,17 @@
 # @prairielearn/opentelemetry
 
+## 2.1.16
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.1.15
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
 ## 2.1.14
 
 ### Patch Changes
@@ -192,7 +204,6 @@
 ### Minor Changes
 
 - cfbab7a69: The following types are now exported:
-
   - `Meter`
   - `Counter`
   - `Histogram`

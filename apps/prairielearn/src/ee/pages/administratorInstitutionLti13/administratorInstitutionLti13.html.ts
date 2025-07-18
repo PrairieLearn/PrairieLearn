@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -28,7 +28,7 @@ export function AdministratorInstitutionLti13({
       institution,
     },
     pageTitle: 'LTI 1.3 - Institution Admin',
-    headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
+    headContent: compiledScriptTag('administratorInstitutionLti13Client.ts'),
     navContext: {
       type: 'administrator_institution',
       page: 'administrator_institution',

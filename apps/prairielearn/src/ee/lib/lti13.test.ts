@@ -1,11 +1,10 @@
-import { assert } from 'chai';
-import express from 'express';
-import { step } from 'mocha-steps';
+import express, { type Request, type Response } from 'express';
+import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { fetchRetry, fetchRetryPaginated } from './lti13.js';
+import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
 const PRODUCTS = [
   'Apple',
@@ -36,7 +35,7 @@ const PRODUCTS = [
   'Zucchini',
 ];
 
-function productApi(req: express.Request, res: express.Response) {
+function productApi(req: Request, res: Response) {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
 
@@ -65,7 +64,7 @@ function productApi(req: express.Request, res: express.Response) {
   res.json(returning);
 }
 
-describe('fetchRetry()', async () => {
+describe('fetchRetry()', () => {
   const app = express();
 
   // Run a server to respond to API requests.
@@ -92,11 +91,7 @@ describe('fetchRetry()', async () => {
 
   let apiCount: number;
 
-  // Thanks chatGPT
-
-  before(async () => {});
-
-  step('should return the full list by iterating', async () => {
+  test.sequential('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url, {}, { sleepMs: 100 });
@@ -109,7 +104,7 @@ describe('fetchRetry()', async () => {
     });
   });
 
-  step('should return the full list with a large limit', async () => {
+  test.sequential('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const res = await fetchRetry(url + '?limit=100', {}, { sleepMs: 100 });
@@ -123,15 +118,17 @@ describe('fetchRetry()', async () => {
     });
   });
 
-  step('should throw an error on all 403s', async () => {
+  test.sequential('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
-      await assert.isRejected(fetchRetry(url + '/403all', {}, { sleepMs: 100 }), /fetch error/);
+      await expect(fetchRetry(url + '/403all', {}, { sleepMs: 100 })).rejects.toThrow(
+        /fetch error/,
+      );
       assert.equal(apiCount, 5);
     });
   });
 
-  step('should return the full list by iterating with intermittent 403s', async () => {
+  test.sequential('should return the full list by iterating with intermittent 403s', async () => {
     apiCount = 0;
     await withServer(app, async ({ url }) => {
       const resultArray = await fetchRetryPaginated(url + '/403oddAttempt', {}, { sleepMs: 100 });
@@ -141,5 +138,63 @@ describe('fetchRetry()', async () => {
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 6);
     });
+  });
+});
+
+describe('findValueByKey() generic tests', () => {
+  const generic = {
+    val1: 'one',
+    nest1: {
+      val2: 'two',
+    },
+    array1: [null, { val3: 'three' }],
+    nest2: {
+      val1: 'nest2',
+    },
+  };
+
+  test('Top level', () => {
+    assert.equal(findValueByKey(generic, 'val1'), 'one');
+  });
+  test('Nested object', () => {
+    assert.equal(findValueByKey(generic, 'val2'), 'two');
+  });
+  test('Nested array', () => {
+    assert.equal(findValueByKey(generic, 'val3'), 'three');
+  });
+  test('Missing value is undefined', () => {
+    assert.isUndefined(findValueByKey(generic, 'missing'));
+  });
+});
+
+describe('findValueByKey() Canvas errors', () => {
+  test('course concluded', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message:
+              'This course has concluded. AGS requests will no longer be accepted for this course.',
+          },
+        },
+        'message',
+      ),
+      'This course has concluded. AGS requests will no longer be accepted for this course.',
+    );
+  });
+  test('user not found', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message: 'User not found in course or is not a student',
+          },
+        },
+        'message',
+      ),
+      'User not found in course or is not a student',
+    );
   });
 });
