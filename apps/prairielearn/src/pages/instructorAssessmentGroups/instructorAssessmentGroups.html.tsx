@@ -274,7 +274,7 @@ export function InstructorAssessmentGroups({
                       : html`
                           <strong>
                             ${notAssigned?.length
-                              ? html` 
+                              ? html`
                         ${notAssigned?.length}
                         student${notAssigned?.length > 1 ? html`s` : ''} not yet
                         assigned:
