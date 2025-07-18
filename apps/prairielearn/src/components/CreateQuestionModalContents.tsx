@@ -45,10 +45,10 @@ function SelectableCard({
       onKeyDown={handleKeyDown}
     >
       <div class="card-body text-center d-flex flex-column justify-content-center">
-        <div id={`${id}_title`} class={clsx('card-title', { 'text-primary': selected })}>
+        <div id={`${id}_title`} class={clsx('card-title', { 'text-primary fw-bold': selected })}>
           {title}
         </div>
-        <div id={`${id}_description`} class="card-text text-muted small mb-0">
+        <div id={`${id}_description`} class={clsx('card-text small', { 'text-muted': !selected })}>
           {description}
         </div>
       </div>
@@ -143,7 +143,7 @@ export function CreateQuestionModalContents({
 }: {
   templateQuestions: { example_course: boolean; qid: string; title: string }[];
 }) {
-  const [startFrom, setStartFrom] = useState('empty');
+  const [startFrom, setStartFrom] = useState('example');
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
 
   const hasCourseTemplates = templateQuestions.some(({ example_course }) => !example_course);
@@ -159,26 +159,17 @@ export function CreateQuestionModalContents({
     });
   }, [startFrom, templateQuestions]);
 
-  const selectedTemplate = filteredTemplateQuestions.find((q) => q.qid === selectedTemplateQid);
-
+  const selectedTemplate = filteredTemplateQuestions.find(({ qid }) => qid === selectedTemplateQid);
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
   // Build start from options based on available templates
-  const startFromOptions = [
-    {
-      id: 'empty',
-      title: 'Empty question',
-      description: 'Start with a blank question and build from scratch',
-    },
-  ];
+  const startFromOptions: { id: string; title: string; description: string }[] = [];
 
-  if (hasExampleTemplates) {
-    startFromOptions.push({
-      id: 'example',
-      title: 'PrairieLearn template',
-      description: 'Start with a pre-built question template',
-    });
-  }
+  startFromOptions.push({
+    id: 'example',
+    title: 'PrairieLearn template',
+    description: 'Start with a pre-built question template',
+  });
 
   if (hasCourseTemplates) {
     startFromOptions.push({
@@ -187,6 +178,12 @@ export function CreateQuestionModalContents({
       description: 'Start with a template from your course',
     });
   }
+
+  startFromOptions.push({
+    id: 'empty',
+    title: 'Empty question',
+    description: 'Start with a blank question and build from scratch',
+  });
 
   return (
     <>
@@ -249,9 +246,10 @@ export function CreateQuestionModalContents({
             name="template_qid"
             required
             aria-describedby="template_help"
-            value={selectedTemplate?.qid ?? filteredTemplateQuestions[0]?.qid ?? ''}
+            value={selectedTemplate?.qid ?? ''}
             onChange={(e) => setSelectedTemplateQid((e.target as HTMLSelectElement).value)}
           >
+            <option value="">Select a template...</option>
             {filteredTemplateQuestions.map((question) => (
               <option key={question.qid} value={question.qid}>
                 {question.title}
