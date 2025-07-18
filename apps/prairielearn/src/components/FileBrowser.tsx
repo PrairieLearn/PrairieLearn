@@ -25,7 +25,7 @@ import {
   CourseSyncErrorsAndWarnings,
   QuestionSyncErrorsAndWarnings,
 } from './SyncErrorsAndWarnings.js';
-import { SyncProblemButton, SyncProblemButtonHtml } from './SyncProblemButton.js';
+import { SyncProblemButtonHtml } from './SyncProblemButton.js';
 
 interface FileInfo {
   id: number;

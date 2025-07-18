@@ -4,12 +4,12 @@ import { html, joinHtml } from '@prairielearn/html';
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
-import { TopicBadge, TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
+import { renderHtml } from '../../../src/lib/preact-html.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
-import { renderHtml } from '../../../src/lib/preact-html.js';
 
 // Allows records like 'Prefix...Suffix'. If key extends `${P}${K}${S}`, allowed, otherwise never.
 type PrefixSuffixObjectKeys<T extends Record<string, any>, P extends string, S extends string> = {

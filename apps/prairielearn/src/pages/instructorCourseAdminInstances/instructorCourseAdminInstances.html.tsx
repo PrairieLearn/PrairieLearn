@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { SyncProblemButton, SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';

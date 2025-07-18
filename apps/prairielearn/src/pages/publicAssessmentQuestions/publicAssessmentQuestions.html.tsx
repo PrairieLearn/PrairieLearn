@@ -7,7 +7,7 @@ import {
 } from '../../components/AssessmentQuestions.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
-import { TopicBadge, TopicBadgeHtml } from '../../components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';

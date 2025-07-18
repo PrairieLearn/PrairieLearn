@@ -4,12 +4,12 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { TagBadge } from '../../src/components/TagBadge.js';
-import { TopicBadge, TopicBadgeHtml } from '../../src/components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
+import { renderHtml } from '../../src/lib/preact-html.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
-import { renderHtml } from '../../src/lib/preact-html.js';
 
 onDocumentReady(() => {
   const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;

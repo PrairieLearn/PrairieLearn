@@ -4,7 +4,7 @@ import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeadin
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { SyncProblemButton, SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { idsEqual } from '../../lib/id.js';
 import type { AssessmentRow } from '../../models/assessment.js';
 
