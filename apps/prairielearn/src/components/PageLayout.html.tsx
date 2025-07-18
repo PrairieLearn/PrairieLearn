@@ -159,14 +159,14 @@ export function PageLayout({
               : ''}
             <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
-                ${resLocals.assessment &&
-                resLocals.course_instance &&
-                AssessmentNavigation({
-                  courseInstanceId: resLocals.course_instance.id,
-                  subPage: navContext.subPage,
-                  assessment: resLocals.assessment,
-                  assessmentSet: resLocals.assessment_set,
-                })}
+                ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
+                  ? AssessmentNavigation({
+                      courseInstanceId: resLocals.course_instance.id,
+                      subPage: navContext.subPage,
+                      assessment: resLocals.assessment,
+                      assessmentSet: resLocals.assessment_set,
+                    })
+                  : ''}
                 ${showContextNavigation
                   ? ContextNavigation({
                       resLocals,

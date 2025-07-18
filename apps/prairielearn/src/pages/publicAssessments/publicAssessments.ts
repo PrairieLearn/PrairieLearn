@@ -6,8 +6,10 @@ import * as error from '@prairielearn/error';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { selectAssessments } from '../../models/assessment.js';
-import { selectCourseInstanceIsPublic } from '../../models/course-instances.js';
-import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
+import {
+  selectCourseInstanceIsPublic,
+  selectOptionalCourseInstanceById,
+} from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
 
