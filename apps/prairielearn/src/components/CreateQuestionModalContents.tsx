@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 
 interface SelectableCardProps {
@@ -30,24 +31,30 @@ function SelectableCard({
   return (
     <div
       ref={cardRef}
-      class={`card h-100 ${selected ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary'}`}
+      class={clsx('card h-100', {
+        'border-primary bg-primary bg-opacity-10': selected,
+        'border-secondary': !selected,
+      })}
       style={{ cursor: 'pointer' }}
       role="radio"
       tabIndex={selected ? 0 : -1}
       aria-checked={selected}
+      aria-labelledby={`${id}_title`}
       aria-describedby={`${id}_description`}
       onClick={onClick}
       onKeyDown={handleKeyDown}
     >
       <div class="card-body text-center d-flex flex-column justify-content-center">
-        <h5 class={`card-title ${selected ? 'text-primary' : ''}`}>{title}</h5>
-        <p id={`${id}_description`} class="card-text text-muted small mb-0">
+        <div id={`${id}_title`} class={clsx('card-title', { 'text-primary': selected })}>
+          {title}
+        </div>
+        <div id={`${id}_description`} class="card-text text-muted small mb-0">
           {description}
-        </p>
+        </div>
       </div>
       {selected && (
         <div class="position-absolute top-0 end-0 p-2">
-          <i class="fa fa-check-circle text-primary" aria-label="Selected"></i>
+          <i class="fa fa-check-circle text-primary" aria-hidden="true"></i>
         </div>
       )}
     </div>

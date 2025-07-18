@@ -15,5 +15,13 @@ import type { VNode } from '@prairielearn/preact-cjs';
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
 export function renderHtml(vnode: VNode): HtmlSafeString {
-  return unsafeHtml(render(vnode, {}, { pretty: false, jsx: false }));
+  let pretty = false;
+
+  // In development mode, render HTML with pretty formatting. This is easier to
+  // debug, especially in test cases.
+  if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    pretty = true;
+  }
+
+  return unsafeHtml(render(vnode, {}, { pretty, jsx: false }));
 }
