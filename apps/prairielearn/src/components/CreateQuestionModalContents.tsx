@@ -7,8 +7,8 @@ interface SelectableCardProps {
   description: string;
   selected: boolean;
   onClick: () => void;
-  onKeyDown?: (e: KeyboardEvent) => void;
-  cardRef?: (el: HTMLElement | null) => void;
+  onKeyDown: (e: KeyboardEvent) => void;
+  cardRef: (el: HTMLElement | null) => void;
 }
 
 function SelectableCard({
@@ -25,7 +25,7 @@ function SelectableCard({
       e.preventDefault();
       onClick();
     }
-    onKeyDown?.(e);
+    onKeyDown(e);
   };
 
   return (
