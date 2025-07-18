@@ -117,12 +117,12 @@ function SampleQuestionSelector({
         </DropdownMenu>
       </Dropdown>
       <div class="d-flex align-items-center gap-2">
-        <Button onClick={onClickPrevious} disabled={selectedQuestionIndex === 0}>
+        <Button disabled={selectedQuestionIndex === 0} onClick={onClickPrevious}>
           Previous
         </Button>
         <Button
-          onClick={onClickNext}
           disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
+          onClick={onClickNext}
         >
           Next
         </Button>
