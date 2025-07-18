@@ -2,10 +2,10 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   compiledScriptTag,
@@ -136,10 +136,6 @@ export function AssessmentQuestion({
 
       ${aiGradingEnabled && aiGradingMode
         ? html`
-            <form method="POST" id="ai-grading">
-              <input type="hidden" name="__action" value="ai_grade_assessment" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
             <form method="POST" id="ai-grading-graded">
               <input type="hidden" name="__action" value="ai_grade_assessment_graded" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -291,13 +287,6 @@ export function AssessmentQuestion({
                         <i class="bi bi-stars" aria-hidden="true"></i> AI grading
                       </button>
                       <div class="dropdown-menu dropdown-menu-end">
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          onclick="$('#ai-grading').submit();"
-                        >
-                          Grade all ungraded
-                        </button>
                         <button
                           class="dropdown-item"
                           type="button"

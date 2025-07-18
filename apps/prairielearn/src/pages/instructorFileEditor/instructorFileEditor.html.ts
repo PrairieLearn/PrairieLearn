@@ -1,7 +1,7 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';

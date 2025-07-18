@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
