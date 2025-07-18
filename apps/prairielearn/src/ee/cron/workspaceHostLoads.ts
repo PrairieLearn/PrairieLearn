@@ -1,12 +1,12 @@
 import { CloudWatch, type MetricDatum } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
+import z from 'zod/v3';
 
 import { callRow, loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 import * as workspaceHostUtils from '../../lib/workspaceHost.js';
-import z from 'zod/v3';
 
 const sql = loadSqlEquiv(import.meta.url);
 

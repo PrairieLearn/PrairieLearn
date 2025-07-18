@@ -5,10 +5,11 @@ import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
 import { v4 as uuid } from 'uuid';
 import * as xml2js from 'xml2js';
+import z from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import z from 'zod';
+
 import { AssessmentInstanceSchema, LtiCredentialSchema, LtiOutcomeSchema } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

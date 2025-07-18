@@ -34,11 +34,11 @@ import * as b64Util from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
-  AssessmentSchema,
-  CourseInstanceSchema,
   type Assessment,
+  AssessmentSchema,
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Question,
   type User,
 } from './db-types.js';

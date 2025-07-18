@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import * as filePaths from '../../lib/file-paths.js';
-import z from 'zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();

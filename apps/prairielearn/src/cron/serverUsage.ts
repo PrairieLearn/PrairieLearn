@@ -1,10 +1,10 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import z from 'zod/v3';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../lib/aws.js';
 import { config } from '../lib/config.js';
-import z from 'zod/v3';
 
 export async function run() {
   if (!config.runningInEc2) return;

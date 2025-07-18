@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -5,9 +6,8 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { APP_ROOT_PATH } from './paths.js';
 import { QuestionSchema } from './db-types.js';
-import assert from 'node:assert';
+import { APP_ROOT_PATH } from './paths.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');

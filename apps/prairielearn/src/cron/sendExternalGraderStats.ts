@@ -1,9 +1,10 @@
+import z from 'zod';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import * as opsbot from '../lib/opsbot.js';
-import z from 'zod';
 
 export async function run() {
   if (!opsbot.canSendMessages()) return;

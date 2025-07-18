@@ -4,15 +4,14 @@ import type { Socket } from 'net';
 import { type Request, type Response } from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type * as httpProxyMiddleware from 'http-proxy-middleware';
-import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import { queryOneRowAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { LocalCache } from '../lib/local-cache.js';
 import { WorkspaceSchema } from '../lib/db-types.js';
+import { LocalCache } from '../lib/local-cache.js';
 
 const WORKSPACE_CONTAINER_PATH_REGEXP = /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/;
 

@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCourseOwners } from '../../lib/course.js';
+import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 
 import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
-import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
-import z from 'zod';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

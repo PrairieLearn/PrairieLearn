@@ -2,11 +2,13 @@ import { S3 } from '@aws-sdk/client-s3';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fetch from 'node-fetch';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
 
 import {
   type WorkspaceLogRow,
@@ -14,8 +16,6 @@ import {
   WorkspaceLogs,
   WorkspaceVersionLogs,
 } from './workspaceLogs.html.js';
-import z from 'zod';
-import { WorkspaceHostSchema, WorkspaceSchema } from '../../lib/db-types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
