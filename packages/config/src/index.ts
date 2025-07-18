@@ -100,7 +100,8 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   async loadAndValidate(sources: ConfigSource[] = []) {
-    let config = this.schema.parse({});
+    // TODO: improve type of config
+    let config = this.schema.parse({}) as AbstractConfig;
     // If the config setting is an array, override instead of merge
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
