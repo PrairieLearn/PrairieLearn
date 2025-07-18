@@ -1,6 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { InsufficientCoursePermissionsCard } from '../../components/InsufficientCoursePermissionsCard.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PageLayout } from '../../components/PageLayout.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -79,8 +80,10 @@ export function InstructorGradebook({
         />,
       )}
       ${!authz_data.has_course_instance_permission_view
-        ? StudentDataViewMissing({
+        ? InsufficientCoursePermissionsCard({
             courseOwners,
+            pageTitle: 'Gradebook',
+            requiredPermissions: 'Student data viewer',
             hasCoursePermissionOwn: authz_data.has_course_permission_own,
             urlPrefix,
           })
@@ -99,45 +102,6 @@ export function InstructorGradebook({
           `}
     `,
   });
-}
-
-function StudentDataViewMissing({
-  courseOwners,
-  hasCoursePermissionOwn,
-  urlPrefix,
-}: {
-  courseOwners: any[];
-  hasCoursePermissionOwn: boolean;
-  urlPrefix: string;
-}) {
-  return html`
-    <div class="card mb-4">
-      <div class="card-header bg-danger text-white">
-        <h1>Gradebook</h1>
-      </div>
-      <div class="card-body">
-        <h2>Insufficient permissions</h2>
-        <p>You must have permission to view student data in order to access the gradebook.</p>
-        ${hasCoursePermissionOwn
-          ? html`
-              <p>
-                You can grant yourself access to student data on the course's
-                <a href="${urlPrefix}/course_admin/staff">Staff tab</a>.
-              </p>
-            `
-          : courseOwners.length > 0
-            ? html`
-                <p>Contact one of the below course owners to request access.</p>
-                <ul>
-                  ${courseOwners.map(
-                    (owner) => html`<li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>`,
-                  )}
-                </ul>
-              `
-            : ''}
-      </div>
-    </div>
-  `;
 }
 
 function RoleDescriptionModal() {
