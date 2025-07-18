@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
