@@ -1,4 +1,4 @@
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { Hydrate } from '../../../lib/preact.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
