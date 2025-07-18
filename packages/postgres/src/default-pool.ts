@@ -94,7 +94,6 @@ export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
  * @deprecated Use {@link queryOptionalRow} instead.
  */
 export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-// export const call = defaultPool.call.bind(defaultPool);
 /**
  * Calls the given function with the specified parameters.
  */
