@@ -39,9 +39,9 @@ function SelectableCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
     >
-      <div class="card-body text-center">
+      <div class="card-body text-center d-flex flex-column justify-content-center">
         <h5 class={`card-title ${selected ? 'text-primary' : ''}`}>{title}</h5>
-        <p id={`${id}_description`} class="card-text text-muted small">
+        <p id={`${id}_description`} class="card-text text-muted small mb-0">
           {description}
         </p>
       </div>
@@ -59,10 +59,9 @@ interface RadioCardGroupProps {
   value: string;
   options: Array<{ id: string; title: string; description: string }>;
   onChange: (value: string) => void;
-  columnClass: string;
 }
 
-function RadioCardGroup({ label, value, options, onChange, columnClass }: RadioCardGroupProps) {
+function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps) {
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   const handleKeyDown = (e: KeyboardEvent, currentIndex: number) => {
@@ -101,22 +100,30 @@ function RadioCardGroup({ label, value, options, onChange, columnClass }: RadioC
 
   return (
     <fieldset class="mb-3">
-      <legend class="col-form-label">{label}</legend>
-      <div class="row gx-3" role="radiogroup" aria-label={label}>
+      <legend class="form-label">{label}</legend>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: '1rem',
+          gridAutoRows: '1fr',
+        }}
+      >
         {options.map((option, index) => (
-          <div key={option.id} class={columnClass}>
-            <SelectableCard
-              id={option.id}
-              title={option.title}
-              description={option.description}
-              selected={value === option.id}
-              onClick={() => onChange(option.id)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              cardRef={(el) => {
-                cardRefs.current[index] = el;
-              }}
-            />
-          </div>
+          <SelectableCard
+            key={option.id}
+            id={option.id}
+            title={option.title}
+            description={option.description}
+            selected={value === option.id}
+            onClick={() => onChange(option.id)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
+            cardRef={(el) => {
+              cardRefs.current[index] = el;
+            }}
+          />
         ))}
       </div>
     </fieldset>
@@ -166,7 +173,7 @@ export function CreateQuestionModalContents({
     startFromOptions.push({
       id: 'example',
       title: 'PrairieLearn template',
-      description: 'Start with a pre-built PrairieLearn question template',
+      description: 'Start with a pre-built question template',
     });
   }
 
@@ -222,7 +229,6 @@ export function CreateQuestionModalContents({
           value={startFrom}
           options={startFromOptions}
           onChange={setStartFrom}
-          columnClass={startFromOptions.length === 2 ? 'col-md-6' : 'col-md-4'}
         />
       )}
 
