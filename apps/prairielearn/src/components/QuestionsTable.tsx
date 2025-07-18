@@ -8,7 +8,7 @@ import { hydrateHtml } from '../lib/preact.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
 import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

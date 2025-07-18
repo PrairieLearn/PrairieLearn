@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { CommentPopover } from '../../components/CommentPopover.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { CommentPopover } from '../../components/CommentPopover.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
