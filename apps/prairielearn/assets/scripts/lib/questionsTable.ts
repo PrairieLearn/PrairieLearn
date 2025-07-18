@@ -258,42 +258,6 @@ onDocumentReady(() => {
 
   $('#questionsTable').bootstrapTable(tableSettings);
 
-  // The startFromInput either has value 'empty', 'example' or 'course'
-  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
-
-  // The templateQuestionInput lets the user select the template question to
-  // start from, and is only enabled when the startFromInput is set to 'example'
-  // or 'course'
-  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
-
-  // The templateContainerDiv is hidden when the startFromInput is set to
-  // 'empty', otherwise it is shown.
-  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
-
-  if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
-    return;
-  }
-
-  startFromInput.addEventListener('change', () => {
-    // If the startFromInput is set to 'example' or 'course', the
-    // templateQuestionInput should be visible and enabled; otherwise, it should
-    // be hidden and disabled.
-    const isTemplateSelected = ['example', 'course'].includes(startFromInput.value);
-    templateQuestionInput.disabled = !isTemplateSelected;
-    templateContainerDiv.hidden = !isTemplateSelected;
-    // Only show template options that match the selected template type.
-    templateQuestionInput.querySelectorAll('option').forEach((option) => {
-      option.hidden = startFromInput.value !== option.dataset.templateSource;
-    });
-    // If the current selection is hidden, change selection to first non-hidden template
-    const selectedOption = templateQuestionInput.querySelector<HTMLOptionElement>('option:checked');
-    if (selectedOption?.hidden) {
-      const visibleOption =
-        templateQuestionInput.querySelector<HTMLOptionElement>('option:not([hidden])');
-      if (visibleOption) templateQuestionInput.value = visibleOption.value;
-    }
-  });
-
   $(document).keydown((event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
