@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
+import {
+  AdministratorSchema,
+  type Institution,
+  InstitutionAdministratorSchema,
+  InstitutionSchema,
+} from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -22,7 +27,7 @@ export async function selectAndAuthzInstitutionAsAdmin({
     z.object({
       institution: InstitutionSchema,
       administrator: AdministratorSchema.nullable(),
-      institution_administrator: AdministratorSchema.nullable(),
+      institution_administrator: InstitutionAdministratorSchema.nullable(),
     }),
   );
 

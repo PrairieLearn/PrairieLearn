@@ -11,6 +11,7 @@ import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
+  type AssessmentQuestionStatsRow,
   AssessmentQuestionStatsRowSchema,
   InstructorQuestionStatistics,
 } from './instructorQuestionStatistics.html.js';
@@ -59,11 +60,15 @@ router.get(
     }
 
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryCursor(sql.assessment_question_stats, {
-        question_id: res.locals.question.id,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.assessment_question_stats,
+        {
+          question_id: res.locals.question.id,
+        },
+        AssessmentQuestionStatsRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentQuestionStatsRow>({
         header: true,
         columns: [
           'Course',

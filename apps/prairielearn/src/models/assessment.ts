@@ -66,6 +66,7 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+  name: AssessmentSetSchema.shape.name,
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema,

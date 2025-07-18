@@ -13,6 +13,7 @@ import {
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
   updateAssessmentInstanceScore,
+  type InstanceLogEntry,
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
@@ -115,7 +116,7 @@ router.get(
       );
       const fingerprintNumbers = new Map();
       let i = 1;
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<InstanceLogEntry>({
         header: true,
         columns: [
           'Time',
