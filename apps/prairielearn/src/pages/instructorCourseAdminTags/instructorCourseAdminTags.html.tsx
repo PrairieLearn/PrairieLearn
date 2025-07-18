@@ -52,7 +52,7 @@ export function InstructorCourseAdminTags({
                 (tag) => html`
                   <tr>
                     <td class="align-middle">${tag.number}</td>
-                    <td class="align-middle">${TagBadge(tag)}</td>
+                    <td class="align-middle">${renderHtml(<TagBadge tag={tag} />)}</td>
                     <td class="align-middle">${tag.color}</td>
                     <td class="align-middle">${TagDescription(tag)}</td>
                   </tr>

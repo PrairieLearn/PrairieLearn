@@ -4,7 +4,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 
 import { isEnterprise } from '../lib/license.js';
 
-import { IssueBadge } from './IssueBadge.js';
+import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.js';
 
@@ -73,7 +73,7 @@ const sideNavPagesTabs = {
       iconClasses: 'fas fa-bug fa-fw',
       tabLabel: 'Issues',
       htmlSuffix: ({ navbarOpenIssueCount }) =>
-        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
+        IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],

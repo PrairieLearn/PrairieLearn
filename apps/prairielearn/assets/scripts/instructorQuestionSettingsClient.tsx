@@ -4,8 +4,9 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { TagBadge } from '../../src/components/TagBadge.js';
-import { TopicBadge } from '../../src/components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
+import { renderHtml } from '../../src/lib/preact-html.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
@@ -52,7 +53,7 @@ onDocumentReady(() => {
         option(data: Topic) {
           return html`
             <div>
-              ${TopicBadge(data)}
+              ${TopicBadgeHtml(data)}
               <div>
                 <small>${data.description}</small>
               </div>
@@ -60,7 +61,7 @@ onDocumentReady(() => {
           `.toString();
         },
         item(data: Topic) {
-          return TopicBadge(data).toString();
+          return TopicBadgeHtml(data).toString();
         },
       },
     });
@@ -75,7 +76,7 @@ onDocumentReady(() => {
         option(data: Tag) {
           return html`
             <div>
-              ${TagBadge(data)}
+              ${renderHtml(<TagBadge tag={data} />)}
               <div>
                 <small>${data.description}</small>
               </div>

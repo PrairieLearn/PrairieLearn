@@ -1,7 +1,6 @@
 import { type Topic } from '../lib/db-types.js';
-import { renderHtml } from '../lib/preact-html.js';
 
-export function TopicDescriptionJsx({ topic }: { topic: Topic }) {
+export function TopicDescription({ topic }: { topic: Topic }) {
   if (!topic.implicit) {
     return <>{topic.description}</>;
   }
@@ -12,8 +11,4 @@ export function TopicDescriptionJsx({ topic }: { topic: Topic }) {
       customize
     </span>
   );
-}
-
-export function TopicDescription(topic: Topic) {
-  return renderHtml(<TopicDescriptionJsx topic={topic} />);
 }
