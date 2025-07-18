@@ -41,6 +41,15 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
+
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
@@ -442,7 +451,10 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  user_id: IdSchema,
+  lti_synced: z.boolean(),
+  pending_uid: z.string().nullable(),
+  status: EnumEnrollmentStatusSchema,
+  user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
@@ -1042,7 +1054,7 @@ export const SubmissionSchema = z.object({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
-  regradable: z.boolean().default(false),
+  regradable: z.boolean(),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
