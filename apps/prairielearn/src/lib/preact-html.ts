@@ -18,7 +18,8 @@ export function renderHtml(vnode: VNode): HtmlSafeString {
   let pretty = false;
 
   // In development mode, render HTML with pretty formatting. This is easier to
-  // debug, especially in test cases.
+  // debug, especially in test cases. This will only do anything on the server,
+  // but that's fine as we won't ever be looking at HTML that's rendered on the client.
   if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
     pretty = true;
   }
