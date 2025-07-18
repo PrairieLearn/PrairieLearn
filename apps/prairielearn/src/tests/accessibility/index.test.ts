@@ -99,6 +99,8 @@ async function checkPage(url: string) {
       'unique-landmark': 'off',
       'void-style': 'off',
       'wcag/h63': 'off',
+      // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
+      'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio'] }],
     },
   });
 
