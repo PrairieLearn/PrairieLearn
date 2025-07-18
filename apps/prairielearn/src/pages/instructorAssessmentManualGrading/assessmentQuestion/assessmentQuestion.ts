@@ -213,6 +213,7 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+        image_rag_enabled: true
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
