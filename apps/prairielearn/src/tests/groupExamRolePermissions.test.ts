@@ -1,17 +1,12 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import z from 'zod';
 
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOneRowAsync,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -153,11 +148,14 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentResult = await queryOneRowAsync(sql.select_assessment, {
-    assessment_tid: GROUP_WORK_EXAM_TID,
-  });
-  assert.lengthOf(assessmentResult.rows, 1);
-  const assessmentId = assessmentResult.rows[0].id;
+  const assessmentResult = await queryRow(
+    sql.select_assessment,
+    {
+      assessment_tid: GROUP_WORK_EXAM_TID,
+    },
+    z.object({ id: IdSchema }),
+  );
+  const assessmentId = assessmentResult.id;
   assert.isDefined(assessmentId);
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
@@ -245,10 +243,13 @@ async function prepareGroup() {
   $ = cheerio.load(await response.text());
 
   // Check there is now one assessment instance in database
-  const assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-  assert.lengthOf(assessmentInstancesResult.rows, 1);
-  assert.equal(assessmentInstancesResult.rows[0].group_id, 1);
-  const assessmentInstanceId = assessmentInstancesResult.rows[0].id;
+  const assessmentInstanceResult = await queryRow(
+    sql.select_all_assessment_instance,
+    [],
+    AssessmentInstanceSchema,
+  );
+  assert.equal(assessmentInstanceResult.group_id, '1');
+  const assessmentInstanceId = assessmentInstanceResult.id;
 
   return {
     assessmentInstanceUrl: courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId,

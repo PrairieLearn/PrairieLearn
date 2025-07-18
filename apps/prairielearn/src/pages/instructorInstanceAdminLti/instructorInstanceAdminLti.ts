@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCourseOwners } from '../../lib/course.js';
+import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 
 import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
 
@@ -20,10 +22,38 @@ router.get(
       return;
     }
 
-    const result = await sqldb.queryAsync(sql.lti_data, {
-      course_instance_id: res.locals.course_instance.id,
-    });
-    Object.assign(res.locals, result.rows[0]);
+    const result = await sqldb.queryRow(
+      sql.lti_data,
+      {
+        course_instance_id: res.locals.course_instance.id,
+      },
+      z.object({
+        assessments: z.object({
+          assessment_id: AssessmentSchema.shape.id,
+          label: z.string(),
+          title: AssessmentSchema.shape.title,
+          tid: AssessmentSchema.shape.tid,
+        }),
+        lti_credentials: z.object({
+          id: LtiCredentialSchema.shape.id,
+          course_instance_id: LtiCredentialSchema.shape.course_instance_id,
+          consumer_key: LtiCredentialSchema.shape.consumer_key,
+          secret: LtiCredentialSchema.shape.secret,
+          created: z.string(),
+          deleted: z.string(),
+          created_at: LtiCredentialSchema.shape.created_at,
+        }),
+        lti_links: z.object({
+          id: LtiLinkSchema.shape.id,
+          resource_link_title: LtiLinkSchema.shape.resource_link_title,
+          resource_link_description: LtiLinkSchema.shape.resource_link_description,
+          assessment_id: LtiLinkSchema.shape.assessment_id,
+          created_at: LtiLinkSchema.shape.created_at,
+          created: z.string(),
+        }),
+      }),
+    );
+    Object.assign(res.locals, result);
 
     res.send(InstructorInstanceAdminLti({ resLocals: res.locals }));
   }),
