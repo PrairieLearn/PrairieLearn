@@ -109,7 +109,7 @@ export function getUniqueNames({
   longName = 'New',
 }: {
   shortNames: string[];
-  longNames: string[];
+  longNames: (string | null)[];
   /**
    * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
    * Long name is matched case-sensitively
@@ -145,7 +145,7 @@ export function getUniqueNames({
     return numberOfMostRecentCopy;
   }
 
-  function getNumberLongName(oldLongNames: string[]): number {
+  function getNumberLongName(oldLongNames: (string | null)[]): number {
     let numberOfMostRecentCopy = 1;
     // longName is a copy of oldLongName if:
     // it matches exactly, or
@@ -557,7 +557,7 @@ function getNamesForCopy(
   oldShortName: string,
   shortNames: string[],
   oldLongName: string | null,
-  longNames: string[],
+  longNames: (string | null)[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
     const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
@@ -594,7 +594,7 @@ function getNamesForCopy(
     return number;
   }
 
-  function getNumberLongName(basename: string, oldnames: string[]): number {
+  function getNumberLongName(basename: string, oldnames: (string | null)[]): number {
     let number = 1;
     oldnames.forEach((oldname) => {
       if (typeof oldname !== 'string') return;
@@ -1753,7 +1753,7 @@ export class QuestionRenameEditor extends Editor {
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryRows(
+    const assessments = await sqldb.queryRows(
       sql.select_assessments_with_question,
       {
         question_id: this.question.id,
@@ -1763,7 +1763,6 @@ export class QuestionRenameEditor extends Editor {
         assessment_directory: AssessmentSchema.shape.tid,
       }),
     );
-    const assessments = result;
 
     const pathsToAdd = [oldPath, newPath];
 
@@ -1771,6 +1770,11 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',
