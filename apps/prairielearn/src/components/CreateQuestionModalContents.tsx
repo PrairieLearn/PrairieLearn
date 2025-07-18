@@ -214,7 +214,7 @@ export function CreateQuestionModalContents({
           id="qid"
           name="qid"
           required
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="[\-A-Za-z0-9_\/]+"
           aria-describedby="qid_help"
         />
         <small id="qid_help" class="form-text text-muted">
