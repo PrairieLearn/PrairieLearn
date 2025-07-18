@@ -146,7 +146,7 @@
     "mime": "^4.0.7",
     "minimist": "^1.2.8",
     "morphdom": "^2.7.5",
-    "multer": "^2.0.1",
+    "multer": "^2.0.2",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",
