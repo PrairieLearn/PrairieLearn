@@ -13,7 +13,12 @@ export function Lti13Test({
 }: {
   resLocals: Record<string, any>;
   lti13_claims: Record<string, any>;
-  userInfo: LoadUserAuth;
+  userInfo: {
+    uin: string | null;
+    uid: string | null;
+    name: string | null;
+    email: string | null;
+  };
   lti13_instance: Lti13Instance;
   url: URL;
 }) {
