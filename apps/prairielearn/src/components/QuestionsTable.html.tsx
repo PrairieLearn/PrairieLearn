@@ -41,7 +41,7 @@ export function QuestionsTable({
   /**
    * The template questions the user can select as a starting point when creating a new question.
    */
-  templateQuestions?: { qid: string; title: string }[];
+  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -270,7 +270,7 @@ function CreateQuestionModal({
   templateQuestions,
 }: {
   csrfToken: string;
-  templateQuestions: { qid: string; title: string }[];
+  templateQuestions: { example_course: boolean; qid: string; title: string }[];
 }) {
   return Modal({
     id: 'createQuestionModal',
@@ -316,8 +316,11 @@ function CreateQuestionModal({
           required
           aria-describedby="start_from_help"
         >
-          <option value="Empty question">Empty question</option>
-          <option value="Template">Template</option>
+          <option value="empty">Empty question</option>
+          <option value="example">PrairieLearn template</option>
+          ${templateQuestions.some(({ example_course }) => !example_course)
+            ? html`<option value="course">Course-specific template</option>`
+            : ''}
         </select>
         <small id="start_from_help" class="form-text text-muted">
           Begin with an empty question or a pre-made question template.
@@ -335,11 +338,18 @@ function CreateQuestionModal({
           disabled
         >
           ${templateQuestions.map(
-            (question) => html`<option value="${question.qid}">${question.title}</option>`,
+            (question) =>
+              html`<option
+                data-template-source="${question.example_course ? 'example' : 'course'}"
+                value="${question.qid}"
+              >
+                ${question.title}
+              </option>`,
           )}
         </select>
         <small id="template_help" class="form-text text-muted">
-          The question will be created from this template.
+          The question will be created from this template. To create your own template, create a
+          question with a QID starting with "<code>template/</code>".
         </small>
       </div>
     `,
