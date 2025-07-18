@@ -7,7 +7,7 @@ import {
   AdministratorQueryResultSchema,
   type AdministratorQuerySpecs,
 } from '../../admin_queries/lib/util.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
