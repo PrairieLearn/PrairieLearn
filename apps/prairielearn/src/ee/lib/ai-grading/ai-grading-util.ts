@@ -90,7 +90,7 @@ export async function generatePrompt({
 }): Promise<{
   messages: ChatCompletionMessageParam[];
 }> {
-  const messages: ChatCompletionMessageParam[] = [];
+  let messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -146,10 +146,23 @@ export async function generatePrompt({
       for (const item of rubric_grading_items) {
         rubric_grading_info += `description: ${item.description}\n`;
       }
-      messages.push({
-        role: 'user',
-        content: `Example student response: \n<response>\n${example.submission_text} \n<response>\nSelected rubric items for this example student response: \n${rubric_grading_info}`,
-      });
+
+      const submission = await selectLastVariantAndSubmission(example.instance_question_id);
+
+      messages = messages.concat([
+        {
+          role: 'user',
+          content: 'Example student response: \n\n<response>'
+        },
+        generateSubmissionMessage({
+          submission_text: example.submission_text,
+          submitted_answer: submission.submission.submitted_answer
+        }),
+        {
+          role: 'user',
+          content: `</response>\n\nSelected rubric items for this example student response: \n${rubric_grading_info}`,
+        }
+      ]);
     } else {
       messages.push({
         role: 'user',

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
+  callAsync,
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
@@ -14,7 +15,8 @@ import {
 
 import { fillInstanceQuestionColumns } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
+import { type Assessment, type AssessmentQuestion, AssessmentQuestionSchema, GradingJobSchema, IdSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectQuestionById } from '../../../models/question.js';
@@ -141,6 +143,59 @@ router.post(
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
       res.send(await exportAssessmentStatistics(res.locals.assessment as Assessment));
+    } else if (req.body.__action === 'delete_ai_grading_data') {
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_questions = (await selectAssessmentQuestions(
+        assessment.id,
+      )) as AssessmentQuestion[];
+      if (!assessment_questions) {
+        console.log(`No questions found for assessment ${assessment.id}`);
+        return;
+      }
+
+      for (const assessment_question of assessment_questions) {
+        const iqs = await runInTransactionAsync(async () => {
+          const iqs = await queryRows(
+            sql.delete_ai_grading_jobs,
+            {
+              authn_user_id: res.locals.authn_user.user_id,
+              assessment_question_id: assessment_question.id,
+            },
+            z.object({
+              id: IdSchema,
+              assessment_instance_id: IdSchema,
+              max_points: AssessmentQuestionSchema.shape.max_points,
+              max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+              max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+              points: InstanceQuestionSchema.shape.points,
+              score_perc: InstanceQuestionSchema.shape.score_perc,
+              auto_points: InstanceQuestionSchema.shape.auto_points,
+              manual_points: InstanceQuestionSchema.shape.manual_points,
+              most_recent_manual_grading_job: GradingJobSchema.nullable(),
+            }),
+          );
+  
+          for (const iq of iqs) {
+            await callAsync('assessment_instances_grade', [
+              iq.assessment_instance_id,
+              // We use the user who is performing the deletion.
+              res.locals.authn_user.user_id,
+              100, // credit
+              false, // only_log_if_score_updated
+              true, // allow_decrease
+            ]);
+          }
+  
+          return iqs;
+        });
+        
+        for (const iq of iqs) {
+          await ltiOutcomes.updateScore(iq.assessment_instance_id);
+        }
+      }
+
+      flash('success', 'AI grading data deleted successfully.');
+      res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

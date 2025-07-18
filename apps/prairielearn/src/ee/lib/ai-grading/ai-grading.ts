@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import { Clusters } from '@kanaries/ml';
 import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
@@ -23,7 +24,6 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
-import { Clusters } from '@kanaries/ml';
 
 import {
   GradingResultSchema,
@@ -45,7 +45,6 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-const NUM_REFERENCE_SAMPLES = 10;
 
 /**
  * Grade instance questions using AI.
@@ -63,6 +62,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  image_rag_enabled = true,
 }: {
   question: Question;
   course: Course;
@@ -77,6 +77,7 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  image_rag_enabled?: boolean; // Whether to use image RAG for AI grading
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -110,8 +111,6 @@ export async function aiGrade({
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
 
-    let i = 0;
-
     // NOTE: This breaks MCQ autograding
     // - Generate embeddings for each instance question
     // - Cluster them into k=20 clusters
@@ -136,9 +135,10 @@ export async function aiGrade({
     const kmeans = new Clusters.KMeans(20, 0.05);
     const result = kmeans.fitPredict(embeddings);
 
-    let representedClusters: Set<number> = new Set();
-    let representativeSamples: InstanceQuestion[] = [];
-    let reference_submission_ids: string[] = [];
+    const representedClusters = new Set<number>();
+    const representativeSamples: InstanceQuestion[] = [];
+    const reference_submission_ids: string[] = [];
+    const reference_instance_question_ids: string[] = [];
     for (let i = 0; i < result.length; i++) {
       const cluster = result[i];
       if (representedClusters.has(cluster)) {
@@ -149,6 +149,7 @@ export async function aiGrade({
       const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
 
       reference_submission_ids.push(submission.id);
+      reference_instance_question_ids.push(all_instance_questions[i].id);
       representedClusters.add(cluster);
     }
 
@@ -193,7 +194,6 @@ export async function aiGrade({
         });
         newEmbeddingsCount++;
       }
-      i++;
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
@@ -259,7 +259,7 @@ export async function aiGrade({
 
       // TODO: Temporary change -- for testing purposes, we will always generate a new embedding. 
 
-      let submission_embedding_original = await selectEmbeddingForSubmission(submission.id);
+      const submission_embedding_original = await selectEmbeddingForSubmission(submission.id);
       if (submission_embedding_original) {
         // remove the existing embedding
         deleteEmbeddingForSubmission(submission.id);
@@ -535,10 +535,19 @@ export async function aiGrade({
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     job.info('Grading instance questions with AI...');
+    job.info('reference_submission_ids: ' + reference_submission_ids.join(', '));
+    job.info('instance_questions count (unfiltered): ' + instance_questions.length);
+
+    console.log('instance_questions', instance_questions);
+
+
+    job.info('instance_questions count: ' + instance_questions.filter(
+      iq => !reference_instance_question_ids.includes(`${iq.id}`)
+    ).length);
 
     const instance_question_grading_successes = await async.mapLimit(
       instance_questions.filter(
-        iq => !reference_submission_ids.includes(iq.id)
+        iq => !reference_instance_question_ids.includes(`${iq.id}`)
       ),
       PARALLEL_SUBMISSION_GRADING_LIMIT,
       async (instance_question: InstanceQuestion) => {

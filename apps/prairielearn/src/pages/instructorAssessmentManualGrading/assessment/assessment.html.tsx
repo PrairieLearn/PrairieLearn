@@ -84,6 +84,10 @@ export function ManualGradingAssessment({
         <input type="hidden" name="__action" value="export_statistics" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
+      <form method="POST" id="delete-ai-grading-data">
+        <input type="hidden" name="__action" value="delete_ai_grading_data" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white align-items-center d-flex w-100 gap-2">
@@ -106,6 +110,14 @@ export function ManualGradingAssessment({
             onclick="$('#export-statistics').submit();"
           >
             Export statistics
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="delete-ai-grading-data"
+            onclick="$('#delete-ai-grading-data').submit();"
+          >
+            Delete AI grading data
           </button>
         </div>
 
