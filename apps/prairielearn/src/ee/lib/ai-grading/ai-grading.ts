@@ -109,82 +109,25 @@ export async function aiGrade({
     );
 
     job.info('Checking for embeddings for all submissions.');
-    let newEmbeddingsCount = 0;
+    const newEmbeddingsCount = 0;
 
     // NOTE: This breaks MCQ autograding
     // - Generate embeddings for each instance question
     // - Cluster them into k=20 clusters
     job.info('Generate embeddings to find the reference submissions.');
-    const embeddings: number[][] = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
-      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
-
-      await deleteEmbeddingForSubmission(submission.id);
-
-      const { embedding } = await generateSubmissionEmbedding({
-        course,
-        question,
-        submitted_answer: submission.submitted_answer,
-        instance_question,
-        urlPrefix,
-        openai,
-      });
-
-      return embedding;
-    });
-
-    const kmeans = new Clusters.KMeans(20, 0.05);
-    const result = kmeans.fitPredict(embeddings);
 
     const representedClusters = new Set<number>();
     const representativeSamples: InstanceQuestion[] = [];
     const reference_submission_ids: string[] = [];
     const reference_instance_question_ids: string[] = [];
-    for (let i = 0; i < result.length; i++) {
-      const cluster = result[i];
-      if (representedClusters.has(cluster)) {
-        continue;
-      }
-      representativeSamples.push(all_instance_questions[i]);
 
-      const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
-
-      reference_submission_ids.push(submission.id);
-      reference_instance_question_ids.push(all_instance_questions[i].id);
-      representedClusters.add(cluster);
-    }
-
-    // Generate rubric item aware embeddings for the representative samples.
-    // This simulates an instructor grading the representative samples.
-    job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.')
-
-    await async.eachLimit(representativeSamples, 50, async (instance_question: InstanceQuestion) => {
-      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
-
-      await deleteEmbeddingForSubmission(submission.id);
-      await generateSubmissionEmbedding({
-        course,
-        question,
-        submitted_answer: submission.submitted_answer,
-        instance_question,
-        urlPrefix,
-        openai,
-        graderFeedbackAvailable: true
-      });
-    });
-    
-    for (const instance_question of all_instance_questions) {
-      // Only checking for instance questions that can be used as RAG data.
-      // They should be graded last by a human.
-      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
-        continue;
-      }
-
-      const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
-
-      const submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      
-      if (!submission_embedding) {
-        await generateSubmissionEmbedding({
+    if (image_rag_enabled) {
+      const embeddings: number[][] = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+        const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+  
+        await deleteEmbeddingForSubmission(submission.id);
+  
+        const { embedding } = await generateSubmissionEmbedding({
           course,
           question,
           submitted_answer: submission.submitted_answer,
@@ -192,9 +135,79 @@ export async function aiGrade({
           urlPrefix,
           openai,
         });
-        newEmbeddingsCount++;
+  
+        return embedding;
+      });
+  
+      const kmeans = new Clusters.KMeans(20, 0.05);
+      const result = kmeans.fitPredict(embeddings);
+  
+      for (let i = 0; i < result.length; i++) {
+        const cluster = result[i];
+        if (representedClusters.has(cluster)) {
+          continue;
+        }
+        representativeSamples.push(all_instance_questions[i]);
+  
+        const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
+  
+        reference_submission_ids.push(submission.id);
+        reference_instance_question_ids.push(all_instance_questions[i].id);
+        representedClusters.add(cluster);
       }
+      // Generate rubric item aware embeddings for the representative samples.
+      // This simulates an instructor grading the representative samples.
+      job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.')
+  
+      await async.eachLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+        const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+  
+        await deleteEmbeddingForSubmission(submission.id);
+
+        if (!reference_submission_ids.includes(submission.id)) {
+          return;
+        }
+
+        await generateSubmissionEmbedding({
+          course,
+          question,
+          submitted_answer: submission.submitted_answer,
+          instance_question,
+          urlPrefix,
+          openai,
+          graderFeedbackAvailable: true
+        });
+
+        // console.log('embedding.new_submission_embedding', embedding.new_submission_embedding);
+      });
+
+      job.info('Generated embeddings for the representative samples.');
     }
+
+    
+    // for (const instance_question of all_instance_questions) {
+    //   // Only checking for instance questions that can be used as RAG data.
+    //   // They should be graded last by a human.
+    //   if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+    //     continue;
+    //   }
+
+    //   const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
+
+    //   const submission_embedding = await selectEmbeddingForSubmission(submission.id);
+      
+    //   if (!submission_embedding) {
+    //     await generateSubmissionEmbedding({
+    //       course,
+    //       question,
+    //       submitted_answer: submission.submitted_answer,
+    //       instance_question,
+    //       urlPrefix,
+    //       openai,
+    //     });
+    //     newEmbeddingsCount++;
+    //   }
+    // }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
@@ -280,13 +293,13 @@ export async function aiGrade({
 
       console.log('submission_embedding.new_submission_embedding.embedding', submission_embedding.new_submission_embedding.embedding);
 
-      const example_submissions = await selectClosestSubmissionInfo({
+      const example_submissions = image_rag_enabled ? await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
         embedding: submission_embedding.new_submission_embedding.embedding,
         limit: 5,
         submission_ids_allowed: reference_submission_ids.map(id => parseInt(id))
-      });
+      }) : [];
 
       console.log('reference_submission_ids', reference_submission_ids);
 

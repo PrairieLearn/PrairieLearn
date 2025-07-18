@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
@@ -34,8 +35,6 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import { logger } from '@prairielearn/logger';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
@@ -96,14 +95,14 @@ export async function generatePrompt({
   if (rubric_items.length > 0) {
     let rubric_info = '';
     for (const item of rubric_items) {
-      rubric_info += `description: ${item.description}\n`;
+      rubric_info += `description: ${item.description}<br/>`;
       if (item.explanation) {
-        rubric_info += `explanation: ${item.explanation}\n`;
+        rubric_info += `explanation: ${item.explanation}<br/>`;
       }
       if (item.grader_note) {
-        rubric_info += `grader note: ${item.grader_note}\n`;
+        rubric_info += `grader note: ${item.grader_note}<br/>`;
       }
-      rubric_info += '\n';
+      rubric_info += '<br/>';
     }
     messages.push({
       role: 'system',
@@ -115,7 +114,7 @@ export async function generatePrompt({
     });
     messages.push({
       role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
+      content: `Here are the rubric items:<br/><br/>${rubric_info}`,
     });
   } else {
     messages.push({
@@ -131,7 +130,7 @@ export async function generatePrompt({
   // Question prompt
   messages.push({
     role: 'user',
-    content: `Question: \n${questionPrompt}`,
+    content: `Question: <br/>${questionPrompt}. Examples:<br/>`,
   });
 
   // Examples
@@ -144,7 +143,7 @@ export async function generatePrompt({
       const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
-        rubric_grading_info += `description: ${item.description}\n`;
+        rubric_grading_info += `description: ${item.description}<br/>`;
       }
 
       const submission = await selectLastVariantAndSubmission(example.instance_question_id);
@@ -152,15 +151,16 @@ export async function generatePrompt({
       messages = messages.concat([
         {
           role: 'user',
-          content: 'Example student response: \n\n<response>'
+          content: '<br/>Example student response (use for reference and to understand the rubric better, not for grading): <br/><br/><example-response>'
         },
         generateSubmissionMessage({
           submission_text: example.submission_text,
-          submitted_answer: submission.submission.submitted_answer
+          submitted_answer: submission.submission.submitted_answer,
+          is_example: true
         }),
         {
           role: 'user',
-          content: `</response>\n\nSelected rubric items for this example student response: \n${rubric_grading_info}`,
+          content: `</example-response><br/><br/>Selected rubric items for this example student response: <br/><br/>${rubric_grading_info}<br/><br/><p>End of example submission.</p><br/><br/>`,
         }
       ]);
     } else {
@@ -174,6 +174,10 @@ export async function generatePrompt({
       });
     }
   }
+  messages.push({
+    role: 'user',
+    content: '<br/><p>This is the end of the example submissions.</p><br/><br/>',
+  });
 
   // Student response
   messages.push(
@@ -192,16 +196,20 @@ export async function generatePrompt({
 export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  is_example = false
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  is_example?: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (!is_example) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response (this is the response that you are grading): <br/><response><br/>',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -264,10 +272,18 @@ export function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (!is_example) {
+    message_content.push({
+      type: 'text',
+      text: '<br/></response><br/>How would you grade this? Please return the JSON object.',
+    });
+  } else {
+    message_content.push({
+      type: 'text',
+      text: '<br/><br/>',
+    });
+    
+  }
 
   return {
     role: 'user',
@@ -315,7 +331,7 @@ export async function generateSubmissionEmbedding({
 
 
   // TODO: Actually search for the image capture
-  let contains_image_capture = true;
+  const contains_image_capture = true;
 
   if (contains_image_capture) {
     // 1. Extract the text and images within the submission HTML. With this, create a prompt to ask the AI, 
@@ -418,11 +434,12 @@ export async function generateSubmissionEmbedding({
       }
 
       submission_text = `
-        <p>
-          Student-provided response: ${response.response_transcription}\n\n
-          Errors:${response.errors}\n\n
-          Rubric reasoning:${response.rubric_reasoning}\n\n
-        </p>
+        <p>Student response transcription: ${response.response_transcription}</p><br/><br/>
+        <p>Error made: ${response.errors}</p><br/><br/>
+        <p>Why the rubric items were selected: ${response.rubric_reasoning}</p><br/><br/>
+        <p>Student submission:</p>
+        <br/>
+        <br/>
 
         ${submission_text}
       `;
@@ -444,11 +461,16 @@ export async function generateSubmissionEmbedding({
 
       submission_text = `
         <p>
-          Student-provided response:${
+          Student response transcription: ${
             response.response_transcription
-          }\n\n
-          Errors:${response.errors}\n\n
+          }
+        </p><br/><br/>
+        <p>
+          Errors: ${response.errors}
         </p>
+        <br/></br>
+        Student submission:
+        <br/>
 
         ${submission_text}
       `;

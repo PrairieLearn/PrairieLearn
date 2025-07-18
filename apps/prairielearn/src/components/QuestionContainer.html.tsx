@@ -63,6 +63,8 @@ export function QuestionContainer({
     answerHtml,
   } = resLocals;
 
+  console.log('aiGradingPrompt', aiGradingPrompt);
+
   return html`
     <div
       class="question-container mb-4"
