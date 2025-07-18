@@ -22,6 +22,8 @@ ARIA_LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
+DISPLAY_LOG_AS_LN_DEFAULT = False
+DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
@@ -52,6 +54,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "blank-value",
         "placeholder",
         "custom-functions",
+        "display-log-as-ln",
+        "display-simplified-expression",
         "show-score",
         "suffix",
     ]
@@ -76,6 +80,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_trig = pl.get_boolean_attrib(
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
+        simplify_expression = pl.get_boolean_attrib(
+            element,
+            "display-simplified-expression",
+            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+        )
         # Validate that the answer can be parsed before storing
         try:
             psu.convert_string_to_sympy(
@@ -84,6 +93,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         except psu.BaseSympyError as exc:
             raise ValueError(
@@ -120,6 +130,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    simplify_expression = pl.get_boolean_attrib(
+        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
+    )
+    display_log_as_ln = pl.get_boolean_attrib(
+        element, "display-log-as-ln", DISPLAY_LOG_AS_LN_DEFAULT
     )
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
@@ -164,11 +180,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_complex=allow_complex,
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
         else:
             a_sub_parsed = psu.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                a_sub,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
+
+        if display_log_as_ln:
+            a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
+
         a_sub_converted = sympy.latex(
             a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
         )
@@ -245,13 +269,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         else:
             a_tru = psu.json_to_sympy(
-                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                a_tru,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
 
         a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        if display_log_as_ln:
+            a_tru = a_tru.replace(sympy.log, sympy.Function("ln"))
+
         html_params = {
             "answer": True,
             "label": label,
@@ -280,6 +311,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    simplify_expression = pl.get_boolean_attrib(
+        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
@@ -321,6 +355,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         assumptions=assumptions_dict,
         custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
     )
 
     # Make sure we can parse the json again
@@ -328,7 +363,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         a_sub_json = psu.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
 
         # Convert safely to sympy
-        psu.json_to_sympy(a_sub_json, allow_complex=allow_complex)
+        psu.json_to_sympy(
+            a_sub_json,
+            allow_complex=allow_complex,
+            simplify_expression=simplify_expression,
+        )
 
         # Finally, store the result
         data["submitted_answers"][name] = a_sub_json
