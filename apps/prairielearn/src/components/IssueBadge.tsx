@@ -1,6 +1,6 @@
 import { renderHtml } from '../lib/preact-html.js';
 
-export function IssueBadgeJsx({
+export function IssueBadge({
   count,
   suppressLink,
   issueQid,
@@ -50,7 +50,7 @@ export function IssueBadgeJsx({
   );
 }
 
-export function IssueBadge({
+export function IssueBadgeHtml({
   count,
   suppressLink,
   issueQid,
@@ -76,12 +76,12 @@ export function IssueBadge({
 )) {
   if (suppressLink) {
     return renderHtml(
-      <IssueBadgeJsx count={count} className={className} suppressLink={suppressLink} />,
+      <IssueBadge count={count} className={className} suppressLink={suppressLink} />,
     );
   }
 
   return renderHtml(
-    <IssueBadgeJsx
+    <IssueBadge
       count={count}
       className={className}
       urlPrefix={urlPrefix}

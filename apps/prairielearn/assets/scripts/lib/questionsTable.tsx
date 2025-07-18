@@ -1,14 +1,15 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
-import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.html.js';
-import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
+import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
+import { TagBadgeList } from '../../../src/components/TagBadge.js';
+import { TopicBadge, TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
+import { renderHtml } from '../../../src/lib/preact-html.js';
 
 // Allows records like 'Prefix...Suffix'. If key extends `${P}${K}${S}`, allowed, otherwise never.
 type PrefixSuffixObjectKeys<T extends Record<string, any>, P extends string, S extends string> = {
@@ -75,12 +76,12 @@ onDocumentReady(() => {
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
     let text = '';
     if (question.sync_errors) {
-      text += SyncProblemButton({
+      text += SyncProblemButtonHtml({
         type: 'error',
         output: question.sync_errors,
       });
     } else if (question.sync_warnings) {
-      text += SyncProblemButton({
+      text += SyncProblemButtonHtml({
         type: 'warning',
         output: question.sync_warnings,
       });
@@ -109,11 +110,11 @@ onDocumentReady(() => {
   };
 
   window.topicFormatter = function (_topic: any, question: QuestionsPageData) {
-    return TopicBadge(question.topic).toString();
+    return TopicBadgeHtml(question.topic).toString();
   };
 
   window.tagsFormatter = function (_tags: any, question: QuestionsPageData) {
-    return TagBadgeList(question.tags).toString();
+    return renderHtml(<TagBadgeList tags={question.tags} />).toString();
   };
 
   window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
@@ -262,15 +263,16 @@ onDocumentReady(() => {
 
   $('#questionsTable').bootstrapTable(tableSettings);
 
-  // The startFromInput either has value 'Template' or 'Empty question'
+  // The startFromInput either has value 'empty', 'example' or 'course'
   const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
 
-  // The templateQuestionInput lets the user select the template question to start from, and is only
-  // enabled when the startFromInput is set to 'Template'
+  // The templateQuestionInput lets the user select the template question to
+  // start from, and is only enabled when the startFromInput is set to 'example'
+  // or 'course'
   const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
 
-  // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
-  // otherwise it is shown.
+  // The templateContainerDiv is hidden when the startFromInput is set to
+  // 'empty', otherwise it is shown.
   const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
 
   if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
@@ -278,10 +280,23 @@ onDocumentReady(() => {
   }
 
   startFromInput.addEventListener('change', () => {
-    // If the startFromInput is set to 'Template', the templateQuestionInput should be visible and enabled
-    // Otherwise, it should be hidden and disabled.
-    templateQuestionInput.disabled = startFromInput.value !== 'Template';
-    templateContainerDiv.hidden = startFromInput.value !== 'Template';
+    // If the startFromInput is set to 'example' or 'course', the
+    // templateQuestionInput should be visible and enabled; otherwise, it should
+    // be hidden and disabled.
+    const isTemplateSelected = ['example', 'course'].includes(startFromInput.value);
+    templateQuestionInput.disabled = !isTemplateSelected;
+    templateContainerDiv.hidden = !isTemplateSelected;
+    // Only show template options that match the selected template type.
+    templateQuestionInput.querySelectorAll('option').forEach((option) => {
+      option.hidden = startFromInput.value !== option.dataset.templateSource;
+    });
+    // If the current selection is hidden, change selection to first non-hidden template
+    const selectedOption = templateQuestionInput.querySelector<HTMLOptionElement>('option:checked');
+    if (selectedOption?.hidden) {
+      const visibleOption =
+        templateQuestionInput.querySelector<HTMLOptionElement>('option:not([hidden])');
+      if (visibleOption) templateQuestionInput.value = visibleOption.value;
+    }
   });
 
   $(document).keydown((event) => {

@@ -1,13 +1,7 @@
 import { ansiToHtml } from '../lib/chalk.js';
 import { renderHtml } from '../lib/preact-html.js';
 
-export function SyncProblemButtonJsx({
-  output,
-  type,
-}: {
-  output: string;
-  type: 'error' | 'warning';
-}) {
+export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
   const title = type === 'error' ? 'Sync Errors' : 'Sync Warnings';
   const classes =
     type === 'error' ? 'fa-times text-danger' : 'fa-exclamation-triangle text-warning';
@@ -34,6 +28,12 @@ export function SyncProblemButtonJsx({
   );
 }
 
-export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
-  return renderHtml(<SyncProblemButtonJsx output={output} type={type} />);
+export function SyncProblemButtonHtml({
+  output,
+  type,
+}: {
+  output: string;
+  type: 'error' | 'warning';
+}) {
+  return renderHtml(<SyncProblemButton output={output} type={type} />);
 }

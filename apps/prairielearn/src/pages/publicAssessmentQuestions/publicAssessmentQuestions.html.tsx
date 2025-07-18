@@ -1,13 +1,13 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../components/AssessmentQuestions.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
+} from '../../components/AssessmentQuestions.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TopicBadge, TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
@@ -100,8 +100,8 @@ function AssessmentQuestionsTable({
                   </a>
                 </td>
                 <td>@${question.course_sharing_name}/${question.qid}</td>
-                <td>${TopicBadge(question.topic)}</td>
-                <td>${TagBadgeList(question.tags)}</td>
+                <td>${TopicBadgeHtml(question.topic)}</td>
+                <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {

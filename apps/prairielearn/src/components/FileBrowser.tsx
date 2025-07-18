@@ -18,14 +18,14 @@ import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import { renderHtml } from '../lib/preact-html.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { PageLayout } from './PageLayout.html.js';
+import { PageLayout } from './PageLayout.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
   CourseSyncErrorsAndWarnings,
   QuestionSyncErrorsAndWarnings,
-} from './SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from './SyncProblemButton.html.js';
+} from './SyncErrorsAndWarnings.js';
+import { SyncProblemButton, SyncProblemButtonHtml } from './SyncProblemButton.js';
 
 interface FileInfo {
   id: number;
@@ -591,12 +591,12 @@ function DirectoryBrowserBody({
             <tr>
               <td>
                 ${f.sync_errors
-                  ? SyncProblemButton({
+                  ? SyncProblemButtonHtml({
                       type: 'error',
                       output: f.sync_errors,
                     })
                   : f.sync_warnings
-                    ? SyncProblemButton({
+                    ? SyncProblemButtonHtml({
                         type: 'warning',
                         output: f.sync_warnings,
                       })
