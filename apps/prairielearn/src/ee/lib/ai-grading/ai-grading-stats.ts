@@ -68,6 +68,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
+      rubric_similarity: null,
     };
     results.push(instance_question);
 
@@ -97,6 +98,20 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
+
+      const tpItems = manualItems
+        .filter((item) => rubricListIncludes(aiItems, item))
+        .map((item) => ({ ...item, true_positive: true }));
+
+      const allRubricItems = await selectRubricForGrading(assessment_question.id);
+      const tnItems = allRubricItems
+        .filter(
+          (item) => !rubricListIncludes(manualItems, item) && !rubricListIncludes(aiItems, item),
+        )
+        .map((item) => ({ ...item, true_positive: false }));
+
+      instance_question.rubric_similarity = tpItems.concat(tnItems);
+
       const fpItems = aiItems
         .filter((item) => !rubricListIncludes(manualItems, item))
         .map((item) => ({ ...item, false_positive: true }));

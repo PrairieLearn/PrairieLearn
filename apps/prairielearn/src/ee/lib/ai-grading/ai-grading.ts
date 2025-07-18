@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 
+import { Clusters } from '@kanaries/ml';
 import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
@@ -23,10 +24,12 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+
 import {
   GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
+  deleteEmbeddingForSubmission,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -34,9 +37,8 @@ import {
   selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -60,6 +62,8 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  image_rag_enabled = true,
+  run_async = true
 }: {
   question: Question;
   course: Course;
@@ -74,6 +78,8 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  image_rag_enabled?: boolean; // Whether to use image RAG for AI grading
+  run_async?: boolean;
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -96,7 +102,7 @@ export async function aiGrade({
     description: 'Perform AI grading',
   });
 
-  serverJob.executeInBackground(async (job) => {
+  const jobFunction = async (job) => {
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
@@ -105,29 +111,104 @@ export async function aiGrade({
     );
 
     job.info('Checking for embeddings for all submissions.');
-    let newEmbeddingsCount = 0;
-    for (const instance_question of all_instance_questions) {
-      // Only checking for instance questions that can be used as RAG data.
-      // They should be graded last by a human.
-      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+    const newEmbeddingsCount = 0;
+
+    // NOTE: This breaks MCQ autograding
+    // - Generate embeddings for each instance question
+    // - Cluster them into k=20 clusters
+    job.info('Generate embeddings to find the reference submissions.');
+
+    const representedClusters = new Set<number>();
+    const representativeSamples: InstanceQuestion[] = [];
+    const reference_submission_ids: string[] = [];
+    const reference_instance_question_ids: string[] = [];
+
+    const embeddings: number[][] = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+
+      await deleteEmbeddingForSubmission(submission.id);
+
+      const { embedding } = await generateSubmissionEmbedding({
+        course,
+        question,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
+      });
+
+      return embedding;
+    });
+
+    const kmeans = new Clusters.KMeans(20, 0.05);
+    const result = kmeans.fitPredict(embeddings);
+
+    for (let i = 0; i < result.length; i++) {
+      const cluster = result[i];
+      if (representedClusters.has(cluster)) {
         continue;
       }
+      representativeSamples.push(all_instance_questions[i]);
 
-      const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
-      const submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      
-      if (!submission_embedding) {
-        await generateSubmissionEmbedding({
-          course,
-          question,
-          submitted_answer: submission.submitted_answer,
-          instance_question,
-          urlPrefix,
-          openai,
-        });
-        newEmbeddingsCount++;
-      }
+      const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
+
+      reference_submission_ids.push(submission.id);
+      reference_instance_question_ids.push(all_instance_questions[i].id);
+      representedClusters.add(cluster);
     }
+    // Generate rubric item aware embeddings for the representative samples.
+    // This simulates an instructor grading the representative samples.
+    job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
+    console.log('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
+
+    await async.eachLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+
+      await deleteEmbeddingForSubmission(submission.id);
+
+      if (!reference_submission_ids.includes(submission.id)) {
+        return;
+      }
+
+      await generateSubmissionEmbedding({
+        course,
+        question,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
+        graderFeedbackAvailable: true
+      });
+    });
+
+    job.info('Generated embeddings for the representative samples.');
+    console.log('Generated embeddings for the representative samples.');
+
+
+    
+    // for (const instance_question of all_instance_questions) {
+    //   // Only checking for instance questions that can be used as RAG data.
+    //   // They should be graded last by a human.
+    //   if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
+    //     continue;
+    //   }
+
+    //   const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
+
+    //   const submission_embedding = await selectEmbeddingForSubmission(submission.id);
+      
+    //   if (!submission_embedding) {
+    //     await generateSubmissionEmbedding({
+    //       course,
+    //       question,
+    //       submitted_answer: submission.submitted_answer,
+    //       instance_question,
+    //       urlPrefix,
+    //       openai,
+    //     });
+    //     newEmbeddingsCount++;
+    //   }
+    // }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
@@ -149,6 +230,10 @@ export async function aiGrade({
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
+    job.info('Allowed samples for RAG: ' + reference_submission_ids.join(', '));
+
+    console.log('Found ' + instance_questions.length + ' submissions to grade!');
+    console.log('Allowed samples for RAG: ' + reference_submission_ids.join(', '));
 
     /**
      * Grade an individual instance question.
@@ -187,24 +272,33 @@ export async function aiGrade({
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
-      let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (!submission_embedding) {
-        submission_embedding = await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          openai,
-        });
-      }
-      const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await selectClosestSubmissionInfo({
+      // TODO: Temporary change -- for testing purposes, we will always generate a new embedding. 
+
+      const submission_embedding_original = await selectEmbeddingForSubmission(submission.id);
+      if (submission_embedding_original) {
+        // remove the existing embedding
+        deleteEmbeddingForSubmission(submission.id);
+      }
+
+      const submission_embedding = await generateSubmissionEmbedding({
+        course,
+        question,
+        questionPrompt,
+        submitted_answer: submission.submitted_answer,
+        instance_question,
+        urlPrefix,
+        openai,
+      });
+      const submission_text = submission_embedding.submission_text;
+      const example_submissions = image_rag_enabled ? await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
+        embedding: submission_embedding.new_submission_embedding.embedding,
         limit: 5,
-      });
+        submission_ids_allowed: reference_submission_ids.map(id => parseInt(id))
+      }) : [];
+
       let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
@@ -233,6 +327,7 @@ export async function aiGrade({
         }
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
+          feedback: z.string(),
         });
         const completion = await openai.chat.completions.parse({
           messages,
@@ -250,12 +345,23 @@ export async function aiGrade({
 
           logger.info(`Raw response:\n${response.content}`);
 
+          logger.info('Parsed content:');
+          logger.info(JSON.stringify(response.parsed, null, 2));
+
           if (response.parsed) {
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
+
+            logger.info('Feedback:' + response.parsed?.feedback);
+            logger.info(
+              'instance_question.requires_manual_grading: ' +
+                instance_question.requires_manual_grading,
+            );
+
             if (instance_question.requires_manual_grading) {
+              logger.info('Manual grading required');
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -268,9 +374,8 @@ export async function aiGrade({
                   submission.id,
                   null, // check_modified_at
                   {
-                    // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
-                    feedback: { manual: '' },
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   user_id,
                   true, // is_ai_graded
@@ -310,10 +415,11 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: manual_rubric_grading.computed_points,
                     manual_rubric_grading_id: manual_rubric_grading.id,
-                    feedback: null,
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   IdSchema,
                 );
+
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
@@ -402,7 +508,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: (score * assessment_question.max_manual_points) / 100,
                     manual_rubric_grading_id: null,
-                    feedback: null,
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   IdSchema,
                 );
@@ -435,8 +541,20 @@ export async function aiGrade({
     };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
+    job.info('Grading instance questions with AI...');
+    job.info('reference_submission_ids: ' + reference_submission_ids.join(', '));
+    job.info('instance_questions count (unfiltered): ' + instance_questions.length);
+
+    job.info('instance_questions count: ' + instance_questions.filter(
+      iq => !reference_instance_question_ids.includes(`${iq.id}`)
+    ).length);
+
+    console.log('Grading instance questions with AI...');
+
     const instance_question_grading_successes = await async.mapLimit(
-      instance_questions,
+      instance_questions.filter(
+        iq => !reference_instance_question_ids.includes(`${iq.id}`)
+      ),
       PARALLEL_SUBMISSION_GRADING_LIMIT,
       async (instance_question: InstanceQuestion) => {
         const logs: AIGradingLog[] = [];
@@ -478,6 +596,15 @@ export async function aiGrade({
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
-  });
+  };
+
+  if (run_async) {
+    // Run the job asynchronously
+    await serverJob.executeInBackground(jobFunction);
+  } else {
+    // Run the job synchronously
+    await serverJob.execute(jobFunction);
+  }
+
   return serverJob.jobSequenceId;
 }

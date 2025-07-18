@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
@@ -88,20 +89,20 @@ export async function generatePrompt({
 }): Promise<{
   messages: ChatCompletionMessageParam[];
 }> {
-  const messages: ChatCompletionMessageParam[] = [];
+  let messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
     let rubric_info = '';
     for (const item of rubric_items) {
-      rubric_info += `description: ${item.description}\n`;
+      rubric_info += `description: ${item.description}<br/>`;
       if (item.explanation) {
-        rubric_info += `explanation: ${item.explanation}\n`;
+        rubric_info += `explanation: ${item.explanation}<br/>`;
       }
       if (item.grader_note) {
-        rubric_info += `grader note: ${item.grader_note}\n`;
+        rubric_info += `grader note: ${item.grader_note}<br/>`;
       }
-      rubric_info += '\n';
+      rubric_info += '<br/>';
     }
     messages.push({
       role: 'system',
@@ -113,7 +114,7 @@ export async function generatePrompt({
     });
     messages.push({
       role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
+      content: `Here are the rubric items:<br/><br/>${rubric_info}`,
     });
   } else {
     messages.push({
@@ -129,7 +130,7 @@ export async function generatePrompt({
   // Question prompt
   messages.push({
     role: 'user',
-    content: `Question: \n${questionPrompt}`,
+    content: `Question: <br/>${questionPrompt}. Examples:<br/>`,
   });
 
   // Examples
@@ -142,12 +143,26 @@ export async function generatePrompt({
       const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
-        rubric_grading_info += `description: ${item.description}\n`;
+        rubric_grading_info += `description: ${item.description}<br/>`;
       }
-      messages.push({
-        role: 'user',
-        content: `Example student response: \n<response>\n${example.submission_text} \n<response>\nSelected rubric items for this example student response: \n${rubric_grading_info}`,
-      });
+
+      const submission = await selectLastVariantAndSubmission(example.instance_question_id);
+
+      messages = messages.concat([
+        {
+          role: 'user',
+          content: '<br/>Example student response (use for reference and to understand the rubric better, not for grading): <br/><br/><example-response>'
+        },
+        generateSubmissionMessage({
+          submission_text: example.submission_text,
+          submitted_answer: submission.submission.submitted_answer,
+          is_example: true
+        }),
+        {
+          role: 'user',
+          content: `</example-response><br/><br/>Selected rubric items for this example student response: <br/><br/>${rubric_grading_info}<br/><br/><p>End of example submission.</p><br/><br/>`,
+        }
+      ]);
     } else {
       messages.push({
         role: 'user',
@@ -159,6 +174,10 @@ export async function generatePrompt({
       });
     }
   }
+  messages.push({
+    role: 'user',
+    content: '<br/><p>This is the end of the example submissions.</p><br/><br/>',
+  });
 
   // Student response
   messages.push(
@@ -177,16 +196,20 @@ export async function generatePrompt({
 export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  is_example = false
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  is_example?: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (!is_example) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response (this is the response that you are grading): <br/><response><br/>',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -249,10 +272,18 @@ export function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (!is_example) {
+    message_content.push({
+      type: 'text',
+      text: '<br/></response><br/>How would you grade this? Please return the JSON object.',
+    });
+  } else {
+    message_content.push({
+      type: 'text',
+      text: '<br/><br/>',
+    });
+    
+  }
 
   return {
     role: 'user',
@@ -268,15 +299,18 @@ export async function generateSubmissionEmbedding({
   instance_question,
   urlPrefix,
   openai,
+  graderFeedbackAvailable = false
 }: {
   question: Question;
   course: Course;
-  questionPrompt: string;
+  /** The rendered HTML content of the question. */
+  questionPrompt?: string;
   submitted_answer: Record<string, any> | null;
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
-}): Promise<SubmissionGradingContextEmbedding> {
+  graderFeedbackAvailable?: boolean;
+}): Promise<{new_submission_embedding: SubmissionGradingContextEmbedding, embedding: number[], submission_text: string}> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
@@ -295,30 +329,47 @@ export async function generateSubmissionEmbedding({
   );
   let submission_text = render_submission_results.data.submissionHtmls[0];
 
-  let contains_image_capture = false;
-  const $submission_html = cheerio.load(submission_text);
 
-  $submission_html
-    .root()
-    .find('img[data-image-capture-uuid]')
-    .contents()
-    .each((_, node) => {
-      if ($submission_html(node).data('image-capture-uuid')) {
-        contains_image_capture = true;
-      }
-    });
+  // TODO: Actually search for the image capture
+  const contains_image_capture = true;
 
   if (contains_image_capture) {
     // 1. Extract the text and images within the submission HTML. With this, create a prompt to ask the AI, 
     //    - Summarize the submission text and any images.
     //    - Explain the student's errors.
     //    - Explain the reasoning for selecting each rubric item
-    // 2. Add this to the submission HTML, and add it to the prompt for embedding. 
+    // 2. Extract the rubric items selected by the human for the submission.
+    // 3. Add this to the submission HTML, and add it to the prompt for embedding. 
+  
+    const rubric_items = await selectRubricForGrading(instance_question.assessment_question_id);
+    const rubric_grading_items = await selectRubricGradingItems(submission.manual_rubric_grading_id);
 
-    const messages: ChatCompletionMessageParam[] = [
+    let rubric_info = '';
+    for (const item of rubric_items) {
+      rubric_info += `description: ${item.description}\n`;
+      if (item.explanation) {
+        rubric_info += `explanation: ${item.explanation}\n`;
+      }
+      if (item.grader_note) {
+        rubric_info += `grader note: ${item.grader_note}\n`;
+      }
+      rubric_info += '\n';
+    }
+
+    let humanSelectedRubricItems = '';
+    if (graderFeedbackAvailable) {
+      if (rubric_grading_items.length > 0) {
+        for (const item of rubric_grading_items) {
+          humanSelectedRubricItems += `description: ${item.description}\n`;
+        }
+      }
+    }
+
+
+    let messages: ChatCompletionMessageParam[] = [
       {
-        role: 'user',
-        content: `Question: \n${questionPrompt}`,
+        role: 'system',
+        content: 'You are an instructor analyzing a students submission and explaining grading decisions.'
       },
       generateSubmissionMessage({
         submission_text,
@@ -326,34 +377,104 @@ export async function generateSubmissionEmbedding({
       }),
       {
         role: 'user',
-        content: 'Given the student\'s submission, perform the following tasks:\n' +
-          '1. Extract the text of the student submission. For images, extract the text as closely as possible without attempting to correct it and describe any handwritten non-textual content, particularly information that would be relevant to the rubric/grading of the question. Place into the response_transcription field.\n' +
-          '2. Explain the student\'s errors. Place into the errors field.\n' +
-          '3. Explain the reasoning for selecting each rubric item. Place into the rubric_reasoning field.\n'
+        content: `Here are the rubric items:\n\n${rubric_info}`,
       }
     ];
 
+    if (graderFeedbackAvailable) {
+      messages.push({
+        role: 'user',
+        content: `Here are the rubric items that were selected by the human grader:\n${humanSelectedRubricItems}`,
+      })
+    }
+
+    messages = [
+      ...messages,
+      {
+        role: 'user',
+        content: 'Given the student\'s submission, perform the following tasks:\n' +
+          '1. Extract the text of the student submission. For images, extract the text as closely as possible without attempting to correct it and describe any handwritten non-textual content, particularly information that would be relevant to the rubric/grading of the question. Place into the response_transcription field.\n' +
+          '2. Explain the student\'s errors. Place into the errors field.\n' +
+          (graderFeedbackAvailable ? '3. Explain the reason why the human selected each rubric item. Place into the rubric_reasoning field.\n' : '')
+      }
+    ]
+
+    if (questionPrompt) {
+      messages = [
+        {
+          role: 'user',
+          content: `Question: \n${questionPrompt}`,
+        },
+        ...messages
+      ];
+    }
+
     const imageCaptureDescriptionResponses = z.object({
       response_transcription: z.string(),
-      errors: z.string(),
-      rubric_reasoning: z.string(),
+      errors: z.string()
     });
+    if (graderFeedbackAvailable) {
 
-    const completion = await openai.chat.completions.create({
-      messages,
-      model: OPEN_AI_MODEL,
-      user: `course_${course.id}`,
-      temperature: OPEN_AI_TEMPERATURE
-    });
+      // TODO: Add the selected rubric items
+      const imageCaptureDescriptionResponsesExtended = imageCaptureDescriptionResponses.extend({
+        rubric_reasoning: z.string(),
+      });
+      const completion = await openai.chat.completions.parse({
+        messages,
+        model: OPEN_AI_MODEL,
+        user: `course_${course.id}`,
+        response_format: zodResponseFormat(imageCaptureDescriptionResponsesExtended, 'submission_description'),
+        temperature: OPEN_AI_TEMPERATURE
+      });
+      
+      const response = completion.choices[0].message.parsed;
 
-    const response = imageCaptureDescriptionResponses.parse(completion.choices[0].message.content);
+      if (!response) {
+        throw new Error('No response from AI for image capture description.');
+      }
 
-    // Add the extracted information to the submission HTML.
-    submission_text = `
-      ${response.response_transcription}
-      ${response.errors}
-      ${response.rubric_reasoning}
-    `;
+      submission_text = `
+        <p>Student response transcription: ${response.response_transcription}</p><br/><br/>
+        <p>Error made: ${response.errors}</p><br/><br/>
+        <p>Why the rubric items were selected: ${response.rubric_reasoning}</p><br/><br/>
+        <p>Student submission:</p>
+        <br/>
+        <br/>
+
+        ${submission_text}
+      `;
+    } else {
+      const completion = await openai.chat.completions.parse({
+        messages,
+        model: OPEN_AI_MODEL,
+        user: `course_${course.id}`,
+        response_format: zodResponseFormat(imageCaptureDescriptionResponses, 'submission_description'),
+        temperature: OPEN_AI_TEMPERATURE
+      });
+
+
+      const response = completion.choices[0].message.parsed;
+
+      if (!response) {
+        throw new Error('No response from AI for image capture description.');
+      }
+
+      submission_text = `
+        <p>
+          Student response transcription: ${
+            response.response_transcription
+          }
+        </p><br/><br/>
+        <p>
+          Errors: ${response.errors}
+        </p>
+        <br/></br>
+        Student submission:
+        <br/>
+
+        ${submission_text}
+      `;
+    }
   }
 
   const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
@@ -368,7 +489,7 @@ export async function generateSubmissionEmbedding({
     },
     SubmissionGradingContextEmbeddingSchema,
   );
-  return new_submission_embedding;
+  return {new_submission_embedding, embedding, submission_text};
 }
 
 
@@ -476,11 +597,13 @@ export async function selectClosestSubmissionInfo({
   assessment_question_id,
   embedding,
   limit,
+  submission_ids_allowed = [],
 }: {
   submission_id: string;
   assessment_question_id: string;
   embedding: string;
   limit: number;
+  submission_ids_allowed?: number[]
 }): Promise<GradedExample[]> {
   return await queryRows(
     sql.select_closest_submission_info,
@@ -489,6 +612,7 @@ export async function selectClosestSubmissionInfo({
       assessment_question_id,
       embedding,
       limit,
+      submission_ids_allowed,
     },
     GradedExampleSchema,
   );
@@ -518,4 +642,10 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteEmbeddingForSubmission(
+  submission_id: string,
+): Promise<void> {
+  await queryAsync(sql.delete_embedding_for_submission, { submission_id });
 }
