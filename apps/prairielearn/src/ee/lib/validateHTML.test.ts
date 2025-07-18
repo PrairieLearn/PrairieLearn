@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
-import { extractMustacheTemplateNames } from './validateHTML.js';
+import { extractMustacheTemplateNames, isValidMustacheTemplateName } from './validateHTML.js';
 
 function assertExtractsNames(input: string, expectedNames: string[]) {
   assert.deepEqual(extractMustacheTemplateNames(input), new Set(expectedNames));
@@ -57,5 +57,45 @@ describe('extractMustacheTemplateNames', () => {
 
   it('handles Mustache comments', () => {
     assertExtractsNames('Hello, {{! This is a comment }}{{name}}!', ['name']);
+  });
+});
+
+describe('isValidMustacheTemplateName', () => {
+  it('validates simple name', () => {
+    assert.isTrue(isValidMustacheTemplateName('name'));
+  });
+
+  it('validates name with dots', () => {
+    assert.isTrue(isValidMustacheTemplateName('foo.bar'));
+  });
+
+  it('validates name with underscores', () => {
+    assert.isTrue(isValidMustacheTemplateName('foo_bar'));
+  });
+
+  it('validates name with underscores and dots', () => {
+    assert.isTrue(isValidMustacheTemplateName('foo.bar_baz'));
+  });
+
+  it('validates name with numbers', () => {
+    assert.isTrue(isValidMustacheTemplateName('foo123'));
+  });
+
+  it('validates name with underscores, dots, and numbers', () => {
+    assert.isTrue(isValidMustacheTemplateName('foo.123.bar_baz'));
+  });
+
+  it('rejects name with spaces', () => {
+    assert.isFalse(isValidMustacheTemplateName('foo bar'));
+  });
+
+  it('rejects name with operators', () => {
+    assert.isFalse(isValidMustacheTemplateName('foo+bar'));
+    assert.isFalse(isValidMustacheTemplateName('foo==bar'));
+  });
+
+  it('rejects name with operators and spaces', () => {
+    assert.isFalse(isValidMustacheTemplateName('foo + bar'));
+    assert.isFalse(isValidMustacheTemplateName('foo == bar'));
   });
 });

@@ -285,7 +285,8 @@ WITH
 SELECT
   rgr.*,
   gir.applied_rubric_items,
-  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed,
+  iq.is_ai_graded
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
@@ -449,6 +450,7 @@ SET
   partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
+  modified_at = now(),
   override_score = COALESCE($score, override_score),
   score = COALESCE($score, score),
   correct = COALESCE($correct, correct),
@@ -471,6 +473,8 @@ WITH
       manual_points = COALESCE($manual_points, manual_points),
       status = 'complete',
       modified_at = now(),
+      -- TODO: this might not be correct. Matt suggested that we might want to
+      -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,

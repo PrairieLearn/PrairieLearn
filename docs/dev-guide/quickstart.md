@@ -66,7 +66,7 @@ The main JavaScript test suite can take on the order of 10+ minutes to run, so y
 ```sh
 make start-support
 cd apps/prairielearn
-yarn mocha src/tests/getHomepage.test.ts
+yarn vitest src/tests/getHomepage.test.ts
 ```
 
 ### Package tests
@@ -107,7 +107,7 @@ If you develop code with VSCode, running these shouldn't be necessary, as we pro
 
 ## Updating dependencies
 
-If you switch branches, pull new code, or edit Python dependencies in the `images/plbase` directory, you will need to update the dependencies.
+If you switch branches, pull new code, or edit Python dependencies, you will need to update the dependencies.
 
 ```sh
 make deps

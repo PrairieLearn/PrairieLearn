@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { html } from '@prairielearn/html';
+import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -14,8 +16,9 @@ import {
 
 import {
   AssessmentSchema,
-  Lti13AssessmentsSchema,
+  Lti13AssessmentSchema,
   Lti13CourseInstanceSchema,
+  Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -28,26 +31,17 @@ import {
   syncLineitems,
   unlinkAssessment,
   updateLti13Scores,
-  validateLti13CourseInstance,
 } from '../../lib/lti13.js';
 
 import {
   AssessmentRowSchema,
   InstructorInstanceAdminLti13,
+  InstructorInstanceAdminLti13NoInstances,
   LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-router.use(
-  asyncHandler(async (req, res, next) => {
-    if (!(await validateLti13CourseInstance(res.locals))) {
-      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
-    }
-    next();
-  }),
-);
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
@@ -57,12 +51,27 @@ router.get(
     }
 
     const instances = await queryRows(
-      sql.select_lti13_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      sql.select_combined_lti13_instances,
+      { course_instance_id: res.locals.course_instance.id },
       Lti13CombinedInstanceSchema,
     );
+
+    if (instances.length === 0) {
+      // See if we have configurations per institution
+      const lti13_instances = await queryRows(
+        sql.select_lti13_instances,
+        { institution_id: res.locals.institution.id },
+        Lti13InstanceSchema,
+      );
+
+      res.send(
+        InstructorInstanceAdminLti13NoInstances({
+          resLocals: res.locals,
+          lti13_instances,
+        }),
+      );
+      return;
+    }
 
     // Handle the no parameter offered case, take the first one
     if (!req.params.unsafe_lti13_course_instance_id) {
@@ -83,7 +92,12 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      res.send(LineitemsInputs(await getLineitems(instance)));
+      try {
+        res.end(LineitemsInputs(await getLineitems(instance)));
+      } catch (error) {
+        res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
+        logger.error('LineitemsInputs error', error);
+      }
       return;
     }
 
@@ -100,10 +114,8 @@ router.get(
 
     const lineitems = await queryRows(
       sql.select_lti13_assessments,
-      {
-        lti13_course_instance_id: instance.lti13_course_instance.id,
-      },
-      Lti13AssessmentsSchema,
+      { lti13_course_instance_id: instance.lti13_course_instance.id },
+      Lti13AssessmentSchema,
     );
 
     res.send(
@@ -126,7 +138,7 @@ router.post(
     }
 
     const instance = await queryRow(
-      sql.select_lti13_instance,
+      sql.select_combined_lti13_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
@@ -222,7 +234,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        Lti13AssessmentsSchema,
+        Lti13AssessmentSchema,
       );
 
       flash(
@@ -290,7 +302,6 @@ router.post(
         await queryAsync(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
-        job.info('Done.');
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {

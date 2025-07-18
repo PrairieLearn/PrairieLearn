@@ -122,6 +122,9 @@ async function prepareCodeCaller() {
   });
 }
 
+process.once('SIGINT', () => process.exit(0));
+process.once('SIGTERM', () => process.exit(0));
+
 (async () => {
   let codeCaller = await prepareCodeCaller();
 

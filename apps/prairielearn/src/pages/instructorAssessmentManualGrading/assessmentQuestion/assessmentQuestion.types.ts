@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
-import {
-  AssessmentQuestionSchema,
-  InstanceQuestionSchema,
-  type User,
-} from '../../../lib/db-types.js';
+import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
+import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   modified_at: z.string(),
@@ -18,6 +15,15 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
+  ...InstanceQuestionRowSchema.shape,
+  ...AIGradingStatsSchema.shape,
+});
+
+export type InstanceQuestionRowWithAIGradingStats = z.infer<
+  typeof InstanceQuestionRowWithAIGradingStatsSchema
+>;
+
 export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
@@ -25,7 +31,6 @@ export interface InstanceQuestionTableData {
   groupWork: boolean;
   maxPoints: number | null;
   maxAutoPoints: number | null;
-  aiGradingEnabled: boolean;
-  courseStaff: User[];
+  aiGradingMode: boolean;
   csrfToken: string;
 }

@@ -22,6 +22,7 @@ PrairieLearn presently provides the following templated **input field** elements
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
   to obtain a file with a specific naming scheme.
+- [`pl-image-capture`](#pl-image-capture-element): Capture images of handwritten work from a local camera or external device such as a phone or tablet.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
   such as -71, 0, 5, 21, and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
@@ -308,8 +309,8 @@ def fib(n):
 | Attribute            | Type    | Default              | description                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | -------------------- | ------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file-name`          | string  | —                    | The name of this file; will be used to store this file in the `"_files"` submitted answer                                                                                                                                                                                                                                                                                                                                                                 |
-| `ace-mode`           | string  | —                    | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/src/mode).                                                                                                                                                                                                                                                            |
-| `ace-theme`          | string  | `"ace/theme/chrome"` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/src/theme).                                                                                                                                                                                                                                                                                                                                  |
+| `ace-mode`           | string  | —                    | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes in the [Ace GitHub repository](https://github.com/ajaxorg/ace/tree/master/src/mode).                                                                                                                                                                                                                                    |
+| `ace-theme`          | string  | `"ace/theme/chrome"` | Specifies an Ace editor theme; see the full list of themes in the [Ace GitHub repository](https://github.com/ajaxorg/ace/tree/master/src/theme).                                                                                                                                                                                                                                                                                                          |
 | `font-size`          | string  | `"12px"`             | Sets the font size for the Ace editor. Specified as a CSS-style size (e.g., `"1rem"`, `"110%"`, `"16pt"`, or `"20px"`).                                                                                                                                                                                                                                                                                                                                   |
 | `source-file-name`   | string  | —                    | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                           |
 | `directory`          | string  | See description      | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `"clientFilesCourse"` or `"serverFilesCourse"`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
@@ -352,6 +353,14 @@ The contents of the file editor are only displayed by default in the question pa
 Provides a way to accept file uploads as part of an answer. They will be stored
 in the format expected by externally graded questions.
 
+!!! note
+
+    There is a file size limit of **5 MB per answer**. This limit is not customizable as larger
+    requests will be rejected by the server. For the same reason, it is also not possible to bypass the
+    limit by using multiple `pl-file-upload` elements in the same question. To avoid unexpected errors or
+    potentially misleading error messages for large file uploads, we recommend not using more than one
+    `pl-file-upload` element per question.
+
 #### Sample element
 
 ![Screenshot of the pl-file-upload element](elements/pl-file-upload.png)
@@ -362,9 +371,48 @@ in the format expected by externally graded questions.
 
 #### Customizations
 
-| Attribute    | Type     | Default | description                                                                                                                                    |
-| ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-names` | CSV list | —       | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes. |
+| Attribute                | Type     | Default | description                                                                                                                                                                                                                                                   |
+| ------------------------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-names`             | CSV list | ""      | List of files that must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                           |
+| `optional-file-names`    | CSV list | ""      | List of files that can be submitted, but are optional. Commas should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                        |
+| `file-patterns`          | CSV list | ""      | List of file name patterns (see below) that must be submitted. For each pattern, exactly one matching file must be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes.                    |
+| `optional-file-patterns` | CSV list | ""      | List of file name patterns (see below) that can be submitted, but are optional. For each pattern, any number of matching files can be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes. |
+
+#### Supported wildcard patterns
+
+The `file-patterns` and `optional-file-patterns` attributes support a number of wildcards to allow a range of file names:
+
+- The `?` placeholder allows a single wildcard character. For example, `solution?.txt` allows
+  files like "solution1.txt", "solution2.txt", and so on, but not "solution10.txt".
+- The `*` placeholder allows an arbitrary number of wildcard characters. For example, `*.txt`
+  allows files like "solution.txt", "my_file.txt", and also ".txt".
+- The `[seq]` placeholder allows a single character from the set of options listed inside the square
+  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
+  "file_x.txt".
+- The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file[0-9].txt`
+  allows "file5.txt", but not "filex.txt". Ranges can also be combined. For example,`file[0-9a-z].txt` allows a single alphanumeric
+  character and therefore both "file5.txt" and "filex.txt".
+
+!!! note
+
+    `file-patterns` and `optional-file-patterns` accepts [fnmatch](https://docs.python.org/3/library/fnmatch.html) file globs, not regular expressions. Brace expansion (`{foo,bar}.txt`) is not currently supported.
+
+| File pattern       | Allowed :white_check_mark:                        | Disallowed :x:                   |
+| ------------------ | ------------------------------------------------- | -------------------------------- |
+| `solution?.txt`    | `solution1.txt`, `solution2.txt`, `solutionA.txt` | `solution10.txt`, `solution.txt` |
+| `*.txt`            | `solution.txt`, `my_file.txt`, `.txt`             | `solution.py`, `my_file`         |
+| `file_[abc].txt`   | `file_a.txt`, `file_b.txt`, `file_c.txt`          | `file_x.txt`, `file_ab.txt`      |
+| `file[0-9].txt`    | `file5.txt`, `file0.txt`, `file9.txt`             | `filex.txt`, `file10.txt`        |
+| `file[0-9a-z].txt` | `file5.txt`, `filex.txt`, `file0.txt`             | `fileX.txt`, `file10.txt`        |
+| `[!_]*.py`         | `solution.py`, `my_file.py`                       | `_foo.py`, `file.txt`            |
+
+If file names or patterns overlap, uploaded files are first used to fill the required file names in `file-names`. Next, files that match a required pattern in `file-patterns` are used to fill that pattern. Any remaining uploaded files are accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
+
+Required files (`file-names` or `file-patterns`) and optional files (`optional-file-names` or `optional-file-patterns`) are handled identically, so if you need to distinguish between the two sets, you should ensure that the patterns don't overlap.
+
+!!! tip
+
+    The same required pattern in `file-patterns` can be repeated, for example `*.py,*.py` means that exactly two Python files must be uploaded. However, different required patterns should not overlap (e.g. `*.py,solution.*`) because files are assigned to a matching pattern arbitrarily, and this can lead to unintended behavior.
 
 #### Details
 
@@ -381,6 +429,49 @@ The `pl-file-upload` element and the contents of the uploaded file(s) are only d
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
+
+---
+
+### `pl-image-capture` element
+
+Provides a way for students to capture and submit an image as part of their answer using a local camera like a webcam or an external device such as a mobile phone or tablet camera.
+
+#### Sample element
+
+![Screenshot of the pl-image-capture element](elements/pl-image-capture.png)
+
+```html title="question.html"
+<pl-image-capture file-name="solution.jpeg" mobile-capture-enabled="true"></pl-image-capture>
+```
+
+#### Customizations
+
+| Attribute                | Type    | Default | description                                                                                                                                                                                                               |
+| ------------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`              | string  | —       | The name under which the captured image will be saved. This must end with `.jpeg` or `.jpg`, and be unique within a single question.                                                                                      |
+| `mobile-capture-enabled` | boolean | true    | When `true`, students can click "Capture with mobile device" to scan a QR code on a phone or tablet to a page where they can capture an image of their work. In most cases, this `mobile-capture-enabled` should be true. |
+
+#### Details
+
+The `pl-image-capture` element is particularly useful for capturing handwritten work on paper, such as sketches or step-by-step calculations.
+
+`pl-image-capture` allows users to submit images through their camera, whether it’s a local device like a webcam or an external device such as a mobile phone or tablet camera. Users can only submit by capturing a new image with their camera; they cannot upload existing images from their device, and `pl-image-capture` does not save images to their device.
+
+A single question page can contain multiple `pl-image-capture` elements, each operating independently and saving files under its specified `file-name`.
+
+In manual grading mode, staff can view submitted images in the submission panel and, if added, through the [`pl-file-preview`](#pl-file-preview-element) element, where submitted images will appear under their associated `file-name`.
+
+By default, the `mobile-capture-enabled` setting is `true`. We strongly recommend keeping mobile capture enabled for most questions to allow students to capture high-quality images easily.
+
+Using mobile device capture in a local development environment requires additional setup. To use this feature locally, see the [Setting up external image capture locally](./dev-guide/configJson.md#setting-up-external-image-capture-locally) section of the server configuration guide.
+
+#### Example implementations
+
+- [element/imageCapture]
+
+#### See also
+
+- [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
 
 ---
 
@@ -1179,7 +1270,7 @@ def square(x):
 | Attribute               | Type    | Default         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ----------------------- | ------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `language`              | string  | —               | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                               |
-| `style`                 | string  | `"friendly"`    | The pygments style to use. A sample of valid styles can be found [here](https://pygments.org/styles/).                                                                                                                                                                                                                                                                                                                                                    |
+| `style-name`            | string  | `"friendly"`    | The name of the Pygments style to use. A sample of valid styles can be found in the [Pygments documentation](https://pygments.org/styles/).                                                                                                                                                                                                                                                                                                               |
 | `source-file-name`      | string  | —               | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                      |
 | `directory`             | string  | See description | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `"clientFilesCourse"` or `"serverFilesCourse"`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
 | `prevent-select`        | boolean | false           | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students. Also note that preventing operations like selecting or copying text may be detrimental to the student's experience, and as such should be avoided unless absolutely necessary.                                                   |
@@ -1191,11 +1282,11 @@ def square(x):
 
 #### Details
 
-The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found [here](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
+The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found in the [Pygments documentation](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
 
 ##### Common Pitfalls
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
 
 #### Example implementations
 
@@ -1585,7 +1676,7 @@ def generate(data):
 
 #### Details
 
-Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported.
+Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported. The currently used Graphviz version is 2.44.0.
 
 #### Example implementations
 
@@ -2556,6 +2647,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
+[element/imageCapture]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/imageCapture
 [element/integerinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
 [element/matching]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matching
 [element/matrixcomponentinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput

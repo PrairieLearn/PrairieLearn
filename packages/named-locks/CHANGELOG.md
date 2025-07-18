@@ -1,5 +1,35 @@
 # @prairielearn/named-locks
 
+## 3.0.20
+
+### Patch Changes
+
+- Updated dependencies [b911b61]
+  - @prairielearn/postgres@3.0.0
+
+## 3.0.19
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/postgres@2.1.15
+
+## 3.0.18
+
+### Patch Changes
+
+- Updated dependencies [d97b97a]
+  - @prairielearn/postgres@2.1.14
+
+## 3.0.17
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/postgres@2.1.13
+
 ## 3.0.16
 
 ### Patch Changes

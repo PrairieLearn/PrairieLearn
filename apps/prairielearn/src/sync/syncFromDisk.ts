@@ -4,8 +4,10 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
@@ -22,6 +24,7 @@ import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
   checkInvalidSharedAssessments,
+  checkInvalidSharedCourseInstances,
   checkInvalidSharingSetAdditions,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetRemovals,
@@ -49,9 +52,18 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  if (!config.checkSharingOnSync) {
-    return true;
-  }
+  if (!config.checkSharingOnSync) return true;
+
+  const institution = await selectInstitutionForCourse({ course_id: courseId });
+  const sharingEnabled = await features.enabled('question-sharing', {
+    course_id: courseId,
+    institution_id: institution.id,
+  });
+
+  // If sharing is not enabled, we'll skip all of these sharing checks. Instead, we'll
+  // already have validated that sharing attributes are not used, and we'll have emitted
+  // sync errors if they are.
+  if (!sharingEnabled) return true;
 
   const sharedQuestions = await selectSharedQuestions(courseId);
   const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
@@ -71,9 +83,9 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
-  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
-
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+  const existInvalidSharedCourseInstance = checkInvalidSharedCourseInstances(courseData, logger);
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
     !existInvalidRenames &&
@@ -82,6 +94,7 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
     !existInvalidSharedAssessment &&
+    !existInvalidSharedCourseInstance &&
     !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }

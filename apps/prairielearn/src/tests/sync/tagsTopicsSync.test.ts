@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
@@ -150,10 +150,11 @@ async function testImplicit(entityName: 'tags' | 'topics') {
 }
 
 describe('Tag/topic syncing', () => {
-  before('set up testing database', helperDb.before);
-  after('tear down testing database', helperDb.after);
+  beforeAll(helperDb.before);
 
-  beforeEach('reset testing database', helperDb.resetDatabase);
+  afterAll(helperDb.after);
+
+  beforeEach(helperDb.resetDatabase);
 
   it('adds a new tag', async () => {
     await testAdd('tags');

@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
@@ -17,7 +17,7 @@ import {
   QueryRunRowSchema,
 } from './administratorQuery.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
@@ -110,10 +110,7 @@ router.post(
         params: queryParams,
         authn_user_id: res.locals.authn_user.user_id,
         error,
-        // While rowCount is not used in the frontend, it used to be required,
-        // so it is included in the result object for backwards compatibility if
-        // a newer query run is viewed in an older version of this page.
-        result: result ? { ...result, rowCount: result.rows.length } : null,
+        result,
       },
       IdSchema,
     );

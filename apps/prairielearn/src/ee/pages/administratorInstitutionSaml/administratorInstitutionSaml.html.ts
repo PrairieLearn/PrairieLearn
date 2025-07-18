@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionSaml({
@@ -40,7 +40,7 @@ export function AdministratorInstitutionSaml({
       page: 'administrator_institution',
       subPage: 'saml',
     },
-    preContent: [DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })],
+    preContent: DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
       ${hasSamlProvider && !hasEnabledSaml
         ? html`

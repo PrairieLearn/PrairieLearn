@@ -2,10 +2,13 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import mocha from 'eslint-plugin-mocha';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -34,16 +37,19 @@ export default tseslint.config([
   js.configs.recommended,
   tseslint.configs.stylistic,
   tseslint.configs.strict,
-  eslintReact.configs['recommended-typescript'],
   {
     extends: compat.extends('plugin:you-dont-need-lodash-underscore/all'),
 
     plugins: {
       'import-x': importX,
-      mocha,
       'no-floating-promise': noFloatingPromise,
-      '@prairielearn': prairielearn,
+      'react-hooks': reactHooks,
+      vitest,
+      'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
+      'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
+      ...eslintReact.configs['recommended-typescript'].plugins,
+      '@prairielearn': prairielearn,
     },
 
     languageOptions: {
@@ -51,6 +57,11 @@ export default tseslint.config([
     },
 
     settings: {
+      'jsx-a11y-x': {
+        attributes: {
+          for: ['for'],
+        },
+      },
       'import-x/parsers': {
         '@typescript-eslint/parser': ['.ts', '.js'],
       },
@@ -60,7 +71,9 @@ export default tseslint.config([
         node: true,
       },
 
+      ...eslintReact.configs['recommended-typescript'].settings,
       'react-x': {
+        ...eslintReact.configs['recommended-typescript'].settings['react-x'],
         // This is roughly the version that Preact's compat layer supports.
         version: '18.0.0',
       },
@@ -84,6 +97,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-duplicate-imports': 'error',
 
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
@@ -121,17 +135,48 @@ export default tseslint.config([
         },
       ],
 
-      // The recommended Mocha rules are too strict for us; we'll only enable
-      // these two rules.
-      'mocha/no-exclusive-tests': 'error',
-      'mocha/no-pending-tests': 'error',
-
       'no-floating-promise/no-floating-promise': 'error',
+
+      // Enable all jsx-a11y rules.
+      ...jsxA11yX.configs.strict.rules,
+      'jsx-a11y-x/anchor-ambiguous-text': 'error',
+      'jsx-a11y-x/lang': 'error',
+      'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+
+      // Use the recommended rules for react-hooks
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'error',
+
+      // Use the recommended rules for react-you-might-not-need-an-effect as errors.
+      ...Object.fromEntries(
+        Object.keys(reactYouMightNotNeedAnEffect.configs['recommended'].rules ?? {}).map(
+          (ruleName) => [ruleName, 'error'],
+        ),
+      ),
+
+      // Use the recommended rules for eslint-react as errors.
+      ...Object.fromEntries(
+        Object.entries(eslintReact.configs['recommended-typescript'].rules).map(
+          ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
+        ),
+      ),
+
+      // Use the recommended rules for vitest
+      ...vitest.configs.recommended.rules,
+
+      // This gives a lot of false positives; we sometimes author tests that
+      // have the assertion in a helper function. We could refactor them in
+      // the future, but for now we'll disable this rule.
+      'vitest/expect-expect': ['off'],
+
+      // We violate this rule in a lot of places. We'll turn it off for now.
+      'vitest/no-identical-title': ['off'],
 
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
+      '@prairielearn/no-unused-sql-blocks': 'error',
 
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
 
@@ -151,6 +196,7 @@ export default tseslint.config([
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
 
@@ -172,20 +218,18 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.test.{js,ts,mjs}'],
-    languageOptions: {
-      globals: {
-        ...globals.mocha,
-      },
-    },
-  },
-  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.jquery,
       },
+    },
+  },
+  {
+    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   globalIgnores([

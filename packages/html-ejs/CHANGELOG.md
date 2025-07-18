@@ -1,5 +1,21 @@
 # @prairielearn/html-ejs
 
+## 2.0.16
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/html@4.0.16
+
+## 2.0.15
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
 ## 2.0.14
 
 ### Patch Changes

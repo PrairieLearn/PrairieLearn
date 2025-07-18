@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -17,7 +17,7 @@ import { regradeAssessmentInstance } from '../../lib/regrading.js';
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -117,7 +117,7 @@ router.post(
         authn_user_id: res.locals.authz_data.authn_user.user_id,
         exact_date: new Date(),
       };
-      if (req.body.action === 'unlimited' || req.body.reopen_without_limit === 'true') {
+      if (req.body.action === 'remove' || req.body.reopen_without_limit === 'true') {
         params.base_time = 'null';
       } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';
@@ -148,7 +148,7 @@ router.post(
         authn_user_id: res.locals.authz_data.authn_user.user_id,
         exact_date: new Date(),
       };
-      if (req.body.action === 'unlimited') {
+      if (req.body.action === 'remove') {
         params.base_time = 'null';
       } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';

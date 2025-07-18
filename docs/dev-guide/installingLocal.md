@@ -69,7 +69,6 @@ You can also build a local copy of this image and use it to make sure you have a
 
 ```sh
 cd /path/to/PrairieLearn
-docker build -t prairielearn/plbase images/plbase
 docker build -t prairielearn/prairielearn .
 ```
 
@@ -95,44 +94,3 @@ The previous shells were launched in their own containers. If you want to open a
   ```sh
   docker exec -it CONTAINER_NAME /bin/bash
   ```
-
-<!--
-This content moved to the quickstart.
-
-## Auto-restarting the node server
-
-The steps above require you to manually stop and restart PrairieLearn after you have edited any JavaScript files. You can alternatively configure the server to automatically restart when changes are detected. To do this, run the PrairieLearn container as described at the start of this page and then run:
-
-```sh
-make dev
-```
-
-Alternatively, you can set the `DEV=true` environment variable while running PrairieLearn automatically:
-
-```sh
-docker run -it --rm -p 3000:3000 -e DEV=true -v .:/PrairieLearn prairielearn/prairielearn
-```
-
-## Running the test suite
-
-The linters and tests for the JavaScript and Python code can be run with the following commands inside the container:
-
-```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
-
-# You can now run the following commands inside the container:
-make lint # or run "make lint-js" and "make lint-python" separately
-make test # or "make test-js" and "make test-python"
-```
-
-To run specific tests you first need to run `make start-support` to start the database and other services:
-
-```sh
-docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
-
-# following commands are inside the container:
-make start-support
-cd apps/prairielearn
-yarn mocha src/tests/getHomepage.test.js
-```
--->

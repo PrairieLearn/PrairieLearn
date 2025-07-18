@@ -23,7 +23,7 @@ More details about the `{{params.x}}` and `{{feedback.y}}` Mustache syntax can b
 
 ## Step 1: `generate`
 
-First, the `generate` function is called to generate random parameters for the variant, and the correct answers. It should set `data["params"]` with the parameters for the question, and `data["correct_answers"]` with the correct answers. The parameters can then be used in the `question.html` file by using `{{params.NAME}}`.
+First, the `generate` function is called to generate the question variant. It should update `data["params"]` with any necessary parameters for the question, and `data["correct_answers"]` with the correct answers.
 
 ```python title="server.py"
 import random
@@ -34,6 +34,17 @@ def generate(data):
 
     # Also compute the correct answer (if there is one) and store in the data["correct_answers"] dict:
     data["correct_answers"]["y"] = 2 * data["params"]["x"]
+```
+
+These values can be used in the `question.html` file with Mustache syntax. For example, you can use `data["params"]["x"]` with `{{params.x}}`.
+
+The snippet below uses the [`<pl-question-panel>`](../elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+
+<!-- prettier-ignore -->
+```html title="question.html"
+<pl-question-panel>
+  If $x = {{params.x}}$, what is $y$ if $y$ is double $x$?
+</pl-question-panel>
 ```
 
 ### Randomization
@@ -129,6 +140,16 @@ Although questions with custom grading may not rely on the full grading function
     code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
     [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
 
+The `parse()` function can also be used to create custom files to be sent to an external grader. This can be done with the `pl.add_submitted_file()` function, as in the example below:
+
+```python title="server.py"
+import prairielearn as pl
+
+def parse(data):
+    code = f"x = {data["submitted_answers"]["expression"]}"
+    pl.add_submitted_file(data, "user_code.py", raw_contents=code)
+```
+
 ## Step 5: `grade`
 
 Finally, the `grade(data)` function is called to grade the question. The grade function is responsible for:
@@ -170,7 +191,7 @@ def grade(data):
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above example](#complete-example) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this.
 
-Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]`, which you can override in the grading function. This field is often a string, though some elements such as `<pl-drawing>` and `<pl-checkbox>` use different types. The feedback provided here will be attached to the student's answer for that element, which can make it easier for students to interpret the feedback they received in longer questions. Since not elements provide feedback this way, and use different data structures to represent the feedback they give, we recommend using `data["feedback"][NAME]` to provide question-specific feedback instead.
+Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]`, which you can override in the grading function. This field is often a string, though some elements such as `<pl-drawing>` and `<pl-checkbox>` use different types. The feedback provided here will be attached to the student's answer for that element, which can make it easier for students to interpret the feedback they received in longer questions. Since not all elements provide feedback this way, and some use different data structures to represent the feedback they give, we recommend using `data["feedback"][NAME]` to provide question-specific feedback instead.
 
 !!! tip "Answer-specific feedback"
 

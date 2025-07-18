@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -9,10 +9,9 @@ import * as helperServer from './helperServer.js';
 const baseUrl = 'http://localhost:' + config.serverPort;
 
 describe('GET /', function () {
-  this.timeout(20000);
+  beforeAll(helperServer.before());
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  afterAll(helperServer.after);
 
   it('should load and contain QA 101', async () => {
     const response = await fetch(baseUrl);

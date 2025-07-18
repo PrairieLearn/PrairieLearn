@@ -40,6 +40,14 @@ updates:
       # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
+      # These upgrades are blocked on Sentry:
+      # https://github.com/getsentry/sentry-javascript/issues/15737
+      # https://github.com/getsentry/sentry-javascript/issues/15213
+      - dependency-name: '@opentelemetry/*'
+      # We use Yarn `resolutions` to point these to our Preact compat packages.
+      # We don't ever care about which version is actually listed in `package.json` files.
+      - dependency-name: 'react'
+      - dependency-name: 'react-dom'
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
@@ -47,6 +55,8 @@ updates:
       # together, so we'll include a special group for them. Dependabot evaluates
       # groups in the order that they're listed, so this will take precedence over
       # the catch-all patch/minor group below.
+      #
+      # These upgrades are currently ignored, see the note above.
       opentelemetry:
         patterns:
           - '@opentelemetry/*'
@@ -57,10 +67,11 @@ updates:
 
   - package-ecosystem: pip
     directories:
+      - '/'
       - '/docs'
       - '/graders/c'
       - '/graders/python'
-      - '/images/plbase'
+      - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
     schedule:

@@ -1,6 +1,8 @@
-import { IssueBadge } from '../components/IssueBadge.html.js';
+import { IssueBadge } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
-import { ProgressCircle } from '../components/ProgressCircle.html.js';
+import { ProgressCircle } from '../components/ProgressCircle.js';
+
+import { isEnterprise } from './license.js';
 
 /**
  * Retrieves horizontal navigation tab info for ContextNavigation.
@@ -45,7 +47,8 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
 
           {
@@ -87,14 +90,16 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
           {
-            activeSubPage: 'lti13',
+            activeSubPage: 'integrations',
             urlSuffix: '/instance_admin/lti13_instance',
             iconClasses: 'fas fa-school-flag',
-            tabLabel: 'LTI 1.3',
-            renderCondition: (resLocals) => resLocals.lti13_enabled,
+            tabLabel: 'Integrations',
+            renderCondition: ({ authz_data }) =>
+              authz_data.has_course_permission_edit && isEnterprise(),
           },
           {
             activeSubPage: 'billing',
@@ -464,7 +469,6 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         urlSuffix: '/lti13',
         iconClasses: 'fa fa-school-flag',
         tabLabel: 'LTI 1.3',
-        renderCondition: (resLocals) => resLocals.lti13_enabled,
       },
     ],
     institution_admin: [

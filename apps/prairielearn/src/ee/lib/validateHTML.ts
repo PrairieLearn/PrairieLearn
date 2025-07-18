@@ -56,6 +56,11 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
   return names;
 }
 
+export function isValidMustacheTemplateName(name: string): boolean {
+  // Mustache template names must be alphanumeric and can contain dots and underscores.
+  return /^[a-zA-Z0-9_.]+$/.test(name);
+}
+
 interface ValidationResult {
   /** Array of errors that we'll instruct the LLM to fix. */
   errors: string[];
@@ -738,13 +743,22 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
   const tree = parse5.parseFragment(file);
   const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
 
+  const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
-    ...extractMustacheTemplateNames(file),
+    ...usedTemplateNames,
     ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
   ];
 
   if (!usesServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
+  }
+
+  for (const template of usedTemplateNames) {
+    if (!isValidMustacheTemplateName(template)) {
+      errors.push(
+        `Template of ${template} must be in mustache format. Please adjust so that any logic done in the template is instead done in server.py`,
+      );
+    }
   }
 
   return errors;

@@ -186,6 +186,8 @@ extra:
   additional_readmes:
     - src: './contrib'
       dest: 'dev-guide/contrib/'
+    - src: './apps/prairielearn/src/migrations/'
+      dest: 'dev-guide/migrations/'
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/PrairieLearn/PrairieLearn
@@ -255,11 +257,12 @@ nav:
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element (Course)': schemas/infoElementCourse.md
           - '<code class="doc-symbol doc-symbol-nav doc-symbol-json"></code> Element Extension': schemas/infoElementExtension.md
   - 'Developer Guide':
-      - developer-guide/index.md
+      - dev-guide/index.md
       - 'Running in Docker': dev-guide/installingLocal.md
       - dev-guide/installingNative.md
       - 'Quickstart': dev-guide/quickstart.md
       - dev-guide/guide.md
+      - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'

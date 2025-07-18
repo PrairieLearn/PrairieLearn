@@ -3,11 +3,11 @@ import { html } from '@prairielearn/html';
 import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
-} from '../components/AssessmentRegenerate.html.js';
-import { HeadContents } from '../components/HeadContents.html.js';
-import { Navbar } from '../components/Navbar.html.js';
-import { Scorebar } from '../components/Scorebar.html.js';
-import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
+} from '../components/AssessmentRegenerate.js';
+import { HeadContents } from '../components/HeadContents.js';
+import { Navbar } from '../components/Navbar.js';
+import { ScorebarHtml } from '../components/Scorebar.js';
+import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
 
@@ -60,13 +60,13 @@ export function StudentAssessmentAccess({
                         )}
                       </div>
                       <div class="col-md-3 col-sm-6">
-                        ${Scorebar(assessment_instance.score_perc)}
+                        ${ScorebarHtml(assessment_instance.score_perc)}
                       </div>
 
                       ${AssessmentStatusDescription({
                         assessment_instance,
                         authz_result,
-                        extraClasses: 'col-md-6 col-sm-12 text-right',
+                        extraClasses: 'col-md-6 col-sm-12 text-end',
                       })}
                     </div>
                   `

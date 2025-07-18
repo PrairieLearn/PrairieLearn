@@ -1,5 +1,17 @@
 # @prairielearn/express-list-endpoints
 
+## 1.0.11
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 1.0.10
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
 ## 1.0.9
 
 ### Patch Changes

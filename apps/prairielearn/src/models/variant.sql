@@ -10,7 +10,8 @@ WHERE
 UPDATE variants AS v
 SET
   broken_at = CURRENT_TIMESTAMP,
-  broken_by = $authn_user_id
+  broken_by = $authn_user_id,
+  modified_at = CURRENT_TIMESTAMP
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
@@ -25,7 +26,8 @@ WHERE
 UPDATE variants AS v
 SET
   broken_at = CURRENT_TIMESTAMP,
-  broken_by = $authn_user_id
+  broken_by = $authn_user_id,
+  modified_at = CURRENT_TIMESTAMP
 FROM
   instance_questions AS iq
 WHERE
