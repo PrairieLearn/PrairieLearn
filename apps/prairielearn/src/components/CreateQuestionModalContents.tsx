@@ -100,7 +100,8 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
 
   return (
     <fieldset class="mb-3">
-      <legend class="form-label">{label}</legend>
+      {/* `col-form-label` correctly overrides the default font size for `legend` */}
+      <legend class="col-form-label">{label}</legend>
       <div
         role="radiogroup"
         aria-label={label}
