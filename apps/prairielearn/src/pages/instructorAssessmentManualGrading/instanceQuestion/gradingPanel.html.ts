@@ -67,14 +67,14 @@ export function GradingPanel({
             html`
               <li class="list-group-item d-flex justify-content-center">
                 <span>Points</span>
-                <div class="custom-control custom-switch mx-2">
+                <div class="form-check form-switch mx-2">
                   <input
-                    class="custom-control-input js-manual-grading-pts-perc-select"
+                    class="form-check-input js-manual-grading-pts-perc-select"
                     name="use_score_perc"
                     id="use-score-perc"
                     type="checkbox"
                   />
-                  <label class="custom-control-label" for="use-score-perc">Percentage</label>
+                  <label class="form-check-label" for="use-score-perc">Percentage</label>
                 </div>
               </li>
             `

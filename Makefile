@@ -1,9 +1,21 @@
+export PATH := $(CURDIR)/.venv/bin:$(PATH)
+
 build:
 	@yarn turbo run build
 build-sequential:
 	@yarn turbo run --concurrency 1 build
-python-deps:
-	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+
+# We use the system Python due to this bug: https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869
+venv-setup:
+	@[ -f .venv/bin/python3 ] || uv venv --python-preference only-system --python 3.10 --seed .venv || \
+		python3 -m venv .venv
+
+# Note the `--compile-bytecode` flag, which is needed to ensure fast
+# performance the first time things run:
+# https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
+python-deps: venv-setup
+	@uv pip install -r requirements.txt --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install -r requirements.txt
 deps:
 	@yarn
 	@$(MAKE) python-deps build
@@ -50,9 +62,11 @@ start-s3rver:
 test: test-js test-python
 test-js: start-support
 	@yarn test
-test-js-dist: start-support build
+test-prairielearn-docker-smoke-tests: start-support
+	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
+test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
-test-python:
+test-python: venv-setup
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
@@ -64,7 +78,7 @@ check-dependencies:
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
 update-jsonschema:
-	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json"
+	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell
@@ -77,7 +91,7 @@ lint-js:
 lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
-lint-python:
+lint-python: venv-setup
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
@@ -103,7 +117,7 @@ format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
-format-python:
+format-python: venv-setup
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
@@ -114,7 +128,7 @@ typecheck-scripts:
 	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
-typecheck-python:
+typecheck-python: venv-setup
 	@yarn pyright
 
 changeset:
@@ -125,7 +139,7 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 prepare-docs-venv:
 	@if uv --version >/dev/null 2>&1; then \
-		uv venv /tmp/pldocs/venv; \
+		uv venv --python-preference only-system /tmp/pldocs/venv; \
 		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
 	else \
 		python3 -m venv /tmp/pldocs/venv; \

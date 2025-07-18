@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { IssueBadge } from '../../components/IssueBadge.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import { idsEqual } from '../../lib/id.js';
 import type { AssessmentRow } from '../../models/assessment.js';
 
@@ -79,8 +79,9 @@ export function AssessmentSwitcher({
               })}
             </div>
             <div class="d-flex overflow-hidden align-items-center ${isActive ? '' : 'text-muted'}">
-              <span class="text-nowrap text-truncate text-left" style="direction: rtl;">
-                ${row.tid}
+              <!-- Use RTL so the overflow is on the left, but with an inner span with auto direction so it doesn't affect the text itself -->
+              <span class="text-nowrap text-truncate text-start" dir="rtl">
+                <span dir="auto">${row.tid}</span>
               </span>
             </div>
           </div>

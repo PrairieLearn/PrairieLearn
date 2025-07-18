@@ -10,13 +10,12 @@ columns
     format_errors: jsonb
     gradable: boolean default true
     graded_at: timestamp with time zone
-    grading_method: enum_grading_method
     grading_requested_at: timestamp with time zone
     id: bigint not null default nextval('submissions_id_seq'::regclass)
     is_ai_graded: boolean not null default false
     manual_rubric_grading_id: bigint
     mode: enum_mode
-    modified_at: timestamp with time zone
+    modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     override_score: double precision
     params: jsonb
     partial_scores: jsonb

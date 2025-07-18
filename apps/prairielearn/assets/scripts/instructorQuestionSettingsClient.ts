@@ -3,9 +3,8 @@ import TomSelect from 'tom-select';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import './lib/changeIdButton.js';
-import { TagBadge } from '../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../src/components/TopicBadge.html.js';
+import { TagBadge } from '../../src/components/TagBadge.js';
+import { TopicBadge } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';

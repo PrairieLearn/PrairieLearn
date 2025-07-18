@@ -6,12 +6,15 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
@@ -65,7 +68,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty question',
+      start_from: 'empty',
     },
     files: new Set([
       'README.md',
@@ -89,7 +92,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty question',
+      start_from: 'empty',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
@@ -326,6 +329,54 @@ const publicCopyTestData: EditData[] = [
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
     ]),
   },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'courseInstances/Fa19_copy1/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'questions/test-course/shared-source-publicly_copy1/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
 ];
 
 describe('test course editor', { timeout: 20_000 }, function () {
@@ -362,9 +413,19 @@ describe('test course editor', { timeout: 20_000 }, function () {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
+      await features.enable('question-sharing');
+      config.checkSharingOnSync = true;
+    });
+
+    afterAll(() => {
+      config.checkSharingOnSync = false;
     });
 
     beforeAll(createSharedCourse);
+
+    beforeAll(async () => {
+      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
+    });
 
     describe('verify edits', async function () {
       publicCopyTestData.forEach((element) => {
@@ -553,6 +614,8 @@ async function createCourseFiles() {
 
 async function createSharedCourse() {
   const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const PUBLICLY_SHARED_SOURCE_QUESTION_QID = 'shared-source-publicly';
+
   const sharingCourseData = syncUtil.getCourseData();
   sharingCourseData.course.name = 'SHARING 101';
   sharingCourseData.questions = {
@@ -564,6 +627,13 @@ async function createSharedCourse() {
       sharePublicly: true,
       shareSourcePublicly: true,
     },
+    [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111112',
+      type: 'v3',
+      title: 'Shared source publicly',
+      topic: 'TOPIC HERE',
+      shareSourcePublicly: true,
+    },
   };
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
@@ -572,13 +642,20 @@ async function createSharedCourse() {
           id: PUBLICLY_SHARED_QUESTION_QID,
           points: 1,
         },
+        {
+          id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
+          points: 1,
+        },
       ],
     },
   ];
-
-  // TODO add tests for copying a publicly shared assessment and course instance, once implemented
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
+    sharingCourseData.courseInstances['Fa19'].assessments['test'],
+  );
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
