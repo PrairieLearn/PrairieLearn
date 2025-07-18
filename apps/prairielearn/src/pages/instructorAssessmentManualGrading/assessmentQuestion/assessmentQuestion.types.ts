@@ -4,7 +4,6 @@ import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
-  modified_at: z.string(),
   assessment_open: z.boolean(),
   uid: z.string().nullable(),
   assigned_grader_name: z.string().nullable(),
