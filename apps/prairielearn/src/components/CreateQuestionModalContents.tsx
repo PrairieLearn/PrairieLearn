@@ -1,5 +1,51 @@
 import { useState, useEffect } from 'preact/hooks';
 
+function SelectableCard({
+  id,
+  title,
+  description,
+  selected,
+  onClick,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  return (
+    <div
+      class={`card h-100 ${selected ? 'border-primary bg-primary bg-opacity-10' : 'border-secondary'} cursor-pointer`}
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
+      aria-describedby={`${id}_description`}
+      onClick={onClick}
+      onKeyDown={handleKeyDown}
+    >
+      <div class="card-body text-center">
+        <h5 class={`card-title ${selected ? 'text-primary' : ''}`}>{title}</h5>
+        <p id={`${id}_description`} class="card-text text-muted small">
+          {description}
+        </p>
+      </div>
+      {selected && (
+        <div class="position-absolute top-0 end-0 p-2">
+          <i class="fa fa-check-circle text-primary" aria-label="Selected"></i>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function CreateQuestionModalContents({
   templateQuestions,
 }: {
@@ -25,6 +71,7 @@ export function CreateQuestionModalContents({
   }, [startFrom, filteredTemplateQuestions.length]);
 
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
+  const hasCourseTemplates = templateQuestions.some(({ example_course }) => !example_course);
 
   return (
     <>
@@ -44,6 +91,7 @@ export function CreateQuestionModalContents({
           The full name of the question, visible to users.
         </small>
       </div>
+
       <div class="mb-3">
         <label class="form-label" for="qid">
           Question identifier (QID)
@@ -62,32 +110,46 @@ export function CreateQuestionModalContents({
           Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
+
       <div class="mb-3">
-        <label class="form-label" for="start_from">
-          Start from
-        </label>
-        <select
-          class="form-select"
-          id="start_from"
-          name="start_from"
-          required
-          aria-describedby="start_from_help"
-          value={startFrom}
-          onChange={(e) => setStartFrom((e.target as HTMLSelectElement).value)}
-        >
-          <option value="empty">Empty question</option>
-          <option value="example">PrairieLearn template</option>
-          {templateQuestions.some(({ example_course }) => !example_course) ? (
-            <option value="course">Course-specific template</option>
-          ) : null}
-        </select>
-        <small id="start_from_help" class="form-text text-muted">
-          Begin with an empty question or a pre-made question template.
-        </small>
+        <label class="form-label">Start from</label>
+        <div class="row g-3" role="group" aria-labelledby="start_from_label">
+          <div class={hasCourseTemplates ? 'col-md-4' : 'col-md-6'}>
+            <SelectableCard
+              id="empty"
+              title="Empty question"
+              description="Start with a blank question and build from scratch"
+              selected={startFrom === 'empty'}
+              onClick={() => setStartFrom('empty')}
+            />
+          </div>
+          <div class={hasCourseTemplates ? 'col-md-4' : 'col-md-6'}>
+            <SelectableCard
+              id="example"
+              title="PrairieLearn template"
+              description="Start with a pre-built PrairieLearn question template"
+              selected={startFrom === 'example'}
+              onClick={() => setStartFrom('example')}
+            />
+          </div>
+          {hasCourseTemplates && (
+            <div class="col-md-4">
+              <SelectableCard
+                id="course"
+                title="Course template"
+                description="Start with a template from your course"
+                selected={startFrom === 'course'}
+                onClick={() => setStartFrom('course')}
+              />
+            </div>
+          )}
+        </div>
+        {/* Hidden input for the form submission */}
+        <input type="hidden" name="start_from" value={startFrom} />
       </div>
 
       {isTemplateSelected && (
-        <div id="templateContainer" class="mb-3">
+        <div class="mb-3">
           <label class="form-label" for="template_qid">
             Template
           </label>
