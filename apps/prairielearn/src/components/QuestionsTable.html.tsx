@@ -4,12 +4,12 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { type QuestionsPageData } from '../models/questions.js';
-
-import { Modal } from './Modal.html.js';
 import { renderHtml } from '../lib/preact-html.js';
 import { Hydrate } from '../lib/preact.js';
+import { type QuestionsPageData } from '../models/questions.js';
+
 import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';
+import { Modal } from './Modal.html.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

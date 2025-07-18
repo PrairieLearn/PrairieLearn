@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 
 interface SelectableCardProps {
   id: string;
@@ -57,7 +57,7 @@ function SelectableCard({
 interface RadioCardGroupProps {
   label: string;
   value: string;
-  options: Array<{ id: string; title: string; description: string }>;
+  options: { id: string; title: string; description: string }[];
   onChange: (value: string) => void;
 }
 
@@ -144,20 +144,27 @@ export function CreateQuestionModalContents({
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
 
   // Filter template questions based on the selected start_from value
-  const filteredTemplateQuestions = templateQuestions.filter((question) => {
-    if (startFrom === 'example') return question.example_course;
-    if (startFrom === 'course') return !question.example_course;
-    return false;
-  });
+  const filteredTemplateQuestions = useMemo(() => {
+    return templateQuestions.filter((question) => {
+      if (startFrom === 'example') return question.example_course;
+      if (startFrom === 'course') return !question.example_course;
+      return false;
+    });
+  }, [startFrom, templateQuestions]);
 
   // When startFrom changes, auto-select the first available template
-  useEffect(() => {
-    if (filteredTemplateQuestions.length > 0) {
-      setSelectedTemplateQid(filteredTemplateQuestions[0].qid);
-    } else {
-      setSelectedTemplateQid('');
-    }
-  }, [startFrom, filteredTemplateQuestions.length]);
+  useEffect(
+    () => {
+      // We very much want to update state in response to this data changing.
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      setSelectedTemplateQid(filteredTemplateQuestions[0]?.qid ?? '');
+    },
+    // We want to avoid unnecessary resetting the selected template QID,
+    // so we depend on the entire list of template questions instead of
+    // just the filtered list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [startFrom, templateQuestions],
+  );
 
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
