@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
@@ -13,9 +12,12 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
+// import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTable.html.js';
+import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTableV2.html.js';
 
 export function AssessmentQuestion({
   resLocals,
@@ -23,12 +25,14 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
+  rubric_data,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
+  rubric_data: RubricData | undefined | null;
 }) {
   const {
     number_in_alternative_group,
@@ -149,49 +153,14 @@ export function AssessmentQuestion({
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
             ${aiGradingStats.rubric_stats.length
-              ? html`
-                  <div class="card overflow-hidden mb-3">
-                    <div class="table-responsive">
-                      <table class="table table-sm" aria-label="AI grading rubric item stats">
-                        <thead>
-                          <tr class="table-light fw-bold">
-                            <td>Rubric item</td>
-                            <td>AI agreement</td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${aiGradingStats.rubric_stats.map(
-                            (item) =>
-                              html`<tr>
-                                <td>${item.rubric_item.description}</td>
-                                <td>
-                                  ${run(() => {
-                                    if (item.disagreement_count) {
-                                      return html`
-                                        <i class="bi bi-x-square-fill text-danger"></i>
-                                        <span class="text-muted">
-                                          (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
-                                          disagree)
-                                        </span>
-                                      `;
-                                    }
-
-                                    if (aiGradingStats.submission_rubric_count === 0) {
-                                      return html`&mdash;`;
-                                    }
-
-                                    return html`<i
-                                      class="bi bi-check-square-fill text-success"
-                                    ></i>`;
-                                  })}
-                                </td>
-                              </tr>`,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                `
+              ? AssessmentQuestionRubricTable(
+                  assessment_question,
+                  rubric_data,
+                  resLocals.__csrf_token,
+                  aiGradingEnabled,
+                  aiGradingMode,
+                  aiGradingStats,
+                )
               : html`
                   <div class="card mb-3">
                     <div class="card-body">
