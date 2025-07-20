@@ -3,21 +3,21 @@ import { type z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { type Lti13Assessments, Lti13AssessmentsSchema } from '../../../lib/db-types.js';
+import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { type Lti13Assessment, Lti13AssessmentSchema } from '../../../lib/db-types.js';
 import { type AssessmentRow, AssessmentRowSchema } from '../../../models/assessment.js';
 import { LineitemSchema, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const LineItemsRowSchema = LineitemSchema.extend({
   assessment: AssessmentRowSchema.optional(),
-  lti13_assessment: Lti13AssessmentsSchema.optional(),
+  lti13_assessment: Lti13AssessmentSchema.optional(),
 });
 export type LineItemsRow = z.infer<typeof LineItemsRowSchema>;
 
 export const AssessmentLti13AssessmentRowSchema = AssessmentRowSchema.extend({
-  lti13_assessment: Lti13AssessmentsSchema.optional(),
+  lti13_assessment: Lti13AssessmentSchema.optional(),
 });
 export type AssessmentLti13AssessmentRowSchema = z.infer<typeof AssessmentLti13AssessmentRowSchema>;
 
@@ -46,7 +46,6 @@ export function InstructorInstanceAdminLti13({
     },
     options: {
       fullWidth: true,
-      marginBottom: true,
     },
     content: html`
       ${KnowAssessmentPickLineItem({
@@ -321,7 +320,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem({ item, timezone }: { item: Lti13Assessments; timezone: string }) {
+function LineItem({ item, timezone }: { item: Lti13Assessment; timezone: string }) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>
