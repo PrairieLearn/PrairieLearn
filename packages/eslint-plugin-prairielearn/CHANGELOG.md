@@ -1,5 +1,17 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.0
+
+### Minor Changes
+
+- edcd248: Introduce `no-unused-sql-blocks` lint rule
+
+## 2.1.7
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
 ## 2.1.6
 
 ### Patch Changes

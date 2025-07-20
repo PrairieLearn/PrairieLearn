@@ -1,18 +1,18 @@
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../components/AssessmentQuestions.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
+} from '../../components/AssessmentQuestions.js';
+import { IssueBadge } from '../../components/IssueBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { Course } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -140,7 +140,7 @@ function AssessmentQuestionsTable({
             <th>Mean score</th>
             <th>Num. Submissions Histogram</th>
             <th>Other Assessments</th>
-            <th class="text-right">Actions</th>
+            <th class="text-end">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -227,7 +227,7 @@ function AssessmentQuestionsTable({
                     AssessmentBadge({ urlPrefix, assessment }),
                   )}
                 </td>
-                <td class="text-right">
+                <td class="text-end">
                   <div class="dropdown js-question-actions">
                     <button
                       type="button"

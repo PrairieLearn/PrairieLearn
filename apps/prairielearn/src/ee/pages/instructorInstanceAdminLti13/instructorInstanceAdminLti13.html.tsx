@@ -3,12 +3,14 @@ import { type z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import {
-  type Lti13Assessments,
-  Lti13AssessmentsSchema,
+  Lti13AssessmentSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
 import { type AssessmentRow, AssessmentRowSchema } from '../../../models/assessment.js';
@@ -16,12 +18,12 @@ import { LineitemSchema, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const LineItemsRowSchema = LineitemSchema.extend({
   assessment: AssessmentRowSchema.optional(),
-  lti13_assessment: Lti13AssessmentsSchema.optional(),
+  lti13_assessment: Lti13AssessmentSchema.optional(),
 });
 export type LineItemsRow = z.infer<typeof LineItemsRowSchema>;
 
 export const AssessmentLti13AssessmentRowSchema = AssessmentRowSchema.extend({
-  lti13_assessment: Lti13AssessmentsSchema.optional(),
+  lti13_assessment: Lti13AssessmentSchema.optional(),
 });
 export type AssessmentLti13AssessmentRowSchema = z.infer<typeof AssessmentLti13AssessmentRowSchema>;
 
@@ -126,13 +128,15 @@ export function InstructorInstanceAdminLti13({
               <div class="dropdown mb-2">
                 <button
                   type="button"
-                  class="btn dropdown-toggle border border-gray"
+                  class="btn dropdown-toggle border border-gray w-100 text-start pe-4"
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"
                   data-bs-boundary="window"
                 >
-                  ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  <span class="d-inline-block text-wrap w-100">
+                    ${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}
+                  </span>
                 </button>
                 <div class="dropdown-menu">
                   ${instances.map((i) => {
@@ -451,7 +455,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem({ item, timezone }: { item: Lti13Assessments; timezone: string }) {
+function LineItem({ item, timezone }: { item: Lti13Assessment; timezone: string }) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>

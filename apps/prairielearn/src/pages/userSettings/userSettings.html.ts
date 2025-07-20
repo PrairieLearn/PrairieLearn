@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -312,7 +312,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
           autocomplete="off"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
@@ -330,7 +330,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         Once you delete this token, any applications using it will no longer be able to access the
         API. You cannot undo this action.
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>

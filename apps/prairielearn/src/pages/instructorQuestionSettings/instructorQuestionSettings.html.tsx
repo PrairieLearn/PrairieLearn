@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TagDescription } from '../../components/TagDescription.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { TopicDescription } from '../../components/TopicDescription.html.js';
+import { AssessmentBadge } from '../../components/AssessmentBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TagDescription } from '../../components/TagDescription.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
+import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -601,7 +601,7 @@ function CopyForm({
           })}
         </select>
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>

@@ -16,8 +16,8 @@ import {
 
 import {
   AssessmentSchema,
-  type Lti13Assessments,
-  Lti13AssessmentsSchema,
+  type Lti13Assessment,
+  Lti13AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
 } from '../../../lib/db-types.js';
@@ -101,11 +101,11 @@ router.get(
     const lti13_assessments = await queryRows(
       sql.select_lti13_assessments,
       { lti13_course_instance_id: instance.lti13_course_instance.id },
-      Lti13AssessmentsSchema,
+      Lti13AssessmentSchema,
     );
 
-    const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessments> = {};
-    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments> = {};
+    const lti13AssessmentsByLineItemIdUrl: Record<string, Lti13Assessment> = {};
+    const lti13AssessmentsByAssessmentId: Record<string, Lti13Assessment> = {};
     for (const la of lti13_assessments) {
       lti13AssessmentsByAssessmentId[la.assessment_id] = la;
       lti13AssessmentsByLineItemIdUrl[la.lineitem_id_url] = la;
@@ -270,7 +270,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        Lti13AssessmentsSchema,
+        Lti13AssessmentSchema,
       );
 
       flash(
