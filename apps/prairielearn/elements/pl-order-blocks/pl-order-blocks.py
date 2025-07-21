@@ -279,7 +279,6 @@ def validate_order_blocks_attribs(
     data: pl.QuestionData,
     order_block_attribs: PLOrderBlocksAttribs,
 ) -> None:
-    print(data)
     pl.check_answers_names(data, order_block_attribs["answer_name"])
     if (
         order_block_attribs["grading_method"] not in LCS_GRADABLE_TYPES
@@ -480,7 +479,6 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
     for i, answer_attribs in enumerate(all_answer_attribs):
-        print(answer_attribs)
         answer_data_dict: OrderBlocksAnswerData = {
             "inner_html": answer_attribs["inner_html"],
             "indent": answer_attribs["indent"],
