@@ -46,6 +46,7 @@
     "eslint": "^9.30.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-x": "^4.16.1",
+    "eslint-plugin-jsx-a11y-x": "^0.1.1",
     "eslint-plugin-no-floating-promise": "^2.0.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.3.2",

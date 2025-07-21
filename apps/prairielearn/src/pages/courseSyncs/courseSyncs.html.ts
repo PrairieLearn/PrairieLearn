@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { JobStatus } from '../../components/JobStatus.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobStatus } from '../../components/JobStatus.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import {
   type Course,

@@ -1,7 +1,7 @@
 import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
 import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';

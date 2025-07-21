@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { type HtmlValue, html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezones.js';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export const InstitutionStatisticsSchema = z.object({
   course_count: z.number(),
