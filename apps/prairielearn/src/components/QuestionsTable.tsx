@@ -4,9 +4,11 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+import { hydrateHtml } from '../lib/preact.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
-import { Modal } from './Modal.html.js';
+import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';
+import { Modal } from './Modal.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -41,7 +43,7 @@ export function QuestionsTable({
   /**
    * The template questions the user can select as a starting point when creating a new question.
    */
-  templateQuestions?: { qid: string; title: string }[];
+  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -229,7 +231,10 @@ export function QuestionsTable({
               </p>
               <p>
                 Learn more in the
-                <a href="https://prairielearn.readthedocs.io/en/latest/question/" target="_blank"
+                <a
+                  href="https://prairielearn.readthedocs.io/en/latest/question/"
+                  target="_blank"
+                  rel="noreferrer"
                   >question documentation</a
                 >.
               </p>
@@ -270,79 +275,13 @@ function CreateQuestionModal({
   templateQuestions,
 }: {
   csrfToken: string;
-  templateQuestions: { qid: string; title: string }[];
+  templateQuestions: { example_course: boolean; qid: string; title: string }[];
 }) {
   return Modal({
     id: 'createQuestionModal',
     title: 'Create question',
     formMethod: 'POST',
-    body: html`
-      <div class="mb-3">
-        <label class="form-label" for="title">Title</label>
-        <input
-          type="text"
-          class="form-control"
-          id="title"
-          name="title"
-          required
-          aria-describedby="title_help"
-        />
-        <small id="title_help" class="form-text text-muted">
-          The full name of the question, visible to users.
-        </small>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="qid">Question identifier (QID)</label>
-        <input
-          type="text"
-          class="form-control"
-          id="qid"
-          name="qid"
-          required
-          pattern="[\\-A-Za-z0-9_\\/]+"
-          aria-describedby="qid_help"
-        />
-        <small id="qid_help" class="form-text text-muted">
-          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
-          Use only letters, numbers, dashes, and underscores, with no spaces.
-        </small>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="start_from">Start from</label>
-        <select
-          class="form-select"
-          id="start_from"
-          name="start_from"
-          required
-          aria-describedby="start_from_help"
-        >
-          <option value="Empty question">Empty question</option>
-          <option value="Template">Template</option>
-        </select>
-        <small id="start_from_help" class="form-text text-muted">
-          Begin with an empty question or a pre-made question template.
-        </small>
-      </div>
-
-      <div id="templateContainer" class="mb-3" hidden>
-        <label class="form-label" for="template_qid">Template</label>
-        <select
-          class="form-select"
-          id="template_qid"
-          name="template_qid"
-          required
-          aria-describedby="template_help"
-          disabled
-        >
-          ${templateQuestions.map(
-            (question) => html`<option value="${question.qid}">${question.title}</option>`,
-          )}
-        </select>
-        <small id="template_help" class="form-text text-muted">
-          The question will be created from this template.
-        </small>
-      </div>
-    `,
+    body: hydrateHtml(<CreateQuestionModalContents templateQuestions={templateQuestions} />),
     footer: html`
       <input type="hidden" name="__action" value="add_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />

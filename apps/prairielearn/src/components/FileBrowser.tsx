@@ -18,14 +18,14 @@ import type { InstructorFilePaths } from '../lib/instructorFiles.js';
 import { renderHtml } from '../lib/preact-html.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { PageLayout } from './PageLayout.html.js';
+import { PageLayout } from './PageLayout.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
   CourseSyncErrorsAndWarnings,
   QuestionSyncErrorsAndWarnings,
-} from './SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from './SyncProblemButton.html.js';
+} from './SyncErrorsAndWarnings.js';
+import { SyncProblemButton } from './SyncProblemButton.js';
 
 interface FileInfo {
   id: number;
@@ -546,6 +546,7 @@ function FileContentPreview({
       <img
         src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}"
         class="img-fluid"
+        alt="Preview of ${fileInfo.name}"
       />
     `;
   }
@@ -557,6 +558,7 @@ function FileContentPreview({
       <div class="ratio ratio-4x3">
         <iframe
           src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
+          title="PDF preview of ${fileInfo.name}"
         >
           This PDF cannot be displayed.
         </iframe>
