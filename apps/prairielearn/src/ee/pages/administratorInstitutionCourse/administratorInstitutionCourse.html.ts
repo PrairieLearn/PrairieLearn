@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, CourseInstanceSchema, type Institution } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({

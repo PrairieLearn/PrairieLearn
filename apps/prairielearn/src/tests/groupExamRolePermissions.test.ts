@@ -2,16 +2,10 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOneRowAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { GroupRoleSchema, QuestionSchema, type User } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -32,10 +26,6 @@ const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
 const GROUP_NAME = 'groupBB';
-
-const QuestionIdSchema = QuestionSchema.pick({
-  id: true,
-});
 
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
@@ -143,16 +133,12 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const result = await queryValidatedOneRow(
+  const id = await queryRow(
     sql.select_instance_questions,
-    {
-      assessment_instance_id: assessmentInstanceId,
-      question_id: questionId,
-    },
-    QuestionIdSchema,
+    { assessment_instance_id: assessmentInstanceId, question_id: questionId },
+    IdSchema,
   );
-  assert.isDefined(result.id);
-  return courseInstanceUrl + '/instance_question/' + result.id;
+  return `${courseInstanceUrl}/instance_question/${id}`;
 }
 
 /**
@@ -161,23 +147,22 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentResult = await queryOneRowAsync(sql.select_assessment, {
-    assessment_tid: GROUP_WORK_EXAM_TID,
-  });
-  assert.lengthOf(assessmentResult.rows, 1);
-  const assessmentId = assessmentResult.rows[0].id;
-  assert.isDefined(assessmentId);
+  const assessmentId = await queryRow(
+    sql.select_assessment,
+    {
+      assessment_tid: GROUP_WORK_EXAM_TID,
+    },
+    IdSchema,
+  );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
   // Generate three users
   const studentUsers = await generateThreeStudentUsers();
 
   // Get group roles
-  const groupRoles = await queryValidatedRows(
+  const groupRoles = await queryRows(
     sql.select_assessment_group_roles,
-    {
-      assessment_id: assessmentId,
-    },
+    { assessment_id: assessmentId },
     GroupRoleSchema.pick({
       id: true,
       role_name: true,
@@ -255,10 +240,13 @@ async function prepareGroup() {
   $ = cheerio.load(await response.text());
 
   // Check there is now one assessment instance in database
-  const assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-  assert.lengthOf(assessmentInstancesResult.rows, 1);
-  assert.equal(assessmentInstancesResult.rows[0].group_id, 1);
-  const assessmentInstanceId = assessmentInstancesResult.rows[0].id;
+  const assessmentInstanceResult = await queryRow(
+    sql.select_all_assessment_instance,
+    [],
+    AssessmentInstanceSchema,
+  );
+  assert.equal(assessmentInstanceResult.group_id, '1');
+  const assessmentInstanceId = assessmentInstanceResult.id;
 
   return {
     assessmentInstanceUrl: courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId,

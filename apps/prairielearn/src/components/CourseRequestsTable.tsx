@@ -3,7 +3,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { type CourseRequestRow } from '../lib/course-request.js';
 import { type Institution } from '../lib/db-types.js';
 
-import { JobStatus } from './JobStatus.html.js';
+import { JobStatus } from './JobStatus.js';
 
 export function CourseRequestsTable({
   rows,

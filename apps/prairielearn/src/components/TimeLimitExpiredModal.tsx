@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 
 export function TimeLimitExpiredModal({ showAutomatically }: { showAutomatically: boolean }) {
   return html`
