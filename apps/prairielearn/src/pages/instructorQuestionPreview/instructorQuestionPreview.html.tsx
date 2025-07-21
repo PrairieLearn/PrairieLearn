@@ -134,10 +134,10 @@ export function InstructorQuestionPreview({
                       class="card-body position-relative markdown-body overflow-hidden max-height"
                     >
                       ${unsafeHtml(readmeHtml)}
-                      <div class="reveal-fade d-none"></div>
                     </div>
+                    <div class="reveal-fade d-none"></div>
                     <div
-                      class="pb-2 d-none justify-content-center bg-light js-expand-button-container"
+                      class="py-1 z-1 position-relative d-none justify-content-center bg-light js-expand-button-container"
                     >
                       <button type="button" class="btn btn-sm btn-link">Expand</button>
                     </div>

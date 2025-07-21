@@ -32,15 +32,15 @@ onDocumentReady(() => {
 
   let readMeExpanded = false;
 
-  function expandReadMe() {
-    if (!markdownBody || readMeExpanded) return;
-    readMeExpanded = true;
-    revealFade?.remove();
-    expandButtonContainer?.remove();
-    markdownBody?.classList.remove('max-height');
+  function toggleExpandReadMe() {
+    if (!markdownBody || !expandButton) return;
+    readMeExpanded = !readMeExpanded;
+    expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
+    revealFade?.classList.toggle('d-none');
+    markdownBody?.classList.toggle('max-height');
   }
 
-  expandButton?.addEventListener('click', expandReadMe);
+  expandButton?.addEventListener('click', toggleExpandReadMe);
 
   if (markdownBody && markdownBody.scrollHeight > 150) {
     markdownBody.classList.add('max-height');
