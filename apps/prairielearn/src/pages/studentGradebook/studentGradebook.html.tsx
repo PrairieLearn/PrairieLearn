@@ -77,7 +77,7 @@ export function StudentGradebook({
                     </td>
                     <td class="align-middle">
                       {row.title}{' '}
-                      {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true"></i>}
+                      {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true" />}
                     </td>
                     <td class="text-center align-middle">
                       {row.show_closed_assessment_score ? (
