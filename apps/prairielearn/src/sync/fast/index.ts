@@ -51,6 +51,8 @@ export interface QuestionFastSync {
 type FastSyncStrategy = QuestionFastSync;
 
 export function getFastSyncStrategy(changedFiles: string[]): FastSyncStrategy | null {
+  if (changedFiles.length === 0) return null;
+
   // We'll aim to handle two possible fast syncing cases for now:
   // - Just a question's `info.json` file has changed.
   // - Any non-JSON question files have changed.

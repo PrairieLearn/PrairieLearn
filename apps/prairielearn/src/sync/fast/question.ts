@@ -2,9 +2,10 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { createAndUploadChunks } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { type Course, type Question, QuestionSchema, type Topic } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -75,45 +76,49 @@ async function updateQuestion(
   question: Question,
   infoFile: infofile.InfoFile<QuestionJson>,
   topic: Topic | null,
-) {
+): Promise<Question> {
   assert(question.qid, 'Question must have a QID');
 
   if (infofile.hasErrors(infoFile)) {
     // Write the errors to the question.
-    await queryAsync(sql.update_question_errors, {
-      id: question.id,
-      errors: infofile.stringifyErrors(infoFile),
-    });
+    return await queryRow(
+      sql.update_question_errors,
+      {
+        id: question.id,
+        errors: infofile.stringifyErrors(infoFile),
+      },
+      QuestionSchema,
+    );
   } else {
     // Update the question's properties.
     assert(topic?.id, 'Topic must be defined');
-    await queryAsync(sql.update_question, {
-      id: question.id,
-      qid: question.qid,
-      data: getParamsForQuestion(question.qid, infoFile.data),
-      topic_id: topic.id,
-      warnings: infofile.stringifyWarnings(infoFile),
-    });
+    const updatedQuestion = await queryRow(
+      sql.update_question,
+      {
+        id: question.id,
+        qid: question.qid,
+        data: getParamsForQuestion(question.qid, infoFile.data),
+        topic_id: topic.id,
+        warnings: infofile.stringifyWarnings(infoFile),
+      },
+      QuestionSchema,
+    );
+
+    // TODO: this will need to sync changes to tags as well.
+
+    return updatedQuestion;
   }
 }
 
-export async function fastSyncQuestion(
+/**
+ * Attempts to sync a question's JSON file. Returns the question if the question
+ * was able to be fast synced, `null` otherwise. If `null`, one should fall back to
+ * a full, slow sync.
+ */
+async function syncQuestionJson(
   course: Course,
   strategy: QuestionFastSync,
-): Promise<boolean> {
-  // We do need to consider deletion here; it's possible that a question may
-  // consist just of a JSON file, and that deleting the file could delete the
-  // question. It's also possible that someone might delete a JSON file that's
-  // not actually part of a question. It's ALSO possible that someone might
-  // delete a JSON file that would cause another directory to start being treated
-  // as a question. For instance, if `foo/info.json` and `foo/bar/info.json` exist
-  // and `foo/info.json` is deleted, `foo/bar/info.json` would become a question's
-  // JSON file.
-  //
-  // To keep things simple, if a JSON file was deleted, we'll require that the
-  // entire containing directory was also deleted. If not, we'll fall back to slow
-  // sync.
-
+): Promise<Question | null> {
   const existingQuestion = await selectMatchingQuestion(strategy.pathPrefix);
 
   if (existingQuestion) {
@@ -122,7 +127,7 @@ export async function fastSyncQuestion(
     // new chunks (if relevant).
 
     // We can't handle these cases.
-    if (!existingQuestion.qid || !existingQuestion.uuid) return false;
+    if (!existingQuestion.qid || !existingQuestion.uuid) return null;
 
     const jsonData = await loadAndValidateQuestionJson(
       course,
@@ -130,10 +135,10 @@ export async function fastSyncQuestion(
     );
 
     // If we're missing JSON data or the UUID, we can't do a fast sync.
-    if (!jsonData?.uuid) return false;
+    if (!jsonData?.uuid) return null;
 
     // If the UUIDs don't match, we can't do a fast sync.
-    if (jsonData.uuid !== existingQuestion.uuid) return false;
+    if (jsonData.uuid !== existingQuestion.uuid) return null;
 
     const topic = await run(async () => {
       if (!jsonData.data?.topic) return null;
@@ -148,9 +153,9 @@ export async function fastSyncQuestion(
     // The exception is when there's an error in the file, in which case we
     // don't care about syncing the topic (and in fact we don't know what it
     // is from the file anyways).
-    if (!topic && !infofile.hasErrors(jsonData)) return false;
+    if (!topic && !infofile.hasErrors(jsonData)) return null;
 
-    await updateQuestion(existingQuestion, jsonData, topic);
+    return await updateQuestion(existingQuestion, jsonData, topic);
   } else {
     // One of several things could be true:
     // - These could be files in the questions directory but not part of a question,
@@ -186,13 +191,13 @@ export async function fastSyncQuestion(
       // that would be totally safe and in fact wouldn't require anything to sync at
       // all. It would be ideal if we could handle this on the fast path, but this
       // is also unlikely to frequently occur, so it's not a priority for now.
-      return false;
+      return null;
     }
 
     const jsonData = await loadAndValidateQuestionJson(course, jsonFilePath);
 
     // If we're missing JSON data or the UUID, we can't do a fast sync.
-    if (!jsonData?.uuid) return false;
+    if (!jsonData?.uuid) return null;
 
     // Get the existing question by UUID, if it exists.
     const existingQuestionByUuid = await selectOptionalQuestionByUuid({
@@ -205,7 +210,7 @@ export async function fastSyncQuestion(
     //
     // TODO: we could in theory handle this case in the future. Skipping for now
     // as it's not a common scenario and would require more complex logic.
-    if (existingQuestionByUuid) return false;
+    if (existingQuestionByUuid) return null;
 
     const topic = await run(async () => {
       if (!jsonData.data?.topic) return null;
@@ -220,7 +225,7 @@ export async function fastSyncQuestion(
     // The exception is when there's an error in the file, in which case we
     // don't care about syncing the topic (and in fact we don't know what it
     // is from the file anyways).
-    if (!topic && !infofile.hasErrors(jsonData)) return false;
+    if (!topic && !infofile.hasErrors(jsonData)) return null;
 
     // Create a new question in the database.
     const qid = qidFromFilePath(jsonFilePath);
@@ -234,14 +239,39 @@ export async function fastSyncQuestion(
       QuestionSchema,
     );
 
-    await updateQuestion(initialQuestion, jsonData, topic);
+    return await updateQuestion(initialQuestion, jsonData, topic);
+  }
+}
+
+export async function fastSyncQuestion(
+  course: Course,
+  strategy: QuestionFastSync,
+): Promise<boolean> {
+  // TODO: We do need to consider deletion here; it's possible that a question may
+  // consist just of a JSON file, and that deleting the file could delete the
+  // question. It's also possible that someone might delete a JSON file that's
+  // not actually part of a question. It's ALSO possible that someone might
+  // delete a JSON file that would cause another directory to start being treated
+  // as a question. For instance, if `foo/info.json` and `foo/bar/info.json` exist
+  // and `foo/info.json` is deleted, `foo/bar/info.json` would become a question's
+  // JSON file.
+  //
+  // To keep things simple, if a JSON file was deleted, we'll require that the
+  // entire containing directory was also deleted. If not, we'll fall back to slow
+  // sync.
+
+  const question = await syncQuestionJson(course, strategy);
+  if (!question) return false;
+
+  if (config.chunksGenerator) {
+    // Generate chunks no matter what changed. It's possible that people are doing
+    // insane things like reading their question's JSON file from `server.py`, so
+    // even if only the JSON file changed, we still need to generate chunks.
+    assert(question.qid, 'Question must have a QID');
+    await createAndUploadChunks(course.path, course.id, [
+      { type: 'question', questionName: question.qid },
+    ]);
   }
 
-  // TODO: we need to handle chunk generation here.
-  //
-  // If we're not configured to generate chunks, there's nothing for us to do
-  // here. Getting the files onto disk was enough.
-  if (!config.chunksGenerator) return true;
-
-  return false;
+  return true;
 }
