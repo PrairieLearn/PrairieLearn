@@ -1,16 +1,20 @@
+import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { type Course, QuestionSchema } from '../../lib/db-types.js';
+import { type Course, type Question, QuestionSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectInstitutionForCourse } from '../../models/institution.js';
+import { selectQuestionByUuid } from '../../models/question.js';
 import * as schemas from '../../schemas/index.js';
 import type { QuestionJson } from '../../schemas/index.js';
 import { DEFAULT_QUESTION_INFO, loadAndValidateJson, validateQuestion } from '../course-db.js';
+import { getParamsForQuestion } from '../fromDisk/questions.js';
+import * as infofile from '../infofile.js';
 
 import type { QuestionFastSync } from './index.js';
 
@@ -45,6 +49,46 @@ async function isSharingEnabled(course: Course): Promise<boolean> {
   });
 }
 
+function qidFromFilePath(filePath: string): string {
+  const relativePath = path.relative('questions', filePath);
+  return relativePath.replace(/\.json$/, '');
+}
+
+async function loadAndValidateQuestionJson(
+  course: Course,
+  jsonFilePath: string,
+): Promise<infofile.InfoFile<QuestionJson> | null> {
+  const sharingEnabled = await isSharingEnabled(course);
+  return await loadAndValidateJson({
+    coursePath: course.path,
+    filePath: jsonFilePath,
+    defaults: DEFAULT_QUESTION_INFO,
+    schema: schemas.infoQuestion,
+    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    // This shouldn't matter, as we've already guaranteed that the file exists.
+    tolerateMissing: false,
+  });
+}
+
+async function updateQuestion(question: Question, infoFile: infofile.InfoFile<QuestionJson>) {
+  assert(question.qid, 'Question must have a QID');
+
+  if (infofile.hasErrors(infoFile)) {
+    // Write the errors to the question.
+    await queryAsync(sql.update_question_errors, {
+      id: question.id,
+      errors: infofile.stringifyErrors(infoFile),
+    });
+  } else {
+    // Update the question's properties.
+    await queryAsync(sql.update_question, {
+      id: question.id,
+      data: getParamsForQuestion(question.qid, infoFile.data),
+      warnings: infofile.stringifyWarnings(infoFile),
+    });
+  }
+}
+
 export async function fastSyncQuestion(
   course: Course,
   strategy: QuestionFastSync,
@@ -68,6 +112,22 @@ export async function fastSyncQuestion(
     // These files all correspond to an existing question. This is the easy case.
     // Update the `questions` row from the JSON file (if relevant) and upload any
     // new chunks (if relevant).
+
+    // We can't handle these cases.
+    if (!existingQuestion.qid || !existingQuestion.uuid) return false;
+
+    const jsonData = await loadAndValidateQuestionJson(
+      course,
+      path.join('questions', existingQuestion.qid, 'info.json'),
+    );
+
+    // If we're missing JSON data or the UUID, we can't do a fast sync.
+    if (!jsonData?.uuid) return false;
+
+    // If the UUIDs don't match, we can't do a fast sync.
+    if (jsonData.uuid !== existingQuestion.uuid) return false;
+
+    await updateQuestion(existingQuestion, jsonData);
   } else {
     // One of several things could be true:
     // - These could be files in the questions directory but not part of a question,
@@ -106,24 +166,41 @@ export async function fastSyncQuestion(
       return false;
     }
 
-    const sharingEnabled = await isSharingEnabled(course);
-    const jsonContents = await loadAndValidateJson({
-      coursePath: course.path,
-      filePath: jsonFilePath,
-      defaults: DEFAULT_QUESTION_INFO,
-      schema: schemas.infoQuestion,
-      validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
-      // This shouldn't matter, as we've already guaranteed that the file exists.
-      tolerateMissing: false,
+    const jsonData = await loadAndValidateQuestionJson(course, jsonFilePath);
+
+    // If we're missing JSON data or the UUID, we can't do a fast sync.
+    if (!jsonData?.uuid) return false;
+
+    // Get the existing question by UUID, if it exists.
+    const existingQuestionByUuid = await selectQuestionByUuid({
+      course_id: course.id,
+      uuid: jsonData.uuid,
     });
 
-    // Create a new question in the database.
+    // If there is an existing question with this UUID, we'll fall back to slow
+    // sync.
     //
-    // TODO: there's probably some stuff we have to handle for UUIDs here. That
-    // is, we probably need a case to handle undeletion? Or deletions + renames?
+    // TODO: we could in theory handle this case in the future. Skipping for now
+    // as it's not a common scenario and would require more complex logic.
+    if (existingQuestionByUuid) return false;
+
+    // Create a new question in the database.
+    const qid = qidFromFilePath(jsonFilePath);
+    const initialQuestion = await queryRow(
+      sql.insert_question,
+      {
+        course_id: course.id,
+        qid,
+        uuid: jsonData.uuid,
+      },
+      QuestionSchema,
+    );
+
+    await updateQuestion(initialQuestion, jsonData);
   }
 
-  // Non-JSON file syncing here!
+  // TODO: we need to handle chunk generation here.
+  //
   // If we're not configured to generate chunks, there's nothing for us to do
   // here. Getting the files onto disk was enough.
   if (!config.chunksGenerator) return true;
