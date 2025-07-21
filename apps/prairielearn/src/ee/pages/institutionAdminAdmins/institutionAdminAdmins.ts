@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryValidatedRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { parseUidsString } from '../../../lib/user.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
@@ -35,7 +35,7 @@ router.get(
       access_as_administrator: res.locals.access_as_administrator,
     });
 
-    const rows = await queryValidatedRows(
+    const rows = await queryRows(
       sql.select_admins,
       { institution_id: institution.id },
       InstitutionAdminAdminsRowSchema,
