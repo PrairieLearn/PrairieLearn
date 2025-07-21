@@ -1,6 +1,6 @@
 import { CloudWatch, type MetricDatum } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
-import z from 'zod/v3';
+import { z } from 'zod';
 
 import { callRow, loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 

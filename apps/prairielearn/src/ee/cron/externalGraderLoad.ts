@@ -1,6 +1,6 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
-import z from 'zod/v3';
+import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';

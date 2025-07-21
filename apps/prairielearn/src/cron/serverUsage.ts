@@ -1,5 +1,5 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
-import z from 'zod/v3';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
