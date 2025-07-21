@@ -1,9 +1,9 @@
 -- BLOCK select_student_info
 SELECT
-  -- TODO: validate this query looks reasonable
   to_jsonb(u.*) AS user,
-  users_get_displayed_role (u.user_id, $course_instance_id) AS role,
-  format_date_iso8601 (e.created_at, ci.display_timezone) AS enrollment_date
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(e.*) AS enrollment,
+  users_get_displayed_role (u.user_id, $course_instance_id) AS role
 FROM
   users AS u
   JOIN course_instances AS ci ON (ci.id = $course_instance_id)

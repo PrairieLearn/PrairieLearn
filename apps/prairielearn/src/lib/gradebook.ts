@@ -93,6 +93,7 @@ async function getGradebookRowsCursor({
       StudentGradebookRowSchema,
     );
   }
+
   return await queryValidatedCursor(
     sql.select_assessment_instances,
     {

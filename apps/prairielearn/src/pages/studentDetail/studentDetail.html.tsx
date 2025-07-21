@@ -1,15 +1,21 @@
 import { Fragment } from 'preact/jsx-runtime';
 import { z } from 'zod';
 
+import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { Scorebar } from '../../components/Scorebar.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
-import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
+import {
+  StaffCourseInstanceSchema,
+  StaffEnrollmentSchema,
+  StaffUserSchema,
+} from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema,
+  course_instance: StaffCourseInstanceSchema,
+  enrollment: StaffEnrollmentSchema.nullable(),
   role: z.string(),
-  enrollment_date: z.string().nullable(),
 });
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
@@ -27,7 +33,7 @@ export function StudentDetail({
   urlPrefix,
   courseInstanceUrl,
 }: StudentDetailProps) {
-  const { user } = student;
+  const { user, course_instance, enrollment, role } = student;
 
   const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
   gradebookRows.forEach((row) => {
@@ -64,32 +70,26 @@ export function StudentDetail({
           </button>
         </div>
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-3">
-              <strong>Name:</strong>
-              <div>{user.name}</div>
-            </div>
-            <div class="col-md-3">
-              <strong>UID:</strong>
-              <div>{user.uid}</div>
-            </div>
-            {user.uin && (
-              <div class="col-md-3">
-                <strong>UIN:</strong>
-                <div>{user.uin}</div>
-              </div>
-            )}
-            <div class="col-md-3">
-              <strong>Role:</strong>
-              <div>{student.role}</div>
-            </div>
+          <h2>{user.name}</h2>
+          <div class="d-flex">
+            <div class="font-weight-bold me-1">UID:</div>
+            {user.uid}
           </div>
-          {student.enrollment_date && (
-            <div class="row mt-3">
-              <div class="col-md-3">
-                <strong>Enrolled:</strong>
-                <div>{student.enrollment_date}</div>
-              </div>
+          {user.uin && (
+            <div class="d-flex">
+              <div class="font-weight-bold me-1">UIN:</div> {user.uin}
+            </div>
+          )}
+          <div class="d-flex">
+            <div class="font-weight-bold me-1">Role:</div> {role}
+          </div>
+          {enrollment?.created_at && (
+            <div class="d-flex">
+              <div class="font-weight-bold me-1">Enrolled:</div>
+              <FriendlyDate
+                date={enrollment.created_at}
+                timezone={course_instance.display_timezone}
+              />
             </div>
           )}
         </div>
