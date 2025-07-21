@@ -368,7 +368,7 @@ export function identifyChunksFromChangedFiles(
       const clientFilesAssessmentIndex = pathComponents.indexOf('clientFilesAssessment');
 
       if (clientFilesCourseInstanceIndex >= 0) {
-        // Let's validate that the preceeding path components correspond
+        // Let's validate that the preceding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
