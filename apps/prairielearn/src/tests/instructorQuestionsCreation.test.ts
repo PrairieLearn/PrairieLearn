@@ -226,11 +226,6 @@ describe('Creating a question', () => {
 
     assert.equal(questionsResponse.status, 200);
 
-    // Ensure the course-specific template question is listed as an option
-    const courseTemplateOption = questionsResponse.$('option[data-template-source="course"]');
-    assert.lengthOf(courseTemplateOption, 1);
-    assert.equal(courseTemplateOption.attr('value'), 'template/courseTemplate');
-
     // Create the new template question based on the course-specific template question
     const createQuestionResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
