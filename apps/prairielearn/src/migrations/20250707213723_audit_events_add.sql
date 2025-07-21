@@ -32,9 +32,12 @@ CREATE TABLE IF NOT EXISTS audit_events (
 
 -- Table-specific events
 CREATE INDEX IF NOT EXISTS audit_events_table_name_idx ON audit_events (table_name);
+
 -- Events that affect a user
 CREATE INDEX IF NOT EXISTS audit_events_subject_user_id_idx ON audit_events (subject_user_id);
+
 -- Specific types of events that affect a user
 CREATE INDEX IF NOT EXISTS audit_events_table_name_subject_user_id_idx ON audit_events (table_name, subject_user_id);
+
 -- Events caused by a user
 CREATE INDEX IF NOT EXISTS audit_events_agent_authn_user_id_idx ON audit_events (agent_authn_user_id);
