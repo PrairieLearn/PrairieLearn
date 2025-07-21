@@ -53,17 +53,14 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Track screen size for aria-hidden
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(true);
+  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(mediaQuery?.matches ?? true);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 768px)');
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setIsMediumOrLarger(mediaQuery.matches);
-
     const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
+    mediaQuery?.addEventListener('change', handler);
+    return () => mediaQuery?.removeEventListener('change', handler);
+  }, [mediaQuery]);
 
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
@@ -106,7 +103,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
         },
       }),
     ],
-    [],
+    [timezone],
   );
 
   const allColumnIds = columns
