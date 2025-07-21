@@ -38,7 +38,8 @@ export function getPageContext(resLocals: Record<string, any>): PageContext {
 // about the data. Specifically, `short_name` will never be null for non-deleted courses
 // and course instances.
 
-// If '*CourseInstanceSchema' ever differs at a column level from '*CourseInstanceContext.course_instance' our branding strategy needs to be updated.
+// If '*CourseInstanceSchema' ever differs at a column level
+// from '*CourseInstanceContext.course_instance' our branding strategy needs to be updated.
 
 const RawStudentCourseInstanceContextSchema = z.object({
   course_instance: z
