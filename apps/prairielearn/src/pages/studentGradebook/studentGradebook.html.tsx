@@ -41,7 +41,7 @@ export function StudentGradebook({
             class="btn btn-light btn-sm ms-auto"
             aria-label="Download gradebook CSV"
           >
-            <i class="fas fa-download" aria-hidden="true"></i>
+            <i class="fas fa-download" aria-hidden="true" />
             <span class="d-none d-sm-inline">Download</span>
           </a>
         </div>
@@ -72,7 +72,7 @@ export function StudentGradebook({
                   </td>
                   <td class="align-middle">
                     {row.title}{' '}
-                    {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true"></i>}
+                    {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true" />}
                   </td>
                   <td class="text-center align-middle">
                     {row.show_closed_assessment_score ? (
