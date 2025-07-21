@@ -109,9 +109,9 @@ router.post(
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           institution_id: req.params.institution_id,
         },
-        z.object({ keystore: z.any() }),
+        z.any(),
       );
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.keystore || []);
+      const keystore = await jose.JWK.asKeyStore(keystoreJson || []);
 
       const kid = new Date().toUTCString();
       // RSA256 minimum keysize of 2048 bits

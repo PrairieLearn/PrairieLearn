@@ -1,7 +1,6 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
-import z from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
@@ -148,15 +147,13 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentResult = await queryRow(
+  const assessmentId = await queryRow(
     sql.select_assessment,
     {
       assessment_tid: GROUP_WORK_EXAM_TID,
     },
-    z.object({ id: IdSchema }),
+    IdSchema,
   );
-  const assessmentId = assessmentResult.id;
-  assert.isDefined(assessmentId);
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
   // Generate three users

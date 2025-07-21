@@ -151,14 +151,13 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentResult = await queryRow(
+  const assessmentId = await queryRow(
     sql.select_assessment,
     {
       assessment_tid: GROUP_WORK_ASSESSMENT_TID,
     },
     IdSchema,
   );
-  const assessmentId = assessmentResult;
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
   // Generate three users

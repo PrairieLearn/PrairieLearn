@@ -128,7 +128,7 @@ router.post(
     req.session.user_id = userResult.user_id;
     req.session.authn_provider_name = 'LTI';
 
-    const linkResult = await sqldb.queryOptionalRow(
+    const linkResult = await sqldb.queryRow(
       sql.upsert_current_link,
       {
         course_instance_id: ltiResult.course_instance_id,
@@ -141,7 +141,7 @@ router.post(
     );
 
     // Do we have an assessment linked to this resource_link_id?
-    if (linkResult?.assessment_id) {
+    if (linkResult.assessment_id !== null) {
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
         await sqldb.queryAsync(sql.upsert_outcome, {

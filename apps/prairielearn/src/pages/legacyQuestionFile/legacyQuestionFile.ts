@@ -17,17 +17,15 @@ router.get(
     const question = res.locals.question;
     const course = res.locals.course;
     const filename = req.params.filename;
-    const result = await sqldb.queryRow(
+    const access_allowed = await sqldb.queryRow(
       sql.check_client_files,
       {
         question_id: question.id,
         filename,
       },
-      z.object({
-        access_allowed: z.boolean(),
-      }),
+      z.boolean(),
     );
-    if (!result.access_allowed) {
+    if (!access_allowed) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
 
