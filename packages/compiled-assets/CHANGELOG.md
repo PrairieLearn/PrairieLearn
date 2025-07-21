@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.2.2
+
+### Patch Changes
+
+- 325af47: Fix paths for preloads
+
 ## 3.2.1
 
 ### Patch Changes
