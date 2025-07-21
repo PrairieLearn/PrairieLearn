@@ -45,8 +45,11 @@ export async function run() {
 }
 
 async function getLoadStats() {
-  const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];
-  return await callRow('workspace_loads_current', params, WorkspaceLoadStatsSchema);
+  return await callRow(
+    'workspace_loads_current',
+    [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity],
+    WorkspaceLoadStatsSchema,
+  );
 }
 
 const cloudwatch_definitions = {
