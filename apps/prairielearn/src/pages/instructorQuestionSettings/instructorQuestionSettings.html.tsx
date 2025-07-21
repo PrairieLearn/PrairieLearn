@@ -96,7 +96,7 @@ export function InstructorQuestionSettings({
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
+      ${compiledScriptTag('instructorQuestionSettingsClient.tsx')}
       <style>
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
