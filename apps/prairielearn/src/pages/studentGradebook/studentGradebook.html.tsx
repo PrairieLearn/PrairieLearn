@@ -41,7 +41,7 @@ export function StudentGradebook({
             class="btn btn-light btn-sm ms-auto"
             aria-label="Download gradebook CSV"
           >
-            <i class="fas fa-download" aria-hidden="true"></i>
+            <i class="fas fa-download" aria-hidden="true" />
             <span class="d-none d-sm-inline">Download</span>
           </a>
         </div>
@@ -81,7 +81,7 @@ export function StudentGradebook({
                     </td>
                     <td class="text-center align-middle">
                       {row.show_closed_assessment_score ? (
-                        <Scorebar score={row.assessment_instance_score_perc} className="mx-auto" />
+                        <Scorebar score={row.assessment_instance_score_perc} class="mx-auto" />
                       ) : (
                         'Score not shown'
                       )}
