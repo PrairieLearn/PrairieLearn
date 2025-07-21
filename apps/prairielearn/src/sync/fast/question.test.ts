@@ -120,6 +120,20 @@ describe('fastSyncQuestion', () => {
     assert.match(question.sync_warnings ?? '', /exceeds the maximum value and has been limited/);
   });
 
+  it('syncs non-JSON changes to question with fast sync', async () => {
+    const { syncResults } = await util.createAndSyncCourseData();
+
+    // TODO: in theory this can skip writing anything to the database at all.
+    // Can we implement that and write a test for it?
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([
+      path.join('questions', util.QUESTION_ID, 'server.py'),
+      path.join('questions', util.QUESTION_ID, 'question.html'),
+    ]);
+    assert(strategy !== null);
+    assert.isTrue(await attemptFastSync(course, strategy));
+  });
+
   it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
     'falls back to slow sync for deletion of question $qid',
     async ({ qid }) => {
