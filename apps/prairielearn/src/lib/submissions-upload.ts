@@ -19,7 +19,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const ZodStringToJson = z.preprocess((val) => {
   if (val === '' || val == null) return {};
   return JSON.parse(String(val));
-}, z.record(z.any()).nullable());
+}, z.record(z.string(), z.any()).nullable());
 
 const SubmissionCsvRowSchema = z.object({
   UID: z.string(),
@@ -200,7 +200,7 @@ export async function uploadSubmissions(
         job.error(`Error processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`);
         if (err instanceof z.ZodError) {
           job.error(
-            `Validation Error: ${err.errors
+            `Validation Error: ${err.issues
               .map((e) => `${e.path.join('.')}: ${e.message}`)
               .join(', ')}`,
           );

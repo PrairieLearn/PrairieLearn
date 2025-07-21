@@ -3,11 +3,14 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionFileOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     fileName: z.string().describe('Filename of the file to download').optional(),
   })
-  .strict()
-  .describe('Options for a File question.');
+
+  .describe('Options for a File question.')
+  .meta({
+    title: 'File question options',
+  });
 
 export type QuestionFileOptionsJson = z.infer<typeof QuestionFileOptionsJsonSchema>;

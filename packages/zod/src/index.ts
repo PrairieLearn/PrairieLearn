@@ -51,8 +51,8 @@ export const BooleanFromCheckboxSchema = required(
  * The `refine` step is important to ensure that the thing we've coerced to a
  * string is actually a number. If it's not, we want to fail quickly.
  */
-export const IdSchema = z
-  .string({ coerce: true })
+export const IdSchema = z.coerce
+  .string()
   .refine((val) => /^\d+$/.test(val), { message: 'ID is not a non-negative integer' });
 
 /**

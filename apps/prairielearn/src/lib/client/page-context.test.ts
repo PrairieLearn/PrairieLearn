@@ -77,6 +77,7 @@ describe('getCourseInstanceContext', () => {
       created_at: new Date(),
       example_course: false,
       institution_id: '1',
+      options: {},
       template_course: false,
       title: 'Example Student Course',
     },

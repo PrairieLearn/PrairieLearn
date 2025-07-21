@@ -350,7 +350,7 @@ describe('@prairielearn/postgres', function () {
 
         const maybeError = await readAllRows().catch((err) => err);
         assert.instanceOf(maybeError, ZodError);
-        assert.lengthOf(maybeError.errors, 10);
+        assert.lengthOf(maybeError.issues, 10);
       });
     });
 
@@ -388,7 +388,7 @@ describe('@prairielearn/postgres', function () {
 
         const maybeError = await readAllRows().catch((err) => err);
         assert.instanceOf(maybeError, ZodError);
-        assert.lengthOf(maybeError.errors, 1);
+        assert.lengthOf(maybeError.issues, 1);
       });
 
       it('closes the cursor when the stream is closed', async () => {
