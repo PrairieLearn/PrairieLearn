@@ -59,7 +59,7 @@ export function StudentDetail({
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1 class="mb-0">Details</h1>
           <button type="button" class="btn btn-sm btn-light" onClick={handleViewAsStudent}>
-            <i class="fas fa-user-graduate me-1" aria-hidden="true"></i>
+            <i class="fas fa-user-graduate me-1" aria-hidden="true" />
             View as Student
           </button>
         </div>
@@ -99,7 +99,7 @@ export function StudentDetail({
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h2 class="mb-0">Gradebook</h2>
           <button type="button" class="btn btn-sm btn-light" onClick={handleViewGradebookAsStudent}>
-            <i class="fas fa-book me-1" aria-hidden="true"></i>
+            <i class="fas fa-book me-1" aria-hidden="true" />
             View Gradebook as Student
           </button>
         </div>
@@ -115,7 +115,7 @@ export function StudentDetail({
                 <th style="width: 1%">
                   <span class="visually-hidden">Label</span>
                 </th>
-                <th></th>
+                <th />
                 <th class="text-center">Score</th>
                 <th class="text-center">Points</th>
                 <th class="text-center">Actions</th>
@@ -137,15 +137,12 @@ export function StudentDetail({
                       <td class="align-middle">
                         {computeTitle(row)}
                         {row.assessment.group_work && (
-                          <i class="fas fa-users ms-1" aria-hidden="true" title="Group work"></i>
+                          <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
                         )}
                       </td>
                       <td class="text-center align-middle">
                         {row.assessment_instance.id && row.show_closed_assessment_score ? (
-                          <Scorebar
-                            score={row.assessment_instance.score_perc}
-                            className="mx-auto"
-                          />
+                          <Scorebar score={row.assessment_instance.score_perc} class="mx-auto" />
                         ) : row.assessment_instance.id ? (
                           'In progress'
                         ) : (
