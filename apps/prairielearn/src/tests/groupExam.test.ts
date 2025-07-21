@@ -441,9 +441,7 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
     // Get exam assessment URL using ids from database
     const firstAssessmentId = await queryRow(
       sql.select_group_exam_by_tid,
-      {
-        assessment_tid: GROUP_EXAM_1_TID,
-      },
+      { assessment_tid: GROUP_EXAM_1_TID },
       IdSchema,
     );
     const firstAssessmentUrl = courseInstanceUrl + '/assessment/' + firstAssessmentId;
