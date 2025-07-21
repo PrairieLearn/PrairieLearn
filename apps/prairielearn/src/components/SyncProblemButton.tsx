@@ -8,7 +8,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
 
   const popoverContent = renderHtml(
     <pre class="text-white rounded p-3 mb-0" style="background-color: black;">
-      {ansiToHtml(output)}
+      {ansiToHtml(output, { escapeHtml: false })}
     </pre>,
   );
 
