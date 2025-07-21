@@ -229,7 +229,10 @@ export function QuestionsTable({
               </p>
               <p>
                 Learn more in the
-                <a href="https://prairielearn.readthedocs.io/en/latest/question/" target="_blank"
+                <a
+                  href="https://prairielearn.readthedocs.io/en/latest/question/"
+                  target="_blank"
+                  rel="noreferrer"
                   >question documentation</a
                 >.
               </p>
