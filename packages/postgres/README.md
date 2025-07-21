@@ -180,9 +180,9 @@ const { user, course } = await sqldb.runInTransactionAsync(async () => {
 For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time.
 
 ```ts
-import { queryCursor } from '@prairielearn/postgres';
+import { queryValidatedCursor } from '@prairielearn/postgres';
 
-const cursor = await queryCursor(sql.select_all_users, {});
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.any());
 for await (const users of cursor.iterate(100)) {
   // `users` will have up to 100 rows in it.
   for (const user of users) {
@@ -213,9 +213,9 @@ for await (const users of cursor.iterate(100)) {
 You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
 
 ```ts
-import { queryCursor } from '@prairielearn/postgres';
+import { queryValidatedCursor } from '@prairielearn/postgres';
 
-const cursor = await queryCursor(sql.select_all_users, {});
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.any());
 cursor.stream(100).pipe(makeStreamSomehow());
 ```
 

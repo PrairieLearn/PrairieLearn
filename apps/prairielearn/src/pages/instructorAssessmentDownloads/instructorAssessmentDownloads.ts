@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
+  GroupRoleSchema,
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
@@ -290,11 +291,16 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
 }
 
 async function sendInstancesCsv(res, req, columns, options) {
-  const result = await sqldb.queryCursor(sql.select_assessment_instances, {
-    assessment_id: res.locals.assessment.id,
-    highest_score: options.only_highest,
-    group_work: options.group_work,
-  });
+  // TODO: type the return value of this function
+  const result = await sqldb.queryValidatedCursor(
+    sql.select_assessment_instances,
+    {
+      assessment_id: res.locals.assessment.id,
+      highest_score: options.only_highest,
+      group_work: options.group_work,
+    },
+    z.any(),
+  );
 
   res.attachment(req.params.filename);
   await pipeline(result.stream(100), stringifyWithColumns(columns), res);
@@ -381,9 +387,14 @@ router.get(
         group_work: res.locals.assessment.group_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
-      const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
-        assessment_id: res.locals.assessment.id,
-      });
+      // TODO: type the return value of this function
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.select_instance_questions,
+        {
+          assessment_id: res.locals.assessment.id,
+        },
+        z.any(),
+      );
 
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
@@ -411,10 +422,15 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
-      const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
-        assessment_id: res.locals.assessment.id,
-        include_files: false,
-      });
+      // TODO: type the return value of this function
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.submissions_for_manual_grading,
+        {
+          assessment_id: res.locals.assessment.id,
+          include_files: false,
+        },
+        z.any(),
+      );
 
       // Replace user-friendly column names with upload-friendly names
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
@@ -547,9 +563,17 @@ router.get(
       await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
-      const cursor = await sqldb.queryCursor(sql.group_configs, {
-        assessment_id: res.locals.assessment.id,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.group_configs,
+        {
+          assessment_id: res.locals.assessment.id,
+        },
+        z.object({
+          group_name: GroupSchema.shape.name,
+          uid: UserSchema.shape.uid,
+          roles: z.array(GroupRoleSchema.shape.role_name),
+        }),
+      );
 
       const columns: Columns = [
         ['groupName', 'name'],

@@ -122,13 +122,6 @@ export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defa
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
- *
- * @deprecated Use {@link queryValidatedCursor} instead.
- */
-export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
-/**
- * Returns an {@link CursorIterator} that can be used to iterate over the
- * results of the query in batches, which is useful for large result sets.
  * Each row will be parsed by the given Zod schema.
  */
 export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);

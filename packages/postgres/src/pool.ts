@@ -810,17 +810,6 @@ export class PostgresPool {
   /**
    * Returns an {@link CursorIterator} that can be used to iterate over the
    * results of the query in batches, which is useful for large result sets.
-   */
-  async queryCursor<Model extends z.ZodTypeAny>(
-    sql: string,
-    params: QueryParams,
-  ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params);
-  }
-
-  /**
-   * Returns an {@link CursorIterator} that can be used to iterate over the
-   * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
   async queryValidatedCursor<Model extends z.ZodTypeAny>(
