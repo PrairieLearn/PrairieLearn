@@ -20,6 +20,9 @@ export function DownloadButton({
 }) {
   const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
   const filenameBase = `${filenamePrefix}students`;
+
+  const filteredStudents = table.getRowModel().rows.map((row) => row.original);
+
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {
     const rows = students.map((student) => [
       student.user.uid,
@@ -86,12 +89,7 @@ export function DownloadButton({
             type="button"
             role="menuitem"
             aria-label="Download filtered students as CSV file"
-            onClick={() =>
-              downloadStudentsCSV(
-                table.getFilteredRowModel().rows.map((row) => row.original),
-                `${filenameBase}_filtered.csv`,
-              )
-            }
+            onClick={() => downloadStudentsCSV(filteredStudents, `${filenameBase}_filtered.csv`)}
           >
             Filtered students as CSV
           </button>
@@ -102,12 +100,7 @@ export function DownloadButton({
             type="button"
             role="menuitem"
             aria-label="Download filtered students as JSON file"
-            onClick={() =>
-              downloadStudentsJSON(
-                table.getFilteredRowModel().rows.map((row) => row.original),
-                `${filenameBase}_filtered.json`,
-              )
-            }
+            onClick={() => downloadStudentsJSON(filteredStudents, `${filenameBase}_filtered.json`)}
           >
             Filtered students as JSON
           </button>

@@ -155,9 +155,9 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
           <div>Students</div>
           <div>
             <DownloadButton
-              students={students}
               course={course}
               courseInstance={courseInstance}
+              students={students}
               table={table}
             />
           </div>
