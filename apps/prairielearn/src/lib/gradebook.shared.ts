@@ -1,32 +1,35 @@
-import z from 'zod';
+import { z } from 'zod';
 
 import {
-  StaffAssessmentInstanceSchema,
-  StaffAssessmentSchema,
-  StaffAssessmentSetSchema,
-  StaffCourseInstanceSchema,
-  StudentAssessmentInstanceSchema,
-  StudentAssessmentSchema,
-  StudentAssessmentSetSchema,
-  StudentCourseInstanceSchema,
+  RawStaffAssessmentInstanceSchema,
+  RawStaffAssessmentSchema,
+  RawStaffAssessmentSetSchema,
+  RawStudentAssessmentInstanceSchema__UNSAFE,
+  RawStudentAssessmentSchema,
+  RawStudentAssessmentSetSchema,
 } from './client/safe-db-types.js';
 
 const StudentGradebookRowSchema = z
   .object({
-    assessment: StudentAssessmentSchema,
-    assessment_instance: StudentAssessmentInstanceSchema,
-    assessment_set: StudentAssessmentSetSchema,
-    course_instance: StudentCourseInstanceSchema,
+    assessment: RawStudentAssessmentSchema,
+    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
+    assessment_set: RawStudentAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+  })
+  .transform((data) => {
+    if (!data.show_closed_assessment_score) {
+      data.assessment_instance.points = null;
+      data.assessment_instance.score_perc = null;
+    }
+    return data;
   })
   .brand('StudentGradebookRow');
 
 const StaffGradebookRowSchema = z
   .object({
-    assessment: StaffAssessmentSchema,
-    assessment_instance: StaffAssessmentInstanceSchema,
-    assessment_set: StaffAssessmentSetSchema,
-    course_instance: StaffCourseInstanceSchema,
+    assessment: RawStaffAssessmentSchema,
+    assessment_instance: RawStaffAssessmentInstanceSchema,
+    assessment_set: RawStaffAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
   })
   .brand('StaffGradebookRow');

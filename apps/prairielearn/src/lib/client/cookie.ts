@@ -1,10 +1,9 @@
 import CookiesModule from 'js-cookie';
 
-// Keep in sync with assets/scripts/navbarClient.ts
 const COOKIE_EXPIRATION_DAYS = 30;
 
-let OldCookies: Cookies.CookieAttributes | undefined;
-let Cookies: Cookies.CookieAttributes | undefined;
+let OldCookies: Cookies.CookiesStatic<string> | undefined;
+let Cookies: Cookies.CookiesStatic<string> | undefined;
 
 // Allows for server-side rendering.
 if (typeof location !== 'undefined') {
@@ -28,7 +27,7 @@ type OldAndNewCookieNames = [string, string];
 
 export function setCookieClient(names: OldAndNewCookieNames, value: string) {
   if (!OldCookies || !Cookies) {
-    throw new Error('location is undefined');
+    throw new Error('Cannot be used outside a browser environment');
   }
   OldCookies.set(names[0], value);
   Cookies.set(names[1], value);
@@ -38,7 +37,7 @@ export function setCookieClient(names: OldAndNewCookieNames, value: string) {
 // an explicit domain.
 export function removeCookieClient(names: OldAndNewCookieNames) {
   if (!OldCookies || !Cookies) {
-    throw new Error('location is undefined');
+    throw new Error('Cannot be used outside a browser environment');
   }
   OldCookies.remove(names[0]);
   Cookies.remove(names[1]);

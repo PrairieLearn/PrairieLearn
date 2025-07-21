@@ -16,7 +16,7 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface getGradebookRowsParams {
+interface GetGradebookRowsParams {
   course_instance_id: string;
   user_id: string;
   authz_data: any;
@@ -25,11 +25,11 @@ interface getGradebookRowsParams {
 }
 
 async function getGradebookRows(
-  params: getGradebookRowsParams & { auth: 'student' },
+  params: GetGradebookRowsParams & { auth: 'student' },
 ): Promise<StudentGradebookRow[]>;
 
 async function getGradebookRows(
-  params: getGradebookRowsParams & { auth: 'instructor' },
+  params: GetGradebookRowsParams & { auth: 'instructor' },
 ): Promise<StaffGradebookRow[]>;
 
 async function getGradebookRows({
@@ -38,7 +38,7 @@ async function getGradebookRows({
   authz_data,
   req_date,
   auth,
-}: getGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
+}: GetGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
   if (auth === 'student') {
     return await queryRows(
       sql.select_assessment_instances,
@@ -65,11 +65,11 @@ async function getGradebookRows({
 }
 
 async function getGradebookRowsCursor(
-  params: getGradebookRowsParams & { auth: 'student' },
+  params: GetGradebookRowsParams & { auth: 'student' },
 ): Promise<CursorIterator<StudentGradebookRow>>;
 
 async function getGradebookRowsCursor(
-  params: getGradebookRowsParams & { auth: 'instructor' },
+  params: GetGradebookRowsParams & { auth: 'instructor' },
 ): Promise<CursorIterator<StaffGradebookRow>>;
 
 async function getGradebookRowsCursor({
@@ -78,10 +78,9 @@ async function getGradebookRowsCursor({
   authz_data,
   req_date,
   auth,
-}: getGradebookRowsParams): Promise<
+}: GetGradebookRowsParams): Promise<
   CursorIterator<StudentGradebookRow> | CursorIterator<StaffGradebookRow>
 > {
-  const sql = loadSqlEquiv(import.meta.url);
   if (auth === 'student') {
     return await queryValidatedCursor(
       sql.select_assessment_instances,

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export const AdministratorInstitutionSso = ({

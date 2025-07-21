@@ -1,9 +1,9 @@
 import { Fragment } from 'preact/jsx-runtime';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
 
-export interface StudentGradebookRow {
+export interface StudentGradebookTableRow {
   assessment_id: string;
   assessment_instance_id: string;
   assessment_group_work: boolean;
@@ -22,7 +22,7 @@ export function StudentGradebook({
   csvFilename,
 }: {
   resLocals: Record<string, any>;
-  rows: StudentGradebookRow[];
+  rows: StudentGradebookTableRow[];
   csvFilename: string;
 }) {
   return PageLayout({
@@ -41,7 +41,7 @@ export function StudentGradebook({
             class="btn btn-light btn-sm ms-auto"
             aria-label="Download gradebook CSV"
           >
-            <i class="fas fa-download" aria-hidden="true"></i>
+            <i class="fas fa-download" aria-hidden="true" />
             <span class="d-none d-sm-inline">Download</span>
           </a>
         </div>
@@ -77,11 +77,11 @@ export function StudentGradebook({
                     </td>
                     <td class="align-middle">
                       {row.title}{' '}
-                      {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true"></i>}
+                      {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true" />}
                     </td>
                     <td class="text-center align-middle">
                       {row.show_closed_assessment_score ? (
-                        <Scorebar score={row.assessment_instance_score_perc} className="mx-auto" />
+                        <Scorebar score={row.assessment_instance_score_perc} class="mx-auto" />
                       ) : (
                         'Score not shown'
                       )}
