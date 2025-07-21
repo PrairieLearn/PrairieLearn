@@ -1,4 +1,6 @@
-import type { QuestionJson } from '../../schemas/infoQuestion.js';
+import type { Course } from '../../lib/db-types.js';
+
+import { fastSyncQuestion } from './question.js';
 
 function longestCommonPathPrefix(paths: string[]) {
   if (paths.length === 0) return '';
@@ -21,25 +23,8 @@ function longestCommonPathPrefix(paths: string[]) {
   return commonSegments.join('/');
 }
 
-function getQuestionFastSyncStrategy(
-  changedFiles: string[],
-): QuestionJsonFastSync | QuestionFilesFastSync | null {
+function getQuestionFastSyncStrategy(changedFiles: string[]): QuestionFastSync | null {
   if (!changedFiles.every((f) => f.startsWith('questions/'))) return null;
-
-  // If any JSON file was changed, exactly one JSON file must be changed,
-  // and only one file may be changed.
-  const jsonFileChanged = changedFiles.some((f) => f.endsWith('/info.json'));
-
-  if (jsonFileChanged) {
-    if (changedFiles.length === 1) {
-      return {
-        type: 'QuestionJson',
-        pathPrefix: changedFiles[0],
-      };
-    }
-
-    return null;
-  }
 
   const commonPrefix = longestCommonPathPrefix(changedFiles);
 
@@ -53,26 +38,39 @@ function getQuestionFastSyncStrategy(
   // a question - for instance, if it's `questions/foo/tests`, where `foo` is
   // the question. We'll also have to handle this later.
   return {
-    type: 'QuestionFiles',
+    type: 'Question',
     pathPrefix: commonPrefix,
   };
 }
 
-export interface QuestionJsonFastSync {
-  type: 'QuestionJson';
+export interface QuestionFastSync {
+  type: 'Question';
   pathPrefix: string;
 }
 
-export interface QuestionFilesFastSync {
-  type: 'QuestionFiles';
-  pathPrefix: string;
-}
-
-type FastSyncStrategy = QuestionJsonFastSync | QuestionFilesFastSync;
+type FastSyncStrategy = QuestionFastSync;
 
 export function getFastSyncStrategy(changedFiles: string[]): FastSyncStrategy | null {
   // We'll aim to handle two possible fast syncing cases for now:
   // - Just a question's `info.json` file has changed.
   // - Any non-JSON question files have changed.
   return getQuestionFastSyncStrategy(changedFiles) ?? null;
+}
+
+/**
+ * Attempts a fast sync with the given strategy. Returns whether or not the fast
+ * sync was able to be performed. This does NOT indicate success of the sync.
+ * Rather, the attempted sync may discover that fast sync is not in fact possible.
+ * If that's the case, one should fall back to a full sync, which is slower but
+ * will correctly handle any unexpected situations. Fast sync is conservative to
+ * avoid correctness and consistency issues.
+ */
+export async function attemptFastSync(
+  course: Course,
+  strategy: FastSyncStrategy,
+): Promise<boolean> {
+  switch (strategy.type) {
+    case 'Question':
+      return fastSyncQuestion(course, strategy);
+  }
 }

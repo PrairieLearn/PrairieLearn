@@ -6,13 +6,13 @@ describe('isFastSyncPossible', () => {
   describe('question changes', () => {
     test('handles question JSON change', () => {
       const strategy = getFastSyncStrategy(['questions/foo/info.json']);
-      assert.equal(strategy?.type, 'QuestionJson');
+      assert.equal(strategy?.type, 'Question');
       assert.equal(strategy?.pathPrefix, 'questions/foo/info.json');
     });
 
     test('handles change to single file from a question', () => {
       const strategy = getFastSyncStrategy(['questions/foo/server.py']);
-      assert.equal(strategy?.type, 'QuestionFiles');
+      assert.equal(strategy?.type, 'Question');
       assert.equal(strategy?.pathPrefix, 'questions/foo/server.py');
     });
 
@@ -21,7 +21,7 @@ describe('isFastSyncPossible', () => {
         'questions/foo/server.py',
         'questions/foo/question.html',
       ]);
-      assert.equal(strategy?.type, 'QuestionFiles');
+      assert.equal(strategy?.type, 'Question');
       assert.equal(strategy?.pathPrefix, 'questions/foo');
     });
 

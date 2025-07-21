@@ -32,7 +32,7 @@ import { isDraftQid } from './question.js';
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
 
-const DEFAULT_QUESTION_INFO = {
+export const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
@@ -673,7 +673,7 @@ export async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends { uuid: string }>({
+export async function loadAndValidateJson<T extends { uuid: string }>({
   coursePath,
   filePath,
   defaults,
@@ -938,7 +938,7 @@ function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
   return warnings;
 }
 
-async function validateQuestion({
+export async function validateQuestion({
   question,
   sharingEnabled,
 }: {
