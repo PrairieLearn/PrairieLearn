@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 export const SharingSetRowSchema = z.object({
