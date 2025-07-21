@@ -101,6 +101,25 @@ describe('fastSyncQuestion', () => {
     assert.match(question.sync_errors ?? '', /must have required property 'title'/);
   });
 
+  it('syncs warnings to question with fast sync', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'alpine',
+      // This exceeds the maximum timeout, which will produce a warning.
+      timeout: 1000,
+    };
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isTrue(await attemptFastSync(course, strategy));
+
+    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    assert.match(question.sync_warnings ?? '', /exceeds the maximum value and has been limited/);
+  });
+
   it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
     'falls back to slow sync for deletion of question $qid',
     async ({ qid }) => {
