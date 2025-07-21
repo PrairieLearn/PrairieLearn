@@ -89,23 +89,22 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
+  const rowHeight = 42;
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 38,
+    estimateSize: () => rowHeight,
     overscan: 10,
   });
 
   // Track focused cell for grid navigation
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
 
-  // Helper to get visible columns for a row
   const getVisibleCells = (row: Row<StudentRow>) => [
     ...row.getLeftVisibleCells(),
     ...row.getCenterVisibleCells(),
   ];
 
-  // Keyboard navigation for grid
   const handleGridKeyDown = (e: KeyboardEvent, rowIdx: number, colIdx: number) => {
     const rowLength = getVisibleCells(rows[rowIdx]).length;
     const adjacentCells: Record<KeyboardEvent['key'], { row: number; col: number }> = {
@@ -148,11 +147,9 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
       return;
     }
 
-    // Otherwise, we should prevent the default behavior.
     e.preventDefault();
   };
 
-  // Focus the correct cell when focusedCell changes
   useEffect(() => {
     const selector = `[data-grid-cell-row="${focusedCell.row}"][data-grid-cell-col="${focusedCell.col}"]`;
     const cell = tableRef.current?.querySelector(selector) as HTMLElement | null;
@@ -321,7 +318,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                 const rowIdx = virtualRow.index;
 
                 return (
-                  <tr key={row.id}>
+                  <tr key={row.id} style={{ height: rowHeight }}>
                     {visibleCells.map((cell, colIdx) => (
                       <td
                         key={cell.id}
