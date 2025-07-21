@@ -5,7 +5,7 @@ import {
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
-  RawStudentAssessmentInstanceSchema,
+  RawStudentAssessmentInstanceSchema__UNSAFE,
   RawStudentAssessmentSchema,
   RawStudentAssessmentSetSchema,
   RawStudentCourseInstanceSchema,
@@ -14,10 +14,17 @@ import {
 const StudentGradebookRowSchema = z
   .object({
     assessment: RawStudentAssessmentSchema,
-    assessment_instance: RawStudentAssessmentInstanceSchema,
+    assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
     assessment_set: RawStudentAssessmentSetSchema,
     course_instance: RawStudentCourseInstanceSchema,
     show_closed_assessment_score: z.boolean(),
+  })
+  .transform((data) => {
+    if (!data.show_closed_assessment_score) {
+      data.assessment_instance.points = null;
+      data.assessment_instance.score_perc = null;
+    }
+    return data;
   })
   .brand('StudentGradebookRow');
 
