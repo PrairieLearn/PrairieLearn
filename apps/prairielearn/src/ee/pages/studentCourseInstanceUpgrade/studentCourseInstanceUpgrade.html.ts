@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
+import { Navbar } from '../../../components/Navbar.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';

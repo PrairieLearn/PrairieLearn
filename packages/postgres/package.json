@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres",
-  "version": "2.1.15",
+  "version": "3.0.0",
   "type": "module",
   "repository": {
     "type": "git",

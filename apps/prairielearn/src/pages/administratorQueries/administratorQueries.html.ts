@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 
 export const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),

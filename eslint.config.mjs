@@ -2,9 +2,12 @@
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
+import html from '@html-eslint/eslint-plugin';
+import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
@@ -44,10 +47,13 @@ export default tseslint.config([
       'no-floating-promise': noFloatingPromise,
       'react-hooks': reactHooks,
       vitest,
+      'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       ...eslintReact.configs['recommended-typescript'].plugins,
       '@prairielearn': prairielearn,
+      '@html-eslint': html,
+      '@stylistic': stylistic,
     },
 
     languageOptions: {
@@ -55,6 +61,11 @@ export default tseslint.config([
     },
 
     settings: {
+      'jsx-a11y-x': {
+        attributes: {
+          for: ['for'],
+        },
+      },
       'import-x/parsers': {
         '@typescript-eslint/parser': ['.ts', '.js'],
       },
@@ -92,10 +103,6 @@ export default tseslint.config([
       'prefer-const': ['error', { destructuring: 'all' }],
       'no-duplicate-imports': 'error',
 
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      quotes: ['error', 'single', { avoidEscape: true }],
-
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
       'sort-imports': [
@@ -130,6 +137,12 @@ export default tseslint.config([
 
       'no-floating-promise/no-floating-promise': 'error',
 
+      // Enable all jsx-a11y rules.
+      ...jsxA11yX.configs.strict.rules,
+      'jsx-a11y-x/anchor-ambiguous-text': 'error',
+      'jsx-a11y-x/lang': 'error',
+      'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+
       // Use the recommended rules for react-hooks
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
@@ -159,6 +172,31 @@ export default tseslint.config([
       // We violate this rule in a lot of places. We'll turn it off for now.
       'vitest/no-identical-title': ['off'],
 
+      // Use the recommended rules for HTML.
+      ...Object.fromEntries(
+        Object.keys(html.rules).map((value) => ['@html-eslint/' + value, 'error']),
+      ),
+      // We don't want these style rules
+      '@html-eslint/attrs-newline': 'off',
+      '@html-eslint/element-newline': 'off',
+      '@html-eslint/indent': 'off',
+      '@html-eslint/no-inline-styles': 'off',
+      '@html-eslint/no-trailing-spaces': 'off',
+      '@html-eslint/sort-attrs': 'off',
+      // We don't want these rules
+      '@html-eslint/no-heading-inside-button': 'off', // not important
+      '@html-eslint/require-explicit-size': 'off', // we don't always have sizes when we use classes.
+      '@html-eslint/require-form-method': 'off', // default is 'GET', that's fine.
+      '@html-eslint/require-input-label': 'off', // we don't always have labels.
+      // We prefer tags like `<img />` over `<img>`.
+      '@html-eslint/no-extra-spacing-attrs': ['error', { enforceBeforeSelfClose: true }],
+      '@html-eslint/require-closing-tags': ['error', { selfClosing: 'always' }],
+      // False positives for attribute/element baseline browser compatibility.
+      '@html-eslint/use-baseline': 'off',
+      // We violate these rules in a lot of places.
+      '@html-eslint/id-naming-convention': 'off',
+      '@html-eslint/require-button-type': 'off',
+
       // These rules are implemented in `packages/eslint-plugin-prairielearn`.
       '@prairielearn/aws-client-mandatory-config': 'error',
       '@prairielearn/aws-client-shared-config': 'error',
@@ -186,6 +224,48 @@ export default tseslint.config([
           varsIgnorePattern: '^_',
         },
       ],
+
+      '@stylistic/jsx-tag-spacing': [
+        'error',
+        {
+          closingSlash: 'never',
+          beforeSelfClosing: 'always',
+          afterOpening: 'never',
+          beforeClosing: 'allow',
+        },
+      ],
+      '@stylistic/jsx-self-closing-comp': [
+        'error',
+        {
+          component: true,
+          html: true,
+        },
+      ],
+      '@stylistic/jsx-curly-brace-presence': [
+        'error',
+        { props: 'never', children: 'never', propElementValues: 'always' },
+      ],
+      '@stylistic/jsx-sort-props': [
+        'error',
+        {
+          callbacksLast: true,
+          ignoreCase: true,
+          locale: 'auto',
+          multiline: 'ignore',
+          noSortAlphabetically: true,
+          reservedFirst: true,
+          shorthandLast: true,
+        },
+      ],
+      '@stylistic/lines-between-class-members': [
+        'error',
+        'always',
+        { exceptAfterSingleLine: true },
+      ],
+      '@stylistic/no-tabs': 'error',
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
