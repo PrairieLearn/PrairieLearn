@@ -1,6 +1,6 @@
 columns
     action: text not null
-    action_detail: text not null
+    action_detail: text
     agent_authn_user_id: bigint
     agent_user_id: bigint
     assessment_id: bigint

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS audit_events (
   id BIGSERIAL PRIMARY KEY,
   date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   action TEXT NOT NULL,
-  action_detail TEXT NOT NULL,
+  action_detail TEXT,
   table_name TEXT NOT NULL,
   agent_authn_user_id BIGINT,
   agent_user_id BIGINT,
