@@ -22,7 +22,7 @@ export function AdministratorInstitutionCourses({
     },
     content: html`
       <div class="table-responsive">
-        <table class="table table-hover table-striped table-bordered table" aria-label="Courses">
+        <table class="table table-hover table-striped table-bordered" aria-label="Courses">
           <thead>
             <tr>
               <th>Name</th>
