@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { selectCourseById } from '../../models/course.js';
+import { selectQuestionByQid } from '../../models/question.js';
 import type { QuestionJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
@@ -78,8 +79,27 @@ describe('fastSyncQuestion', () => {
       const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
       assert(strategy !== null);
       assert.isTrue(await attemptFastSync(course, strategy));
+
+      const question = await selectQuestionByQid({ course_id: course.id, qid });
+      assert.equal(question.title, courseData.questions[qid].title);
     },
   );
+
+  it('syncs errors to question with fast sync', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // @ts-expect-error -- Deliberately introducing malformed JSON.
+    courseData.questions[util.QUESTION_ID].title = undefined;
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isTrue(await attemptFastSync(course, strategy));
+
+    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    assert.match(question.sync_errors ?? '', /must have required property 'title'/);
+  });
 
   it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
     'falls back to slow sync for deletion of question $qid',
@@ -103,6 +123,19 @@ describe('fastSyncQuestion', () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
     courseData.questions[util.QUESTION_ID].uuid = uuidv4();
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
+
+  it('falls back to slow sync when topic does not exist', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // Change the topic to something that doesn't exist.
+    courseData.questions[util.QUESTION_ID].topic = 'nonexistent-topic';
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
