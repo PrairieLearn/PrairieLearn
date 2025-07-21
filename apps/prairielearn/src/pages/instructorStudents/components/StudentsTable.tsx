@@ -217,7 +217,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           <table
             class="table table-hover mb-0 border border-top-0"
             style={{ tableLayout: 'fixed' }}
-            aria-label="Students table"
+            aria-label="Students"
             role="grid"
           >
             <thead>
