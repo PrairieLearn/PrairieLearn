@@ -369,7 +369,7 @@ async function updateInstanceQuestionFromJson(
         assessment_id,
         submission_data.instance_question_id,
         submission_data.submission_id,
-        null, // modified_at
+        null, // check_modified_at
         new_score,
         authn_user_id,
       );
