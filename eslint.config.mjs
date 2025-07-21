@@ -198,12 +198,6 @@ export default tseslint.config([
         },
       ],
 
-      '@stylistic/lines-between-class-members': [
-        'error',
-        'always',
-        { exceptAfterSingleLine: true },
-      ],
-      '@stylistic/no-tabs': 'error',
       '@stylistic/jsx-tag-spacing': [
         'error',
         {
@@ -236,6 +230,12 @@ export default tseslint.config([
           shorthandLast: true,
         },
       ],
+      '@stylistic/lines-between-class-members': [
+        'error',
+        'always',
+        { exceptAfterSingleLine: true },
+      ],
+      '@stylistic/no-tabs': 'error',
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
