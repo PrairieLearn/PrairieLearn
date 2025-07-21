@@ -39,6 +39,19 @@ async function getGradebookRows({
   req_date,
   auth,
 }: GetGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
+  if (auth === 'student') {
+    return await queryRows(
+      sql.select_assessment_instances,
+      {
+        course_instance_id,
+        user_id,
+        authz_data,
+        req_date,
+      },
+      StudentGradebookRowSchema,
+    );
+  }
+
   return await queryRows(
     sql.select_assessment_instances,
     {
@@ -47,7 +60,7 @@ async function getGradebookRows({
       authz_data,
       req_date,
     },
-    auth === 'student' ? StudentGradebookRowSchema : StaffGradebookRowSchema,
+    StaffGradebookRowSchema,
   );
 }
 
@@ -68,6 +81,19 @@ async function getGradebookRowsCursor({
 }: GetGradebookRowsParams): Promise<
   CursorIterator<StudentGradebookRow> | CursorIterator<StaffGradebookRow>
 > {
+  if (auth === 'student') {
+    return await queryValidatedCursor(
+      sql.select_assessment_instances,
+      {
+        course_instance_id,
+        user_id,
+        authz_data,
+        req_date,
+      },
+      StudentGradebookRowSchema,
+    );
+  }
+
   return await queryValidatedCursor(
     sql.select_assessment_instances,
     {
@@ -76,7 +102,7 @@ async function getGradebookRowsCursor({
       authz_data,
       req_date,
     },
-    auth === 'student' ? StudentGradebookRowSchema : StaffGradebookRowSchema,
+    StaffGradebookRowSchema,
   );
 }
 
