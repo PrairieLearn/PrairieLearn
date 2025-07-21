@@ -54,7 +54,7 @@ function SelectableCard({
       </div>
       {selected && (
         <div class="position-absolute top-0 end-0 p-2">
-          <i class="fa fa-check-circle text-primary" aria-hidden="true"></i>
+          <i class="fa fa-check-circle text-primary" aria-hidden="true" />
         </div>
       )}
     </div>
@@ -126,11 +126,11 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
             title={option.title}
             description={option.description}
             selected={value === option.id}
-            onClick={() => onChange(option.id)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
             cardRef={(el) => {
               cardRefs.current[index] = el;
             }}
+            onClick={() => onChange(option.id)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
           />
         ))}
       </div>
@@ -196,8 +196,8 @@ export function CreateQuestionModalContents({
           class="form-control"
           id="title"
           name="title"
-          required
           aria-describedby="title_help"
+          required
         />
         <small id="title_help" class="form-text text-muted">
           The full name of the question, visible to users.
@@ -213,9 +213,9 @@ export function CreateQuestionModalContents({
           class="form-control"
           id="qid"
           name="qid"
-          required
           pattern="[\-A-Za-z0-9_\/]+"
           aria-describedby="qid_help"
+          required
         />
         <small id="qid_help" class="form-text text-muted">
           A short unique identifier for this question, such as "add-vectors" or "find-derivative".
@@ -244,9 +244,9 @@ export function CreateQuestionModalContents({
             class="form-select"
             id="template_qid"
             name="template_qid"
-            required
             aria-describedby="template_help"
             value={selectedTemplate?.qid ?? ''}
+            required
             onChange={(e) => setSelectedTemplateQid((e.target as HTMLSelectElement).value)}
           >
             <option value="">Select a template...</option>
