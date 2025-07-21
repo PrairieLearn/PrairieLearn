@@ -4,7 +4,7 @@ import type { GroupConfig } from '../lib/db-types.js';
 import type { GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
-import { Modal } from './Modal.html.js';
+import { Modal } from './Modal.js';
 
 export function GroupWorkInfoContainer({
   groupConfig,

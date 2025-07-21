@@ -1,5 +1,5 @@
-import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
-import { TopicDescriptionJsx } from '../../../components/TopicDescription.html.js';
+import { TopicBadgeJsx } from '../../../components/TopicBadge.js';
+import { TopicDescriptionJsx } from '../../../components/TopicDescription.js';
 import { type Topic } from '../../../lib/db-types.js';
 
 export function InstructorCourseAdminTopicsTable({ topics }: { topics: Topic[] }) {
