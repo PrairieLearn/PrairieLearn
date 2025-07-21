@@ -6,10 +6,11 @@ import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairiele
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { type Course, type Question, QuestionSchema } from '../../lib/db-types.js';
+import { type Course, type Question, QuestionSchema, type Topic } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectInstitutionForCourse } from '../../models/institution.js';
-import { selectQuestionByUuid } from '../../models/question.js';
+import { selectOptionalQuestionByUuid } from '../../models/question.js';
+import { selectOptionalTopicByName } from '../../models/topics.js';
 import * as schemas from '../../schemas/index.js';
 import type { QuestionJson } from '../../schemas/index.js';
 import { DEFAULT_QUESTION_INFO, loadAndValidateJson, validateQuestion } from '../course-db.js';
@@ -70,7 +71,11 @@ async function loadAndValidateQuestionJson(
   });
 }
 
-async function updateQuestion(question: Question, infoFile: infofile.InfoFile<QuestionJson>) {
+async function updateQuestion(
+  question: Question,
+  infoFile: infofile.InfoFile<QuestionJson>,
+  topic: Topic | null,
+) {
   assert(question.qid, 'Question must have a QID');
 
   if (infofile.hasErrors(infoFile)) {
@@ -81,9 +86,12 @@ async function updateQuestion(question: Question, infoFile: infofile.InfoFile<Qu
     });
   } else {
     // Update the question's properties.
+    assert(topic?.id, 'Topic must be defined');
     await queryAsync(sql.update_question, {
       id: question.id,
+      qid: question.qid,
       data: getParamsForQuestion(question.qid, infoFile.data),
+      topic_id: topic.id,
       warnings: infofile.stringifyWarnings(infoFile),
     });
   }
@@ -127,7 +135,22 @@ export async function fastSyncQuestion(
     // If the UUIDs don't match, we can't do a fast sync.
     if (jsonData.uuid !== existingQuestion.uuid) return false;
 
-    await updateQuestion(existingQuestion, jsonData);
+    const topic = await run(async () => {
+      if (!jsonData.data?.topic) return null;
+
+      return await selectOptionalTopicByName({
+        course_id: course.id,
+        name: jsonData.data?.topic,
+      });
+    });
+
+    // The topic must already exist. I.f it doesn't, we can't do a fast sync.
+    // The exception is when there's an error in the file, in which case we
+    // don't care about syncing the topic (and in fact we don't know what it
+    // is from the file anyways).
+    if (!topic && !infofile.hasErrors(jsonData)) return false;
+
+    await updateQuestion(existingQuestion, jsonData, topic);
   } else {
     // One of several things could be true:
     // - These could be files in the questions directory but not part of a question,
@@ -172,7 +195,7 @@ export async function fastSyncQuestion(
     if (!jsonData?.uuid) return false;
 
     // Get the existing question by UUID, if it exists.
-    const existingQuestionByUuid = await selectQuestionByUuid({
+    const existingQuestionByUuid = await selectOptionalQuestionByUuid({
       course_id: course.id,
       uuid: jsonData.uuid,
     });
@@ -183,6 +206,21 @@ export async function fastSyncQuestion(
     // TODO: we could in theory handle this case in the future. Skipping for now
     // as it's not a common scenario and would require more complex logic.
     if (existingQuestionByUuid) return false;
+
+    const topic = await run(async () => {
+      if (!jsonData.data?.topic) return null;
+
+      return await selectOptionalTopicByName({
+        course_id: course.id,
+        name: jsonData.data?.topic,
+      });
+    });
+
+    // The topic must already exist. I.f it doesn't, we can't do a fast sync.
+    // The exception is when there's an error in the file, in which case we
+    // don't care about syncing the topic (and in fact we don't know what it
+    // is from the file anyways).
+    if (!topic && !infofile.hasErrors(jsonData)) return false;
 
     // Create a new question in the database.
     const qid = qidFromFilePath(jsonFilePath);
@@ -196,7 +234,7 @@ export async function fastSyncQuestion(
       QuestionSchema,
     );
 
-    await updateQuestion(initialQuestion, jsonData);
+    await updateQuestion(initialQuestion, jsonData, topic);
   }
 
   // TODO: we need to handle chunk generation here.

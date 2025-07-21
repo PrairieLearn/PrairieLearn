@@ -10,10 +10,15 @@ WHERE
 INSERT INTO
   questions (course_id, qid, uuid, deleted_at)
 VALUES
-  ($course_id, $qid, $uuid, NULL);
+  ($course_id, $qid, $uuid, NULL)
+RETURNING
+  *;
 
 -- BLOCK update_question_errors
-UPDATE questions SET sync_errors = $errors WHERE
+UPDATE questions
+SET
+  sync_errors = $errors
+WHERE
   id = $id;
 
 -- BLOCK update_question
@@ -30,7 +35,7 @@ SET
   draft = ($data::jsonb ->> 'draft')::boolean,
   show_correct_answer = ($data::jsonb ->> 'show_correct_answer')::boolean,
   template_directory = $data::jsonb ->> 'template_directory',
-  topic_id = aggregates.topic_id,
+  topic_id = $topic_id,
   share_publicly = ($data::jsonb ->> 'share_publicly')::boolean,
   share_source_publicly = ($data::jsonb ->> 'share_source_publicly')::boolean,
   json_comment = ($data::jsonb -> 'comment'),
@@ -39,7 +44,9 @@ SET
   external_grading_files = jsonb_array_to_text_array ($data::jsonb -> 'external_grading_files'),
   external_grading_entrypoint = $data::jsonb ->> 'external_grading_entrypoint',
   external_grading_timeout = ($data::jsonb ->> 'external_grading_timeout')::integer,
-  external_grading_enable_networking = ($data::jsonb ->> 'external_grading_enable_networking')::boolean,
+  external_grading_enable_networking = (
+    $data::jsonb ->> 'external_grading_enable_networking'
+  )::boolean,
   external_grading_environment = ($data::jsonb ->> 'external_grading_environment')::jsonb,
   json_external_grading_comment = ($data::jsonb -> 'external_grading_comment'),
   dependencies = ($data::jsonb ->> 'dependencies')::jsonb,
@@ -53,6 +60,6 @@ SET
   workspace_environment = ($data::jsonb ->> 'workspace_environment')::jsonb,
   json_workspace_comment = ($data::jsonb -> 'workspace_comment'),
   sync_errors = NULL,
-  sync_warnings = src.warnings
+  sync_warnings = $warnings
 WHERE
   id = $id;

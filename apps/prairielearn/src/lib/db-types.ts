@@ -891,14 +891,9 @@ export const QuestionSchema = z.object({
   template_directory: z.string().nullable(),
   title: z.string().nullable(),
   topic_id: IdSchema.nullable(),
-  type: z.enum([
-    'Calculation',
-    'MultipleChoice',
-    'Checkbox',
-    'File',
-    'MultipleTrueFalse',
-    'Freeform',
-  ]),
+  type: z
+    .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'Freeform'])
+    .nullable(),
   uuid: z.string().nullable(),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
