@@ -19,6 +19,7 @@ export function DownloadButton({
   courseInstance: StaffCourseInstanceContext['course_instance'];
 }) {
   const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
+  const filenameBase = `${filenamePrefix}students`;
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {
     const rows = students.map((student) => [
       student.user.uid,
@@ -63,7 +64,7 @@ export function DownloadButton({
             type="button"
             role="menuitem"
             aria-label="Download all students as CSV file"
-            onClick={() => downloadStudentsCSV(students, `${filenamePrefix}students.csv`)}
+            onClick={() => downloadStudentsCSV(students, `${filenameBase}.csv`)}
           >
             All students as CSV
           </button>
@@ -74,7 +75,7 @@ export function DownloadButton({
             type="button"
             role="menuitem"
             aria-label="Download all students as JSON file"
-            onClick={() => downloadStudentsJSON(students, `${filenamePrefix}students.json`)}
+            onClick={() => downloadStudentsJSON(students, `${filenameBase}.json`)}
           >
             All students as JSON
           </button>
@@ -88,7 +89,7 @@ export function DownloadButton({
             onClick={() =>
               downloadStudentsCSV(
                 table.getFilteredRowModel().rows.map((row) => row.original),
-                `${filenamePrefix}students_filtered.csv`,
+                `${filenameBase}_filtered.csv`,
               )
             }
           >
@@ -104,7 +105,7 @@ export function DownloadButton({
             onClick={() =>
               downloadStudentsJSON(
                 table.getFilteredRowModel().rows.map((row) => row.original),
-                `${filenamePrefix}students_filtered.json`,
+                `${filenameBase}_filtered.json`,
               )
             }
           >

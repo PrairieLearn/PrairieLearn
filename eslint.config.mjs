@@ -142,6 +142,17 @@ export default tseslint.config([
       'jsx-a11y-x/anchor-ambiguous-text': 'error',
       'jsx-a11y-x/lang': 'error',
       'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+      // Bootstrap turns some elements into interactive elements.
+      'jsx-a11y-x/no-noninteractive-element-to-interactive-role': [
+        'error',
+        {
+          ul: ['listbox', 'menu', 'menubar', 'radiogroup', 'tablist', 'tree', 'treegrid', 'role'],
+          ol: ['listbox', 'menu', 'menubar', 'radiogroup', 'tablist', 'tree', 'treegrid'],
+          li: ['menuitem', 'option', 'row', 'tab', 'treeitem'],
+          table: ['grid'],
+          td: ['gridcell'],
+        },
+      ],
 
       // Use the recommended rules for react-hooks
       'react-hooks/rules-of-hooks': 'error',

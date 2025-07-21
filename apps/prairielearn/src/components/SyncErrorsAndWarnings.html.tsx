@@ -2,7 +2,6 @@ import clsx from 'clsx';
 
 import { ansiToHtml } from '../lib/chalk.js';
 import type { StaffCourseInstanceContext } from '../lib/client/page-context.js';
-import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
 import { type Assessment, type Question } from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
@@ -11,7 +10,7 @@ export function CourseSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  course: StaffCourse | StaffCourseInstanceContext['course'];
+  course: StaffCourseInstanceContext['course'];
   urlPrefix: string;
 }) {
   return (
@@ -34,7 +33,7 @@ export function QuestionSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   question: Question;
-  course: StaffCourse | StaffCourseInstanceContext['course'];
+  course: StaffCourseInstanceContext['course'];
   urlPrefix: string;
 }) {
   return (
@@ -56,8 +55,8 @@ export function CourseInstanceSyncErrorsAndWarnings({
   urlPrefix,
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
-  courseInstance: StaffCourseInstance | StaffCourseInstanceContext['course_instance'];
-  course: StaffCourse | StaffCourseInstanceContext['course'];
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: StaffCourseInstanceContext['course'];
   urlPrefix: string;
 }) {
   return (
@@ -81,8 +80,8 @@ export function AssessmentSyncErrorsAndWarnings({
 }: {
   authz_data: { has_course_instance_permission_edit: boolean };
   assessment: Assessment;
-  courseInstance: StaffCourseInstance | StaffCourseInstanceContext['course_instance'];
-  course: StaffCourse | StaffCourseInstanceContext['course'];
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+  course: StaffCourseInstanceContext['course'];
   urlPrefix: string;
 }) {
   return (

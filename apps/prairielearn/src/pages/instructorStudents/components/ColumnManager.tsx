@@ -81,7 +81,6 @@ function ColumnMenuItem({
               column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
             }
             aria-describedby={`${column.id}-label`}
-            // tabIndex={0}
           />
         </OverlayTrigger>
         <span class="form-check-label ms-2" id={`${column.id}-label`}>
@@ -150,10 +149,14 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');
   const unpinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() !== 'left');
 
-  // When we use the pin or reset button, we want to refocus to another element.
   useEffect(() => {
+    // When we use the pin or reset button, we want to refocus to another element.
+    // We want this in a useEffect so that this code runs after the component re-renders.
+
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (activeElementId) {
       const element = document.getElementById(activeElementId);
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (element) {
         (element as HTMLElement).focus();
       }

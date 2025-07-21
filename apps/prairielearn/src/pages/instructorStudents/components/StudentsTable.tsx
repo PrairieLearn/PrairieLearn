@@ -37,10 +37,9 @@ function ResizeHandle({
       const increment = e.shiftKey ? 20 : 5; // Larger increment with Shift key
       const newSize =
         e.key === 'ArrowLeft'
-          ? Math.max(minSize, currentSize - increment) // Minimum width of 50px
-          : Math.min(maxSize, currentSize + increment); // Maximum width of 800px
+          ? Math.max(minSize, currentSize - increment)
+          : Math.min(maxSize, currentSize + increment);
 
-      // Use the table's setColumnSizing method to update column size
       setColumnSizing((prevSizing) => ({
         ...prevSizing,
         [header.column.id]: newSize,
@@ -58,14 +57,19 @@ function ResizeHandle({
 
   return (
     <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
+      {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
+        https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
+      */}
+      {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
       <div
         onMouseDown={header.getResizeHandler()}
         onTouchStart={header.getResizeHandler()}
         onKeyDown={handleKeyDown}
+        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
         tabIndex={0}
         role="separator"
         aria-label={`Resize '${columnName}' column`}
-        aria-description="Use left and right arrow keys to resize, shift for larger increments, or home to reset."
+        aria-valuetext={`${header.getSize()}px`}
         aria-orientation="vertical"
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
@@ -167,18 +171,16 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
         ]
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
-  const isTableResizing = () => {
-    return headerGroups.some((headerGroup) =>
-      headerGroup.headers.some((header) => header.column.getIsResizing()),
-    );
-  };
+  const isTableResizing = headerGroups.some((headerGroup) =>
+    headerGroup.headers.some((header) => header.column.getIsResizing()),
+  );
   const lastColumnId = table.getAllLeafColumns()[table.getAllLeafColumns().length - 1].id;
 
   const tableRect = tableRef.current?.getBoundingClientRect();
 
   useEffect(() => {
-    document.body.classList.toggle('no-user-select', isTableResizing());
-  }, [isTableResizing()]);
+    document.body.classList.toggle('no-user-select', isTableResizing);
+  }, [isTableResizing]);
 
   // Helper function to get aria-sort value
   const getAriaSort = (
@@ -281,11 +283,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                               ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
                               : undefined
                           }
-                          aria-description={
-                            canSort
-                              ? `Use Enter to toggle the sort direction of the '${columnName}' column.`
-                              : undefined
-                          }
                         >
                           {header.isPlaceholder
                             ? null
@@ -314,7 +311,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             </thead>
             <tbody>
               {before > 0 && (
-                <tr aria-hidden="true">
+                <tr tabIndex={-1}>
                   <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
                 </tr>
               )}
@@ -357,7 +354,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                 );
               })}
               {after > 0 && (
-                <tr aria-hidden="true">
+                <tr tabIndex={-1}>
                   <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
                 </tr>
               )}
