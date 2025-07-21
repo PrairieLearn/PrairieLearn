@@ -58,12 +58,12 @@ function getQuestionFastSyncStrategy(
   };
 }
 
-interface QuestionJsonFastSync {
+export interface QuestionJsonFastSync {
   type: 'QuestionJson';
   pathPrefix: string;
 }
 
-interface QuestionFilesFastSync {
+export interface QuestionFilesFastSync {
   type: 'QuestionFiles';
   pathPrefix: string;
 }
