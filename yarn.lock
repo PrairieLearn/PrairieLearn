@@ -2122,16 +2122,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@html-eslint/parser@npm:^0.42.0":
-  version: 0.42.0
-  resolution: "@html-eslint/parser@npm:0.42.0"
-  dependencies:
-    "@html-eslint/template-syntax-parser": "npm:^0.42.0"
-    es-html-parser: "npm:0.2.0"
-  checksum: 10c0/16b3e5e2058c21e80890aa2a4a83a5db59815e47c29028dc8e12a16d441e1fecfede26a6dcca9264e632f2e082483b3cdc3434e57bdb94ea290b4a056bc151f4
-  languageName: node
-  linkType: hard
-
 "@html-eslint/parser@npm:^0.43.0":
   version: 0.43.0
   resolution: "@html-eslint/parser@npm:0.43.0"
@@ -2148,13 +2138,6 @@ __metadata:
   dependencies:
     es-html-parser: "npm:0.2.0"
   checksum: 10c0/fd829d32e4f932407ceae7f5636171284cca4b1524d1d54d86e9d30d24cbf252f1f07602e48a44cb81777f289d723c74af4b25ecc22c08711d18269948e842c7
-  languageName: node
-  linkType: hard
-
-"@html-eslint/template-syntax-parser@npm:^0.42.0":
-  version: 0.42.0
-  resolution: "@html-eslint/template-syntax-parser@npm:0.42.0"
-  checksum: 10c0/73d32f47ccb620c958f5d159c66f6a3928ef05c5d5fdc6899bee1681663435f4f036651b5bbd59853a656981243951059b9a04f421945c911e898a508cf58c22
   languageName: node
   linkType: hard
 
@@ -14802,7 +14785,6 @@ __metadata:
     "@changesets/cli": "npm:^2.29.5"
     "@eslint-react/eslint-plugin": "npm:^1.52.2"
     "@html-eslint/eslint-plugin": "npm:^0.43.0"
-    "@html-eslint/parser": "npm:^0.42.0"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^3.2.4"
