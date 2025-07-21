@@ -30,8 +30,7 @@ router.get(
 
     const search = getUrl(req).search;
 
-    const hasPermission = pageContext.authz_data.has_course_instance_permission_view;
-    if (!hasPermission) {
+    if (!pageContext.authz_data.has_course_instance_permission_view) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
