@@ -28,33 +28,39 @@ router.get(
         course_instance_id: res.locals.course_instance.id,
       },
       z.object({
-        assessments: z.object({
-          assessment_id: AssessmentSchema.shape.id,
-          label: z.string(),
-          title: AssessmentSchema.shape.title,
-          tid: AssessmentSchema.shape.tid,
-        }),
-        lti_credentials: z.object({
-          ...LtiCredentialSchema.pick({
-            id: true,
-            course_instance_id: true,
-            consumer_key: true,
-            secret: true,
-            created_at: true,
-          }).shape,
-          created: z.string(),
-          deleted: z.string(),
-        }),
-        lti_links: z.object({
-          ...LtiLinkSchema.pick({
-            id: true,
-            resource_link_title: true,
-            resource_link_description: true,
-            assessment_id: true,
-            created_at: true,
-          }).shape,
-          created: z.string(),
-        }),
+        assessments: z.array(
+          z.object({
+            assessment_id: AssessmentSchema.shape.id,
+            label: z.string(),
+            title: AssessmentSchema.shape.title,
+            tid: AssessmentSchema.shape.tid,
+          }),
+        ),
+        lti_credentials: z.array(
+          z.object({
+            ...LtiCredentialSchema.pick({
+              id: true,
+              course_instance_id: true,
+              consumer_key: true,
+              secret: true,
+              created_at: true,
+            }).shape,
+            created: z.string(),
+            deleted: z.string(),
+          }),
+        ),
+        lti_links: z.array(
+          z.object({
+            ...LtiLinkSchema.pick({
+              id: true,
+              resource_link_title: true,
+              resource_link_description: true,
+              assessment_id: true,
+              created_at: true,
+            }).shape,
+            created: z.string(),
+          }),
+        ),
       }),
     );
     Object.assign(res.locals, result);
