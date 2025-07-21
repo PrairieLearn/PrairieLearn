@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import {
   type CourseInstance,
   CourseInstancePermissionSchema,

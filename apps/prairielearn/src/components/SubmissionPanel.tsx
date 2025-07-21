@@ -18,8 +18,8 @@ import {
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
-import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
-import { Modal } from './Modal.html.js';
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
+import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 
 const detailedSubmissionColumns = {
@@ -103,7 +103,7 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex align-items-center submission-header ${!expanded
+                class="card-header bg-info text-white d-flex align-items-center collapsible-card-header ${!expanded
                   ? ' collapsed'
                   : ''}"
               >
@@ -179,7 +179,9 @@ export function SubmissionPanel({
         : ''}
 
       <div class="card mb-4" data-testid="submission-block">
-        <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
+        <div
+          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+        >
           <div class="me-2">
             <div>
               <span class="me-2 d-flex align-items-center">
@@ -230,10 +232,9 @@ export function SubmissionPanel({
         </div>
 
         <div
-          class="collapse js-submission-body ${expanded ? 'show' : ''} ${submissionHtml == null &&
-          question.type === 'Freeform'
-            ? 'render-pending'
-            : ''}"
+          class="collapse js-submission-body js-collapsible-card-body ${expanded
+            ? 'show'
+            : ''} ${submissionHtml == null && question.type === 'Freeform' ? 'render-pending' : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}

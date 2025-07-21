@@ -6,7 +6,7 @@ import { ansiToHtml } from '../lib/chalk.js';
 import type { Course } from '../lib/db-types.js';
 import type { JobSequenceWithTokens, JobWithToken } from '../lib/server-jobs.types.js';
 
-import { JobStatus } from './JobStatus.html.js';
+import { JobStatus } from './JobStatus.js';
 
 export interface JobSequenceResultsData {
   jobSequenceId: string;
