@@ -72,6 +72,7 @@ export default tseslint.config([
       '@html-eslint/use-baseline': 'off',
       // We violate these rules in a lot of places.
       '@html-eslint/id-naming-convention': 'off',
+      '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
       '@html-eslint/require-button-type': 'off',
     },
     plugins: {
@@ -280,6 +281,7 @@ export default tseslint.config([
     rules: {
       // We prefer tags like `<img>` over `<img />`.
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'never' }],
+      // Whitespace is intentional in these files.
       '@html-eslint/no-extra-spacing-text': 'off',
     },
     languageOptions: {
