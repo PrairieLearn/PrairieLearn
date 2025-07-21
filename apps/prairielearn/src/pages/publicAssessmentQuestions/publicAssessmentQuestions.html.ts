@@ -1,13 +1,13 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../components/AssessmentQuestions.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
+} from '../../components/AssessmentQuestions.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
 
