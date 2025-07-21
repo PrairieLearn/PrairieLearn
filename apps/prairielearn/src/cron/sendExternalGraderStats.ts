@@ -12,7 +12,7 @@ export async function run() {
   const result = await sqldb.callRow(
     'grading_jobs_stats_day',
     z.object({
-      count: z.bigint(), // Is this good?
+      count: z.number(),
       delta_total: z.number(),
       delta_submitted_at: z.number(),
       delta_received_at: z.number(),
