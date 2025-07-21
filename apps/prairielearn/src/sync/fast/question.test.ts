@@ -81,6 +81,24 @@ describe('fastSyncQuestion', () => {
     },
   );
 
+  it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
+    'falls back to slow sync for deletion of question $qid',
+    async ({ qid }) => {
+      const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+      courseData.questions[qid] = makeQuestion(courseData);
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      delete courseData.questions[qid];
+      await util.writeCourseToDirectory(courseData, courseDir);
+
+      const course = await selectCourseById(syncResults.courseId);
+      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
+      assert(strategy !== null);
+      assert.isFalse(await attemptFastSync(course, strategy));
+    },
+  );
+
   it('falls back to slow sync when question UUID changes', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 

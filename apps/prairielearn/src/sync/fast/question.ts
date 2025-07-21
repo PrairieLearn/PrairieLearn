@@ -135,6 +135,12 @@ async function syncQuestionJson(
     );
 
     // If we're missing JSON data or the UUID, we can't do a fast sync.
+    //
+    // This implicitly handles the case of question deletion, since that's the
+    // case in which the `info.json` file would be missing. We could have a
+    // fast case for this too, e.g. we could safely delete draft questions, or
+    // non-shared questions that aren't used on any assessments. But question
+    // deletion isn't that common, so we can handle that with full syncing for now.
     if (!jsonData?.uuid) return null;
 
     // If the UUIDs don't match, we can't do a fast sync.
