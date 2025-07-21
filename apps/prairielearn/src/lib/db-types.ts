@@ -453,7 +453,6 @@ export const ExamModeNetworkSchema = z.object({
   location: z.string().nullable(),
   network: z.string().cidr(),
   purpose: z.string().nullable(),
-  updated_at: DateFromISOString,
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
