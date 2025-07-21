@@ -232,20 +232,20 @@ mjx-container {
 }
 
 /* Button in submission header context prepends "hide" or "show" automatically */
-.submission-header .expand-icon {
+.collapsible-card-header .expand-icon {
   transition: transform 400ms;
 }
 
-.submission-header .expand-icon-container::before {
-  content: 'hide';
+.collapsible-card-header .expand-icon-container::before {
+  content: 'Hide';
 }
 
-.submission-header .expand-icon-container.collapsed .expand-icon {
+.collapsible-card-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header .expand-icon-container.collapsed::before {
-  content: 'show';
+.collapsible-card-header .expand-icon-container.collapsed::before {
+  content: 'Show';
 }
 
 /***************************************
