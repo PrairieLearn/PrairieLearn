@@ -136,7 +136,7 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           mode: 'all',
-          image_rag_enabled: false,
+          image_rag_enabled: true,
           run_async: false
         });
       }
