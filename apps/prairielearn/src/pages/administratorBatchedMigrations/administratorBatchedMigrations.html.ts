@@ -5,7 +5,7 @@ import type {
   BatchedMigrationStatus,
 } from '@prairielearn/migrations';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 
 export function AdministratorBatchedMigrations({
   batchedMigrations,

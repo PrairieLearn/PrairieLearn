@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { createFileBrowser } from '../../components/FileBrowser.html.js';
+import { createFileBrowser } from '../../components/FileBrowser.js';
 import { UserSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';

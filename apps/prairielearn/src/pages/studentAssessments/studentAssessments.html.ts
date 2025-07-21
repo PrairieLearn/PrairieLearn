@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import {
   AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
-} from '../../components/StudentAccessRulesPopover.html.js';
+} from '../../components/StudentAccessRulesPopover.js';
 import {
   AssessmentAccessRuleSchema,
   AssessmentInstanceSchema,
