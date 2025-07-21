@@ -1,27 +1,28 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
-import z from 'zod/v3';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../lib/aws.js';
 import { config } from '../lib/config.js';
 
+const ServerUsageStatsSchema = z.object({
+  user_count: z.number().int(),
+  page_views_per_second: z.number(),
+  submissions_per_second: z.number(),
+  internal_grading_jobs_per_second: z.number(),
+  external_grading_jobs_per_second: z.number(),
+  timestamp_formatted: z.string(),
+});
+
 export async function run() {
   if (!config.runningInEc2) return;
 
-  const result = await sqldb.callRow(
+  const stats = await sqldb.callRow(
     'server_usage_current',
     [config.serverUsageIntervalSec],
-    z.object({
-      user_count: z.number().int(),
-      page_views_per_second: z.number(),
-      submissions_per_second: z.number(),
-      internal_grading_jobs_per_second: z.number(),
-      external_grading_jobs_per_second: z.number(),
-      timestamp_formatted: z.string(),
-    }),
+    ServerUsageStatsSchema,
   );
-  const stats = result;
   const dimensions = [{ Name: 'Server Group', Value: config.groupName }];
   const timestamp = new Date(stats.timestamp_formatted);
 

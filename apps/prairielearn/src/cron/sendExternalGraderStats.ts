@@ -6,27 +6,26 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import * as opsbot from '../lib/opsbot.js';
 
+const GradingJobStatsDaySchema = z.object({
+  count: z.number(),
+  delta_total: z.number(),
+  delta_submitted_at: z.number(),
+  delta_received_at: z.number(),
+  delta_started_at: z.number(),
+  delta_finished_at: z.number(),
+  delta_final: z.number(),
+  max_total: z.number(),
+  max_submitted_at: z.number(),
+  max_received_at: z.number(),
+  max_started_at: z.number(),
+  max_finished_at: z.number(),
+  max_final: z.number(),
+});
+
 export async function run() {
   if (!opsbot.canSendMessages()) return;
 
-  const result = await sqldb.callRow(
-    'grading_jobs_stats_day',
-    z.object({
-      count: z.number(),
-      delta_total: z.number(),
-      delta_submitted_at: z.number(),
-      delta_received_at: z.number(),
-      delta_started_at: z.number(),
-      delta_finished_at: z.number(),
-      delta_final: z.number(),
-      max_total: z.number(),
-      max_submitted_at: z.number(),
-      max_received_at: z.number(),
-      max_started_at: z.number(),
-      max_finished_at: z.number(),
-      max_final: z.number(),
-    }),
-  );
+  const result = await sqldb.callRow('grading_jobs_stats_day', GradingJobStatsDaySchema);
   const {
     count,
     delta_total,
