@@ -127,6 +127,8 @@ function ColumnMenuItem({
 
 export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const handleTogglePin = (columnId: string) => {
     const currentLeft = table.getState().columnPinning?.left ?? [];
     const isPinned = currentLeft.includes(columnId);
@@ -164,7 +166,18 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   }, [activeElementId]);
 
   return (
-    <Dropdown autoClose="outside">
+    <Dropdown
+      ref={menuRef}
+      autoClose="outside"
+      onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
+      onFocusOut={(e: FocusEvent) => {
+        // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
+        if (menuRef.current && !menuRef.current.contains(e.relatedTarget as Node)) {
+          setDropdownOpen(false);
+        }
+      }}
+      show={dropdownOpen}
+    >
       <Dropdown.Toggle variant="outline-secondary" id="column-manager-button">
         <i class="bi bi-view-list me-2" aria-hidden="true"></i>
         View
