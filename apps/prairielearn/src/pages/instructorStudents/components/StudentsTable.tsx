@@ -13,11 +13,11 @@ import type { StudentRow } from '../instructorStudents.shared.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
-    return <i class="bi bi-sort-up-alt" aria-hidden="true"></i>;
+    return <i class="bi bi-sort-up-alt" aria-hidden="true" />;
   } else if (sortMethod === 'desc') {
-    return <i class="bi bi-sort-down" aria-hidden="true"></i>;
+    return <i class="bi bi-sort-down" aria-hidden="true" />;
   } else {
-    return <i class="bi bi-arrow-down-up opacity-75 text-muted" aria-hidden="true"></i>;
+    return <i class="bi bi-arrow-down-up opacity-75 text-muted" aria-hidden="true" />;
   }
 }
 
@@ -62,11 +62,6 @@ function ResizeHandle({
       */}
       {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
       <div
-        onMouseDown={header.getResizeHandler()}
-        onTouchStart={header.getResizeHandler()}
-        onKeyDown={handleKeyDown}
-        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
-        tabIndex={0}
         role="separator"
         aria-label={`Resize '${columnName}' column`}
         aria-valuetext={`${header.getSize()}px`}
@@ -74,12 +69,17 @@ function ResizeHandle({
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
         aria-valuenow={header.getSize()}
+        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
+        tabIndex={0}
         class="h-100"
         style={{
           background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
           cursor: 'col-resize',
           transition: 'background-color 0.2s',
         }}
+        onMouseDown={header.getResizeHandler()}
+        onTouchStart={header.getResizeHandler()}
+        onKeyDown={handleKeyDown}
       />
     </div>
   );
@@ -262,6 +262,12 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                             background: 'transparent',
                             border: 'none',
                           }}
+                          type="button"
+                          aria-label={
+                            canSort
+                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+                              : undefined
+                          }
                           onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                           onKeyDown={
                             canSort
@@ -272,12 +278,6 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                                     handleSort(e);
                                   }
                                 }
-                              : undefined
-                          }
-                          type="button"
-                          aria-label={
-                            canSort
-                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
                               : undefined
                           }
                         >
@@ -375,7 +375,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             role="status"
             aria-live="polite"
           >
-            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true"></i>
+            <i class="bi bi-eye-slash display-4 mb-2" aria-hidden="true" />
             <p class="mb-0">No columns selected. Use the View menu to show columns.</p>
           </div>
         </div>
@@ -394,7 +394,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
           role="status"
           aria-live="polite"
         >
-          <i class="bi bi-search display-4 mb-2" aria-hidden="true"></i>
+          <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
           <p class="mb-0">No students found matching your search criteria.</p>
         </div>
       )}

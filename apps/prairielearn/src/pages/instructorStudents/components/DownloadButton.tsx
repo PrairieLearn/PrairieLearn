@@ -57,7 +57,7 @@ export function DownloadButton({
         aria-label="Download student data in various formats"
         class="btn btn-light btn-sm dropdown-toggle"
       >
-        <i aria-hidden="true" class="pe-2 bi bi-download"></i>
+        <i aria-hidden="true" class="pe-2 bi bi-download" />
         Download
       </button>
       <ul class="dropdown-menu" role="menu" aria-label="Download options">

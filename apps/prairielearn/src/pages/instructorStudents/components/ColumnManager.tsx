@@ -51,8 +51,8 @@ function ColumnMenuItem({
 
   return (
     <Dropdown.Item
-      as="div"
       key={column.id}
+      as="div"
       class="px-2 py-1 d-flex align-items-center justify-content-between"
       onKeyDown={handleKeyDown}
     >
@@ -62,16 +62,16 @@ function ColumnMenuItem({
           overlay={<Tooltip>{column.getIsVisible() ? 'Hide column' : 'Show column'}</Tooltip>}
         >
           <input
-            type="checkbox"
             ref={checkboxRef}
+            type="checkbox"
             class="form-check-input"
             checked={column.getIsVisible()}
-            onChange={column.getToggleVisibilityHandler()}
             disabled={!column.getCanHide()}
             aria-label={
               column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
             }
             aria-describedby={`${column.id}-label`}
+            onChange={column.getToggleVisibilityHandler()}
           />
         </OverlayTrigger>
         <span class="form-check-label ms-2" id={`${column.id}-label`}>
@@ -80,23 +80,18 @@ function ColumnMenuItem({
       </label>
       {column.getCanPin() && !hidePinButton && (
         <button
+          ref={pinButtonRef}
           type="button"
           // Since the HTML changes, but we want to refocus the pin button, we track
           // the active pin button and refocuses it when the column manager is rerendered.
           id={`${column.id}-pin`}
-          ref={pinButtonRef}
           class="btn btn-sm btn-ghost ms-2"
           aria-label={
             column.getIsPinned() ? `Unfreeze '${header}' column` : `Freeze '${header}'  column`
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
-          onClick={() => {
-            if (!pinButtonRef.current) {
-              throw new Error('pinButtonRef.current is null');
-            }
-            onTogglePin(column.id);
-          }}
+          tabIndex={-1}
           onKeyDown={(e) => {
             if (!pinButtonRef.current) {
               throw new Error('pinButtonRef.current is null');
@@ -107,7 +102,12 @@ function ColumnMenuItem({
             }
           }}
           // Instead, use the arrow keys to move between interactive elements in each menu item.
-          tabIndex={-1}
+          onClick={() => {
+            if (!pinButtonRef.current) {
+              throw new Error('pinButtonRef.current is null');
+            }
+            onTogglePin(column.id);
+          }}
         >
           <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
         </button>
@@ -160,6 +160,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
     <Dropdown
       ref={menuRef}
       autoClose="outside"
+      show={dropdownOpen}
       onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
       onFocusOut={(e: FocusEvent) => {
         // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
@@ -167,10 +168,9 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
           setDropdownOpen(false);
         }
       }}
-      show={dropdownOpen}
     >
       <Dropdown.Toggle variant="outline-secondary" id="column-manager-button">
-        <i class="bi bi-view-list me-2" aria-hidden="true"></i>
+        <i class="bi bi-view-list me-2" aria-hidden="true" />
         View
       </Dropdown.Toggle>
       <Dropdown.Menu>
@@ -219,12 +219,12 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
               variant="secondary"
               size="sm"
               class="w-100"
+              aria-label="Reset all columns to default visibility and pinning"
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
                 setActiveElementId('column-manager-button');
               }}
-              aria-label="Reset all columns to default visibility and pinning"
             >
               <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
               Reset view

@@ -98,7 +98,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
         cell: (info) => {
           const date = new Date(info.getValue());
           return (
-            <FriendlyDate date={date} timezone={timezone} tooltip options={{ includeTz: false }} />
+            <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
           );
         },
       }),
@@ -187,7 +187,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
                 data-bs-toggle="tooltip"
                 onClick={() => setGlobalFilter('')}
               >
-                <i class="bi bi-x-circle" aria-hidden="true"></i>
+                <i class="bi bi-x-circle" aria-hidden="true" />
               </button>
             </div>
             {/* We do this instead of CSS properties for the accessibility checker */}
