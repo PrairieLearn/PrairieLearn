@@ -4,11 +4,9 @@ import {
   RawStaffAssessmentInstanceSchema,
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
-  RawStaffCourseInstanceSchema,
   RawStudentAssessmentInstanceSchema__UNSAFE,
   RawStudentAssessmentSchema,
   RawStudentAssessmentSetSchema,
-  RawStudentCourseInstanceSchema,
 } from './client/safe-db-types.js';
 
 const StudentGradebookRowSchema = z
@@ -16,7 +14,6 @@ const StudentGradebookRowSchema = z
     assessment: RawStudentAssessmentSchema,
     assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
     assessment_set: RawStudentAssessmentSetSchema,
-    course_instance: RawStudentCourseInstanceSchema,
     show_closed_assessment_score: z.boolean(),
   })
   .transform((data) => {
@@ -33,7 +30,6 @@ const StaffGradebookRowSchema = z
     assessment: RawStaffAssessmentSchema,
     assessment_instance: RawStaffAssessmentInstanceSchema,
     assessment_set: RawStaffAssessmentSetSchema,
-    course_instance: RawStaffCourseInstanceSchema,
     show_closed_assessment_score: z.boolean(),
   })
   .brand('StaffGradebookRow');
