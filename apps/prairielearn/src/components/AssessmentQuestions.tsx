@@ -47,7 +47,7 @@ export function AssessmentQuestionHeaders({
 
 export function AssessmentQuestionNumber({ question }: { question: AssessmentQuestionRow }) {
   return question.alternative_group_size === 1 ? (
-    <>{question.alternative_group_number}. </>
+    `${question.alternative_group_number}. `
   ) : (
     <span class="ms-3">
       {question.alternative_group_number}.{question.number_in_alternative_group}.{' '}

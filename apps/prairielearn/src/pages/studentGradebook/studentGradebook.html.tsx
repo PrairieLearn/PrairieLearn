@@ -76,7 +76,7 @@ export function StudentGradebook({
                   </td>
                   <td class="text-center align-middle">
                     {row.show_closed_assessment_score ? (
-                      <Scorebar score={row.assessment_instance_score_perc} className="mx-auto" />
+                      <Scorebar score={row.assessment_instance_score_perc} class="mx-auto" />
                     ) : (
                       'Score not shown'
                     )}

@@ -173,7 +173,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               }),
             renderCondition: ({ authz_data, course }) =>
               authz_data.has_course_permission_edit && course.show_getting_started,
@@ -376,7 +376,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
           IssueBadgeHtml({
             count: resLocals.open_issue_count,
             suppressLink: true,
-            className: 'ms-2',
+            class: 'ms-2',
           }),
         renderCondition: ({ course, question }) => question.course_id === course.id,
       },

@@ -23,7 +23,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       data-bs-content={popoverContent}
       data-bs-custom-class="popover-wide"
     >
-      <i className={`fa ${classes}`} aria-hidden="true"></i>
+      <i class={`fa ${classes}`} aria-hidden="true" />
     </button>
   );
 }

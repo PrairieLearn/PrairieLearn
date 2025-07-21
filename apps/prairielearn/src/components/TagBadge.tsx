@@ -8,7 +8,7 @@ export function TagBadgeList({ tags }: { tags: Pick<Tag, 'color' | 'name'>[] | n
   if (!tags) return null;
 
   return tags.map((tag) => (
-    <span class="me-1" key={tag.name}>
+    <span key={tag.name} class="me-1">
       <TagBadge tag={tag} />
     </span>
   ));

@@ -887,7 +887,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               })}
             </a>
           </li>
