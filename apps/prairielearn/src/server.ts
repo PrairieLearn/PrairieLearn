@@ -1264,6 +1264,15 @@ export async function initExpress(): Promise<Express> {
       (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
         .default,
     );
+
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_instance/:lti13_course_instance_id/assessment',
+      (
+        await import(
+          './ee/pages/instructorInstanceAdminLti13Assessment/instructorInstanceAdminLti13Assessment.js'
+        )
+      ).default,
+    );
   }
 
   // Global client files

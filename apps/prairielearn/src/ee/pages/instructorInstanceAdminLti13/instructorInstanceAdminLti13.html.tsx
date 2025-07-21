@@ -1,26 +1,31 @@
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
+  Lti13AssessmentSchema,
   AssessmentSchema,
   AssessmentSetSchema,
   type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
-import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
+import { type AssessmentRow, AssessmentRowSchema } from '../../../models/assessment.js';
+import { LineitemSchema, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
+export const LineItemsRowSchema = LineitemSchema.extend({
+  assessment: AssessmentRowSchema.optional(),
+  lti13_assessment: Lti13AssessmentSchema.optional(),
 });
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+export type LineItemsRow = z.infer<typeof LineItemsRowSchema>;
+
+export const AssessmentLti13AssessmentRowSchema = AssessmentRowSchema.extend({
+  lti13_assessment: Lti13AssessmentSchema.optional(),
+});
+export type AssessmentLti13AssessmentRowSchema = z.infer<typeof AssessmentLti13AssessmentRowSchema>;
 
 export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
@@ -91,13 +96,13 @@ export function InstructorInstanceAdminLti13({
   instance,
   instances,
   assessments,
-  lineitems,
+  assessmentsGroupBy,
 }: {
   resLocals: Record<string, any>;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Assessment[];
+  assessmentsGroupBy: 'Set' | 'Module';
 }): string {
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
@@ -174,7 +179,8 @@ export function InstructorInstanceAdminLti13({
                     resLocals,
                     lms_name,
                     assessments,
-                    lineitems,
+                    assessmentsGroupBy,
+                    lti13_course_instance_id: instance.lti13_course_instance.id,
                   })
                 : html`
                     <p>
@@ -211,15 +217,16 @@ function LinkedAssessments({
   resLocals,
   lms_name,
   assessments,
-  lineitems,
+  assessmentsGroupBy,
+  lti13_course_instance_id,
 }: {
   resLocals: Record<string, any>;
   lms_name: string;
-  assessments: AssessmentRow[];
-  lineitems: Lti13Assessment[];
+  assessments: AssessmentLti13AssessmentRowSchema[];
+  assessmentsGroupBy: 'Set' | 'Module';
+  lti13_course_instance_id: string;
 }): HtmlSafeString {
   const { urlPrefix } = resLocals;
-  const { assessments_group_by } = resLocals.course_instance;
 
   return html`
     <div class="table-responsive">
@@ -240,9 +247,6 @@ function LinkedAssessments({
         </thead>
         <tbody>
           ${assessments.map((row) => {
-            const lineitems_linked = lineitems.filter((item) => {
-              return item.assessment_id === row.id;
-            });
             return html`
               ${row.start_new_assessment_group
                 ? html`
@@ -250,7 +254,11 @@ function LinkedAssessments({
                       <th colspan="5">
                         ${Modal({
                           id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
-                          title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
+                          title: `${
+                            assessmentsGroupBy === 'Set'
+                              ? row.assessment_set.heading
+                              : row.assessment_module.heading
+                          } ${assessmentsGroupBy} Bulk Actions`,
                           body: html`<p>
                               These bulk actions work collectively on every assessment in the group
                               where the action makes sense.
@@ -302,7 +310,9 @@ function LinkedAssessments({
                             Close
                           </button>`,
                         })}
-                        ${row.assessment_group_heading}
+                        ${assessmentsGroupBy === 'Set'
+                          ? row.assessment_set.heading
+                          : row.assessment_module.heading}
                         <button
                           class="btn btn-sm btn-secondary ms-2"
                           type="button"
@@ -317,18 +327,25 @@ function LinkedAssessments({
                 : ''}
               <tr id="row-${row.id}">
                 <td class="align-middle" style="width: 1%">
-                  <span class="badge color-${row.color}">${row.label}</span>
+                  ${AssessmentBadge({
+                    assessment: {
+                      assessment_id: row.id,
+                      color: row.assessment_set.color,
+                      label: row.label,
+                    },
+                    urlPrefix,
+                    hideLink: true,
+                  })}
                 </td>
                 <td class="align-middle">
-                  <a href="${urlPrefix}/assessment/${row.id}/"
-                    >${row.title}
-                    ${row.group_work
-                      ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                      : ''}</a
-                  >
+                  ${AssessmentLink({
+                    assessment: row,
+                    urlPrefix,
+                  })}
                 </td>
                 <td>
                   ${Modal({
+                    size: 'modal-xl',
                     body: html`
                       <p>Which ${lms_name} assignment should we link?</p>
                       <form method="POST">
@@ -379,18 +396,8 @@ function LinkedAssessments({
                   <form method="POST">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
-                    ${lineitems_linked.length === 0
+                    ${row.lti13_assessment
                       ? html`
-                          <button
-                            class="btn btn-med-light"
-                            type="button"
-                            data-bs-toggle="modal"
-                            data-bs-target="#assignment-${row.id}"
-                          >
-                            Link assignment
-                          </button>
-                        `
-                      : html`
                           <div class="btn-group">
                             <button class="btn btn-info" name="__action" value="send_grades">
                               Send grades
@@ -414,13 +421,30 @@ function LinkedAssessments({
                               </li>
                             </ul>
                           </div>
+                        `
+                      : html`
+                          <button
+                            class="btn btn-med-light"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#assignment-${row.id}"
+                          >
+                            Link assignment
+                          </button>
                         `}
                   </form>
+
+                  <a href="${lti13_course_instance_id}/assessment/${row.id}" class="btn btn-primary"
+                    >New UI</a
+                  >
                 </td>
                 <td class="align-middle">
-                  ${lineitems_linked.map((i) =>
-                    LineItem(i, resLocals.course_instance.display_timezone),
-                  )}
+                  ${row.lti13_assessment
+                    ? LineItem({
+                        item: row.lti13_assessment,
+                        timezone: resLocals.course_instance.display_timezone,
+                      })
+                    : ''}
                 </td>
               </tr>
             `;
@@ -431,7 +455,7 @@ function LinkedAssessments({
   `;
 }
 
-function LineItem(item: Lti13Assessment, timezone: string) {
+function LineItem({ item, timezone }: { item: Lti13Assessment; timezone: string }) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p>
@@ -440,7 +464,13 @@ function LineItem(item: Lti13Assessment, timezone: string) {
   `;
 }
 
-export function LineitemsInputs(lineitems: Lineitems) {
+export function LineitemsInputs({
+  lineitems,
+  urlPrefix,
+}: {
+  lineitems: LineItemsRow[];
+  urlPrefix: string;
+}): string {
   const disclaimer = html`
     <details>
       <summary>Why don't I see my assignment here?</summary>
@@ -461,23 +491,69 @@ export function LineitemsInputs(lineitems: Lineitems) {
     `.toString();
   }
   return html`
-    ${lineitems.map(
-      (lineitem) => html`
-        <div class="form-check">
-          <label class="form-check-label">
-            <input
-              class="form-check-input"
-              type="radio"
-              name="lineitem_id"
-              value="${lineitem.id}"
-              required
-            />
-            <span title="${lineitem.id}">${lineitem.label}</span>
-          </label>
-        </div>
-      `,
-    )}
+    <table class="table w-auto">
+      <tr>
+        <th>Assignment</th>
+        <th colspan="2">Linked PrairieLearn assessment</th>
+      </tr>
+      ${lineitems.map(
+        (lineitem) => html`
+          <tr>
+            <td>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="lineitem_id"
+                    value="${lineitem.id}"
+                    required
+                  />
+                  <span title="${lineitem.id}">${lineitem.label}</span>
+                </label>
+              </div>
+            </td>
+            <td style="width: 1%">
+              ${lineitem.assessment
+                ? AssessmentBadge({
+                    assessment: {
+                      assessment_id: lineitem.assessment.id,
+                      color: lineitem.assessment.assessment_set.color,
+                      label: lineitem.assessment.label,
+                    },
+                    urlPrefix,
+                    hideLink: true,
+                  })
+                : ''}
+            </td>
+            <td>
+              ${lineitem.assessment
+                ? AssessmentLink({
+                    assessment: lineitem.assessment,
+                    urlPrefix,
+                  })
+                : ''}
+            </td>
+          </tr>
+        `,
+      )}
+    </table>
     <button name="__action" value="link_assessment" class="btn btn-primary">Link assignment</button>
     ${disclaimer}
   `.toString();
+}
+
+function AssessmentLink({
+  assessment,
+  urlPrefix,
+}: {
+  assessment: AssessmentRow;
+  urlPrefix: string;
+}) {
+  return html`
+    <a href="${urlPrefix}/assessment/${assessment.id}/"
+      >${assessment.title}
+      ${assessment.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}</a
+    >
+  `;
 }
