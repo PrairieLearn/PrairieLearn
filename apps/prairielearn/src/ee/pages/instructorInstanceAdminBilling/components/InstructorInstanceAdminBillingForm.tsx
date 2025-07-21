@@ -189,7 +189,7 @@ export function InstructorInstanceAdminBillingForm({
               aria-valuenow={enrollmentCount}
               aria-valuemin={0}
               aria-valuemax={enrollmentLimit}
-            ></div>
+            />
           </div>
         </div>
         <div class="small text-muted">
