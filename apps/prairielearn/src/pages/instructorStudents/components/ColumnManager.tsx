@@ -66,15 +66,7 @@ function ColumnMenuItem({
             ref={checkboxRef}
             class="form-check-input"
             checked={column.getIsVisible()}
-            onKeyDown={(e) => {
-              // https://github.com/TanStack/table/blob/29a3a320cd884ce7c3e1e7f89aeedb1fbf0f1f6e/packages/table-core/src/features/ColumnVisibility.ts#L195
-              // getToggleVisibilityHandler doesn't work with keyboard navigation.
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                column.toggleVisibility(!column.getIsVisible());
-              }
-            }}
-            onClick={column.getToggleVisibilityHandler()}
+            onChange={column.getToggleVisibilityHandler()}
             disabled={!column.getCanHide()}
             aria-label={
               column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
