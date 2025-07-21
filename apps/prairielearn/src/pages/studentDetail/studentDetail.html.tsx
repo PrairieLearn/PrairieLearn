@@ -72,20 +72,20 @@ export function StudentDetail({
         <div class="card-body">
           <h2>{user.name}</h2>
           <div class="d-flex">
-            <div class="font-weight-bold me-1">UID:</div>
+            <div class="fw-bold me-1">UID:</div>
             {user.uid}
           </div>
           {user.uin && (
             <div class="d-flex">
-              <div class="font-weight-bold me-1">UIN:</div> {user.uin}
+              <div class="fw-bold me-1">UIN:</div> {user.uin}
             </div>
           )}
           <div class="d-flex">
-            <div class="font-weight-bold me-1">Role:</div> {role}
+            <div class="fw-bold me-1">Role:</div> {role}
           </div>
           {enrollment?.created_at && (
             <div class="d-flex">
-              <div class="font-weight-bold me-1">Enrolled:</div>
+              <div class="fw-bold me-1">Enrolled:</div>
               <FriendlyDate
                 date={enrollment.created_at}
                 timezone={course_instance.display_timezone}
@@ -115,7 +115,9 @@ export function StudentDetail({
                 <th style="width: 1%">
                   <span class="visually-hidden">Label</span>
                 </th>
-                <th />
+                <th>
+                  <span class="visually-hidden">Assessment</span>
+                </th>
                 <th class="text-center">Score</th>
                 <th class="text-center">Points</th>
                 <th class="text-center">Actions</th>
