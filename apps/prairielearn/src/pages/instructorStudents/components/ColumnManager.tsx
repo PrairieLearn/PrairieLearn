@@ -53,8 +53,7 @@ function ColumnMenuItem({
     <Dropdown.Item
       as="div"
       key={column.id}
-      // No support for class, only className
-      className="px-2 py-1 d-flex align-items-center justify-content-between"
+      class="px-2 py-1 d-flex align-items-center justify-content-between"
       onKeyDown={handleKeyDown}
     >
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
@@ -227,7 +226,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
             <Button
               variant="secondary"
               size="sm"
-              className="w-100"
+              class="w-100"
               onClick={() => {
                 table.resetColumnVisibility();
                 table.resetColumnPinning();
