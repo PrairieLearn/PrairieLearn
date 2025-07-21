@@ -27,7 +27,7 @@ router.get(
         }),
       ),
     );
-    Object.assign(res.locals, result);
+    res.locals.networks = result;
     res.send(AdministratorNetworks({ resLocals: res.locals }));
   }),
 );
