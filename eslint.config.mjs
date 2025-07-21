@@ -277,12 +277,11 @@ export default tseslint.config([
     },
   },
   {
-    files: ['exampleCourse/questions/**/*.html'],
+    files: ['**/*.html', '**/*.mustache'],
     rules: {
+      '@html-eslint/no-extra-spacing-text': 'off',
       // We prefer tags like `<img>` over `<img />`.
       '@html-eslint/require-closing-tags': ['error', { selfClosing: 'never' }],
-      // Whitespace is intentional in these files.
-      '@html-eslint/no-extra-spacing-text': 'off',
     },
     languageOptions: {
       parser: htmlParser,
@@ -291,15 +290,28 @@ export default tseslint.config([
       },
     },
   },
+  {
+    files: ['**/*.mustache'],
+    rules: {
+      '@html-eslint/no-extra-spacing-attrs': 'off',
+      // We are inconsistent about whether we use self-closing tags or not.
+      '@html-eslint/require-closing-tags': 'off',
+      // False positive
+      '@html-eslint/no-duplicate-id': 'off',
+      // False positive (https://github.com/yeonjuan/html-eslint/issues/392)
+      '@html-eslint/no-duplicate-attrs': 'off',
+      // False positive (alt added via bootstrap)
+      '@html-eslint/require-img-alt': 'off',
+      // Issue in 'pl-matrix-input'
+      '@html-eslint/no-nested-interactive': 'off',
+    },
+  },
   globalIgnores([
     '.venv/*',
     '.yarn/*',
     'docs/*',
     'node_modules/*',
-    'exampleCourse/{clientFilesCourse,courseInstances,elementExtensions,elements,serverFilesCourse}/*',
-    'exampleCourse/questions/**/*.json',
-    'exampleCourse/questions/**/clientFilesQuestion/*',
-    'testCourse/*',
+    '{testCourse,exampleCourse}/**/*.js',
     'coverage/*',
     'out/*',
     'workspaces/*',
@@ -318,5 +330,8 @@ export default tseslint.config([
     'apps/*/dist/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
+
+    // News items
+    'apps/prairielearn/src/news_items/*',
   ]),
 ]);
