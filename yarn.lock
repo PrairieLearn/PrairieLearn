@@ -4145,7 +4145,7 @@ __metadata:
     mime: "npm:^4.0.7"
     minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.5"
-    multer: "npm:^2.0.1"
+    multer: "npm:^2.0.2"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
@@ -4156,7 +4156,7 @@ __metadata:
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
-    on-headers: "npm:^1.0.2"
+    on-headers: "npm:^1.1.0"
     openai: "npm:^5.8.2"
     openid-client: "npm:^5.7.1"
     p-memoize: "npm:^7.1.1"
@@ -4310,7 +4310,7 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     fetch-cookie: "npm:^3.1.0"
     node-fetch: "npm:^3.3.2"
-    on-headers: "npm:^1.0.2"
+    on-headers: "npm:^1.1.0"
     set-cookie-parser: "npm:^2.7.1"
     source-map-support: "npm:^0.5.21"
     tsx: "npm:^4.20.3"
@@ -13730,9 +13730,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "multer@npm:2.0.1"
+"multer@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "multer@npm:2.0.2"
   dependencies:
     append-field: "npm:^1.0.0"
     busboy: "npm:^1.6.0"
@@ -13741,7 +13741,7 @@ __metadata:
     object-assign: "npm:^4.1.1"
     type-is: "npm:^1.6.18"
     xtend: "npm:^4.0.2"
-  checksum: 10c0/2b5ab16a2bc6070690cff1f30589bb0d1218ed62051d65fdb1a8d9c65c63238c07af81ae8921de449f921ff10c849f3f6830fd07ef5640c46aaaca5c94044d25
+  checksum: 10c0/d3b99dd0512169bbabf15440e1bbb3ecdc000b761e5a3e4aaca40b5e5e213c6cdcc9b7dffebaa601b7691a84f6876aa87e0173ffcc47139253793cf5657819eb
   languageName: node
   linkType: hard
 
@@ -14156,10 +14156,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"on-headers@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "on-headers@npm:1.0.2"
-  checksum: 10c0/f649e65c197bf31505a4c0444875db0258e198292f34b884d73c2f751e91792ef96bb5cf89aa0f4fecc2e4dc662461dda606b1274b0e564f539cae5d2f5fc32f
+"on-headers@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "on-headers@npm:1.1.0"
+  checksum: 10c0/2c3b6b0d68ec9adbd561dc2d61c9b14da8ac03d8a2f0fd9e97bdf0600c887d5d97f664ff3be6876cf40cda6e3c587d73a4745e10b426ac50c7664fc5a0dfc0a1
   languageName: node
   linkType: hard
 
