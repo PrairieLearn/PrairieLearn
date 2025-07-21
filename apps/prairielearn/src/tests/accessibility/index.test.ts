@@ -413,6 +413,10 @@ describe('accessibility', () => {
       { qid: 'downloadFile' },
     );
 
+    const userResult = await sqldb.queryOneRowAsync('SELECT user_id FROM users WHERE uid = $uid', {
+      uid: 'dev@example.com',
+    });
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -420,6 +424,7 @@ describe('accessibility', () => {
       news_item_id: firstNewsItemResult.rows[0].id,
       assessment_id: assessmentResult.rows[0].id,
       question_id: questionResult.rows[0].id,
+      user_id: userResult.rows[0].user_id,
     };
 
     await sqldb.queryOneRowAsync(
