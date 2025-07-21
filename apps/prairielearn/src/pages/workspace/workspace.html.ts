@@ -1,8 +1,8 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Modal } from '../../components/Modal.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Modal } from '../../components/Modal.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({

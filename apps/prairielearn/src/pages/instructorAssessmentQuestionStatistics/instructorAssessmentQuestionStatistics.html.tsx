@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -201,12 +201,12 @@ export function InstructorAssessmentQuestionStatistics({
                       </a>
                     </td>
                     <td class="text-center align-middle">
-                      ${Scorebar(
+                      ${ScorebarHtml(
                         row.mean_question_score ? Math.round(row.mean_question_score) : null,
                       )}
                     </td>
                     <td class="text-center align-middle">
-                      ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
+                      ${ScorebarHtml(row.discrimination ? Math.round(row.discrimination) : null)}
                     </td>
                     <td class="text-center">
                       ${(row.max_auto_points ?? 0) > 0 ||

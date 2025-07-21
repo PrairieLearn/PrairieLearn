@@ -3,14 +3,14 @@ import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { IssueBadge } from '../../components/IssueBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -242,7 +242,7 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
         : row.score_stat_number > 0
           ? html`
               <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-                ${Scorebar(Math.round(row.score_stat_mean))}
+                ${ScorebarHtml(Math.round(row.score_stat_mean))}
               </div>
             `
           : html`&mdash;`}

@@ -273,6 +273,14 @@ describe('date formatting', () => {
       const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 2));
       const date = new Date(Date.UTC(2018, 0, 1, 13, 34, 7));
       assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 1:34:07pm (UTC)');
+      assert.equal(
+        formatDateFriendly(date, 'UTC', { baseDate, maxPrecision: 'minute' }),
+        'today, 1:34pm (UTC)',
+      );
+      assert.equal(
+        formatDateFriendly(date, 'UTC', { baseDate, maxPrecision: 'hour' }),
+        'today, 1pm (UTC)',
+      );
     });
 
     it('should handle a time with minutes', () => {
@@ -298,128 +306,407 @@ describe('date formatting', () => {
       const date = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
       assert.equal(formatDateFriendly(date, 'UTC', { baseDate }), 'today, 12pm (UTC)');
     });
-  });
 
-  describe('formatDateRangeFriendly()', () => {
-    it('should handle two different dates', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
-        'today, 12:34pm to Wed, Jan\u00a03, 10am (UTC)',
-      );
+    describe('maxPrecision option', () => {
+      it('should limit to hour precision when maxPrecision is "hour"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 17));
+        const date = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', {
+            baseDate,
+            maxPrecision: 'hour',
+            timeOnly: true,
+            includeTz: false,
+          }),
+          '3pm',
+        );
+      });
+
+      it('should limit to minute precision when maxPrecision is "minute"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 17));
+        const date = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', {
+            baseDate,
+            maxPrecision: 'minute',
+            timeOnly: true,
+            includeTz: false,
+          }),
+          '3:45pm',
+        );
+      });
+
+      it('should show second precision when maxPrecision is "second"', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 17));
+        const date = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+        assert.equal(
+          formatDateFriendly(date, 'UTC', {
+            baseDate,
+            maxPrecision: 'second',
+            timeOnly: true,
+            includeTz: false,
+          }),
+          '3:45:17pm',
+        );
+      });
+
+      describe('minPrecision option', () => {
+        it('should sometimes show minutes when minPrecision is "hour"', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const date1 = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          assert.equal(
+            formatDateFriendly(date1, 'UTC', {
+              baseDate,
+              minPrecision: 'hour',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3pm',
+          );
+          const date2 = new Date(Date.UTC(2018, 0, 1, 15, 1, 0));
+          assert.equal(
+            formatDateFriendly(date2, 'UTC', {
+              baseDate,
+              minPrecision: 'hour',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:01pm',
+          );
+          const date3 = new Date(Date.UTC(2018, 0, 1, 15, 0, 1));
+          assert.equal(
+            formatDateFriendly(date3, 'UTC', {
+              baseDate,
+              minPrecision: 'hour',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:00:01pm',
+          );
+        });
+        it('should always show minutes when minPrecision is "minute"', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const date = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          assert.equal(
+            formatDateFriendly(date, 'UTC', {
+              baseDate,
+              minPrecision: 'minute',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:00pm',
+          );
+          const date2 = new Date(Date.UTC(2018, 0, 1, 15, 1, 0));
+          assert.equal(
+            formatDateFriendly(date2, 'UTC', {
+              baseDate,
+              minPrecision: 'minute',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:01pm',
+          );
+          const date3 = new Date(Date.UTC(2018, 0, 1, 15, 0, 1));
+          assert.equal(
+            formatDateFriendly(date3, 'UTC', {
+              baseDate,
+              minPrecision: 'minute',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:00:01pm',
+          );
+        });
+      });
+
+      describe('precision option combinations', () => {
+        it('should work with fixed precision (min=max)', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const date1 = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          assert.equal(
+            formatDateFriendly(date1, 'UTC', {
+              baseDate,
+              maxPrecision: 'hour',
+              minPrecision: 'hour',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3pm',
+          );
+          assert.equal(
+            formatDateFriendly(date1, 'UTC', {
+              baseDate,
+              maxPrecision: 'minute',
+              minPrecision: 'minute',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:00pm',
+          );
+          assert.equal(
+            formatDateFriendly(date1, 'UTC', {
+              baseDate,
+              maxPrecision: 'second',
+              minPrecision: 'second',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:00:00pm',
+          );
+          const date2 = new Date(Date.UTC(2018, 0, 1, 15, 30, 45));
+          assert.equal(
+            formatDateFriendly(date2, 'UTC', {
+              baseDate,
+              maxPrecision: 'hour',
+              minPrecision: 'hour',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3pm',
+          );
+          assert.equal(
+            formatDateFriendly(date2, 'UTC', {
+              baseDate,
+              maxPrecision: 'minute',
+              minPrecision: 'minute',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:30pm',
+          );
+          assert.equal(
+            formatDateFriendly(date2, 'UTC', {
+              baseDate,
+              maxPrecision: 'second',
+              minPrecision: 'second',
+              timeOnly: true,
+              includeTz: false,
+            }),
+            '3:30:45pm',
+          );
+        });
+      });
+
+      describe('precision with full date formatting', () => {
+        it('should work with full date and time formatting', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const date = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+          assert.equal(
+            formatDateFriendly(date, 'UTC', { baseDate, maxPrecision: 'minute' }),
+            'today, 3:45pm (UTC)',
+          );
+        });
+
+        it('should work with timeFirst option', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const date = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          assert.equal(
+            formatDateFriendly(date, 'UTC', {
+              baseDate,
+              minPrecision: 'minute',
+              timeFirst: true,
+            }),
+            '3:00pm today (UTC)',
+          );
+        });
+      });
     });
 
-    it('should handle the same date with different times', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 1, 13, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
-        'today, 12:34pm to 1pm (UTC)',
-      );
-    });
+    describe('formatDateRangeFriendly()', () => {
+      it('should handle two different dates', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
+          'today, 12:34pm to Wed, Jan\u00a03, 10am (UTC)',
+        );
+      });
 
-    it('should handle the same date with the same time', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
-        'today, 12:34pm (UTC)',
-      );
-    });
+      it('should handle the same date with different times', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 1, 13, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
+          'today, 12:34pm to 1pm (UTC)',
+        );
+      });
 
-    it('should handle two different dates with the time first', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
-        '12:34pm today to 10am Wed, Jan\u00a03 (UTC)',
-      );
-    });
+      it('should handle the same date with the same time', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate }),
+          'today, 12:34pm (UTC)',
+        );
+      });
 
-    it('should handle the same date with different times with the time first', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 1, 13, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
-        '12:34pm to 1pm today (UTC)',
-      );
-    });
+      it('should handle two different dates with the time first', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
+          '12:34pm today to 10am Wed, Jan\u00a03 (UTC)',
+        );
+      });
 
-    it('should handle the same date with the same time and the time first', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
-        '12:34pm today (UTC)',
-      );
-    });
+      it('should handle the same date with different times with the time first', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 1, 13, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
+          '12:34pm to 1pm today (UTC)',
+        );
+      });
 
-    it('should handle two different dates without the timezone', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', { baseDate, includeTz: false }),
-        'today, 12:34pm to Wed, Jan\u00a03, 10am',
-      );
-    });
+      it('should handle the same date with the same time and the time first', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate, timeFirst: true }),
+          '12:34pm today (UTC)',
+        );
+      });
 
-    it('should handle two different dates with only dates and without the timezone', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', {
-          baseDate,
-          dateOnly: true,
-          includeTz: false,
-        }),
-        'today to Wed, Jan\u00a03',
-      );
-    });
+      it('should handle two different dates without the timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', { baseDate, includeTz: false }),
+          'today, 12:34pm to Wed, Jan\u00a03, 10am',
+        );
+      });
 
-    it('should handle two different dates with time first and without the timezone', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'UTC', {
-          baseDate,
-          timeFirst: true,
-          includeTz: false,
-        }),
-        '12:34pm today to 10am Wed, Jan\u00a03',
-      );
-    });
+      it('should handle two different dates with only dates and without the timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', {
+            baseDate,
+            dateOnly: true,
+            includeTz: false,
+          }),
+          'today to Wed, Jan\u00a03',
+        );
+      });
 
-    it('should handle two different dates in CST', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 0, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'America/Chicago', { baseDate }),
-        'yesterday, 6:34pm to Wed, Jan\u00a03, 4am (CST)',
-      );
-    });
+      it('should handle two different dates with time first and without the timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'UTC', {
+            baseDate,
+            timeFirst: true,
+            includeTz: false,
+          }),
+          '12:34pm today to 10am Wed, Jan\u00a03',
+        );
+      });
 
-    it('should handle two different dates in CDT without the timezone', () => {
-      const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
-      const start = new Date(Date.UTC(2018, 0, 1, 0, 34, 0));
-      const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
-      assert.equal(
-        formatDateRangeFriendly(start, end, 'America/Chicago', {
-          baseDate,
-          includeTz: false,
-        }),
-        'yesterday, 6:34pm to Wed, Jan\u00a03, 4am',
-      );
+      it('should handle two different dates in CST', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 0, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'America/Chicago', { baseDate }),
+          'yesterday, 6:34pm to Wed, Jan\u00a03, 4am (CST)',
+        );
+      });
+
+      it('should handle two different dates in CST without the timezone', () => {
+        const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 34, 0));
+        const start = new Date(Date.UTC(2018, 0, 1, 0, 34, 0));
+        const end = new Date(Date.UTC(2018, 0, 3, 10, 0, 0));
+        assert.equal(
+          formatDateRangeFriendly(start, end, 'America/Chicago', {
+            baseDate,
+            includeTz: false,
+          }),
+          'yesterday, 6:34pm to Wed, Jan\u00a03, 4am',
+        );
+      });
+
+      describe('precision options', () => {
+        it('should apply maxPrecision to both start and end times', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const start = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+          const end = new Date(Date.UTC(2018, 0, 1, 17, 30, 45));
+          assert.equal(
+            formatDateRangeFriendly(start, end, 'UTC', {
+              baseDate,
+              maxPrecision: 'minute',
+              includeTz: false,
+            }),
+            'today, 3:45pm to 5:30pm',
+          );
+        });
+
+        it('should apply minPrecision to both start and end times', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const start = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          const end = new Date(Date.UTC(2018, 0, 1, 17, 0, 0));
+          assert.equal(
+            formatDateRangeFriendly(start, end, 'UTC', {
+              baseDate,
+              minPrecision: 'minute',
+              includeTz: false,
+            }),
+            'today, 3:00pm to 5:00pm',
+          );
+        });
+
+        it('should handle precision options with different dates', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const start = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+          const end = new Date(Date.UTC(2018, 0, 2, 10, 30, 45));
+          assert.equal(
+            formatDateRangeFriendly(start, end, 'UTC', {
+              baseDate,
+              maxPrecision: 'hour',
+              includeTz: false,
+            }),
+            'today, 3pm to tomorrow, 10am',
+          );
+        });
+
+        it('should handle precision options with same times', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const start = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          const end = new Date(Date.UTC(2018, 0, 1, 15, 0, 0));
+          assert.equal(
+            formatDateRangeFriendly(start, end, 'UTC', {
+              baseDate,
+              maxPrecision: 'second',
+              minPrecision: 'second',
+              includeTz: false,
+            }),
+            'today, 3:00:00pm',
+          );
+        });
+
+        it('should work with timeFirst and precision options', () => {
+          const baseDate = new Date(Date.UTC(2018, 0, 1, 12, 0, 0));
+          const start = new Date(Date.UTC(2018, 0, 1, 15, 45, 17));
+          const end = new Date(Date.UTC(2018, 0, 1, 17, 30, 45));
+          assert.equal(
+            formatDateRangeFriendly(start, end, 'UTC', {
+              baseDate,
+              maxPrecision: 'minute',
+              timeFirst: true,
+              includeTz: false,
+            }),
+            '3:45pm to 5:30pm today',
+          );
+        });
+      });
     });
   });
 });
