@@ -88,7 +88,7 @@ router.get(
       transform(row) {
         return [
           computeTitle(row),
-          row.assessment,
+          row.assessment_set.heading,
           row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
         ];
       },
