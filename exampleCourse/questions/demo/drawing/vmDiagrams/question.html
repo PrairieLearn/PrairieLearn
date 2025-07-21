@@ -1,11 +1,11 @@
 <pl-drawing answers-name="vm_diag" gradable="true" width="540" height="1000" hide-answer-panel="false">
     <pl-drawing-initial>
-        <pl-fixed-pin x1={{params.x1}} y1={{params.y1}}> </pl-fixed-pin>
-        <pl-roller x1={{params.x2}} y1={{params.y1}}> </pl-roller>
-        <pl-rod x1={{params.x1}} y1={{params.y1}} x2={{params.x2}} y2={{params.y1}}> </pl-rod>
-        <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x3}} y2={{params.y1}} dim-offset="80" label="a"></pl-dimensions>
-        <pl-dimensions x1={{params.x3}} y1={{params.y1}} x2={{params.x2}} y2={{params.y1}} dim-offset="80" label="2a"></pl-dimensions>
-        <pl-distributed-load anchor-is-tail="false" x1={{params.xm}} y1={{params.y1}} width={{params.a}} label2="w" offsety2="-60"> </pl-distributed-load>
+        <pl-fixed-pin x1="{{params.x1}}" y1="{{params.y1}}"> </pl-fixed-pin>
+        <pl-roller x1="{{params.x2}}" y1="{{params.y1}}"> </pl-roller>
+        <pl-rod x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x2}}" y2="{{params.y1}}"> </pl-rod>
+        <pl-dimensions x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x3}}" y2="{{params.y1}}" dim-offset="80" label="a"></pl-dimensions>
+        <pl-dimensions x1="{{params.x3}}" y1="{{params.y1}}" x2="{{params.x2}}" y2="{{params.y1}}" dim-offset="80" label="2a"></pl-dimensions>
+        <pl-distributed-load anchor-is-tail="false" x1="{{params.xm}}" y1="{{params.y1}}" width="{{params.a}}" label2="w" offsety2="-60"> </pl-distributed-load>
 
         <!-- Drawing the shear diagram -->
         <pl-axes origin="{{params.V_origin}}"
