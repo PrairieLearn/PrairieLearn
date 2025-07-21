@@ -7,12 +7,12 @@ import type { VNode } from '@prairielearn/preact-cjs';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { renderHtml } from '../lib/preact-html.js';
 
-import { AssessmentNavigation } from './AssessmentNavigation.html.js';
-import { HeadContents } from './HeadContents.html.js';
-import { Navbar } from './Navbar.html.js';
+import { AssessmentNavigation } from './AssessmentNavigation.js';
+import { HeadContents } from './HeadContents.js';
+import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.html.js';
-import { SideNav } from './SideNav.html.js';
+import { ContextNavigation } from './NavbarContext.js';
+import { SideNav } from './SideNav.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,

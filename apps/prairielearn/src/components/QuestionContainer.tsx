@@ -17,10 +17,10 @@ import type {
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
-import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.html.js';
-import { Modal } from './Modal.html.js';
+import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
+import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
-import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.html.js';
+import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
