@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Navbar } from '../../components/Navbar.js';
 import { config } from '../../lib/config.js';
 import { GradingJobSchema, QuestionSchema, UserSchema, VariantSchema } from '../../lib/db-types.js';
 
