@@ -8,7 +8,7 @@ import multipipe from 'multipipe';
 import pg, { type QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
 import { DatabaseError } from 'pg-protocol';
-import { z } from 'zod';
+import { ZodType, z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
 
@@ -650,15 +650,9 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined
-        ? {}
-        : (paramsOrSchema as QueryParams);
+    const params = paramsOrSchema instanceof ZodType ? {} : (paramsOrSchema as QueryParams);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.queryAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -688,15 +682,12 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined
-        ? {}
-        : (paramsOrSchema as QueryParams);
+    console.log('paramsOrSchema', paramsOrSchema);
+    console.log('paramsOrSchema instanceof ZodType', paramsOrSchema instanceof ZodType);
+
+    const params = paramsOrSchema instanceof ZodType ? {} : (paramsOrSchema as QueryParams);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.queryOneRowAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -725,15 +716,9 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined
-        ? {}
-        : (paramsOrSchema as QueryParams);
+    const params = paramsOrSchema instanceof ZodType ? {} : (paramsOrSchema as QueryParams);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.queryZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
@@ -759,13 +744,9 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
+    const params = paramsOrSchema instanceof ZodType ? [] : (paramsOrSchema as any[]);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.callAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -790,13 +771,9 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
+    const params = paramsOrSchema instanceof ZodType ? [] : (paramsOrSchema as any[]);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.callOneRowAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -820,13 +797,9 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params =
-      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
+    const params = paramsOrSchema instanceof ZodType ? [] : (paramsOrSchema as any[]);
     const model =
-      maybeModel ??
-      (paramsOrSchema === undefined || typeof paramsOrSchema === 'object'
-        ? z.unknown()
-        : (paramsOrSchema as Model));
+      maybeModel ?? (paramsOrSchema instanceof ZodType ? (paramsOrSchema as Model) : z.unknown());
     const results = await this.callZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
