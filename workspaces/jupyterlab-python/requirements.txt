@@ -1,6 +1,7 @@
 beautifulsoup4==4.13.4
 bokeh==3.7.3
 colormath==3.0.0
+datascience==0.17.6
 defusedxml==0.7.1
 Faker==37.4.0
 folium==0.20.0
