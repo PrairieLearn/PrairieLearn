@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 

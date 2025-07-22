@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
+import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {

@@ -1480,6 +1480,127 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cropper/element-canvas@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-canvas@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/7efd56dfaa507ff75030914299d1c81f4ad23edf015537c2b6e8b286d8511b3aff4753f7239ff81cb8a5302212d9fec3dc17c3c646109a6eedc51f2a3f475439
+  languageName: node
+  linkType: hard
+
+"@cropper/element-crosshair@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-crosshair@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/c979dd2b3ec34a85979b28039c96a3d146a844c4aebcbbf367d14e5aa199ae0de5725ccb1fd18461f61d700dc043ae64b4c90a35d525afd1f9a15cd9115ba6b2
+  languageName: node
+  linkType: hard
+
+"@cropper/element-grid@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-grid@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/2c29c4eb43b3318211a5b49b642b3dde07c128b90cfbc1a0df56dca4967138e1f440e11fdc853347695dde29e3dfd3df93559061de6a269307007e14214c7bf7
+  languageName: node
+  linkType: hard
+
+"@cropper/element-handle@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-handle@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/da4ee74a848e208196e9fd98d7270020a112f142179677af48d4ee882ee56a4697f5a92a3431a7efbe9cbf8502d9f496984a3b71338da7da9fda5747aa2f099e
+  languageName: node
+  linkType: hard
+
+"@cropper/element-image@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-image@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/element-canvas": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/5e1f3b3cdf7a176c58757b94d9a435f9b59c3e583df8c78caa293b9cda100a08d422261e80b7fd51296ff1ce18dfc61a820f2535bb9709c2cd0e8542cd02b357
+  languageName: node
+  linkType: hard
+
+"@cropper/element-selection@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-selection@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/element-canvas": "npm:^2.0.0"
+    "@cropper/element-image": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/593b175e31cec33afd9dacc1ea6e69fc63cf7770d8668d710819f127ea9ce8c9c0721a7df52d1b6447864de3ee99a0e382a3f268c6bf3585c4edf037bae57df0
+  languageName: node
+  linkType: hard
+
+"@cropper/element-shade@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-shade@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/element-canvas": "npm:^2.0.0"
+    "@cropper/element-selection": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/1f9047aedaf83836d3fe6e8b9a5226b7e13e407a32e747c20d948d13fa127293908c9ff175a972693eb1b95549d2c04fae13aaf8d8513bbef7ddf6a190235aff
+  languageName: node
+  linkType: hard
+
+"@cropper/element-viewer@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element-viewer@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/element-canvas": "npm:^2.0.0"
+    "@cropper/element-image": "npm:^2.0.0"
+    "@cropper/element-selection": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/360261d2dbb01d5e4ac4fc15d365a2cd3d808f40c1511d1367fc16f499a36a1b8d43b9ca35fa8958b2cef3ab9d962e9dbd32cc409a541cf0583526542cef320e
+  languageName: node
+  linkType: hard
+
+"@cropper/element@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/element@npm:2.0.0"
+  dependencies:
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/e0e3c21bd4ef0a18e7f293e030f2323533373164100d8cf849bef1c1434aa8e199166aa3c2f4563c2088de0a2c8d341f4208707722885193d30baa10e19fc75a
+  languageName: node
+  linkType: hard
+
+"@cropper/elements@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/elements@npm:2.0.0"
+  dependencies:
+    "@cropper/element": "npm:^2.0.0"
+    "@cropper/element-canvas": "npm:^2.0.0"
+    "@cropper/element-crosshair": "npm:^2.0.0"
+    "@cropper/element-grid": "npm:^2.0.0"
+    "@cropper/element-handle": "npm:^2.0.0"
+    "@cropper/element-image": "npm:^2.0.0"
+    "@cropper/element-selection": "npm:^2.0.0"
+    "@cropper/element-shade": "npm:^2.0.0"
+    "@cropper/element-viewer": "npm:^2.0.0"
+  checksum: 10c0/a48c5779f9620e16c067b0c7abc6616a8eb9bba0682b309bfd87231b5fde9fc1d4303aae7645842d17f965963d4cadcc39fb1947a348fbc87d35cb51a00f1020
+  languageName: node
+  linkType: hard
+
+"@cropper/utils@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@cropper/utils@npm:2.0.0"
+  checksum: 10c0/38d9760d7660841ba84df69850d85b89b793f0a536683c4457abbe09f7e75479775ec50d66b14149ec283a878a4ec3c512e9ffd228313f04015dc8e3ae746c2d
+  languageName: node
+  linkType: hard
+
 "@csstools/color-helpers@npm:^5.0.1":
   version: 5.0.1
   resolution: "@csstools/color-helpers@npm:5.0.1"
@@ -3964,6 +4085,7 @@ __metadata:
     clipboard: "npm:^2.0.11"
     clsx: "npm:^2.1.1"
     cookie-parser: "npm:^1.4.7"
+    cropperjs: "npm:^2.0.0"
     crypto-js: "npm:^4.2.0"
     csv-parse: "npm:^5.6.0"
     csv-stringify: "npm:^6.5.2"
@@ -4023,7 +4145,7 @@ __metadata:
     mime: "npm:^4.0.7"
     minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.5"
-    multer: "npm:^2.0.1"
+    multer: "npm:^2.0.2"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
@@ -4034,7 +4156,7 @@ __metadata:
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
-    on-headers: "npm:^1.0.2"
+    on-headers: "npm:^1.1.0"
     openai: "npm:^5.8.2"
     openid-client: "npm:^5.7.1"
     p-memoize: "npm:^7.1.1"
@@ -4188,7 +4310,7 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     fetch-cookie: "npm:^3.1.0"
     node-fetch: "npm:^3.3.2"
-    on-headers: "npm:^1.0.2"
+    on-headers: "npm:^1.1.0"
     set-cookie-parser: "npm:^2.7.1"
     source-map-support: "npm:^0.5.21"
     tsx: "npm:^4.20.3"
@@ -7299,6 +7421,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"aria-query@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "aria-query@npm:5.3.2"
+  checksum: 10c0/003c7e3e2cff5540bf7a7893775fc614de82b0c5dde8ae823d47b7a28a9d4da1f7ed85f340bdb93d5649caa927755f0e31ecc7ab63edfdfc00c8ef07e505e03e
+  languageName: node
+  linkType: hard
+
 "array-flatten@npm:1.1.1":
   version: 1.1.1
   resolution: "array-flatten@npm:1.1.1"
@@ -7326,6 +7455,13 @@ __metadata:
   version: 2.0.1
   resolution: "assertion-error@npm:2.0.1"
   checksum: 10c0/bbbcb117ac6480138f8c93cf7f535614282dea9dc828f540cdece85e3c665e8f78958b96afac52f29ff883c72638e6a87d469ecc9fe5bc902df03ed24a55dba8
+  languageName: node
+  linkType: hard
+
+"ast-types-flow@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "ast-types-flow@npm:0.0.8"
+  checksum: 10c0/f2a0ba8055353b743c41431974521e5e852a9824870cd6fce2db0e538ac7bf4da406bbd018d109af29ff3f8f0993f6a730c9eddbd0abd031fbcb29ca75c1014e
   languageName: node
   linkType: hard
 
@@ -7370,10 +7506,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axe-core@npm:4.10.3, axe-core@npm:^4.10.3":
+"axe-core@npm:4.10.3, axe-core@npm:^4.10.2, axe-core@npm:^4.10.3":
   version: 4.10.3
   resolution: "axe-core@npm:4.10.3"
   checksum: 10c0/1b1c24f435b2ffe89d76eca0001cbfff42dbf012ad9bd37398b70b11f0d614281a38a28bc3069e8972e3c90ec929a8937994bd24b0ebcbaab87b8d1e241ab0c7
+  languageName: node
+  linkType: hard
+
+"axobject-query@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "axobject-query@npm:4.1.0"
+  checksum: 10c0/c470e4f95008f232eadd755b018cb55f16c03ccf39c027b941cd8820ac6b68707ce5d7368a46756db4256fbc91bb4ead368f84f7fb034b2b7932f082f6dc0775
   languageName: node
   linkType: hard
 
@@ -8399,6 +8542,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cropperjs@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "cropperjs@npm:2.0.0"
+  dependencies:
+    "@cropper/elements": "npm:^2.0.0"
+    "@cropper/utils": "npm:^2.0.0"
+  checksum: 10c0/a1bafe952d79e3b284c7492a262c0a1a9badaef96cbbd605d04b38450ff3323fcd38ee9cc964c2dfc80f541000fb634870370cf48f64d1fa0f157f3845bdf092
+  languageName: node
+  linkType: hard
+
 "cross-spawn@npm:^7.0.0, cross-spawn@npm:^7.0.5, cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
@@ -8810,6 +8963,13 @@ __metadata:
     d3-transition: "npm:3"
     d3-zoom: "npm:3"
   checksum: 10c0/3dd9c08c73cfaa69c70c49e603c85e049c3904664d9c79a1a52a0f52795828a1ff23592dc9a7b2257e711d68a615472a13103c212032f38e016d609796e087e8
+  languageName: node
+  linkType: hard
+
+"damerau-levenshtein@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "damerau-levenshtein@npm:1.0.8"
+  checksum: 10c0/4c2647e0f42acaee7d068756c1d396e296c3556f9c8314bac1ac63ffb236217ef0e7e58602b18bb2173deec7ec8e0cac8e27cccf8f5526666b4ff11a13ad54a3
   languageName: node
   linkType: hard
 
@@ -9658,6 +9818,25 @@ __metadata:
     eslint-import-resolver-node:
       optional: true
   checksum: 10c0/19cae9bf7b0e457747d5a5846b4198d83b02be43c02d2d49190ba3887ff019a307e3c486b5fc6feec7e9ed24a15e321012742fbbcbe96ad7e3bd24a31ee1450c
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-jsx-a11y-x@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "eslint-plugin-jsx-a11y-x@npm:0.1.1"
+  dependencies:
+    aria-query: "npm:^5.3.2"
+    ast-types-flow: "npm:^0.0.8"
+    axe-core: "npm:^4.10.2"
+    axobject-query: "npm:^4.1.0"
+    damerau-levenshtein: "npm:^1.0.8"
+    emoji-regex: "npm:^9.2.2"
+    jsx-ast-utils-x: "npm:^0.1.0"
+    language-tags: "npm:^1.0.9"
+    minimatch: "npm:^3.1.2"
+  peerDependencies:
+    eslint: ^8.57.0 || ^9.0.0
+  checksum: 10c0/8cabd0a95ac6ba9319de99c6202cc5ad3fce34d49c995750beddb0821128d1f17db3fce1fb38f01a547635328bee68a7e890562b4b98ddba3cc1fc5c24d6f37a
   languageName: node
   linkType: hard
 
@@ -12082,6 +12261,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsx-ast-utils-x@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "jsx-ast-utils-x@npm:0.1.0"
+  checksum: 10c0/bd147ff19bace8309e48110ec5c7a0c9f750148bcab699b5ba5d44dfac6cea8f358127f3da35ebe073f81cfe46494ce1e9647dd45681bb6c84d83c315904b72b
+  languageName: node
+  linkType: hard
+
 "jwa@npm:^1.4.1":
   version: 1.4.1
   resolution: "jwa@npm:1.4.1"
@@ -12245,6 +12431,22 @@ __metadata:
   version: 2.0.0
   resolution: "kuler@npm:2.0.0"
   checksum: 10c0/0a4e99d92ca373f8f74d1dc37931909c4d0d82aebc94cf2ba265771160fc12c8df34eaaac80805efbda367e2795cb1f1dd4c3d404b6b1cf38aec94035b503d2d
+  languageName: node
+  linkType: hard
+
+"language-subtag-registry@npm:^0.3.20":
+  version: 0.3.23
+  resolution: "language-subtag-registry@npm:0.3.23"
+  checksum: 10c0/e9b05190421d2cd36dd6c95c28673019c927947cb6d94f40ba7e77a838629ee9675c94accf897fbebb07923187deb843b8fbb8935762df6edafe6c28dcb0b86c
+  languageName: node
+  linkType: hard
+
+"language-tags@npm:^1.0.9":
+  version: 1.0.9
+  resolution: "language-tags@npm:1.0.9"
+  dependencies:
+    language-subtag-registry: "npm:^0.3.20"
+  checksum: 10c0/9ab911213c4bd8bd583c850201c17794e52cb0660d1ab6e32558aadc8324abebf6844e46f92b80a5d600d0fbba7eface2c207bfaf270a1c7fd539e4c3a880bff
   languageName: node
   linkType: hard
 
@@ -13528,9 +13730,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "multer@npm:2.0.1"
+"multer@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "multer@npm:2.0.2"
   dependencies:
     append-field: "npm:^1.0.0"
     busboy: "npm:^1.6.0"
@@ -13539,7 +13741,7 @@ __metadata:
     object-assign: "npm:^4.1.1"
     type-is: "npm:^1.6.18"
     xtend: "npm:^4.0.2"
-  checksum: 10c0/2b5ab16a2bc6070690cff1f30589bb0d1218ed62051d65fdb1a8d9c65c63238c07af81ae8921de449f921ff10c849f3f6830fd07ef5640c46aaaca5c94044d25
+  checksum: 10c0/d3b99dd0512169bbabf15440e1bbb3ecdc000b761e5a3e4aaca40b5e5e213c6cdcc9b7dffebaa601b7691a84f6876aa87e0173ffcc47139253793cf5657819eb
   languageName: node
   linkType: hard
 
@@ -13954,10 +14156,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"on-headers@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "on-headers@npm:1.0.2"
-  checksum: 10c0/f649e65c197bf31505a4c0444875db0258e198292f34b884d73c2f751e91792ef96bb5cf89aa0f4fecc2e4dc662461dda606b1274b0e564f539cae5d2f5fc32f
+"on-headers@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "on-headers@npm:1.1.0"
+  checksum: 10c0/2c3b6b0d68ec9adbd561dc2d61c9b14da8ac03d8a2f0fd9e97bdf0600c887d5d97f664ff3be6876cf40cda6e3c587d73a4745e10b426ac50c7664fc5a0dfc0a1
   languageName: node
   linkType: hard
 
@@ -14613,6 +14815,7 @@ __metadata:
     eslint: "npm:^9.30.0"
     eslint-import-resolver-typescript: "npm:^4.4.4"
     eslint-plugin-import-x: "npm:^4.16.1"
+    eslint-plugin-jsx-a11y-x: "npm:^0.1.1"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.3.2"
