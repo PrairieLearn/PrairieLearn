@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Navbar } from '../../components/Navbar.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({

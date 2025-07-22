@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -149,7 +149,7 @@ function LTI13Instance(
             Use this name inside PL to refer to the LMS, i.e. whatever your institution calls it
           </small>
         </div>
-        <button class="btn btn-info">Save name</button>
+        <button type="submit" class="btn btn-info">Save name</button>
         <input type="reset" class="btn btn-secondary" value="Reset options" />
       </form>
 
@@ -233,13 +233,14 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <a
               href="https://canvas.instructure.com/doc/api/file.tools_variable_substitutions.html"
               target="_blank"
+              rel="noreferrer"
               >Canvas variable substitution docs</a
             >
           </small>
         </div>
 
         <div class="mb-3">
-          <button class="btn btn-info">Save platform options</button>
+          <button type="submit" class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
       </form>
@@ -262,7 +263,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
                 class="btn btn-xs btn-outline-warning"
                 type="submit"
                 value="Delete key"
-                onClick="return confirm('Really delete this key: ${k.kid}?')"
+                onclick="return confirm('Really delete this key: ${k.kid}?')"
               />
             </form>
           </li>`;
@@ -278,7 +279,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           name="__action"
           value="delete_keys"
           class="btn btn-warning"
-          onClick="return confirm('Really delete all keys from keystore?')"
+          onclick="return confirm('Really delete all keys from keystore?')"
         >
           Delete all keys from keystore
         </button>
@@ -360,7 +361,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <button class="btn btn-info">Save PrairieLearn config</button>
+        <button type="submit" class="btn btn-info">Save PrairieLearn config</button>
       </form>
 
       <hr />
@@ -375,8 +376,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="remove_instance" />
         <button
+          type="submit"
           class="btn btn-danger my-2"
-          onClick="return confirm('Really delete this LTI 1.3 instance?')"
+          onclick="return confirm('Really delete this LTI 1.3 instance?')"
         >
           Remove LTI 1.3 instance
         </button>
