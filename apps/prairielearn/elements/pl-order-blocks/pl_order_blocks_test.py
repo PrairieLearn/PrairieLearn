@@ -1,7 +1,9 @@
 import importlib
 from typing import Any
+
 import lxml.html
 import pytest
+
 pl_order_blocks = importlib.import_module("pl-order-blocks")
 
 
@@ -81,9 +83,7 @@ pl_order_blocks = importlib.import_module("pl-order-blocks")
         ),
     ],
 )
-def test_get_order_blocks_attribs(
-        input_str: str, expected_output: Any
-) -> None:
+def test_get_order_blocks_attribs(input_str: str, expected_output: Any) -> None:
     element = lxml.html.fromstring(input_str)
     attrs = pl_order_blocks.get_order_blocks_attribs(element)
     assert attrs == expected_output
@@ -105,7 +105,7 @@ def test_get_order_blocks_attribs_failure(
     input_str: str,
 ) -> None:
     element = lxml.html.fromstring(input_str)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'Required attribute "answers-name" missing'):
         pl_order_blocks.get_order_blocks_attribs(element)
 
 
@@ -126,12 +126,11 @@ def test_get_order_blocks_attribs_failure(
 def test_invalid_partial_credit_option(input_str: str) -> None:
     element = lxml.html.fromstring(input_str)
     attribs = pl_order_blocks.get_order_blocks_attribs(element)
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError,
+        match=r"You may only specify partial credit options in the DAG, ordered, and ranking grading modes.",
+    ):
         pl_order_blocks.validate_order_blocks_attribs(attribs)
-    assert (
-        "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
-        in str(error.value)
-    )
 
 
 @pytest.mark.parametrize(
@@ -139,8 +138,8 @@ def test_invalid_partial_credit_option(input_str: str) -> None:
     [
         (
             r"""
-            <pl_order_blocks> 
-               <pl-answer correct="true" indent="0">def my_sum(first, second):</pl-answer> 
+            <pl_order_blocks>
+               <pl-answer correct="true" indent="0">def my_sum(first, second):</pl-answer>
            <\pl_order_blocks>
            """,
             {
@@ -222,16 +221,16 @@ def test_ordering_feedback_failure(input_str: str) -> None:
     element = lxml.html.fromstring(input_str)
     order_blocks_attribs = pl_order_blocks.get_order_blocks_attribs(element)
 
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError,
+        match=r"The ordering-feedback attribute may only be used on blocks with correct=true.",
+    ):
         pl_order_blocks.validate_answer_attribs(
             pl_order_blocks.get_answer_attribs(
                 element, order_blocks_attribs["grading_method"]
-            ), order_blocks_attribs
+            ),
+            order_blocks_attribs,
         )
-    assert (
-        "The ordering-feedback attribute may only be used on blocks with correct=true."
-        in str(error.value)
-    )
 
 
 @pytest.mark.parametrize(
@@ -240,11 +239,11 @@ def test_ordering_feedback_failure(input_str: str) -> None:
         (
             r"""
             <pl-order-blocks>
-                <pl-answer tag="TEST" 
-                correct="true" 
-                distractor-feedback="TEST DISTRACTOR FEEDBACK" 
-                ordering-feedback="TEST ORDERING FEEDBACK" 
-                distractor-for="TEST" 
+                <pl-answer tag="TEST"
+                correct="true"
+                distractor-feedback="TEST DISTRACTOR FEEDBACK"
+                ordering-feedback="TEST ORDERING FEEDBACK"
+                distractor-for="TEST"
                 indent="0">def my_sum(first, second):</pl-answer>
             </pl-order-blocks>
             """,
@@ -263,9 +262,7 @@ def test_ordering_feedback_failure(input_str: str) -> None:
         ),
     ],
 )
-def test_get_answer_attribs_dag_grading(
-    input_str: str, expected_output: Any
-) -> None:
+def test_get_answer_attribs_dag_grading(input_str: str, expected_output: Any) -> None:
     element = lxml.html.fromstring(input_str)
     attribs = pl_order_blocks.get_answer_attribs(
         element, pl_order_blocks.GradingMethodType.RANKING
@@ -294,11 +291,10 @@ def test_get_answer_attribs_dag_grading(
 def test_invalid_inner_tag(input_str: str) -> None:
     element = lxml.html.fromstring(input_str)
     order_blocks_attribs = pl_order_blocks.get_order_blocks_attribs(element)
-    with pytest.raises(ValueError) as error:
+    with pytest.raises(
+        ValueError,
+        match=r"Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.\n                Any html tags nested inside <pl-block-group> must be <pl-answer>",
+    ):
         pl_order_blocks.get_answer_attribs(
             element, order_blocks_attribs["grading_method"]
         )
-    assert """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                Any html tags nested inside <pl-block-group> must be <pl-answer>""" in str(
-        error.value
-    )

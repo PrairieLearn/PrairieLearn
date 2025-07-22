@@ -146,6 +146,7 @@ FIRST_WRONG_FEEDBACK = {
     "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
 }
 
+
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
 ) -> GroupInfo:
