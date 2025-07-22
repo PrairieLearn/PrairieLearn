@@ -73,6 +73,40 @@ class OrderBlocksAnswerData(TypedDict):
     uuid: str
 
 
+class AnswerAttribs(TypedDict):
+    correct: bool
+    ranking: int
+    indent: int
+    tag: str
+    depends: list[str] | None
+    inner_html: str
+    distractor_feedback: str | None
+    ordering_feedback: str | None
+    distractor_for: str | None
+    group_info: GroupInfo
+
+
+class OrderBlocksAttribs(TypedDict):
+    answer_name: str
+    indentation: bool
+    grading_method: GradingMethodType
+    feedback_type: FeedbackType
+    format_type: FormatType
+    code_language: str | None
+    weight: int | None
+    allow_blank: bool
+    file_name: str
+    source_blocks_order: SourceBlocksOrderType
+    max_incorrect: int | None
+    min_incorrect: int | None
+    source_header: str
+    solution_header: str
+    solution_placement: SolutionPlacementType
+    max_indent: int
+    partial_credit_type: PartialCreditType
+    inline: bool
+
+
 FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
     FeedbackType.FIRST_WRONG_VERBOSE,
@@ -85,12 +119,11 @@ LCS_GRADABLE_TYPES = frozenset([
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
-PL_ANSWER_CORRECT_DEFAULT = True
-PL_ANSWER_INDENT_DEFAULT = -1
+ANSWER_CORRECT_DEFAULT = True
+ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 INLINE_DEFAULT = False
-ANSWER_INDENT_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ORDERING_FEEDBACK_DEFAULT = None
 DISTRACTOR_FOR_DEFAULT = None
@@ -115,6 +148,14 @@ FIRST_WRONG_FEEDBACK = {
     "block-group": r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>""",
     "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
 }
+
+def get_graph_info(
+    html_tag: lxml.html.HtmlElement,
+) -> GroupInfo:
+    tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
+    depends = pl.get_string_attrib(html_tag, "depends", "")
+    depends = [tag.strip() for tag in depends.split(",")] if depends else []
+    return {"tag": tag, "depends": depends}
 
 
 def extract_dag(
@@ -149,49 +190,6 @@ def solve_problem(
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
         assert_never(grading_method)
-
-
-class AnswerAttribs(TypedDict):
-    correct: bool
-    ranking: int
-    indent: int | None
-    tag: str
-    depends: list[str]
-    inner_html: str | None
-    distractor_feedback: str
-    ordering_feedback: str | None
-    distractor_for: str
-    group_info: GroupInfo
-
-
-class OrderBlocksAttribs(TypedDict):
-    answer_name: str
-    indentation: bool
-    grading_method: GradingMethodType
-    feedback_type: FeedbackType
-    format_type: FormatType
-    code_language: str | None
-    weight: int | None
-    allow_blank: bool
-    file_name: str
-    source_blocks_order: SourceBlocksOrderType
-    max_incorrect: int | None
-    min_incorrect: int | None
-    source_header: str
-    solution_header: str
-    solution_placement: SolutionPlacementType
-    max_indent: int
-    partial_credit_type: PartialCreditType
-    inline: bool
-
-
-def get_graph_info(
-    html_tag: lxml.html.HtmlElement,
-) -> GroupInfo:
-    tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
-    depends = pl.get_string_attrib(html_tag, "depends", "")
-    depends = [tag.strip() for tag in depends.split(",")] if depends else []
-    return {"tag": tag, "depends": depends}
 
 
 def check_pl_order_blocks_attribs(element: lxml.html.HtmlElement) -> None:
@@ -365,7 +363,7 @@ def get_answer_attribs(
         graph_info = get_graph_info(answer_element)
         return {
             "correct": pl.get_boolean_attrib(
-                answer_element, "correct", PL_ANSWER_CORRECT_DEFAULT
+                answer_element, "correct", ANSWER_CORRECT_DEFAULT
             ),
             "ranking": pl.get_integer_attrib(answer_element, "ranking", -1),
             "indent": pl.get_integer_attrib(
