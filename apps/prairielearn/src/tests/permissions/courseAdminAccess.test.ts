@@ -90,7 +90,7 @@ function runTest(context) {
   beforeAll(async function () {
     // Insert necessary users.
     for (const user of users) {
-      await sqldb.callAsync('users_select_or_insert', [
+      await sqldb.callOptionalRow('users_select_or_insert', [
         user.uid,
         user.name,
         user.uin,

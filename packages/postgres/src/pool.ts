@@ -632,11 +632,14 @@ export class PostgresPool {
     return result;
   }
 
-  async queryRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async queryRows<Model extends z.ZodTypeAny>(
+  async queryRows<Model extends z.ZodTypeAny = z.ZodUnknown>(
+    sql: string,
+    model?: Model,
+  ): Promise<z.infer<Model>[]>;
+  async queryRows<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: QueryParams,
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model>[]>;
   /**
    * Wrapper around {@link queryAsync} that parses the resulting rows with the
@@ -644,11 +647,11 @@ export class PostgresPool {
    */
   async queryRows<Model extends z.ZodTypeAny>(
     sql: string,
-    paramsOrSchema: QueryParams | Model,
+    paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -659,11 +662,14 @@ export class PostgresPool {
     }
   }
 
-  async queryRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async queryRow<Model extends z.ZodTypeAny>(
+  async queryRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
+    sql: string,
+    model?: Model,
+  ): Promise<z.infer<Model>>;
+  async queryRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: QueryParams,
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model>>;
   /**
    * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
@@ -672,11 +678,11 @@ export class PostgresPool {
    */
   async queryRow<Model extends z.ZodTypeAny>(
     sql: string,
-    paramsOrSchema: QueryParams | Model,
+    paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryOneRowAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -686,27 +692,27 @@ export class PostgresPool {
     }
   }
 
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model> | null>;
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: QueryParams,
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model> | null>;
   /**
    * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
    * (if any) with the given Zod schema. Returns either null or a single row, and
    * errors otherwise.
    */
-  async queryOptionalRow<Model extends z.ZodTypeAny>(
+  async queryOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    paramsOrSchema: QueryParams | Model,
+    paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
@@ -718,19 +724,22 @@ export class PostgresPool {
     }
   }
 
-  async callRows<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>[]>;
-  async callRows<Model extends z.ZodTypeAny>(
+  async callRows<Model extends z.ZodTypeAny = z.ZodUnknown>(
+    sql: string,
+    model?: Model,
+  ): Promise<z.infer<Model>[]>;
+  async callRows<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: any[],
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model>[]>;
-  async callRows<Model extends z.ZodTypeAny>(
+  async callRows<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    paramsOrSchema: any[] | Model,
+    paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -741,19 +750,22 @@ export class PostgresPool {
     }
   }
 
-  async callRow<Model extends z.ZodTypeAny>(sql: string, model: Model): Promise<z.infer<Model>>;
-  async callRow<Model extends z.ZodTypeAny>(
+  async callRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
+    sql: string,
+    model?: Model,
+  ): Promise<z.infer<Model>>;
+  async callRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: any[],
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model>>;
-  async callRow<Model extends z.ZodTypeAny>(
+  async callRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    paramsOrSchema: any[] | Model,
+    paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callOneRowAsync(sql, params);
     if (results.fields.length === 1) {
       const columnName = results.fields[0].name;
@@ -763,22 +775,22 @@ export class PostgresPool {
     }
   }
 
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: any[],
-    model: Model,
+    model?: Model,
   ): Promise<z.infer<Model> | null>;
-  async callOptionalRow<Model extends z.ZodTypeAny>(
+  async callOptionalRow<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
-    paramsOrSchema: any[] | Model,
+    paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
     const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
-    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
       return null;
@@ -815,8 +827,9 @@ export class PostgresPool {
   async queryValidatedCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
-    model: Model,
+    maybeModel?: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
+    const model = maybeModel ?? z.unknown();
     return this.queryValidatedCursorInternal(sql, params, model);
   }
 

@@ -414,9 +414,11 @@ class PLDrawingAnswerState {
     static get_button_icon() {
       return 'delete';
     }
+
     static get_button_tooltip() {
       return 'Delete selected object';
     }
+
     static button_press(canvas, _options, _submittedAnswer) {
       canvas.remove(canvas.getActiveObject());
     }
@@ -440,9 +442,11 @@ class PLDrawingAnswerState {
       const opts = { ...def, ...options, type: 'pl-line' };
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
+
     static get_button_icon() {
       return 'help-line';
     }
+
     static get_button_tooltip() {
       return 'Add help line';
     }

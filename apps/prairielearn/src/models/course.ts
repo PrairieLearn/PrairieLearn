@@ -6,7 +6,6 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -80,7 +79,7 @@ export async function updateCourseCommitHash(course: {
   path: string;
 }): Promise<string> {
   const hash = await getCourseCommitHash(course.path);
-  await queryAsync(sql.update_course_commit_hash, {
+  await queryRows(sql.update_course_commit_hash, {
     course_id: course.id,
     commit_hash: hash,
   });
@@ -227,7 +226,7 @@ export async function updateCourseShowGettingStarted({
   course_id: string;
   show_getting_started: boolean;
 }) {
-  await queryAsync(sql.update_course_show_getting_started, {
+  await queryRows(sql.update_course_show_getting_started, {
     course_id,
     show_getting_started,
   });
@@ -237,7 +236,7 @@ export async function updateCourseShowGettingStarted({
  * Update the `sharing_name` column for a course.
  */
 export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
-  await queryAsync(sql.update_course_sharing_name, {
+  await queryRows(sql.update_course_sharing_name, {
     course_id,
     sharing_name,
   });

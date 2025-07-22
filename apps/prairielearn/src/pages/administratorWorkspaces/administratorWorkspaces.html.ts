@@ -104,7 +104,7 @@ export function AdministratorWorkspaces({
                         </div>
                       `
                     : html`
-                        <div class="list-group list-group my-2">
+                        <div class="list-group my-2">
                           ${workspaces.map((workspace) => {
                             const maybeCourseInstanceName = workspace.course_instance_name
                               ? html`(<span title="Course instance"

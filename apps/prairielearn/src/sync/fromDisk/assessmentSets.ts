@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentSetSchema } from '../../lib/db-types.js';
 import type { CommentJson } from '../../schemas/comment.js';
@@ -86,7 +86,7 @@ export async function sync(courseId: string, courseData: CourseData) {
   ) {
     await runInTransactionAsync(async () => {
       if (assessmentSetsToCreate.length) {
-        await queryAsync(sql.insert_assessment_sets, {
+        await queryRows(sql.insert_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToCreate.map((as) =>
             JSON.stringify([
@@ -103,7 +103,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (assessmentSetsToUpdate.length) {
-        await queryAsync(sql.update_assessment_sets, {
+        await queryRows(sql.update_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToUpdate.map((as) =>
             JSON.stringify([
@@ -120,7 +120,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (assessmentSetsToDelete.length) {
-        await queryAsync(sql.delete_assessment_sets, {
+        await queryRows(sql.delete_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToDelete,
         });

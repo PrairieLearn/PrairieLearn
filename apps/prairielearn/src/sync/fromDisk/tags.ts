@@ -1,7 +1,6 @@
 import {
-  callAsync,
+  callOptionalRow,
   loadSqlEquiv,
-  queryAsync,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -85,7 +84,7 @@ export async function sync(
       });
 
       if (tagsToUpdate.length > 0) {
-        await queryAsync(sql.update_tags, {
+        await queryRows(sql.update_tags, {
           course_id: courseId,
           tags: tagsToUpdate.map((t) =>
             JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
@@ -94,7 +93,7 @@ export async function sync(
       }
 
       if (tagsToDelete.length > 0) {
-        await queryAsync(sql.delete_tags, {
+        await queryRows(sql.delete_tags, {
           course_id: courseId,
           tags: tagsToDelete,
         });
@@ -131,5 +130,5 @@ export async function sync(
     questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
 
-  await callAsync('sync_question_tags', [questionTagsParam]);
+  await callOptionalRow('sync_question_tags', [questionTagsParam]);
 }

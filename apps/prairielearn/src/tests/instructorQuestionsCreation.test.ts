@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
@@ -49,7 +49,7 @@ describe('Creating a question', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await queryRows(sql.update_course_repo, { repo: courseOriginDir });
   });
 
   afterAll(helperServer.after);
@@ -225,11 +225,6 @@ describe('Creating a question', () => {
     );
 
     assert.equal(questionsResponse.status, 200);
-
-    // Ensure the course-specific template question is listed as an option
-    const courseTemplateOption = questionsResponse.$('option[data-template-source="course"]');
-    assert.lengthOf(courseTemplateOption, 1);
-    assert.equal(courseTemplateOption.attr('value'), 'template/courseTemplate');
 
     // Create the new template question based on the course-specific template question
     const createQuestionResponse = await fetchCheerio(

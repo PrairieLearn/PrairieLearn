@@ -77,14 +77,14 @@ export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *
- * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
+ * @deprecated Use {@link queryRows} instead.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead. If you don't need to parse the result, use `z.unknown()`.
+ * @deprecated Use {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
@@ -97,7 +97,7 @@ export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(de
 /**
  * Calls the given function with the specified parameters.
  *
- * @deprecated Use {@link callRows} instead.
+ * @deprecated Use {@link callOptionalRow} (if you don't care about the result), {@link callRow} or {@link callRows} (if the result is a table) instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**

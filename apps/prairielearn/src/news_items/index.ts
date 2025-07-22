@@ -76,7 +76,7 @@ export async function init({
     },
     async () => {
       const news_items = await loadNewsItems();
-      await sqldb.callAsync('sync_news_items', [
+      await sqldb.callOptionalRow('sync_news_items', [
         JSON.stringify(news_items),
         notifyIfPreviouslyEmpty,
       ]);

@@ -469,7 +469,7 @@ export async function updateInstanceQuestionScore(
   assessment_id: string,
   instance_question_id: string,
   submission_id: string | null,
-  check_modified_at: string | null,
+  check_modified_at: Date | null,
   score: InstanceQuestionScoreInput,
   authn_user_id: string,
   is_ai_graded = false,
@@ -477,7 +477,12 @@ export async function updateInstanceQuestionScore(
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
       sql.select_submission_for_score_update,
-      { assessment_id, instance_question_id, submission_id, check_modified_at },
+      {
+        assessment_id,
+        instance_question_id,
+        submission_id,
+        check_modified_at: check_modified_at?.toISOString(),
+      },
       SubmissionForScoreUpdateSchema,
     );
 
@@ -660,7 +665,7 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callAsync('assessment_instances_grade', [
+      await sqldb.callOptionalRow('assessment_instances_grade', [
         current_submission.assessment_instance_id,
         authn_user_id,
         100, // credit
