@@ -141,7 +141,12 @@ function LoginPageContainer({
           <div class="login-container">
             <div>
               <h1 class="text-center">
-                <a href="https://www.prairielearn.com/" target="_blank" class="text-body">
+                <a
+                  href="https://www.prairielearn.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="text-body"
+                >
                   PrairieLearn
                 </a>
               </h1>
@@ -172,7 +177,7 @@ function ShibLoginButton() {
   return html`
     <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
       ${config.shibLinkLogo != null
-        ? html`<img src="${config.shibLinkLogo}" class="social-icon" />`
+        ? html`<img src="${config.shibLinkLogo}" class="social-icon" alt="" />`
         : html`<span class="social-icon"></span>`}
       <span class="fw-bold">${config.shibLinkText}</span>
     </a>
@@ -182,7 +187,7 @@ function ShibLoginButton() {
 function GoogleLoginButton() {
   return html`
     <a class="btn btn-primary d-block position-relative" href="/pl/oauth2login">
-      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" />
+      <img src="${assetPath('/images/google_logo.svg')}" class="social-icon" alt="" />
       <span class="fw-bold">Sign in with Google</span>
     </a>
   `;
@@ -191,7 +196,7 @@ function GoogleLoginButton() {
 function MicrosoftLoginButton() {
   return html`
     <a class="btn btn-dark d-block position-relative" href="/pl/azure_login">
-      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" />
+      <img src="${assetPath('/images/ms_logo.svg')}" class="social-icon" alt="" />
       <span class="fw-bold">Sign in with Microsoft</span>
     </a>
   `;
@@ -363,7 +368,7 @@ function DevModeBypass() {
     <a class="btn btn-success w-100" href="/pl/dev_login">
       <span class="fw-bold">Dev Mode Bypass</span>
     </a>
-    <small class="text-muted">You will be authenticated as <tt>${config.authUid}</tt>.</small>
+    <small class="text-muted">You will be authenticated as <code>${config.authUid}</code>.</small>
   `;
 }
 
@@ -388,7 +393,7 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
           aria-describedby="dev_uin_help"
         />
         <small id="dev_uin_help" class="form-text text-muted">
-          Optional; will be set to <tt>null</tt> if not specified.
+          Optional; will be set to <code>null</code> if not specified.
         </small>
       </div>
       <div class="mb-3">
@@ -401,7 +406,7 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
           aria-describedby="dev_email_help"
         />
         <small id="dev_email_help" class="form-text text-muted">
-          Optional; will be set to <tt>null</tt> if not specified.
+          Optional; will be set to <code>null</code> if not specified.
         </small>
       </div>
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />

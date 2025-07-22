@@ -46,7 +46,6 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: DateFromISOString,
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -708,7 +707,11 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
   return html`
     <div>
       IP Address:
-      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+      <a
+        href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}"
+        target="_blank"
+        rel="noreferrer"
+      >
         ${fingerprint.ip_address}
       </a>
     </div>

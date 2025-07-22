@@ -86,6 +86,13 @@ function EditQuestionPointsScoreForm({
     score_perc: [instance_question.score_perc, 100],
   }[field];
 
+  // Since this component may be rendered by the client,
+  // we should take special care to ensure that the modified_at timestamp is a 'Date' object.
+  // This is done by re-parsing client-side data with Zod so that timestamps are converted back to 'Date' objects.
+  if (!(instance_question.modified_at instanceof Date)) {
+    throw new Error('modified_at must be a Date object');
+  }
+
   return html`
     <form name="edit-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_question_points" />
