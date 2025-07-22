@@ -8,13 +8,7 @@ import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 
 import { contains } from '@prairielearn/path-utils';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOneRowAsync,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
 import { IntervalSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -162,7 +156,7 @@ export async function updateWorkspaceDiskUsage(
     totalSize += size ?? 0;
   }
 
-  await queryRows(sql.update_workspace_disk_usage_bytes, {
+  await queryAsync(sql.update_workspace_disk_usage_bytes, {
     workspace_id,
     disk_usage_bytes: totalSize,
   });
@@ -228,7 +222,7 @@ export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id: string | number;
   duration_milliseconds: number;
 }) {
-  await queryRows(sql.update_course_instance_usages_for_workspace, {
+  await queryAsync(sql.update_course_instance_usages_for_workspace, {
     workspace_id,
     duration_milliseconds,
   });

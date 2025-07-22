@@ -34,24 +34,24 @@ const SprocTwoColumnsSchema = z.object({
 describe('@prairielearn/postgres', function () {
   beforeAll(async () => {
     await postgresTestUtils.createDatabase();
-    await queryRows(
+    await queryAsync(
       'CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);',
       {},
     );
-    await queryRows('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
-    await queryRows(
+    await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
+    await queryAsync(
       'CREATE FUNCTION test_sproc_one_column(num_entries INT) RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
       {},
     );
-    await queryRows(
+    await queryAsync(
       'CREATE FUNCTION test_sproc_two_columns(num_entries INT) RETURNS TABLE (id BIGINT, negative INT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id, -s AS negative FROM generate_series(1, num_entries) AS s; END; $$ LANGUAGE plpgsql;',
       {},
     );
-    await queryRows(
+    await queryAsync(
       'CREATE FUNCTION test_sproc_one_column_ten_rows() RETURNS TABLE (id BIGINT) AS $$ BEGIN RETURN QUERY SELECT s::BIGINT AS id FROM generate_series(1, 10) AS s; END; $$ LANGUAGE plpgsql;',
       {},
     );
-    await queryRows(
+    await queryAsync(
       'CREATE FUNCTION test_sproc_one_column_one_row(OUT id BIGINT) AS $$ BEGIN id = 1; END; $$ LANGUAGE plpgsql;',
       {},
     );
