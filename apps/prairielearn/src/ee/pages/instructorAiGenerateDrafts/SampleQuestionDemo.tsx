@@ -185,7 +185,7 @@ export function SampleQuestionDemo({
     : '';
 
   return (
-    <Card class="shadow" ref={cardRef}>
+    <Card ref={cardRef} class="shadow">
       <CardHeader>
         <div class="d-flex align-items-center gap-2">
           <p class="mb-0">{prompt.name}</p>
@@ -237,7 +237,7 @@ export function SampleQuestionDemo({
       <CardFooter>
         <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div class="flex-grow-1"></div>
+          <div class="flex-grow-1" />
           <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
               <span class="text-nowrap">New variant</span>
@@ -261,12 +261,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return (
-    <span class={`badge ${badgeType}`}>
-      {Math.floor(grade)}
-      {'%'}
-    </span>
-  );
+  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
@@ -294,7 +289,7 @@ function NumericOrStringInput({
         value={userInputResponse}
         type="text"
         placeholder={placeholder}
-        onChange={(e: Event) => onChange((e.target as HTMLInputElement).value)}
+        onChange={(e) => onChange(e.currentTarget.value)}
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
@@ -323,8 +318,8 @@ function CheckboxOrRadioInput({
     <div class="mt-2">
       {options.map((option) => (
         <FormCheck
-          id={`check-${option.value}`}
           key={option.value}
+          id={`check-${option.value}`}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
           value={option.value}

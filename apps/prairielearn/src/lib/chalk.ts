@@ -9,7 +9,11 @@ const ansiUp = new AnsiUp();
 // display value.
 ansiUp.faintStyle = 'opacity: 0.7; display: var(--verbose-display);';
 
-export function ansiToHtml(ansiString: string | null): string {
+export function ansiToHtml(
+  ansiString: string | null,
+  { escapeHtml = true }: { escapeHtml?: boolean } = {},
+): string {
+  ansiUp.escape_html = escapeHtml;
   const htmlString = ansiUp.ansi_to_html(ansiString ?? '');
   // We want to be able to hide whole lines of output, so we need to ensure the line breaks are inside spans.
   return htmlString.replaceAll('</span>\n', '\n</span>');

@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { TagBadge } from '../../components/TagBadge.html.js';
-import { TagDescription } from '../../components/TagDescription.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagBadge } from '../../components/TagBadge.js';
+import { TagDescription } from '../../components/TagDescription.js';
 import { type Tag } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
@@ -52,7 +52,7 @@ export function InstructorCourseAdminTags({
                 (tag) => html`
                   <tr>
                     <td class="align-middle">${tag.number}</td>
-                    <td class="align-middle">${TagBadge(tag)}</td>
+                    <td class="align-middle">${renderHtml(<TagBadge tag={tag} />)}</td>
                     <td class="align-middle">${tag.color}</td>
                     <td class="align-middle">${TagDescription(tag)}</td>
                   </tr>
