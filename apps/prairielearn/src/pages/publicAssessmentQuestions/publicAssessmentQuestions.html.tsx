@@ -1,14 +1,15 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../components/AssessmentQuestions.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
-import { TopicBadge } from '../../components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
+import { renderHtml } from '../../lib/preact-html.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({
@@ -87,22 +88,24 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(
+                <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
+              )}
               <tr>
                 <td>
                   <a
                     href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
                   >
-                    ${AssessmentQuestionNumber(question)}${question.title}
+                    ${renderHtml(<AssessmentQuestionNumber question={question} />)}${question.title}
                   </a>
                 </td>
                 <td>@${question.course_sharing_name}/${question.qid}</td>
-                <td>${TopicBadge(question.topic)}</td>
-                <td>${TagBadgeList(question.tags)}</td>
+                <td>${TopicBadgeHtml(question.topic)}</td>
+                <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
-                        return AssessmentBadge({
+                        return AssessmentBadgeHtml({
                           assessment,
                           plainUrlPrefix: urlPrefix,
                           course_instance_id,
