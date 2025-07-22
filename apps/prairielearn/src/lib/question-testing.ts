@@ -37,7 +37,7 @@ interface TestQuestionResults {
   stats: TestResultStats;
 }
 
-type TestType = 'correct' | 'incorrect' | 'invalid';
+export type TestType = 'correct' | 'incorrect' | 'invalid';
 
 /**
  * Internal worker for testVariant(). Do not call directly.
@@ -51,7 +51,7 @@ type TestType = 'correct' | 'incorrect' | 'invalid';
  * @param authn_user_id - The currently authenticated user.
  * @returns The submission ID.
  */
-async function createTestSubmission(
+export async function createTestSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
