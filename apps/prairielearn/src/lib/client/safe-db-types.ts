@@ -2,7 +2,6 @@ import { type z } from 'zod';
 
 import {
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
-  AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
@@ -94,10 +93,6 @@ export const RawStudentAssessmentSetSchema = RawStaffAssessmentSetSchema.pick({
 export const StudentAssessmentSetSchema =
   RawStudentAssessmentSetSchema.brand<'StudentAssessmentSet'>();
 export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
-
-/** Assessment Questions */
-
-export const StaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
 
 /** Courses */
 

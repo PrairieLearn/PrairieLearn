@@ -51,8 +51,6 @@ export function HistMiniHtml({
 
   d3.scaleOrdinal(d3.schemeCategory10);
 
-  console.log('selector', selector);
-
   const svg = d3
     .select(selector)
     .append('svg')
@@ -90,8 +88,6 @@ export function HistMiniHtml({
     .attr('x2', width)
     .attr('y2', height)
     .attr('class', 'x axis');
-
-  console.log(svg);
 
   return svg.node();
 }

@@ -2,9 +2,8 @@ import * as async from 'async';
 
 import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-utils';
 
+import { HistMiniHtml } from '../../src/components/HistMini.js';
 import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
-
-import { histmini } from './lib/histmini.js';
 
 const statElements = [
   '.score-stat-number',
@@ -52,5 +51,11 @@ onDocumentReady(() => {
 });
 
 function updatePlots(container: HTMLElement) {
-  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
+  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
+    HistMiniHtml({
+      selector: element,
+      data: JSON.parse(element.dataset.data ?? '[]'),
+      options: JSON.parse(element.dataset.options ?? '{}'),
+    }),
+  );
 }
