@@ -404,10 +404,11 @@ def get_answer_attribs(
     return answer_attribs
 
 
-def validate_answer_attribs_closure() -> FunctionType:
+def validate_answer_attribs_setup() -> FunctionType:
     used_tags = set()
+    used_groups = []
 
-    def validation(
+    def answer_attribs_validation(
         answers: list[AnswerAttribs],
         order_blocks_attribs: OrderBlocksAttribs,
     ) -> None:
@@ -448,12 +449,13 @@ def validate_answer_attribs_closure() -> FunctionType:
                     )
                 used_tags.add(answer_attribs["tag"])
 
-            if answer_attribs["group_info"]["tag"] in used_tags:
+            if answer_attribs["group_info"]["tag"] in used_tags and not answer_attribs["group_info"] in used_groups:
                 raise ValueError(
                     f'Tag "{answer_attribs["group_info"]["tag"]}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
             if answer_attribs["group_info"]["tag"] is not None:
                 used_tags.add(answer_attribs["group_info"]["tag"])
+                used_groups.append(answer_attribs["group_info"])
 
             if order_blocks_attribs["format_type"] is FormatType.CODE:
                 answer_attribs["inner_html"] = (
@@ -468,14 +470,12 @@ def validate_answer_attribs_closure() -> FunctionType:
                     + "</pl-code>"
                 )
 
-    return validation
-
-
-validate_answer_attribs = validate_answer_attribs_closure()
+    return answer_attribs_validation
 
 
 def prepare(html: str, data: pl.QuestionData) -> None:
     html_element = lxml.html.fragment_fromstring(html)
+    validate_answer_attribs = validate_answer_attribs_setup()
 
     order_blocks_attribs = get_order_blocks_attribs(html_element)
     pl.check_answers_names(data, order_blocks_attribs["answer_name"])
@@ -484,6 +484,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     all_answer_attribs = get_answer_attribs(
         html_element, order_blocks_attribs["grading_method"]
     )
+
     validate_answer_attribs(all_answer_attribs, order_blocks_attribs)
 
     correct_answers: list[OrderBlocksAnswerData] = []
