@@ -77,7 +77,7 @@ export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *
- * @deprecated Use {@link queryRows} instead.
+ * If you use the return value of this function, you should use {@link queryRow}, {@link queryOptionalRow}, or {@link queryRows} instead.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 /**
@@ -97,7 +97,7 @@ export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(de
 /**
  * Calls the given function with the specified parameters.
  *
- * @deprecated Use {@link callOptionalRow} (if you don't care about the result), {@link callRow} or {@link callRows} (if the result is a table) instead.
+ * If you use the return value of this function, you should use {@link callRow}, {@link callOptionalRow}, or {@link callRows} instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**
