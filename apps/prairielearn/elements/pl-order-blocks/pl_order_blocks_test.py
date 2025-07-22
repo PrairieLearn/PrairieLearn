@@ -225,7 +225,7 @@ def test_ordering_feedback_failure(input_str: str) -> None:
         ValueError,
         match=r"The ordering-feedback attribute may only be used on blocks with correct=true.",
     ):
-        pl_order_blocks.validate_answer_attribs(
+        pl_order_blocks.validate_answer_attribs_setup()(
             pl_order_blocks.get_answer_attribs(
                 element, order_blocks_attribs["grading_method"]
             ),
