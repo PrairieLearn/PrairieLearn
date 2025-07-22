@@ -48,7 +48,7 @@ async function makeLoginExecutor({
   user: {
     name: string;
     email: string;
-    uin: string;
+    uin: string | null;
     sub: string;
   };
   fetchWithCookies: typeof fetch;
@@ -114,9 +114,13 @@ async function makeLoginExecutor({
     },
     name: user.name,
     email: user.email,
-    'https://purl.imsglobal.org/spec/lti/claim/custom': {
-      uin: user.uin,
-    },
+    ...(user.uin
+      ? {
+          'https://purl.imsglobal.org/spec/lti/claim/custom': {
+            uin: user.uin,
+          },
+        }
+      : {}),
     'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
       scope: [
         'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
@@ -621,14 +625,15 @@ describe('LTI 1.3', () => {
         const initialUid = 'old-uid-no-uin@example.com';
         const newUid = 'new-uid-no-uin@example.com';
         const testSub = 'uid-update-test-sub-no-uin-67890';
+        const testUin = '1234512345';
 
         // Perform initial LTI login to create the user.
         const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const initialExecutor = await makeLoginExecutor({
           user: {
-            name: 'UID Update Test User No UIN',
+            name: 'Test User No UIN',
             email: initialUid, // Initial UID
-            uin: '888777666',
+            uin: null,
             sub: testSub,
           },
           fetchWithCookies,
@@ -648,13 +653,20 @@ describe('LTI 1.3', () => {
         assert.ok(initialUser);
         assert.equal(initialUser.uid, initialUid);
 
+        // Add a UIN to the user. This doesn't matter for the login process, but
+        // we'll use this later to validate that it's persisted after UID update.
+        await queryAsync('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
+          user_id: initialUser.user_id,
+          uin: testUin,
+        });
+
         // Now perform LTI login with the same sub but a different UID (email).
         const secondTargetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const executor = await makeLoginExecutor({
           user: {
             name: 'UID Update Test User No UIN',
             email: newUid,
-            uin: '888777666',
+            uin: null,
             sub: testSub,
           },
           // Use fresh cookies for new session.
@@ -677,6 +689,7 @@ describe('LTI 1.3', () => {
         assert.ok(updatedUser);
         assert.equal(updatedUser.user_id, initialUser.user_id);
         assert.equal(updatedUser.uid, newUid);
+        assert.equal(updatedUser.uin, testUin);
         assert.isNull(oldUser);
       },
     );
