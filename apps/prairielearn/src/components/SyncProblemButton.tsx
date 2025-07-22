@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { ansiToHtml } from '../lib/chalk.js';
 import { renderHtml } from '../lib/preact-html.js';
 
@@ -23,7 +25,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       data-bs-content={popoverContent}
       data-bs-custom-class="popover-wide"
     >
-      <i class={`fa ${classes}`} aria-hidden="true" />
+      <i class={clsx('fa', classes)} aria-hidden="true" />
     </button>
   );
 }
