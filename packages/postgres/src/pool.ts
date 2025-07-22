@@ -650,7 +650,10 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined
+        ? {}
+        : (paramsOrSchema as QueryParams);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryAsync(sql, params);
     if (results.fields.length === 1) {
@@ -681,7 +684,10 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined
+        ? {}
+        : (paramsOrSchema as QueryParams);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryOneRowAsync(sql, params);
     if (results.fields.length === 1) {
@@ -711,7 +717,10 @@ export class PostgresPool {
     paramsOrSchema?: QueryParams | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined
+        ? {}
+        : (paramsOrSchema as QueryParams);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.queryZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
@@ -738,7 +747,8 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callAsync(sql, params);
     if (results.fields.length === 1) {
@@ -764,7 +774,8 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callOneRowAsync(sql, params);
     if (results.fields.length === 1) {
@@ -789,7 +800,8 @@ export class PostgresPool {
     paramsOrSchema?: any[] | Model,
     maybeModel?: Model,
   ) {
-    const params = maybeModel === undefined ? [] : (paramsOrSchema as any[]);
+    const params =
+      maybeModel === undefined && paramsOrSchema === undefined ? [] : (paramsOrSchema as any[]);
     const model = maybeModel ?? (paramsOrSchema as Model) ?? z.unknown();
     const results = await this.callZeroOrOneRowAsync(sql, params);
     if (results.rows.length === 0) {
