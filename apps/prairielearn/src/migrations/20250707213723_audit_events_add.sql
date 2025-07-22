@@ -1,4 +1,4 @@
-CREATE TYPE audit_event_action AS ENUM ('insert', 'update', 'delete');
+CREATE TYPE audit_event_action AS ENUM('insert', 'update', 'delete');
 
 CREATE TABLE audit_events (
   id BIGSERIAL PRIMARY KEY,
@@ -34,10 +34,19 @@ CREATE TABLE audit_events (
 
 -- These columns could be hard-deleted; this index helps us prune old events quickly.
 CREATE INDEX audit_events_assessment_instance_id_idx ON audit_events (assessment_instance_id);
+
 CREATE INDEX audit_events_institution_id_idx ON audit_events (institution_id);
 
 -- Events that affect a user (potentially on specific tables) (potentially in a course instance)
-CREATE INDEX audit_events_table_name_subject_user_id_course_instance_id_idx ON audit_events (subject_user_id, table_name, course_instance_id) WHERE subject_user_id IS NOT NULL;
+CREATE INDEX audit_events_table_name_subject_user_id_course_instance_id_idx ON audit_events (subject_user_id, table_name, course_instance_id)
+WHERE
+  subject_user_id IS NOT NULL;
 
 -- Events caused by a user (potentially on specific tables) (potentially in a course instance)
-CREATE INDEX audit_events_agent_authn_user_id_course_instance_id_idx ON audit_events (agent_authn_user_id, table_name, course_instance_id) WHERE agent_authn_user_id IS NOT NULL;
+CREATE INDEX audit_events_agent_authn_user_id_course_instance_id_idx ON audit_events (
+  agent_authn_user_id,
+  table_name,
+  course_instance_id
+)
+WHERE
+  agent_authn_user_id IS NOT NULL;
