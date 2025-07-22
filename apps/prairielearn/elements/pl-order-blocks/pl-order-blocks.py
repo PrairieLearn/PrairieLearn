@@ -149,11 +149,11 @@ FIRST_WRONG_FEEDBACK = {
 
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
-) -> GroupInfo:
+) -> tuple[str, list[str]]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
-    return {"tag": tag, "depends": depends}
+    return tag, depends
 
 
 def extract_dag(
@@ -358,12 +358,7 @@ def get_answer_attribs(
     def gather_attribs(
         answer_element: lxml.html.HtmlElement, group_info: GroupInfo
     ) -> AnswerAttribs:
-        graph_info = get_graph_info(answer_element)
-        if graph_info["tag"] is None:
-            raise ValueError("Error while gathering <pl-answer> tag attribute.")
-        if graph_info["depends"] is None:
-            raise ValueError("Error while gathering <pl-answer> depends attribute.")
-
+        tag, depends = get_graph_info(answer_element)
         return {
             "correct": pl.get_boolean_attrib(
                 answer_element, "correct", ANSWER_CORRECT_DEFAULT
@@ -372,8 +367,8 @@ def get_answer_attribs(
             "indent": pl.get_integer_attrib(
                 answer_element, "indent", ANSWER_INDENT_DEFAULT
             ),
-            "depends": graph_info["depends"],
-            "tag": graph_info["tag"],
+            "depends": depends,
+            "tag": tag,
             "distractor_for": pl.get_string_attrib(
                 answer_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
             ),
@@ -391,11 +386,14 @@ def get_answer_attribs(
         if isinstance(inner_element, _Comment):
             continue
         if inner_element.tag == "pl-block-group":
-            group_info = get_graph_info(inner_element)
+            group_tag, group_depends = get_graph_info(inner_element)
             for answer_element in inner_element:
                 check_answer_attribs(answer_element, grading_method)
-                group_info = get_graph_info(answer_element)
-                answer_attribs.append(gather_attribs(answer_element, group_info))
+                answer_attribs.append(
+                    gather_attribs(
+                        answer_element, {"tag": group_tag, "depends": group_depends}
+                    )
+                )
 
         if inner_element.tag == "pl-answer":
             check_answer_attribs(inner_element, grading_method)
