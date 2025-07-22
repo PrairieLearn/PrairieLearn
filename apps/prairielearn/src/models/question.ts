@@ -1,4 +1,4 @@
-import z from 'zod';
+import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
