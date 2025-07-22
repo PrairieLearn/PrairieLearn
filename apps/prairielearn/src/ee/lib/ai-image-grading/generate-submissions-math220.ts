@@ -106,6 +106,7 @@ export async function generateSubmissionsMath220(
         __dirname,
         'student_submitted_responses.json'
     );
+
     if (!fs.existsSync(student_submitted_responses_path)) {
         throw new Error(`Student submitted responses file does not exist: ${student_submitted_responses_path}`);
     }
@@ -154,20 +155,6 @@ export async function generateSubmissionsMath220(
             if (!question.qid) {
                 throw new Error(`Question ${question.id} does not have a qid`);
             }
-            
-            // Generate a variant for each question
-            const variant = await ensureVariant(
-                question.id,
-                instance_question.instance_question_id,
-                enrolled_student.user_id,
-                enrolled_student.user_id,
-                courseInstance.id,
-                course,
-                course,
-                {},
-                false,
-                null,
-            );
 
             // Retrieve submitted files
             const submission_filenames = FILE_SUBMISSIONS[question.qid];
@@ -176,11 +163,20 @@ export async function generateSubmissionsMath220(
 
             const submitted_files: { name: string; contents: string; mimetype: string }[] = [];
 
+            let file_missing = false;
+
             for (const filename of submission_filenames) {
                 const currentPath = path.join(
                     submission_folder,
                     filename.replace('.jpg', '.jpeg') // Ensure the file extension matches
                 );
+
+                if (!fs.existsSync(currentPath)) {
+                    console.warn(`File not found: ${currentPath}`);
+                    file_missing = true;
+                    continue; // Skip this file if it does not exist
+                }
+
                 // Retrieve the base-64 encoded image, stored locally 
                 const encodedData = fs.readFileSync(currentPath, {
                     encoding: 'base64'
@@ -198,7 +194,26 @@ export async function generateSubmissionsMath220(
                 submitted_files.push(file);
             }
 
+            if (file_missing) {
+                console.warn(`Some files are missing for question ${question.qid}. Skipping submission for this question.`);
+                continue; // Skip this question if any file is missing
+            }
+
             submitted_answer._files = submitted_files;
+            
+            // Generate a variant for each question
+            const variant = await ensureVariant(
+                question.id,
+                instance_question.instance_question_id,
+                enrolled_student.user_id,
+                enrolled_student.user_id,
+                courseInstance.id,
+                course,
+                course,
+                {},
+                false,
+                null,
+            );
             
             // Generate a submission for each question
             const submission_data = {
