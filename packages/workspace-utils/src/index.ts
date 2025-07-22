@@ -8,7 +8,13 @@ import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryAsync, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOneRowAsync,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 import { IntervalSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
