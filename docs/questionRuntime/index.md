@@ -26,11 +26,11 @@ The quickest way to add custom libraries is to install them directly to your cou
 
 4. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.
 
-After these steps, you should be able to `import` the library as normal in your `server.py` files.
-
 !!! note
 
     The local installation may generate compiled files that are commonly ignored in `.gitignore`. For example, packages that use native code will typically contain `*.so` files. These files are required for the usage of the installed package, so make sure these files are committed within Git if you encounter issues. Ignored files can be viewed with `git status --ignored`.
+
+After these steps, you should be able to `import` the library as normal in your `server.py` files. If you also wish to use these libraries in an external grader, you will need to ensure your grader image includes these packages as well. For the default Python autograder, this may be done by [mapping the corresponding libraries to the grader](../python-grader/index.md#course-specific-libraries). Similarly, if you also wish to use these libraries in a workspace, you will again need to ensure your workspace image includes these packages, which may be done by [creating a custom workspace image](../workspaces/index.md#custom-workspace-images).
 
 ## Adding libraries to PrairieLearn
 
@@ -45,9 +45,13 @@ Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 
 ### Add the library to `requirements.txt`
 
-A list of of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake).
+A list of of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake). Note that there are different `requirements.txt` files for different environments:
 
-First, browse to the file `requirements.txt` in the [PL GitHub Repo](https://github.com/prairielearn/prairielearn). An edit button should be visible on the top right of the file preview:
+- The `requirements.txt` file in the root directory is used in the question runtime environment, which mostly affects `server.py` in individual questions and custom elements.
+- External graders, like the [Python grader](../python-grader/index.md) or the [C/C++ grader](../c-grader/index.md), have their own versions of `requirements.txt` in the `graders` directory.
+- [Workspaces](../workspaces/index.md), like the Jupyterlab or VSCode environments, have their own versions of `requirements.txt` in the `workspaces` directory.
+
+First, find the `requirements.txt` file(s) you wish to modify in the [PL GitHub Repo](https://github.com/prairielearn/prairielearn). An edit button should be visible on the top right of the file preview:
 
 ![GitHub edit button](edit_btn.png)
 

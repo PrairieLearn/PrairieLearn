@@ -237,9 +237,31 @@ PrairieLearn provides and maintains the following workspace images:
 
 ## Custom workspace images
 
-You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+You can build custom workspace images if you need to install specific dependencies for use by students that are not present in the default version of the images above. If you wish to do so, you can follow these steps:
 
-If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
+1. Install [Docker Desktop](https://docs.docker.com/desktop/) in your environment.
+2. Create a [Docker Hub](https://hub.docker.com/) account, if you don't yet have one.
+3. Create a new directory to hold the information for your image. You may create it in your course image if you wish to share this with other staff members in your course.
+4. In the directory above, create a file named [`Dockerfile`](https://docs.docker.com/reference/dockerfile/) (without an extension), and set its contents to the set of instructions to be used for the image you are creating. For example, to create a custom version of `prairielearn/workspace-vscode-python` with the `datascience` Python package, the file may look like:
+
+   ```dockerfile
+   FROM prairielearn/workspace-vscode-python
+   RUN pip install workspace-vscode-python
+   ```
+
+5. In a terminal, change to the directory that contains the `Dockerfile` above and run the following command (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
+
+   ```bash
+   docker build -t yourdockerhubaccount/yourimagename .
+   docker push yourdockerhubaccount/yourimagename
+   ```
+
+6. Change the settings for the question that needs the custom image to use the image name you set above.
+7. In your course's "Sync" page, under "Docker images", find the image name above and click on "Sync".
+
+Note that the process above will not cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to, periodically, update your custom image by repeating steps 5-7 above.
+
+If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image. If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 
 ## Running locally (on Docker)
 
