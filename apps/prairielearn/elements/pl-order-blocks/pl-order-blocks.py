@@ -228,51 +228,51 @@ def get_order_blocks_attribs(
 ) -> OrderBlocksAttribs:
     check_pl_order_blocks_attribs(element)
     return {
-            "answer_name": pl.get_string_attrib(element, "answers-name"),
-            "weight": pl.get_integer_attrib(element, "weight", None),
-            "grading_method": pl.get_enum_attrib(
-                element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-                ),
-            "allow_blank": pl.get_boolean_attrib(
-                element, "allow-blank", ALLOW_BLANK_DEFAULT
-                ),
-            "file_name": pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT),
-            "source_blocks_order": pl.get_enum_attrib(
-                element,
-                "source-blocks-order",
-                SourceBlocksOrderType,
-                SOURCE_BLOCKS_ORDER_DEFAULT,
-                ),
-            "indentation": pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT),
-            "max_incorrect": pl.get_integer_attrib(element, "max-incorrect", None),
-            "min_incorrect": pl.get_integer_attrib(element, "min-incorrect", None),
-            "source_header": pl.get_string_attrib(
-                element, "source-header", SOURCE_HEADER_DEFAULT
-                ),
-            "solution_header": pl.get_string_attrib(
-                element, "solution-header", SOLUTION_HEADER_DEFAULT
-                ),
-            "solution_placement": pl.get_enum_attrib(
-                element,
-                "solution-placement",
-                SolutionPlacementType,
-                SOLUTION_PLACEMENT_DEFAULT,
-                ),
-            "max_indent": pl.get_integer_attrib(
-                element, "max-indent", MAX_INDENTION_DEFAULT
-                ),
-            "partial_credit_type": pl.get_enum_attrib(
-                element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT
-                ),
-            "feedback_type": pl.get_enum_attrib(
-                element, "feedback", FeedbackType, FEEDBACK_DEFAULT
-                ),
-            "format_type": pl.get_enum_attrib(
-                element, "format", FormatType, FormatType.DEFAULT
-                ),
-            "code_language": pl.get_string_attrib(element, "code-language", None),
-            "inline": pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT),
-            }
+        "answer_name": pl.get_string_attrib(element, "answers-name"),
+        "weight": pl.get_integer_attrib(element, "weight", None),
+        "grading_method": pl.get_enum_attrib(
+            element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
+        ),
+        "allow_blank": pl.get_boolean_attrib(
+            element, "allow-blank", ALLOW_BLANK_DEFAULT
+        ),
+        "file_name": pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT),
+        "source_blocks_order": pl.get_enum_attrib(
+            element,
+            "source-blocks-order",
+            SourceBlocksOrderType,
+            SOURCE_BLOCKS_ORDER_DEFAULT,
+        ),
+        "indentation": pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT),
+        "max_incorrect": pl.get_integer_attrib(element, "max-incorrect", None),
+        "min_incorrect": pl.get_integer_attrib(element, "min-incorrect", None),
+        "source_header": pl.get_string_attrib(
+            element, "source-header", SOURCE_HEADER_DEFAULT
+        ),
+        "solution_header": pl.get_string_attrib(
+            element, "solution-header", SOLUTION_HEADER_DEFAULT
+        ),
+        "solution_placement": pl.get_enum_attrib(
+            element,
+            "solution-placement",
+            SolutionPlacementType,
+            SOLUTION_PLACEMENT_DEFAULT,
+        ),
+        "max_indent": pl.get_integer_attrib(
+            element, "max-indent", MAX_INDENTION_DEFAULT
+        ),
+        "partial_credit_type": pl.get_enum_attrib(
+            element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT
+        ),
+        "feedback_type": pl.get_enum_attrib(
+            element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+        ),
+        "format_type": pl.get_enum_attrib(
+            element, "format", FormatType, FormatType.DEFAULT
+        ),
+        "code_language": pl.get_string_attrib(element, "code-language", None),
+        "inline": pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT),
+    }
 
 
 def validate_order_blocks_attribs(
@@ -303,7 +303,7 @@ def validate_order_blocks_attribs(
 
 
 def check_answer_attribs(
-        element: lxml.html.HtmlElement, grading_method: GradingMethodType
+    element: lxml.html.HtmlElement, grading_method: GradingMethodType
 ) -> None:
     if element.tag != "pl-answer":
         raise ValueError(
@@ -354,32 +354,37 @@ def check_answer_attribs(
 
 
 # collects all pl-answer tag attributes inside a pl-block-group or alone
-def get_answer_attribs(element: lxml.html.HtmlElement, grading_method: GradingMethodType) -> list[AnswerAttribs]:
+def get_answer_attribs(
+    element: lxml.html.HtmlElement, grading_method: GradingMethodType
+) -> list[AnswerAttribs]:
     answer_attribs = []
 
-    def gather_attribs(answer_element: lxml.html.HtmlElement, group_info: GroupInfo) -> AnswerAttribs:
+    def gather_attribs(
+        answer_element: lxml.html.HtmlElement, group_info: GroupInfo
+    ) -> AnswerAttribs:
         graph_info = get_graph_info(answer_element)
-        return { "correct": pl.get_boolean_attrib(
-                    answer_element, "correct", PL_ANSWER_CORRECT_DEFAULT
-                ),
-                "ranking": pl.get_integer_attrib(answer_element, "ranking", -1),
-                "indent": pl.get_integer_attrib(
-                    answer_element, "indent", ANSWER_INDENT_DEFAULT
-                ),
-                "depends": graph_info["depends"],
-                "tag": graph_info["tag"],
-                "distractor_for": pl.get_string_attrib(
-                    answer_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
-                ),
-                "distractor_feedback": pl.get_string_attrib(
-                    answer_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
-                ),
-                "ordering_feedback": pl.get_string_attrib(
-                    answer_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
-                ),
-                "inner_html": pl.inner_html(answer_element),
-                "group_info": group_info
-            }
+        return {
+            "correct": pl.get_boolean_attrib(
+                answer_element, "correct", PL_ANSWER_CORRECT_DEFAULT
+            ),
+            "ranking": pl.get_integer_attrib(answer_element, "ranking", -1),
+            "indent": pl.get_integer_attrib(
+                answer_element, "indent", ANSWER_INDENT_DEFAULT
+            ),
+            "depends": graph_info["depends"],
+            "tag": graph_info["tag"],
+            "distractor_for": pl.get_string_attrib(
+                answer_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
+            ),
+            "distractor_feedback": pl.get_string_attrib(
+                answer_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
+            ),
+            "ordering_feedback": pl.get_string_attrib(
+                answer_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
+            ),
+            "inner_html": pl.inner_html(answer_element),
+            "group_info": group_info,
+        }
 
     for inner_element in element:
         if isinstance(inner_element, _Comment):
@@ -393,10 +398,11 @@ def get_answer_attribs(element: lxml.html.HtmlElement, grading_method: GradingMe
 
         if inner_element.tag == "pl-answer":
             check_answer_attribs(inner_element, grading_method)
-            answer_attribs.append(gather_attribs(inner_element, {"tag": None, "depends": None}))
+            answer_attribs.append(
+                gather_attribs(inner_element, {"tag": None, "depends": None})
+            )
 
     return answer_attribs
-
 
 
 def validate_answer_attribs_closure() -> FunctionType:
@@ -411,7 +417,9 @@ def validate_answer_attribs_closure() -> FunctionType:
                 order_blocks_attribs["grading_method"] is not GradingMethodType.DAG
                 and answer_attribs["group_info"]["tag"] is not None
             ):
-                raise ValueError('Block groups only supported in the "dag" grading mode.')
+                raise ValueError(
+                    'Block groups only supported in the "dag" grading mode.'
+                )
 
             if (
                 order_blocks_attribs["indentation"] is False
@@ -461,7 +469,10 @@ def validate_answer_attribs_closure() -> FunctionType:
                         + answer_attribs["inner_html"]
                         + "</pl-code>"
                     )
+
     return validation
+
+
 validate_answer_attribs = validate_answer_attribs_closure()
 
 
@@ -472,7 +483,9 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     pl.check_answers_names(data, order_blocks_attribs["answer_name"])
     validate_order_blocks_attribs(order_blocks_attribs)
 
-    all_answer_attribs = get_answer_attribs(html_element, order_blocks_attribs["grading_method"])
+    all_answer_attribs = get_answer_attribs(
+        html_element, order_blocks_attribs["grading_method"]
+    )
     validate_answer_attribs(all_answer_attribs, order_blocks_attribs)
 
     correct_answers: list[OrderBlocksAnswerData] = []
