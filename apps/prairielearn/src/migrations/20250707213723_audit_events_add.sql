@@ -36,20 +36,8 @@ CREATE TABLE audit_events (
 CREATE INDEX audit_events_assessment_instance_id_idx ON audit_events (assessment_instance_id);
 CREATE INDEX audit_events_institution_id_idx ON audit_events (institution_id);
 
--- Events that affect a user
-CREATE INDEX audit_events_subject_user_id_idx ON audit_events (subject_user_id) WHERE subject_user_id IS NOT NULL;
+-- Events that affect a user (potentially on specific tables) (potentially in a course instance)
+CREATE INDEX audit_events_table_name_subject_user_id_course_instance_id_idx ON audit_events (subject_user_id, table_name, course_instance_id) WHERE subject_user_id IS NOT NULL;
 
--- Specific types of events that affect a user
-CREATE INDEX audit_events_table_name_subject_user_id_idx ON audit_events (table_name, subject_user_id) WHERE subject_user_id IS NOT NULL;
-
--- Specific types of events that affect a user in a course instance
-CREATE INDEX audit_events_table_name_subject_user_id_course_instance_id_idx ON audit_events (table_name, subject_user_id, course_instance_id) WHERE subject_user_id IS NOT NULL AND course_instance_id IS NOT NULL;
-
--- Events caused by a user
-CREATE INDEX audit_events_agent_authn_user_id_idx ON audit_events (agent_authn_user_id) WHERE agent_authn_user_id IS NOT NULL;
-
--- Specific types of events caused by a user
-CREATE INDEX audit_events_agent_authn_user_id_table_name_idx ON audit_events (agent_authn_user_id, table_name) WHERE agent_authn_user_id IS NOT NULL;
-
--- Specific types of events caused by a user in a course instance
-CREATE INDEX audit_events_agent_authn_user_id_course_instance_id_idx ON audit_events (agent_authn_user_id, course_instance_id) WHERE agent_authn_user_id IS NOT NULL AND course_instance_id IS NOT NULL;
+-- Events caused by a user (potentially on specific tables) (potentially in a course instance)
+CREATE INDEX audit_events_agent_authn_user_id_course_instance_id_idx ON audit_events (agent_authn_user_id, table_name, course_instance_id) WHERE agent_authn_user_id IS NOT NULL;
