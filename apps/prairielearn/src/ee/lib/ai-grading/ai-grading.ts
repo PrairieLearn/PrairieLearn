@@ -23,6 +23,7 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
+import fs from 'fs-extra';
 
 
 import {
@@ -38,13 +39,20 @@ import {
   selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
-  selectRubricForGrading
+  selectRubricForGrading,
+  type SubmissionEmbeddingAndData
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+
+// THIS SHOULD BE IN CONFIG
+
+// o4-mini
+const inputTokenPrice = 1.1 / 1_000_000; 
+const outputTokenPrice = 4.4 / 1_000_000;
 
 /**
  * Grade instance questions using AI.
@@ -63,7 +71,8 @@ export async function aiGrade({
   mode,
   instance_question_ids,
   image_rag_enabled = true,
-  run_async = true
+  run_async = true,
+  use_save_clusters = true
 }: {
   question: Question;
   course: Course;
@@ -80,6 +89,8 @@ export async function aiGrade({
   instance_question_ids?: string[];
   image_rag_enabled?: boolean; // Whether to use image RAG for AI grading
   run_async?: boolean;
+  /** Use saved clusters if they are available */
+  use_save_clusters?: boolean;
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -123,12 +134,12 @@ export async function aiGrade({
     const reference_submission_ids: string[] = [];
     const reference_instance_question_ids: string[] = [];
 
-    const embeddings: number[][] = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
-      const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
+    const embeddingsAndUsage = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+      const { submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       await deleteEmbeddingForSubmission(submission.id);
 
-      const { embedding } = await generateSubmissionEmbedding({
+      const embedding = await generateSubmissionEmbedding({
         course,
         question,
         submitted_answer: submission.submitted_answer,
@@ -140,37 +151,91 @@ export async function aiGrade({
       return embedding;
     });
 
-    const kmeans = new Clusters.KMeans(20, 0.05);
-    const result = kmeans.fitPredict(embeddings);
+    const embeddings = embeddingsAndUsage.map((e) => e.embedding);
+    const embeddingsByInstanceQuestionId: Record<string, SubmissionEmbeddingAndData> = {};
 
-    for (let i = 0; i < result.length; i++) {
-      const cluster = result[i];
-      if (representedClusters.has(cluster)) {
-        continue;
+    for (let i = 0; i < all_instance_questions.length; i++) {
+      const instance_question = all_instance_questions[i];
+      embeddingsByInstanceQuestionId[instance_question.id] = embeddingsAndUsage[i];
+    }
+
+    let openAiUsage: {
+      completion_tokens_embedding: number;
+      prompt_tokens_embedding: number;
+      completion_tokens_embedding_human_responses: number;
+      prompt_tokens_embedding_human_responses: number;
+      completion_tokens_grading: number;
+      prompt_tokens_grading: number;
+    } = {
+      completion_tokens_embedding: embeddingsAndUsage.reduce((sum, e) => sum + e.completion_tokens, 0),
+      prompt_tokens_embedding: embeddingsAndUsage.reduce((sum, e) => sum + e.prompt_tokens, 0),
+      completion_tokens_embedding_human_responses: 0,
+      prompt_tokens_embedding_human_responses: 0,
+      completion_tokens_grading: 0,
+      prompt_tokens_grading: 0
+    };
+
+    let loaded_data = false;
+    if (use_save_clusters) {
+      // Load saved clusters from file
+      const referenceSubmissionDataPath = 'reference_submission_data.json';
+      if (fs.existsSync(referenceSubmissionDataPath)) {
+        const referenceSubmissionData = JSON.parse(fs.readFileSync(referenceSubmissionDataPath, 'utf-8'));
+        reference_submission_ids.push(...referenceSubmissionData.reference_submission_ids);
+        reference_instance_question_ids.push(...referenceSubmissionData.reference_instance_question_ids);
+        job.info('Loaded saved clusters from file.');
+        loaded_data = true;
+      } else {
+        job.info('No saved clusters found, generating new clusters.');
       }
-      representativeSamples.push(all_instance_questions[i]);
+    }
 
-      const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
+    if (!loaded_data) {
+      console.log('Starting K-Means clustering');
+      const kmeans = new Clusters.KMeans(20, 0.05);
+      console.log('K-means complete');
+      const result = kmeans.fitPredict(embeddings);
 
-      reference_submission_ids.push(submission.id);
-      reference_instance_question_ids.push(all_instance_questions[i].id);
-      representedClusters.add(cluster);
+      for (let i = 0; i < result.length; i++) {
+        const cluster = result[i];
+        if (representedClusters.has(cluster)) {
+          continue;
+        }
+        representativeSamples.push(all_instance_questions[i]);
+
+        const {submission} = await selectLastVariantAndSubmission(all_instance_questions[i].id);
+
+        reference_submission_ids.push(submission.id);
+        reference_instance_question_ids.push(all_instance_questions[i].id);
+        representedClusters.add(cluster);
+      }
+
+      fs.writeFileSync(
+        'reference_submission_data.json',
+        JSON.stringify({
+          reference_submission_ids,
+          reference_instance_question_ids
+        }, null, 2),
+      );
     }
     // Generate rubric item aware embeddings for the representative samples.
     // This simulates an instructor grading the representative samples.
     job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
     console.log('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
 
-    await async.eachLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+    const embeddingWithHumanResponsesUsage = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
       const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
 
       await deleteEmbeddingForSubmission(submission.id);
 
       if (!reference_submission_ids.includes(submission.id)) {
-        return;
+        return {
+          completion_tokens: 0,
+          prompt_tokens: 0
+        };
       }
 
-      await generateSubmissionEmbedding({
+      const embeddingUsageData = await generateSubmissionEmbedding({
         course,
         question,
         submitted_answer: submission.submitted_answer,
@@ -179,36 +244,25 @@ export async function aiGrade({
         openai,
         graderFeedbackAvailable: true
       });
+
+      return {
+        completion_tokens: embeddingUsageData.completion_tokens,
+        prompt_tokens: embeddingUsageData.prompt_tokens
+      };
     });
+
+    const completion_tokens_embedding_human_responses = embeddingWithHumanResponsesUsage.reduce((sum, e) => sum + e.completion_tokens, 0);
+    const prompt_tokens_embedding_human_responses = embeddingWithHumanResponsesUsage.reduce((sum, e) => sum + e.prompt_tokens, 0);
+
+    openAiUsage = {
+      ...openAiUsage,
+      completion_tokens_embedding_human_responses,
+      prompt_tokens_embedding_human_responses,
+    }
 
     job.info('Generated embeddings for the representative samples.');
     console.log('Generated embeddings for the representative samples.');
 
-
-    
-    // for (const instance_question of all_instance_questions) {
-    //   // Only checking for instance questions that can be used as RAG data.
-    //   // They should be graded last by a human.
-    //   if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
-    //     continue;
-    //   }
-
-    //   const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
-
-    //   const submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      
-    //   if (!submission_embedding) {
-    //     await generateSubmissionEmbedding({
-    //       course,
-    //       question,
-    //       submitted_answer: submission.submitted_answer,
-    //       instance_question,
-    //       urlPrefix,
-    //       openai,
-    //     });
-    //     newEmbeddingsCount++;
-    //   }
-    // }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
@@ -231,10 +285,6 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
     job.info('Allowed samples for RAG: ' + reference_submission_ids.join(', '));
-
-    console.log('Found ' + instance_questions.length + ' submissions to grade!');
-    console.log('Allowed samples for RAG: ' + reference_submission_ids.join(', '));
-
     /**
      * Grade an individual instance question.
      *
@@ -247,13 +297,21 @@ export async function aiGrade({
     const gradeInstanceQuestion = async (
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
-    ) => {
+    ): Promise<{
+      success: boolean;
+      completion_tokens: number;
+      prompt_tokens: number;
+    }> => {
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
         ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
         questionRenderContext: 'ai_grading',
       };
+
+      let completion_tokens = 0;
+      let prompt_tokens = 0;
+
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
@@ -268,28 +326,16 @@ export async function aiGrade({
       if (render_question_results.courseIssues.length > 0) {
         logger.info(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
-        return false;
+        return {
+          success: false,
+          completion_tokens: 0,
+          prompt_tokens: 0,
+        };
       }
       const questionPrompt = render_question_results.data.questionHtml;
 
+      const submission_embedding = embeddingsByInstanceQuestionId[instance_question.id];
 
-      // TODO: Temporary change -- for testing purposes, we will always generate a new embedding. 
-
-      const submission_embedding_original = await selectEmbeddingForSubmission(submission.id);
-      if (submission_embedding_original) {
-        // remove the existing embedding
-        deleteEmbeddingForSubmission(submission.id);
-      }
-
-      const submission_embedding = await generateSubmissionEmbedding({
-        course,
-        question,
-        questionPrompt,
-        submitted_answer: submission.submitted_answer,
-        instance_question,
-        urlPrefix,
-        openai,
-      });
       const submission_text = submission_embedding.submission_text;
       const example_submissions = image_rag_enabled ? await selectClosestSubmissionInfo({
         submission_id: submission.id,
@@ -337,6 +383,8 @@ export async function aiGrade({
           temperature: OPEN_AI_TEMPERATURE,
         });
         try {
+          completion_tokens = completion.usage?.completion_tokens ?? 0;
+          prompt_tokens = completion.usage?.prompt_tokens ?? 0;
           logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
           logger.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
@@ -440,12 +488,20 @@ export async function aiGrade({
             logger.error(`ERROR AI grading for ${instance_question.id}`);
             logger.error(response.refusal);
 
-            return false;
+            return {
+              success: false,
+              completion_tokens: 0,
+              prompt_tokens: 0,
+            };
           }
         } catch (err) {
           logger.error(`ERROR AI grading for ${instance_question.id}`);
           logger.error(err);
-          return false;
+          return {
+            success: false,
+            completion_tokens: 0,
+            prompt_tokens: 0,
+          };
         }
       } else {
         const completion = await openai.chat.completions.parse({
@@ -455,6 +511,10 @@ export async function aiGrade({
           response_format: zodResponseFormat(GradingResultSchema, 'score'),
           temperature: OPEN_AI_TEMPERATURE,
         });
+
+        completion_tokens = completion.usage?.completion_tokens ?? 0;
+        prompt_tokens = completion.usage?.prompt_tokens ?? 0;
+
         try {
           logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
           logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
@@ -528,16 +588,28 @@ export async function aiGrade({
             logger.error(`ERROR AI grading for ${instance_question.id}`);
             logger.error(response.refusal);
 
-            return false;
+            return {
+              success: false,
+              completion_tokens: 0,
+              prompt_tokens: 0,
+            };
           }
         } catch (err) {
           logger.error(`ERROR AI grading for ${instance_question.id}`);
           logger.error(err);
-          return false;
+          return {
+            success: false,
+            completion_tokens: 0,
+            prompt_tokens: 0,
+          };
         }
       }
 
-      return true;
+      return {
+        success: true,
+        completion_tokens,
+        prompt_tokens,
+      };
     };
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
@@ -590,12 +662,53 @@ export async function aiGrade({
       },
     );
 
-    const error_count = instance_question_grading_successes.filter((success) => !success).length;
+    const error_count = instance_question_grading_successes.filter((success) => !success?.success).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
+
+    openAiUsage = {
+      ...openAiUsage,
+      completion_tokens_grading: instance_question_grading_successes.reduce(
+        (sum, e) => sum + (e?.completion_tokens ?? 0),
+        0,
+      ),
+      prompt_tokens_grading: instance_question_grading_successes.reduce(
+        (sum, e) => sum + (e?.prompt_tokens ?? 0),
+        0,
+      ),
+    };
+    job.info(`OpenAI usage: ${JSON.stringify(openAiUsage, null, 2)}`);
+
+    const total_completion_tokens = instance_question_grading_successes.reduce(
+      (sum, e) => sum + (e?.completion_tokens ?? 0),
+      0,
+    );
+    const total_prompt_tokens = instance_question_grading_successes.reduce(
+      (sum, e) => sum + (e?.prompt_tokens ?? 0),
+      0,
+    );
+
+    job.info(`Total completion tokens: ${total_completion_tokens}`);
+    job.info(`Total prompt tokens: ${total_prompt_tokens}`);
+
+    // Cost to generate all embeddings
+    const total_embedding_cost = (openAiUsage.completion_tokens_embedding + openAiUsage.prompt_tokens_embedding) * inputTokenPrice;
+    job.info(`Total embedding cost: $${total_embedding_cost.toFixed(6)}`);
+
+    // Cost to generate human embeddings
+    const total_embedding_human_cost = (openAiUsage.completion_tokens_embedding_human_responses + openAiUsage.prompt_tokens_embedding_human_responses) * inputTokenPrice;
+    job.info(`Total embedding with human grading data cost: $${total_embedding_human_cost.toFixed(6)}`);
+
+    // Cost to grade
+    const total_grading_cost = (openAiUsage.completion_tokens_grading + openAiUsage.prompt_tokens_grading) * inputTokenPrice;
+    job.info(`Total grading cost: $${total_grading_cost.toFixed(6)}`);
+
+    // Total cost
+    const total_cost = total_embedding_cost + total_embedding_human_cost + total_grading_cost;
+    job.info(`Total cost: $${total_cost.toFixed(6)}`);
   };
 
   if (run_async) {

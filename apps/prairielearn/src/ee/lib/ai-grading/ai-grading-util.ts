@@ -291,6 +291,14 @@ export function generateSubmissionMessage({
   } satisfies ChatCompletionMessageParam;
 }
 
+export type SubmissionEmbeddingAndData = {
+  new_submission_embedding: SubmissionGradingContextEmbedding;
+  embedding: number[];
+  submission_text: string;
+  completion_tokens: number;
+  prompt_tokens: number;
+};
+
 export async function generateSubmissionEmbedding({
   course,
   question,
@@ -310,7 +318,7 @@ export async function generateSubmissionEmbedding({
   urlPrefix: string;
   openai: OpenAI;
   graderFeedbackAvailable?: boolean;
-}): Promise<{new_submission_embedding: SubmissionGradingContextEmbedding, embedding: number[], submission_text: string}> {
+}): Promise<SubmissionEmbeddingAndData> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
@@ -332,6 +340,8 @@ export async function generateSubmissionEmbedding({
 
   // TODO: Actually search for the image capture
   const contains_image_capture = true;
+  let completion_tokens = 0;
+  let prompt_tokens = 0;
 
   if (contains_image_capture) {
     // 1. Extract the text and images within the submission HTML. With this, create a prompt to ask the AI, 
@@ -426,6 +436,9 @@ export async function generateSubmissionEmbedding({
         response_format: zodResponseFormat(imageCaptureDescriptionResponsesExtended, 'submission_description'),
         temperature: OPEN_AI_TEMPERATURE
       });
+
+      completion_tokens += completion.usage?.completion_tokens ?? 0;
+      prompt_tokens += completion.usage?.prompt_tokens ?? 0;
       
       const response = completion.choices[0].message.parsed;
 
@@ -440,8 +453,6 @@ export async function generateSubmissionEmbedding({
         <p>Student submission:</p>
         <br/>
         <br/>
-
-        ${submission_text}
       `;
     } else {
       const completion = await openai.chat.completions.parse({
@@ -452,7 +463,9 @@ export async function generateSubmissionEmbedding({
         temperature: OPEN_AI_TEMPERATURE
       });
 
-
+      completion_tokens += completion.usage?.completion_tokens ?? 0;
+      prompt_tokens += completion.usage?.prompt_tokens ?? 0;
+      
       const response = completion.choices[0].message.parsed;
 
       if (!response) {
@@ -470,9 +483,7 @@ export async function generateSubmissionEmbedding({
         </p>
         <br/></br>
         Student submission:
-        <br/>
-
-        ${submission_text}
+        <br/><br/>
       `;
     }
   }
@@ -489,7 +500,7 @@ export async function generateSubmissionEmbedding({
     },
     SubmissionGradingContextEmbeddingSchema,
   );
-  return {new_submission_embedding, embedding, submission_text};
+  return {new_submission_embedding, embedding, submission_text, completion_tokens, prompt_tokens};
 }
 
 
