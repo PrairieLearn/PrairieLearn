@@ -103,7 +103,7 @@ export function HistMini({ data, options }: HistMiniProps) {
     if (ref.current) {
       ref.current.innerHTML = '';
       renderHistMini({
-        selector: ref.current as HTMLElement,
+        selector: ref.current,
         data,
         options: options ?? {},
       });
