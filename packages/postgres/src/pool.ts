@@ -835,7 +835,7 @@ export class PostgresPool {
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryValidatedCursor<Model extends z.ZodTypeAny>(
+  async queryValidatedCursor<Model extends z.ZodTypeAny = z.ZodUnknown>(
     sql: string,
     params: QueryParams,
     maybeModel?: Model,
