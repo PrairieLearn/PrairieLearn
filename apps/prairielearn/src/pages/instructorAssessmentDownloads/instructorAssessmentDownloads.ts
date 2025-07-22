@@ -412,15 +412,10 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
-      // TODO: type the return value of this function
-      const cursor = await sqldb.queryValidatedCursor(
-        sql.submissions_for_manual_grading,
-        {
-          assessment_id: res.locals.assessment.id,
-          include_files: false,
-        },
-        z.any(),
-      );
+      const cursor = await sqldb.queryValidatedCursor(sql.submissions_for_manual_grading, {
+        assessment_id: res.locals.assessment.id,
+        include_files: false,
+      });
 
       // Replace user-friendly column names with upload-friendly names
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
