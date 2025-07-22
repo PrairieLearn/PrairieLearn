@@ -2,14 +2,14 @@ import { renderHtml } from '../lib/preact-html.js';
 
 export function Scorebar({
   score,
-  class: className,
+  class: className = '',
   minWidth = '5em',
   maxWidth = '20em',
 }: {
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  class?: string;
+  class: string;
 }) {
   if (score == null) return '';
   return (
