@@ -357,10 +357,10 @@ def get_answer_attribs(
     def gather_attribs(
         answer_element: lxml.html.HtmlElement, group_info: GroupInfo
     ) -> AnswerAttribs:
-        group_info = get_graph_info(answer_element)
-        if group_info["tag"] is None:
+        graph_info = get_graph_info(answer_element)
+        if graph_info["tag"] is None:
             raise ValueError("Error while gathering tag attribute.")
-        if group_info["depends"] is None:
+        if graph_info["depends"] is None:
             raise ValueError("Error while gathering depends attribute.")
 
         return {
@@ -371,8 +371,8 @@ def get_answer_attribs(
             "indent": pl.get_integer_attrib(
                 answer_element, "indent", ANSWER_INDENT_DEFAULT
             ),
-            "depends": group_info["depends"],
-            "tag": group_info["tag"],
+            "depends": graph_info["depends"],
+            "tag": graph_info["tag"],
             "distractor_for": pl.get_string_attrib(
                 answer_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
             ),
