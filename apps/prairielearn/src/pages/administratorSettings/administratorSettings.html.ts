@@ -72,7 +72,7 @@ export function AdministratorSettings({ resLocals }) {
               </button>
             </div>
           </form>
-          <script type="text/javascript">
+          <script>
             $(function () {
               var invalidateButton = $('#invalidate-render-cache');
               var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');
