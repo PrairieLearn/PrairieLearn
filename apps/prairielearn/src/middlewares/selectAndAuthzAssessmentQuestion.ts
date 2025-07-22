@@ -8,9 +8,9 @@ import { AssessmentQuestionSchema, QuestionSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAndAuthzAssessmentQuestionSchema = z.strictObject({
-  assessment_question: z.strictObject(AssessmentQuestionSchema.shape),
-  question: z.strictObject(QuestionSchema.shape),
+const SelectAndAuthzAssessmentQuestionSchema = z.object({
+  assessment_question: AssessmentQuestionSchema,
+  question: QuestionSchema,
   number_in_alternative_group: z.string(),
   num_open_instances: z.number(),
 });

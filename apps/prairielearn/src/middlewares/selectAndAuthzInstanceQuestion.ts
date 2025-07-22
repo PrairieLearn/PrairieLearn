@@ -37,30 +37,29 @@ const InstanceQuestionInfoSchema = z.object({
   instructor_question_number: z.string(),
 });
 
-const SelectAndAuthzInstanceQuestionSchema = z.strictObject({
-  assessment_instance: z.strictObject({
+const SelectAndAuthzInstanceQuestionSchema = z.object({
+  assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string(),
-    ...AssessmentInstanceSchema.shape,
   }),
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
-  instance_user: z.strictObject(UserSchema.shape).nullable(),
+  instance_user: UserSchema.nullable(),
   instance_role: z.string(),
-  instance_group: z.strictObject(GroupSchema.shape).nullable(),
+  instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: z.strictObject({
+  instance_question: z.object({
     ...NextAllowedGradeSchema.shape,
     ...InstanceQuestionSchema.shape,
   }),
-  instance_question_info: z.strictObject(InstanceQuestionInfoSchema.shape),
-  assessment_question: z.strictObject(AssessmentQuestionSchema.shape),
-  question: z.strictObject(QuestionSchema.shape),
-  assessment: z.strictObject(AssessmentSchema.shape),
-  assessment_set: z.strictObject(AssessmentSetSchema.shape),
-  authz_result: z.strictObject(AuthzAssessmentInstanceSchema.shape),
+  instance_question_info: InstanceQuestionInfoSchema,
+  assessment_question: AssessmentQuestionSchema,
+  question: QuestionSchema,
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  authz_result: AuthzAssessmentInstanceSchema,
   assessment_instance_label: z.string(),
-  file_list: z.array(z.strictObject(FileSchema.shape)),
+  file_list: z.array(FileSchema),
 });
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {

@@ -30,7 +30,7 @@ export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
 // Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
-  z.strictObject({
+  z.object({
     label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
@@ -105,7 +105,7 @@ export type PermissionsCourseInstance = z.infer<typeof PermissionsCourseInstance
 
 // Result of tags_for_question sproc
 export const TagsForQuestionSchema = z.array(
-  z.strictObject({
+  z.object({
     name: z.string(),
     id: IdSchema,
     color: z.string(),
@@ -114,7 +114,7 @@ export const TagsForQuestionSchema = z.array(
 );
 
 // Result of instance_questions_next_allowed_grade sproc
-export const NextAllowedGradeSchema = z.strictObject({
+export const NextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_interval: z.string(),

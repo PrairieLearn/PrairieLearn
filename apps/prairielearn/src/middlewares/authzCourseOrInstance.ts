@@ -43,19 +43,19 @@ function clearOverrideCookies(res: Response, overrides: Override[]) {
   });
 }
 
-const SelectAuthzDataSchema = z.strictObject({
+const SelectAuthzDataSchema = z.object({
   mode: EnumModeSchema,
   mode_reason: EnumModeReasonSchema,
-  course: z.strictObject(CourseSchema.shape),
-  institution: z.strictObject(InstitutionSchema.shape),
-  course_instance: z.strictObject(CourseInstanceSchema.shape).nullable(),
-  permissions_course: z.strictObject(PermissionsCourseSchema.shape),
-  permissions_course_instance: z.strictObject(PermissionsCourseInstanceSchema.shape),
+  course: CourseSchema,
+  institution: InstitutionSchema,
+  course_instance: CourseInstanceSchema.nullable(),
+  permissions_course: PermissionsCourseSchema,
+  permissions_course_instance: PermissionsCourseInstanceSchema,
 });
 
-const SelectUserSchema = z.strictObject({
-  user: z.strictObject(UserSchema.shape),
-  institution: z.strictObject(InstitutionSchema.shape),
+const SelectUserSchema = z.object({
+  user: UserSchema,
+  institution: InstitutionSchema,
   is_administrator: z.boolean(),
   is_instructor: z.boolean(),
 });

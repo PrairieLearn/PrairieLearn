@@ -14,16 +14,16 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAndAuthSchema = z.strictObject({
-  question: z.strictObject(QuestionSchema.shape),
-  topic: z.strictObject(TopicSchema.shape),
+const SelectAndAuthSchema = z.object({
+  question: QuestionSchema,
+  topic: TopicSchema,
   tags: TagsForQuestionSchema.nullable(),
   open_issue_count: z.string(),
 });
 
-const SelectAndAuthWithCourseInstanceSchema = z.strictObject({
-  question: z.strictObject(QuestionSchema.shape),
-  topic: z.strictObject(TopicSchema.shape),
+const SelectAndAuthWithCourseInstanceSchema = z.object({
+  question: QuestionSchema,
+  topic: TopicSchema,
   tags: TagsForQuestionSchema.nullable(),
   assessments: AssessmentsFormatForQuestionSchema.nullable(),
   open_issue_count: z.string(),

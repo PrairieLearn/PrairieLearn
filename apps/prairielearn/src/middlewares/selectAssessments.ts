@@ -6,14 +6,14 @@ import { IdSchema } from '@prairielearn/zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAssessmentsSchema = z.strictObject({
+const SelectAssessmentsSchema = z.object({
   assessment_label: z.string(),
   id: IdSchema,
   title: z.string(),
 });
 
 export default asyncHandler(async (req, res, next) => {
-  const rows = await sqldb.queryValidatedRows(
+  const rows = await sqldb.queryRows(
     sql.select_assessments,
     {
       course_instance_id: res.locals.course_instance.id,
