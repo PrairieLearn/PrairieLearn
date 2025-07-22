@@ -82,9 +82,7 @@ router.get(
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryValidatedCursor(
         sql.questions,
-        {
-          assessment_id: res.locals.assessment.id,
-        },
+        { assessment_id: res.locals.assessment.id },
         AssessmentQuestionStatsRowSchema,
       );
 
