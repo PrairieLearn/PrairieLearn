@@ -259,7 +259,7 @@ You can build custom workspace images if you need to install specific dependenci
 6. Change the settings for the question that needs the custom image to use the image name you set above.
 7. In your course's "Sync" page, under "Docker images", find the image name above and click on "Sync".
 
-Note that the process above will not cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to, periodically, update your custom image by repeating steps 5-7 above.
+Note that the process above will not cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to periodically update your custom image by repeating steps 5-7 above.
 
 If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image. If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 
