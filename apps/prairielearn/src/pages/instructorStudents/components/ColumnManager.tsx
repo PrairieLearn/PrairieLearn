@@ -25,36 +25,18 @@ function ColumnMenuItem({
   onTogglePin,
   onClearElementFocus,
 }: ColumnMenuItemProps) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
   const pinButtonRef = useRef<HTMLButtonElement>(null);
 
   if (!column.getCanHide() && !column.getCanPin()) return null;
 
   const header = typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id;
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    onClearElementFocus();
-    switch (e.key) {
-      // Support for arrow keys to move between menu items
-      case 'ArrowRight':
-        e.preventDefault();
-        // Move to the next menu item
-        pinButtonRef.current?.focus();
-        break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        // Move to the previous menu item
-        checkboxRef.current?.focus();
-        break;
-    }
-  };
-
   return (
     <Dropdown.Item
       key={column.id}
       as="div"
       class="px-2 py-1 d-flex align-items-center justify-content-between"
-      onKeyDown={handleKeyDown}
+      onKeyDown={onClearElementFocus}
     >
       <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
         <OverlayTrigger
@@ -62,7 +44,6 @@ function ColumnMenuItem({
           overlay={<Tooltip>{column.getIsVisible() ? 'Hide column' : 'Show column'}</Tooltip>}
         >
           <input
-            ref={checkboxRef}
             type="checkbox"
             class="form-check-input"
             checked={column.getIsVisible()}
@@ -91,12 +72,13 @@ function ColumnMenuItem({
           }
           title={column.getIsPinned() ? 'Unfreeze column' : 'Freeze column'}
           data-bs-toggle="tooltip"
-          tabIndex={-1}
+          tabIndex={0}
           onKeyDown={(e) => {
             if (!pinButtonRef.current) {
               throw new Error('pinButtonRef.current is null');
             }
             if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
               onTogglePin(column.id);
               return;
             }
@@ -164,7 +146,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
       onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
       onFocusOut={(e: FocusEvent) => {
         // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
-        if (menuRef.current && !menuRef.current.contains(e.relatedTarget as Node)) {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
           setDropdownOpen(false);
         }
       }}
