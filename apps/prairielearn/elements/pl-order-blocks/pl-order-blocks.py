@@ -151,7 +151,7 @@ def solve_problem(
         assert_never(grading_method)
 
 
-class PLAnswerAttribs(TypedDict):
+class AnswerAttribs(TypedDict):
     correct: bool
     ranking: int
     indent: int | None
@@ -164,7 +164,7 @@ class PLAnswerAttribs(TypedDict):
     group_info: GroupInfo
 
 
-class PLOrderBlocksAttribs(TypedDict):
+class OrderBlocksAttribs(TypedDict):
     answer_name: str
     indentation: bool
     grading_method: GradingMethodType
@@ -225,7 +225,7 @@ def check_pl_order_blocks_attribs(element: lxml.html.HtmlElement) -> None:
 
 def get_order_blocks_attribs(
     element: lxml.html.HtmlElement,
-) -> PLOrderBlocksAttribs:
+) -> OrderBlocksAttribs:
     check_pl_order_blocks_attribs(element)
     return {
             "answer_name": pl.get_string_attrib(element, "answers-name"),
@@ -277,7 +277,7 @@ def get_order_blocks_attribs(
 
 def validate_order_blocks_attribs(
     data: pl.QuestionData,
-    order_block_attribs: PLOrderBlocksAttribs,
+    order_block_attribs: OrderBlocksAttribs,
 ) -> None:
     pl.check_answers_names(data, order_block_attribs["answer_name"])
     if (
@@ -356,10 +356,10 @@ def check_answer_attribs(
 
 
 # collects all pl-answer tag attributes inside a pl-block-group or alone
-def get_answer_attribs(element: lxml.html.HtmlElement, grading_method: GradingMethodType) -> list[PLAnswerAttribs]:
+def get_answer_attribs(element: lxml.html.HtmlElement, grading_method: GradingMethodType) -> list[AnswerAttribs]:
     answer_attribs = []
 
-    def gather_attribs(answer_element: lxml.html.HtmlElement, group_info: GroupInfo) -> PLAnswerAttribs:
+    def gather_attribs(answer_element: lxml.html.HtmlElement, group_info: GroupInfo) -> AnswerAttribs:
         graph_info = get_graph_info(answer_element)
         return { "correct": pl.get_boolean_attrib(
                     answer_element, "correct", PL_ANSWER_CORRECT_DEFAULT
@@ -405,8 +405,8 @@ def validate_answer_attribs_closure() -> FunctionType:
     used_tags = set()
 
     def validation(
-        answers: list[PLAnswerAttribs],
-        order_blocks_attribs: PLOrderBlocksAttribs,
+        answers: list[AnswerAttribs],
+        order_blocks_attribs: OrderBlocksAttribs,
     ) -> None:
         for answer_attribs in answers:
             if (
