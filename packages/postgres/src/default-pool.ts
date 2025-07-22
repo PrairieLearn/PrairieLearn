@@ -97,7 +97,7 @@ export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(de
 /**
  * Calls the given function with the specified parameters.
  *
- * @deprecated Use {@link callOptionalRow} or {@link callRows} (if it returns a table) instead.
+ * @deprecated Use {@link callOptionalRow} (if you don't care about the result), {@link callRow} or {@link callRows} (if the result is a table) instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**
