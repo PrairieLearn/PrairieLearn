@@ -76,7 +76,7 @@ class OrderBlocksAnswerData(TypedDict):
 class AnswerAttribs(TypedDict):
     correct: bool
     ranking: int
-    indent: int
+    indent: int | None
     tag: str
     depends: list[str] | None
     inner_html: str
@@ -120,7 +120,7 @@ GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
 FEEDBACK_DEFAULT = FeedbackType.NONE
 ANSWER_CORRECT_DEFAULT = True
-ANSWER_INDENT_DEFAULT = -1
+ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 INLINE_DEFAULT = False
