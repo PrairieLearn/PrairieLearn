@@ -20,7 +20,6 @@ SELECT
   q.title,
   row_to_json(top) AS topic,
   q.id AS question_id,
-  admin_assessment_question_number (aq.id) as number,
   tags_for_question (q.id) AS tags,
   ag.number AS alternative_group_number,
   ag.number_choose AS alternative_group_number_choose,
