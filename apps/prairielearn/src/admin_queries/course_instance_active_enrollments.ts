@@ -6,7 +6,6 @@ export const specs: AdministratorQuerySpecs = {
     {
       name: 'institution_short_name',
       description: 'The short name of the institution (required).',
-      default: '',
     },
     {
       name: 'start_date',

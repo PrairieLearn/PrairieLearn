@@ -4,13 +4,7 @@ import type { AdministratorQueryResult, AdministratorQuerySpecs } from './lib/ut
 
 export const specs: AdministratorQuerySpecs = {
   description: 'Generate random UUIDs for use in info files',
-  params: [
-    {
-      name: 'count',
-      description: 'Number of UUIDs to generate (integer)',
-      default: '5',
-    },
-  ],
+  params: [{ name: 'count', description: 'Number of UUIDs to generate (integer)', default: '5' }],
 };
 
 export default async function ({ count }: { count: string }): Promise<AdministratorQueryResult> {

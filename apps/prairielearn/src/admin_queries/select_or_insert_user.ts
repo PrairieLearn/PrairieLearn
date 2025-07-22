@@ -3,22 +3,10 @@ import { type AdministratorQuerySpecs, runLegacySqlAdminQuery } from './lib/util
 export const specs: AdministratorQuerySpecs = {
   description: 'Select or insert a user from the users table.',
   params: [
-    {
-      name: 'name',
-      description: 'Full name of the user.',
-    },
-    {
-      name: 'uid',
-      description: "The user's UID (including email address).",
-    },
-    {
-      name: 'uin',
-      description: "The user's UIN (leave blank to not insert a UIN).",
-    },
-    {
-      name: 'email',
-      description: "The user's email (leave blank to not insert an email).",
-    },
+    { name: 'name', description: 'Full name of the user.' },
+    { name: 'uid', description: "The user's UID (including email address)." },
+    { name: 'uin', description: "The user's UIN (leave blank to not insert a UIN)." },
+    { name: 'email', description: "The user's email (leave blank to not insert an email)." },
   ],
 };
 

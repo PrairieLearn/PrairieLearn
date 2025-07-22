@@ -6,7 +6,6 @@ export const specs: AdministratorQuerySpecs = {
     {
       name: 'institution_short_name',
       description: 'Restrict to a particular institution (blank means all institutions).',
-      default: '',
     },
     {
       name: 'start_date',

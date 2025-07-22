@@ -2,9 +2,7 @@ import { type AdministratorQuerySpecs, runLegacySqlAdminQuery } from './lib/util
 
 export const specs: AdministratorQuerySpecs = {
   description: 'Queries currently running in the DB.',
-  resultFormats: {
-    query: 'pre',
-  },
+  resultFormats: { query: 'pre' },
 };
 
 export default async function (params: Record<string, any>) {

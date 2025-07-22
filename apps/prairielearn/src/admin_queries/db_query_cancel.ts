@@ -2,12 +2,7 @@ import { type AdministratorQuerySpecs, runLegacySqlAdminQuery } from './lib/util
 
 export const specs: AdministratorQuerySpecs = {
   description: 'Cancel a running query (graceful kill).',
-  params: [
-    {
-      name: 'pid',
-      description: 'PID of the backend process to cancel.',
-    },
-  ],
+  params: [{ name: 'pid', description: 'PID of the backend process to cancel.' }],
 };
 
 export default async function (params: Record<string, any>) {
