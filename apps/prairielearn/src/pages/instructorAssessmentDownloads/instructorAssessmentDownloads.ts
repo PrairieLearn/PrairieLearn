@@ -291,16 +291,11 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
 }
 
 async function sendInstancesCsv(res, req, columns, options) {
-  // TODO: type the return value of this function
-  const result = await sqldb.queryValidatedCursor(
-    sql.select_assessment_instances,
-    {
-      assessment_id: res.locals.assessment.id,
-      highest_score: options.only_highest,
-      group_work: options.group_work,
-    },
-    z.any(),
-  );
+  const result = await sqldb.queryValidatedCursor(sql.select_assessment_instances, {
+    assessment_id: res.locals.assessment.id,
+    highest_score: options.only_highest,
+    group_work: options.group_work,
+  });
 
   res.attachment(req.params.filename);
   await pipeline(result.stream(100), stringifyWithColumns(columns), res);
