@@ -2,7 +2,7 @@ import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type BatchedMigrationJobRow,

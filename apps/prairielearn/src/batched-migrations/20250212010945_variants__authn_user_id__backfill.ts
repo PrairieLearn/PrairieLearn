@@ -1,5 +1,5 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
