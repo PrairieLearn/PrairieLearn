@@ -17,6 +17,8 @@ import { selectCourseInstanceByShortName } from '../../../models/course-instance
 import { selectCourseById } from '../../../models/course.js';
 import { selectQuestionById } from '../../../models/question.js';
 
+import {tqdm, TqdmProgress} from 'node-console-progress-bar-tqdm';
+
 const FILE_SUBMISSIONS: Record<string, string[]> = {
     'cos-sin-1': [
         '1a.jpg'
@@ -114,8 +116,13 @@ export async function generateSubmissionsMath220(
         fs.readFileSync(student_submitted_responses_path, 'utf-8')
     );
 
+    const pb = new TqdmProgress({
+        total: enrollments.length,
+        progressColor: '#f1d3c4',
+    });
+    pb.render();
+
     for (let i = 0; i < enrollments.length; i++) {
-    // for (let i = 0; i < 1; i++) {
         const enrolled_student = enrollments[i];
 
         const submission_folder = path.join(
@@ -158,7 +165,6 @@ export async function generateSubmissionsMath220(
 
             // Retrieve submitted files
             const submission_filenames = FILE_SUBMISSIONS[question.qid];
-            console.log(question.qid, submission_filenames);
             const submitted_answer: Record<string, any> = {};
 
             const submitted_files: { name: string; contents: string; mimetype: string }[] = [];
@@ -233,7 +239,6 @@ export async function generateSubmissionsMath220(
             );
 
             // Insert student grades
-            console.log(' rubric id', instance_question.manual_rubric_id)
             const rubric_items = await queryRows(
                 sql.select_rubric_items,
                 { rubric_id: instance_question.manual_rubric_id },
@@ -250,7 +255,6 @@ export async function generateSubmissionsMath220(
                 let col_found = false;
                 for (const rubric_item of rubric_items) {
                     if (rubric_item.description === col) {
-                        console.log('rubric_item', rubric_item);
                         pts_change += rubric_item.points;
                         selected_rubric_item_ids.push(rubric_item.id);
                         col_found = true;
@@ -262,20 +266,14 @@ export async function generateSubmissionsMath220(
                 }
             }
 
-            console.log('pts_change', pts_change);
 
             if (!instance_question.manual_rubric_id) {
                 throw new Error(`Instance question ${instance_question.instance_question_id} does not have a manual rubric id`);
             }
         
-
-            console.log('instance_question', instance_question);
-
             if (!instance_question.max_points) {
                 throw new Error(`Instance question points not found for assessment instance ${new_assessment_instance_id}`);
             }
-
-            console.log('instance_question.max_points + pts_change', instance_question.max_points + pts_change);
 
             const { modified_at_conflict, grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                 assessment.id,
@@ -298,12 +296,8 @@ export async function generateSubmissionsMath220(
                 },
                 res.locals.authn_user.user_id,
             );
-
-            console.log('modified_at_conflict', modified_at_conflict, 'grading_job_id', grading_job_id);
-
-            console.log('instance question', instance_question)
-            console.log('selected_rubric_item_ids', question.qid, selected_rubric_item_ids);
         }            
-        // console.log('nameToSubmissionFolder: ', JSON.stringify(nameToSubmissionFolder, null, 2));
+        pb.update();
     }
+    pb.close();
 }
