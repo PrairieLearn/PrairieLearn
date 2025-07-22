@@ -359,9 +359,9 @@ def get_answer_attribs(
     ) -> AnswerAttribs:
         graph_info = get_graph_info(answer_element)
         if graph_info["tag"] is None:
-            raise ValueError("Error while gathering tag attribute.")
+            raise ValueError("Error while gathering <pl-answer> tag attribute.")
         if graph_info["depends"] is None:
-            raise ValueError("Error while gathering depends attribute.")
+            raise ValueError("Error while gathering <pl-answer> depends attribute.")
 
         return {
             "correct": pl.get_boolean_attrib(
