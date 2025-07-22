@@ -449,7 +449,7 @@ def validate_answer_attribs_setup() -> FunctionType:
                     )
                 used_tags.add(answer_attribs["tag"])
 
-            if answer_attribs["group_info"]["tag"] in used_tags and not answer_attribs["group_info"] in used_groups:
+            if answer_attribs["group_info"]["tag"] in used_tags and answer_attribs["group_info"] not in used_groups:
                 raise ValueError(
                     f'Tag "{answer_attribs["group_info"]["tag"]}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
@@ -475,7 +475,6 @@ def validate_answer_attribs_setup() -> FunctionType:
 
 def prepare(html: str, data: pl.QuestionData) -> None:
     html_element = lxml.html.fragment_fromstring(html)
-    validate_answer_attribs = validate_answer_attribs_setup()
 
     order_blocks_attribs = get_order_blocks_attribs(html_element)
     pl.check_answers_names(data, order_blocks_attribs["answer_name"])
@@ -485,6 +484,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         html_element, order_blocks_attribs["grading_method"]
     )
 
+    validate_answer_attribs = validate_answer_attribs_setup()
     validate_answer_attribs(all_answer_attribs, order_blocks_attribs)
 
     correct_answers: list[OrderBlocksAnswerData] = []
