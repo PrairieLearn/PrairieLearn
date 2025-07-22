@@ -1,5 +1,5 @@
 columns
-    action: text not null
+    action: audit_event_action not null
     action_detail: text
     agent_authn_user_id: bigint
     agent_user_id: bigint

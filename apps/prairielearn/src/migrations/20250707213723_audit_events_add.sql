@@ -1,7 +1,9 @@
+CREATE TYPE audit_event_action AS ENUM ('insert', 'update', 'delete');
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id BIGSERIAL PRIMARY KEY,
   date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  action TEXT NOT NULL,
+  action audit_event_action NOT NULL,
   action_detail TEXT,
   table_name TEXT NOT NULL,
   agent_authn_user_id BIGINT,
