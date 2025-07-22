@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 
 export function AdministratorNetworks({ resLocals }) {
   return PageLayout({
@@ -49,7 +49,7 @@ export function AdministratorNetworks({ resLocals }) {
         <div class="card-footer">
           <small>
             To add new networks for exam-mode access, insert directly into the
-            <strong><tt>exam_mode_networks</tt></strong> table.
+            <strong><code>exam_mode_networks</code></strong> table.
           </small>
         </div>
       </div>

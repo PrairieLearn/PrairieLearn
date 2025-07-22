@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -274,7 +274,7 @@ export function InstructorAssessmentGroups({
                       : html`
                           <strong>
                             ${notAssigned?.length
-                              ? html` 
+                              ? html`
                         ${notAssigned?.length}
                         student${notAssigned?.length > 1 ? html`s` : ''} not yet
                         assigned:
