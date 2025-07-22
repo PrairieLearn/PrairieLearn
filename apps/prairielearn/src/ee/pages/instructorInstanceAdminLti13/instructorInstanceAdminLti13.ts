@@ -6,7 +6,13 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   AssessmentSchema,
@@ -293,7 +299,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await updateLti13Scores(assessment.id, instance, job);
 
-        await queryRows(sql.update_lti13_assessment_last_activity, {
+        await queryAsync(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
       });

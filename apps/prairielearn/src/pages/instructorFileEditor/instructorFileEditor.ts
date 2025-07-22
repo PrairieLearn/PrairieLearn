@@ -8,7 +8,13 @@ import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -268,7 +274,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await queryRows(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({

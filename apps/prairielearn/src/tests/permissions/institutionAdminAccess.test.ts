@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryRow, queryRows } from '@prairielearn/postgres';
+import { queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { config } from '../../lib/config.js';
@@ -57,7 +57,7 @@ async function insertUser(user: AuthUser) {
   );
 
   if (user.isAdministrator) {
-    await queryRows('INSERT INTO administrators (user_id) VALUES ($user_id);', {
+    await queryAsync('INSERT INTO administrators (user_id) VALUES ($user_id);', {
       user_id: newUser.user_id,
     });
   }

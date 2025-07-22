@@ -256,7 +256,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await queryRows(sql.update_job_on_finish, {
+    await queryAsync(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
@@ -439,7 +439,7 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
     try {
-      await queryRows(sql.update_job_on_error, {
+      await queryAsync(sql.update_job_on_error, {
         job_id: row.id,
         output: null,
         error_message: 'Job abandoned by server',

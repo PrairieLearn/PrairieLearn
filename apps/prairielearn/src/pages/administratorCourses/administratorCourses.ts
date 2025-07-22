@@ -52,7 +52,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
-      await sqldb.callOptionalRow('courses_update_column', [
+      await sqldb.callAsync('courses_update_column', [
         req.body.course_id,
         req.body.column_name,
         req.body.value,

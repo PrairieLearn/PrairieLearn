@@ -2091,7 +2091,7 @@ export async function insertDevUser() {
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
     ' ON CONFLICT (user_id) DO NOTHING;';
-  await sqldb.queryRows(adminSql, { user_id });
+  await sqldb.queryAsync(adminSql, { user_id });
 }
 
 function idleErrorHandler(err: Error) {

@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentModuleSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
@@ -72,7 +72,7 @@ export async function sync(courseId: string, courseData: CourseData) {
   ) {
     await runInTransactionAsync(async () => {
       if (assessmentModulesToCreate.length) {
-        await queryRows(sql.insert_assessment_modules, {
+        await queryAsync(sql.insert_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToCreate.map((am) =>
             JSON.stringify([am.name, am.heading, am.number, am.implicit]),
@@ -81,7 +81,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (assessmentModulesToUpdate.length) {
-        await queryRows(sql.update_assessment_modules, {
+        await queryAsync(sql.update_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToUpdate.map((am) =>
             JSON.stringify([am.name, am.heading, am.number, am.implicit]),
@@ -90,7 +90,7 @@ export async function sync(courseId: string, courseData: CourseData) {
       }
 
       if (assessmentModulesToDelete.length) {
-        await queryRows(sql.delete_assessment_modules, {
+        await queryAsync(sql.delete_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToDelete,
         });

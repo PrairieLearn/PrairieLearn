@@ -1,8 +1,8 @@
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryOptionalRow,
-  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -32,7 +32,7 @@ export async function ensureEnrollment({
   course_instance_id: string;
   user_id: string;
 }): Promise<void> {
-  await queryRows(sql.ensure_enrollment, { course_instance_id, user_id });
+  await queryAsync(sql.ensure_enrollment, { course_instance_id, user_id });
 }
 
 /**

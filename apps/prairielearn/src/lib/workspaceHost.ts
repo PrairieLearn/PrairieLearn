@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type WorkspaceHost,
@@ -68,7 +74,7 @@ export async function recaptureDrainingWorkspaceHosts(needed_hosts: number) {
 }
 
 export async function drainExtraWorkspaceHosts(surplus: number) {
-  await queryRows(sql.drain_extra_hosts, { surplus });
+  await queryAsync(sql.drain_extra_hosts, { surplus });
 }
 
 /**

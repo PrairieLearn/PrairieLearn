@@ -7,7 +7,13 @@ import type {
 } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import {
   type Course,
@@ -374,7 +380,7 @@ export async function insertAiGradingJob({
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
-  await queryRows(sql.insert_ai_grading_job, {
+  await queryAsync(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),

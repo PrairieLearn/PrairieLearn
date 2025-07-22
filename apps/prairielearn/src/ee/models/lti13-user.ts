@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -14,7 +14,7 @@ export async function updateLti13UserSub({
   lti13_instance_id: string;
   sub: string;
 }) {
-  await queryRows(sql.update_lti13_users, {
+  await queryAsync(sql.update_lti13_users, {
     user_id,
     lti13_instance_id,
     sub,
