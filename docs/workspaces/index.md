@@ -246,10 +246,10 @@ You can build custom workspace images if you need to install specific dependenci
 
    ```dockerfile
    FROM prairielearn/workspace-vscode-python
-   RUN pip install workspace-vscode-python
+   RUN pip install datascience
    ```
 
-5. In a terminal, change to the directory that contains the `Dockerfile` above and run the following command (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
+5. In a terminal, change to the directory that contains the `Dockerfile` above and run the following commands (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
 
    ```bash
    docker build -t yourdockerhubaccount/yourimagename .

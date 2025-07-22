@@ -18,7 +18,7 @@ The quickest way to add custom libraries is to install them directly to your cou
 
 1. Check out a copy of your course locally with Git, and make sure the main branch is up-to-date.
 2. Locate the package that you would like to install. You can find a list of all the available Python libraries at the [Python Package Index](https://pypi.org).
-3. Install the package to your course's `serverFileCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
+3. Install the package to your course's `serverFilesCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
 
    ```sh
    docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install --target /course/serverFilesCourse <library>
@@ -45,7 +45,7 @@ Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 
 ### Add the library to `requirements.txt`
 
-A list of of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake). Note that there are different `requirements.txt` files for different environments:
+A list of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. The easiest way to propose a change to this file is to use the web interface (if you are familiar with Git and pull requests you may do that, but this will not be included for simplicity's sake). Note that there are different `requirements.txt` files for different environments:
 
 - The `requirements.txt` file in the root directory is used in the question runtime environment, which mostly affects `server.py` in individual questions and custom elements.
 - External graders, like the [Python grader](../python-grader/index.md) or the [C/C++ grader](../c-grader/index.md), have their own versions of `requirements.txt` in the `graders` directory.
