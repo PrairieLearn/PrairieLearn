@@ -1,5 +1,5 @@
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   getAssessmentContext,

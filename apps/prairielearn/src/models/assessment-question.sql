@@ -15,6 +15,7 @@ WITH
       q.id
   )
 SELECT
+<<<<<<< HEAD
   to_jsonb(aq.*) AS assessment_question,
   to_jsonb(q.*) AS question,
   to_jsonb(top.*) AS topic,
@@ -25,6 +26,16 @@ SELECT
   to_jsonb(c.*) AS course,
   aq.number_in_alternative_group,
   coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
+=======
+  aq.*,
+  q.qid,
+  q.title,
+  row_to_json(top) AS topic,
+  q.id AS question_id,
+  tags_for_question (q.id) AS tags,
+  ag.number AS alternative_group_number,
+  ag.number_choose AS alternative_group_number_choose,
+>>>>>>> master
   (
     SELECT jsonb_agg(t.*)
     FROM tags t

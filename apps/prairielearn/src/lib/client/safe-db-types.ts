@@ -60,7 +60,7 @@ export const StaffAssessmentInstanceSchema =
   RawStaffAssessmentInstanceSchema.brand<'StaffAssessmentInstance'>();
 export type StaffAssessmentInstance = z.infer<typeof StaffAssessmentInstanceSchema>;
 
-export const RawStudentAssessmentInstanceSchema = RawStaffAssessmentInstanceSchema.pick({
+export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInstanceSchema.pick({
   assessment_id: true,
   auth_user_id: true,
   auto_close: true,
@@ -77,13 +77,16 @@ export const RawStudentAssessmentInstanceSchema = RawStaffAssessmentInstanceSche
   modified_at: true,
   number: true,
   open: true,
-  points: true,
-  score_perc: true,
+  // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
+  points: true, // potentially sensitive
+  score_perc: true, // potentially sensitive
   user_id: true,
 });
-export const StudentAssessmentInstanceSchema =
-  RawStudentAssessmentInstanceSchema.brand<'StudentAssessmentInstance'>();
-export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
+export const StudentAssessmentInstanceSchema__UNSAFE =
+  RawStudentAssessmentInstanceSchema__UNSAFE.brand<'StudentAssessmentInstance'>();
+export type StudentAssessmentInstance__UNSAFE = z.infer<
+  typeof StudentAssessmentInstanceSchema__UNSAFE
+>;
 
 /** Assessment Sets */
 
