@@ -43,7 +43,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20 20"
-    class=${className}
+    class="${className}"
   >
     <circle
       cx="10px"
