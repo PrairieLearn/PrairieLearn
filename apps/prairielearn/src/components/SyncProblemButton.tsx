@@ -8,10 +8,13 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
   const classes =
     type === 'error' ? 'fa-times text-danger' : 'fa-exclamation-triangle text-warning';
 
-  const popoverContent = renderHtml(
-    <pre class="text-white rounded p-3 mb-0" style="background-color: black;">
-      {ansiToHtml(output, { escapeHtml: false })}
-    </pre>,
+  const popoverContent = (
+    <pre
+      class="text-white rounded p-3 mb-0"
+      style="background-color: black;"
+      // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+      dangerouslySetInnerHTML={{ __html: ansiToHtml(output).toString() }}
+    />
   );
 
   return (

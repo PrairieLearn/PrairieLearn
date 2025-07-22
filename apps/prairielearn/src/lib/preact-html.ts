@@ -1,6 +1,6 @@
 import { render } from 'preact-render-to-string/jsx';
 
-import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
+import { HtmlSafeString, escapeHtml, unsafeHtml } from '@prairielearn/html';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 // This function must live outside of `preact.tsx` so that it can be imported
@@ -25,7 +25,7 @@ export function renderHtml(vnode: VNode | string): HtmlSafeString {
   }
 
   if (typeof vnode === 'string') {
-    return unsafeHtml(vnode);
+    return escapeHtml(new HtmlSafeString([vnode], []));
   }
 
   return unsafeHtml(render(vnode, {}, { pretty, jsx: false }));
