@@ -63,17 +63,17 @@ export function EditTopicsModal({
         modalInstance.hide();
       }
     };
-  }, []);
+  }, [selectedTopic]);
 
   return (
     <div
+      ref={modalRef}
       class="modal fade"
       tabindex={-1}
       data-bs-backdrop="static"
       role="dialog"
       id="editTopicModal"
       aria-labelledby="editTopicModalTitle"
-      ref={modalRef}
     >
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -81,18 +81,13 @@ export function EditTopicsModal({
             <h2 class="modal-title" id="editTopicModalTitle">
               Edit Topic
             </h2>
-            <button
-              type="button"
-              class="btn-close"
-              onClick={handleCloseModal}
-              aria-label="close"
-            ></button>
+            <button type="button" class="btn-close" aria-label="close" onClick={handleCloseModal} />
           </div>
           <div class="modal-body">
             {selectedTopic ? (
               <>
                 <div class="mb-3">
-                  <label class="form-label" htmlFor="topicName">
+                  <label class="form-label" for="topicName">
                     Name
                   </label>
                   <input
@@ -109,7 +104,7 @@ export function EditTopicsModal({
                   />
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" htmlFor="topicColor">
+                  <label class="form-label" for="topicColor">
                     Color
                   </label>
                   <select
@@ -131,7 +126,7 @@ export function EditTopicsModal({
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label" htmlFor="topicDescription">
+                  <label class="form-label" for="topicDescription">
                     Description
                   </label>
                   <textarea
