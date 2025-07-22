@@ -14,11 +14,10 @@ interface HistMiniProps {
   };
 }
 
-const DEFAULT_OPTIONS = {};
-export function HistMiniHtml({
+export function renderHistMini({
   selector,
   data,
-  options = DEFAULT_OPTIONS,
+  options = {},
 }: HistMiniProps & { selector: HTMLElement }) {
   if (!Array.isArray(data) || data.length === 0) {
     return;
@@ -103,7 +102,7 @@ export function HistMini({ data, options }: HistMiniProps) {
   useEffect(() => {
     if (ref.current) {
       ref.current.innerHTML = '';
-      HistMiniHtml({
+      renderHistMini({
         selector: ref.current as HTMLElement,
         data,
         options: options ?? {},
