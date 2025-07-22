@@ -6,13 +6,11 @@ import { scatter } from './lib/scatter.js';
 
 onDocumentReady(() => {
   document.querySelectorAll<HTMLElement>('.js-scatter').forEach((element) => scatter(element));
-  document
-    .querySelectorAll<HTMLElement>('.js-histmini')
-    .forEach((element) =>
-      HistMiniHtml({
-        selector: element,
-        data: JSON.parse(element.dataset.data ?? '[]'),
-        options: JSON.parse(element.dataset.options ?? '{}'),
-      }),
-    );
+  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
+    HistMiniHtml({
+      selector: element,
+      data: JSON.parse(element.dataset.data ?? '[]'),
+      options: JSON.parse(element.dataset.options ?? '{}'),
+    }),
+  );
 });

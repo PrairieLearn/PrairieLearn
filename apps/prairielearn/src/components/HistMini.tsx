@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'preact/hooks';
 
 interface HistMiniProps {
-  data?: number[];
+  data: number[];
   options?: {
     width?: number;
     height?: number;
@@ -16,7 +16,7 @@ interface HistMiniProps {
 
 export function HistMiniHtml({
   selector,
-  data = [],
+  data,
   options = {},
 }: HistMiniProps & { selector: HTMLElement }) {
   const resolvedOptions = {
@@ -102,11 +102,11 @@ export function HistMini({ data, options }: HistMiniProps) {
       ref.current.innerHTML = '';
       HistMiniHtml({
         selector: ref.current as HTMLElement,
-        data: data ?? [],
+        data,
         options: options ?? {},
       });
     }
   }, [data, options]);
 
-  return <div className="histmini" ref={ref}></div>;
+  return <div ref={ref} className="histmini" />;
 }
