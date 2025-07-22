@@ -382,14 +382,9 @@ router.get(
         group_work: res.locals.assessment.group_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
-      // TODO: type the return value of this function
-      const cursor = await sqldb.queryValidatedCursor(
-        sql.select_instance_questions,
-        {
-          assessment_id: res.locals.assessment.id,
-        },
-        z.any(),
-      );
+      const cursor = await sqldb.queryValidatedCursor(sql.select_instance_questions, {
+        assessment_id: res.locals.assessment.id,
+      });
 
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
