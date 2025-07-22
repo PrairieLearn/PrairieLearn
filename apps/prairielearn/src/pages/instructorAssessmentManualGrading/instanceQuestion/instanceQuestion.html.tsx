@@ -180,8 +180,7 @@ function ConflictGradingJobModal({
                 <div><strong>Existing score and feedback</strong></div>
                 <div class="mb-2">
                   ${formatDateYMDHM(
-                    // The modified_at value may have come from a non-validated query
-                    DateFromISOString.parse(resLocals.instance_question.modified_at),
+                    resLocals.instance_question.modified_at,
                     resLocals.course_instance.display_timezone,
                   )},
                   by ${lastGraderName}
