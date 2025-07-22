@@ -9,8 +9,7 @@ columns
 
 indexes
     enrollments_pkey: PRIMARY KEY (id) USING btree (id)
-    enrollments_pending_uid_course_instance_id_idx: UNIQUE USING btree (pending_uid, course_instance_id)
-    enrollments_user_id_course_instance_id_idx: UNIQUE USING btree (user_id, course_instance_id)
+    enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
     enrollments_course_instance_id_idx: USING btree (course_instance_id)
 
