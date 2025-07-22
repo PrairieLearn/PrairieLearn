@@ -13,7 +13,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       class="text-white rounded p-3 mb-0"
       style="background-color: black;"
       // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-      dangerouslySetInnerHTML={{ __html: ansiToHtml(output).toString() }}
+      dangerouslySetInnerHTML={{ __html: ansiToHtml(output) }}
     />
   );
 
