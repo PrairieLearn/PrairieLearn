@@ -8,7 +8,7 @@ onDocumentReady(() => {
   document.querySelectorAll<HTMLElement>('.js-scatter').forEach((element) => scatter(element));
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
     renderHistMini({
-      selector: element,
+      element,
       data: JSON.parse(element.dataset.data ?? '[]'),
       options: JSON.parse(element.dataset.options ?? '{}'),
     }),

@@ -5,7 +5,7 @@ import { renderHistMini } from '../../src/components/HistMini.js';
 onDocumentReady(() => {
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => {
     renderHistMini({
-      selector: element,
+      element,
       data: JSON.parse(element.dataset.data ?? '[]'),
       options: JSON.parse(element.dataset.options ?? '{}'),
     });

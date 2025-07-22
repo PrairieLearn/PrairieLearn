@@ -15,7 +15,7 @@ interface HistMiniProps {
 }
 
 export function renderHistMini({
-  selector,
+  element,
   data,
   options = {},
 }: HistMiniProps & { element: HTMLElement }) {
@@ -56,7 +56,7 @@ export function renderHistMini({
   d3.scaleOrdinal(d3.schemeCategory10);
 
   const svg = d3
-    .select(selector)
+    .select(element)
     .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
@@ -103,7 +103,7 @@ export function HistMini({ data, options }: HistMiniProps) {
     if (ref.current) {
       ref.current.innerHTML = '';
       renderHistMini({
-        selector: ref.current,
+        element: ref.current,
         data,
         options: options ?? {},
       });

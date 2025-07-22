@@ -53,7 +53,7 @@ onDocumentReady(() => {
 function updatePlots(container: HTMLElement) {
   container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
     renderHistMini({
-      selector: element,
+      element,
       data: JSON.parse(element.dataset.data ?? '[]'),
       options: JSON.parse(element.dataset.options ?? '{}'),
     }),
