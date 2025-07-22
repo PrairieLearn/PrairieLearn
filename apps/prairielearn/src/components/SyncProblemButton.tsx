@@ -5,8 +5,6 @@ import { renderHtml } from '../lib/preact-html.js';
 
 export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
   const title = type === 'error' ? 'Sync Errors' : 'Sync Warnings';
-  const classes =
-    type === 'error' ? 'fa-times text-danger' : 'fa-exclamation-triangle text-warning';
 
   const popoverContent = (
     <pre
@@ -28,7 +26,14 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       data-bs-content={renderHtml(popoverContent).toString()}
       data-bs-custom-class="popover-wide"
     >
-      <i class={clsx('fa', classes)} aria-hidden="true" />
+      <i
+        class={clsx({
+          fa: true,
+          'fa-times text-danger': type === 'error',
+          'fa-exclamation-triangle text-warning': type === 'warning',
+        })}
+        aria-hidden="true"
+      />
     </button>
   );
 }
