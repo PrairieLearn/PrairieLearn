@@ -52,7 +52,7 @@ export async function insertIssue({
   // Allow for a higher limit on the system data. This object contains output
   // from the Python subprocess, which can be especially useful for debugging.
   const truncatedSystemData = recursivelyTruncateStrings(systemData, 10000);
-  await sqldb.callAsync('issues_insert_for_variant', [
+  await sqldb.callOptionalRow('issues_insert_for_variant', [
     variantId,
     studentMessage,
     instructorMessage,

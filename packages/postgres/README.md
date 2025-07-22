@@ -104,7 +104,7 @@ END;
 You can call this sproc in your JavaScript code:
 
 ```ts
-await sqldb.callAsync('insert_data', [1, 2]);
+await sqldb.callOptionalRow('insert_data', [1, 2]);
 ```
 
 ### Zod validation

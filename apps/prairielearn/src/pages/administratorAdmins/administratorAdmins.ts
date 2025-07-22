@@ -25,13 +25,13 @@ router.post(
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'administrators_insert_by_user_uid') {
-      await sqldb.callAsync('administrators_insert_by_user_uid', [
+      await sqldb.callOptionalRow('administrators_insert_by_user_uid', [
         req.body.uid,
         res.locals.authn_user.user_id,
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'administrators_delete_by_user_id') {
-      await sqldb.callAsync('administrators_delete_by_user_id', [
+      await sqldb.callOptionalRow('administrators_delete_by_user_id', [
         req.body.user_id,
         res.locals.authn_user.user_id,
       ]);

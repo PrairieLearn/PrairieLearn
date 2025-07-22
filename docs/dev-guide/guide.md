@@ -182,7 +182,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
   ```js
   const workspace_id = 1342;
   const message = 'Startup successful';
-  await sqldb.callAsync('workspaces_message_update', [workspace_id, message]);
+  await sqldb.callOptionalRow('workspaces_message_update', [workspace_id, message]);
   ```
 
 - The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/current/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
