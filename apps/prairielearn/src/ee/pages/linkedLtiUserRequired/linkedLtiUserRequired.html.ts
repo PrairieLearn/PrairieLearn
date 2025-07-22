@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
 
 export function LinkedLtiUserRequired({
