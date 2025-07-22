@@ -18,7 +18,7 @@ export function renderHistMini({
   selector,
   data,
   options = {},
-}: HistMiniProps & { selector: HTMLElement }) {
+}: HistMiniProps & { element: HTMLElement }) {
   if (!Array.isArray(data) || data.length === 0) {
     return;
   }
