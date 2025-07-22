@@ -15,8 +15,6 @@ from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
 
-from prairielearn.html_utils import inner_html
-
 
 class GradingMethodType(Enum):
     UNORDERED = "unordered"
@@ -133,7 +131,6 @@ PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
-FILE_NAME_DEFAULT = "user_code.py"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
@@ -455,18 +452,17 @@ def validate_answer_attribs_closure() -> FunctionType:
                 used_tags.add(answer_attribs["group_info"]["tag"])
 
             if order_blocks_attribs["format_type"] is FormatType.CODE:
-                if answer_attribs["inner_html"] is not None:
-                    answer_attribs["inner_html"] = (
-                        "<pl-code"
-                        + (
-                            ' language="' + order_blocks_attribs["code_language"] + '"'
-                            if order_blocks_attribs["code_language"]
-                            else ""
-                        )
-                        + ">"
-                        + answer_attribs["inner_html"]
-                        + "</pl-code>"
+                answer_attribs["inner_html"] = (
+                    "<pl-code"
+                    + (
+                        ' language="' + order_blocks_attribs["code_language"] + '"'
+                        if order_blocks_attribs["code_language"]
+                        else ""
                     )
+                    + ">"
+                    + answer_attribs["inner_html"]
+                    + "</pl-code>"
+                )
 
     return validation
 
