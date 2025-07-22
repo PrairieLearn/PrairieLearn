@@ -25,7 +25,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       data-bs-container="body"
       data-bs-html="true"
       data-bs-title={title}
-      data-bs-content={popoverContent}
+      data-bs-content={renderHtml(popoverContent).toString()}
       data-bs-custom-class="popover-wide"
     >
       <i class={clsx('fa', classes)} aria-hidden="true" />
