@@ -449,7 +449,10 @@ def validate_answer_attribs_setup() -> FunctionType:
                     )
                 used_tags.add(answer_attribs["tag"])
 
-            if answer_attribs["group_info"]["tag"] in used_tags and answer_attribs["group_info"] not in used_groups:
+            if (
+                answer_attribs["group_info"]["tag"] in used_tags
+                and answer_attribs["group_info"] not in used_groups
+            ):
                 raise ValueError(
                     f'Tag "{answer_attribs["group_info"]["tag"]}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
