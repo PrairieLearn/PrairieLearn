@@ -47,3 +47,9 @@ ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
     AND pending_uid IS NULL
   )
 );
+
+-- user_id+course_instance_id must be unique.
+CREATE UNIQUE INDEX enrollments_user_id_course_instance_id_idx ON enrollments (user_id, course_instance_id);
+
+-- pending_uid+course_instance_id must be unique.
+CREATE UNIQUE INDEX enrollments_pending_uid_course_instance_id_idx ON enrollments (pending_uid, course_instance_id);
