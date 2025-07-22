@@ -116,6 +116,7 @@ def test_get_pl_order_blocks_attribs_failure(
         answers-name="TEST"
         indentation="true"
         partial-credit="lcs"
+        grading-method="unordered"
         feedback="none">
         <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
         <pl-answer correct="true" ranking="2" indent="1">return first + second</pl-answer>
@@ -128,7 +129,7 @@ def test_invalid_partial_credit_option(
     element = lxml.html.fromstring(input_str)
     attribs = pl_order_blocks.get_order_blocks_attribs(element)
     with pytest.raises(ValueError) as error:
-        pl_order_blocks.validate_order_blocks_attribs({}, attribs)
+        pl_order_blocks.validate_order_blocks_attribs(attribs)
     assert "You may only specify partial credit options in the DAG, ordered, and ranking grading modes." in str(error.value)
 
 @pytest.mark.parametrize(

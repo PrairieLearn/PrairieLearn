@@ -276,10 +276,8 @@ def get_order_blocks_attribs(
 
 
 def validate_order_blocks_attribs(
-    data: pl.QuestionData,
     order_block_attribs: OrderBlocksAttribs,
 ) -> None:
-    pl.check_answers_names(data, order_block_attribs["answer_name"])
     if (
         order_block_attribs["grading_method"] not in LCS_GRADABLE_TYPES
         and order_block_attribs["partial_credit_type"] != PARTIAL_CREDIT_DEFAULT
@@ -471,7 +469,8 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     html_element = lxml.html.fragment_fromstring(html)
 
     order_blocks_attribs = get_order_blocks_attribs(html_element)
-    validate_order_blocks_attribs(data, order_blocks_attribs)
+    pl.check_answers_names(data, order_blocks_attribs["answer_name"])
+    validate_order_blocks_attribs(order_blocks_attribs)
 
     all_answer_attribs = get_answer_attribs(html_element, order_blocks_attribs["grading_method"])
     validate_answer_attribs(all_answer_attribs, order_blocks_attribs)
