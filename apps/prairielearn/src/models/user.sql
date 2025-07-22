@@ -68,8 +68,7 @@ FROM
   inserted_user;
 
 -- BLOCK update_user_uid
-UPDATE
-  users
+UPDATE users
 SET
   uid = $uid
 WHERE
