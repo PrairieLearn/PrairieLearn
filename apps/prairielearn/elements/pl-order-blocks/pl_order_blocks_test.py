@@ -81,7 +81,7 @@ pl_order_blocks = importlib.import_module("pl-order-blocks")
         ),
     ],
 )
-def test_get_pl_order_blocks_attribs(
+def test_get_order_blocks_attribs(
         input_str: str, expected_output: Any
 ) -> None:
     element = lxml.html.fromstring(input_str)
@@ -101,7 +101,7 @@ def test_get_pl_order_blocks_attribs(
         </pl-order-blocks>""",
     ],
 )
-def test_get_pl_order_blocks_attribs_failure(
+def test_get_order_blocks_attribs_failure(
     input_str: str,
 ) -> None:
     element = lxml.html.fromstring(input_str)
@@ -158,7 +158,7 @@ def test_invalid_partial_credit_option(input_str: str) -> None:
         ),
     ],
 )
-def test_get_pl_answer_attribs_ordered_grading(
+def test_get_answer_attribs_ordered_grading(
     input_str: str, expected_output: Any
 ) -> None:
     element = lxml.html.fromstring(input_str)
@@ -193,7 +193,7 @@ def test_get_pl_answer_attribs_ordered_grading(
         ),
     ],
 )
-def test_get_pl_answer_attribs_ranking_grading(
+def test_get_answer_attribs_ranking_grading(
     input_str: str, expected_output: Any
 ) -> None:
     element = lxml.html.fromstring(input_str)
@@ -263,7 +263,7 @@ def test_ordering_feedback_failure(input_str: str) -> None:
         ),
     ],
 )
-def test_get_pl_answer_attribs_dag_grading(
+def test_get_answer_attribs_dag_grading(
     input_str: str, expected_output: Any
 ) -> None:
     element = lxml.html.fromstring(input_str)
