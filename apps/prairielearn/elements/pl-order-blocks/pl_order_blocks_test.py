@@ -3,7 +3,6 @@ from typing import Any
 import lxml.html
 import pytest
 pl_order_blocks = importlib.import_module("pl-order-blocks")
-from pl_order_blocks import OrderBlocksAttribs
 
 
 @pytest.mark.parametrize(
@@ -223,12 +222,11 @@ def test_ordering_feedback_failure(input_str: str) -> None:
     element = lxml.html.fromstring(input_str)
     order_blocks_attribs = pl_order_blocks.get_order_blocks_attribs(element)
 
-    all_answer_attribs = pl_order_blocks.get_answer_attribs(
-        element, order_blocks_attribs["grading_method"]
-    )
     with pytest.raises(ValueError) as error:
         pl_order_blocks.validate_answer_attribs(
-            all_answer_attribs, order_blocks_attribs
+            pl_order_blocks.get_answer_attribs(
+                element, order_blocks_attribs["grading_method"]
+            ), order_blocks_attribs
         )
     assert (
         "The ordering-feedback attribute may only be used on blocks with correct=true."
@@ -297,7 +295,7 @@ def test_invalid_inner_tag(input_str: str) -> None:
     element = lxml.html.fromstring(input_str)
     order_blocks_attribs = pl_order_blocks.get_order_blocks_attribs(element)
     with pytest.raises(ValueError) as error:
-        all_answer_attribs = pl_order_blocks.get_answer_attribs(
+        pl_order_blocks.get_answer_attribs(
             element, order_blocks_attribs["grading_method"]
         )
     assert """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
