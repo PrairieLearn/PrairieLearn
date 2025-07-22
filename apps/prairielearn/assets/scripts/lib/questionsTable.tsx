@@ -2,15 +2,9 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
-<<<<<<< HEAD:apps/prairielearn/assets/scripts/lib/questionsTable.ts
-import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
-import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
-=======
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
->>>>>>> master:apps/prairielearn/assets/scripts/lib/questionsTable.tsx
 import { type Topic } from '../../../src/lib/db-types.js';
 import { renderHtml } from '../../../src/lib/preact-html.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
@@ -180,15 +174,11 @@ onDocumentReady(() => {
         (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
       )
       .map((assessment) =>
-<<<<<<< HEAD:apps/prairielearn/assets/scripts/lib/questionsTable.ts
-        AssessmentBadgeHtml({ plainUrlPrefix, course_instance_id, assessment }).toString(),
-=======
         AssessmentBadgeHtml({
           plainUrlPrefix,
           course_instance_id,
           assessment,
         }).toString(),
->>>>>>> master:apps/prairielearn/assets/scripts/lib/questionsTable.tsx
       )
       .join(' ');
   };

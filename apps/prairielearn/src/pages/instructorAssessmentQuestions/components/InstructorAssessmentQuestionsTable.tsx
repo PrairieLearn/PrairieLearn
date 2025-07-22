@@ -6,11 +6,11 @@ import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../../components/AssessmentQuestions.html.js';
-import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
-import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
-import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
-import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
+} from '../../../components/AssessmentQuestions.js';
+import { IssueBadge } from '../../../components/IssueBadge.js';
+import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
+import { TagBadgeList } from '../../../components/TagBadge.js';
+import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
@@ -137,7 +137,7 @@ export function InstructorAssessmentQuestionsTable({
                           hasCoursePermissionPreview={hasCoursePermissionPreview}
                           urlPrefix={urlPrefix}
                         />
-                        <IssueBadgeJsx
+                        <IssueBadge
                           urlPrefix={urlPrefix}
                           count={question.open_issue_count ?? 0}
                           issueQid={question.question.qid}
@@ -145,12 +145,9 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                       <td>
                         {question.question.sync_errors ? (
-                          <SyncProblemButtonJsx
-                            output={question.question.sync_errors}
-                            type="error"
-                          />
+                          <SyncProblemButton output={question.question.sync_errors} type="error" />
                         ) : question.question.sync_warnings ? (
-                          <SyncProblemButtonJsx
+                          <SyncProblemButton
                             output={question.question.sync_warnings}
                             type="warning"
                           />
@@ -162,10 +159,10 @@ export function InstructorAssessmentQuestionsTable({
                           : `@${question.course.sharing_name}/${question.question.qid}`}
                       </td>
                       <td>
-                        <TopicBadgeJsx topic={question.topic} />
+                        <TopicBadge topic={question.topic} />
                       </td>
                       <td>
-                        <TagBadgeListJsx tags={question.tags} />
+                        <TagBadgeList tags={question.tags} />
                       </td>
                       <td>
                         {maxPoints({
