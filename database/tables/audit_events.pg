@@ -21,10 +21,14 @@ columns
 
 indexes
     audit_events_pkey: PRIMARY KEY (id) USING btree (id)
-    audit_events_agent_authn_user_id_idx: USING btree (agent_authn_user_id)
-    audit_events_subject_user_id_idx: USING btree (subject_user_id)
-    audit_events_table_name_idx: USING btree (table_name)
-    audit_events_table_name_subject_user_id_idx: USING btree (table_name, subject_user_id)
+    audit_events_agent_authn_user_id_course_instance_id_idx: USING btree (agent_authn_user_id, course_instance_id) WHERE agent_authn_user_id IS NOT NULL AND course_instance_id IS NOT NULL
+    audit_events_agent_authn_user_id_idx: USING btree (agent_authn_user_id) WHERE agent_authn_user_id IS NOT NULL
+    audit_events_agent_authn_user_id_table_name_idx: USING btree (agent_authn_user_id, table_name) WHERE agent_authn_user_id IS NOT NULL
+    audit_events_assessment_instance_id_idx: USING btree (assessment_instance_id)
+    audit_events_institution_id_idx: USING btree (institution_id)
+    audit_events_subject_user_id_idx: USING btree (subject_user_id) WHERE subject_user_id IS NOT NULL
+    audit_events_table_name_subject_user_id_course_instance_id_idx: USING btree (table_name, subject_user_id, course_instance_id) WHERE subject_user_id IS NOT NULL AND course_instance_id IS NOT NULL
+    audit_events_table_name_subject_user_id_idx: USING btree (table_name, subject_user_id) WHERE subject_user_id IS NOT NULL
 
 foreign-key constraints
     audit_events_agent_authn_user_id_fkey: FOREIGN KEY (agent_authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
