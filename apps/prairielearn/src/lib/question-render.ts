@@ -51,6 +51,7 @@ import {
 import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
+import type { RubricData } from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
@@ -62,6 +63,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   user_name: z.string().nullable(),
   user_email: z.string().nullable(),
 });
+type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -237,6 +239,23 @@ export function buildQuestionUrls(
   return urls;
 }
 
+export interface ResLocalsBuildLocals {
+  showGradeButton: boolean;
+  showSaveButton: boolean;
+  disableGradeButton: boolean;
+  disableSaveButton: boolean;
+  showNewVariantButton: boolean;
+  showTryAgainButton: boolean;
+  showTrueAnswer: boolean;
+  showGradingRequested: boolean;
+  allowAnswerEditing: boolean;
+  hasAttemptsOtherVariants: boolean;
+  variantAttemptsLeft: number;
+  variantAttemptsTotal: number;
+  submissions: SubmissionForRender[];
+  variantToken: string;
+}
+
 function buildLocals({
   variant,
   question,
@@ -261,7 +280,7 @@ function buildLocals({
   group_config?: GroupConfig | null;
   authz_result?: any;
 }) {
-  const locals = {
+  const locals: ResLocalsBuildLocals = {
     showGradeButton: false,
     showSaveButton: false,
     disableGradeButton: false,
@@ -376,6 +395,24 @@ function buildLocals({
   }
 
   return locals;
+}
+
+export interface ResLocalsQuestionRender extends ResLocalsBuildLocals {
+  question_is_shared: boolean;
+  variant: Variant;
+  urls: QuestionUrls;
+
+  submission: SubmissionForRender;
+  effectiveQuestionType: questionServers.EffectiveQuestionType;
+  extraHeadersHtml: string;
+  questionHtml: string;
+  submissionHtmls: string[];
+  issues: IssueRenderData[];
+  questionJsonBase64: string | undefined;
+}
+
+export interface ResLocalsInstanceQuestionRender extends ResLocalsQuestionRender {
+  rubric_data: RubricData | null;
 }
 
 /**

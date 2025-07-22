@@ -11,7 +11,14 @@ import type {
   ResLocalsInstructorQuestionWithCourseInstance,
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 
-export type ResLocals = object;
+import type {
+  ResLocalsInstanceQuestionRender,
+  ResLocalsQuestionRender,
+} from './question-render.js';
+
+export interface ResLocals {
+  __csrf_token: string;
+}
 
 export type PageType =
   | 'instructor-question-with-course-instance'
@@ -23,18 +30,30 @@ export type PageType =
   | 'course-instance'
   | 'course';
 
+interface ResLocalsCourseInstanceMisc {
+  urlPrefix: string;
+  navbarType: 'student' | 'instructor';
+}
+
 export type ResLocalsForPage<T extends PageType> = T extends 'course'
   ? ResLocals & ResLocalsCourse
   : T extends 'course-instance'
-    ? ResLocals & ResLocalsCourseInstance
+    ? ResLocals & ResLocalsCourseInstanceMisc & ResLocalsCourseInstance
     : T extends 'instructor-course-instance-question'
       ? ResLocals & ResLocalsInstructorQuestionWithCourseInstance
       : T extends 'instructor-question'
-        ? ResLocals & ResLocalsInstructorQuestion
+        ? ResLocals & ResLocalsInstructorQuestion & ResLocalsQuestionRender
         : T extends 'instance-question'
-          ? ResLocals & ResLocalsCourseInstance & ResLocalsInstanceQuestion
+          ? ResLocals &
+              ResLocalsCourseInstanceMisc &
+              ResLocalsCourseInstance &
+              ResLocalsInstanceQuestion &
+              ResLocalsInstanceQuestionRender
           : T extends 'assessment-question'
-            ? ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion
+            ? ResLocals &
+                ResLocalsAssessment &
+                ResLocalsAssessmentQuestion &
+                ResLocalsInstanceQuestionRender
             : T extends 'assessment-instance'
               ? ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance
               : T extends 'assessment'
@@ -46,12 +65,3 @@ export function getResLocalsForPage<T extends PageType>(
 ): ResLocalsForPage<T> {
   return locals as ResLocalsForPage<T>;
 }
-
-export type ResLocalsProperty<
-  T extends PageType,
-  K extends keyof ResLocalsForPage<T>,
-> = ResLocalsForPage<T>[K];
-
-export type HasProperty<T extends PageType, K extends string> = K extends keyof ResLocalsForPage<T>
-  ? true
-  : false;

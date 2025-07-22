@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { type Issue, type User } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
   AutoPointsSection,
@@ -25,7 +26,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
