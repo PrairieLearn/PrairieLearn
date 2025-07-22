@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
@@ -142,12 +142,12 @@ export function InstructorCourseAdminInstances({
                         <tr>
                           <td class="align-left">
                             ${row.sync_errors
-                              ? SyncProblemButton({
+                              ? SyncProblemButtonHtml({
                                   type: 'error',
                                   output: row.sync_errors,
                                 })
                               : row.sync_warnings
-                                ? SyncProblemButton({
+                                ? SyncProblemButtonHtml({
                                     type: 'warning',
                                     output: row.sync_warnings,
                                   })
@@ -180,6 +180,7 @@ export function InstructorCourseAdminInstances({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
                     target="_blank"
+                    rel="noreferrer"
                     >course instance documentation</a
                   >.
                 </p>

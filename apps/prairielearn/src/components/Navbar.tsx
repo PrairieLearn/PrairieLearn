@@ -4,7 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
-import { IssueBadge } from './IssueBadge.js';
+import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { ProgressCircle } from './ProgressCircle.js';
@@ -887,7 +887,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               })}
             </a>
           </li>
@@ -896,7 +896,7 @@ function NavbarInstructor({
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}
+        Issues ${IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true })}
       </a>
     </li>
     ${authz_data.has_course_permission_preview
