@@ -241,7 +241,7 @@ You can build custom workspace images if you need to install specific dependenci
 
 1. Install [Docker Desktop](https://docs.docker.com/desktop/) in your environment.
 2. Create a [Docker Hub](https://hub.docker.com/) account, if you don't yet have one.
-3. Create a new directory to hold the information for your image. You may create it in your course image if you wish to share this with other staff members in your course.
+3. Create a new directory to hold the information for your image. You may create it in your course repository if you wish to share this with other staff members in your course.
 4. In the directory above, create a file named [`Dockerfile`](https://docs.docker.com/reference/dockerfile/) (without an extension), and set its contents to the set of instructions to be used for the image you are creating. For example, to create a custom version of `prairielearn/workspace-vscode-python` with the `datascience` Python package, the file may look like:
 
    ```dockerfile
@@ -252,7 +252,7 @@ You can build custom workspace images if you need to install specific dependenci
 5. In a terminal, change to the directory that contains the `Dockerfile` above and run the following commands (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
 
    ```bash
-   docker build -t yourdockerhubaccount/yourimagename .
+   docker build --platform linux/amd64 -t yourdockerhubaccount/yourimagename .
    docker push yourdockerhubaccount/yourimagename
    ```
 
