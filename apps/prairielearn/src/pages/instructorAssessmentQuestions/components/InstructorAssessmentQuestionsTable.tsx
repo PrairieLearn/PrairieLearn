@@ -29,11 +29,11 @@ function Title({
   const title = (
     <>
       <AssessmentQuestionNumber question={question} />
-      {question.title}
+      {question.question.title}
     </>
   );
   if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
+    return <a href={`${urlPrefix}/question/${question.question.id}/`}>{title}</a>;
   }
   return title;
 }
@@ -69,7 +69,7 @@ export function InstructorAssessmentQuestionsTable({
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
-    questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
+    questions.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >= 1;
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -128,7 +128,7 @@ export function InstructorAssessmentQuestionsTable({
             <tbody>
               {questions.map((question) => {
                 return (
-                  <Fragment key={question.qid}>
+                  <Fragment key={question.question.qid}>
                     <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                     <tr>
                       <td>
@@ -140,20 +140,26 @@ export function InstructorAssessmentQuestionsTable({
                         <IssueBadgeJsx
                           urlPrefix={urlPrefix}
                           count={question.open_issue_count ?? 0}
-                          issueQid={question.qid}
+                          issueQid={question.question.qid}
                         />
                       </td>
                       <td>
-                        {question.sync_errors ? (
-                          <SyncProblemButtonJsx output={question.sync_errors} type="error" />
-                        ) : question.sync_warnings ? (
-                          <SyncProblemButtonJsx output={question.sync_warnings} type="warning" />
+                        {question.question.sync_errors ? (
+                          <SyncProblemButtonJsx
+                            output={question.question.sync_errors}
+                            type="error"
+                          />
+                        ) : question.question.sync_warnings ? (
+                          <SyncProblemButtonJsx
+                            output={question.question.sync_warnings}
+                            type="warning"
+                          />
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.course_id)
-                          ? question.qid
-                          : `@${question.course_sharing_name}/${question.qid}`}
+                        {idsEqual(course.id, question.question.course_id)
+                          ? question.question.qid
+                          : `@${question.course.sharing_name}/${question.question.qid}`}
                       </td>
                       <td>
                         <TopicBadgeJsx topic={question.topic} />
@@ -163,37 +169,39 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                       <td>
                         {maxPoints({
-                          max_auto_points: question.max_auto_points,
-                          max_manual_points: question.max_manual_points,
-                          points_list: question.points_list,
-                          init_points: question.init_points,
+                          max_auto_points: question.assessment_question.max_auto_points,
+                          max_manual_points: question.assessment_question.max_manual_points,
+                          points_list: question.assessment_question.points_list,
+                          init_points: question.assessment_question.init_points,
                         })}
                       </td>
-                      <td>{question.max_manual_points || '—'}</td>
+                      <td>{question.assessment_question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol ? (
                         <td
                           class={clsx(
-                            question.assessment_question_advance_score_perc === 0
+                            question.assessment_question.effective_advance_score_perc === 0
                               ? 'text-muted'
                               : '',
                           )}
                           data-testid="advance-score-perc"
                         >
-                          {question.assessment_question_advance_score_perc}%
+                          {question.assessment_question.effective_advance_score_perc}%
                         </td>
                       ) : (
                         ''
                       )}
                       <td>
-                        {question.mean_question_score
-                          ? `${question.mean_question_score.toFixed(3)} %`
+                        {question.assessment_question.mean_question_score
+                          ? `${question.assessment_question.mean_question_score.toFixed(3)}%`
                           : ''}
                       </td>
                       <td class="text-center">
-                        {question.number_submissions_hist ? (
+                        {question.assessment_question.number_submissions_hist ? (
                           <div
                             class="js-histmini"
-                            data-data={JSON.stringify(question.number_submissions_hist)}
+                            data-data={JSON.stringify(
+                              question.assessment_question.number_submissions_hist,
+                            )}
                             data-options={JSON.stringify({ width: 60, height: 20 })}
                           ></div>
                         ) : (
@@ -204,7 +212,7 @@ export function InstructorAssessmentQuestionsTable({
                         {question.other_assessments?.map((assessment) => (
                           <div
                             class="d-inline-block me-1"
-                            key={`${question.qid}-${assessment.assessment_id}`}
+                            key={`${question.question.qid}-${assessment.assessment_id}`}
                           >
                             <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
                           </div>
@@ -228,7 +236,9 @@ export function InstructorAssessmentQuestionsTable({
                                 class="dropdown-item"
                                 data-bs-toggle="modal"
                                 data-bs-target="#resetQuestionVariantsModal"
-                                onClick={() => handleResetButtonClick(question.id)}
+                                onClick={() =>
+                                  handleResetButtonClick(question.assessment_question.id)
+                                }
                               >
                                 Reset question variants
                               </button>

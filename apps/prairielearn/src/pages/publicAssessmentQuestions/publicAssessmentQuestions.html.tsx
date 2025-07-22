@@ -46,6 +46,7 @@ export function PublicAssessmentQuestions({
               urlPrefix: resLocals.urlPrefix,
               course_id: course.id,
               course_instance_id,
+              course,
             })}
           </div>
         `
@@ -66,13 +67,15 @@ function AssessmentQuestionsTable({
   urlPrefix,
   course_id,
   course_instance_id,
+  course,
 }: {
   questions: AssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;
+  course: Course;
 }) {
-  const nTableCols = 4;
+  const nTableCols = 5;
   return html`
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -94,12 +97,14 @@ function AssessmentQuestionsTable({
               <tr>
                 <td>
                   <a
-                    href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
+                    href="${urlPrefix}/public/course/${course_id}/question/${question.question
+                      .id}/preview"
                   >
-                    ${renderHtml(<AssessmentQuestionNumber question={question} />)}${question.title}
+                    ${renderHtml(<AssessmentQuestionNumber question={question} />)}${question
+                      .question.title}
                   </a>
                 </td>
-                <td>@${question.course_sharing_name}/${question.qid}</td>
+                <td>@${course.sharing_name}/${question.question.qid}</td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
