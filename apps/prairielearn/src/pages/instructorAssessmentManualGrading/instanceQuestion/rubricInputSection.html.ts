@@ -16,8 +16,6 @@ export function RubricInputSection({
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
 
-  console.log('resLocals.submission', resLocals.submission);
-
   return html`
     <style>
       .js-selectable-rubric-item-label {

@@ -16,6 +16,7 @@ import { selectAssessmentById } from '../../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectQuestionById } from '../../../models/question.js';
+import * as async from 'async';
 
 import {tqdm, TqdmProgress} from 'node-console-progress-bar-tqdm';
 
@@ -116,13 +117,19 @@ export async function generateSubmissionsMath220(
         fs.readFileSync(student_submitted_responses_path, 'utf-8')
     );
 
+    // Bug: There might exist more enrollments than submissions. In that case, we should limit to the number of submissions.
+    let enrollmentIndices: number[] = [];
+    for (let i = 0; i < Math.min(enrollments.length, submissionFolders.length); i++) {
+        enrollmentIndices.push(i);
+    }
+
     const pb = new TqdmProgress({
-        total: enrollments.length,
+        total: enrollmentIndices.length,
         progressColor: '#f1d3c4',
     });
     pb.render();
 
-    for (let i = 0; i < enrollments.length; i++) {
+    await async.eachLimit(enrollmentIndices, 10, async (i) => {
         const enrolled_student = enrollments[i];
 
         const submission_folder = path.join(
@@ -140,9 +147,9 @@ export async function generateSubmissionsMath220(
             date: new Date(),
             client_fingerprint_id: null
         });
-
+    
         nameToSubmissionFolder[enrolled_student.user_uid] = submission_folder;
-
+    
         const instance_questions = await queryRows(
             sql.select_instance_questions,
             { assessment_instance_id: new_assessment_instance_id },
@@ -162,49 +169,49 @@ export async function generateSubmissionsMath220(
             if (!question.qid) {
                 throw new Error(`Question ${question.id} does not have a qid`);
             }
-
+    
             // Retrieve submitted files
             const submission_filenames = FILE_SUBMISSIONS[question.qid];
             const submitted_answer: Record<string, any> = {};
-
+    
             const submitted_files: { name: string; contents: string; mimetype: string }[] = [];
-
+    
             let file_missing = false;
-
+    
             for (const filename of submission_filenames) {
                 const currentPath = path.join(
                     submission_folder,
                     filename.replace('.jpg', '.jpeg') // Ensure the file extension matches
                 );
-
+    
                 if (!fs.existsSync(currentPath)) {
                     console.warn(`File not found: ${currentPath}`);
                     file_missing = true;
                     continue; // Skip this file if it does not exist
                 }
-
+    
                 // Retrieve the base-64 encoded image, stored locally 
                 const encodedData = fs.readFileSync(currentPath, {
                     encoding: 'base64'
                 });
-
+    
                 const dataWithPrefix = `data:image/jpeg;base64,${encodedData}`;
-
+    
                 const file = {
                     name: filename,
                     contents: encodedData,
                     mimetype: 'image/jpeg',
                 };
-
+    
                 submitted_answer[filename] = dataWithPrefix;
                 submitted_files.push(file);
             }
-
+    
             if (file_missing) {
                 console.warn(`Some files are missing for question ${question.qid}. Skipping submission for this question.`);
                 continue; // Skip this question if any file is missing
             }
-
+    
             submitted_answer._files = submitted_files;
             
             // Generate a variant for each question
@@ -237,18 +244,18 @@ export async function generateSubmissionsMath220(
                 question,
                 course,
             );
-
+    
             // Insert student grades
             const rubric_items = await queryRows(
                 sql.select_rubric_items,
                 { rubric_id: instance_question.manual_rubric_id },
                 RubricItemSchema
             );
-
+    
             // Determine the rubric items that were selected for the student.
             const submission_id_for_file = submissionFolders[i].replace('_redacted.pdf', '');
             const selected_rubric_items = studentSubmittedResponses[question.qid][submission_id_for_file] || [];
-
+    
             const selected_rubric_item_ids: string[] = [];
             let pts_change = 0;
             for (const col of selected_rubric_items) {
@@ -265,8 +272,8 @@ export async function generateSubmissionsMath220(
                     throw new Error(`Rubric item with description "${col}" not found in rubric items for question ${question.qid}`);
                 }
             }
-
-
+    
+    
             if (!instance_question.manual_rubric_id) {
                 throw new Error(`Instance question ${instance_question.instance_question_id} does not have a manual rubric id`);
             }
@@ -274,7 +281,7 @@ export async function generateSubmissionsMath220(
             if (!instance_question.max_points) {
                 throw new Error(`Instance question points not found for assessment instance ${new_assessment_instance_id}`);
             }
-
+    
             const { modified_at_conflict, grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                 assessment.id,
                 instance_question.instance_question_id,
@@ -298,6 +305,7 @@ export async function generateSubmissionsMath220(
             );
         }            
         pb.update();
-    }
+    });
+
     pb.close();
 }

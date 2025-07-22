@@ -4197,6 +4197,7 @@ __metadata:
     morphdom: "npm:^2.7.5"
     multer: "npm:^2.0.2"
     mustache: "npm:^4.2.0"
+    node-console-progress-bar-tqdm: "npm:^1.0.4"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
     nodemon: "npm:^3.1.10"
@@ -13990,6 +13991,13 @@ __metadata:
   version: 1.0.0
   resolution: "negotiator@npm:1.0.0"
   checksum: 10c0/4c559dd52669ea48e1914f9d634227c561221dd54734070791f999c52ed0ff36e437b2e07d5c1f6e32909fc625fe46491c16e4a8f0572567d4dd15c3a4fda04b
+  languageName: node
+  linkType: hard
+
+"node-console-progress-bar-tqdm@npm:^1.0.4":
+  version: 1.0.4
+  resolution: "node-console-progress-bar-tqdm@npm:1.0.4"
+  checksum: 10c0/04c2e2e0f383698fd1ae10d375228a0b37a67ef9d75a1ae39b50c5f34848335092ae3095b3174b66008bdf37e68cb59b0d120d0ec12d8f8fc2804197b531453b
   languageName: node
   linkType: hard
 

@@ -116,6 +116,7 @@ router.post(
       const assessment_questions = (await selectAssessmentQuestions(
         assessment.id,
       )) as AssessmentQuestion[];
+      console.log('AI grade all questions for assessment', assessment.id);
       if (!assessment_questions) {
         console.log(`No questions found for assessment ${assessment.id}`);
         return;
@@ -137,8 +138,10 @@ router.post(
           user_id: res.locals.user.user_id,
           mode: 'all',
           image_rag_enabled: true,
-          run_async: false
+          run_async: false,
+          use_save_clusters: false
         });
+        console.log(`Completed AI grading for question ${assessment_question.question_id}`);
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'export_statistics') {

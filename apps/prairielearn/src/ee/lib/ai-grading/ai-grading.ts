@@ -2,6 +2,8 @@ import assert from 'node:assert';
 
 import { Clusters } from '@kanaries/ml';
 import * as async from 'async';
+import fs from 'fs-extra';
+import { TqdmProgress } from 'node-console-progress-bar-tqdm';
 import { OpenAI } from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -23,26 +25,25 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
-import fs from 'fs-extra';
 
 
 import {
   GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
+  type SubmissionEmbeddingAndData,
   deleteEmbeddingForSubmission,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
   parseAiRubricItems,
   selectClosestSubmissionInfo,
-  selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
-  type SubmissionEmbeddingAndData
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
+
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -117,9 +118,9 @@ export async function aiGrade({
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
-    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+    const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
-    );
+    ));
 
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = 0;
@@ -134,7 +135,14 @@ export async function aiGrade({
     const reference_submission_ids: string[] = [];
     const reference_instance_question_ids: string[] = [];
 
-    const embeddingsAndUsage = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+    
+    const pb = new TqdmProgress({
+        total: all_instance_questions.length,
+        progressColor: '#f1d3c4',
+    });
+    pb.render();
+
+    const embeddingsAndUsage = await async.mapLimit(all_instance_questions, PARALLEL_SUBMISSION_GRADING_LIMIT, async (instance_question: InstanceQuestion) => {
       const { submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       await deleteEmbeddingForSubmission(submission.id);
@@ -148,8 +156,12 @@ export async function aiGrade({
         openai,
       });
 
+      pb.update();
+
       return embedding;
     });
+
+    pb.close();
 
     const embeddings = embeddingsAndUsage.map((e) => e.embedding);
     const embeddingsByInstanceQuestionId: Record<string, SubmissionEmbeddingAndData> = {};
@@ -223,7 +235,15 @@ export async function aiGrade({
     job.info('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
     console.log('Generate embeddings incorporating the rubric/human grading for the reference submissions.');
 
-    const embeddingWithHumanResponsesUsage = await async.mapLimit(all_instance_questions, 50, async (instance_question: InstanceQuestion) => {
+
+    const pb2 = new TqdmProgress({
+        total: all_instance_questions.length,
+        progressColor: '#f1d3c4',
+    });
+
+    pb2.render();
+
+    const embeddingWithHumanResponsesUsage = await async.mapLimit(all_instance_questions, PARALLEL_SUBMISSION_GRADING_LIMIT, async (instance_question: InstanceQuestion) => {
       const { submission } = await selectLastVariantAndSubmission(instance_question.id); 
 
       await deleteEmbeddingForSubmission(submission.id);
@@ -244,12 +264,14 @@ export async function aiGrade({
         openai,
         graderFeedbackAvailable: true
       });
+      pb2.update();
 
       return {
         completion_tokens: embeddingUsageData.completion_tokens,
         prompt_tokens: embeddingUsageData.prompt_tokens
       };
     });
+    pb2.close();
 
     const completion_tokens_embedding_human_responses = embeddingWithHumanResponsesUsage.reduce((sum, e) => sum + e.completion_tokens, 0);
     const prompt_tokens_embedding_human_responses = embeddingWithHumanResponsesUsage.reduce((sum, e) => sum + e.prompt_tokens, 0);
@@ -623,6 +645,15 @@ export async function aiGrade({
 
     console.log('Grading instance questions with AI...');
 
+
+
+    const pb3 = new TqdmProgress({
+        total: all_instance_questions.length,
+        progressColor: '#f1d3c4',
+    });
+
+    pb3.render();
+
     const instance_question_grading_successes = await async.mapLimit(
       instance_questions.filter(
         iq => !reference_instance_question_ids.includes(`${iq.id}`)
@@ -647,6 +678,8 @@ export async function aiGrade({
         };
 
         try {
+
+          pb3.update();
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err) {
           logger.error(err);
@@ -661,6 +694,8 @@ export async function aiGrade({
         }
       },
     );
+
+    pb3.close();
 
     const error_count = instance_question_grading_successes.filter((success) => !success?.success).length;
 
@@ -695,20 +730,25 @@ export async function aiGrade({
     job.info(`Total prompt tokens: ${total_prompt_tokens}`);
 
     // Cost to generate all embeddings
-    const total_embedding_cost = (openAiUsage.completion_tokens_embedding + openAiUsage.prompt_tokens_embedding) * inputTokenPrice;
+    const total_embedding_cost = (openAiUsage.completion_tokens_embedding * outputTokenPrice) + (openAiUsage.prompt_tokens_embedding * inputTokenPrice);
     job.info(`Total embedding cost: $${total_embedding_cost.toFixed(6)}`);
 
     // Cost to generate human embeddings
-    const total_embedding_human_cost = (openAiUsage.completion_tokens_embedding_human_responses + openAiUsage.prompt_tokens_embedding_human_responses) * inputTokenPrice;
+    const total_embedding_human_cost = (openAiUsage.completion_tokens_embedding_human_responses * outputTokenPrice) + (openAiUsage.prompt_tokens_embedding_human_responses * inputTokenPrice);
     job.info(`Total embedding with human grading data cost: $${total_embedding_human_cost.toFixed(6)}`);
 
     // Cost to grade
-    const total_grading_cost = (openAiUsage.completion_tokens_grading + openAiUsage.prompt_tokens_grading) * inputTokenPrice;
+    const total_grading_cost = (openAiUsage.completion_tokens_grading * outputTokenPrice) + (openAiUsage.prompt_tokens_grading * inputTokenPrice);
     job.info(`Total grading cost: $${total_grading_cost.toFixed(6)}`);
 
     // Total cost
     const total_cost = total_embedding_cost + total_embedding_human_cost + total_grading_cost;
     job.info(`Total cost: $${total_cost.toFixed(6)}`);
+
+    console.log(`Total embedding cost: $${total_embedding_cost.toFixed(6)}`);
+    console.log(`Total embedding with human grading data cost: $${total_embedding_human_cost.toFixed(6)}`);
+    console.log(`Total grading cost: $${total_grading_cost.toFixed(6)}`);
+    console.log(`Total cost: $${total_cost.toFixed(6)}`);
   };
 
   if (run_async) {
@@ -716,7 +756,11 @@ export async function aiGrade({
     await serverJob.executeInBackground(jobFunction);
   } else {
     // Run the job synchronously
-    await serverJob.execute(jobFunction);
+    try {
+      await jobFunction(serverJob);
+    } catch (e) {
+      console.log('Error executing AI grading job', e);
+    }
   }
 
   return serverJob.jobSequenceId;

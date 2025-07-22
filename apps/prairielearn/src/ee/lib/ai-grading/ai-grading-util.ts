@@ -37,8 +37,8 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
-export const OPEN_AI_TEMPERATURE = 0.2;
+export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'o4-mini';
+export const OPEN_AI_TEMPERATURE = 1;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -291,13 +291,13 @@ export function generateSubmissionMessage({
   } satisfies ChatCompletionMessageParam;
 }
 
-export type SubmissionEmbeddingAndData = {
+export interface SubmissionEmbeddingAndData {
   new_submission_embedding: SubmissionGradingContextEmbedding;
   embedding: number[];
   submission_text: string;
   completion_tokens: number;
   prompt_tokens: number;
-};
+}
 
 export async function generateSubmissionEmbedding({
   course,

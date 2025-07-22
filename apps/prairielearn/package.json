@@ -151,6 +151,7 @@
     "morphdom": "^2.7.5",
     "multer": "^2.0.2",
     "mustache": "^4.2.0",
+    "node-console-progress-bar-tqdm": "^1.0.4",
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",
     "nodemon": "^3.1.10",
