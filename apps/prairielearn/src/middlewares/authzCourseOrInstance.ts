@@ -8,6 +8,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { ResLocalsAuthnUser } from '../lib/authn.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
@@ -53,12 +54,66 @@ const SelectAuthzDataSchema = z.object({
   permissions_course_instance: PermissionsCourseInstanceSchema,
 });
 
+type SelectAuthzData = z.infer<typeof SelectAuthzDataSchema>;
+
 const SelectUserSchema = z.object({
   user: UserSchema,
   institution: InstitutionSchema,
   is_administrator: z.boolean(),
   is_instructor: z.boolean(),
 });
+
+// This is if isCourseInstance is false
+interface ResLocalsCourseAuthz {
+  authn_user: ResLocalsAuthnUser['authn_user'];
+  authn_mode: SelectAuthzData['mode'];
+  authn_mode_reason: SelectAuthzData['mode_reason'];
+  authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
+  authn_course_role: SelectAuthzData['permissions_course']['course_role'];
+  authn_has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
+  authn_has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
+  authn_has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
+  authn_has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  user: ResLocalsAuthnUser['authn_user'];
+  mode: SelectAuthzData['mode'];
+  mode_reason: SelectAuthzData['mode_reason'];
+  is_administrator: ResLocalsAuthnUser['is_administrator'];
+  course_role: SelectAuthzData['permissions_course']['course_role'];
+  has_course_permission_preview: SelectAuthzData['permissions_course']['has_course_permission_preview'];
+  has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
+  has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
+  has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+}
+
+interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
+  authn_course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
+  authn_has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  authn_has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  authn_has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  authn_has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  course_instance_role: SelectAuthzData['permissions_course_instance']['course_instance_role'];
+  has_course_instance_permission_view: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_view'];
+  has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
+  has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
+  has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+}
+
+export interface ResLocalsCourse {
+  course: SelectAuthzData['course'];
+  institution: SelectAuthzData['institution'];
+  side_nav_expanded: boolean;
+  authz_data: ResLocalsCourseAuthz;
+  user: ResLocalsCourseAuthz['user'];
+  course_has_course_instances: boolean;
+  has_enhanced_navigation: boolean;
+  question_sharing_enabled: boolean;
+}
+
+export interface ResLocalsCourseInstance extends ResLocalsCourse {
+  course_instance: SelectAuthzData['course_instance'];
+  authz_data: ResLocalsCourseInstanceAuthz;
+  user: ResLocalsCourseInstanceAuthz['user'];
+}
 
 export async function authzCourseOrInstance(req: Request, res: Response) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
