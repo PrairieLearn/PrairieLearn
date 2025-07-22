@@ -26,12 +26,12 @@ import express, {
   Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -58,6 +58,7 @@ import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
+import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
@@ -77,15 +78,15 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
-const argv = yargsParser(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
+    --config <filename>                 Use the specified configuration file
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -211,6 +212,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
     upload.single('file'),
   );
+
+  app.post(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -259,7 +266,19 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
 
@@ -1065,6 +1084,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/grading_job',
@@ -1401,6 +1424,11 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
@@ -1504,6 +1532,12 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
+
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
@@ -1739,6 +1773,12 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
+      publicQuestionPreview: true,
+    }),
   );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
@@ -2409,6 +2449,7 @@ if (esMain(import.meta) && config.startServer) {
 
     externalGradingSocket.init();
     externalGrader.init();
+    externalImageCaptureSocket.init();
 
     await workspace.init();
     serverJobs.init();

@@ -1,5 +1,19 @@
 # @prairielearn/compiled-assets
 
+## 3.2.2
+
+### Patch Changes
+
+- 325af47: Fix paths for preloads
+
+## 3.2.1
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/html@4.0.16
+
 ## 3.2.0
 
 ### Minor Changes

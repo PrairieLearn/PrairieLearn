@@ -27,4 +27,4 @@ ALTER TABLE pl_courses
 ADD COLUMN IF NOT EXISTS sharing_name text UNIQUE;
 
 ALTER TABLE pl_courses
-ADD COLUMN IF NOT EXISTS sharing_token text UNIQUE NOT NULL DEFAULT gen_random_uuid ();
+ADD COLUMN IF NOT EXISTS sharing_token text UNIQUE NOT NULL DEFAULT gen_random_uuid();

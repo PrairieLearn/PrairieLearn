@@ -20,7 +20,7 @@ def test_evaluate() -> None:
         "helpers": {},
     }
 
-    expression = f(z) + custom_function(z, 1) + 3  # type: ignore
+    expression = f(z) + custom_function(z, 1) + 3
 
     # Check that using custom functions on the backend works
     assert expression == psu.evaluate(

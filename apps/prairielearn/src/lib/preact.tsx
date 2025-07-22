@@ -124,13 +124,13 @@ registerReactFragment(${componentName});</code></pre>
       >
         <script
           type="application/json"
-          data-component-props
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
             __html: escapeJsonForHtml(props),
           }}
+          data-component-props
         />
-        <div data-component-root class={fullHeight ? 'h-100' : ''}>
+        <div class={fullHeight ? 'h-100' : ''} data-component-root>
           <Component {...props} />
         </div>
       </div>

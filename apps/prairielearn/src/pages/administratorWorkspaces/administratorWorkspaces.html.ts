@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { IdSchema, WorkspaceHostSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
@@ -104,7 +104,7 @@ export function AdministratorWorkspaces({
                         </div>
                       `
                     : html`
-                        <div class="list-group list-group my-2">
+                        <div class="list-group my-2">
                           ${workspaces.map((workspace) => {
                             const maybeCourseInstanceName = workspace.course_instance_name
                               ? html`(<span title="Course instance"
@@ -170,7 +170,7 @@ function Capacity({ total, current }: { total: number; current: number }) {
 
 function WorkspaceState({ state }) {
   const color = state === 'running' ? 'success' : 'secondary';
-  return html` <span class="badge badge-${color} me-2">${state}</span> `;
+  return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }
 
 function WorkspaceHostState({ state }) {
@@ -185,5 +185,5 @@ function WorkspaceHostState({ state }) {
       color = 'danger';
       break;
   }
-  return html`<span class="badge badge-${color} me-2">${state}</span>`;
+  return html`<span class="badge text-bg-${color} me-2">${state}</span>`;
 }

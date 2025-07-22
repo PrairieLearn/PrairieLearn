@@ -99,6 +99,8 @@ async function checkPage(url: string) {
       'unique-landmark': 'off',
       'void-style': 'off',
       'wcag/h63': 'off',
+      // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
+      'prefer-native-element': ['error', { exclude: ['radiogroup', 'radio'] }],
     },
   });
 
@@ -288,6 +290,12 @@ const SKIP_ROUTES = [
   '/pl/public/course/:course_id/question/:question_id/file_download/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:unsafe_submission_id/file/*',
+
+  // File upload pages for external image capture.
+  '/pl/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/externalImageCapture/variant/:variant_id',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/externalImageCapture/variant/:variant_id',
+  '/pl/public/course/:course_id/question/:question_id/externalImageCapture/variant/:variant_id',
 
   // Renders partial HTML documents, not a full page.
   '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/variant/:unsafe_variant_id/submission/:unsafe_submission_id',

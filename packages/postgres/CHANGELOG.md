@@ -1,5 +1,19 @@
 # @prairielearn/postgres
 
+## 3.0.0
+
+### Major Changes
+
+- b911b61: Remove deprecated validated query/call functions.
+
+  Users should replace `queryValidated*` (except for `queryValidatedCursor`) and `callValidated*` with the equivalent `query*` and `call*`, respectively. For queries returning multiple columns, these calls would be equivalent. For queries returning a single column, the schema needs to be updated to the column schema.
+
+## 2.1.15
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
 ## 2.1.14
 
 ### Patch Changes

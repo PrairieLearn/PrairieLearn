@@ -1,7 +1,7 @@
 import { useState } from 'preact/compat';
 
-import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
-import { TopicDescriptionJsx } from '../../../components/TopicDescription.html.js';
+import { TopicBadgeJsx } from '../../../components/TopicBadge.js';
+import { TopicDescriptionJsx } from '../../../components/TopicDescription.js';
 import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
@@ -93,7 +93,7 @@ export function InstructorCourseAdminTopicsTable({
                   type="button"
                   onClick={() => setEditMode(true)}
                 >
-                  <i class="fa fa-edit" aria-hidden="true"></i> Edit topics
+                  <i class="fa fa-edit" aria-hidden="true" /> Edit topics
                 </button>
               ) : (
                 <form method="POST">
@@ -103,7 +103,7 @@ export function InstructorCourseAdminTopicsTable({
                   <input type="hidden" name="topics" value={JSON.stringify(topicsState)} />
                   <span class="js-edit-mode-buttons">
                     <button class="btn btn-sm btn-light mx-1" type="submit">
-                      <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                      <i class="fa fa-save" aria-hidden="true" /> Save and sync
                     </button>
                     <button
                       class="btn btn-sm btn-light"
@@ -152,20 +152,20 @@ export function InstructorCourseAdminTopicsTable({
                           <button
                             class="btn btn-sm btn-ghost"
                             type="button"
-                            onClick={() => handleOpenEditModal(index)}
                             aria-label={`Edit topic ${topic.name}`}
+                            onClick={() => handleOpenEditModal(index)}
                           >
-                            <i class="fa fa-edit" aria-hidden="true"></i>
+                            <i class="fa fa-edit" aria-hidden="true" />
                           </button>
                         </td>
                         <td class="align-middle">
                           <button
                             class="btn btn-sm"
                             type="button"
-                            onClick={() => handleDeleteTopic(index)}
                             aria-label={`Delete topic ${topic.name}`}
+                            onClick={() => handleDeleteTopic(index)}
                           >
-                            <i class="fa fa-trash text-danger" aria-hidden="true"></i>
+                            <i class="fa fa-trash text-danger" aria-hidden="true" />
                           </button>
                         </td>
                       </>
@@ -187,7 +187,7 @@ export function InstructorCourseAdminTopicsTable({
                 <tr>
                   <td colSpan={6}>
                     <button class="btn btn-sm btn-ghost" type="button" onClick={handleNewTopic}>
-                      <i class="fa fa-plus" aria-hidden="true"></i> New Topic
+                      <i class="fa fa-plus" aria-hidden="true" /> New Topic
                     </button>
                   </td>
                 </tr>

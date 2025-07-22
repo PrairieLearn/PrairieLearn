@@ -1,5 +1,23 @@
 # @prairielearn/formatter
 
+## 1.4.2
+
+### Patch Changes
+
+- 7f25a8a: Add `maxPrecision` and `minPrecision` options to `format*Friendly` functions.
+
+## 1.4.1
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 1.4.0
+
+### Minor Changes
+
+- 74b5cac: Add friendly date formatters and tests, and additional supporting utilities
+
 ## 1.3.14
 
 ### Patch Changes

@@ -1311,3 +1311,10 @@ def test_check_answers_names(
     else:
         # Should not raise an exception
         pl.check_answers_names(question_data, name)
+
+
+def test_partition() -> None:
+    nums = [1, 2, 3, 4, 6, 5]
+    evens, odds = pl.partition(nums, lambda x: x % 2 == 0)
+    assert odds == [1, 3, 5]
+    assert evens == [2, 4, 6]
