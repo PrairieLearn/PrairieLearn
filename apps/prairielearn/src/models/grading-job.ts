@@ -1,5 +1,5 @@
 import {
-  callAsync,
+  callOptionalRow,
   callRow,
   loadSqlEquiv,
   queryOptionalRow,
@@ -48,7 +48,7 @@ export async function insertGradingJob({
   authn_user_id: string | null;
 }): Promise<GradingJob> {
   return await runInTransactionAsync(async () => {
-    await callAsync('submissions_lock', [submission_id]);
+    await callOptionalRow('submissions_lock', [submission_id]);
     const { assessment_instance_id, credit, ...grading_job } = await queryRow(
       sql.insert_grading_job,
       { submission_id, authn_user_id },
@@ -58,7 +58,7 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await callAsync('assessment_instances_grade', [
+      await callOptionalRow('assessment_instances_grade', [
         assessment_instance_id,
         authn_user_id,
         credit,

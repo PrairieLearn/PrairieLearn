@@ -13,6 +13,6 @@ export default makeBatchedMigration({
     };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(sql.backfill_authn_user_id, { start, end });
+    await queryRows(sql.backfill_authn_user_id, { start, end });
   },
 });

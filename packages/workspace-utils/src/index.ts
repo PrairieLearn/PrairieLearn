@@ -156,7 +156,7 @@ export async function updateWorkspaceDiskUsage(
     totalSize += size ?? 0;
   }
 
-  await queryAsync(sql.update_workspace_disk_usage_bytes, {
+  await queryRows(sql.update_workspace_disk_usage_bytes, {
     workspace_id,
     disk_usage_bytes: totalSize,
   });
@@ -222,7 +222,7 @@ export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id: string | number;
   duration_milliseconds: number;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_workspace, {
+  await queryRows(sql.update_course_instance_usages_for_workspace, {
     workspace_id,
     duration_milliseconds,
   });

@@ -1,5 +1,5 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+import { queryOneRowAsync, queryRows } from '@prairielearn/postgres';
 
 export default makeBatchedMigration({
   async getParameters() {
@@ -12,7 +12,7 @@ export default makeBatchedMigration({
   },
 
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(
+    await queryRows(
       `
       UPDATE variants AS v
       SET

@@ -455,7 +455,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await queryRows(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
