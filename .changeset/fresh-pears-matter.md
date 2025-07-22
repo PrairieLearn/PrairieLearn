@@ -1,5 +1,5 @@
 ---
-'@prairielearn/postgres': minor
+'@prairielearn/postgres': major
 ---
 
-Deprecate queryCursor
+Remove `queryCursor`
