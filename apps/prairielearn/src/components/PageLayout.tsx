@@ -7,12 +7,12 @@ import type { VNode } from '@prairielearn/preact-cjs';
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { renderHtml } from '../lib/preact-html.js';
 
-import { AssessmentNavigation } from './AssessmentNavigation.html.js';
-import { HeadContents } from './HeadContents.html.js';
-import { Navbar } from './Navbar.html.js';
+import { AssessmentNavigation } from './AssessmentNavigation.js';
+import { HeadContents } from './HeadContents.js';
+import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.html.js';
-import { SideNav } from './SideNav.html.js';
+import { ContextNavigation } from './NavbarContext.js';
+import { SideNav } from './SideNav.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -173,16 +173,14 @@ export function PageLayout({
               : ''}
             <div class="${sideNavEnabled ? 'app-main' : ''}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
-                ${resLocals.assessment &&
-                resLocals.course_instance &&
-                // student and public pages don't get the assesment switcher
-                sideNavEnabled &&
-                AssessmentNavigation({
-                  courseInstanceId: resLocals.course_instance.id,
-                  subPage: navContext.subPage,
-                  assessment: resLocals.assessment,
-                  assessmentSet: resLocals.assessment_set,
-                })}
+                ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
+                  ? AssessmentNavigation({
+                      courseInstanceId: resLocals.course_instance.id,
+                      subPage: navContext.subPage,
+                      assessment: resLocals.assessment,
+                      assessmentSet: resLocals.assessment_set,
+                    })
+                  : ''}
                 ${showContextNavigation
                   ? ContextNavigation({
                       resLocals,

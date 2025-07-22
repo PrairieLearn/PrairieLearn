@@ -4,10 +4,10 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
-import { IssueBadge } from './IssueBadge.html.js';
+import { IssueBadge } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
-import { ContextNavigation } from './NavbarContext.html.js';
-import { ProgressCircle } from './ProgressCircle.html.js';
+import { ContextNavigation } from './NavbarContext.js';
+import { ProgressCircle } from './ProgressCircle.js';
 
 export function Navbar({
   resLocals,

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../../lib/db-types.js';
+import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -141,7 +141,7 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
-    modified_at: z.string(),
+    modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
       .transform((val) =>
@@ -236,7 +236,7 @@ router.post(
           res.locals.assessment.id,
           res.locals.instance_question.id,
           body.submission_id,
-          body.modified_at,
+          body.modified_at, // check_modified_at
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,

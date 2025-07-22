@@ -4,10 +4,10 @@ import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
@@ -180,6 +180,7 @@ export function InstructorCourseAdminInstances({
                   <a
                     href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
                     target="_blank"
+                    rel="noreferrer"
                     >course instance documentation</a
                   >.
                 </p>
