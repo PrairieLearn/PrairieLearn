@@ -14,11 +14,16 @@ interface HistMiniProps {
   };
 }
 
+const DEFAULT_OPTIONS = {};
 export function HistMiniHtml({
   selector,
   data,
-  options = {},
+  options = DEFAULT_OPTIONS,
 }: HistMiniProps & { selector: HTMLElement }) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return;
+  }
+
   const resolvedOptions = {
     width: 100,
     height: 40,
@@ -88,8 +93,6 @@ export function HistMiniHtml({
     .attr('x2', width)
     .attr('y2', height)
     .attr('class', 'x axis');
-
-  return svg.node();
 }
 
 export function HistMini({ data, options }: HistMiniProps) {
