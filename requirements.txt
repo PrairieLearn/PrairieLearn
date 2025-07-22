@@ -2,6 +2,7 @@ ansi2html==1.9.2
 automata-lib==9.0.0
 chevron==0.14.0
 coloraide==4.7.2
+datascience==0.17.6
 Faker==37.4.0
 lxml==6.0.0
 matplotlib==3.10.3
