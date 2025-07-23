@@ -495,6 +495,6 @@ export async function startTestQuestion(
   return serverJob.jobSequenceId;
 }
 
-async function selectSubmission(submission_id: string): Promise<Submission> {
+export async function selectSubmission(submission_id: string): Promise<Submission> {
   return await sqldb.queryRow(sql.select_submission_by_id, { submission_id }, SubmissionSchema);
 }

@@ -137,6 +137,8 @@ router.post(
           user_id: res.locals.user.user_id,
           mode: 'selected',
           instance_question_ids,
+          image_rag_enabled: false,
+          use_save_clusters: true
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -215,6 +217,8 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+        image_rag_enabled: true,
+        use_save_clusters: true
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

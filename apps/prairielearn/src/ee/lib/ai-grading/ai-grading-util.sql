@@ -99,6 +99,10 @@ WITH
       JOIN submissions s ON v.id = s.variant_id
     WHERE
       iq.assessment_question_id = $assessment_question_id
+      AND (
+        cardinality($submission_ids_allowed::bigint[]) = 0
+        OR s.id = ANY($submission_ids_allowed::bigint[])
+      )
       AND NOT iq.requires_manual_grading
       AND iq.status != 'unanswered'
       AND s.id != $submission_id
@@ -153,3 +157,9 @@ FROM
   submission_grading_context_embeddings AS emb
 WHERE
   emb.submission_id = $submission_id;
+
+-- BLOCK delete_embedding_for_submission
+DELETE FROM
+  submission_grading_context_embeddings
+WHERE
+  submission_id = $submission_id;

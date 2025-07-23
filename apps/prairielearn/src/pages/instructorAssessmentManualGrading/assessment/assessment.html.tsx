@@ -76,11 +76,49 @@ export function ManualGradingAssessment({
         assessmentId: resLocals.assessment.id,
         urlPrefix: resLocals.urlPrefix,
       })}
+      <form method="POST" id="ai-grading-all">
+        <input type="hidden" name="__action" value="ai_grade_assessment_all" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+      <form method="POST" id="export-statistics">
+        <input type="hidden" name="__action" value="export_statistics" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+      <form method="POST" id="delete-ai-grading-data">
+        <input type="hidden" name="__action" value="delete_ai_grading_data" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white align-items-center d-flex w-100 gap-2">
           <h1>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
           </h1>
+          <div class="flex-1"></div>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="ai-grade-all-questions"
+            onclick="$('#ai-grading-all').submit();"
+          >
+            AI grade all questions
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="export-statistics"
+            onclick="$('#export-statistics').submit();"
+          >
+            Export statistics
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="delete-ai-grading-data"
+            onclick="$('#delete-ai-grading-data').submit();"
+          >
+            Delete AI grading data
+          </button>
         </div>
 
         <div class="table-responsive">
