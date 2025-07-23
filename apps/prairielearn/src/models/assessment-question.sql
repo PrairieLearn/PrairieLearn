@@ -50,11 +50,6 @@ SELECT
           'assessment_set_color',
           aset.color
         )
-        ORDER BY
-          aset.number,
-          aset.id,
-          a2.number,
-          a2.id
       )
     FROM
       assessments a2

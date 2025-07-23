@@ -25,6 +25,8 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
   StaffZoneSchema,
+  RawStaffAssessmentSetSchema,
+  RawStaffAssessmentSchema,
 } from '../lib/client/safe-db-types.js';
 import { run } from '@prairielearn/run';
 
