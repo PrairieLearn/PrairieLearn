@@ -167,11 +167,6 @@ export default tseslint.config([
 
           pathGroups: [
             {
-              pattern: '#{lib,components,pages}/**',
-              group: 'internal',
-              position: 'before',
-            },
-            {
               pattern: '@prairielearn/**',
               group: 'external',
               position: 'after',

@@ -280,6 +280,8 @@
     "ext": "js,jsx,ts,tsx,json,sql"
   },
   "imports": {
-    "#lib/*": "./src/lib/*.js"
+    "#lib/*": "./src/lib/*",
+    "#components/*": "./src/components/*",
+    "#pages/*": "./src/pages/*"
   }
 }
