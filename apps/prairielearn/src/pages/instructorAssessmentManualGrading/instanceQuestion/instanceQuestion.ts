@@ -137,8 +137,7 @@ router.get(
             z.boolean(),
           )) ?? false;
 
-        console.log('aiGradingAvailable', aiGradingAvailable);
-        console.log('manualGradingAvailable', manualGradingAvailable);
+          
 
         aiGradingInfo = {
           aiGradingAvailable,
