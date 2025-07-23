@@ -8,7 +8,13 @@ import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import {
@@ -390,7 +396,7 @@ export async function getAccessToken(lti13_instance_id: string) {
   // Store the token for reuse
   const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
 
-  await queryRows(sql.update_token, {
+  await queryAsync(sql.update_token, {
     lti13_instance_id,
     access_tokenset: tokenSet,
     access_token_expires_at: new Date(expires_at),
@@ -519,7 +525,7 @@ export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryRows(sql.delete_lti13_assessment, {
+  await queryAsync(sql.delete_lti13_assessment, {
     lti13_course_instance_id,
     assessment_id,
   });
@@ -543,7 +549,7 @@ export async function linkAssessment(
     throw new HttpStatusError(403, 'Invalid assessment id');
   }
 
-  await queryRows(sql.upsert_lti13_assessment, {
+  await queryAsync(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),

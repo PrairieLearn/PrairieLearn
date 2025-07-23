@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -47,7 +47,7 @@ describe('Updating a course instance ID', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryRows(sql.update_course_repo, { repo: courseOriginDir });
+    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
   });
 
   afterAll(helperServer.after);

@@ -1,5 +1,5 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -13,6 +13,6 @@ export default makeBatchedMigration({
     };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryRows(sql.backfill_authn_user_id, { start, end });
+    await queryAsync(sql.backfill_authn_user_id, { start, end });
   },
 });
