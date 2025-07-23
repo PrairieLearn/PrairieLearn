@@ -26,23 +26,41 @@ SELECT
   aq.number_in_alternative_group,
   coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
   (
-    SELECT jsonb_agg(t.*)
-    FROM tags t
-    JOIN question_tags qt ON qt.tag_id = t.id
-    WHERE qt.question_id = q.id
+    SELECT
+      jsonb_agg(t.*)
+    FROM
+      tags t
+      JOIN question_tags qt ON qt.tag_id = t.id
+    WHERE
+      qt.question_id = q.id
   ) AS tags,
   (
-    SELECT jsonb_agg(jsonb_build_object(
-      'label', aset.abbreviation || a2.number,
-      'assessment_id', a2.id::text,
-      'course_instance_id', a2.course_instance_id::text,
-      'share_source_publicly', a2.share_source_publicly,
-      'color', aset.color
-    ) ORDER BY aset.number, aset.id, a2.number, a2.id)
-    FROM assessments a2
-    JOIN assessment_sets aset ON aset.id = a2.assessment_set_id
-    JOIN assessment_questions aq2 ON aq2.assessment_id = a2.id
-    WHERE aq2.question_id = q.id
+    SELECT
+      jsonb_agg(
+        jsonb_build_object(
+          'label',
+          aset.abbreviation || a2.number,
+          'assessment_id',
+          a2.id::text,
+          'course_instance_id',
+          a2.course_instance_id::text,
+          'share_source_publicly',
+          a2.share_source_publicly,
+          'color',
+          aset.color
+        )
+        ORDER BY
+          aset.number,
+          aset.id,
+          a2.number,
+          a2.id
+      )
+    FROM
+      assessments a2
+      JOIN assessment_sets aset ON aset.id = a2.assessment_set_id
+      JOIN assessment_questions aq2 ON aq2.assessment_id = a2.id
+    WHERE
+      aq2.question_id = q.id
       AND a2.id != a.id
       AND a2.course_instance_id = a.course_instance_id
       AND aq2.deleted_at IS NULL
