@@ -57,6 +57,7 @@ The assessment ID is the full path relative to `assessments`.
 | `studentGroupCreate`                                              | boolean | Whether students can create groups. (Optional; default: `false`)                                                                          |
 | `studentGroupJoin`                                                | boolean | Whether students can join groups. (Optional; default: `false`)                                                                            |
 | `studentGroupLeave`                                               | boolean | Whether students can leave groups. (Optional; default: `false`)                                                                           |
+| `studentGroupChooseName`                                          | boolean | Whether students can choose their own group name. (Optional; default: `true`)                                                             |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -112,7 +113,7 @@ The `shuffleQuestions` parameter controls whether questions on an assessment app
 | `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
 | `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
 
-If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
 ## Question specification
 
