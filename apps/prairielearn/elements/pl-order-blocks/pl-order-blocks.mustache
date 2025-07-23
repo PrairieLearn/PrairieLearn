@@ -39,7 +39,7 @@ $(function() {
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
-                        style='margin-left: {{indent}}px;'
+                        style="margin-left: {{indent}}px;"
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}

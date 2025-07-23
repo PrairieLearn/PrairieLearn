@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import ButtonOriginal from 'react-bootstrap/Button';
 import CardOriginal from 'react-bootstrap/Card';
 import CardBodyOriginal from 'react-bootstrap/CardBody';
@@ -7,6 +8,15 @@ import FormCheckOriginal from 'react-bootstrap/FormCheck';
 import FormControlOriginal from 'react-bootstrap/FormControl';
 import InputGroupOriginal from 'react-bootstrap/InputGroup';
 import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
+
+import { run } from '@prairielearn/run';
+
+import {
+  type ExamplePromptWithId,
+  type VariantOption,
+  generateSampleQuestionVariant,
+  variantOptionToString,
+} from './aiGeneratedQuestionSamples.js';
 
 const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
 const Card = CardOriginal as unknown as typeof CardOriginal.default;
@@ -18,28 +28,14 @@ const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal
 const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
 const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
-import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
-import { run } from '@prairielearn/run';
-
-import {
-  type ExamplePrompt,
-  type SampleQuestionVariant,
-  type VariantOption,
-  type examplePrompts,
-  generateSampleQuestionVariant,
-  variantOptionToString,
-} from './aiGeneratedQuestionSamples.js';
-
 export function SampleQuestionDemo({
-  promptId,
   prompt,
   onMathjaxTypeset,
 }: {
-  promptId: keyof typeof examplePrompts;
-  prompt: ExamplePrompt;
-  onMathjaxTypeset: () => Promise<void>;
+  prompt: ExamplePromptWithId;
+  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
 }) {
-  const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
+  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -48,6 +44,8 @@ export function SampleQuestionDemo({
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(() => new Set<string>());
 
   const [grade, setGrade] = useState<number | null>(null);
+
+  const cardRef = useRef<HTMLElement | null>(null);
 
   const handleSelectOption = (option: string) => {
     if (prompt.answerType === 'radio') {
@@ -66,7 +64,7 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleGenerateNewVariant = async () => {
+  const handleGenerateNewVariant = () => {
     // Clear the grade shown to the user
     setGrade(null);
 
@@ -77,14 +75,17 @@ export function SampleQuestionDemo({
     setSelectedOptions(new Set<string>());
 
     // Generate a new question variant
-    const questionVariant = generateSampleQuestionVariant(promptId);
+    const questionVariant = generateSampleQuestionVariant(prompt.id);
     setVariant(questionVariant);
   };
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    onMathjaxTypeset();
-  }, [variant?.question, prompt]);
+    if (cardRef.current) {
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      onMathjaxTypeset([cardRef.current]);
+    }
+  }, [variant?.question, onMathjaxTypeset]);
 
   const handleGrade = () => {
     if (!variant) {
@@ -152,10 +153,6 @@ export function SampleQuestionDemo({
     }
   };
 
-  useEffect(() => {
-    handleGenerateNewVariant();
-  }, [promptId]);
-
   // The correct answer to the problem, displayed to the user
   const answerText = variant
     ? run(() => {
@@ -188,7 +185,7 @@ export function SampleQuestionDemo({
     : '';
 
   return (
-    <Card class="shadow">
+    <Card ref={cardRef} class="shadow">
       <CardHeader>
         <div class="d-flex align-items-center gap-2">
           <p class="mb-0">{prompt.name}</p>
@@ -240,7 +237,7 @@ export function SampleQuestionDemo({
       <CardFooter>
         <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div class="flex-grow-1"></div>
+          <div class="flex-grow-1" />
           <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
               <span class="text-nowrap">New variant</span>
@@ -264,12 +261,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return (
-    <span class={`badge ${badgeType}`}>
-      {Math.floor(grade)}
-      {'%'}
-    </span>
-  );
+  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
@@ -326,8 +318,8 @@ function CheckboxOrRadioInput({
     <div class="mt-2">
       {options.map((option) => (
         <FormCheck
-          id={`check-${option.value}`}
           key={option.value}
+          id={`check-${option.value}`}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
           value={option.value}

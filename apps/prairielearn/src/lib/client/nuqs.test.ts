@@ -1,7 +1,11 @@
 import type { SortingState } from '@tanstack/table-core';
 import { describe, expect, it } from 'vitest';
 
-import { parseAsSortingState } from './nuqs.js';
+import {
+  parseAsColumnPinningState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsSortingState,
+} from './nuqs.js';
 
 describe('parseAsSortingState', () => {
   describe('parse', () => {
@@ -112,5 +116,63 @@ describe('parseAsSortingState', () => {
     it('returns false for one empty, one not', () => {
       expect(parseAsSortingState.eq([], [{ id: 'col', desc: false }])).toBe(false);
     });
+  });
+});
+
+describe('parseAsColumnVisibilityStateWithColumns', () => {
+  const allColumns = ['a', 'b', 'c'];
+  const parser = parseAsColumnVisibilityStateWithColumns(allColumns);
+
+  it('parses empty string as all columns visible', () => {
+    expect(parser.parse('')).toEqual({ a: true, b: true, c: true });
+  });
+
+  it('parses comma-separated columns as only those visible', () => {
+    expect(parser.parse('a,b')).toEqual({ a: true, b: true, c: false });
+    expect(parser.parse('b')).toEqual({ a: false, b: true, c: false });
+  });
+
+  it('serializes all columns visible as empty string', () => {
+    expect(parser.serialize({ a: true, b: true, c: true })).toBe('');
+  });
+
+  it('serializes partial visibility as comma-separated columns', () => {
+    expect(parser.serialize({ a: true, b: false, c: true })).toBe('a,c');
+    expect(parser.serialize({ a: false, b: true, c: false })).toBe('b');
+  });
+
+  it('eq returns true for equal visibility', () => {
+    expect(parser.eq({ a: true, b: false, c: true }, { a: true, b: false, c: true })).toBe(true);
+  });
+
+  it('eq returns false for different visibility', () => {
+    expect(parser.eq({ a: true, b: false, c: true }, { a: false, b: false, c: true })).toBe(false);
+  });
+});
+
+describe('parseAsColumnPinningState', () => {
+  const parser = parseAsColumnPinningState;
+
+  it('parses empty string as no pinned columns', () => {
+    expect(parser.parse('')).toEqual({ left: [], right: [] });
+  });
+
+  it('parses comma-separated columns as left-pinned', () => {
+    expect(parser.parse('a,b')).toEqual({ left: ['a', 'b'], right: [] });
+    expect(parser.parse('c')).toEqual({ left: ['c'], right: [] });
+  });
+
+  it('serializes left-pinned columns as comma-separated string', () => {
+    expect(parser.serialize({ left: ['a', 'b'], right: [] })).toBe('a,b');
+    expect(parser.serialize({ left: [], right: [] })).toBe('');
+  });
+
+  it('eq returns true for equal pinning', () => {
+    expect(parser.eq({ left: ['a', 'b'], right: [] }, { left: ['a', 'b'], right: [] })).toBe(true);
+  });
+
+  it('eq returns false for different pinning', () => {
+    expect(parser.eq({ left: ['a', 'b'], right: [] }, { left: ['b', 'a'], right: [] })).toBe(false);
+    expect(parser.eq({ left: ['a'], right: [] }, { left: ['a', 'b'], right: [] })).toBe(false);
   });
 });

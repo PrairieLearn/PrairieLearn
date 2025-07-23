@@ -1,18 +1,18 @@
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../components/AssessmentQuestions.html.js';
-import { IssueBadge } from '../../components/IssueBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
+} from '../../components/AssessmentQuestions.js';
+import { IssueBadgeHtml } from '../../components/IssueBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { Course } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -146,12 +146,12 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(AssessmentQuestionHeaders({ question, nTableCols }))}
               <tr>
                 <td>
                   ${run(() => {
-                    const number = AssessmentQuestionNumber(question);
-                    const issueBadge = IssueBadge({
+                    const number = renderHtml(AssessmentQuestionNumber({ question }));
+                    const issueBadge = IssueBadgeHtml({
                       urlPrefix,
                       count: question.open_issue_count ?? 0,
                       issueQid: question.qid,
@@ -169,12 +169,12 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>
                   ${question.sync_errors
-                    ? SyncProblemButton({
+                    ? SyncProblemButtonHtml({
                         type: 'error',
                         output: question.sync_errors,
                       })
                     : question.sync_warnings
-                      ? SyncProblemButton({
+                      ? SyncProblemButtonHtml({
                           type: 'warning',
                           output: question.sync_warnings,
                         })
@@ -183,8 +183,8 @@ function AssessmentQuestionsTable({
                     ? question.qid
                     : `@${question.course_sharing_name}/${question.qid}`}
                 </td>
-                <td>${TopicBadge(question.topic)}</td>
-                <td>${TagBadgeList(question.tags)}</td>
+                <td>${TopicBadgeHtml(question.topic)}</td>
+                <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
                 <td>
                   ${maxPoints({
                     max_auto_points: question.max_auto_points,
@@ -224,7 +224,7 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>
                   ${question.other_assessments?.map((assessment) =>
-                    AssessmentBadge({ urlPrefix, assessment }),
+                    AssessmentBadgeHtml({ urlPrefix, assessment }),
                   )}
                 </td>
                 <td class="text-end">

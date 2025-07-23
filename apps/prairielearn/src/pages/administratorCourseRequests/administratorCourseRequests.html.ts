@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { type Institution } from '../../lib/db-types.js';
 
