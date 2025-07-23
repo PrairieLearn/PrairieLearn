@@ -5,7 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { doWithLock } from '@prairielearn/named-locks';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-// import { DEV_EXECUTION_MODE } from '../execution-mode.js';
+import { DEV_EXECUTION_MODE } from '../execution-mode.js';
 import {
   type MigrationFile,
   readAndValidateMigrationsFromDirectories,
@@ -166,9 +166,9 @@ export class BatchedMigrationsRunner extends EventEmitter {
   start(options: BatchedMigrationStartOptions = {}) {
     if (this.running) {
       // For Vite HMR mode
-      // eslint-disable-next-line no-constant-condition
-      if (true) return;
-      // throw new Error('BatchedMigrationsRunner is already running');
+
+      if (DEV_EXECUTION_MODE === 'hmr') return;
+      throw new Error('BatchedMigrationsRunner is already running');
     }
 
     this.loop(options);
