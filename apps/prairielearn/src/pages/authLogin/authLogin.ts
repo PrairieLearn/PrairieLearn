@@ -7,6 +7,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import * as authLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
+import { AuthnProviderSchema } from '../../lib/db-types.js';
 
 import {
   AuthLogin,
@@ -24,7 +25,7 @@ const InstitutionAuthnProviderSchema = z.object({
   default_authn_provider_name: z.string(),
 });
 const InstitutionSupportedProvidersSchema = z.object({
-  name: z.string(),
+  name: AuthnProviderSchema.shape.name,
   is_default: z.boolean(),
 });
 const ServiceSchema = z.string().nullable();
