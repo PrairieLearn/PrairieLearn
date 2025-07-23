@@ -1,4 +1,4 @@
-import { join } from 'path';
+import path, { join } from 'path';
 
 import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 
@@ -58,6 +58,11 @@ export default defineConfig(({ mode }) => {
           all: true,
           include: ['src/**'],
           reporter: ['html', 'text-summary', 'cobertura'],
+        },
+        alias: {
+          '#components': path.resolve(import.meta.dirname, 'src/components'),
+          '#lib': path.resolve(import.meta.dirname, 'src/lib'),
+          '#pages': path.resolve(import.meta.dirname, 'src/pages'),
         },
       },
     }),

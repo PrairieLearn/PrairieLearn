@@ -278,5 +278,8 @@
       "public/*"
     ],
     "ext": "js,jsx,ts,tsx,json,sql"
+  },
+  "imports": {
+    "#lib/*": "./src/lib/*.js"
   }
 }
