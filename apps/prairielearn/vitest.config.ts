@@ -60,6 +60,9 @@ export default defineConfig(({ mode }) => {
           reporter: ['html', 'text-summary', 'cobertura'],
         },
       },
+      resolve: {
+        conditions: ['prairielearn-dev'],
+      },
     }),
   );
 });
