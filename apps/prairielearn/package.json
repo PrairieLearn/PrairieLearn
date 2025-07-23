@@ -282,6 +282,7 @@
   "imports": {
     "#lib/*": "./src/lib/*",
     "#components/*": "./src/components/*",
-    "#pages/*": "./src/pages/*"
+    "#pages/*": "./src/pages/*",
+    "#client/*": "./src/lib/client/*"
   }
 }
