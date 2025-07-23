@@ -7,21 +7,21 @@ import { run } from '@prairielearn/run';
 import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
-} from '../../components/AssessmentRegenerate.html.js';
-import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
-import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
+} from '../../components/AssessmentRegenerate.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
 import {
   ExamQuestionAvailablePoints,
   ExamQuestionStatus,
   InstanceQuestionPoints,
   QuestionVariantHistory,
-} from '../../components/QuestionScore.html.js';
+} from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
-import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
+import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,

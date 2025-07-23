@@ -4,11 +4,11 @@ import { z } from 'zod';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
-import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
+import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
