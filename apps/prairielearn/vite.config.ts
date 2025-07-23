@@ -16,6 +16,7 @@ export default defineConfig({
   plugins: [
     ...VitePluginExpress({
       appPath: './src/server.ts',
+      extraWatchPaths: [],
     }),
   ],
 });
