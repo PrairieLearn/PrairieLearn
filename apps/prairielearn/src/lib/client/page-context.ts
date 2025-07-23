@@ -8,6 +8,7 @@ import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
 } from './safe-db-types.js';
+import { run } from '@prairielearn/run';
 
 const RawPageContextSchema = z.object({
   authz_data: z.object({
@@ -95,10 +96,13 @@ export function getCourseInstanceContext(
   resLocals: Record<string, any>,
   authLevel: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
-  if (authLevel === 'student') {
-    return StudentCourseInstanceContextSchema.parse(resLocals);
-  }
-  return StaffCourseInstanceContextSchema.parse(resLocals);
+  const schema = run(() => {
+    if (authLevel === 'student') {
+      return StudentCourseInstanceContextSchema;
+    }
+    return StaffCourseInstanceContextSchema;
+  });
+  return schema.parse(resLocals);
 }
 
 const RawStaffAssessmentContextSchema = z.object({
@@ -112,6 +116,15 @@ const StaffAssessmentContextSchema =
 
 export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
 
-export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
-  return StaffAssessmentContextSchema.parse(resLocals);
+export function getAssessmentContext(
+  resLocals: Record<string, any>,
+  authLevel: 'instructor',
+): StaffAssessmentContext {
+  const schema = run(() => {
+    if (authLevel === 'instructor') {
+      return StaffAssessmentContextSchema;
+    }
+    return StaffAssessmentContextSchema;
+  });
+  return schema.parse(resLocals);
 }

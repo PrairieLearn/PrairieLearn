@@ -1,10 +1,18 @@
-import type { AssessmentQuestionRow } from '../models/assessment-question.js';
+import type {
+  StaffAlternativeGroup,
+  StaffAssessmentQuestion,
+} from '../lib/client/safe-db-types.js';
+import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
+import type {
+  AssessmentQuestionRow,
+  StaffAssessmentQuestionRow,
+} from '../models/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
   question,
   nTableCols,
 }: {
-  question: AssessmentQuestionRow;
+  question: AssessmentQuestionRow | StaffAssessmentQuestionRow;
   nTableCols: number;
 }) {
   return (
@@ -47,12 +55,20 @@ export function AssessmentQuestionHeaders({
   );
 }
 
-export function AssessmentQuestionNumber({ question }: { question: AssessmentQuestionRow }) {
-  return question.alternative_group_size === 1 ? (
-    `${question.alternative_group.number}. `
+export function AssessmentQuestionNumber({
+  alternativeGroup,
+  alternativeGroupSize,
+  assessmentQuestion,
+}: {
+  alternativeGroup: AlternativeGroup | StaffAlternativeGroup;
+  alternativeGroupSize: number;
+  assessmentQuestion: AssessmentQuestion | StaffAssessmentQuestion;
+}) {
+  return alternativeGroupSize === 1 ? (
+    `${alternativeGroup.number}. `
   ) : (
     <span class="ms-3">
-      {question.alternative_group.number}.{question.number_in_alternative_group}.{' '}
+      {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
     </span>
   );
 }

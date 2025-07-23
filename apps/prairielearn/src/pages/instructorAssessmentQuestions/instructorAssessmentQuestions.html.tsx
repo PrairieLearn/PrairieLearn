@@ -6,22 +6,21 @@ import {
   getCourseInstanceContext,
   getPageContext,
 } from '../../lib/client/page-context.js';
-import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { Hydrate } from '../../lib/preact.js';
-import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
-  questions,
+  questionRows,
 }: {
   resLocals: Record<string, any>;
-  questions: AssessmentQuestionRow[];
+  questionRows: StaffAssessmentQuestionRow[];
 }) {
   const { authz_data, urlPrefix } = getPageContext(resLocals);
   const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
-  const { assessment, assessment_set } = getAssessmentContext(resLocals);
+  const { assessment, assessment_set } = getAssessmentContext(resLocals, 'instructor');
 
   return PageLayout({
     resLocals,
@@ -40,14 +39,14 @@ export function InstructorAssessmentQuestions({
         <AssessmentSyncErrorsAndWarnings
           authz_data={authz_data}
           assessment={assessment}
-          courseInstance={course_instance as StaffCourseInstance}
-          course={course as StaffCourse}
+          courseInstance={course_instance}
+          course={course}
           urlPrefix={urlPrefix}
         />
         <Hydrate>
           <InstructorAssessmentQuestionsTable
-            course={course as StaffCourse}
-            questions={questions}
+            course={course}
+            questionRows={questionRows}
             urlPrefix={urlPrefix}
             assessmentType={assessment.type}
             assessmentSetName={assessment_set.name}

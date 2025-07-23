@@ -23,7 +23,6 @@ SELECT
   to_jsonb(a.*) AS assessment,
   to_jsonb(ci.*) AS course_instance,
   to_jsonb(c.*) AS course,
-  aq.number_in_alternative_group,
   coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
   (
     SELECT
@@ -38,15 +37,17 @@ SELECT
     SELECT
       jsonb_agg(
         jsonb_build_object(
-          'label',
-          aset.abbreviation || a2.number,
+          'assessment_set_abbreviation',
+          aset.abbreviation,
+          'assessment_number',
+          a2.number,
           'assessment_id',
-          a2.id::text,
-          'course_instance_id',
-          a2.course_instance_id::text,
-          'share_source_publicly',
+          a2.id,
+          'assessment_course_instance_id',
+          a2.course_instance_id,
+          'assessment_share_source_publicly',
           a2.share_source_publicly,
-          'color',
+          'assessment_set_color',
           aset.color
         )
         ORDER BY

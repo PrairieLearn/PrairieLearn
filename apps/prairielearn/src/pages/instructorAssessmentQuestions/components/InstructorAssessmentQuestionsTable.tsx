@@ -13,34 +13,39 @@ import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
-  question,
+  questionRow,
   hasCoursePermissionPreview,
   urlPrefix,
 }: {
-  question: AssessmentQuestionRow;
+  questionRow: StaffAssessmentQuestionRow;
   hasCoursePermissionPreview: boolean;
   urlPrefix: string;
 }) {
+  const { question, assessment_question, alternative_group, alternative_group_size } = questionRow;
   const title = (
     <>
-      <AssessmentQuestionNumber question={question} />
-      {question.question.title}
+      <AssessmentQuestionNumber
+        assessmentQuestion={assessment_question}
+        alternativeGroup={alternative_group}
+        alternativeGroupSize={alternative_group_size}
+      />
+      {question.title}
     </>
   );
   if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.question.id}/`}>{title}</a>;
+    return <a href={`${urlPrefix}/question/${question.id}/`}>{title}</a>;
   }
   return title;
 }
 
 export function InstructorAssessmentQuestionsTable({
   course,
-  questions,
+  questionRows,
   urlPrefix,
   assessmentType,
   assessmentSetName,
@@ -50,7 +55,7 @@ export function InstructorAssessmentQuestionsTable({
   csrfToken,
 }: {
   course: StaffCourse;
-  questions: AssessmentQuestionRow[];
+  questionRows: StaffAssessmentQuestionRow[];
   assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
   assessmentNumber: string;
@@ -69,7 +74,8 @@ export function InstructorAssessmentQuestionsTable({
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
-    questions.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >= 1;
+    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
+    1;
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -126,79 +132,76 @@ export function InstructorAssessmentQuestionsTable({
               </tr>
             </thead>
             <tbody>
-              {questions.map((question) => {
+              {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
+                const { question, assessment_question, other_assessments, open_issue_count } =
+                  questionRow;
                 return (
-                  <Fragment key={question.question.qid}>
-                    <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
+                  <Fragment key={question.qid}>
+                    <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
                     <tr>
                       <td>
                         <Title
-                          question={question}
+                          questionRow={questionRow}
                           hasCoursePermissionPreview={hasCoursePermissionPreview}
                           urlPrefix={urlPrefix}
                         />
                         <IssueBadge
                           urlPrefix={urlPrefix}
-                          count={question.open_issue_count ?? 0}
-                          issueQid={question.question.qid}
+                          count={questionRow.open_issue_count ?? 0}
+                          issueQid={question.qid}
                         />
                       </td>
                       <td>
-                        {question.question.sync_errors ? (
-                          <SyncProblemButton output={question.question.sync_errors} type="error" />
-                        ) : question.question.sync_warnings ? (
-                          <SyncProblemButton
-                            output={question.question.sync_warnings}
-                            type="warning"
-                          />
+                        {question.sync_errors ? (
+                          <SyncProblemButton output={question.sync_errors} type="error" />
+                        ) : question.sync_warnings ? (
+                          <SyncProblemButton output={question.sync_warnings} type="warning" />
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.question.course_id)
-                          ? question.question.qid
-                          : `@${question.course.sharing_name}/${question.question.qid}`}
+                        {idsEqual(course.id, question.course_id)
+                          ? question.qid
+                          : `@${course.sharing_name}/${question.qid}`}
                       </td>
                       <td>
-                        <TopicBadge topic={question.topic} />
+                        <TopicBadge topic={questionRow.topic} />
                       </td>
                       <td>
-                        <TagBadgeList tags={question.tags} />
+                        <TagBadgeList tags={questionRow.tags} />
                       </td>
                       <td>
                         {maxPoints({
-                          max_auto_points: question.assessment_question.max_auto_points,
-                          max_manual_points: question.assessment_question.max_manual_points,
-                          points_list: question.assessment_question.points_list,
-                          init_points: question.assessment_question.init_points,
+                          max_auto_points: assessment_question.max_auto_points,
+                          max_manual_points: assessment_question.max_manual_points,
+                          points_list: assessment_question.points_list,
+                          init_points: assessment_question.init_points,
                         })}
                       </td>
-                      <td>{question.assessment_question.max_manual_points || '—'}</td>
+                      <td>{assessment_question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol ? (
                         <td
                           class={clsx(
-                            question.assessment_question.effective_advance_score_perc === 0
+                            assessment_question.effective_advance_score_perc === 0
                               ? 'text-muted'
                               : '',
                           )}
                           data-testid="advance-score-perc"
                         >
-                          {question.assessment_question.effective_advance_score_perc}%
+                          {assessment_question.effective_advance_score_perc}%
                         </td>
                       ) : (
                         ''
                       )}
                       <td>
-                        {question.assessment_question.mean_question_score
-                          ? `${question.assessment_question.mean_question_score.toFixed(3)}%`
+                        {assessment_question.mean_question_score
+                          ? `${assessment_question.mean_question_score.toFixed(3)}%`
                           : ''}
                       </td>
                       <td class="text-center">
-                        {question.assessment_question.number_submissions_hist ? (
+                        {assessment_question.number_submissions_hist ? (
                           <div
                             class="js-histmini"
-                            data-data={JSON.stringify(
-                              question.assessment_question.number_submissions_hist,
-                            )}
+                            data-data={JSON.stringify(assessment_question.number_submissions_hist)}
                             data-options={JSON.stringify({ width: 60, height: 20 })}
                           />
                         ) : (
@@ -206,12 +209,21 @@ export function InstructorAssessmentQuestionsTable({
                         )}
                       </td>
                       <td>
-                        {question.other_assessments?.map((assessment) => (
+                        {other_assessments?.map((assessment) => (
                           <div
-                            key={`${question.question.qid}-${assessment.assessment_id}`}
+                            key={`${question.qid}-${assessment.assessment_id}`}
                             class="d-inline-block me-1"
                           >
-                            <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
+                            <AssessmentBadge
+                              urlPrefix={urlPrefix}
+                              assessment={{
+                                assessment_id: assessment.assessment_id,
+                                color: assessment.assessment_set_color,
+                                label:
+                                  assessment.assessment_set_abbreviation +
+                                  assessment.assessment_number,
+                              }}
+                            />
                           </div>
                         ))}
                       </td>
@@ -233,9 +245,7 @@ export function InstructorAssessmentQuestionsTable({
                                 class="dropdown-item"
                                 data-bs-toggle="modal"
                                 data-bs-target="#resetQuestionVariantsModal"
-                                onClick={() =>
-                                  handleResetButtonClick(question.assessment_question.id)
-                                }
+                                onClick={() => handleResetButtonClick(assessment_question.id)}
                               >
                                 Reset question variants
                               </button>
