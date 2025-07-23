@@ -13,6 +13,8 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
   StaffZoneSchema,
+  RawStaffAssessmentSetSchema,
+  RawStaffAssessmentSchema,
 } from '../lib/client/safe-db-types.js';
 
 export const RawAssessmentQuestionRowSchema = z.object({
@@ -30,11 +32,12 @@ export const RawAssessmentQuestionRowSchema = z.object({
   other_assessments: z
     .array(
       z.object({
-        label: z.string(),
-        assessment_id: z.string(),
-        course_instance_id: z.string(),
-        share_source_publicly: z.boolean(),
-        color: z.string(),
+        assessment_set_abbreviation: RawStaffAssessmentSetSchema.shape.abbreviation,
+        assessment_number: RawStaffAssessmentSchema.shape.number,
+        assessment_id: RawStaffAssessmentSchema.shape.id,
+        assessment_course_instance_id: RawStaffAssessmentSchema.shape.course_instance_id,
+        assessment_share_source_publicly: RawStaffAssessmentSchema.shape.share_source_publicly,
+        assessment_set_color: RawStaffAssessmentSetSchema.shape.color,
       }),
     )
     .nullable(),

@@ -111,7 +111,11 @@ function AssessmentQuestionsTable({
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
                         return AssessmentBadgeHtml({
-                          assessment,
+                          assessment: {
+                            assessment_id: assessment.assessment_id,
+                            color: assessment.assessment_set_color,
+                            label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                          },
                           plainUrlPrefix: urlPrefix,
                           course_instance_id,
                           publicURL: true,

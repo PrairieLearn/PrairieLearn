@@ -38,22 +38,19 @@ SELECT
     SELECT
       jsonb_agg(
         jsonb_build_object(
-          'label',
-          aset.abbreviation || a2.number,
+          'assessment_set_abbreviation',
+          aset.abbreviation,
+          'assessment_number',
+          a2.number,
           'assessment_id',
-          a2.id::text,
-          'course_instance_id',
-          a2.course_instance_id::text,
-          'share_source_publicly',
+          a2.id,
+          'assessment_course_instance_id',
+          a2.course_instance_id,
+          'assessment_share_source_publicly',
           a2.share_source_publicly,
-          'color',
+          'assessment_set_color',
           aset.color
         )
-        ORDER BY
-          aset.number,
-          aset.id,
-          a2.number,
-          a2.id
       )
     FROM
       assessments a2

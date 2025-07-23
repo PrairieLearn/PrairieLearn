@@ -206,14 +206,23 @@ export function InstructorAssessmentQuestionsTable({
                         )}
                       </td>
                       <td>
-                        {question.other_assessments?.map((assessment) => (
-                          <div
-                            key={`${question.question.qid}-${assessment.assessment_id}`}
-                            class="d-inline-block me-1"
-                          >
-                            <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
-                          </div>
-                        ))}
+                        {question.other_assessments?.map((assessment) => {
+                          return (
+                            <div
+                              key={`${question.question.qid}-${assessment.assessment_id}`}
+                              class="d-inline-block me-1"
+                            >
+                              <AssessmentBadge
+                                urlPrefix={urlPrefix}
+                                assessment={{
+                                  assessment_id: assessment.assessment_id,
+                                  color: assessment.assessment_set_color,
+                                  label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </td>
                       <td class="text-end">
                         <div class="dropdown js-question-actions">
