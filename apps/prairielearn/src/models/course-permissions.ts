@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
+  queryAsync,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,
@@ -33,7 +34,7 @@ export async function insertCoursePermissionsByUserUid({
 }): Promise<User> {
   return await runInTransactionAsync(async () => {
     const user = await selectOrInsertUserByUid(uid);
-    await queryRows(sql.insert_course_permissions, {
+    await queryAsync(sql.insert_course_permissions, {
       user_id: user.user_id,
       course_id,
       course_role,
@@ -73,7 +74,7 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await queryRows(sql.delete_course_permissions, {
+  await queryAsync(sql.delete_course_permissions, {
     course_id,
     user_ids: Array.isArray(user_id) ? user_id : [user_id],
     authn_user_id,
@@ -183,7 +184,7 @@ export async function deleteCourseInstancePermissions({
   user_id: string;
   authn_user_id: string;
 }): Promise<void> {
-  await queryRows(sql.delete_course_instance_permissions, {
+  await queryAsync(sql.delete_course_instance_permissions, {
     course_id,
     course_instance_id,
     user_id,
@@ -199,7 +200,7 @@ export async function deleteAllCourseInstancePermissionsForCourse({
   course_id: string;
   authn_user_id: string;
 }): Promise<void> {
-  await queryRows(sql.delete_all_course_instance_permissions_for_course, {
+  await queryAsync(sql.delete_all_course_instance_permissions_for_course, {
     course_id,
     authn_user_id,
   });

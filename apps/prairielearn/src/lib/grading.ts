@@ -90,7 +90,7 @@ export async function insertSubmission({
   client_fingerprint_id?: string | null;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callOptionalRow('variants_lock', [variant_id]);
+    await sqldb.callAsync('variants_lock', [variant_id]);
 
     // Select the variant, while updating the variant's `params` and
     // `correct_answer`, which is permitted to change during the `parse` phase
@@ -163,9 +163,7 @@ export async function insertSubmission({
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
-      await sqldb.callOptionalRow('instance_questions_calculate_stats', [
-        variant.instance_question_id,
-      ]);
+      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
 
     return { submission_id, variant };
@@ -273,7 +271,7 @@ async function selectSubmissionForGrading(
   check_submission_id: string | null,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
-    await sqldb.callOptionalRow('variants_lock', [variant_id]);
+    await sqldb.callAsync('variants_lock', [variant_id]);
 
     const variantData = await sqldb.queryOptionalRow(
       sql.select_variant_data,

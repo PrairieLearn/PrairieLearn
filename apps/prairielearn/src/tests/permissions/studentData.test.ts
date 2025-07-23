@@ -40,14 +40,14 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   beforeAll(async function () {
-    await sqldb.callOptionalRow('users_select_or_insert', [
+    await sqldb.callAsync('users_select_or_insert', [
       'instructor@example.com',
       'Instructor User',
       '100000000',
       'instructor@example.com',
       'dev',
     ]);
-    await sqldb.callOptionalRow('users_select_or_insert', [
+    await sqldb.callAsync('users_select_or_insert', [
       'student@example.com',
       'Student User',
       '000000001',

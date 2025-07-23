@@ -5,8 +5,9 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
-  callOptionalRow,
+  callAsync,
   loadSqlEquiv,
+  queryAsync,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -155,7 +156,7 @@ router.post(
             );
           }
         }
-        await queryRows(sql.update_instance_questions, {
+        await queryAsync(sql.update_instance_questions, {
           assessment_question_id: res.locals.assessment_question.id,
           instance_question_ids,
           update_requires_manual_grading: 'requires_manual_grading' in action_data,
@@ -188,7 +189,7 @@ router.post(
         res.send({});
       }
     } else if (req.body.__action === 'toggle_ai_grading_mode') {
-      await queryRows(sql.toggle_ai_grading_mode, {
+      await queryAsync(sql.toggle_ai_grading_mode, {
         assessment_question_id: res.locals.assessment_question.id,
       });
       res.redirect(req.originalUrl);
@@ -252,7 +253,7 @@ router.post(
         );
 
         for (const iq of iqs) {
-          await callOptionalRow('assessment_instances_grade', [
+          await callAsync('assessment_instances_grade', [
             iq.assessment_instance_id,
             // We use the user who is performing the deletion.
             res.locals.authn_user.user_id,

@@ -665,7 +665,7 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callOptionalRow('assessment_instances_grade', [
+      await sqldb.callAsync('assessment_instances_grade', [
         current_submission.assessment_instance_id,
         authn_user_id,
         100, // credit

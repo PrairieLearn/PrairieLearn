@@ -72,7 +72,7 @@ export default makeBatchedMigration({
   },
 
   async execute(min: bigint, max: bigint) {
-    await queryRows('UPDATE examples SET text = TRIM(text) WHERE id >= $min AND id <= $max', {
+    await queryAsync('UPDATE examples SET text = TRIM(text) WHERE id >= $min AND id <= $max', {
       min,
       max,
     });

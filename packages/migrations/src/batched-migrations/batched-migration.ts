@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
@@ -108,5 +114,5 @@ export async function updateBatchedMigrationStatus(
 }
 
 export async function retryFailedBatchedMigrationJobs(project: string, id: string): Promise<void> {
-  await queryRows(sql.retry_failed_jobs, { project, id });
+  await queryAsync(sql.retry_failed_jobs, { project, id });
 }

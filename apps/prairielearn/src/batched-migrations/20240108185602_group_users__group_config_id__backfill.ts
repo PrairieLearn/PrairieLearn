@@ -1,5 +1,5 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryOneRowAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -13,6 +13,6 @@ export default makeBatchedMigration({
     };
   },
   async execute(min: bigint, max: bigint): Promise<void> {
-    await queryRows(sql.update_group_users_group_config_id, { min, max });
+    await queryAsync(sql.update_group_users_group_config_id, { min, max });
   },
 });

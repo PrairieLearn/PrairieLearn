@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -11,6 +11,6 @@ export default makeBatchedMigration({
     return { min: 1n, max: result, batchSize: 1000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryRows(sql.update_submissions_modified_at, { start, end });
+    await queryAsync(sql.update_submissions_modified_at, { start, end });
   },
 });
