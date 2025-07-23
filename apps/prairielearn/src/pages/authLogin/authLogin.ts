@@ -11,7 +11,7 @@ import { AuthnProviderSchema } from '../../lib/db-types.js';
 
 import {
   AuthLogin,
-  AuthLoginInstitution as AuthLoginInstitution,
+  AuthLoginInstitution,
   type InstitutionAuthnProvider,
 } from './authLogin.html.js';
 
