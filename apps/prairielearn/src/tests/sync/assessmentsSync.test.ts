@@ -17,7 +17,6 @@ import {
   QuestionSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import type {
   AssessmentJsonInput,
