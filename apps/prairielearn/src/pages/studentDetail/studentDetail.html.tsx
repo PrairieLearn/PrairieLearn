@@ -66,7 +66,7 @@ export function StudentDetail({
           <h1 class="mb-0">Details</h1>
           <button type="button" class="btn btn-sm btn-light" onClick={handleViewAsStudent}>
             <i class="fas fa-user-graduate me-1" aria-hidden="true" />
-            View as Student
+            View as student
           </button>
         </div>
         <div class="card-body">
