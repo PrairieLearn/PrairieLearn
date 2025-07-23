@@ -1,4 +1,3 @@
-import { decode } from 'entities';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as assets from '../../lib/assets.js';
@@ -163,10 +162,11 @@ describe('authLogin', () => {
         html,
         'The authentication method you tried to use is not supported by your institution.',
       );
-      assert.include(
-        // `decode(...)` is needed to handle the single quote in the message.
-        decode(html),
-        "You must start a session from your course's Learning Management System (LMS).",
+      // This uses `assert.match(...)` to avoid the need to handle HTML escaping.
+      console.log(html);
+      assert.match(
+        html,
+        /You must start a session from your course.*s Learning Management System \(LMS\)\./,
       );
     });
 
