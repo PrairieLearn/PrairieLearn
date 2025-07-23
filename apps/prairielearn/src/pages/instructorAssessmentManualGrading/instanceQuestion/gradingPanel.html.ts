@@ -7,6 +7,7 @@ import {
   ManualPointsSection,
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
+import type { AIGradingInfo } from './instanceQuestion.html.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
 
 interface SubmissionOrGradingJob {
@@ -24,8 +25,7 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
-  ai_feedback,
-  ai_selected_rubric_item_ids,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -37,11 +37,7 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
-  /**
-   * ai_feedback is undefined if AI grading was not used, and null if AI grading was used, but no AI feedback was generated.
-   */
-  ai_feedback?: string | null;
-  ai_selected_rubric_item_ids?: string[];
+  aiGradingInfo?: AIGradingInfo;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -94,7 +90,7 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable, ai_selected_rubric_item_ids })
+            ? RubricInputSection({ resLocals, disable, aiGradingInfo })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -105,7 +101,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
                 ${resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable, ai_selected_rubric_item_ids })
+                  ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}
               </li>
             `
@@ -128,12 +124,12 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
-        ${ai_feedback !== undefined
+        ${aiGradingInfo?.feedback !== undefined
           ? html`
               <li class="list-group-item overflow-y-auto" style="max-height: 500px;">
                 <label>
                   <p class="mt-2">AI-generated feedback:</p>
-                  <p>${ai_feedback || 'No feedback available.'}</p>
+                  <p>${aiGradingInfo.feedback || 'No feedback available.'}</p>
                 </label>
               </li>
             `

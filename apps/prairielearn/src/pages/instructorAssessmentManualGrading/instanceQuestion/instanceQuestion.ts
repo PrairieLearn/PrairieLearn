@@ -11,7 +11,12 @@ import {
   selectLastSubmissionId,
   selectRubricGradingItems,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { DateFromISOString, GradingJobSchema, IdSchema, type InstanceQuestion } from '../../../lib/db-types.js';
+import {
+  DateFromISOString,
+  GradingJobSchema,
+  IdSchema,
+  type InstanceQuestion,
+} from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -23,6 +28,7 @@ import { selectAndAuthzVariant } from '../../../models/variant.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
+  type AIGradingInfo,
   type GradingJobData,
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
@@ -92,12 +98,7 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    let aiGradingInfo: {
-      feedback: string | null;
-      showAiManualComparison: boolean;
-      selectedRubricItemIds: string[];
-      prompt: ChatCompletionMessageParam[] | null;
-    } | null = null;
+    let aiGradingInfo: AIGradingInfo | undefined = undefined;
 
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
@@ -122,25 +123,31 @@ router.get(
           z.array(z.record(z.string(), z.any())).nullable(),
         )) as ChatCompletionMessageParam[] | null;
 
-        const ai_grading_available =
+        const aiGradingAvailable =
           (await sqldb.queryOptionalRow(
             sql.select_ai_grading_available_for_submission,
             { submission_id },
             z.boolean(),
           )) ?? false;
 
-        const manual_grading_available =
+        const manualGradingAvailable =
           (await sqldb.queryOptionalRow(
             sql.select_manual_grading_available_for_submission,
             { submission_id },
             z.boolean(),
           )) ?? false;
 
+        console.log('aiGradingAvailable', aiGradingAvailable);
+        console.log('manualGradingAvailable', manualGradingAvailable);
+
         aiGradingInfo = {
-          feedback: grading_job?.feedback?.manual ?? null,
-          showAiManualComparison: ai_grading_available && manual_grading_available,
-          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-          prompt: prompt_for_grading_job ?? null,
+          aiGradingAvailable,
+          manualGradingAvailable,
+          feedback: aiGradingAvailable ? grading_job?.feedback?.manual : undefined,
+          prompt: manualGradingAvailable ? prompt_for_grading_job : undefined,
+          selectedRubricItemIds: aiGradingAvailable
+            ? selectedRubricItems.map((item) => item.id)
+            : undefined,
         };
       }
     }

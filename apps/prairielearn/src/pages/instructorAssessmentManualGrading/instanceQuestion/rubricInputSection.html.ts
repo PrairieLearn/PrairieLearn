@@ -3,14 +3,16 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
 import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
 
+import type { AIGradingInfo } from './instanceQuestion.html.js';
+
 export function RubricInputSection({
   resLocals,
   disable,
-  ai_selected_rubric_item_ids,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   disable: boolean;
-  ai_selected_rubric_item_ids?: string[];
+  aiGradingInfo?: AIGradingInfo;
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
@@ -38,7 +40,7 @@ export function RubricInputSection({
       rubric_grading_items: rubric_grading?.rubric_items,
       assessment_question: resLocals.assessment_question,
       disable,
-      ai_selected_rubric_item_ids,
+      aiGradingInfo,
     })}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
@@ -105,27 +107,34 @@ function RubricItems({
   rubric_grading_items,
   assessment_question,
   disable,
-  ai_selected_rubric_item_ids,
+  aiGradingInfo,
 }: {
   rubric_items: RubricData['rubric_items'][0][] | null | undefined;
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
   assessment_question: AssessmentQuestion;
   disable: boolean;
-  ai_selected_rubric_item_ids?: string[];
+  aiGradingInfo?: AIGradingInfo;
 }) {
-  const ai_selected_rubric_item_ids_set = ai_selected_rubric_item_ids
-    ? new Set(ai_selected_rubric_item_ids)
-    : null;
+  const ai_selected_rubric_item_ids_set =
+    aiGradingInfo?.selectedRubricItemIds &&
+    aiGradingInfo.aiGradingAvailable &&
+    aiGradingInfo.manualGradingAvailable
+      ? new Set(aiGradingInfo.selectedRubricItemIds)
+      : null;
 
   return html`
-    <div class="d-flex align-items-center gap-2 text-secondary mb-1">
-      <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-        <i class="fa-solid fa-robot"></i>
-      </div>
-      <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
-        <i class="fa-solid fa-list-check"></i>
-      </div>
-    </div>
+    ${aiGradingInfo?.aiGradingAvailable
+      ? html`
+          <div class="d-flex align-items-center gap-2 text-secondary mb-1">
+            <div data-bs-toggle="tooltip" data-bs-title="AI grading">
+              <i class="bi bi-stars"></i>
+            </div>
+            <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
+              <i class="bi bi-person-fill"></i>
+            </div>
+          </div>
+        `
+      : ''}
     ${rubric_items
       ? rubric_items.map((item) =>
           RubricItem({

@@ -63,6 +63,8 @@ export function QuestionContainer({
     answerHtml,
   } = resLocals;
 
+  console.log('aiGradingPrompt', JSON.stringify(aiGradingPrompt));
+
   return html`
     <div
       class="question-container mb-4"
@@ -107,33 +109,7 @@ export function QuestionContainer({
       }
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
       aiGradingPrompt
-        ? html`
-            <div class="card mb-3 grading-block">
-              <div class="card-header bg-secondary text-white">
-                <h2>AI Grading Prompt</h2>
-              </div>
-              <div class="card-body">
-                ${aiGradingPrompt?.map((item) => {
-                  if (!item.content) {
-                    return '';
-                  }
-                  if (typeof item.content === 'string') {
-                    return unsafeHtml(item.content);
-                  } else if (typeof item.content === 'object') {
-                    return item.content.map((contentItem) => {
-                      if (contentItem.type === 'text') {
-                        return html`<p>${contentItem.text}</p>`;
-                      } else if (contentItem.type === 'image_url') {
-                        return html`<img class="w-100" src="${contentItem.image_url.url}" />`;
-                      } else {
-                        return html``;
-                      }
-                    }) as HtmlValue[];
-                  }
-                })}
-              </div>
-            </div>
-          `
+        ? AIGradingPrompt(aiGradingPrompt)
         : ''}
       ${submissions.length > 0
         ? html`
@@ -179,6 +155,47 @@ export function QuestionContainer({
         : ''}
     </div>
     ${CopyQuestionModal({ resLocals, questionCopyTargets })}
+  `;
+}
+
+function AIGradingPrompt(prompt: ChatCompletionMessageParam[]) {
+  return html`
+    <div class="card mb-3 grading-block">
+      <div class="card-header bg-secondary text-white">
+        <h2>AI Grading Prompt</h2>
+      </div>
+      <div class="card-body">
+        ${prompt.map((item) => {
+          if (!item.content) {
+            return '';
+          }
+          return html`
+            <div class="bg-light p-3 rounded mb-3">
+              ${run(() => {
+                if (typeof item.content === 'string') {
+                  return unsafeHtml(item.content);
+                } else if (item.content && typeof item.content === 'object') {
+                  return item.content.map((contentItem) => {
+                    if (contentItem.type === 'text') {
+                      return html`<p>${contentItem.text}</p>`;
+                    } else if (contentItem.type === 'image_url') {
+                      return html`<img
+                        class="w-100"
+                        src="${contentItem.image_url.url}"
+                        alt="Student submitted image"
+                      />`;
+                    } else {
+                      return html``;
+                    }
+                  }) as HtmlValue[];
+                }
+                return '';
+              })}
+            </div>
+          `;
+        })}
+      </div>
+    </div>
   `;
 }
 

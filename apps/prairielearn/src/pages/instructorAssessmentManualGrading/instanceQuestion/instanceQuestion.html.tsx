@@ -22,6 +22,14 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
+export interface AIGradingInfo {
+  aiGradingAvailable: boolean;
+  manualGradingAvailable: boolean;
+  feedback?: string;
+  prompt?: ChatCompletionMessageParam[] | null;
+  selectedRubricItemIds?: string[];
+}
+
 export function InstanceQuestion({
   resLocals,
   conflict_grading_job,
@@ -36,15 +44,10 @@ export function InstanceQuestion({
   assignedGrader: User | null;
   lastGrader: User | null;
   /**
-   * If null, AI grading information (feedback, prompt, etc.) will not be shown at all.
-   * If aiGradingInfo is specified, but a property/properties are null, those properties will not be shown.
+   * `undefined` if the AI grading feature flag is disabled.
+   * Otherwise, this is always specified, even if no AI grading is available.
    */
-  aiGradingInfo: {
-    feedback: string | null;
-    showAiManualComparison: boolean;
-    selectedRubricItemIds: string[];
-    prompt: ChatCompletionMessageParam[] | null;
-  } | null;
+  aiGradingInfo?: AIGradingInfo;
 }) {
   return PageLayout({
     resLocals: {
@@ -124,10 +127,7 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                ai_feedback: aiGradingInfo?.feedback,
-                ai_selected_rubric_item_ids: aiGradingInfo?.showAiManualComparison
-                  ? aiGradingInfo?.selectedRubricItemIds
-                  : undefined,
+                aiGradingInfo,
               })}
             </div>
           </div>
