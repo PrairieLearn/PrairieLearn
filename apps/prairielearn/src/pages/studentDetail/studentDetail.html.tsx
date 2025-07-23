@@ -100,7 +100,7 @@ export function StudentDetail({
           <h2 class="mb-0">Gradebook</h2>
           <button type="button" class="btn btn-sm btn-light" onClick={handleViewGradebookAsStudent}>
             <i class="fas fa-book me-1" aria-hidden="true" />
-            View Gradebook as Student
+            View gradebook as student
           </button>
         </div>
 
