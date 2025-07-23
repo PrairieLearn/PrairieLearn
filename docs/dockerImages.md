@@ -4,7 +4,7 @@ PrairieLearn relies on Docker containers to provide isolated environments for st
 
 Docker containers are created from [container images](https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/), which are standardized packages that include all files, binaries, libraries, and configurations needed to run a container. PrairieLearn provides and maintains a set of default images that can be used without additional configuration:
 
-- For external grading, graders are provided for [Python](./python-grader/index.md), [C/C++](./c-grader/index.md), [Java](./java-grader/) and [R](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/r/README.md).
+- For external grading, graders are provided for [Python](./python-grader/index.md), [C/C++](./c-grader/index.md), [Java](./java-grader/index.md) and [R](https://github.com/PrairieLearn/PrairieLearn/blob/master/graders/r/README.md).
 - For workspaces, [multiple images are available](./workspaces/index.md#maintained-workspace-images) depending on the environment and programming language to be used.
 
 Instructors are encouraged to use one of the maintained images, to ensure all security updates and new functionality can be accessed in your questions. Questions may use their own images, though, provided these images allow the question configuration to provide the appropriate functionality needed for external grading and workspaces.
