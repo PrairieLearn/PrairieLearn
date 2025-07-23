@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
@@ -72,7 +72,7 @@ export function AdministratorSettings({ resLocals }) {
               </button>
             </div>
           </form>
-          <script type="text/javascript">
+          <script>
             $(function () {
               var invalidateButton = $('#invalidate-render-cache');
               var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');

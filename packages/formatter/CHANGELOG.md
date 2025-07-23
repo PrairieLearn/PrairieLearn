@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 1.4.2
+
+### Patch Changes
+
+- 7f25a8a: Add `maxPrecision` and `minPrecision` options to `format*Friendly` functions.
+
 ## 1.4.1
 
 ### Patch Changes
