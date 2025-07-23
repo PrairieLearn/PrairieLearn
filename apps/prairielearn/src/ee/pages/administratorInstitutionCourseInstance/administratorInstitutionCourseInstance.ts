@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
-import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstance,

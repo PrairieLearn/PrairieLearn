@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -116,6 +116,8 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+    // TODO: parse req.body with Zod
+
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -169,7 +171,7 @@ router.post(
         res.locals.assessment.id,
         req.body.instance_question_id,
         null, // submission_id
-        req.body.modified_at,
+        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
         {
           points: req.body.points,
           manual_points: req.body.manual_points,
@@ -209,7 +211,6 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
         mode: run(() => {
-          if (req.body.__action === 'ai_grade_assessment') return 'ungraded';
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);

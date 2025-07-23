@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionCourses({
@@ -22,7 +22,7 @@ export function AdministratorInstitutionCourses({
     },
     content: html`
       <div class="table-responsive">
-        <table class="table table-hover table-striped table-bordered table" aria-label="Courses">
+        <table class="table table-hover table-striped table-bordered" aria-label="Courses">
           <thead>
             <tr>
               <th>Name</th>

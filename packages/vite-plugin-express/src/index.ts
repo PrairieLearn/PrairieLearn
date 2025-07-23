@@ -116,10 +116,10 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
   const config: VitePluginExpressConfig = {
     appPath: cfg.appPath,
     appName: cfg.appName ?? 'app',
-    exportName: cfg.exportName ?? 'viteNodeApp',
-    initAppOnBoot: cfg.initAppOnBoot ?? false,
+    exportName: cfg.exportName ?? 'viteExpressApp',
+    initAppOnBoot: cfg.initAppOnBoot ?? true,
     outputFormat: cfg.outputFormat ?? 'cjs',
-    watchFileChanges: cfg.watchFileChanges ?? false,
+    watchFileChanges: cfg.watchFileChanges ?? true,
     extraWatchPaths: cfg.extraWatchPaths ?? [],
   };
 

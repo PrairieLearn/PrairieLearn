@@ -68,7 +68,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty question',
+      start_from: 'empty',
     },
     files: new Set([
       'README.md',
@@ -92,7 +92,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty question',
+      start_from: 'empty',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
