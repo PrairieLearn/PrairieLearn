@@ -1804,17 +1804,7 @@ describe('Assessment syncing', () => {
   });
 
   describe('Test validating shared questions on sync', () => {
-    beforeAll(() => {
-      // Temporarily enable validation of shared questions
-      config.checkSharingOnSync = true;
-    });
-    afterAll(() => {
-      // Disable again for other tests
-      config.checkSharingOnSync = false;
-    });
-
     it('records an error if a zone references a QID from another course that does not exist or we do not have permissions for', async () => {
-      features.enable('question-sharing');
       const courseData = util.getCourseData();
       const assessment = makeAssessment(courseData);
       assessment.zones?.push({
@@ -1827,7 +1817,11 @@ describe('Assessment syncing', () => {
         ],
       });
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-      await util.writeAndSyncCourseData(courseData);
+
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+
       const syncedAssessment = await findSyncedAssessment('fail');
       assert.match(
         syncedAssessment?.sync_errors,
