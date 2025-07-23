@@ -48,8 +48,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-
-// THIS SHOULD BE IN CONFIG
+const SUBMISSIONS_TO_GRADE = 25
 
 // o4-mini
 const inputTokenPrice = 1.1 / 1_000_000; 
@@ -120,7 +119,7 @@ export async function aiGrade({
     }
     const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
-    ));
+    )).slice(0, SUBMISSIONS_TO_GRADE);
 
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = 0;
@@ -190,7 +189,7 @@ export async function aiGrade({
     let loaded_data = false;
     if (use_save_clusters) {
       // Load saved clusters from file
-      const referenceSubmissionDataPath = 'reference_submission_data.json';
+      const referenceSubmissionDataPath = `reference_submissions/reference_submission_data_${question.id}.json`;
       if (fs.existsSync(referenceSubmissionDataPath)) {
         const referenceSubmissionData = JSON.parse(fs.readFileSync(referenceSubmissionDataPath, 'utf-8'));
         reference_submission_ids.push(...referenceSubmissionData.reference_submission_ids);
@@ -223,7 +222,7 @@ export async function aiGrade({
       }
 
       fs.writeFileSync(
-        'reference_submission_data.json',
+        `reference_submissions/reference_submission_data_${question.id}.json`,
         JSON.stringify({
           reference_submission_ids,
           reference_instance_question_ids

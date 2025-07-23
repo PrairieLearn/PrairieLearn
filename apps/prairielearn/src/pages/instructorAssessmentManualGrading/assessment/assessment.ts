@@ -121,7 +121,8 @@ router.post(
         console.log(`No questions found for assessment ${assessment.id}`);
         return;
       }
-      for (let i = 0; i < assessment_questions.length; i++) {
+      const START_INDEX = 1; 
+      for (let i = START_INDEX; i < assessment_questions.length; i++) {
         const assessment_question = assessment_questions[i];
         const question = await selectQuestionById(assessment_question.question_id);
 
@@ -137,9 +138,9 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           mode: 'all',
-          image_rag_enabled: true,
+          image_rag_enabled: false,
           run_async: false,
-          use_save_clusters: false
+          use_save_clusters: true
         });
         console.log(`Completed AI grading for question ${assessment_question.question_id}`);
       }

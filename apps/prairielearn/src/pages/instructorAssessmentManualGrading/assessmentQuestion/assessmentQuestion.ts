@@ -137,7 +137,8 @@ router.post(
           user_id: res.locals.user.user_id,
           mode: 'selected',
           instance_question_ids,
-          use_save_clusters: false
+          image_rag_enabled: false,
+          use_save_clusters: true
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -217,7 +218,7 @@ router.post(
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
         image_rag_enabled: true,
-          use_save_clusters: false
+        use_save_clusters: true
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

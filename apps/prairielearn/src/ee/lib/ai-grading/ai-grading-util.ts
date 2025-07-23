@@ -130,39 +130,44 @@ export async function generatePrompt({
   // Question prompt
   messages.push({
     role: 'user',
-    content: `Question: <br/>${questionPrompt}. Examples:<br/>`,
+    content: `Question: <br/>${questionPrompt}<br/>`,
   });
 
+  if (example_submissions.length > 0) {
+    messages.push({
+      role: 'user',
+      content: '<br/>Examples:<br/>',
+    });
+  }
+
   // Examples
-  for (const example of example_submissions) {
+  for (let i = 0; i < example_submissions.length; i++) {
+    const example = example_submissions[i];
     if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
       // Note that the example may have been graded with a different rubric,
       // or the rubric may have changed significantly since the example was graded.
       // We'll show whatever items were selected anyways, since it'll likely
       // still be useful context to the LLM.
-      const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
-      let rubric_grading_info = '';
-      for (const item of rubric_grading_items) {
-        rubric_grading_info += `description: ${item.description}<br/>`;
-      }
+      // const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
+      // let rubric_grading_info = '';
+      // for (const item of rubric_grading_items) {
+      //   rubric_grading_info += `description: ${item.description}<br/>`;
+      // }
 
       const submission = await selectLastVariantAndSubmission(example.instance_question_id);
 
       messages = messages.concat([
         {
           role: 'user',
-          content: '<br/>Example student response (use for reference and to understand the rubric better, not for grading): <br/><br/><example-response>'
+          content: `<br/>Example student response ${i} (use for reference and to understand the rubric better, not for grading): <br/><br/><example-response>`
         },
         generateSubmissionMessage({
           submission_text: example.submission_text,
           submitted_answer: submission.submission.submitted_answer,
           is_example: true
-        }),
-        {
-          role: 'user',
-          content: `</example-response><br/><br/>Selected rubric items for this example student response: <br/><br/>${rubric_grading_info}<br/><br/><p>End of example submission.</p><br/><br/>`,
-        }
+        })
       ]);
+
     } else {
       messages.push({
         role: 'user',
@@ -174,10 +179,13 @@ export async function generatePrompt({
       });
     }
   }
-  messages.push({
-    role: 'user',
-    content: '<br/><p>This is the end of the example submissions.</p><br/><br/>',
-  });
+
+  if (example_submissions.length > 0) {
+    messages.push({
+      role: 'user',
+      content: '<br/><p>This is the end of the example submissions.</p><br/><br/>',
+    });
+  }
 
   // Student response
   messages.push(
@@ -343,6 +351,8 @@ export async function generateSubmissionEmbedding({
   let completion_tokens = 0;
   let prompt_tokens = 0;
 
+  let displayed_submission_text = '';
+  
   if (contains_image_capture) {
     // 1. Extract the text and images within the submission HTML. With this, create a prompt to ask the AI, 
     //    - Summarize the submission text and any images.
@@ -366,11 +376,15 @@ export async function generateSubmissionEmbedding({
       rubric_info += '\n';
     }
 
-    let humanSelectedRubricItems = '';
+    const humanSelectedRubricItems: {
+      description: string
+    }[] = [];
     if (graderFeedbackAvailable) {
       if (rubric_grading_items.length > 0) {
         for (const item of rubric_grading_items) {
-          humanSelectedRubricItems += `description: ${item.description}\n`;
+          humanSelectedRubricItems.push({
+            description: item.description
+          });
         }
       }
     }
@@ -394,7 +408,7 @@ export async function generateSubmissionEmbedding({
     if (graderFeedbackAvailable) {
       messages.push({
         role: 'user',
-        content: `Here are the rubric items that were selected by the human grader:\n${humanSelectedRubricItems}`,
+        content: `Here are the rubric items that were selected by the human grader:${JSON.stringify(humanSelectedRubricItems)}`,
       })
     }
 
@@ -424,8 +438,6 @@ export async function generateSubmissionEmbedding({
       errors: z.string()
     });
     if (graderFeedbackAvailable) {
-
-      // TODO: Add the selected rubric items
       const imageCaptureDescriptionResponsesExtended = imageCaptureDescriptionResponses.extend({
         rubric_reasoning: z.string(),
       });
@@ -446,12 +458,22 @@ export async function generateSubmissionEmbedding({
         throw new Error('No response from AI for image capture description.');
       }
 
-      submission_text = `
-        <p>Student response transcription: ${response.response_transcription}</p><br/><br/>
-        <p>Error made: ${response.errors}</p><br/><br/>
-        <p>Why the rubric items were selected: ${response.rubric_reasoning}</p><br/><br/>
-        <p>Student submission:</p>
+      const responseContentForEmbedding = {
+        response_transcription: response.response_transcription,
+        errors: response.errors
+      }
+
+      submission_text = JSON.stringify(responseContentForEmbedding, null, 2);
+
+      const humanSelectedRubricData = JSON.stringify({
+        humanSelectedRubricItems,
+        whyRubricItemsWereSelected: response.rubric_reasoning
+      }, null, 2);
+
+      displayed_submission_text = `
+        ${submission_text}
         <br/>
+        ${humanSelectedRubricData}
         <br/>
       `;
     } else {
@@ -472,19 +494,9 @@ export async function generateSubmissionEmbedding({
         throw new Error('No response from AI for image capture description.');
       }
 
-      submission_text = `
-        <p>
-          Student response transcription: ${
-            response.response_transcription
-          }
-        </p><br/><br/>
-        <p>
-          Errors: ${response.errors}
-        </p>
-        <br/></br>
-        Student submission:
-        <br/><br/>
-      `;
+      submission_text = JSON.stringify(response);
+
+      displayed_submission_text = submission_text;
     }
   }
 
@@ -495,7 +507,7 @@ export async function generateSubmissionEmbedding({
     {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
-      submission_text,
+      submission_text: displayed_submission_text,
       assessment_question_id: instance_question.assessment_question_id,
     },
     SubmissionGradingContextEmbeddingSchema,
