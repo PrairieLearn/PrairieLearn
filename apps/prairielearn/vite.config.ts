@@ -16,9 +16,6 @@ export default defineConfig({
   plugins: [
     ...VitePluginExpress({
       appPath: './src/server.ts',
-      exportName: 'viteExpressApp',
-      initAppOnBoot: true,
-      watchFileChanges: false,
     }),
   ],
 });
