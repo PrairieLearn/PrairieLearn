@@ -166,7 +166,7 @@ export function StudentDetail({
                             href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
                             class="btn btn-xs btn-outline-primary"
                           >
-                            View Instance
+                            View instance
                           </a>
                         ) : (
                           <span class="text-muted">—</span>
