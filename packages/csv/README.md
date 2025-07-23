@@ -12,16 +12,16 @@ import { queryValidatedCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
 
-const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, z.any());
+const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, z.number());
 const output = createWriteStream('workspaces.csv');
 
-const stringifier = stringifyStream({
+const stringifier = stringifyStream<number>({
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
   // Optionally provide a function to transform each item in the stream.
   transform(record) {
     return {
-      id: `workspace-${id}`,
+      id: `workspace-${record}`,
     };
   },
 });
@@ -37,7 +37,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking(data, {
+stringifyNonblocking<{ id: number }>(data, {
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
 }).pipe(output);
