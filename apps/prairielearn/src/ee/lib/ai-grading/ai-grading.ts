@@ -248,23 +248,12 @@ export async function aiGrade({
 
           logger.info(`Raw response:\n${response.content}`);
 
-          logger.info('Parsed content:');
-          logger.info(JSON.stringify(response.parsed, null, 2));
-
           if (response.parsed) {
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-
-            logger.info('Feedback:' + response.parsed?.feedback);
-            logger.info(
-              'instance_question.requires_manual_grading: ' +
-                instance_question.requires_manual_grading,
-            );
-
             if (instance_question.requires_manual_grading) {
-              logger.info('Manual grading required');
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
