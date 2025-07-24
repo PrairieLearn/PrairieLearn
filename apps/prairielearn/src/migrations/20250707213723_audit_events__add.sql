@@ -26,16 +26,13 @@ CREATE TABLE audit_events (
   CONSTRAINT audit_events_course_instance_id_fkey FOREIGN KEY (course_instance_id) REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE SET NULL,
   CONSTRAINT audit_events_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups (id) ON UPDATE CASCADE ON DELETE SET NULL,
   CONSTRAINT audit_events_subject_user_id_fkey FOREIGN KEY (subject_user_id) REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL,
+  -- Even though institution_id gets hard-deleted, this happens infrequently enough that we don't care.
   CONSTRAINT audit_events_institution_id_fkey FOREIGN KEY (institution_id) REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL,
-  CONSTRAINT audit_events_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE SET NULL,
+  -- assessment_instance_id gets hard-deleted, so we won't use a foreign key constraint.
+  -- Context: https://github.com/PrairieLearn/PrairieLearn/pull/12362#discussion_r2226445050
   CONSTRAINT audit_events_assessment_instance_id_fkey FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances (id) ON UPDATE CASCADE ON DELETE SET NULL,
   CONSTRAINT audit_events_assessment_question_id_fkey FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions (id) ON UPDATE CASCADE ON DELETE SET NULL
 );
-
--- These columns could be hard-deleted; this index helps us prune old events quickly.
-CREATE INDEX audit_events_assessment_instance_id_idx ON audit_events (assessment_instance_id);
-
-CREATE INDEX audit_events_institution_id_idx ON audit_events (institution_id);
 
 -- Events that affect a user (potentially on specific tables) (potentially in a course instance)
 CREATE INDEX audit_events_table_name_subject_user_id_course_instance_id_idx ON audit_events (subject_user_id, table_name, course_instance_id)
