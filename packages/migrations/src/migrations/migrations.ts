@@ -62,15 +62,23 @@ export async function initWithLock(directories: string[], project: string) {
   logger.verbose('Starting DB schema migration');
   console.log('directories', directories);
   console.log('project', project);
-  console.log('getMigrations (initWithLock)', await getMigrations(project));
+  console.log(
+    'getMigrations -- before create_migrations_table (initWithLock)',
+    (await getMigrations(project)).length,
+  );
 
   // Create the migrations table if needed
   await sqldb.queryAsync(sql.create_migrations_table, {});
 
+  console.log(
+    'getMigrations -- after create_migrations_table (initWithLock)',
+    (await getMigrations(project)).length,
+  );
   // Apply necessary changes to the migrations table as needed.
   try {
     await sqldb.queryAsync('SELECT project FROM migrations;', {});
   } catch (err: any) {
+    console.log('err', err);
     if (err.routine === 'errorMissingColumn') {
       logger.info('Altering migrations table');
       await sqldb.queryAsync(sql.add_projects_column, {});
@@ -92,7 +100,6 @@ export async function initWithLock(directories: string[], project: string) {
   console.log(import.meta.filename, sql.get_migrations);
 
   let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-  console.log('allMigrations first (initWithLock)', allMigrations.rows);
   const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
     '.sql',
     '.js',
@@ -118,15 +125,12 @@ export async function initWithLock(directories: string[], project: string) {
 
   // Refetch the list of migrations from the database.
   allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-  console.log('allMigrations second (initWithLock)', allMigrations.rows);
-  console.log('migrationFiles', migrationFiles);
 
   // Sort the migration files into execution order.
   const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
   // Figure out which migrations have to be applied.
   const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
-  console.log('migrationsToExecute', migrationsToExecute);
   for (const { directory, filename, timestamp } of migrationsToExecute) {
     if (allMigrations.rows.length === 0) {
       // if we are running all the migrations then log at a lower level

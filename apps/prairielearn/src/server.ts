@@ -2128,7 +2128,6 @@ const isHMR = DEV_EXECUTION_MODE === 'hmr';
 
 if (isHMR && isFullRestart() && isServerInitialized()) {
   console.log('full restart');
-  console.log('getMigrations', await migrations.getMigrations('prairielearn'));
 
   await stopBatchedMigrations();
 
@@ -2587,11 +2586,8 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   });
   setServerInitialized(true);
   setNoFullRestart();
-  console.log('getMigrations', await migrations.getMigrations('prairielearn'));
   console.log('serverInitialized', serverInitialized);
-}
-
-if (isHMR && isServerInitialized()) {
+} else if (isHMR && isServerInitialized()) {
   console.log('re-initializing server');
   // We need to re-initialize the server when we are running in HMR mode.
   await socketServer.close();

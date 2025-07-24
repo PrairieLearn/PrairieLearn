@@ -1,1 +1,1 @@
-export { init, getMigrations } from './migrations.js';
+export { init } from './migrations.js';
