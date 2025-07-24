@@ -12,17 +12,18 @@ import type {
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
+import type { ResLocalsAuthnUser } from './authn.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.js';
 
-export interface ResLocals {
+export interface ResLocals extends ResLocalsAuthnUser {
   __csrf_token: string;
 }
 
 export type PageType =
-  | 'instructor-question-with-course-instance'
+  | 'instructor-instance-question'
   | 'instructor-question'
   | 'instance-question'
   | 'assessment-question'
@@ -40,8 +41,14 @@ export type ResLocalsForPage<T extends PageType> = T extends 'course'
   ? ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount
   : T extends 'course-instance'
     ? ResLocals & ResLocalsCourseInstanceMisc & ResLocalsCourseInstance
-    : T extends 'instructor-course-instance-question'
-      ? ResLocals & ResLocalsInstructorQuestionWithCourseInstance
+    : T extends 'instructor-instance-question'
+      ? ResLocals &
+          ResLocalsCourseInstanceMisc &
+          ResLocalsCourseInstance &
+          ResLocalsInstructorQuestionWithCourseInstance &
+          ResLocalsInstanceQuestion &
+          ResLocalsInstanceQuestionRender &
+          ResLocalsQuestionRender & { questionRenderContext: 'manual_grading' | 'ai_grading' }
       : T extends 'instructor-question'
         ? ResLocals & ResLocalsInstructorQuestion & ResLocalsQuestionRender
         : T extends 'instance-question'

@@ -11,6 +11,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -26,7 +27,10 @@ import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
+async function prepareLocalsForRender(
+  query: Record<string, any>,
+  resLocals: ResLocalsForPage<'instructor-instance-question'>,
+) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behaviour, so we select the last
@@ -68,19 +72,20 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
+    const resLocals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
+    if (!resLocals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const assignedGrader = res.locals.instance_question.assigned_grader
-      ? await selectUserById(res.locals.instance_question.assigned_grader)
+    const assignedGrader = resLocals.instance_question.assigned_grader
+      ? await selectUserById(resLocals.instance_question.assigned_grader)
       : null;
-    const lastGrader = res.locals.instance_question.last_grader
-      ? await selectUserById(res.locals.instance_question.last_grader)
+    const lastGrader = resLocals.instance_question.last_grader
+      ? await selectUserById(resLocals.instance_question.last_grader)
       : null;
     res.send(
       InstanceQuestion({
-        ...(await prepareLocalsForRender(req.query, res.locals)),
+        ...(await prepareLocalsForRender(req.query, resLocals)),
         assignedGrader,
         lastGrader,
       }),
@@ -91,15 +96,16 @@ router.get(
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
   asyncHandler(async (req, res) => {
+    const resLocals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
-      question_id: res.locals.question.id,
-      course_instance_id: res.locals.course_instance.id,
-      instance_question_id: res.locals.instance_question.id,
-      authz_data: res.locals.authz_data,
-      authn_user: res.locals.authn_user,
-      user: res.locals.user,
+      question_id: resLocals.question.id,
+      course_instance_id: resLocals.course_instance.id,
+      instance_question_id: resLocals.instance_question.id,
+      authz_data: resLocals.authz_data,
+      authn_user: resLocals.authn_user,
+      user: resLocals.user,
       is_administrator: res.locals.is_administrator,
     });
 
@@ -127,7 +133,8 @@ router.get(
   '/grading_rubric_panels',
   asyncHandler(async (req, res) => {
     try {
-      const locals = await prepareLocalsForRender({}, res.locals);
+      const resLocals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
+      const locals = await prepareLocalsForRender({}, resLocals);
       const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
       const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
