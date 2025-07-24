@@ -4,15 +4,15 @@ A few helpful wrappers on top of the functionality from [`csv-stringify`](https:
 
 ## Usage
 
-Here's an example taking data from `@prairielearn/postgres#queryCursor()` and writing it to a file, though this should be applicable to any source and destination streams:
+Here's an example taking data from `@prairielearn/postgres#queryValidatedCursor()` and writing it to a file, though this should be applicable to any source and destination streams:
 
 ```ts
 import { stringifyStream } from '@prairielearn/csv';
-import { queryCursor } from '@prairielearn/postgres';
+import { queryValidatedCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
 
-const cursor = await queryCursor('SELECT id FROM workspaces;', {});
+const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, z.any());
 const output = createWriteStream('workspaces.csv');
 
 const stringifier = stringifyStream({

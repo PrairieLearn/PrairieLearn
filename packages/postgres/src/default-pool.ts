@@ -77,14 +77,14 @@ export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *
- * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
+ * If you use the return value of this function, you should use {@link queryRow}, {@link queryOptionalRow}, or {@link queryRows} instead.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead. If you don't need to parse the result, use `z.unknown()`.
+ * @deprecated Use {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
@@ -97,7 +97,7 @@ export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(de
 /**
  * Calls the given function with the specified parameters.
  *
- * @deprecated Use {@link callRows} instead.
+ * If you use the return value of this function, you should use {@link callRow}, {@link callOptionalRow}, or {@link callRows} instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**
@@ -150,13 +150,6 @@ export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
  * read results in batches, which is useful for large result sets.
  */
 export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
-/**
- * Returns an {@link CursorIterator} that can be used to iterate over the
- * results of the query in batches, which is useful for large result sets.
- *
- * @deprecated Use {@link queryValidatedCursor} instead.
- */
-export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
