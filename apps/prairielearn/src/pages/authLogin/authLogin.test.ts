@@ -26,7 +26,7 @@ describe('authLogin', () => {
 
   describe('institution-specific login', () => {
     it('renders institution login page with supported providers', async () => {
-      const html = withConfig({ hasOauth: true, hasAzure: true, isEnterprise: true }, () =>
+      const html = await withConfig({ hasOauth: true, hasAzure: true, isEnterprise: true }, () =>
         AuthLoginInstitution({
           showUnsupportedMessage: false,
           supportedProviders: [
@@ -60,7 +60,7 @@ describe('authLogin', () => {
     });
 
     it('handles supported non-LTI providers with multiple options', async () => {
-      const html = withConfig({ hasOauth: true }, () =>
+      const html = await withConfig({ hasOauth: true }, () =>
         AuthLoginInstitution({
           showUnsupportedMessage: false,
           supportedProviders: [
@@ -78,7 +78,7 @@ describe('authLogin', () => {
     });
 
     it('renders alert when there are no supported providers', async () => {
-      const html = withConfig({ hasOauth: false, hasAzure: false }, () =>
+      const html = await withConfig({ hasOauth: false, hasAzure: false }, () =>
         AuthLoginInstitution({
           showUnsupportedMessage: false,
           supportedProviders: [],
@@ -92,7 +92,7 @@ describe('authLogin', () => {
     });
 
     it('renders alert when supported providers are not enabled', async () => {
-      const html = withConfig({ hasOauth: false, hasAzure: false }, () =>
+      const html = await withConfig({ hasOauth: false, hasAzure: false }, () =>
         AuthLoginInstitution({
           showUnsupportedMessage: false,
           supportedProviders: [
@@ -109,7 +109,7 @@ describe('authLogin', () => {
     });
 
     it('renders alert when only LTI providers are available', async () => {
-      const html = withConfig({ hasOauth: false, hasAzure: false }, () =>
+      const html = await withConfig({ hasOauth: false, hasAzure: false }, () =>
         AuthLoginInstitution({
           showUnsupportedMessage: false,
           supportedProviders: [
