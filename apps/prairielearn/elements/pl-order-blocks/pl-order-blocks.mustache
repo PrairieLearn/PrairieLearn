@@ -13,14 +13,14 @@ $(function() {
 
 
     <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
-        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
+        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} " >
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
-                <button type="button" class="btn btn-light btn-sm align-middle" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks" data-bs-content="{{help_text}}">
+                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks Help Button" data-bs-content="{{help_text}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
             </div>
-            <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable">
+            <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable" aria-label="Options Area">
                 {{#options}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         uuid="{{uuid}}"
@@ -32,14 +32,14 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
+        <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} " >
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{solution-header}}</span>
             </div>
-            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
+            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone" aria-label="Answer Area">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
-                        style="margin-left: {{indent}}px;"
+                        style='margin-left: {{indent}}px;'
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
@@ -90,34 +90,14 @@ $(function() {
                 </li>
                 {{/distractor_feedback}}
                 {{^distractor_feedback}}
-                    {{#ordering_feedback}}
-                    <li class="pl-order-blocks-pairing-indicator bg-warning-subtle">
-                        <ul class="list-unstyled">
-                            <li>
-                                <div class="pl-order-blocks-correctness-badge-container">
-                                    {{#allow_feedback_badges}}
-                                    <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                                    {{/allow_feedback_badges}}
-                                    <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
-                                </div>
-                            </li>
-                        </ul>
-                        <div>
-                            <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                            {{ordering_feedback}}
-                        </div>
-                    </li>
-                    {{/ordering_feedback}}
-                    {{^ordering_feedback}}
-                    <li>
-                        <div class="pl-order-blocks-correctness-badge-container">
-                            {{#allow_feedback_badges}}
-                            <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
-                            {{/allow_feedback_badges}}
-                            <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
-                        </div>
-                    </li>
-                    {{/ordering_feedback}}
+                <li>
+                    <div class="pl-order-blocks-correctness-badge-container">
+                        {{#allow_feedback_badges}}
+                        <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                        {{/allow_feedback_badges}}
+                        <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
+                    </div>
+                </li>
                 {{/distractor_feedback}}
             {{/student_submission}}
         </ul>
@@ -154,7 +134,7 @@ $(function() {
             <li class="pl-order-blocks-pairing-indicator bg-warning-subtle">
                 <ul class="p-0">
                     <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
-                </ul>
+                </ul>.
                 <div>
                     <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
                     {{distractor_feedback}}
