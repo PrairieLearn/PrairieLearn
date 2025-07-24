@@ -53,7 +53,7 @@ import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
@@ -65,6 +65,8 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { needsFullRestart, setNeedsFullRestart } from './lib/server-fullrestart.js';
+import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
@@ -1986,12 +1988,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-
 let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
-export async function startServer() {
-  const app = await initExpress();
-
+export async function startServer(app: express.Express) {
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -2043,6 +2043,12 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
+
+  if (DEV_EXECUTION_MODE === 'hmr') {
+    return server;
+  }
+
+  // In production, startup the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2114,8 +2120,41 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (esMain(import.meta) && config.startServer) {
+const isHMR = DEV_EXECUTION_MODE === 'hmr';
+
+if (isHMR && isServerPending()) {
+  throw new Error('The server was restarted, but it was not fully initialized.');
+}
+
+if (isHMR && needsFullRestart() && isServerInitialized()) {
+  setServerState('pending');
+  await stopBatchedMigrations();
+
+  await assets.close();
+
+  await codeCaller.finish();
+
+  // The server will get blown away by the full restart, so no need to call stopServer().
+  // await stopServer();
+
+  await cron.stop();
+
+  await serverJobs.stop();
+
+  await cache.close();
+
+  await socketServer.close();
+
+  load.close();
+
+  await namedLocks.close();
+  await sqldb.closeAsync();
+  setServerState('stopped');
+}
+
+if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
+    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     // For backwards compatibility, we'll default to trying to load config
@@ -2450,9 +2489,10 @@ if (esMain(import.meta) && config.startServer) {
     }
 
     logger.verbose('Starting server...');
-    const server = await startServer();
+    app = await initExpress();
+    const serverInstance = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(serverInstance);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2488,10 +2528,6 @@ if (esMain(import.meta) && config.startServer) {
   } catch (err) {
     logger.error('Error initializing PrairieLearn server:', err);
     throw err;
-  }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 
   // SIGTERM can be used to gracefully shut down the process. This signal
@@ -2542,4 +2578,20 @@ if (esMain(import.meta) && config.startServer) {
       process.exit(0);
     }
   });
+  setServerState('started');
+  setNeedsFullRestart(false);
+  if (!isHMR) {
+    logger.info('PrairieLearn server ready, press Control-C to quit');
+    if (config.devMode) {
+      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+    }
+  }
+} else if (isHMR && isServerInitialized()) {
+  // We need to re-initialize the server when we are running in HMR mode.
+  await socketServer.close();
+  app = await initExpress();
+  const serverInstance = await startServer(app);
+  await socketServer.init(serverInstance);
 }
+
+export const viteExpressApp = app;
