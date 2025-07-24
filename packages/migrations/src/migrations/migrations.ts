@@ -53,11 +53,6 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-export async function getMigrations(project: string) {
-  const migrations = await sqldb.queryAsync(sql.get_migrations, { project });
-  return migrations.rows;
-}
-
 export async function initWithLock(directories: string[], project: string) {
   logger.verbose('Starting DB schema migration');
 

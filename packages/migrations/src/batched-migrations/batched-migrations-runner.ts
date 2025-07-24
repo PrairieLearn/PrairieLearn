@@ -293,9 +293,7 @@ function assertRunner(
 }
 
 export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
-  if (runner) {
-    throw new Error('Batched migrations already initialized');
-  }
+  if (runner) throw new Error('Batched migrations already initialized');
   runner = new BatchedMigrationsRunner(options);
   return runner;
 }

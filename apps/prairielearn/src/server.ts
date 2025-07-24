@@ -87,11 +87,11 @@ const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
-  -h, --help                          Display this help and exit
-  --config <filename>                 Use the specified configuration file
-  --migrate-and-exit                  Run the DB initialization parts and exit
-  --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
-  --sync-course <course_id>           Synchronize a course and exit
+    -h, --help                          Display this help and exit
+    --config <filename>                 Use the specified configuration file
+    --migrate-and-exit                  Run the DB initialization parts and exit
+    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
+    --sync-course <course_id>           Synchronize a course and exit
 `;
 
   console.log(msg);
