@@ -492,7 +492,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
-        help_text = f"Move answer blocks from the options area to the {dropzone_layout.value}."
+        help_text = (
+            f"Move answer blocks from the options area to the {dropzone_layout.value}."
+        )
 
         if inline and check_indentation:
             raise ValueError(
@@ -510,8 +512,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if check_indentation:
             help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
-
-
 
         uuid = pl.get_uuid()
         html_params = {

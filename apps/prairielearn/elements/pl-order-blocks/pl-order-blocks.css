@@ -149,7 +149,7 @@ div.pl-order-blocks-header {
   margin-bottom: 0px !important;
 }
 
-[aria-selected="true"]:not(.ui-sortable-placeholder) {
+[aria-selected='true']:not(.ui-sortable-placeholder) {
   outline: 2px solid orangered;
   outline-offset: -2px;
 }

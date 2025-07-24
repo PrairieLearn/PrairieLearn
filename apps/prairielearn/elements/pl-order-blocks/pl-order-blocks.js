@@ -43,8 +43,7 @@ window.PLOrderBlocks = function (uuid, options) {
     }
     if (inDropzone(block)) {
       block.setAttribute('aria-description', 'indentation depth ' + getIndentation(block));
-    }
-    else {
+    } else {
       block.removeAttribute('aria-description');
     }
   }
@@ -113,7 +112,7 @@ window.PLOrderBlocks = function (uuid, options) {
         switch (ev.key) {
           case ' ': // Space key
           case 'Enter':
-            handleKey(ev, block, () => block.setAttribute('aria-selected',  true));
+            handleKey(ev, block, () => block.setAttribute('aria-selected', true));
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
@@ -161,18 +160,18 @@ window.PLOrderBlocks = function (uuid, options) {
             break;
           case 'ArrowRight':
             handleKey(ev, block, () => {
-              if (!inDropzone(block)) { // Moving to the answer area
+              if (!inDropzone(block)) {
+                // Moving to the answer area
                 $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
                 if (enableIndentation) {
                   if (block.previousElementSibling) {
                     setIndentation(block, getIndentation(block.previousElementSibling) * TABWIDTH);
-                  }
-                  else {
+                  } else {
                     setIndentation(block, 0);
                   }
                 }
-              } 
-              else if (enableIndentation) { // Already in answer area
+              } else if (enableIndentation) {
+                // Already in answer area
                 setIndentation(block, (getIndentation(block) + 1) * TABWIDTH);
               }
             });
