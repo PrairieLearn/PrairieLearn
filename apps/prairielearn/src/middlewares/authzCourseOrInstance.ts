@@ -110,7 +110,7 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: SelectAuthzData['course_instance'];
+  course_instance: NonNullable<SelectAuthzData['course_instance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }

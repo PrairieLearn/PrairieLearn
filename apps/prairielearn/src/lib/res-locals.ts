@@ -10,6 +10,7 @@ import type {
   ResLocalsInstructorQuestion,
   ResLocalsInstructorQuestionWithCourseInstance,
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
+import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type {
   ResLocalsInstanceQuestionRender,
@@ -36,7 +37,7 @@ interface ResLocalsCourseInstanceMisc {
 }
 
 export type ResLocalsForPage<T extends PageType> = T extends 'course'
-  ? ResLocals & ResLocalsCourse
+  ? ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount
   : T extends 'course-instance'
     ? ResLocals & ResLocalsCourseInstanceMisc & ResLocalsCourseInstance
     : T extends 'instructor-course-instance-question'
