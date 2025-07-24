@@ -85,7 +85,7 @@ export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead. If you don't need to parse the result, use `z.unknown()`.
+ * @deprecated Use {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
