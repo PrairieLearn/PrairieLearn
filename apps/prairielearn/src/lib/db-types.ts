@@ -39,7 +39,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// apps/prairielearn/src/sprocs/check_assessment_access.sql
+// Result of check_assessment_access sproc
 const AuthzAssessmentAccessRuleSchema = z.object({
   credit: z.union([z.string(), z.literal('None')]),
   time_limit_min: z.union([z.string(), z.literal('—')]),
@@ -49,7 +49,7 @@ const AuthzAssessmentAccessRuleSchema = z.object({
   active: z.boolean().nullable(),
 });
 
-// apps/prairielearn/src/sprocs/authz_assessment.sql
+// Result of authz_assessment sproc
 export const AuthzAssessmentSchema = z.object({
   authorized: z.boolean(),
   exam_access_end: DateFromISOString.nullable(),
@@ -65,7 +65,7 @@ export const AuthzAssessmentSchema = z.object({
   access_rules: z.array(AuthzAssessmentAccessRuleSchema),
 });
 
-// apps/prairielearn/src/sprocs/authz_assessment_instance.sql
+// Result of authz_assessment_instance sproc
 export const AuthzAssessmentInstanceSchema = z.object({
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
@@ -83,7 +83,7 @@ export const AuthzAssessmentInstanceSchema = z.object({
   access_rules: z.array(AuthzAssessmentAccessRuleSchema),
 });
 
-// apps/prairielearn/src/sprocs/authz_course.sql
+// Result of authz_course sproc
 export const PermissionsCourseSchema = z.object({
   course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
   has_course_permission_own: z.boolean(),
@@ -93,7 +93,7 @@ export const PermissionsCourseSchema = z.object({
 });
 export type PermissionsCourse = z.infer<typeof PermissionsCourseSchema>;
 
-// apps/prairielearn/src/sprocs/authz_course_instance.sql
+// Result of authz_course_instance sproc
 export const PermissionsCourseInstanceSchema = z.object({
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
   has_course_instance_permission_view: z.boolean(),
