@@ -40,13 +40,13 @@ import {
 import { useCursorVisibility } from '#lib/hooks/use-cursor-visibility.js';
 import { useMobile } from '#lib/hooks/use-mobile.js';
 import { useWindowSize } from '#lib/hooks/use-window-size.js';
-import '@/components/tiptap-node/code-block-node/code-block-node.scss';
-import '@/components/tiptap-node/list-node/list-node.scss';
-import '@/components/tiptap-node/image-node/image-node.scss';
-import '@/components/tiptap-node/paragraph-node/paragraph-node.scss';
+import '#components/tiptap-node/code-block-node/code-block-node.scss';
+import '#components/tiptap-node/list-node/list-node.scss';
+import '#components/tiptap-node/image-node/image-node.scss';
+import '#components/tiptap-node/paragraph-node/paragraph-node.scss';
 import { MAX_FILE_SIZE, handleImageUpload } from '#lib/tiptap-utils.js';
 
-import '@/components/tiptap-templates/simple/simple-editor.scss';
+import '#components/tiptap-templates/simple/simple-editor.scss';
 
 const content = {
   type: 'doc',

@@ -26,7 +26,7 @@ import {
   useMemo,
   useState,
 } from 'preact/compat';
-import '@/components/tiptap-ui-primitive/tooltip/tooltip.scss';
+import '#components/tiptap-ui-primitive/tooltip/tooltip.scss';
 
 interface TooltipProviderProps {
   children: ComponentChildren;

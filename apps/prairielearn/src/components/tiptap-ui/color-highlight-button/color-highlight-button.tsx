@@ -6,7 +6,7 @@ import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { findNodePosition, isEmptyNode, isMarkInSchema } from '#lib/tiptap-utils.js';
 
-import '@/components/tiptap-ui/color-highlight-button/color-highlight-button.scss';
+import '#components/tiptap-ui/color-highlight-button/color-highlight-button.scss';
 
 export const HIGHLIGHT_COLORS = [
   {

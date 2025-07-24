@@ -32,7 +32,7 @@ import {
   useState,
 } from 'preact/compat';
 
-import '@/components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss';
+import '#components/tiptap-ui-primitive/dropdown-menu/dropdown-menu.scss';
 import { Separator } from '#components/tiptap-ui-primitive/separator/index.js';
 
 interface DropdownMenuOptions {

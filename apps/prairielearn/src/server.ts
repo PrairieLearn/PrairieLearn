@@ -478,6 +478,7 @@ export async function initExpress(): Promise<Express> {
 
   // some pages don't need authorization
   app.use('/', (await import('./pages/home/home.js')).default);
+  app.use('/pl/editor', (await import('./pages/editor/editor.js')).default);
   app.use('/pl', (await import('./pages/home/home.js')).default);
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);

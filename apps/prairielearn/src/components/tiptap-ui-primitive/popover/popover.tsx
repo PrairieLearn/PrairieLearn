@@ -27,7 +27,7 @@ import {
   useMemo,
   useState,
 } from 'preact/compat';
-import '@/components/tiptap-ui-primitive/popover/popover.scss';
+import '#components/tiptap-ui-primitive/popover/popover.scss';
 
 type PopoverContextValue = ReturnType<typeof usePopover> & {
   setLabelId: (id: string | undefined) => void;

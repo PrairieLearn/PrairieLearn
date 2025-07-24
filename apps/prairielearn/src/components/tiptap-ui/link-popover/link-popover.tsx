@@ -14,7 +14,7 @@ import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema, sanitizeUrl } from '#lib/tiptap-utils.js';
 
 // --- Styles ---
-import '@/components/tiptap-ui/link-popover/link-popover.scss';
+import '#components/tiptap-ui/link-popover/link-popover.scss';
 
 export interface LinkHandlerProps {
   editor: Editor | null;

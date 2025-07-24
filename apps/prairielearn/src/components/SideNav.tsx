@@ -33,6 +33,13 @@ interface SideNavTabInfo {
 const sideNavPagesTabs = {
   course_admin: [
     {
+      activePages: ['editor'],
+      activeSubPages: [],
+      urlSuffix: '/editor',
+      iconClasses: 'fa fa-edit fa-fw',
+      tabLabel: 'Editor',
+    },
+    {
       activePages: ['course_admin'],
       activeSubPages: ['getting_started'],
       urlSuffix: '/course_admin/getting_started',

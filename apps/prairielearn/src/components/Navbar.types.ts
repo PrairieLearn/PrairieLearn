@@ -10,6 +10,7 @@ export type NavbarType =
   | undefined;
 
 export type NavPage =
+  | 'editor'
   | 'public_assessment'
   | 'public_question'
   | 'public_questions'
