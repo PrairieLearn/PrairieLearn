@@ -26,6 +26,9 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
+export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -40,9 +43,6 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
-
-export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
-export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
 
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
