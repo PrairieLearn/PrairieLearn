@@ -791,6 +791,7 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
   name: z.string(),
   platform: z.string(),
+  require_linked_lti_user: z.boolean(),
   tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
