@@ -1,6 +1,6 @@
 import path from 'path';
 
-export { init } from './migrations/index.js';
+export { init, getMigrations } from './migrations/index.js';
 
 export {
   type BatchedMigrationRow,

@@ -65,6 +65,12 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { isFullRestart, setNoFullRestart } from './lib/server-fullrestart.js';
+import {
+  isServerInitialized,
+  serverInitialized,
+  setServerInitialized,
+} from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
@@ -85,11 +91,11 @@ const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
-    -h, --help                          Display this help and exit
-    --config <filename>                 Use the specified configuration file
-    --migrate-and-exit                  Run the DB initialization parts and exit
-    --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
-    --sync-course <course_id>           Synchronize a course and exit
+  -h, --help                          Display this help and exit
+  --config <filename>                 Use the specified configuration file
+  --migrate-and-exit                  Run the DB initialization parts and exit
+  --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
+  --sync-course <course_id>           Synchronize a course and exit
 `;
 
   console.log(msg);
@@ -2118,8 +2124,39 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if ((esMain(import.meta) || DEV_EXECUTION_MODE === 'hmr') && config.startServer) {
+const isHMR = DEV_EXECUTION_MODE === 'hmr';
+
+if (isHMR && isFullRestart() && isServerInitialized()) {
+  console.log('full restart');
+  console.log('getMigrations', await migrations.getMigrations('prairielearn'));
+
+  await stopBatchedMigrations();
+
+  await assets.close();
+
+  await codeCaller.finish();
+
+  // The server will get blown away by the full restart, so no need to call stopServer().
+  // await stopServer();
+
+  await cron.stop();
+
+  await serverJobs.stop();
+
+  await cache.close();
+
+  await socketServer.close();
+
+  load.close();
+
+  await namedLocks.close();
+  await sqldb.closeAsync();
+  setServerInitialized(false);
+}
+
+if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
+    console.log('isHMR', esMain(import.meta), isHMR, isServerInitialized());
     logger.verbose('PrairieLearn server start');
 
     // For backwards compatibility, we'll default to trying to load config
@@ -2269,12 +2306,13 @@ if ((esMain(import.meta) || DEV_EXECUTION_MODE === 'hmr') && config.startServer)
 
     // We need to do this before we run migrations, as some migrations will
     // call `enqueueBatchedMigration` which requires this to be initialized.
+    console.log('initBatchedMigrations');
     const runner = initBatchedMigrations({
       project: 'prairielearn',
       directories: [path.join(import.meta.dirname, 'batched-migrations')],
     });
 
-    runner?.on('error', (err) => {
+    runner.on('error', (err) => {
       logger.error('Batched migration runner error', err);
       Sentry.captureException(err);
     });
@@ -2547,5 +2585,19 @@ if ((esMain(import.meta) || DEV_EXECUTION_MODE === 'hmr') && config.startServer)
       process.exit(0);
     }
   });
+  setServerInitialized(true);
+  setNoFullRestart();
+  console.log('getMigrations', await migrations.getMigrations('prairielearn'));
+  console.log('serverInitialized', serverInitialized);
 }
+
+if (isHMR && isServerInitialized()) {
+  console.log('re-initializing server');
+  // We need to re-initialize the server when we are running in HMR mode.
+  await socketServer.close();
+  app = await initExpress();
+  const serverInstance = await startServer(app);
+  await socketServer.init(serverInstance);
+}
+
 export const viteExpressApp = app;

@@ -148,7 +148,6 @@ export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJob
   );
   if (Object.prototype.hasOwnProperty.call(estimators, jobType)) {
     // For Vite HMR mode
-    if (DEV_EXECUTION_MODE === 'hmr') return;
     throw new Error(`duplicate jobType: ${jobType}`);
   }
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);

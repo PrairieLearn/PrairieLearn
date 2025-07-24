@@ -1,0 +1,5617 @@
+
+  VITE v7.0.0  ready in 76 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+re-importing server-initialized
+isServerInitialized false
+isServerInitialized false
+isServerInitialized false
+isHMR false true false
+initBatchedMigrations
+directories [
+  '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+  '/Users/peter/work/PrairieLearn/packages/migrations/schema-migrations'
+]
+project prairielearn
+getMigrations (initWithLock) [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+/Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js -- BLOCK get_migrations
+SELECT
+  id,
+  filename,
+  index,
+  timestamp
+FROM
+  migrations
+WHERE
+  project = $project;
+
+allMigrations first (initWithLock) [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+allMigrations second (initWithLock) [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+migrationFiles [
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200859_initial_state.sql',
+    timestamp: '20170428200859'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    timestamp: '20170428200900'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    timestamp: '20170428200901'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    timestamp: '20170428200902'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    timestamp: '20170428200903'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    timestamp: '20170428200904'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    timestamp: '20170428200905'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    timestamp: '20170428200906'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    timestamp: '20170429082806'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    timestamp: '20170429082807'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082808'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082809'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    timestamp: '20170429082810'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    timestamp: '20170429082811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    timestamp: '20170429082812'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    timestamp: '20170429082813'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    timestamp: '20170429082814'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    timestamp: '20170429082815'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    timestamp: '20170429082816'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    timestamp: '20170429082817'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    timestamp: '20170429082818'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    timestamp: '20170429082819'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    timestamp: '20170429082820'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    timestamp: '20170429082821'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    timestamp: '20170429082822'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    timestamp: '20170429082823'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082824_courses__create.sql',
+    timestamp: '20170429082824'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082825_exams__create.sql',
+    timestamp: '20170429082825'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082826_reservations__create.sql',
+    timestamp: '20170429082826'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    timestamp: '20170429082827'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082828'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    timestamp: '20170429082829'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    timestamp: '20170429082830'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    timestamp: '20170429082831'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082832_submissions__duration__add.sql',
+    timestamp: '20170429082832'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    timestamp: '20170429082833'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    timestamp: '20170429082834'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    timestamp: '20170429082835'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    timestamp: '20170429082836'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    timestamp: '20170429082837'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    timestamp: '20170429082838'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    timestamp: '20170429082839'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170430225459_last_accesses__create.sql',
+    timestamp: '20170430225459'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170504085908_config__create.sql',
+    timestamp: '20170504085908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    timestamp: '20170511134617'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    timestamp: '20170511134618'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140518_indexes_update.sql',
+    timestamp: '20170511140518'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140519_questions__config__drop.sql',
+    timestamp: '20170511140519'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    timestamp: '20170512130530'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    timestamp: '20170512130531'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    timestamp: '20170514163619'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    timestamp: '20170516205210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    timestamp: '20170516205211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    timestamp: '20170516223515'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224411_users__provider__add.sql',
+    timestamp: '20170516224411'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    timestamp: '20170516224412'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    timestamp: '20170516224413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224414_errors__add.sql',
+    timestamp: '20170516224414'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    timestamp: '20170623121937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170715083623_variants__console__add.sql',
+    timestamp: '20170715083623'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    timestamp: '20170718091712'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    timestamp: '20170719084424'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    timestamp: '20170722114413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723090307_variants__valid__add.sql',
+    timestamp: '20170723090307'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    timestamp: '20170723122207'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    timestamp: '20170723122208'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122209_errors__open__add.sql',
+    timestamp: '20170723122209'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122210_errors__date__default.sql',
+    timestamp: '20170723122210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    timestamp: '20170723122211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170731193513_variants__console__drop.sql',
+    timestamp: '20170731193513'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    timestamp: '20170802104018'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    timestamp: '20170803112748'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    timestamp: '20170806085650'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    timestamp: '20170807122914'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    timestamp: '20170807122915'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    timestamp: '20170807122916'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    timestamp: '20170807123908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    timestamp: '20170824203937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    timestamp: '20170902142323'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    timestamp: '20170902184217'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    timestamp: '20170902184218'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    timestamp: '20170903152154'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    timestamp: '20170904114538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    timestamp: '20170906092028'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170925133104_questions__timeout__add.sql',
+    timestamp: '20170925133104'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053038_errors__issues__rename.sql',
+    timestamp: '20170928053038'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    timestamp: '20170928053039'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    timestamp: '20170928053040'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    timestamp: '20170928053041'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171001101621_grader_loads__create.sql',
+    timestamp: '20171001101621'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    timestamp: '20171011060538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    timestamp: '20171012060805'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    timestamp: '20171013094452'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    timestamp: '20171027064532'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    timestamp: '20171101063221'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    timestamp: '20171102164811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    timestamp: '20171108063855'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063856_assessments__mode__add.sql',
+    timestamp: '20171108063856'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    timestamp: '20171108063857'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    timestamp: '20171108063858'
+  },
+  ... 338 more items
+]
+migrationsToExecute []
+[32minfo[39m: PrairieLearn server ready, press Control-C to quit
+[32minfo[39m: Go to http://localhost:3000
+setServerInitialized true
+getMigrations [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+serverInitialized true
+isServerInitialized true
+re-initializing server
+isServerInitialized true
+full restart
+getMigrations [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+[32minfo[39m: Destroying Python worker d12f2375-c73b-4b94-bc2a-d069b0fb95a3 (last course path: null)
+[32minfo[39m: Destroying Python worker d238a759-5f9b-4607-8eff-6ef96a27d0a7 (last course path: null)
+[32minfo[39m: Destroying Python worker 91c74cfb-18d7-4709-93ec-24e8faa0b87f (last course path: null)
+[32minfo[39m: Destroying Python worker ab4b6b51-45c0-438f-a714-8816856fb2cb (last course path: null)
+[32minfo[39m: Destroying Python worker ff5c8d8f-035f-4c71-90be-0b5d97fbb22c (last course path: null)
+[32minfo[39m: Destroying Python worker cbf82c8c-25fb-4051-b0d0-21e0408442fc (last course path: null)
+[32minfo[39m: Destroying Python worker 3c94b850-02bc-46da-9faa-65d7808c8e1c (last course path: null)
+[32minfo[39m: Destroying Python worker fe320094-4907-4ea7-bf85-e9a1a0048361 (last course path: null)
+[32minfo[39m: Destroying Python worker 998eaab0-8ddc-409e-90ef-698ae6745766 (last course path: null)
+[32minfo[39m: Destroying Python worker e75395b9-2fc2-4be2-a43e-36ffc58337da (last course path: null)
+[32minfo[39m: Destroying Python worker 986ffcf6-1a64-4c75-a897-6263925af91a (last course path: null)
+[32minfo[39m: Destroying Python worker 33a58a5c-b339-47a0-908d-3fd517422a51 (last course path: null)
+setServerInitialized false
+isServerInitialized false
+isServerInitialized false
+isHMR false true false
+initBatchedMigrations
+directories [
+  '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+  '/Users/peter/work/PrairieLearn/packages/migrations/schema-migrations'
+]
+project prairielearn
+getMigrations (initWithLock) [
+  {
+    id: '1',
+    filename: '20170428200859_initial_state.sql',
+    index: null,
+    timestamp: '20170428200859'
+  },
+  {
+    id: '2',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    index: null,
+    timestamp: '20170428200900'
+  },
+  {
+    id: '3',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    index: null,
+    timestamp: '20170428200901'
+  },
+  {
+    id: '4',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200902'
+  },
+  {
+    id: '5',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    index: null,
+    timestamp: '20170428200903'
+  },
+  {
+    id: '6',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    index: null,
+    timestamp: '20170428200904'
+  },
+  {
+    id: '7',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200905'
+  },
+  {
+    id: '8',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    index: null,
+    timestamp: '20170428200906'
+  },
+  {
+    id: '9',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    index: null,
+    timestamp: '20170429082806'
+  },
+  {
+    id: '10',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    index: null,
+    timestamp: '20170429082807'
+  },
+  {
+    id: '11',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082808'
+  },
+  {
+    id: '12',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082809'
+  },
+  {
+    id: '13',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    index: null,
+    timestamp: '20170429082810'
+  },
+  {
+    id: '14',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082811'
+  },
+  {
+    id: '15',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    index: null,
+    timestamp: '20170429082812'
+  },
+  {
+    id: '16',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082813'
+  },
+  {
+    id: '17',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082814'
+  },
+  {
+    id: '18',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082815'
+  },
+  {
+    id: '19',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082816'
+  },
+  {
+    id: '20',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    index: null,
+    timestamp: '20170429082817'
+  },
+  {
+    id: '21',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    index: null,
+    timestamp: '20170429082818'
+  },
+  {
+    id: '22',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082819'
+  },
+  {
+    id: '23',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    index: null,
+    timestamp: '20170429082820'
+  },
+  {
+    id: '24',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082821'
+  },
+  {
+    id: '25',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    index: null,
+    timestamp: '20170429082822'
+  },
+  {
+    id: '26',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082823'
+  },
+  {
+    id: '27',
+    filename: '20170429082824_courses__create.sql',
+    index: null,
+    timestamp: '20170429082824'
+  },
+  {
+    id: '28',
+    filename: '20170429082825_exams__create.sql',
+    index: null,
+    timestamp: '20170429082825'
+  },
+  {
+    id: '29',
+    filename: '20170429082826_reservations__create.sql',
+    index: null,
+    timestamp: '20170429082826'
+  },
+  {
+    id: '30',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    index: null,
+    timestamp: '20170429082827'
+  },
+  {
+    id: '31',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    index: null,
+    timestamp: '20170429082828'
+  },
+  {
+    id: '32',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    index: null,
+    timestamp: '20170429082829'
+  },
+  {
+    id: '33',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082830'
+  },
+  {
+    id: '34',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082831'
+  },
+  {
+    id: '35',
+    filename: '20170429082832_submissions__duration__add.sql',
+    index: null,
+    timestamp: '20170429082832'
+  },
+  {
+    id: '36',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    index: null,
+    timestamp: '20170429082833'
+  },
+  {
+    id: '37',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    index: null,
+    timestamp: '20170429082834'
+  },
+  {
+    id: '38',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    index: null,
+    timestamp: '20170429082835'
+  },
+  {
+    id: '39',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    index: null,
+    timestamp: '20170429082836'
+  },
+  {
+    id: '40',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    index: null,
+    timestamp: '20170429082837'
+  },
+  {
+    id: '41',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    index: null,
+    timestamp: '20170429082838'
+  },
+  {
+    id: '42',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    index: null,
+    timestamp: '20170429082839'
+  },
+  {
+    id: '43',
+    filename: '20170430225459_last_accesses__create.sql',
+    index: null,
+    timestamp: '20170430225459'
+  },
+  {
+    id: '44',
+    filename: '20170504085908_config__create.sql',
+    index: null,
+    timestamp: '20170504085908'
+  },
+  {
+    id: '45',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    index: null,
+    timestamp: '20170511134617'
+  },
+  {
+    id: '46',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    index: null,
+    timestamp: '20170511134618'
+  },
+  {
+    id: '47',
+    filename: '20170511140518_indexes_update.sql',
+    index: null,
+    timestamp: '20170511140518'
+  },
+  {
+    id: '48',
+    filename: '20170511140519_questions__config__drop.sql',
+    index: null,
+    timestamp: '20170511140519'
+  },
+  {
+    id: '49',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130530'
+  },
+  {
+    id: '50',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    index: null,
+    timestamp: '20170512130531'
+  },
+  {
+    id: '51',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    index: null,
+    timestamp: '20170514163619'
+  },
+  {
+    id: '52',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    index: null,
+    timestamp: '20170516205210'
+  },
+  {
+    id: '53',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    index: null,
+    timestamp: '20170516205211'
+  },
+  {
+    id: '54',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    index: null,
+    timestamp: '20170516223515'
+  },
+  {
+    id: '55',
+    filename: '20170516224411_users__provider__add.sql',
+    index: null,
+    timestamp: '20170516224411'
+  },
+  {
+    id: '56',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    index: null,
+    timestamp: '20170516224412'
+  },
+  {
+    id: '57',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    index: null,
+    timestamp: '20170516224413'
+  },
+  {
+    id: '58',
+    filename: '20170516224414_errors__add.sql',
+    index: null,
+    timestamp: '20170516224414'
+  },
+  {
+    id: '59',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    index: null,
+    timestamp: '20170623121937'
+  },
+  {
+    id: '60',
+    filename: '20170715083623_variants__console__add.sql',
+    index: null,
+    timestamp: '20170715083623'
+  },
+  {
+    id: '61',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    index: null,
+    timestamp: '20170718091712'
+  },
+  {
+    id: '62',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    index: null,
+    timestamp: '20170719084424'
+  },
+  {
+    id: '63',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    index: null,
+    timestamp: '20170722114413'
+  },
+  {
+    id: '64',
+    filename: '20170723090307_variants__valid__add.sql',
+    index: null,
+    timestamp: '20170723090307'
+  },
+  {
+    id: '65',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    index: null,
+    timestamp: '20170723122207'
+  },
+  {
+    id: '66',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    index: null,
+    timestamp: '20170723122208'
+  },
+  {
+    id: '67',
+    filename: '20170723122209_errors__open__add.sql',
+    index: null,
+    timestamp: '20170723122209'
+  },
+  {
+    id: '68',
+    filename: '20170723122210_errors__date__default.sql',
+    index: null,
+    timestamp: '20170723122210'
+  },
+  {
+    id: '69',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    index: null,
+    timestamp: '20170723122211'
+  },
+  {
+    id: '70',
+    filename: '20170731193513_variants__console__drop.sql',
+    index: null,
+    timestamp: '20170731193513'
+  },
+  {
+    id: '71',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    index: null,
+    timestamp: '20170802104018'
+  },
+  {
+    id: '72',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    index: null,
+    timestamp: '20170803112748'
+  },
+  {
+    id: '73',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    index: null,
+    timestamp: '20170806085650'
+  },
+  {
+    id: '74',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    index: null,
+    timestamp: '20170807122914'
+  },
+  {
+    id: '75',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    index: null,
+    timestamp: '20170807122915'
+  },
+  {
+    id: '76',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    index: null,
+    timestamp: '20170807122916'
+  },
+  {
+    id: '77',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    index: null,
+    timestamp: '20170807123908'
+  },
+  {
+    id: '78',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    index: null,
+    timestamp: '20170824203937'
+  },
+  {
+    id: '79',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    index: null,
+    timestamp: '20170902142323'
+  },
+  {
+    id: '80',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184217'
+  },
+  {
+    id: '81',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    index: null,
+    timestamp: '20170902184218'
+  },
+  {
+    id: '82',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    index: null,
+    timestamp: '20170903152154'
+  },
+  {
+    id: '83',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    index: null,
+    timestamp: '20170904114538'
+  },
+  {
+    id: '84',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    index: null,
+    timestamp: '20170906092028'
+  },
+  {
+    id: '85',
+    filename: '20170925133104_questions__timeout__add.sql',
+    index: null,
+    timestamp: '20170925133104'
+  },
+  {
+    id: '86',
+    filename: '20170928053038_errors__issues__rename.sql',
+    index: null,
+    timestamp: '20170928053038'
+  },
+  {
+    id: '87',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    index: null,
+    timestamp: '20170928053039'
+  },
+  {
+    id: '88',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    index: null,
+    timestamp: '20170928053040'
+  },
+  {
+    id: '89',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    index: null,
+    timestamp: '20170928053041'
+  },
+  {
+    id: '90',
+    filename: '20171001101621_grader_loads__create.sql',
+    index: null,
+    timestamp: '20171001101621'
+  },
+  {
+    id: '91',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    index: null,
+    timestamp: '20171011060538'
+  },
+  {
+    id: '92',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    index: null,
+    timestamp: '20171012060805'
+  },
+  {
+    id: '93',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    index: null,
+    timestamp: '20171013094452'
+  },
+  {
+    id: '94',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    index: null,
+    timestamp: '20171027064532'
+  },
+  {
+    id: '95',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    index: null,
+    timestamp: '20171101063221'
+  },
+  {
+    id: '96',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    index: null,
+    timestamp: '20171102164811'
+  },
+  {
+    id: '97',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    index: null,
+    timestamp: '20171108063855'
+  },
+  {
+    id: '98',
+    filename: '20171108063856_assessments__mode__add.sql',
+    index: null,
+    timestamp: '20171108063856'
+  },
+  {
+    id: '99',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    index: null,
+    timestamp: '20171108063857'
+  },
+  {
+    id: '100',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    index: null,
+    timestamp: '20171108063858'
+  },
+  ... 349 more items
+]
+/Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js -- BLOCK get_migrations
+SELECT
+  id,
+  filename,
+  index,
+  timestamp
+FROM
+  migrations
+WHERE
+  project = $project;
+
+allMigrations first (initWithLock) []
+allMigrations second (initWithLock) []
+migrationFiles [
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200859_initial_state.sql',
+    timestamp: '20170428200859'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    timestamp: '20170428200900'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    timestamp: '20170428200901'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    timestamp: '20170428200902'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    timestamp: '20170428200903'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    timestamp: '20170428200904'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    timestamp: '20170428200905'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    timestamp: '20170428200906'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    timestamp: '20170429082806'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    timestamp: '20170429082807'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082808'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082809'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    timestamp: '20170429082810'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    timestamp: '20170429082811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    timestamp: '20170429082812'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    timestamp: '20170429082813'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    timestamp: '20170429082814'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    timestamp: '20170429082815'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    timestamp: '20170429082816'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    timestamp: '20170429082817'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    timestamp: '20170429082818'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    timestamp: '20170429082819'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    timestamp: '20170429082820'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    timestamp: '20170429082821'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    timestamp: '20170429082822'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    timestamp: '20170429082823'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082824_courses__create.sql',
+    timestamp: '20170429082824'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082825_exams__create.sql',
+    timestamp: '20170429082825'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082826_reservations__create.sql',
+    timestamp: '20170429082826'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    timestamp: '20170429082827'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082828'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    timestamp: '20170429082829'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    timestamp: '20170429082830'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    timestamp: '20170429082831'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082832_submissions__duration__add.sql',
+    timestamp: '20170429082832'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    timestamp: '20170429082833'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    timestamp: '20170429082834'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    timestamp: '20170429082835'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    timestamp: '20170429082836'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    timestamp: '20170429082837'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    timestamp: '20170429082838'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    timestamp: '20170429082839'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170430225459_last_accesses__create.sql',
+    timestamp: '20170430225459'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170504085908_config__create.sql',
+    timestamp: '20170504085908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    timestamp: '20170511134617'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    timestamp: '20170511134618'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140518_indexes_update.sql',
+    timestamp: '20170511140518'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140519_questions__config__drop.sql',
+    timestamp: '20170511140519'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    timestamp: '20170512130530'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    timestamp: '20170512130531'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    timestamp: '20170514163619'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    timestamp: '20170516205210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    timestamp: '20170516205211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    timestamp: '20170516223515'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224411_users__provider__add.sql',
+    timestamp: '20170516224411'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    timestamp: '20170516224412'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    timestamp: '20170516224413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224414_errors__add.sql',
+    timestamp: '20170516224414'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    timestamp: '20170623121937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170715083623_variants__console__add.sql',
+    timestamp: '20170715083623'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    timestamp: '20170718091712'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    timestamp: '20170719084424'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    timestamp: '20170722114413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723090307_variants__valid__add.sql',
+    timestamp: '20170723090307'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    timestamp: '20170723122207'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    timestamp: '20170723122208'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122209_errors__open__add.sql',
+    timestamp: '20170723122209'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122210_errors__date__default.sql',
+    timestamp: '20170723122210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    timestamp: '20170723122211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170731193513_variants__console__drop.sql',
+    timestamp: '20170731193513'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    timestamp: '20170802104018'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    timestamp: '20170803112748'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    timestamp: '20170806085650'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    timestamp: '20170807122914'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    timestamp: '20170807122915'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    timestamp: '20170807122916'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    timestamp: '20170807123908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    timestamp: '20170824203937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    timestamp: '20170902142323'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    timestamp: '20170902184217'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    timestamp: '20170902184218'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    timestamp: '20170903152154'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    timestamp: '20170904114538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    timestamp: '20170906092028'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170925133104_questions__timeout__add.sql',
+    timestamp: '20170925133104'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053038_errors__issues__rename.sql',
+    timestamp: '20170928053038'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    timestamp: '20170928053039'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    timestamp: '20170928053040'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    timestamp: '20170928053041'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171001101621_grader_loads__create.sql',
+    timestamp: '20171001101621'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    timestamp: '20171011060538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    timestamp: '20171012060805'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    timestamp: '20171013094452'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    timestamp: '20171027064532'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    timestamp: '20171101063221'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    timestamp: '20171102164811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    timestamp: '20171108063855'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063856_assessments__mode__add.sql',
+    timestamp: '20171108063856'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    timestamp: '20171108063857'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    timestamp: '20171108063858'
+  },
+  ... 338 more items
+]
+migrationsToExecute [
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200859_initial_state.sql',
+    timestamp: '20170428200859'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200900_assessement_access_rules__time_limit_min__add.sql',
+    timestamp: '20170428200900'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200901_assessment_instances__date_limit__add.sql',
+    timestamp: '20170428200901'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200902_assessment_instances__auto_close__add.sql',
+    timestamp: '20170428200902'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200903_assessment_instances__tmp_upgraded_iq_status__add.sql',
+    timestamp: '20170428200903'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200904_assessments__auto_close__add.sql',
+    timestamp: '20170428200904'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200905_course_instances__display_timezone__add.sql',
+    timestamp: '20170428200905'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170428200906_pl_courses__display_timezone__add.sql',
+    timestamp: '20170428200906'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082806_enum_instance_question_status__create.sql',
+    timestamp: '20170429082806'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082807_instance_questions__status__add.sql',
+    timestamp: '20170429082807'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082808_alternative_groups__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082808'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082809_assessment_access_rules__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082809'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082810_assessment_instances__instrutor_opened__drop.sql',
+    timestamp: '20170429082810'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082811_assessment_instances__unique__assessment_id__user_id__number__reorder.sql',
+    timestamp: '20170429082811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082812_assessment_questions__force_max_points__add.sql',
+    timestamp: '20170429082812'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082813_assessment_sets__unique__course_id__name__reorder.sql',
+    timestamp: '20170429082813'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082814_course_instance_access_rules__unique__course_instance_id__number__reorder.sql',
+    timestamp: '20170429082814'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082815_job_sequences__course_instance_id__add.sql',
+    timestamp: '20170429082815'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082816_job_sequences__assessment_id__add.sql',
+    timestamp: '20170429082816'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082817_jobs__course_instance_id__add.sql',
+    timestamp: '20170429082817'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082818_jobs__assessment_id__add.sql',
+    timestamp: '20170429082818'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082819_questions__unique__course_id__number__reorder.sql',
+    timestamp: '20170429082819'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082820_questions__autograding_enabled__autograder__environment__add.sql',
+    timestamp: '20170429082820'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082821_tags__course_id__name__reorder.sql',
+    timestamp: '20170429082821'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082822_topics__course_id__name__reorder.sql',
+    timestamp: '20170429082822'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082823_variants__unique__instance_question_id__number__reorder.sql',
+    timestamp: '20170429082823'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082824_courses__create.sql',
+    timestamp: '20170429082824'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082825_exams__create.sql',
+    timestamp: '20170429082825'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082826_reservations__create.sql',
+    timestamp: '20170429082826'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082827_courses__pl_course_id__add.sql',
+    timestamp: '20170429082827'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082828_zones__unique__assessment_id__number__reorder.sql',
+    timestamp: '20170429082828'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082829_submissions__grading_method__add.sql',
+    timestamp: '20170429082829'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082830_instance_questions__authn_user_id__add.sql',
+    timestamp: '20170429082830'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082831_instance_questions__duration__first_duration__add.sql',
+    timestamp: '20170429082831'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082832_submissions__duration__add.sql',
+    timestamp: '20170429082832'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082833_variants__authn_user_id__add.sql',
+    timestamp: '20170429082833'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082834_variants__duration__first_duration__add.sql',
+    timestamp: '20170429082834'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082835_assessment_instances__time_limit_min__drop.sql',
+    timestamp: '20170429082835'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082836_questions__external_grading__change.sql',
+    timestamp: '20170429082836'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082837_gradings_logs__extra_times__add.sql',
+    timestamp: '20170429082837'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082838_questions__single_variant__add.sql',
+    timestamp: '20170429082838'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170429082839_questions__external_grading_change.sql',
+    timestamp: '20170429082839'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170430225459_last_accesses__create.sql',
+    timestamp: '20170430225459'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170504085908_config__create.sql',
+    timestamp: '20170504085908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134617_config__display_timezone__insert.sql',
+    timestamp: '20170511134617'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511134618_exam_mode_networks__create.sql',
+    timestamp: '20170511134618'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140518_indexes_update.sql',
+    timestamp: '20170511140518'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170511140519_questions__config__drop.sql',
+    timestamp: '20170511140519'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130530_courses__pl_courses__rename_cleanup.sql',
+    timestamp: '20170512130530'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170512130531_users__user_id__rename_cleanup.sql',
+    timestamp: '20170512130531'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170514163619_grading_logs__rename__grading_jobs.sql',
+    timestamp: '20170514163619'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205210_users__uin__unique_add.sql',
+    timestamp: '20170516205210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516205211_jobs__job_sequences__drop_extra_foreign_keys.sql',
+    timestamp: '20170516205211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516223515_course_instance_access_rules__institution__add.sql',
+    timestamp: '20170516223515'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224411_users__provider__add.sql',
+    timestamp: '20170516224411'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224412_pl_courses__options__add.sql',
+    timestamp: '20170516224412'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224413_enum_question_type__freeform__add.sql',
+    timestamp: '20170516224413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170516224414_errors__add.sql',
+    timestamp: '20170516224414'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170623121937_assessment_access_rules__password__add.sql',
+    timestamp: '20170623121937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170715083623_variants__console__add.sql',
+    timestamp: '20170715083623'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170718091712_submissions__grading_jobs__partial_scores__add.sql',
+    timestamp: '20170718091712'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170719084424_submissions__raw_submitted_answer__parse_errors__add.sql',
+    timestamp: '20170719084424'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170722114413_submissions__params__true_answer__add.sql',
+    timestamp: '20170722114413'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723090307_variants__valid__add.sql',
+    timestamp: '20170723090307'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122207_errors__id__primary_key__constraint_add.sql',
+    timestamp: '20170723122207'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122208_errors__variant_id__add.sql',
+    timestamp: '20170723122208'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122209_errors__open__add.sql',
+    timestamp: '20170723122209'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122210_errors__date__default.sql',
+    timestamp: '20170723122210'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170723122211_errors__instructor_message__add.sql',
+    timestamp: '20170723122211'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170731193513_variants__console__drop.sql',
+    timestamp: '20170731193513'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170802104018_variants__question_id__user_id__add.sql',
+    timestamp: '20170802104018'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170803112748_enum_submissions_type__drop.sql',
+    timestamp: '20170803112748'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170806085650_submissions__broken__gradable__add.sql',
+    timestamp: '20170806085650'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122914_variants__valid__broken__rename.sql',
+    timestamp: '20170807122914'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122915_variants__available__open__rename.sql',
+    timestamp: '20170807122915'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807122916_enum_instance_question_status__grading__add.sql',
+    timestamp: '20170807122916'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170807123908_submissions__parse_errors__format_errors__rename.sql',
+    timestamp: '20170807123908'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170824203937_instance_questions__highest_submission_score__add.sql',
+    timestamp: '20170824203937'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902142323_instance_questions__points_list_original__add.sql',
+    timestamp: '20170902142323'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184217_submissions__v2_score__add.sql',
+    timestamp: '20170902184217'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170902184218_grading_jobs__v2_score__add.sql',
+    timestamp: '20170902184218'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170903152154_instance_questions__number_attempts__update.sql',
+    timestamp: '20170903152154'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170904114538_homework_partial_credit__columns__add.sql',
+    timestamp: '20170904114538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170906092028_instance_questions__variants_points_list__update.sql',
+    timestamp: '20170906092028'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170925133104_questions__timeout__add.sql',
+    timestamp: '20170925133104'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053038_errors__issues__rename.sql',
+    timestamp: '20170928053038'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053039_issues__instance_question_id__add.sql',
+    timestamp: '20170928053039'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053040_issues__manually_reported__add.sql',
+    timestamp: '20170928053040'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20170928053041_assessments__allow_issue_reporting__add.sql',
+    timestamp: '20170928053041'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171001101621_grader_loads__create.sql',
+    timestamp: '20171001101621'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171011060538_instance_questions__points_list_original__update.sql',
+    timestamp: '20171011060538'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171012060805_grading_jobs__date__create_index.sql',
+    timestamp: '20171012060805'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171013094452_questions__partial_credit__add.sql',
+    timestamp: '20171013094452'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171027064532_question_score_logs__grading_job_id__add.sql',
+    timestamp: '20171027064532'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171101063221_course_instances__ps_linked__add.sql',
+    timestamp: '20171101063221'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171102164811_grading_jobs__logs__create_columns.sql',
+    timestamp: '20171102164811'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063855_assessment_questions__add_stats_columns.sql',
+    timestamp: '20171108063855'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063856_assessments__mode__add.sql',
+    timestamp: '20171108063856'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063857_assessments__stats_last_updated__add.sql',
+    timestamp: '20171108063857'
+  },
+  {
+    directory: '/Users/peter/work/PrairieLearn/apps/prairielearn/src/migrations',
+    filename: '20171108063858_instance_questions__stats__add.sql',
+    timestamp: '20171108063858'
+  },
+  ... 338 more items
+]
+[31merror[39m: Error initializing PrairieLearn server: type "enum_role" does not exist {"code":"42704","data":{"rollback":"success","sql":"-- Initial state, as of 9c698b433f583a1df5f7450f60689424570988a4\n---------------------------------\n-- Types\n---------------------------------\n-- enum_mode\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_mode') THEN\n        CREATE TYPE enum_mode AS ENUM ('Public', 'Exam');\n    END IF;\nEND;\n$$;\n\n-- enum_question_type\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_question_type') THEN\n        CREATE TYPE enum_question_type AS ENUM ('Calculation', 'ShortAnswer', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse');\n    END IF;\nEND;\n$$;\n\n-- enum_role\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_role') THEN\n        CREATE TYPE enum_role AS ENUM ('None', 'Student', 'TA', 'Instructor', 'Superuser');\n    END IF;\nEND;\n$$;\n\n-- enum_course_role.sql\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_course_role') THEN\n        CREATE TYPE enum_course_role AS ENUM ('None', 'Viewer', 'Editor', 'Owner');\n    END IF;\nEND;\n$$;\n\n-- enum_submission_type.sql\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_submission_type') THEN\n        CREATE TYPE enum_submission_type AS ENUM ('check', 'score', 'practice');\n    END IF;\nEND;\n$$;\n\n-- enum_assessment_type.sql\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_assessment_type') THEN\n        CREATE TYPE enum_assessment_type AS ENUM ('Exam', 'RetryExam', 'Basic', 'Game', 'Homework');\n    END IF;\nEND;\n$$;\n\n-- enum_auth_action.sql\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_auth_action') THEN\n        CREATE TYPE enum_auth_action AS ENUM ('View', 'Edit');\n    END IF;\nEND;\n$$;\n\n-- enum_grading_method.sql\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_grading_method') THEN\n        CREATE TYPE enum_grading_method AS ENUM ('Internal', 'External', 'Manual');\n    END IF;\nEND;\n$$;\n\n-- enum_job_status\nDO $$\nBEGIN\n    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_job_status') THEN\n        CREATE TYPE enum_job_status AS ENUM ('Running', 'Success', 'Error');\n    END IF;\nEND;\n$$;\n\n---------------------------------\n-- Top-level Tables\n---------------------------------\n-- users\nCREATE TABLE IF NOT EXISTS users (\n  user_id BIGSERIAL PRIMARY KEY,\n  uid text UNIQUE NOT NULL,\n  uin char(9) UNIQUE,\n  name text\n);\n\n-- administrators\nCREATE TABLE IF NOT EXISTS administrators (\n  id BIGSERIAL PRIMARY KEY,\n  user_id BIGINT NOT NULL UNIQUE REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE\n);\n\n-- pl_courses\nCREATE TABLE IF NOT EXISTS pl_courses (\n  id BIGSERIAL PRIMARY KEY,\n  short_name text,\n  title text,\n  display_timezone text,\n  grading_queue text,\n  path text,\n  repository text,\n  deleted_at TIMESTAMP WITH TIME ZONE\n);\n\n-- course_permissions\nCREATE TABLE IF NOT EXISTS course_permissions (\n  id BIGSERIAL PRIMARY KEY,\n  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  course_role enum_course_role,\n  UNIQUE (user_id, course_id)\n);\n\n---------------------------------\n-- Tables synced from git repo\n---------------------------------\n-- course_instances\nCREATE TABLE IF NOT EXISTS course_instances (\n  id BIGSERIAL PRIMARY KEY,\n  uuid UUID NOT NULL UNIQUE,\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  short_name text,\n  long_name text,\n  number INTEGER,\n  display_timezone text,\n  deleted_at TIMESTAMP WITH TIME ZONE\n);\n\n-- course_instance_access_rules\nCREATE TABLE IF NOT EXISTS course_instance_access_rules (\n  id BIGSERIAL PRIMARY KEY,\n  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  number INTEGER,\n  role enum_role,\n  uids text[],\n  start_date TIMESTAMP WITH TIME ZONE,\n  end_date TIMESTAMP WITH TIME ZONE,\n  UNIQUE (number, course_instance_id)\n);\n\n-- topics\nCREATE TABLE IF NOT EXISTS topics (\n  id BIGSERIAL PRIMARY KEY,\n  name text,\n  number INTEGER,\n  color text,\n  description text,\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (name, course_id)\n);\n\n-- questions\nCREATE TABLE IF NOT EXISTS questions (\n  id BIGSERIAL PRIMARY KEY,\n  uuid UUID NOT NULL UNIQUE,\n  qid text,\n  directory text,\n  template_directory text,\n  type enum_question_type,\n  title text,\n  config JSONB,\n  options JSONB,\n  client_files TEXT[] DEFAULT ARRAY[]::TEXT[],\n  number INTEGER,\n  grading_method enum_grading_method NOT NULL DEFAULT 'Internal',\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,\n  deleted_at TIMESTAMP WITH TIME ZONE,\n  UNIQUE (number, course_id)\n);\n\n-- tags\nCREATE TABLE IF NOT EXISTS tags (\n  id BIGSERIAL PRIMARY KEY,\n  name text,\n  number INTEGER,\n  color text,\n  description text,\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (name, course_id)\n);\n\n-- question_tags\nCREATE TABLE IF NOT EXISTS question_tags (\n  id BIGSERIAL PRIMARY KEY,\n  question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,\n  tag_id BIGINT NOT NULL REFERENCES tags ON DELETE CASCADE ON UPDATE CASCADE,\n  number INTEGER,\n  UNIQUE (question_id, tag_id)\n);\n\n-- assessment_sets\nCREATE TABLE IF NOT EXISTS assessment_sets (\n  id BIGSERIAL PRIMARY KEY,\n  abbreviation text,\n  name text,\n  heading text,\n  color text,\n  number INTEGER,\n  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (name, course_id)\n);\n\n-- assessments\nCREATE TABLE IF NOT EXISTS assessments (\n  id BIGSERIAL PRIMARY KEY,\n  uuid UUID NOT NULL UNIQUE,\n  tid text,\n  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  type enum_assessment_type,\n  number text,\n  order_by integer,\n  title text,\n  config JSONB,\n  text TEXT,\n  multiple_instance boolean,\n  shuffle_questions boolean DEFAULT false,\n  max_points DOUBLE PRECISION,\n  assessment_set_id BIGINT REFERENCES assessment_sets ON DELETE SET NULL ON UPDATE CASCADE,\n  deleted_at TIMESTAMP WITH TIME ZONE,\n  obj JSONB\n);\n\n-- zones\nCREATE TABLE IF NOT EXISTS zones (\n  id BIGSERIAL PRIMARY KEY,\n  title text,\n  number INTEGER,\n  number_choose INTEGER, -- NULL means choose all\n  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (number, assessment_id)\n);\n\n-- alternative_groups\nCREATE TABLE IF NOT EXISTS alternative_groups (\n  id BIGSERIAL PRIMARY KEY,\n  number INTEGER,\n  number_choose INTEGER, -- NULL means choose all\n  zone_id BIGINT NOT NULL REFERENCES zones ON DELETE CASCADE ON UPDATE CASCADE,\n  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (number, assessment_id)\n);\n\n-- assessment_access_rules\nCREATE TABLE IF NOT EXISTS assessment_access_rules (\n  id BIGSERIAL PRIMARY KEY,\n  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n  number INTEGER,\n  mode enum_mode,\n  role enum_role,\n  uids text[],\n  start_date TIMESTAMP WITH TIME ZONE,\n  end_date TIMESTAMP WITH TIME ZONE,\n  credit INTEGER,\n  UNIQUE (number, assessment_id)\n);\n\n-- assessment_questions\nCREATE TABLE IF NOT EXISTS assessment_questions (\n  id BIGSERIAL PRIMARY KEY,\n  number INTEGER,\n  max_points DOUBLE PRECISION,\n  points_list DOUBLE PRECISION[],\n  init_points DOUBLE PRECISION,\n  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n  alternative_group_id BIGINT REFERENCES alternative_groups ON DELETE SET NULL ON UPDATE CASCADE,\n  number_in_alternative_group INTEGER,\n  question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,\n  deleted_at TIMESTAMP WITH TIME ZONE,\n  UNIQUE (question_id, assessment_id)\n);\n\n---------------------------------\n-- Tables created during operation\n---------------------------------\n-- enrollments\nCREATE TABLE IF NOT EXISTS enrollments (\n  id BIGSERIAL PRIMARY KEY,\n  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  role enum_role,\n  UNIQUE (user_id, course_instance_id)\n);\n\n-- assessment_instances\nCREATE TABLE IF NOT EXISTS assessment_instances (\n  id BIGSERIAL PRIMARY KEY,\n  tiid text UNIQUE, -- temporary, delete after Mongo import\n  qids JSONB, -- temporary, delete after Mongo import\n  obj JSONB, -- temporary, delete after Mongo import\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  mode enum_mode, -- mode at creation\n  number INTEGER,\n  open BOOLEAN DEFAULT TRUE,\n  closed_at TIMESTAMP WITH TIME ZONE,\n  instructor_opened BOOLEAN DEFAULT FALSE,\n  duration INTERVAL DEFAULT INTERVAL '0 seconds',\n  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  points DOUBLE PRECISION DEFAULT 0,\n  points_in_grading DOUBLE PRECISION DEFAULT 0,\n  max_points DOUBLE PRECISION,\n  score_perc DOUBLE PRECISION DEFAULT 0,\n  score_perc_in_grading DOUBLE PRECISION DEFAULT 0,\n  UNIQUE (number, assessment_id, user_id)\n);\n\n-- instance_questions\nCREATE TABLE IF NOT EXISTS instance_questions (\n  id BIGSERIAL PRIMARY KEY,\n  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  open BOOLEAN DEFAULT TRUE,\n  number INTEGER,\n  order_by INTEGER DEFAULT floor(random() * 1000000),\n  points DOUBLE PRECISION DEFAULT 0,\n  points_in_grading DOUBLE PRECISION DEFAULT 0,\n  score_perc DOUBLE PRECISION DEFAULT 0,\n  score_perc_in_grading DOUBLE PRECISION DEFAULT 0,\n  current_value DOUBLE PRECISION,\n  number_attempts INTEGER DEFAULT 0,\n  points_list DOUBLE PRECISION[],\n  assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions ON DELETE CASCADE ON UPDATE CASCADE,\n  UNIQUE (assessment_question_id, assessment_instance_id)\n);\n\n-- variants\nCREATE TABLE IF NOT EXISTS variants (\n  id BIGSERIAL PRIMARY KEY,\n  qiid text UNIQUE, -- temporary, delete after Mongo import\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  instance_question_id BIGINT NOT NULL REFERENCES instance_questions ON DELETE CASCADE ON UPDATE CASCADE,\n  available BOOLEAN DEFAULT TRUE,\n  number INTEGER,\n  variant_seed text,\n  params JSONB,\n  true_answer JSONB,\n  options JSONB,\n  UNIQUE (number, instance_question_id)\n);\n\n-- submissions\nCREATE TABLE IF NOT EXISTS submissions (\n  id BIGSERIAL PRIMARY KEY,\n  sid text UNIQUE, -- temporary, delete after Mongo import\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  submitted_answer JSONB,\n  type enum_submission_type,\n  override_score DOUBLE PRECISION,\n  credit INTEGER,\n  mode enum_mode,\n  grading_requested_at TIMESTAMP WITH TIME ZONE,\n  graded_at TIMESTAMP WITH TIME ZONE,\n  score DOUBLE PRECISION,\n  correct BOOLEAN,\n  feedback JSONB\n);\n\n-- job_sequences\nCREATE TABLE IF NOT EXISTS job_sequences (\n  id BIGSERIAL PRIMARY KEY,\n  start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  finish_date TIMESTAMP WITH TIME ZONE,\n  course_id BIGINT REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  number INTEGER,\n  user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  authn_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  type TEXT,\n  description TEXT,\n  status enum_job_status DEFAULT 'Running',\n  UNIQUE (course_id, number)\n);\n\n-- jobs\nCREATE TABLE IF NOT EXISTS jobs (\n  id BIGSERIAL PRIMARY KEY,\n  start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  finish_date TIMESTAMP WITH TIME ZONE,\n  course_id BIGINT REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n  number INTEGER,\n  job_sequence_id BIGINT REFERENCES job_sequences ON DELETE CASCADE ON UPDATE CASCADE,\n  number_in_sequence INTEGER,\n  last_in_sequence BOOLEAN,\n  user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  authn_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  type TEXT,\n  description TEXT,\n  status enum_job_status,\n  stdin TEXT,\n  stdout TEXT,\n  stderr TEXT,\n  output TEXT,\n  command TEXT,\n  arguments TEXT[],\n  working_directory TEXT,\n  exit_code INTEGER,\n  exit_signal TEXT,\n  error_message TEXT,\n  UNIQUE (course_id, number),\n  UNIQUE (job_sequence_id, number_in_sequence)\n);\n\n---------------------------------\n-- Tables for logging\n---------------------------------\n-- assessment_state_logs\nCREATE TABLE IF NOT EXISTS assessment_state_logs (\n  id BIGSERIAL PRIMARY KEY,\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  open BOOLEAN,\n  assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE\n);\n\n-- assessment_score_logs\nCREATE TABLE IF NOT EXISTS assessment_score_logs (\n  id BIGSERIAL PRIMARY KEY,\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  points DOUBLE PRECISION,\n  points_in_grading DOUBLE PRECISION,\n  max_points DOUBLE PRECISION,\n  score_perc DOUBLE PRECISION,\n  score_perc_in_grading DOUBLE PRECISION,\n  assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE\n);\n\n-- access_logs\nCREATE TABLE IF NOT EXISTS access_logs (\n  id BIGSERIAL PRIMARY KEY,\n  mongo_id text UNIQUE,\n  date timestamp with time zone,\n  mode enum_mode,\n  ip inet,\n  forwarded_ip inet,\n  auth_uid text,\n  auth_role enum_role,\n  user_uid text,\n  user_role enum_role,\n  method text,\n  path text,\n  params jsonb,\n  body jsonb\n);\n\n-- variant_view_logs\nCREATE TABLE IF NOT EXISTS variant_view_logs (\n  id BIGSERIAL PRIMARY KEY,\n  variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,\n  access_log_id BIGINT UNIQUE NOT NULL REFERENCES access_logs ON DELETE CASCADE ON UPDATE CASCADE,\n  open BOOLEAN,\n  credit INTEGER\n);\n\n-- grading_logs\nCREATE TABLE IF NOT EXISTS grading_logs (\n  id BIGSERIAL PRIMARY KEY,\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  submission_id BIGINT NOT NULL REFERENCES submissions ON DELETE CASCADE ON UPDATE CASCADE,\n  grading_method enum_grading_method,\n  grading_requested_at TIMESTAMP WITH TIME ZONE,\n  grading_request_canceled_at TIMESTAMP WITH TIME ZONE,\n  grading_request_canceled_by BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  graded_at TIMESTAMP WITH TIME ZONE,\n  graded_by BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  score DOUBLE PRECISION,\n  correct BOOLEAN,\n  feedback JSONB,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE\n);\n\n-- question_score_logs\nCREATE TABLE IF NOT EXISTS question_score_logs (\n  id BIGSERIAL PRIMARY KEY,\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  instance_question_id BIGINT NOT NULL REFERENCES instance_questions ON DELETE CASCADE ON UPDATE CASCADE,\n  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n  points DOUBLE PRECISION,\n  max_points DOUBLE PRECISION,\n  score_perc DOUBLE PRECISION\n);\n\n-- audit_logs\nCREATE TABLE IF NOT EXISTS audit_logs (\n  id BIGSERIAL PRIMARY KEY,\n  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n  authn_user_id BIGINT,\n  course_id BIGINT,\n  course_instance_id BIGINT,\n  user_id BIGINT,\n  table_name TEXT,\n  column_name TEXT,\n  row_id BIGINT,\n  action TEXT,\n  parameters JSONB,\n  old_state JSONB,\n  new_state JSONB\n);\n","sqlError":{"code":"42704","file":"parse_type.c","length":98,"line":"274","message":"type \"enum_role\" does not exist","name":"error","position":"3815","routine":"typenameType","severity":"ERROR"},"sqlFile":"20170428200859_initial_state.sql","sqlParams":{}},"file":"parse_type.c","length":98,"line":"274","name":"error","position":"3815","routine":"typenameType","severity":"ERROR","stack":"error: type \"enum_role\" does not exist\n    at /Users/peter/work/PrairieLearn/node_modules/pg/lib/client.js:545:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async PostgresPool.queryWithClientAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:274:28)\n    at async PostgresPool.queryAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:463:20)\n    at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:121:25\n    at async PostgresPool.runInTransactionAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:434:22)\n    at async initWithLock (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:120:21)\n    at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:24:9\n    at async Module.doWithLock (file:///Users/peter/work/PrairieLearn/packages/named-locks/dist/index.js:80:16)\n    at async Module.init (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:13:5)\n    at async eval (/Users/peter/work/PrairieLearn/apps/prairielearn/src/server.ts:1885:7)\n    at async ESModulesEvaluator.runInlinedModule (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:989:3)\n    at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1160:59)\n    at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/chunks/dep-Bsx9IwL8.js:18871:22)\n    at async SSRCompatModuleRunner.cachedRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1067:73)\n    at async SSRCompatModuleRunner.import (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1017:10)"}
+10:24:19 AM [vite] (ssr) Error when evaluating SSR module ./src/server.ts: type "enum_role" does not exist
+      at /Users/peter/work/PrairieLearn/node_modules/pg/lib/client.js:545:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async PostgresPool.queryWithClientAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:274:28)
+      at async PostgresPool.queryAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:463:20)
+      at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:121:25
+      at async PostgresPool.runInTransactionAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:434:22)
+      at async initWithLock (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:120:21)
+      at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:24:9
+      at async Module.doWithLock (file:///Users/peter/work/PrairieLearn/packages/named-locks/dist/index.js:80:16)
+      at async Module.init (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:13:5)
+      at async eval (/Users/peter/work/PrairieLearn/apps/prairielearn/src/server.ts:1885:7)
+      at async ESModulesEvaluator.runInlinedModule (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:989:3)
+      at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1160:59)
+      at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/chunks/dep-Bsx9IwL8.js:18871:22)
+      at async SSRCompatModuleRunner.cachedRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1067:73)
+      at async SSRCompatModuleRunner.import (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1017:10)
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+error: type "enum_role" does not exist
+    at /Users/peter/work/PrairieLearn/node_modules/pg/lib/client.js:545:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresPool.queryWithClientAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:274:28)
+    at async PostgresPool.queryAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:463:20)
+    at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:121:25
+    at async PostgresPool.runInTransactionAsync (file:///Users/peter/work/PrairieLearn/packages/postgres/dist/pool.js:434:22)
+    at async initWithLock (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:120:21)
+    at async file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:24:9
+    at async Module.doWithLock (file:///Users/peter/work/PrairieLearn/packages/named-locks/dist/index.js:80:16)
+    at async Module.init (file:///Users/peter/work/PrairieLearn/packages/migrations/dist/migrations/migrations.js:13:5)
+    at async eval (/Users/peter/work/PrairieLearn/apps/prairielearn/src/server.ts:1885:7)
+    at async ESModulesEvaluator.runInlinedModule (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:989:3)
+    at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1160:59)
+    at async SSRCompatModuleRunner.directRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/chunks/dep-Bsx9IwL8.js:18871:22)
+    at async SSRCompatModuleRunner.cachedRequest (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1067:73)
+    at async SSRCompatModuleRunner.import (file:///Users/peter/work/PrairieLearn/node_modules/vite/dist/node/module-runner.js:1017:10) {
+  length: 98,
+  severity: 'ERROR',
+  code: '42704',
+  detail: undefined,
+  hint: undefined,
+  position: '3815',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_type.c',
+  line: '274',
+  routine: 'typenameType',
+  data: {
+    sqlError: {
+      length: 98,
+      name: 'error',
+      severity: 'ERROR',
+      code: '42704',
+      detail: undefined,
+      hint: undefined,
+      position: '3815',
+      internalPosition: undefined,
+      internalQuery: undefined,
+      where: undefined,
+      schema: undefined,
+      table: undefined,
+      column: undefined,
+      dataType: undefined,
+      constraint: undefined,
+      file: 'parse_type.c',
+      line: '274',
+      routine: 'typenameType',
+      message: 'type "enum_role" does not exist'
+    },
+    sql: '-- Initial state, as of 9c698b433f583a1df5f7450f60689424570988a4\n' +
+      '---------------------------------\n' +
+      '-- Types\n' +
+      '---------------------------------\n' +
+      '-- enum_mode\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_mode') THEN\n" +
+      "        CREATE TYPE enum_mode AS ENUM ('Public', 'Exam');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_question_type\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_question_type') THEN\n" +
+      "        CREATE TYPE enum_question_type AS ENUM ('Calculation', 'ShortAnswer', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_role\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_role') THEN\n" +
+      "        CREATE TYPE enum_role AS ENUM ('None', 'Student', 'TA', 'Instructor', 'Superuser');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_course_role.sql\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_course_role') THEN\n" +
+      "        CREATE TYPE enum_course_role AS ENUM ('None', 'Viewer', 'Editor', 'Owner');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_submission_type.sql\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_submission_type') THEN\n" +
+      "        CREATE TYPE enum_submission_type AS ENUM ('check', 'score', 'practice');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_assessment_type.sql\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_assessment_type') THEN\n" +
+      "        CREATE TYPE enum_assessment_type AS ENUM ('Exam', 'RetryExam', 'Basic', 'Game', 'Homework');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_auth_action.sql\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_auth_action') THEN\n" +
+      "        CREATE TYPE enum_auth_action AS ENUM ('View', 'Edit');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_grading_method.sql\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_grading_method') THEN\n" +
+      "        CREATE TYPE enum_grading_method AS ENUM ('Internal', 'External', 'Manual');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '-- enum_job_status\n' +
+      'DO $$\n' +
+      'BEGIN\n' +
+      "    IF NOT EXISTS (SELECT * FROM pg_type WHERE typname = 'enum_job_status') THEN\n" +
+      "        CREATE TYPE enum_job_status AS ENUM ('Running', 'Success', 'Error');\n" +
+      '    END IF;\n' +
+      'END;\n' +
+      '$$;\n' +
+      '\n' +
+      '---------------------------------\n' +
+      '-- Top-level Tables\n' +
+      '---------------------------------\n' +
+      '-- users\n' +
+      'CREATE TABLE IF NOT EXISTS users (\n' +
+      '  user_id BIGSERIAL PRIMARY KEY,\n' +
+      '  uid text UNIQUE NOT NULL,\n' +
+      '  uin char(9) UNIQUE,\n' +
+      '  name text\n' +
+      ');\n' +
+      '\n' +
+      '-- administrators\n' +
+      'CREATE TABLE IF NOT EXISTS administrators (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  user_id BIGINT NOT NULL UNIQUE REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE\n' +
+      ');\n' +
+      '\n' +
+      '-- pl_courses\n' +
+      'CREATE TABLE IF NOT EXISTS pl_courses (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  short_name text,\n' +
+      '  title text,\n' +
+      '  display_timezone text,\n' +
+      '  grading_queue text,\n' +
+      '  path text,\n' +
+      '  repository text,\n' +
+      '  deleted_at TIMESTAMP WITH TIME ZONE\n' +
+      ');\n' +
+      '\n' +
+      '-- course_permissions\n' +
+      'CREATE TABLE IF NOT EXISTS course_permissions (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  course_role enum_course_role,\n' +
+      '  UNIQUE (user_id, course_id)\n' +
+      ');\n' +
+      '\n' +
+      '---------------------------------\n' +
+      '-- Tables synced from git repo\n' +
+      '---------------------------------\n' +
+      '-- course_instances\n' +
+      'CREATE TABLE IF NOT EXISTS course_instances (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  uuid UUID NOT NULL UNIQUE,\n' +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  short_name text,\n' +
+      '  long_name text,\n' +
+      '  number INTEGER,\n' +
+      '  display_timezone text,\n' +
+      '  deleted_at TIMESTAMP WITH TIME ZONE\n' +
+      ');\n' +
+      '\n' +
+      '-- course_instance_access_rules\n' +
+      'CREATE TABLE IF NOT EXISTS course_instance_access_rules (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  number INTEGER,\n' +
+      '  role enum_role,\n' +
+      '  uids text[],\n' +
+      '  start_date TIMESTAMP WITH TIME ZONE,\n' +
+      '  end_date TIMESTAMP WITH TIME ZONE,\n' +
+      '  UNIQUE (number, course_instance_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- topics\n' +
+      'CREATE TABLE IF NOT EXISTS topics (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  name text,\n' +
+      '  number INTEGER,\n' +
+      '  color text,\n' +
+      '  description text,\n' +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  UNIQUE (name, course_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- questions\n' +
+      'CREATE TABLE IF NOT EXISTS questions (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  uuid UUID NOT NULL UNIQUE,\n' +
+      '  qid text,\n' +
+      '  directory text,\n' +
+      '  template_directory text,\n' +
+      '  type enum_question_type,\n' +
+      '  title text,\n' +
+      '  config JSONB,\n' +
+      '  options JSONB,\n' +
+      '  client_files TEXT[] DEFAULT ARRAY[]::TEXT[],\n' +
+      '  number INTEGER,\n' +
+      "  grading_method enum_grading_method NOT NULL DEFAULT 'Internal',\n" +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,\n' +
+      '  deleted_at TIMESTAMP WITH TIME ZONE,\n' +
+      '  UNIQUE (number, course_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- tags\n' +
+      'CREATE TABLE IF NOT EXISTS tags (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  name text,\n' +
+      '  number INTEGER,\n' +
+      '  color text,\n' +
+      '  description text,\n' +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  UNIQUE (name, course_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- question_tags\n' +
+      'CREATE TABLE IF NOT EXISTS question_tags (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  tag_id BIGINT NOT NULL REFERENCES tags ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  number INTEGER,\n' +
+      '  UNIQUE (question_id, tag_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- assessment_sets\n' +
+      'CREATE TABLE IF NOT EXISTS assessment_sets (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  abbreviation text,\n' +
+      '  name text,\n' +
+      '  heading text,\n' +
+      '  color text,\n' +
+      '  number INTEGER,\n' +
+      '  course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  UNIQUE (name, course_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- assessments\n' +
+      'CREATE TABLE IF NOT EXISTS assessments (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  uuid UUID NOT NULL UNIQUE,\n' +
+      '  tid text,\n' +
+      '  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  type enum_assessment_type,\n' +
+      '  number text,\n' +
+      '  order_by integer,\n' +
+      '  title text,\n' +
+      '  config JSONB,\n' +
+      '  text TEXT,\n' +
+      '  multiple_instance boolean,\n' +
+      '  shuffle_questions boolean DEFAULT false,\n' +
+      '  max_points DOUBLE PRECISION,\n' +
+      '  assessment_set_id BIGINT REFERENCES assessment_sets ON DELETE SET NULL ON UPDATE CASCADE,\n' +
+      '  deleted_at TIMESTAMP WITH TIME ZONE,\n' +
+      '  obj JSONB\n' +
+      ');\n' +
+      '\n' +
+      '-- zones\n' +
+      'CREATE TABLE IF NOT EXISTS zones (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  title text,\n' +
+      '  number INTEGER,\n' +
+      '  number_choose INTEGER, -- NULL means choose all\n' +
+      '  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  UNIQUE (number, assessment_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- alternative_groups\n' +
+      'CREATE TABLE IF NOT EXISTS alternative_groups (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  number INTEGER,\n' +
+      '  number_choose INTEGER, -- NULL means choose all\n' +
+      '  zone_id BIGINT NOT NULL REFERENCES zones ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  UNIQUE (number, assessment_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- assessment_access_rules\n' +
+      'CREATE TABLE IF NOT EXISTS assessment_access_rules (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  number INTEGER,\n' +
+      '  mode enum_mode,\n' +
+      '  role enum_role,\n' +
+      '  uids text[],\n' +
+      '  start_date TIMESTAMP WITH TIME ZONE,\n' +
+      '  end_date TIMESTAMP WITH TIME ZONE,\n' +
+      '  credit INTEGER,\n' +
+      '  UNIQUE (number, assessment_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- assessment_questions\n' +
+      'CREATE TABLE IF NOT EXISTS assessment_questions (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  number INTEGER,\n' +
+      '  max_points DOUBLE PRECISION,\n' +
+      '  points_list DOUBLE PRECISION[],\n' +
+      '  init_points DOUBLE PRECISION,\n' +
+      '  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  alternative_group_id BIGINT REFERENCES alternative_groups ON DELETE SET NULL ON UPDATE CASCADE,\n' +
+      '  number_in_alternative_group INTEGER,\n' +
+      '  question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  deleted_at TIMESTAMP WITH TIME ZONE,\n' +
+      '  UNIQUE (question_id, assessment_id)\n' +
+      ');\n' +
+      '\n' +
+      '---------------------------------\n' +
+      '-- Tables created during operation\n' +
+      '---------------------------------\n' +
+      '-- enrollments\n' +
+      'CREATE TABLE IF NOT EXISTS enrollments (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  role enum_role,\n' +
+      '  UNIQUE (user_id, course_instance_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- assessment_instances\n' +
+      'CREATE TABLE IF NOT EXISTS assessment_instances (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  tiid text UNIQUE, -- temporary, delete after Mongo import\n' +
+      '  qids JSONB, -- temporary, delete after Mongo import\n' +
+      '  obj JSONB, -- temporary, delete after Mongo import\n' +
+      '  date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n' +
+      '  mode enum_mode, -- mode at creation\n' +
+      '  number INTEGER,\n' +
+      '  open BOOLEAN DEFAULT TRUE,\n' +
+      '  closed_at TIMESTAMP WITH TIME ZONE,\n' +
+      '  instructor_opened BOOLEAN DEFAULT FALSE,\n' +
+      "  duration INTERVAL DEFAULT INTERVAL '0 seconds',\n" +
+      '  assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,\n' +
+      '  points DOUBLE PRECISION DEFAULT 0,\n' +
+      '  points_in_grading DOUBLE PRECISION DEFAULT 0,\n' +
+      '  max_points DOUBLE PRECISION,\n' +
+      '  score_perc DOUBLE PRECISION DEFAULT 0,\n' +
+      '  score_perc_in_grading DOUBLE PRECISION DEFAULT 0,\n' +
+      '  UNIQUE (number, assessment_id, user_id)\n' +
+      ');\n' +
+      '\n' +
+      '-- instance_questions\n' +
+      'CREATE TABLE IF NOT EXISTS instance_questions (\n' +
+      '  id BIGSERIAL PRIMARY KEY,\n' +
+      '  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,\n' +
+      '  open BOOLEAN DEFAULT TRUE,\n' +
+      '  number INTEGER,\n' +
+      '  order_by INTEGER DEFAULT floor(random() * 1000000),\n' +
+      '  points DOUBLE PRECISION DEFAULT 0,\n' +
+      '  points_in_grading DOUBLE PRECISION DEFAULT 0,\n' +
+      '  score_perc DOUBLE PRECISION DEFAULT 0,\n' +
+      '  score_perc_in_grading DOUBLE PRECISION DEFAULT 0,\n' +
+      '  current_value DOUBLE PRECISION,\n' +
+      '  number_attempts INTEGER DEFAULT 0,\n' +
+      '  points_list DOUBLE PRECISION[],\n' +
+      '  assessment_instance_id BIGINT NOT NULL REFEREN'... 5935 more characters,
+    sqlParams: {},
+    rollback: 'success',
+    sqlFile: '20170428200859_initial_state.sql'
+  }
+}
+
+Node.js v22.17.1

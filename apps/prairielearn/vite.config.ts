@@ -10,8 +10,7 @@ export default defineConfig({
     // Force Vite to externalize even linked dependencies. For us, this means
     // things in the `packages/` directory at the root of the repo.
     external: true,
-    // We need this so that we can detect if we are running in HMR mode.
-    noExternal: ['@prairielearn/migrations'],
+    noExternal: [],
   },
   plugins: [
     ...VitePluginExpress({

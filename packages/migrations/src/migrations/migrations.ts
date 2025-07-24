@@ -7,7 +7,6 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
-import { DEV_EXECUTION_MODE } from '../execution-mode.js';
 import {
   type MigrationFile,
   parseAnnotations,
@@ -54,14 +53,16 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-let didMigration = false;
+export async function getMigrations(project: string) {
+  const migrations = await sqldb.queryAsync(sql.get_migrations, { project });
+  return migrations.rows;
+}
 
 export async function initWithLock(directories: string[], project: string) {
-  // For Vite HMR mode
-  if (didMigration && DEV_EXECUTION_MODE === 'hmr') return;
-
   logger.verbose('Starting DB schema migration');
-  didMigration = true;
+  console.log('directories', directories);
+  console.log('project', project);
+  console.log('getMigrations (initWithLock)', await getMigrations(project));
 
   // Create the migrations table if needed
   await sqldb.queryAsync(sql.create_migrations_table, {});
@@ -88,8 +89,10 @@ export async function initWithLock(directories: string[], project: string) {
     }
   }
 
-  let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+  console.log(import.meta.filename, sql.get_migrations);
 
+  let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+  console.log('allMigrations first (initWithLock)', allMigrations.rows);
   const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
     '.sql',
     '.js',
@@ -115,13 +118,15 @@ export async function initWithLock(directories: string[], project: string) {
 
   // Refetch the list of migrations from the database.
   allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+  console.log('allMigrations second (initWithLock)', allMigrations.rows);
+  console.log('migrationFiles', migrationFiles);
 
   // Sort the migration files into execution order.
   const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
   // Figure out which migrations have to be applied.
   const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
-
+  console.log('migrationsToExecute', migrationsToExecute);
   for (const { directory, filename, timestamp } of migrationsToExecute) {
     if (allMigrations.rows.length === 0) {
       // if we are running all the migrations then log at a lower level
@@ -162,7 +167,4 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
-
-  // Mark that the migrations have finished, and shouldn't be run again
-  didMigration = true;
 }
