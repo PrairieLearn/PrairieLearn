@@ -65,12 +65,8 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { isFullRestart, setNoFullRestart } from './lib/server-fullrestart.js';
-import {
-  isServerInitialized,
-  serverInitialized,
-  setServerInitialized,
-} from './lib/server-initialized.js';
+import { needsFullRestart, setNeedsFullRestart } from './lib/server-fullrestart.js';
+import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
@@ -2126,9 +2122,12 @@ function idleErrorHandler(err: Error) {
 
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
 
-if (isHMR && isFullRestart() && isServerInitialized()) {
-  console.log('full restart');
+if (isHMR && isServerPending()) {
+  throw new Error('The server was restarted, but it was not fully initialized.');
+}
 
+if (isHMR && needsFullRestart() && isServerInitialized()) {
+  setServerState('pending');
   await stopBatchedMigrations();
 
   await assets.close();
@@ -2150,11 +2149,12 @@ if (isHMR && isFullRestart() && isServerInitialized()) {
 
   await namedLocks.close();
   await sqldb.closeAsync();
-  setServerInitialized(false);
+  setServerState('stopped');
 }
 
 if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
+    setServerState('pending');
     console.log('isHMR', esMain(import.meta), isHMR, isServerInitialized());
     logger.verbose('PrairieLearn server start');
 
@@ -2531,10 +2531,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     logger.error('Error initializing PrairieLearn server:', err);
     throw err;
   }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-  }
 
   // SIGTERM can be used to gracefully shut down the process. This signal
   // may come from another process, but we also send it to ourselves if
@@ -2584,11 +2580,15 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       process.exit(0);
     }
   });
-  setServerInitialized(true);
-  setNoFullRestart();
-  console.log('serverInitialized', serverInitialized);
+  setServerState('started');
+  setNeedsFullRestart(false);
+  if (!isHMR) {
+    logger.info('PrairieLearn server ready, press Control-C to quit');
+    if (config.devMode) {
+      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+    }
+  }
 } else if (isHMR && isServerInitialized()) {
-  console.log('re-initializing server');
   // We need to re-initialize the server when we are running in HMR mode.
   await socketServer.close();
   app = await initExpress();

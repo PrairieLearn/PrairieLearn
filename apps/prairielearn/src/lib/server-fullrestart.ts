@@ -1,17 +1,17 @@
 /**
- * This module is used to track whether the server has been initialized.
+ * This module is used to track whether the server needs to be fully restarted.
  *
- * Since vite won't reload this file in HMR mode, this will work.
+ * Vite will reload this file whenever any of the imports change.
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import * as foo from './foo.js';
+import * as codeCaller from './code-caller/index.js';
 
 let fullRestart = true;
 
-export function setNoFullRestart() {
-  fullRestart = false;
+export function setNeedsFullRestart(state: boolean) {
+  fullRestart = state;
 }
 
-export function isFullRestart() {
+export function needsFullRestart() {
   return fullRestart;
 }

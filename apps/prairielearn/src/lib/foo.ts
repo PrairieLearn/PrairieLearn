@@ -1,1 +1,1 @@
-export const bar = 15;
+export const bar = 24;

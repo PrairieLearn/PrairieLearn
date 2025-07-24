@@ -4,14 +4,19 @@
  * Since vite won't reload this file in HMR mode, this will work.
  */
 console.log('re-importing server-initialized');
-export let serverInitialized = false;
+let serverState: 'started' | 'pending' | 'stopped' = 'stopped';
 
 export function isServerInitialized() {
-  console.log('isServerInitialized', serverInitialized);
-  return serverInitialized;
+  console.log('isServerInitialized', serverState);
+  return serverState === 'started';
 }
 
-export function setServerInitialized(state: boolean) {
-  console.log('setServerInitialized', state);
-  serverInitialized = state;
+export function isServerPending() {
+  console.log('isServerPending', serverState);
+  return serverState === 'pending';
+}
+
+export function setServerState(state: 'started' | 'pending' | 'stopped') {
+  console.log('setServerState', state);
+  serverState = state;
 }
