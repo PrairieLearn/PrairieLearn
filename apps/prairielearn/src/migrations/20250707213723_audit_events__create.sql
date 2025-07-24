@@ -28,9 +28,9 @@ CREATE TABLE audit_events (
   CONSTRAINT audit_events_subject_user_id_fkey FOREIGN KEY (subject_user_id) REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE SET NULL,
   -- Even though institution_id gets hard-deleted, this happens infrequently enough that we don't care.
   CONSTRAINT audit_events_institution_id_fkey FOREIGN KEY (institution_id) REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT audit_events_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments (id) ON UPDATE CASCADE ON DELETE SET NULL,
   -- assessment_instance_id gets hard-deleted, so we won't use a foreign key constraint.
   -- Context: https://github.com/PrairieLearn/PrairieLearn/pull/12362#discussion_r2226445050
-  CONSTRAINT audit_events_assessment_instance_id_fkey FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances (id) ON UPDATE CASCADE ON DELETE SET NULL,
   CONSTRAINT audit_events_assessment_question_id_fkey FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions (id) ON UPDATE CASCADE ON DELETE SET NULL
 );
 
