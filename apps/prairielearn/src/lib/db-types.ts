@@ -41,6 +41,9 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
+export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
+
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
@@ -283,7 +286,7 @@ export const AssessmentSetSchema = z.object({
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const AuditEventSchema = z.object({
-  action: z.string(),
+  action: EnumAuditEventActionSchema,
   action_detail: z.string().nullable(),
   agent_authn_user_id: IdSchema.nullable(),
   agent_user_id: IdSchema.nullable(),
