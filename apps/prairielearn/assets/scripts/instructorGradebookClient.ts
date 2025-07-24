@@ -1,7 +1,7 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../src/components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.js';
 import {
   type AssessmentInstanceScoreResult,
   type GradebookRow,
@@ -129,7 +129,7 @@ onDocumentReady(() => {
       },
       ...courseAssessments.map((assessment) => ({
         field: `scores.${assessment.assessment_id}.score_perc`,
-        title: AssessmentBadge({ urlPrefix, assessment }).toString(),
+        title: AssessmentBadgeHtml({ urlPrefix, assessment }).toString(),
         class: 'text-nowrap',
         searchable: false,
         sortable: true,
