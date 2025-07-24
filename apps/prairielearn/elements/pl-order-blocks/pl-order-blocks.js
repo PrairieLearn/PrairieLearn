@@ -309,7 +309,7 @@ window.PLOrderBlocks = function (uuid, options) {
     if (!binUuid && containingIndicatorUuid) {
       containingIndicator.insertAdjacentElement('afterend', block);
     } else if (binUuid !== containingIndicatorUuid) {
-      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
+      const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
       properIndicatorList.insertAdjacentElement('beforeend', block);
@@ -329,7 +329,7 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
-  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
