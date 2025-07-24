@@ -176,7 +176,7 @@ const ImageUploadDragArea: React.FC<ImageUploadDragAreaProps> = ({ onFile, child
     e.preventDefault();
     e.stopPropagation();
 
-    const files = Array.from(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer?.files ?? []);
     onFile(files);
   };
 
@@ -298,7 +298,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const { fileItem, uploadFiles, clearFileItem } = useFileUpload(uploadOptions);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+    const files = (e.target as HTMLInputElement).files;
     if (!files || files.length === 0) {
       extension.options.onError?.(new Error('No file selected'));
       return;

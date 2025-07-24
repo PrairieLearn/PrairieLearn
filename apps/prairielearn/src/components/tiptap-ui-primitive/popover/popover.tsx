@@ -16,7 +16,17 @@ import {
   useMergeRefs,
   useRole,
 } from '@floating-ui/react';
-import * as React from 'react';
+import type { ComponentChildren, VNode } from 'preact';
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'preact/compat';
 import '@/components/tiptap-ui-primitive/popover/popover.scss';
 
 type PopoverContextValue = ReturnType<typeof usePopover> & {
@@ -42,13 +52,13 @@ interface PopoverOptions {
 }
 
 interface PopoverProps extends PopoverOptions {
-  children: React.ReactNode;
+  children: ComponentChildren;
 }
 
-const PopoverContext = React.createContext<PopoverContextValue | null>(null);
+const PopoverContext = createContext<PopoverContextValue | null>(null);
 
 function usePopoverContext() {
-  const context = React.useContext(PopoverContext);
+  const context = useContext(PopoverContext);
   if (!context) {
     throw new Error('Popover components must be wrapped in <Popover />');
   }
@@ -65,18 +75,18 @@ function usePopover({
   sideOffset = 4,
   alignOffset = 0,
 }: PopoverOptions = {}) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen);
-  const [labelId, setLabelId] = React.useState<string>();
-  const [descriptionId, setDescriptionId] = React.useState<string>();
-  const [currentPlacement, setCurrentPlacement] = React.useState<Placement>(
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(initialOpen);
+  const [labelId, setLabelId] = useState<string>();
+  const [descriptionId, setDescriptionId] = useState<string>();
+  const [currentPlacement, setCurrentPlacement] = useState<Placement>(
     `${side}-${align}` as Placement,
   );
-  const [offsets, setOffsets] = React.useState({ sideOffset, alignOffset });
+  const [offsets, setOffsets] = useState({ sideOffset, alignOffset });
 
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = setControlledOpen ?? setUncontrolledOpen;
 
-  const middleware = React.useMemo(
+  const middleware = useMemo(
     () => [
       offset({
         mainAxis: offsets.sideOffset,
@@ -107,7 +117,7 @@ function usePopover({
     useRole(floating.context),
   ]);
 
-  const updatePosition = React.useCallback(
+  const updatePosition = useCallback(
     (
       newSide: 'top' | 'right' | 'bottom' | 'left',
       newAlign: 'start' | 'center' | 'end',
@@ -125,7 +135,7 @@ function usePopover({
     [offsets.sideOffset, offsets.alignOffset],
   );
 
-  return React.useMemo(
+  return useMemo(
     () => ({
       open,
       setOpen,
@@ -147,29 +157,31 @@ function Popover({ children, modal = false, ...options }: PopoverProps) {
   return <PopoverContext.Provider value={popover}>{children}</PopoverContext.Provider>;
 }
 
-interface TriggerElementProps extends React.HTMLProps<HTMLElement> {
+interface TriggerElementProps {
+  children?: ComponentChildren;
   asChild?: boolean;
+  [key: string]: any;
 }
 
-const PopoverTrigger = React.forwardRef<HTMLElement, TriggerElementProps>(function PopoverTrigger(
-  { children, asChild = false, ...props },
-  propRef,
-) {
+function PopoverTrigger({ children, asChild = false, ...props }: TriggerElementProps) {
   const context = usePopoverContext();
-  const childrenRef = React.isValidElement(children)
-    ? parseInt(React.version, 10) >= 19
-      ? (children.props as any).ref
-      : (children as any).ref
-    : undefined;
-  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef]);
+  const childrenRef =
+    isValidElement(children) &&
+    typeof children === 'object' &&
+    children !== null &&
+    'ref' in children
+      ? (children as any).ref
+      : undefined;
+  const ref = useMergeRefs([context.refs.setReference, props.ref, childrenRef]);
 
-  if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(
-      children,
+  if (asChild && isValidElement(children) && typeof children === 'object') {
+    const childVNode = children as VNode<any>;
+    return cloneElement(
+      childVNode,
       context.getReferenceProps({
         ref,
         ...props,
-        ...(children.props as any),
+        ...(childVNode.props || {}),
         'data-state': context.open ? 'open' : 'closed',
       }),
     );
@@ -184,90 +196,91 @@ const PopoverTrigger = React.forwardRef<HTMLElement, TriggerElementProps>(functi
       {children}
     </button>
   );
-});
+}
 
-interface PopoverContentProps extends React.HTMLProps<HTMLDivElement> {
+interface PopoverContentProps {
+  className?: string;
   side?: 'top' | 'right' | 'bottom' | 'left';
   align?: 'start' | 'center' | 'end';
   sideOffset?: number;
   alignOffset?: number;
+  style?: any;
   portal?: boolean;
-  portalProps?: Omit<React.ComponentProps<typeof FloatingPortal>, 'children'>;
+  portalProps?: any;
   asChild?: boolean;
+  children?: ComponentChildren;
+  [key: string]: any;
 }
 
 const DEFAULT_PORTAL_PROPS = {};
-const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
-  function PopoverContent(
-    {
-      className,
-      side = 'bottom',
-      align = 'center',
-      sideOffset,
-      alignOffset,
-      style,
-      portal = true,
-      portalProps = DEFAULT_PORTAL_PROPS,
-      asChild = false,
-      children,
-      ...props
-    },
-    propRef,
-  ) {
-    const context = usePopoverContext();
-    const childrenRef = React.isValidElement(children)
-      ? parseInt(React.version, 10) >= 19
-        ? (children.props as any).ref
-        : (children as any).ref
+function PopoverContent({
+  className,
+  side = 'bottom',
+  align = 'center',
+  sideOffset,
+  alignOffset,
+  style,
+  portal = true,
+  portalProps = DEFAULT_PORTAL_PROPS,
+  asChild = false,
+  children,
+  ...props
+}: PopoverContentProps) {
+  const context = usePopoverContext();
+  const childrenRef =
+    isValidElement(children) &&
+    typeof children === 'object' &&
+    children !== null &&
+    'ref' in children
+      ? (children as any).ref
       : undefined;
-    const ref = useMergeRefs([context.refs.setFloating, propRef, childrenRef]);
+  const ref = useMergeRefs([context.refs.setFloating, props.ref, childrenRef]);
 
-    React.useEffect(() => {
-      context.updatePosition(side, align, sideOffset, alignOffset);
-    }, [context, side, align, sideOffset, alignOffset]);
+  useEffect(() => {
+    context.updatePosition(side, align, sideOffset, alignOffset);
+  }, [context, side, align, sideOffset, alignOffset]);
 
-    if (!context.context.open) return null;
+  if (!context.context.open) return null;
 
-    const contentProps = {
-      ref,
-      style: {
-        position: context.strategy,
-        top: context.y ?? 0,
-        left: context.x ?? 0,
-        ...style,
-      },
-      'aria-labelledby': context.labelId,
-      'aria-describedby': context.descriptionId,
-      className: `tiptap-popover ${className || ''}`,
-      'data-side': side,
-      'data-align': align,
-      'data-state': context.context.open ? 'open' : 'closed',
-      ...context.getFloatingProps(props),
-    };
+  const contentProps = {
+    ref,
+    style: {
+      position: context.strategy,
+      top: context.y ?? 0,
+      left: context.x ?? 0,
+      ...(style || {}),
+    },
+    'aria-labelledby': context.labelId,
+    'aria-describedby': context.descriptionId,
+    className: `tiptap-popover ${className || ''}`,
+    'data-side': side,
+    'data-align': align,
+    'data-state': context.context.open ? 'open' : 'closed',
+    ...context.getFloatingProps(props),
+  };
 
-    const content =
-      asChild && React.isValidElement(children) ? (
-        React.cloneElement(children, {
-          ...contentProps,
-          ...(children.props as any),
-        })
-      ) : (
-        <div {...contentProps}>{children}</div>
-      );
-
-    const wrappedContent = (
-      <FloatingFocusManager context={context.context} modal={context.modal}>
-        {content}
-      </FloatingFocusManager>
+  const content =
+    asChild && isValidElement(children) && typeof children === 'object' ? (
+      cloneElement(children as VNode<any>, {
+        ...contentProps,
+        ...((children as VNode<any>).props || {}),
+      })
+    ) : (
+      <div {...contentProps}>{children}</div>
     );
 
-    if (portal) {
-      return <FloatingPortal {...portalProps}>{wrappedContent}</FloatingPortal>;
-    }
+  const wrappedContent = (
+    <FloatingFocusManager context={context.context} modal={context.modal}>
+      {content}
+    </FloatingFocusManager>
+  );
 
-    return wrappedContent;
-  },
-);
+  if (portal) {
+    return <FloatingPortal {...portalProps}>{wrappedContent}</FloatingPortal>;
+  }
+
+  return wrappedContent;
+}
 
 PopoverTrigger.displayName = 'PopoverTrigger';
 PopoverContent.displayName = 'PopoverContent';

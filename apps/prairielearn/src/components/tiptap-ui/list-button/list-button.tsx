@@ -162,7 +162,9 @@ export const ListButton = React.forwardRef<HTMLButtonElement, ListButtonProps>(
     const editor = useTiptapEditor(providedEditor);
     const { listInSchema, listOption, isActive, shortcutKey } = useListState(editor, type);
 
-    const Icon = listOption?.icon || <i class="bi bi-list-ul" />;
+    const Icon =
+      listOption?.icon ||
+      (({ className }: { className: string }) => <i class={`bi bi-list-ul ${className}`} />);
 
     const handleClick = React.useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {

@@ -12,8 +12,8 @@ export const Separator = React.forwardRef<HTMLDivElement, SeparatorProps>(
   ({ decorative, orientation = 'vertical', className = '', ...divProps }, ref) => {
     const ariaOrientation = orientation === 'vertical' ? orientation : undefined;
     const semanticProps = decorative
-      ? { role: 'none' }
-      : { 'aria-orientation': ariaOrientation, role: 'separator' };
+      ? { role: 'none' as const }
+      : { 'aria-orientation': ariaOrientation, role: 'separator' as const };
 
     return (
       <div
