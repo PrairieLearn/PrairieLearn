@@ -1245,6 +1245,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students',
+    (await import('./pages/instructorStudents/instructorStudents.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti',
     (await import('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti.js')).default,
   );

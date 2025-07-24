@@ -157,7 +157,7 @@ export function PageLayout({
                   </div>
                 `
               : ''}
-            <div class="${sideNavEnabled ? 'app-main' : ''}">
+            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                   ? AssessmentNavigation({
