@@ -15,7 +15,6 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
   type ClientFingerprint,
-  DateFromISOString,
   IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
