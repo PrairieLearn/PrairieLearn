@@ -2155,7 +2155,6 @@ if (isHMR && needsFullRestart() && isServerInitialized()) {
 if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
     setServerState('pending');
-    console.log('isHMR', esMain(import.meta), isHMR, isServerInitialized());
     logger.verbose('PrairieLearn server start');
 
     // For backwards compatibility, we'll default to trying to load config
@@ -2305,7 +2304,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
 
     // We need to do this before we run migrations, as some migrations will
     // call `enqueueBatchedMigration` which requires this to be initialized.
-    console.log('initBatchedMigrations');
     const runner = initBatchedMigrations({
       project: 'prairielearn',
       directories: [path.join(import.meta.dirname, 'batched-migrations')],

@@ -158,6 +158,6 @@ export async function initWithLock(directories: string[], project: string) {
     }
   } finally {
     // Restore the search schema
-    await sqldb.defaultPool.setSearchSchema(oldSchema ?? 'public');
+    await sqldb.defaultPool.setSearchSchema(oldSchema);
   }
 }
