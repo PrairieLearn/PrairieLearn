@@ -26,7 +26,13 @@ export interface AIGradingInfo {
   aiGradingAvailable: boolean;
   manualGradingAvailable: boolean;
   feedback?: string;
-  prompt?: ChatCompletionMessageParam[] | null;
+  prompt: {
+    type: 'text',
+    text: string;
+  } | {
+    type: 'imageContent'
+    imageContent: string;
+  }
   selectedRubricItemIds?: string[];
 }
 

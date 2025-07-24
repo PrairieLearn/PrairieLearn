@@ -123,6 +123,9 @@ router.get(
           z.array(z.record(z.string(), z.any())).nullable(),
         )) as ChatCompletionMessageParam[] | null;
 
+        
+
+
         const aiGradingAvailable =
           (await sqldb.queryOptionalRow(
             sql.select_ai_grading_available_for_submission,
@@ -137,13 +140,11 @@ router.get(
             z.boolean(),
           )) ?? false;
 
-          
-
         aiGradingInfo = {
           aiGradingAvailable,
           manualGradingAvailable,
           feedback: aiGradingAvailable ? grading_job?.feedback?.manual : undefined,
-          prompt: manualGradingAvailable ? prompt_for_grading_job : undefined,
+          prompt: aiGradingAvailable ? prompt_for_grading_job : undefined,
           selectedRubricItemIds: aiGradingAvailable
             ? selectedRubricItems.map((item) => item.id)
             : undefined,

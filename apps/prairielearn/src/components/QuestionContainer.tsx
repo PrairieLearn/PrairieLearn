@@ -23,6 +23,7 @@ import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
+import { formatJsonWithPrettier } from '../lib/prettier.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -165,35 +166,9 @@ function AIGradingPrompt(prompt: ChatCompletionMessageParam[]) {
         <h2>AI Grading Prompt</h2>
       </div>
       <div class="card-body">
-        ${prompt.map((item) => {
-          if (!item.content) {
-            return '';
-          }
-          return html`
-            <div class="bg-light p-3 rounded mb-3">
-              ${run(() => {
-                if (typeof item.content === 'string') {
-                  return unsafeHtml(item.content);
-                } else if (item.content && typeof item.content === 'object') {
-                  return item.content.map((contentItem) => {
-                    if (contentItem.type === 'text') {
-                      return html`<p>${contentItem.text}</p>`;
-                    } else if (contentItem.type === 'image_url') {
-                      return html`<img
-                        class="w-100"
-                        src="${contentItem.image_url.url}"
-                        alt="Student submitted image"
-                      />`;
-                    } else {
-                      return html``;
-                    }
-                  }) as HtmlValue[];
-                }
-                return '';
-              })}
-            </div>
-          `;
-        })}
+        <code>
+          ${JSON.stringify(prompt)}
+        </code>
       </div>
     </div>
   `;
