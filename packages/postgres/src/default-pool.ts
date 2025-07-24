@@ -77,7 +77,8 @@ export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *
- * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
+ * It is not recommended to use the return from this function. Instead, use
+ * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 /**
