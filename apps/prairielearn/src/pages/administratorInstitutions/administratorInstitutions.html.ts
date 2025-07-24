@@ -96,6 +96,7 @@ export function AdministratorInstitutions({
                 <a
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                   target="_blank"
+                  rel="noreferrer"
                   >tz database</a
                 >. It's best to use a city-based timezone that has the same times as you. E.g.,
                 "America/Chicago".

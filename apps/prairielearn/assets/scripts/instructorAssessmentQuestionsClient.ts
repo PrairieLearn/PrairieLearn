@@ -1,6 +1,6 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
-import { histmini } from './lib/histmini.js';
+import { renderHistMini } from '../../src/components/HistMini.js';
 
 onDocumentReady(() => {
   document.getElementById('resetQuestionVariantsModal')?.addEventListener('show.bs.modal', (e) => {
@@ -12,5 +12,11 @@ onDocumentReady(() => {
     });
   });
 
-  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
+  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
+    renderHistMini({
+      element,
+      data: JSON.parse(element.dataset.data ?? '[]'),
+      options: JSON.parse(element.dataset.options ?? '{}'),
+    }),
+  );
 });
