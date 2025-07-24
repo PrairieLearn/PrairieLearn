@@ -81,6 +81,8 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/table-core": "^8.21.3",
+    "@tiptap/pm": "^3.0.7",
+    "@tiptap/react": "^3.0.7",
     "@trpc/client": "^11.4.3",
     "@trpc/server": "^11.4.3",
     "@types/d3": "^7.4.3",
