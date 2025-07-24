@@ -61,6 +61,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_label: z.string(),
   file_list: z.array(FileSchema),
 });
+export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema>;
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(

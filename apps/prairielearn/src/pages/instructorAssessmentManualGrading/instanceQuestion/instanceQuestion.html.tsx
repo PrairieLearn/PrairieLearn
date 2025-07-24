@@ -11,6 +11,7 @@ import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAnd
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
@@ -28,7 +29,7 @@ export function InstanceQuestion({
   assignedGrader,
   lastGrader,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
@@ -150,7 +151,7 @@ function ConflictGradingJobModal({
   graders,
   lastGrader,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
@@ -210,7 +211,8 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     custom_points:
-                      (conflict_grading_job.score ?? 0) * resLocals.assessment_question.max_points,
+                      (conflict_grading_job.score ?? 0) *
+                      (resLocals.assessment_question.max_points ?? 0),
                     custom_auto_points: conflict_grading_job.auto_points ?? 0,
                     custom_manual_points: conflict_grading_job.manual_points ?? 0,
                     grading_job: conflict_grading_job,
