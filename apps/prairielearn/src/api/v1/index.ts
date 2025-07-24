@@ -91,6 +91,10 @@ router.use(
   (await import('./endpoints/courseInstanceAccessRules/index.js')).default,
 );
 router.use(
+  '/course/:course_id(\\d+)/staff',
+  (await import('./endpoints/courseStaffPermissions/index.js')).default,
+);
+router.use(
   '/course/:course_id(\\d+)/sync',
   (await import('./endpoints/courseSync/index.js')).default,
 );
