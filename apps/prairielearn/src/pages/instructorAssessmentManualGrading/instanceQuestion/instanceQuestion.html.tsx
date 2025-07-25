@@ -1,3 +1,4 @@
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
@@ -21,18 +22,32 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
+export interface AIGradingInfo {
+  aiGradingAvailable: boolean;
+  manualGradingAvailable: boolean;
+  feedback?: string;
+  prompt?: string;
+  selectedRubricItemIds?: string[];
+}
+
 export function InstanceQuestion({
   resLocals,
   conflict_grading_job,
   graders,
   assignedGrader,
   lastGrader,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  /**
+   * `undefined` if the AI grading feature flag is disabled.
+   * Otherwise, this is always specified, even if no AI grading is available.
+   */
+  aiGradingInfo?: AIGradingInfo;
 }) {
   return PageLayout({
     resLocals: {
@@ -96,14 +111,24 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
+          ${QuestionContainer({
+            resLocals,
+            questionContext: 'manual_grading',
+            showFooter: false,
+            aiGradingPrompt: aiGradingInfo?.prompt,
+          })}
         </div>
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({
+                resLocals,
+                context: 'main',
+                graders,
+                aiGradingInfo,
+              })}
             </div>
           </div>
 

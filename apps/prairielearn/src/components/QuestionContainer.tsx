@@ -1,3 +1,4 @@
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -34,6 +35,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
+  aiGradingPrompt,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -43,6 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
+  aiGradingPrompt?: string;
 }) {
   const {
     question,
@@ -101,6 +104,10 @@ export function QuestionContainer({
             `
           : ''
       }
+      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
+      aiGradingPrompt
+        ? AIGradingPrompt(aiGradingPrompt)
+        : ''}
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
@@ -145,6 +152,31 @@ export function QuestionContainer({
         : ''}
     </div>
     ${CopyQuestionModal({ resLocals, questionCopyTargets })}
+  `;
+}
+
+function AIGradingPrompt(prompt: string) {
+  console.log('prompt:');
+  console.log(prompt);
+
+  return html`
+    <div class="card mb-3 grading-block">
+      <div class="card-header bg-secondary text-white">
+        <h2>AI Grading Prompt</h2>
+      </div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="tooltip"
+        data-bs-html="true"
+        title='<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Midtown_Manhattan_from_Weehawken_September_2021_HDR.jpg/500px-Midtown_Manhattan_from_Weehawken_September_2021_HDR.jpg" alt="Example" class="img-fluid" />'>
+        Hover me
+      </button>
+
+      <div class="card-body">
+        <pre class="mb-0"><code>${prompt}</code></pre>
+      </div>
+    </div>
   `;
 }
 

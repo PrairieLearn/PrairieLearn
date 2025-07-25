@@ -230,6 +230,7 @@ export async function aiGrade({
         }
         const RubricGradingResultSchema = z.object({
           rubric_items: RubricGradingItemsSchema,
+          feedback: z.string(),
         });
         const completion = await openai.chat.completions.parse({
           messages,
@@ -265,9 +266,8 @@ export async function aiGrade({
                   submission.id,
                   null, // check_modified_at
                   {
-                    // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
-                    feedback: { manual: '' },
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   user_id,
                   true, // is_ai_graded
@@ -307,10 +307,11 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: manual_rubric_grading.computed_points,
                     manual_rubric_grading_id: manual_rubric_grading.id,
-                    feedback: null,
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   IdSchema,
                 );
+
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
@@ -399,7 +400,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: (score * assessment_question.max_manual_points) / 100,
                     manual_rubric_grading_id: null,
-                    feedback: null,
+                    feedback: { manual: response.parsed?.feedback ?? '' },
                   },
                   IdSchema,
                 );
