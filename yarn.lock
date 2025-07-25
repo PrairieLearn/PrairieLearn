@@ -6496,14 +6496,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/qs@npm:*":
-  version: 6.9.15
-  resolution: "@types/qs@npm:6.9.15"
-  checksum: 10c0/49c5ff75ca3adb18a1939310042d273c9fc55920861bd8e5100c8a923b3cda90d759e1a95e18334092da1c8f7b820084687770c83a1ccef04fb2c6908117c823
-  languageName: node
-  linkType: hard
-
-"@types/qs@npm:^6.9.18":
+"@types/qs@npm:*, @types/qs@npm:^6.9.18":
   version: 6.14.0
   resolution: "@types/qs@npm:6.14.0"
   checksum: 10c0/5b3036df6e507483869cdb3858201b2e0b64b4793dc4974f188caa5b5732f2333ab9db45c08157975054d3b070788b35088b4bc60257ae263885016ee2131310
