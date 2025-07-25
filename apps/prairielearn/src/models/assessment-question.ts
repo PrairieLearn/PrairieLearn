@@ -3,7 +3,6 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-import { AssessmentSetSchema, AssessmentSchema } from '../lib/db-types.js';
 import {
   StaffAlternativeGroupSchema,
   StaffAssessmentQuestionSchema,
@@ -15,6 +14,7 @@ import {
   StaffTopicSchema,
   StaffZoneSchema,
 } from '../lib/client/safe-db-types.js';
+import { AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
 
 const AssessmentQuestionRowMetaSchema = z.object({
   start_new_zone: z.boolean(),
@@ -50,7 +50,7 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-const StaffAssessmentQuestionRowSchema =
+export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 

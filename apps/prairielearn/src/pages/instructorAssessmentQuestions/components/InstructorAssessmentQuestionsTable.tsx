@@ -133,8 +133,7 @@ export function InstructorAssessmentQuestionsTable({
             </thead>
             <tbody>
               {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
-                const { question, assessment_question, other_assessments, open_issue_count } =
-                  questionRow;
+                const { question, assessment_question, other_assessments } = questionRow;
                 return (
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />

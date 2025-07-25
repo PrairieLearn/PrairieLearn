@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { run } from '@prairielearn/run';
+
 import {
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
@@ -8,7 +10,6 @@ import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
 } from './safe-db-types.js';
-import { run } from '@prairielearn/run';
 
 const RawPageContextSchema = z.object({
   authz_data: z.object({
