@@ -442,8 +442,42 @@
         hiddenCaptureInput,
       });
 
+      if (!hiddenCaptureInput.value) {
+        // If no image has been captured yet, update the button text to indicate that the user can retake the image.
+        this.updateCaptureText();
+      }
       hiddenCaptureInput.value = dataUrl;
     }
+
+    updateCaptureText() {
+      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-local-camera-button',
+      );
+      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-mobile-device-button',
+      );
+
+      this.ensureElementsExist({
+        captureWithLocalCameraButton,
+        captureWithMobileDeviceButton,
+      });
+
+      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector(
+        'span'
+      );
+      const captureWithMobileDeviceButtonSpan = captureWithMobileDeviceButton.querySelector(
+        'span'
+      );
+
+      this.ensureElementsExist({
+        captureWithLocalCameraButtonSpan,
+        captureWithMobileDeviceButtonSpan,
+      });
+
+      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
+    }
+
 
     /**
      * Sets the hidden capture input value to the capture preview, which is the last
@@ -609,12 +643,19 @@
         '.js-local-camera-image-preview',
       );
       const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
         localCameraCaptureContainer,
         localCameraImagePreviewCanvas,
         localCameraVideo,
+        hiddenCaptureInput
       });
+
+      // No image was captured previously
+      if (!hiddenCaptureInput.value) {
+        this.updateCaptureText();
+      }
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
       localCameraImagePreviewCanvas.height = localCameraVideo.videoHeight;
