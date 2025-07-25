@@ -1,5 +1,5 @@
 import { Highlight } from '@tiptap/extension-highlight';
-import { Image } from '@tiptap/extension-image';
+// import { Image } from '@tiptap/extension-image';
 import { Subscript } from '@tiptap/extension-subscript';
 import { Superscript } from '@tiptap/extension-superscript';
 import { TaskItem } from '@tiptap/extension-task-item';
@@ -14,7 +14,7 @@ import * as React from 'react';
 import { Link } from '../../tiptap-extension/link-extension.js';
 import { Selection } from '../../tiptap-extension/selection-extension.js';
 import { TrailingNode } from '../../tiptap-extension/trailing-node-extension.js';
-import { ImageUploadNode } from '../../tiptap-node/image-upload-node/image-upload-node-extension.js';
+// import { ImageUploadNode } from '../../tiptap-node/image-upload-node/image-upload-node-extension.js';
 import { BlockquoteButton } from '../../tiptap-ui/blockquote-button/index.js';
 import { CodeBlockButton } from '../../tiptap-ui/code-block-button/index.js';
 import {
@@ -23,7 +23,7 @@ import {
   ColorHighlightPopoverContent,
 } from '../../tiptap-ui/color-highlight-popover/index.js';
 import { HeadingDropdownMenu } from '../../tiptap-ui/heading-dropdown-menu/index.js';
-import { ImageUploadButton } from '../../tiptap-ui/image-upload-button/index.js';
+// import { ImageUploadButton } from '../../tiptap-ui/image-upload-button/index.js';
 import { LinkButton, LinkContent, LinkPopover } from '../../tiptap-ui/link-popover/index.js';
 import { ListDropdownMenu } from '../../tiptap-ui/list-dropdown-menu/index.js';
 import { MarkButton } from '../../tiptap-ui/mark-button/index.js';
@@ -38,7 +38,7 @@ import { useWindowSize } from '../../../lib/hooks/use-window-size.js';
 // import '#components/tiptap-node/list-node/list-node.scss';
 // import '#components/tiptap-node/image-node/image-node.scss';
 // import '#components/tiptap-node/paragraph-node/paragraph-node.scss';
-import { MAX_FILE_SIZE, handleImageUpload } from '../../../lib/tiptap-utils.js';
+// import { MAX_FILE_SIZE, handleImageUpload } from '../../../lib/tiptap-utils.js';
 
 import { ButtonGroup } from 'react-bootstrap';
 import { ButtonToolbar } from 'react-bootstrap';
@@ -265,14 +265,6 @@ const content = {
           text: ' to make your writing more engaging and professional.',
         },
       ],
-    },
-    {
-      type: 'image',
-      attrs: {
-        src: '/images/placeholder-image.png',
-        alt: 'placeholder-image',
-        title: 'placeholder-image',
-      },
     },
     {
       type: 'bulletList',
@@ -572,9 +564,10 @@ const MainToolbarContent = ({
         <TextAlignButton align="justify" />
       </ButtonGroup>
 
-      <ButtonGroup>
+      {/* Image upload not supported */}
+      {/* <ButtonGroup>
         <ImageUploadButton text="Add" />
-      </ButtonGroup>
+      </ButtonGroup> */}
 
       <Spacer />
     </>
@@ -625,19 +618,19 @@ export function SimpleEditor() {
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
-      Image,
+      // Image,
       Typography,
       Superscript,
       Subscript,
 
       Selection,
-      ImageUploadNode.configure({
-        accept: 'image/*',
-        maxSize: MAX_FILE_SIZE,
-        limit: 3,
-        upload: handleImageUpload,
-        onError: (error) => console.error('Upload failed:', error),
-      }),
+      // ImageUploadNode.configure({
+      //   accept: 'image/*',
+      //   maxSize: MAX_FILE_SIZE,
+      //   limit: 3,
+      //   upload: handleImageUpload,
+      //   onError: (error) => console.error('Upload failed:', error),
+      // }),
       TrailingNode,
       Link.configure({ openOnClick: false }),
     ],
