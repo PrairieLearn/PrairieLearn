@@ -10,7 +10,7 @@ import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
-import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -25,7 +25,7 @@ export function PublicAssessmentQuestions({
   assessment_set: AssessmentSet;
   course: Course;
   course_instance_id: string;
-  questions: AssessmentQuestionRow[];
+  questions: StaffAssessmentQuestionRow[];
 }) {
   return PageLayout({
     resLocals,
@@ -69,7 +69,7 @@ function AssessmentQuestionsTable({
   course_instance_id,
   course,
 }: {
-  questions: AssessmentQuestionRow[];
+  questions: StaffAssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;

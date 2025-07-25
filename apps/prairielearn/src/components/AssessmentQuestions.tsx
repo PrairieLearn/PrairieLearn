@@ -3,16 +3,13 @@ import type {
   StaffAssessmentQuestion,
 } from '../lib/client/safe-db-types.js';
 import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
-import type {
-  AssessmentQuestionRow,
-  StaffAssessmentQuestionRow,
-} from '../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../models/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
   question,
   nTableCols,
 }: {
-  question: AssessmentQuestionRow | StaffAssessmentQuestionRow;
+  question: StaffAssessmentQuestionRow;
   nTableCols: number;
 }) {
   return (
