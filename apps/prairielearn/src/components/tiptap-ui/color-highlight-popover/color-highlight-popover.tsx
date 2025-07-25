@@ -2,7 +2,8 @@ import type { Node } from '@tiptap/pm/model';
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as React from 'react';
-import { ButtonGroup, OverlayTrigger } from 'react-bootstrap';
+import { ButtonGroup, Overlay } from 'react-bootstrap';
+import type { OverlayInjectedProps } from 'react-bootstrap/esm/Overlay.js';
 
 import { useMenuNavigation } from '../../../lib/hooks/use-menu-navigation.js';
 import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
@@ -15,10 +16,8 @@ export interface ColorHighlightPopoverColor {
   border?: string;
 }
 
-export interface ColorHighlightPopoverContentProps {
-  editor?: Editor | null;
+export interface ColorHighlightOverlayProps extends OverlayInjectedProps {
   colors?: ColorHighlightPopoverColor[];
-  onClose?: () => void;
 }
 
 export interface ColorHighlightPopoverProps extends Omit<ButtonProps, 'type'> {
@@ -262,25 +261,22 @@ export const DEFAULT_HIGHLIGHT_COLORS: ColorHighlightPopoverColor[] = [
   },
 ];
 
-export function ColorHighlightPopoverContent({
+export function ColorHighlightOverlay({
   colors = DEFAULT_HIGHLIGHT_COLORS,
-  onClose,
-}: ColorHighlightPopoverContentProps) {
+  placement: _placement,
+  arrowProps: _arrowProps,
+  show: _show,
+  popper: _popper,
+  hasDoneInitialMeasure: _hasDoneInitialMeasure,
+  style,
+}: ColorHighlightOverlayProps) {
   const editor = useTiptapEditor();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const removeHighlight = useCallback(() => {
     if (!editor) return;
     editor.chain().focus().unsetMark('highlight').run();
-    onClose?.();
-  }, [editor, onClose]);
-
-  const handleColorApplied = useCallback(
-    (_color: string) => {
-      onClose?.();
-    },
-    [onClose],
-  );
+  }, [editor]);
 
   const menuItems = useMemo(
     () => [...colors, { label: 'Remove highlight', value: 'none' }],
@@ -295,25 +291,20 @@ export function ColorHighlightPopoverContent({
       if (item.value === 'none') {
         removeHighlight();
       }
-      onClose?.();
     },
-    onClose,
     autoSelectFirstItem: false,
   });
 
   return (
-    <div style={{ position: 'absolute' }}>
-      <ButtonGroup vertical>
-        {colors.map((color, index) => (
-          <ColorHighlightButton
-            key={color.value}
-            color={color.value}
-            aria-label={`${color.label} highlight color`}
-            tabIndex={index === selectedIndex ? 0 : -1}
-            onApplied={handleColorApplied}
-          />
-        ))}
-      </ButtonGroup>
+    <ButtonGroup style={style} className="bg-white" vertical>
+      {colors.map((color, index) => (
+        <ColorHighlightButton
+          key={color.value}
+          color={color.value}
+          aria-label={`${color.label} highlight color`}
+          tabIndex={index === selectedIndex ? 0 : -1}
+        />
+      ))}
       <Button
         aria-label="Remove highlight"
         tabIndex={selectedIndex === colors.length ? 0 : -1}
@@ -324,7 +315,7 @@ export function ColorHighlightPopoverContent({
       >
         <i className="bi bi-ban" />
       </Button>
-    </div>
+    </ButtonGroup>
   );
 }
 
@@ -333,6 +324,9 @@ export function ColorHighlightPopover({
   hideWhenUnavailable = false,
 }: ColorHighlightPopoverProps) {
   const editor = useTiptapEditor();
+  const [show, setShow] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   const [_isDisabled, setIsDisabled] = useState(false);
 
   const markAvailable = isMarkInSchema('highlight', editor);
@@ -380,17 +374,17 @@ export function ColorHighlightPopover({
 
   return (
     <>
-      <OverlayTrigger
-        placement="bottom"
-        delay={{ show: 100, hide: 100 }}
-        overlay={({ onHide }) => {
-          return <ColorHighlightPopoverContent colors={colors} onClose={onHide} />;
-        }}
+      <Button
+        ref={buttonRef}
+        variant="outline-secondary"
+        aria-label="Highlight text"
+        onClick={() => setShow(!show)}
       >
-        <Button variant="outline-secondary" aria-label="Highlight text">
-          <i className="bi bi-highlighter" />
-        </Button>
-      </OverlayTrigger>
+        <i className="bi bi-highlighter" />
+      </Button>
+      <Overlay placement="bottom" target={buttonRef} show={show}>
+        {(props) => <ColorHighlightOverlay colors={colors} {...props} />}
+      </Overlay>
     </>
   );
 }
