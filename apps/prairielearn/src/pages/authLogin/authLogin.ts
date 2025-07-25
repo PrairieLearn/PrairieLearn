@@ -7,10 +7,11 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import * as authLib from '../../lib/authn.js';
 import { config } from '../../lib/config.js';
+import { AuthnProviderSchema } from '../../lib/db-types.js';
 
 import {
   AuthLogin,
-  AuthLoginUnsupportedProvider,
+  AuthLoginInstitution,
   type InstitutionAuthnProvider,
 } from './authLogin.html.js';
 
@@ -24,7 +25,7 @@ const InstitutionAuthnProviderSchema = z.object({
   default_authn_provider_name: z.string(),
 });
 const InstitutionSupportedProvidersSchema = z.object({
-  name: z.string(),
+  name: AuthnProviderSchema.shape.name,
   is_default: z.boolean(),
 });
 const ServiceSchema = z.string().nullable();
@@ -35,21 +36,19 @@ router.get(
   asyncHandler(async (req, res, _next) => {
     const service = ServiceSchema.parse(req.query.service ?? null);
 
+    // If an `institution_id` query parameter is provided, we'll only show the
+    // login options for that institution.
     const institutionId = InstitutionIdSchema.parse(req.query.institution_id ?? null);
     if (institutionId) {
-      // Limit ourselves to showing the login options for a given institution.
-
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
         sql.select_supported_providers_for_institution,
-        {
-          institution_id: institutionId,
-        },
+        { institution_id: institutionId },
         InstitutionSupportedProvidersSchema,
       );
 
       res.send(
-        AuthLoginUnsupportedProvider({
+        AuthLoginInstitution({
           showUnsupportedMessage: req.query.unsupported_provider === 'true',
           institutionId,
           supportedProviders,
