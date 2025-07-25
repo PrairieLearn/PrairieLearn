@@ -188,7 +188,7 @@
     /**
      * When the user clicks Enter or Space, apply any pending changes based on the current container.
      * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in capture-preview, capture the current image.
+     * - If in local-camera-capture, capture the current image.
      */
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
@@ -207,7 +207,7 @@
      * Show the specified container within the image capture element and hide all others.
      *
      * @param {string} containerName The name of the container to open. Valid values are:
-     * 'capture-preview', 'local-camera-capture'
+     * 'capture-preview', 'local-camera-capture', 'crop-rotate'
      */
     openContainer(containerName) {
       if (!['capture-preview', 'local-camera-capture', 'crop-rotate'].includes(containerName)) {
@@ -449,7 +449,7 @@
       const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-local-camera-button',
       );
-      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton?.querySelector('span');
+      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
       this.ensureElementsExist({
         captureWithLocalCameraButtonSpan,
       });
