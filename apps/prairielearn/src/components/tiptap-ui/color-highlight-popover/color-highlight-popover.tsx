@@ -220,6 +220,7 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
         type="button"
         className={className}
         disabled={isDisabled}
+        style={{ backgroundColor: isActive ? color : 'transparent' }}
         variant="outline-secondary"
         role="button"
         tabIndex={-1}
@@ -227,7 +228,7 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
         aria-pressed={isActive}
         onClick={handleClick}
       >
-        <i className="bi bi-marker-tip" style={{ color }} />
+        <i className="bi bi-marker-tip" style={{ color: isActive ? 'white' : color }} />
       </Button>
     );
   },
@@ -266,7 +267,7 @@ export function ColorHighlightOverlay({
   placement: _placement,
   arrowProps: _arrowProps,
   show: _show,
-  popper: _popper,
+  popper,
   hasDoneInitialMeasure: _hasDoneInitialMeasure,
   style,
 }: ColorHighlightOverlayProps) {
@@ -294,6 +295,7 @@ export function ColorHighlightOverlay({
     },
     autoSelectFirstItem: false,
   });
+  console.log(selectedIndex);
 
   return (
     <ButtonGroup style={style} className="bg-white" vertical>
@@ -303,6 +305,7 @@ export function ColorHighlightOverlay({
           color={color.value}
           aria-label={`${color.label} highlight color`}
           tabIndex={index === selectedIndex ? 0 : -1}
+          onClick={() => popper.scheduleUpdate?.()}
         />
       ))}
       <Button
