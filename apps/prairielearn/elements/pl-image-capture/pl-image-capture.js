@@ -196,7 +196,7 @@
           event.preventDefault();
           if (this.selectedContainerName === 'crop-rotate') {
             this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'capture-preview') {
+          } else if (this.selectedContainerName === 'local-camera-capture') {
             this.handleCaptureImage();
           }
         }
@@ -210,13 +210,7 @@
      * 'capture-preview', 'local-camera-capture'
      */
     openContainer(containerName) {
-      if (
-        ![
-          'capture-preview',
-          'local-camera-capture',
-          'crop-rotate',
-        ].includes(containerName)
-      ) {
+      if (!['capture-preview', 'local-camera-capture', 'crop-rotate'].includes(containerName)) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
 
@@ -356,12 +350,12 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user might upload an image while in the crop-rotate state.
-          // We discard any pending changes or captured images and show the capture preview, since
-          // the user's most recent action was to capture an image externally.
           if (this.selectedContainerName === 'crop-rotate') {
+            // We discard any pending changes or captured images and show the capture preview, since
+            // the user's most recent action was to capture an image externally.
             await this.revertToPreviousCropRotateState();
           }
+          this.openContainer('capture-preview');
         }
       });
     }
@@ -442,42 +436,40 @@
         hiddenCaptureInput,
       });
 
-      if (!hiddenCaptureInput.value) {
-        // If no image has been captured yet, update the button text to indicate that the user can retake the image.
-        this.updateCaptureText();
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtonTextForRetake();
       }
       hiddenCaptureInput.value = dataUrl;
     }
 
-    updateCaptureText() {
+    /**
+     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     */
+    updateCaptureButtonTextForRetake() {
       const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-local-camera-button',
       );
+      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton?.querySelector('span');
+      this.ensureElementsExist({
+        captureWithLocalCameraButtonSpan,
+      });
+      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+
+      if (!this.mobile_capture_enabled) {
+        return;
+      }
       const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-mobile-device-button',
       );
+      const captureWithMobileDeviceButtonSpan =
+        captureWithMobileDeviceButton?.querySelector('span');
 
       this.ensureElementsExist({
-        captureWithLocalCameraButton,
-        captureWithMobileDeviceButton,
-      });
-
-      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector(
-        'span'
-      );
-      const captureWithMobileDeviceButtonSpan = captureWithMobileDeviceButton.querySelector(
-        'span'
-      );
-
-      this.ensureElementsExist({
-        captureWithLocalCameraButtonSpan,
         captureWithMobileDeviceButtonSpan,
       });
 
-      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
       captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
     }
-
 
     /**
      * Sets the hidden capture input value to the capture preview, which is the last
@@ -649,13 +641,8 @@
         localCameraCaptureContainer,
         localCameraImagePreviewCanvas,
         localCameraVideo,
-        hiddenCaptureInput
+        hiddenCaptureInput,
       });
-
-      // No image was captured previously
-      if (!hiddenCaptureInput.value) {
-        this.updateCaptureText();
-      }
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
       localCameraImagePreviewCanvas.height = localCameraVideo.videoHeight;
@@ -670,12 +657,9 @@
         );
 
       this.deactivateVideoStream();
-
-      const imageData = localCameraImagePreviewCanvas.toDataURL('image/jpeg');
-
-      this.setHiddenCaptureInputValue(imageData);
-
-      this.loadCapturePreviewFromDataUrl({ dataUrl: imageData });
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
+      });
       this.openContainer('capture-preview');
     }
 
