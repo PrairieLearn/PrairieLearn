@@ -2,7 +2,6 @@ import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import path from 'path';
 
 import esbuild, { type Metafile } from 'esbuild';
-import { sassPlugin } from 'esbuild-sass-plugin';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
@@ -291,7 +290,6 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string): Pro
       '.woff': 'file',
       '.woff2': 'file',
     },
-    plugins: [sassPlugin()],
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
