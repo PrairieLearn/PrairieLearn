@@ -34,7 +34,6 @@ router.get(
 
     const questions = await selectAssessmentQuestions({
       assessment_id,
-      authLevel: 'admin',
     });
 
     // Filter out non-public assessments

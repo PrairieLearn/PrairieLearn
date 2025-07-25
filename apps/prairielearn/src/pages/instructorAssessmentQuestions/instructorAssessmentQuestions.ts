@@ -15,7 +15,6 @@ router.get(
   asyncHandler(async (req, res) => {
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
-      authLevel: 'instructor',
     });
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }));
   }),
