@@ -1,11 +1,11 @@
 /* eslint-disable @eslint-react/hooks-extra/no-unnecessary-use-prefix */
 import { type Editor, isNodeSelection } from '@tiptap/react';
+import clsx from 'clsx';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema } from '../../../lib/tiptap-utils.js';
-import clsx from 'clsx';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
 
 export type Mark =
   | 'bold'
@@ -22,10 +22,6 @@ export interface MarkButtonProps extends Omit<ButtonProps, 'type'> {
    */
   type: Mark;
   /**
-   * Optional editor instance. If not provided, will use editor from context
-   */
-  editor?: Editor | null;
-  /**
    * Display text for the button (optional)
    */
   text?: string;
@@ -36,24 +32,24 @@ export interface MarkButtonProps extends Omit<ButtonProps, 'type'> {
 }
 
 export const markIcons = {
-  bold: ({ className }: { className?: string }) => <i class={clsx(`bi bi-type-bold`, className)} />,
+  bold: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-bold', className)} />,
   italic: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-type-italic`, className)} />
+    <i class={clsx('bi bi-type-italic', className)} />
   ),
   underline: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-type-underline`, className)} />
+    <i class={clsx('bi bi-type-underline', className)} />
   ),
   strike: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-type-strikethrough`, className)} />
+    <i class={clsx('bi bi-type-strikethrough', className)} />
   ),
   code: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-code-slash`, className)} />
+    <i class={clsx('bi bi-code-slash', className)} />
   ),
   superscript: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-superscript`, className)} />
+    <i class={clsx('bi bi-superscript', className)} />
   ),
   subscript: ({ className }: { className?: string }) => (
-    <i class={clsx(`bi bi-subscript`, className)} />
+    <i class={clsx('bi bi-subscript', className)} />
   ),
 };
 
@@ -146,7 +142,6 @@ export function useMarkState(editor: Editor | null, type: Mark, disabled = false
 export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
   (
     {
-      editor: providedEditor,
       type,
       text,
       hideWhenUnavailable = false,
@@ -158,7 +153,7 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
     },
     ref,
   ) => {
-    const editor = useTiptapEditor(providedEditor);
+    const editor = useTiptapEditor();
 
     const { markInSchema, isDisabled, isActive, Icon, shortcutKey, formattedName } = useMarkState(
       editor,
@@ -193,9 +188,9 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
     return (
       <Button
         type="button"
-        className={className.trim()}
+        className={className}
         disabled={isDisabled}
-        variant="outline-secondary"
+        variant={isActive ? 'primary' : isDisabled ? 'secondary' : 'outline-primary'}
         role="button"
         tabIndex={-1}
         aria-label={type}

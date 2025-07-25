@@ -1,9 +1,9 @@
 import { forwardRef } from 'preact/compat';
 import {
   Button as BootstrapButton,
+  type ButtonProps as BootstrapButtonProps,
   OverlayTrigger,
   Tooltip,
-  type ButtonProps as BootstrapButtonProps,
 } from 'react-bootstrap';
 
 export interface ButtonProps extends BootstrapButtonProps {
@@ -14,11 +14,14 @@ export interface ButtonProps extends BootstrapButtonProps {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
-  const { tooltip, showTooltip, shortcutKeys: _shortcutKeys, ...rest } = props;
+  const { tooltip, showTooltip: _showTooltip, shortcutKeys: _shortcutKeys, ...rest } = props;
+  if (!tooltip) {
+    return <BootstrapButton {...rest} ref={ref} />;
+  }
   return (
     <>
       <OverlayTrigger placement="right" overlay={<Tooltip>{tooltip}</Tooltip>}>
-        <BootstrapButton {...props} ref={ref} />
+        <BootstrapButton {...rest} ref={ref} />
       </OverlayTrigger>
     </>
   );
