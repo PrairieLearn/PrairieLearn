@@ -6,6 +6,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
+  EnrollmentSchema as RawEnrollmentSchema,
   UserSchema as RawUserSchema,
 } from '../db-types.js';
 
@@ -162,6 +163,12 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
 export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
+
+/** Enrollments */
+
+export const RawStaffEnrollmentSchema = RawEnrollmentSchema;
+export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
+export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 
 /** Users */
 
