@@ -26,13 +26,7 @@ export interface AIGradingInfo {
   aiGradingAvailable: boolean;
   manualGradingAvailable: boolean;
   feedback?: string;
-  prompt: {
-    type: 'text',
-    text: string;
-  } | {
-    type: 'imageContent'
-    imageContent: string;
-  }
+  prompt?: string;
   selectedRubricItemIds?: string[];
 }
 

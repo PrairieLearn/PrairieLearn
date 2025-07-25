@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import type { ChatCompletionContentPart, ChatCompletionContentPartText, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
@@ -21,6 +21,7 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { formatHtmlWithPrettier, formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -115,16 +116,13 @@ router.get(
           grading_job.manual_rubric_grading_id,
         );
 
-        const prompt_for_grading_job = (await sqldb.queryOptionalRow(
+        let prompt_for_grading_job = (await sqldb.queryOptionalRow(
           sql.select_prompt_for_grading_job,
           {
             grading_job_id: grading_job.id,
           },
           z.array(z.record(z.string(), z.any())).nullable(),
         )) as ChatCompletionMessageParam[] | null;
-
-        
-
 
         const aiGradingAvailable =
           (await sqldb.queryOptionalRow(
@@ -140,11 +138,36 @@ router.get(
             z.boolean(),
           )) ?? false;
 
+        if (prompt_for_grading_job) {
+          const messageParamsCleaned: ChatCompletionMessageParam[] = [];
+      
+          for (const prompt_part of prompt_for_grading_job) {
+            if (!prompt_part || !prompt_part.content) {
+              continue;
+            }
+            if (typeof prompt_part.content === 'string') {
+              messageParamsCleaned.push(
+                {
+                  ...prompt_part,
+                  content: await formatHtmlWithPrettier(prompt_part.content)
+                }
+              );
+            } else {
+              messageParamsCleaned.push(prompt_part);
+            }
+          }
+
+          prompt_for_grading_job = messageParamsCleaned;
+
+        }
+
+        const formattedPrompt = await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2));
+
         aiGradingInfo = {
           aiGradingAvailable,
           manualGradingAvailable,
           feedback: aiGradingAvailable ? grading_job?.feedback?.manual : undefined,
-          prompt: aiGradingAvailable ? prompt_for_grading_job : undefined,
+          prompt: aiGradingAvailable ? formattedPrompt : undefined,
           selectedRubricItemIds: aiGradingAvailable
             ? selectedRubricItems.map((item) => item.id)
             : undefined,

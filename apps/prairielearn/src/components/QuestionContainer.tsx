@@ -1,7 +1,6 @@
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -23,7 +22,6 @@ import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
-import { formatJsonWithPrettier } from '../lib/prettier.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -47,7 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
-  aiGradingPrompt?: ChatCompletionMessageParam[] | null;
+  aiGradingPrompt?: string;
 }) {
   const {
     question,
@@ -63,8 +61,6 @@ export function QuestionContainer({
     submissionHtmls,
     answerHtml,
   } = resLocals;
-
-  console.log('aiGradingPrompt', JSON.stringify(aiGradingPrompt));
 
   return html`
     <div
@@ -159,16 +155,20 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt(prompt: ChatCompletionMessageParam[]) {
+function AIGradingPrompt(prompt: string) {
+  console.log('prompt', prompt);
+
   return html`
     <div class="card mb-3 grading-block">
       <div class="card-header bg-secondary text-white">
         <h2>AI Grading Prompt</h2>
       </div>
       <div class="card-body">
-        <code>
-          ${JSON.stringify(prompt)}
-        </code>
+        <pre class="mb-0">
+          <code>
+            ${prompt.trim()}
+          </code>
+        </pre>
       </div>
     </div>
   `;
