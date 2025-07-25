@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCourseOwners } from '../../lib/course.js';
+import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 
 import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
 
@@ -20,10 +22,54 @@ router.get(
       return;
     }
 
-    const result = await sqldb.queryAsync(sql.lti_data, {
-      course_instance_id: res.locals.course_instance.id,
-    });
-    Object.assign(res.locals, result.rows[0]);
+    const result = await sqldb.queryRow(
+      sql.lti_data,
+      {
+        course_instance_id: res.locals.course_instance.id,
+      },
+      z.object({
+        assessments: z
+          .array(
+            z.object({
+              assessment_id: AssessmentSchema.shape.id,
+              label: z.string(),
+              title: AssessmentSchema.shape.title,
+              tid: AssessmentSchema.shape.tid,
+            }),
+          )
+          .nullable(),
+        lti_credentials: z
+          .array(
+            z.object({
+              ...LtiCredentialSchema.pick({
+                id: true,
+                course_instance_id: true,
+                consumer_key: true,
+                secret: true,
+                created_at: true,
+              }).shape,
+              created: z.string(),
+              deleted: z.string(),
+            }),
+          )
+          .nullable(),
+        lti_links: z
+          .array(
+            z.object({
+              ...LtiLinkSchema.pick({
+                id: true,
+                resource_link_title: true,
+                resource_link_description: true,
+                assessment_id: true,
+                created_at: true,
+              }).shape,
+              created: z.string(),
+            }),
+          )
+          .nullable(),
+      }),
+    );
+    Object.assign(res.locals, result);
 
     res.send(InstructorInstanceAdminLti({ resLocals: res.locals }));
   }),
