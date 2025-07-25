@@ -55,7 +55,7 @@ $(function() {
         class="js-capture-with-local-camera-button btn btn-info"
       >
         <i class="bi bi-camera-fill me-1"></i>
-        Use webcam
+        <span>Use webcam</span>
       </button>
       {{#mobile_capture_enabled}}
         <button 
@@ -93,7 +93,7 @@ $(function() {
           '
         >
           <i class="bi bi-qr-code-scan me-1"></i>
-          Use phone
+          <span>Use phone</span>
         </button>
       {{/mobile_capture_enabled}}
     </div>
@@ -135,43 +135,9 @@ $(function() {
           Capture image
         </button>
       </div>
-    </div>
-  </div>
-  <div class="js-local-camera-confirmation-container d-none d-flex flex-column">
-    <canvas
-      class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom"
-      autoplay
-      playsinline
-    >
-    </canvas>
-    <div class="d-flex gap-2 p-2 justify-content-end align-items-center flex-wrap">
-      <p class="text-muted my-0 me-auto">
-        Make sure your photo is clear, well-lit, and shows all your work legibly. 
-        <br/>
-        Later, you can crop or rotate the image as needed.
-      </p>
-      <div class="d-flex align-items-center gap-2">
-        <button 
-          type="button"
-          class="js-cancel-local-camera-confirmation-button btn btn-secondary"
-        >
-          Cancel
-        </button>
-        <button 
-          type="button"
-          class="js-retake-local-camera-image-button btn btn-secondary"
-        >
-          <i class="bi bi-arrow-counterclockwise me-1"></i>
-          Retake
-        </button>
-        <button 
-          type="button" 
-          class="js-confirm-local-camera-image-button btn btn-info"
-        >
-          <i class="bi bi-check2 me-1"></i>
-          Use image
-        </button>
-      </div>
+      <canvas
+        class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom d-none"
+      >
     </div>
   </div>
   <div class="js-crop-rotate-container d-none">
