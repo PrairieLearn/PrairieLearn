@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import type { ChatCompletionContentPart, ChatCompletionContentPartText, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import type { ChatCompletionContentPart, ChatCompletionContentPartImage, ChatCompletionContentPartInputAudio, ChatCompletionContentPartRefusal, ChatCompletionContentPartText, ChatCompletionMessage, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -116,7 +117,7 @@ router.get(
           grading_job.manual_rubric_grading_id,
         );
 
-        let prompt_for_grading_job = (await sqldb.queryOptionalRow(
+        const prompt_for_grading_job = (await sqldb.queryOptionalRow(
           sql.select_prompt_for_grading_job,
           {
             grading_job_id: grading_job.id,
@@ -138,30 +139,50 @@ router.get(
             z.boolean(),
           )) ?? false;
 
+        const prompt_for_grading_job_with_image_tooltips: Record<string, any>[] = [];
+        
         if (prompt_for_grading_job) {
-          const messageParamsCleaned: ChatCompletionMessageParam[] = [];
-      
-          for (const prompt_part of prompt_for_grading_job) {
-            if (!prompt_part || !prompt_part.content) {
-              continue;
-            }
-            if (typeof prompt_part.content === 'string') {
-              messageParamsCleaned.push(
-                {
-                  ...prompt_part,
-                  content: await formatHtmlWithPrettier(prompt_part.content)
+          for (const message of prompt_for_grading_job) {
+            if (message.content && typeof message.content === 'object') {
+              const messageParts: any[] = [];
+              for (const part of message.content) {
+                if (part.type === 'image_url') {
+                  messageParts.push({
+                    ...part,
+                    image_url: {
+                      url: {
+                        detail: part.image_url.detail,
+                        url: html`
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          data-bs-toggle="tooltip"
+                          data-bs-html="true"
+                          title='<img src="${part.image_url.url}" alt="Student-submitted response" class="img-fluid" />'
+                        >
+                          ${part.image_url.url}
+                        </button>
+                        `.toString()
+                      }
+                    }
+                  });
+
+                } else {
+                  messageParts.push(part);
                 }
-              );
+              }
+              prompt_for_grading_job_with_image_tooltips.push({
+                ...message,
+                content: messageParts
+              } as any);
             } else {
-              messageParamsCleaned.push(prompt_part);
+              prompt_for_grading_job_with_image_tooltips.push(message);
             }
           }
-
-          prompt_for_grading_job = messageParamsCleaned;
-
         }
 
-        const formattedPrompt = await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2));
+
+        const formattedPrompt = (await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job_with_image_tooltips, null, 2))).replaceAll('\\n','\n').trimStart();
 
         aiGradingInfo = {
           aiGradingAvailable,
