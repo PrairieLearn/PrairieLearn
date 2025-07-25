@@ -7,11 +7,11 @@ import {
   canToggleList,
   isListActive,
   listOptions,
-} from '#components/tiptap-ui/list-button/list-button.js';
-import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
+} from '../list-button/list-button.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
 
-import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
-import { isNodeInSchema } from '#lib/tiptap-utils.js';
+import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
+import { isNodeInSchema } from '../../../lib/tiptap-utils.js';
 import { Dropdown, DropdownMenu } from 'react-bootstrap';
 
 export interface ListDropdownMenuProps extends Omit<ButtonProps, 'type'> {

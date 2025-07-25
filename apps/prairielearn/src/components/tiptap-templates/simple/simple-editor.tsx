@@ -11,36 +11,35 @@ import { EditorContent, EditorContext, useEditor } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import * as React from 'react';
 
-import { Link } from '#components/tiptap-extension/link-extension.js';
-import { Selection } from '#components/tiptap-extension/selection-extension.js';
-import { TrailingNode } from '#components/tiptap-extension/trailing-node-extension.js';
-import { ImageUploadNode } from '#components/tiptap-node/image-upload-node/image-upload-node-extension.js';
-import { BlockquoteButton } from '#components/tiptap-ui/blockquote-button/index.js';
-import { CodeBlockButton } from '#components/tiptap-ui/code-block-button/index.js';
+import { Link } from '../../tiptap-extension/link-extension.js';
+import { Selection } from '../../tiptap-extension/selection-extension.js';
+import { TrailingNode } from '../../tiptap-extension/trailing-node-extension.js';
+import { ImageUploadNode } from '../../tiptap-node/image-upload-node/image-upload-node-extension.js';
+import { BlockquoteButton } from '../../tiptap-ui/blockquote-button/index.js';
+import { CodeBlockButton } from '../../tiptap-ui/code-block-button/index.js';
 import {
   ColorHighlightPopover,
   ColorHighlightPopoverButton,
   ColorHighlightPopoverContent,
-} from '#components/tiptap-ui/color-highlight-popover/index.js';
-import { HeadingDropdownMenu } from '#components/tiptap-ui/heading-dropdown-menu/index.js';
-import { ImageUploadButton } from '#components/tiptap-ui/image-upload-button/index.js';
-import { LinkButton, LinkContent, LinkPopover } from '#components/tiptap-ui/link-popover/index.js';
-import { ListDropdownMenu } from '#components/tiptap-ui/list-dropdown-menu/index.js';
-import { MarkButton } from '#components/tiptap-ui/mark-button/index.js';
-import { TextAlignButton } from '#components/tiptap-ui/text-align-button/index.js';
-import { UndoRedoButton } from '#components/tiptap-ui/undo-redo-button/index.js';
-import { Button } from '#components/bootstrap-ui-primitive/button/index.js';
-import { Spacer } from '#components/bootstrap-ui-primitive/spacer/index.js';
-import { useCursorVisibility } from '#lib/hooks/use-cursor-visibility.js';
-import { useMobile } from '#lib/hooks/use-mobile.js';
-import { useWindowSize } from '#lib/hooks/use-window-size.js';
-import '#components/tiptap-node/code-block-node/code-block-node.scss';
-import '#components/tiptap-node/list-node/list-node.scss';
-import '#components/tiptap-node/image-node/image-node.scss';
-import '#components/tiptap-node/paragraph-node/paragraph-node.scss';
-import { MAX_FILE_SIZE, handleImageUpload } from '#lib/tiptap-utils.js';
+} from '../../tiptap-ui/color-highlight-popover/index.js';
+import { HeadingDropdownMenu } from '../../tiptap-ui/heading-dropdown-menu/index.js';
+import { ImageUploadButton } from '../../tiptap-ui/image-upload-button/index.js';
+import { LinkButton, LinkContent, LinkPopover } from '../../tiptap-ui/link-popover/index.js';
+import { ListDropdownMenu } from '../../tiptap-ui/list-dropdown-menu/index.js';
+import { MarkButton } from '../../tiptap-ui/mark-button/index.js';
+import { TextAlignButton } from '../../tiptap-ui/text-align-button/index.js';
+import { UndoRedoButton } from '../../tiptap-ui/undo-redo-button/index.js';
+import { Button } from '../../bootstrap-ui-primitive/button/index.js';
+import { Spacer } from '../../bootstrap-ui-primitive/spacer/index.js';
+import { useCursorVisibility } from '../../../lib/hooks/use-cursor-visibility.js';
+import { useMobile } from '../../../lib/hooks/use-mobile.js';
+import { useWindowSize } from '../../../lib/hooks/use-window-size.js';
+// import '#components/tiptap-node/code-block-node/code-block-node.scss';
+// import '#components/tiptap-node/list-node/list-node.scss';
+// import '#components/tiptap-node/image-node/image-node.scss';
+// import '#components/tiptap-node/paragraph-node/paragraph-node.scss';
+import { MAX_FILE_SIZE, handleImageUpload } from '../../../lib/tiptap-utils.js';
 
-import '#components/tiptap-templates/simple/simple-editor.scss';
 import { ButtonGroup } from 'react-bootstrap';
 import { ButtonToolbar } from 'react-bootstrap';
 
@@ -691,7 +690,11 @@ export function SimpleEditor() {
           scrollbarWidth: 'thin',
         }}
       >
-        <EditorContent editor={editor} role="presentation" className="simple-editor-content" />
+        <EditorContent
+          editor={editor}
+          role="presentation"
+          style={{ maxWidth: '640px', width: '100%', margin: '0 auto' }}
+        />
       </div>
     </EditorContext.Provider>
   );

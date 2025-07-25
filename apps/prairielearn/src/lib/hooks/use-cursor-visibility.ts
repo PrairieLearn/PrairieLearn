@@ -2,7 +2,7 @@
 import type { Editor } from '@tiptap/react';
 import * as React from 'react';
 
-import { useWindowSize } from '#lib/hooks/use-window-size.js';
+import { useWindowSize } from './use-window-size.js';
 
 /**
  * Interface defining required parameters for the cursor visibility hook

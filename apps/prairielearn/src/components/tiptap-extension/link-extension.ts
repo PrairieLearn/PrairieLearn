@@ -18,7 +18,8 @@ export const Link = TiptapLink.extend({
     const { editor } = this;
 
     return [
-      ...(this.parent?.() || []),
+      // TODO: type error?
+      ...((this as any).parent?.() || []),
       new Plugin({
         props: {
           handleKeyDown: (_: EditorView, event: KeyboardEvent) => {

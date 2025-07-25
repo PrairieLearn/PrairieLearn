@@ -3,24 +3,6 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "imports": {
-    "#lib/*": {
-      "development": "./src/lib/*",
-      "default": "./dist/lib/*"
-    },
-    "#components/*": {
-      "development": "./src/components/*",
-      "default": "./dist/components/*"
-    },
-    "#pages/*": {
-      "development": "./src/pages/*",
-      "default": "./dist/pages/*"
-    },
-    "#client/*": {
-      "development": "./src/lib/client/*",
-      "default": "./dist/lib/client/*"
-    }
-  },
   "scripts": {
     "build": "tsc --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",

@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '#components/PageLayout.js';
-import { config } from '#lib/config.js';
-import { CourseInstanceSchema, CourseSchema, type Institution } from '#lib/db-types.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { config } from '../../lib/config.js';
+import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,

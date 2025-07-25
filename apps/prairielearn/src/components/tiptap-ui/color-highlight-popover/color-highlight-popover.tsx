@@ -5,12 +5,12 @@ import * as React from 'react';
 import {
   ColorHighlightButton,
   canToggleHighlight,
-} from '#components/tiptap-ui/color-highlight-button/index.js';
-import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
-import { Separator } from '#components/bootstrap-ui-primitive/separator/index.js';
-import { useMenuNavigation } from '#lib/hooks/use-menu-navigation.js';
-import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
-import { isMarkInSchema } from '#lib/tiptap-utils.js';
+} from '../color-highlight-button/color-highlight-button.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
+import { Separator } from '../../bootstrap-ui-primitive/separator/index.js';
+import { useMenuNavigation } from '../../../lib/hooks/use-menu-navigation.js';
+import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
+import { isMarkInSchema } from '../../../lib/tiptap-utils.js';
 import { OverlayTrigger } from 'react-bootstrap';
 
 export interface ColorHighlightPopoverColor {

@@ -6,10 +6,10 @@ import {
   type Level,
   getFormattedHeadingName,
   headingIcons,
-} from '#components/tiptap-ui/heading-button/heading-button.js';
-import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
-import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
-import { isNodeInSchema } from '#lib/tiptap-utils.js';
+} from '../heading-button/heading-button.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
+import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
+import { isNodeInSchema } from '../../../lib/tiptap-utils.js';
 import { Dropdown } from 'react-bootstrap';
 import clsx from 'clsx';
 

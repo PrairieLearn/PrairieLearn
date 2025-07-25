@@ -1,8 +1,6 @@
 import { type NodeViewProps, NodeViewWrapper } from '@tiptap/react';
 import * as React from 'react';
 
-import '#components/tiptap-node/image-upload-node/image-upload-node.scss';
-
 export interface FileItem {
   id: string;
   file: File;

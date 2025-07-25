@@ -3,10 +3,10 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
-import { Separator } from '#components/bootstrap-ui-primitive/separator/index.js';
-import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
-import { isMarkInSchema, sanitizeUrl } from '#lib/tiptap-utils.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
+import { Separator } from '../../bootstrap-ui-primitive/separator/index.js';
+import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
+import { isMarkInSchema, sanitizeUrl } from '../../../lib/tiptap-utils.js';
 
 import { OverlayTrigger } from 'react-bootstrap';
 

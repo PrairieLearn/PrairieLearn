@@ -2,9 +2,9 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
-import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
-import { isMarkInSchema } from '#lib/tiptap-utils.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
+import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
+import { isMarkInSchema } from '../../../lib/tiptap-utils.js';
 import clsx from 'clsx';
 
 export type Mark =

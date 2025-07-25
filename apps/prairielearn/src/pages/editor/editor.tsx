@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { Editor } from './editor.html.js';
+import { Editor } from './components/Editor.js';
 
-import { PageLayout } from '#components/PageLayout.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { Hydrate } from '../../lib/preact.js';
 
 const router = Router();
 
@@ -26,7 +27,11 @@ router.get(
           fullWidth: true,
         },
 
-        content: Editor(),
+        content: (
+          <Hydrate>
+            <Editor />
+          </Hydrate>
+        ),
       }),
     );
   }),
