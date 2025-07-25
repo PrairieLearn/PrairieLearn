@@ -1,7 +1,7 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '#lib/tiptap-utils.js';
 
@@ -156,9 +156,7 @@ export const BlockquoteButton = React.forwardRef<HTMLButtonElement, BlockquoteBu
         type="button"
         className={className.trim()}
         disabled={isDisabled}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
-        data-disabled={isDisabled}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label="blockquote"
@@ -171,8 +169,8 @@ export const BlockquoteButton = React.forwardRef<HTMLButtonElement, BlockquoteBu
       >
         {children || (
           <>
-            <i class="bi bi-quote tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <i class="bi bi-quote" />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

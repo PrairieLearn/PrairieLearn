@@ -3,18 +3,12 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#components/tiptap-ui-primitive/popover/index.js';
-import { Separator } from '#components/tiptap-ui-primitive/separator/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
+import { Separator } from '#components/bootstrap-ui-primitive/separator/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema, sanitizeUrl } from '#lib/tiptap-utils.js';
 
-// --- Styles ---
-import '#components/tiptap-ui/link-popover/link-popover.scss';
+import { OverlayTrigger } from 'react-bootstrap';
 
 export interface LinkHandlerProps {
   editor: Editor | null;
@@ -102,14 +96,14 @@ export const LinkButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type="button"
         className={className}
-        data-style="ghost"
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label="Link"
         tooltip="Link"
         {...props}
       >
-        {children || <i class="bi bi-link tiptap-button-icon" />}
+        {children || <i class="bi bi-link" />}
       </Button>
     );
   },
@@ -153,44 +147,44 @@ const LinkMain: React.FC<LinkMainProps> = ({ url, setUrl, setLink, removeLink, i
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
-        className="tiptap-input tiptap-input-clamp"
+        className="form-control"
         onChange={(e) => setUrl((e.target as HTMLInputElement).value)}
         onKeyDown={handleKeyDown}
       />
 
-      <div className="tiptap-button-group" data-orientation="horizontal">
+      <div className="d-flex gap-1">
         <Button
           type="button"
           title="Apply link"
           disabled={!url && !isActive}
-          data-style="ghost"
+          variant="outline-secondary"
           onClick={setLink}
         >
-          <i class="bi bi-box-arrow-down-left tiptap-button-icon" />
+          <i class="bi bi-box-arrow-down-left" />
         </Button>
       </div>
 
       <Separator />
 
-      <div className="tiptap-button-group" data-orientation="horizontal">
+      <div className="d-flex gap-1">
         <Button
           type="button"
           title="Open in new window"
           disabled={!url && !isActive}
-          data-style="ghost"
+          variant="outline-secondary"
           onClick={handleOpenLink}
         >
-          <i class="bi bi-box-arrow-up-right tiptap-button-icon" />
+          <i class="bi bi-box-arrow-up-right" />
         </Button>
 
         <Button
           type="button"
+          variant="outline-secondary"
           title="Remove link"
           disabled={!url && !isActive}
-          data-style="ghost"
           onClick={removeLink}
         >
-          <i class="bi bi-trash tiptap-button-icon" />
+          <i class="bi bi-trash" />
         </Button>
       </div>
     </>
@@ -287,20 +281,9 @@ export function LinkPopover({
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={handleOnOpenChange}>
-      <PopoverTrigger asChild>
-        <LinkButton
-          disabled={isDisabled}
-          data-active-state={isActive ? 'on' : 'off'}
-          data-disabled={isDisabled}
-          {...props}
-        />
-      </PopoverTrigger>
-
-      <PopoverContent>
-        <LinkMain {...linkHandler} />
-      </PopoverContent>
-    </Popover>
+    <OverlayTrigger overlay={<LinkMain {...linkHandler} />} onToggle={handleOnOpenChange}>
+      <LinkButton disabled={isDisabled} {...props} />
+    </OverlayTrigger>
   );
 }
 

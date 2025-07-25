@@ -6,16 +6,12 @@ import {
   ColorHighlightButton,
   canToggleHighlight,
 } from '#components/tiptap-ui/color-highlight-button/index.js';
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#components/tiptap-ui-primitive/popover/index.js';
-import { Separator } from '#components/tiptap-ui-primitive/separator/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
+import { Separator } from '#components/bootstrap-ui-primitive/separator/index.js';
 import { useMenuNavigation } from '#lib/hooks/use-menu-navigation.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema } from '#lib/tiptap-utils.js';
+import { OverlayTrigger } from 'react-bootstrap';
 
 export interface ColorHighlightPopoverColor {
   label: string;
@@ -41,28 +37,28 @@ export interface ColorHighlightPopoverProps extends Omit<ButtonProps, 'type'> {
 export const DEFAULT_HIGHLIGHT_COLORS: ColorHighlightPopoverColor[] = [
   {
     label: 'Green',
-    value: 'var(--tt-color-highlight-green)',
-    border: 'var(--tt-color-highlight-green-contrast)',
+    value: 'var(--bs-green)',
+    border: 'var(--bs-green-dark)',
   },
   {
     label: 'Blue',
-    value: 'var(--tt-color-highlight-blue)',
-    border: 'var(--tt-color-highlight-blue-contrast)',
+    value: 'var(--bs-blue)',
+    border: 'var(--bs-blue-dark)',
   },
   {
     label: 'Red',
-    value: 'var(--tt-color-highlight-red)',
-    border: 'var(--tt-color-highlight-red-contrast)',
+    value: 'var(--bs-red)',
+    border: 'var(--bs-red-dark)',
   },
   {
     label: 'Purple',
-    value: 'var(--tt-color-highlight-purple)',
-    border: 'var(--tt-color-highlight-purple-contrast)',
+    value: 'var(--bs-purple)',
+    border: 'var(--bs-purple-dark)',
   },
   {
     label: 'Yellow',
-    value: 'var(--tt-color-highlight-yellow)',
-    border: 'var(--tt-color-highlight-yellow-contrast)',
+    value: 'var(--bs-yellow)',
+    border: 'var(--bs-yellow-dark)',
   },
 ];
 
@@ -71,16 +67,15 @@ export const ColorHighlightPopoverButton = React.forwardRef<HTMLButtonElement, B
     <Button
       ref={ref}
       type="button"
+      variant="outline-secondary"
       className={className}
-      data-style="ghost"
-      data-appearance="default"
       role="button"
       tabIndex={-1}
       aria-label="Highlight text"
       tooltip="Highlight"
       {...props}
     >
-      {children || <i class="bi bi-highlighter tiptap-button-icon" />}
+      {children || <i class="bi bi-highlighter" />}
     </Button>
   ),
 );
@@ -121,16 +116,19 @@ export function ColorHighlightPopoverContent({
   });
 
   return (
-    <div ref={containerRef} className="tiptap-color-highlight-content" tabIndex={0}>
-      <div className="tiptap-button-group" data-orientation="horizontal">
+    <div ref={containerRef} className="d-flex gap-1 align-items-center" tabIndex={0}>
+      <div className="d-flex gap-1">
         {colors.map((color, index) => (
           <ColorHighlightButton
             key={color.value}
             editor={editor}
             color={color.value}
+            style={{
+              color: color.value,
+              border: `1px ${index === selectedIndex ? 'solid' : 'dashed'} ${color.border}`,
+            }}
             aria-label={`${color.label} highlight color`}
             tabIndex={index === selectedIndex ? 0 : -1}
-            data-highlighted={selectedIndex === index}
             onClick={onClose}
           />
         ))}
@@ -138,17 +136,16 @@ export function ColorHighlightPopoverContent({
 
       <Separator />
 
-      <div className="tiptap-button-group">
+      <div className="d-flex gap-1">
         <Button
           aria-label="Remove highlight"
           tabIndex={selectedIndex === colors.length ? 0 : -1}
           type="button"
           role="menuitem"
-          data-style="ghost"
-          data-highlighted={selectedIndex === colors.length}
+          variant={selectedIndex === colors.length ? 'outline-primary' : 'outline-secondary'}
           onClick={removeHighlight}
         >
-          <i class="bi bi-ban tiptap-button-icon" />
+          <i class="bi bi-ban" />
         </Button>
       </div>
     </div>
@@ -209,25 +206,19 @@ export function ColorHighlightPopover({
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <ColorHighlightPopoverButton
-          disabled={isDisabled}
-          data-active-state={isActive ? 'on' : 'off'}
-          data-disabled={isDisabled}
-          aria-pressed={isActive}
-          {...props}
-        />
-      </PopoverTrigger>
-
-      <PopoverContent aria-label="Highlight colors">
+    <OverlayTrigger
+      show={isOpen}
+      onToggle={(nextShow) => setIsOpen(nextShow)}
+      overlay={
         <ColorHighlightPopoverContent
           editor={editor}
           colors={colors}
           onClose={() => setIsOpen(false)}
         />
-      </PopoverContent>
-    </Popover>
+      }
+    >
+      <ColorHighlightPopoverButton disabled={isDisabled} aria-pressed={isActive} {...props} />
+    </OverlayTrigger>
   );
 }
 

@@ -2,62 +2,60 @@ import type { Node } from '@tiptap/pm/model';
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { findNodePosition, isEmptyNode, isMarkInSchema } from '#lib/tiptap-utils.js';
-
-import '#components/tiptap-ui/color-highlight-button/color-highlight-button.scss';
 
 export const HIGHLIGHT_COLORS = [
   {
     label: 'Default background',
-    value: 'var(--tt-bg-color)',
-    border: 'var(--tt-bg-color-contrast)',
+    value: 'var(--bs-white)',
+    border: 'var(--bs-gray-600)',
   },
   {
     label: 'Gray background',
-    value: 'var(--tt-color-highlight-gray)',
-    border: 'var(--tt-color-highlight-gray-contrast)',
+    value: 'var(--bs-gray-500)',
+    border: 'var(--bs-gray-600)',
   },
   {
     label: 'Brown background',
-    value: 'var(--tt-color-highlight-brown)',
-    border: 'var(--tt-color-highlight-brown-contrast)',
+    value: 'var(--bs-brown-500)',
+    border: 'var(--bs-brown-600)',
   },
   {
     label: 'Orange background',
-    value: 'var(--tt-color-highlight-orange)',
-    border: 'var(--tt-color-highlight-orange-contrast)',
+    value: 'var(--bs-orange-500)',
+    border: 'var(--bs-orange-600)',
   },
   {
     label: 'Yellow background',
-    value: 'var(--tt-color-highlight-yellow)',
-    border: 'var(--tt-color-highlight-yellow-contrast)',
+    value: 'var(--bs-yellow-500)',
+    border: 'var(--bs-yellow-600)',
   },
   {
     label: 'Green background',
-    value: 'var(--tt-color-highlight-green)',
-    border: 'var(--tt-color-highlight-green-contrast)',
+    value: 'var(--bs-green-500)',
+    border: 'var(--bs-green-600)',
   },
   {
     label: 'Blue background',
-    value: 'var(--tt-color-highlight-blue)',
-    border: 'var(--tt-color-highlight-blue-contrast)',
+    value: 'var(--bs-blue-500)',
+    border: 'var(--bs-blue-600)',
   },
   {
     label: 'Purple background',
-    value: 'var(--tt-color-highlight-purple)',
-    border: 'var(--tt-color-highlight-purple-contrast)',
+    value: 'var(--bs-purple-500)',
+    border: 'var(--bs-purple-600)',
   },
   {
     label: 'Pink background',
-    value: 'var(--tt-color-highlight-pink)',
-    border: 'var(--tt-color-highlight-pink-contrast)',
+    value: 'var(--bs-pink-500)',
+    border: 'var(--bs-pink-600)',
   },
   {
     label: 'Red background',
-    value: 'var(--tt-color-highlight-red)',
-    border: 'var(--tt-color-highlight-red-contrast)',
+    value: 'var(--bs-red-500)',
+    border: 'var(--bs-red-600)',
   },
 ];
 
@@ -268,11 +266,9 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
     return (
       <Button
         type="button"
-        className={className.trim()}
+        className={className}
         disabled={isDisabled}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
-        data-disabled={isDisabled}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={`${color} highlight color`}
@@ -286,7 +282,9 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
           <>
             <span
               className="tiptap-button-highlight"
-              style={{ '--highlight-color': color } as React.CSSProperties}
+              style={
+                { backgroundColor: color, border: `1px solid ${color}` } as React.CSSProperties
+              }
             />
             {text && <span className="tiptap-button-text">{text}</span>}
           </>

@@ -2,7 +2,7 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '#lib/tiptap-utils.js';
 
@@ -194,8 +194,7 @@ export const ListButton = React.forwardRef<HTMLButtonElement, ListButtonProps>(
       <Button
         type="button"
         className={className.trim()}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={listOption?.label || type}
@@ -208,8 +207,8 @@ export const ListButton = React.forwardRef<HTMLButtonElement, ListButtonProps>(
       >
         {children || (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

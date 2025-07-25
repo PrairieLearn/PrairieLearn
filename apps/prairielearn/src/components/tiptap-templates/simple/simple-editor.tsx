@@ -15,7 +15,6 @@ import { Link } from '#components/tiptap-extension/link-extension.js';
 import { Selection } from '#components/tiptap-extension/selection-extension.js';
 import { TrailingNode } from '#components/tiptap-extension/trailing-node-extension.js';
 import { ImageUploadNode } from '#components/tiptap-node/image-upload-node/image-upload-node-extension.js';
-import { ThemeToggle } from '#components/tiptap-templates/simple/theme-toggle.js';
 import { BlockquoteButton } from '#components/tiptap-ui/blockquote-button/index.js';
 import { CodeBlockButton } from '#components/tiptap-ui/code-block-button/index.js';
 import {
@@ -30,13 +29,8 @@ import { ListDropdownMenu } from '#components/tiptap-ui/list-dropdown-menu/index
 import { MarkButton } from '#components/tiptap-ui/mark-button/index.js';
 import { TextAlignButton } from '#components/tiptap-ui/text-align-button/index.js';
 import { UndoRedoButton } from '#components/tiptap-ui/undo-redo-button/index.js';
-import { Button } from '#components/tiptap-ui-primitive/button/index.js';
-import { Spacer } from '#components/tiptap-ui-primitive/spacer/index.js';
-import {
-  Toolbar,
-  ToolbarGroup,
-  ToolbarSeparator,
-} from '#components/tiptap-ui-primitive/toolbar/index.js';
+import { Button } from '#components/bootstrap-ui-primitive/button/index.js';
+import { Spacer } from '#components/bootstrap-ui-primitive/spacer/index.js';
 import { useCursorVisibility } from '#lib/hooks/use-cursor-visibility.js';
 import { useMobile } from '#lib/hooks/use-mobile.js';
 import { useWindowSize } from '#lib/hooks/use-window-size.js';
@@ -47,6 +41,8 @@ import '#components/tiptap-node/paragraph-node/paragraph-node.scss';
 import { MAX_FILE_SIZE, handleImageUpload } from '#lib/tiptap-utils.js';
 
 import '#components/tiptap-templates/simple/simple-editor.scss';
+import { ButtonGroup } from 'react-bootstrap';
+import { ButtonToolbar } from 'react-bootstrap';
 
 const content = {
   type: 'doc',
@@ -539,23 +535,19 @@ const MainToolbarContent = ({
     <>
       <Spacer />
 
-      <ToolbarGroup>
+      <ButtonGroup>
         <UndoRedoButton action="undo" />
         <UndoRedoButton action="redo" />
-      </ToolbarGroup>
+      </ButtonGroup>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+      <ButtonGroup>
         <HeadingDropdownMenu levels={[1, 2, 3, 4]} />
         <ListDropdownMenu types={['bulletList', 'orderedList', 'taskList']} />
         <BlockquoteButton />
         <CodeBlockButton />
-      </ToolbarGroup>
+      </ButtonGroup>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+      <ButtonGroup>
         <MarkButton type="bold" />
         <MarkButton type="italic" />
         <MarkButton type="strike" />
@@ -567,37 +559,25 @@ const MainToolbarContent = ({
           <ColorHighlightPopoverButton onClick={onHighlighterClick} />
         )}
         {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
-      </ToolbarGroup>
+      </ButtonGroup>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+      <ButtonGroup>
         <MarkButton type="superscript" />
         <MarkButton type="subscript" />
-      </ToolbarGroup>
+      </ButtonGroup>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+      <ButtonGroup>
         <TextAlignButton align="left" />
         <TextAlignButton align="center" />
         <TextAlignButton align="right" />
         <TextAlignButton align="justify" />
-      </ToolbarGroup>
+      </ButtonGroup>
 
-      <ToolbarSeparator />
-
-      <ToolbarGroup>
+      <ButtonGroup>
         <ImageUploadButton text="Add" />
-      </ToolbarGroup>
+      </ButtonGroup>
 
       <Spacer />
-
-      {isMobile && <ToolbarSeparator />}
-
-      <ToolbarGroup>
-        <ThemeToggle />
-      </ToolbarGroup>
     </>
   );
 };
@@ -610,18 +590,14 @@ const MobileToolbarContent = ({
   onBack: () => void;
 }) => (
   <>
-    <ToolbarGroup>
-      <Button data-style="ghost" onClick={onBack}>
-        <i class="bi bi-arrow-left tiptap-button-icon" />
-        {type === 'highlighter' ? (
-          <i class="bi bi-highlighter tiptap-button-icon" />
-        ) : (
-          <i class="bi bi-link tiptap-button-icon" />
-        )}
+    <ButtonGroup>
+      <Button variant="outline-secondary" onClick={onBack}>
+        <i class="bi bi-arrow-left" />
+        {type === 'highlighter' ? <i class="bi bi-highlighter" /> : <i class="bi bi-link" />}
       </Button>
-    </ToolbarGroup>
+    </ButtonGroup>
 
-    <ToolbarSeparator />
+    <Spacer />
 
     {type === 'highlighter' ? <ColorHighlightPopoverContent /> : <LinkContent />}
   </>
@@ -684,7 +660,7 @@ export function SimpleEditor() {
   return (
     // eslint-disable-next-line @eslint-react/no-unstable-context-value
     <EditorContext.Provider value={{ editor }}>
-      <Toolbar
+      <ButtonToolbar
         ref={toolbarRef}
         style={
           isMobile
@@ -706,9 +682,15 @@ export function SimpleEditor() {
             onBack={() => setMobileView('main')}
           />
         )}
-      </Toolbar>
+      </ButtonToolbar>
 
-      <div className="content-wrapper">
+      <div
+        style={{
+          height: `100%`,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin',
+        }}
+      >
         <EditorContent editor={editor} role="presentation" className="simple-editor-content" />
       </div>
     </EditorContext.Provider>

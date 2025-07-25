@@ -1,7 +1,7 @@
 import { type Editor } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 
 export interface ImageUploadButtonProps extends ButtonProps {
@@ -85,8 +85,7 @@ export const ImageUploadButton = React.forwardRef<HTMLButtonElement, ImageUpload
         ref={ref}
         type="button"
         className={className.trim()}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label="Add image"
@@ -97,8 +96,8 @@ export const ImageUploadButton = React.forwardRef<HTMLButtonElement, ImageUpload
       >
         {children || (
           <>
-            <i class="bi bi-image tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <i class="bi bi-image" />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

@@ -1,8 +1,9 @@
 import { type ChainedCommands, type Editor } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
+import clsx from 'clsx';
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 
@@ -27,10 +28,16 @@ export interface TextAlignButtonProps extends ButtonProps {
 }
 
 export const textAlignIcons = {
-  left: ({ className }: { className: string }) => <i class={`bi bi-text-left ${className}`} />,
-  center: ({ className }: { className: string }) => <i class={`bi bi-text-center ${className}`} />,
-  right: ({ className }: { className: string }) => <i class={`bi bi-text-right ${className}`} />,
-  justify: ({ className }: { className: string }) => <i class={`bi bi-justify ${className}`} />,
+  left: ({ className }: { className?: string }) => <i class={clsx(`bi bi-text-left`, className)} />,
+  center: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-text-center`, className)} />
+  ),
+  right: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-text-right`, className)} />
+  ),
+  justify: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-justify`, className)} />
+  ),
 };
 
 export const textAlignShortcutKeys: Partial<Record<TextAlign, string>> = {
@@ -204,9 +211,7 @@ export const TextAlignButton = React.forwardRef<HTMLButtonElement, TextAlignButt
         type="button"
         className={className.trim()}
         disabled={isDisabled}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
-        data-disabled={isDisabled}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={label}
@@ -219,8 +224,8 @@ export const TextAlignButton = React.forwardRef<HTMLButtonElement, TextAlignButt
       >
         {children || (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

@@ -2,9 +2,10 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '#lib/tiptap-utils.js';
+import clsx from 'clsx';
 
 export type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -29,12 +30,12 @@ export interface HeadingButtonProps extends Omit<ButtonProps, 'type'> {
 }
 
 export const headingIcons = {
-  1: ({ className }: { className: string }) => <i class={`bi bi-type-h1 ${className}`} />,
-  2: ({ className }: { className: string }) => <i class={`bi bi-type-h2 ${className}`} />,
-  3: ({ className }: { className: string }) => <i class={`bi bi-type-h3 ${className}`} />,
-  4: ({ className }: { className: string }) => <i class={`bi bi-type-h4 ${className}`} />,
-  5: ({ className }: { className: string }) => <i class={`bi bi-type-h5 ${className}`} />,
-  6: ({ className }: { className: string }) => <i class={`bi bi-type-h6 ${className}`} />,
+  1: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h1', className)} />,
+  2: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h2', className)} />,
+  3: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h3', className)} />,
+  4: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h4', className)} />,
+  5: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h5', className)} />,
+  6: ({ className }: { className?: string }) => <i class={clsx('bi bi-type-h6', className)} />,
 };
 
 export const headingShortcutKeys: Partial<Record<Level, string>> = {
@@ -173,11 +174,9 @@ export const HeadingButton = React.forwardRef<HTMLButtonElement, HeadingButtonPr
     return (
       <Button
         type="button"
+        variant="outline-secondary"
         className={className.trim()}
         disabled={isDisabled}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
-        data-disabled={isDisabled}
         role="button"
         tabIndex={-1}
         aria-label={formattedName}
@@ -190,8 +189,8 @@ export const HeadingButton = React.forwardRef<HTMLButtonElement, HeadingButtonPr
       >
         {children || (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

@@ -2,9 +2,10 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema } from '#lib/tiptap-utils.js';
+import clsx from 'clsx';
 
 export type Mark =
   | 'bold'
@@ -35,19 +36,25 @@ export interface MarkButtonProps extends Omit<ButtonProps, 'type'> {
 }
 
 export const markIcons = {
-  bold: ({ className }: { className: string }) => <i class={`bi bi-type-bold ${className}`} />,
-  italic: ({ className }: { className: string }) => <i class={`bi bi-type-italic ${className}`} />,
-  underline: ({ className }: { className: string }) => (
-    <i class={`bi bi-type-underline ${className}`} />
+  bold: ({ className }: { className?: string }) => <i class={clsx(`bi bi-type-bold`, className)} />,
+  italic: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-type-italic`, className)} />
   ),
-  strike: ({ className }: { className: string }) => (
-    <i class={`bi bi-type-strikethrough ${className}`} />
+  underline: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-type-underline`, className)} />
   ),
-  code: ({ className }: { className: string }) => <i class={`bi bi-code-slash ${className}`} />,
-  superscript: ({ className }: { className: string }) => (
-    <i class={`bi bi-superscript ${className}`} />
+  strike: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-type-strikethrough`, className)} />
   ),
-  subscript: ({ className }: { className: string }) => <i class={`bi bi-subscript ${className}`} />,
+  code: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-code-slash`, className)} />
+  ),
+  superscript: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-superscript`, className)} />
+  ),
+  subscript: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-subscript`, className)} />
+  ),
 };
 
 export const markShortcutKeys: Partial<Record<Mark, string>> = {
@@ -188,9 +195,7 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
         type="button"
         className={className.trim()}
         disabled={isDisabled}
-        data-style="ghost"
-        data-active-state={isActive ? 'on' : 'off'}
-        data-disabled={isDisabled}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={type}
@@ -203,8 +208,8 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
       >
         {children || (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>

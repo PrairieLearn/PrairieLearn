@@ -7,16 +7,11 @@ import {
   getFormattedHeadingName,
   headingIcons,
 } from '#components/tiptap-ui/heading-button/heading-button.js';
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '#components/tiptap-ui-primitive/dropdown-menu/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '#lib/tiptap-utils.js';
+import { Dropdown } from 'react-bootstrap';
+import clsx from 'clsx';
 
 export interface HeadingDropdownMenuProps extends Omit<ButtonProps, 'type'> {
   editor?: Editor | null;
@@ -47,7 +42,7 @@ export function HeadingDropdownMenu({
   );
 
   const getActiveIcon = React.useCallback(() => {
-    if (!editor) return <i class="bi bi-card-heading tiptap-button-icon" />;
+    if (!editor) return <i class="bi bi-card-heading" />;
 
     const activeLevel = levels.find((level) => editor.isActive('heading', { level })) as
       | Level
@@ -56,7 +51,7 @@ export function HeadingDropdownMenu({
     if (!activeLevel) return <i class="bi bi-card-heading" />;
 
     const ActiveIcon = headingIcons[activeLevel];
-    return <ActiveIcon className="tiptap-button-icon" />;
+    return <ActiveIcon />;
   }, [editor, levels]);
 
   const canToggleAnyHeading = React.useCallback((): boolean => {
@@ -86,41 +81,39 @@ export function HeadingDropdownMenu({
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={handleOnOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          disabled={isDisabled}
-          data-style="ghost"
-          data-active-state={isAnyHeadingActive ? 'on' : 'off'}
-          data-disabled={isDisabled}
-          role="button"
-          tabIndex={-1}
-          aria-label="Format text as heading"
-          aria-pressed={isAnyHeadingActive}
-          tooltip="Heading"
-          {...props}
-        >
-          {getActiveIcon()}
-          <i class="bi bi-chevron-down tiptap-button-dropdown-small" />
-        </Button>
-      </DropdownMenuTrigger>
+    <Dropdown show={isOpen} onToggle={handleOnOpenChange}>
+      <Dropdown.Toggle
+        as={Button}
+        disabled={isDisabled}
+        className={clsx(
+          isAnyHeadingActive && 'btn-outline-primary',
+          isDisabled && 'btn-outline-secondary',
+          'btn-sm',
+        )}
+        role="button"
+        tabIndex={-1}
+        aria-label="Format text as heading"
+        tooltip="Heading"
+        aria-pressed={isAnyHeadingActive}
+        {...props}
+      >
+        {getActiveIcon()}
+        <i class="bi bi-chevron-down" />
+      </Dropdown.Toggle>
 
-      <DropdownMenuContent>
-        <DropdownMenuGroup>
-          {levels.map((level) => (
-            <DropdownMenuItem key={`heading-${level}`} asChild>
-              <HeadingButton
-                editor={editor}
-                level={level}
-                text={getFormattedHeadingName(level)}
-                tooltip=""
-              />
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <Dropdown.Menu>
+        {levels.map((level) => (
+          <Dropdown.Item key={`heading-${level}`}>
+            <HeadingButton
+              editor={editor}
+              level={level}
+              text={getFormattedHeadingName(level)}
+              tooltip=""
+            />
+          </Dropdown.Item>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 

@@ -8,16 +8,11 @@ import {
   isListActive,
   listOptions,
 } from '#components/tiptap-ui/list-button/list-button.js';
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '#components/tiptap-ui-primitive/dropdown-menu/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
+
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '#lib/tiptap-utils.js';
+import { Dropdown, DropdownMenu } from 'react-bootstrap';
 
 export interface ListDropdownMenuProps extends Omit<ButtonProps, 'type'> {
   /**
@@ -108,11 +103,7 @@ export function useActiveListIcon(editor: Editor | null, filteredLists: typeof l
   return React.useCallback(() => {
     const activeOption = filteredLists.find((option) => isListActive(editor, option.type));
 
-    return activeOption ? (
-      <activeOption.icon className="tiptap-button-icon" />
-    ) : (
-      <i class="bi bi-list-ul tiptap-button-icon" />
-    );
+    return activeOption ? <activeOption.icon /> : <i class="bi bi-list-ul" />;
   }, [editor, filteredLists]);
 }
 
@@ -152,39 +143,35 @@ export function ListDropdownMenu({
   }
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={handleOnOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          data-style="ghost"
-          data-active-state={isAnyActive ? 'on' : 'off'}
-          role="button"
-          tabIndex={-1}
-          aria-label="List options"
-          tooltip="List"
-          {...props}
-        >
-          {getActiveIcon()}
-          <i class="bi bi-chevron-down tiptap-button-dropdown-small" />
-        </Button>
-      </DropdownMenuTrigger>
+    <Dropdown show={isOpen} onToggle={handleOnOpenChange}>
+      <Dropdown.Toggle
+        as={Button}
+        type="button"
+        variant="outline-secondary"
+        role="button"
+        tabIndex={-1}
+        aria-label="List options"
+        tooltip="List"
+        {...props}
+      >
+        {getActiveIcon()}
+        <i class="bi bi-chevron-down" />
+      </Dropdown.Toggle>
 
-      <DropdownMenuContent>
-        <DropdownMenuGroup>
-          {filteredLists.map((option) => (
-            <DropdownMenuItem key={option.type} asChild>
-              <ListButton
-                editor={editor}
-                type={option.type}
-                text={option.label}
-                hideWhenUnavailable={hideWhenUnavailable}
-                tooltip=""
-              />
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <Dropdown.Menu>
+        {filteredLists.map((option) => (
+          <Dropdown.Item key={option.type}>
+            <ListButton
+              editor={editor}
+              type={option.type}
+              text={option.label}
+              hideWhenUnavailable={hideWhenUnavailable}
+              tooltip=""
+            />
+          </Dropdown.Item>
+        ))}
+      </Dropdown.Menu>
+    </Dropdown>
   );
 }
 

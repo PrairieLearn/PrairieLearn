@@ -1,8 +1,9 @@
 import { type Editor } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '#components/tiptap-ui-primitive/button/index.js';
+import { Button, type ButtonProps } from '#components/bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '#lib/hooks/use-tiptap-editor.js';
+import clsx from 'clsx';
 
 export type HistoryAction = 'undo' | 'redo';
 
@@ -25,11 +26,11 @@ export interface UndoRedoButtonProps extends ButtonProps {
 }
 
 export const historyIcons = {
-  undo: ({ className }: { className: string }) => (
-    <i class={`bi bi-arrow-counterclockwise ${className}`} />
+  undo: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-arrow-counterclockwise`, className)} />
   ),
-  redo: ({ className }: { className: string }) => (
-    <i class={`bi bi-arrow-clockwise ${className}`} />
+  redo: ({ className }: { className?: string }) => (
+    <i class={clsx(`bi bi-arrow-clockwise`, className)} />
   ),
 };
 
@@ -163,8 +164,7 @@ export const UndoRedoButton = React.forwardRef<HTMLButtonElement, UndoRedoButton
         type="button"
         className={className.trim()}
         disabled={isDisabled}
-        data-style="ghost"
-        data-disabled={isDisabled}
+        variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={actionLabel}
@@ -175,8 +175,8 @@ export const UndoRedoButton = React.forwardRef<HTMLButtonElement, UndoRedoButton
       >
         {children || (
           <>
-            <Icon className="tiptap-button-icon" />
-            {text && <span className="tiptap-button-text">{text}</span>}
+            <Icon />
+            {text && <span>{text}</span>}
           </>
         )}
       </Button>
