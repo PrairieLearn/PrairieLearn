@@ -441,7 +441,7 @@
       if (dataUrl && !hiddenCaptureInput.value) {
         this.updateCaptureButtonTextForRetake();
       }
-      
+
       hiddenCaptureInput.value = dataUrl;
     }
 
@@ -541,17 +541,21 @@
     loadCapturePreview({ data, type }) {
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
     }
-    
-    /** 
-     * Enables the hidden capture changed flag, triggering a change in the form data so that
-     * navigating away from the page will warn the user about unsaved changes.
-     * 
-     * Called when the user captures a new image or crops/rotates an existing one.
+
+    /**
+     * Updates the hidden capture changed flag, ensuring that users receive an unsaved changes
+     * warning if they attempt to leave the question without saving.
+     *
+     * This flag is not included in the submission data; it is used solely by the question
+     * unload event handler to detect unsaved edits to the image (e.g., after
+     * capturing, cropping, or rotating).
      */
     setHiddenCaptureChangedFlag(value) {
-      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector('.js-hidden-capture-changed-flag');
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
       this.ensureElementsExist({
-        hiddenCaptureChangedFlag
+        hiddenCaptureChangedFlag,
       });
 
       hiddenCaptureChangedFlag.value = value;
@@ -746,12 +750,12 @@
         '.js-hidden-capture-changed-flag',
       );
       this.ensureElementsExist({
-        hiddenCaptureChangedFlag
+        hiddenCaptureChangedFlag,
       });
-      
+
       this.previousHiddenCaptureChangedFlagValue = hiddenCaptureChangedFlag.value === 'true';
 
-      // To keep this logic simple, this assumes that the user will make changes if they are in the crop/rotate interface.
+      // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
       this.setHiddenCaptureChangedFlag(true);
 
       this.openContainer('crop-rotate');
@@ -1098,11 +1102,9 @@
       this.openContainer('capture-preview');
       this.setHiddenCaptureInputToCapturePreview();
 
-      /** 
-       * Restore hidden capture changed flag. Particularly useful if the user had no previous edits; 
-       * this will be false so that no warning appears that there are unsaved changes. 
-       */
-      this.setHiddenCaptureChangedFlag(this.previousEditedState);
+      // Restore the previous hidden capture changed flag value.
+      // Needed for the case that the user had no changes before starting crop/rotate.
+      this.setHiddenCaptureChangedFlag(this.previousHiddenCaptureChangedFlagValue);
     }
   }
 
