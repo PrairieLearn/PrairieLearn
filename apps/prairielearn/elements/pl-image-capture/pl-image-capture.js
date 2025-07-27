@@ -322,6 +322,7 @@
           data: msg.file_content,
           type: 'image/jpeg',
         });
+        this.setHiddenCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
