@@ -1,4 +1,4 @@
-/* global QRCode, io, bootstrap, Cropper */
+/* global QRCode, io, bootstrap, Cropper, Panzoom */
 
 (() => {
   class PLImageCapture {
@@ -510,6 +510,11 @@
           { once: true },
         );
       }
+
+      Panzoom(capturePreview, {
+        maxScale: 3,
+        contain: 'inside'
+      });
 
       if (this.editable) {
         this.setHiddenCaptureInputValue(dataUrl);

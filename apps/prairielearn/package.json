@@ -27,6 +27,7 @@
     "@js-temporal/polyfill": "^0.5.1",
     "@node-saml/passport-saml": "^5.0.1",
     "@octokit/rest": "^22.0.0",
+    "@panzoom/panzoom": "^4.6.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/bind-mount": "workspace:^",
     "@prairielearn/browser-utils": "workspace:^",
