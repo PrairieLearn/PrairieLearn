@@ -31,6 +31,7 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
+      this.previousHiddenCaptureChangedFlagValue = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
@@ -439,6 +440,7 @@
       if (dataUrl && !hiddenCaptureInput.value) {
         this.updateCaptureButtonTextForRetake();
       }
+      
       hiddenCaptureInput.value = dataUrl;
     }
 
@@ -537,6 +539,22 @@
 
     loadCapturePreview({ data, type }) {
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
+    }
+    
+    /** 
+     * Enables the hidden capture changed flag, triggering a change in the form data so that
+     * navigating away from the page will warn the user about unsaved changes.
+     * 
+     * Called when the user captures a new image or crops/rotates an existing one.
+     */
+    setHiddenCaptureChangedFlag(value) {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector('.js-hidden-capture-changed-flag');
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag
+      });
+
+      hiddenCaptureChangedFlag.value = value;
+      hiddenCaptureChangedFlag.disabled = false;
     }
 
     async startLocalCameraCapture() {
@@ -660,6 +678,7 @@
       this.loadCapturePreviewFromDataUrl({
         dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
+      this.setHiddenCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -722,6 +741,18 @@
     }
 
     async startCropRotate() {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag
+      });
+      
+      this.previousHiddenCaptureChangedFlagValue = hiddenCaptureChangedFlag.value === 'true';
+
+      // To keep this logic simple, this assumes that the user will make changes if they are in the crop/rotate interface.
+      this.setHiddenCaptureChangedFlag(true);
+
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -1065,6 +1096,12 @@
 
       this.openContainer('capture-preview');
       this.setHiddenCaptureInputToCapturePreview();
+
+      /** 
+       * Restore hidden capture changed flag. Particularly useful if the user had no previous edits; 
+       * this will be false so that no warning appears that there are unsaved changes. 
+       */
+      this.setHiddenCaptureChangedFlag(this.previousEditedState);
     }
   }
 
