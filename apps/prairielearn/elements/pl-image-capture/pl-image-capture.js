@@ -511,10 +511,26 @@
         );
       }
 
-      Panzoom(capturePreview, {
+      const panzoom = Panzoom(capturePreview, { 
+        contain: 'inside',
+        minScale: 1,
         maxScale: 3,
-        contain: 'inside'
+        panOnlyWhenZoomed: true
       });
+
+      const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+      const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+      this.ensureElementsExist({
+        zoomInButton,
+        zoomOutButton,
+      });
+      zoomInButton.addEventListener('click', () => {
+        panzoom.zoomIn();
+      });
+      zoomOutButton.addEventListener('click', () => {
+        panzoom.zoomOut();
+      });
+
 
       if (this.editable) {
         this.setHiddenCaptureInputValue(dataUrl);

@@ -31,13 +31,29 @@ $(function() {
       disabled
     />
     {{/editable}}
-    <div class="js-uploaded-image-container">
-      <div
-        class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
-      >
-        <div class="spinning-wheel spinner-border">
-          <span class="visually-hidden">Loading...</span>
+    <div class="position-relative">
+      <div class="js-uploaded-image-container position-relative">
+        <div
+          class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
+        >
+          <div class="spinning-wheel spinner-border">
+            <span class="visually-hidden">Loading...</span>
+          </div>
         </div>
+      </div>
+      <div class="position-absolute top-0 end-0 m-2">
+        <button 
+          type="button" 
+          class="js-zoom-in-button btn btn-light border"
+        >
+          <i class="bi bi-zoom-in opacity-80"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-zoom-out-button btn btn-light border"
+        >
+          <i class="bi bi-zoom-out opacity-80"></i>
+        </button>
       </div>
     </div>
 
