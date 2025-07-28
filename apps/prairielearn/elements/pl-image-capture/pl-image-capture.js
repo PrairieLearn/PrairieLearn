@@ -531,7 +531,7 @@
           this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
             contain: 'outside',
             minScale: 1,
-            maxScale: 5
+            maxScale: 5,
           });
 
           zoomInButton.addEventListener('click', () => {
