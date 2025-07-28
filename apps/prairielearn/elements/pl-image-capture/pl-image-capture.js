@@ -525,20 +525,33 @@
         });
 
         buttonsContainer.classList.remove('d-none');
+        if (!this.imageCapturePreviewPanzoom) {
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+            contain: 'outside',
+            minScale: 1,
+            maxScale: 5,
+          });
 
-        const panzoom = Panzoom(capturePreview, {
-          contain: 'outside',
-          minScale: 1,
-          maxScale: 3,
-          panOnlyWhenZoomed: true,
-        });
+          zoomInButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomIn();
+          });
+          zoomOutButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomOut();
+          });
+          capturePreview.parentElement.addEventListener(
+            'wheel',
+            this.imageCapturePreviewPanzoom.zoomWithWheel,
+          );
 
-        zoomInButton.addEventListener('click', () => {
-          panzoom.zoomIn();
-        });
-        zoomOutButton.addEventListener('click', () => {
-          panzoom.zoomOut();
-        });
+          // Only if the image is zoomed in, indicate panning is allowed.
+          // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+          capturePreview.addEventListener('panzoomchange', (e) => {
+            const scale = e.detail.scale;
+            capturePreview.style.cursor = scale <= 1 ? 'default' : 'move';
+          });
+        } else {
+          this.imageCapturePreviewPanzoom.reset({ animate: false });
+        }
       }
 
       if (this.editable) {
