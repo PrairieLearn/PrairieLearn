@@ -512,19 +512,21 @@
       }
 
       if (!this.editable) {
-        // Only visible when the image capture is not editable to prevent
-        // confusion between zoom and crop/rotate.
-        const buttonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
-          buttonsContainer,
+          zoomButtonsContainer,
           zoomInButton,
           zoomOutButton,
         });
 
-        buttonsContainer.classList.remove('d-none');
+        // Display the zoom buttons only when the image is not editable to
+        // prevent confusion with crop/rotate functionality, which is
+        // available when the image is editable.
+        zoomButtonsContainer.classList.remove('d-none');
+
         if (!this.imageCapturePreviewPanzoom) {
           this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
             contain: 'outside',
