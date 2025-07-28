@@ -1,5 +1,11 @@
 /* global QRCode, io, bootstrap, Cropper, Panzoom */
 
+/** Minimum zoom scale for a submitted image capture preview */
+const MIN_ZOOM_SCALE = 1;
+
+/** Maximum zoom scale for a submitted image capture preview */
+const MAX_ZOOM_SCALE = 5;
+
 (() => {
   class PLImageCapture {
     constructor(uuid) {
@@ -534,8 +540,8 @@
         if (!this.imageCapturePreviewPanzoom) {
           this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
             contain: 'outside',
-            minScale: 1,
-            maxScale: 5,
+            minScale: MIN_ZOOM_SCALE,
+            maxScale: MAX_ZOOM_SCALE,
           });
 
           zoomInButton.addEventListener('click', () => {
@@ -545,11 +551,39 @@
             this.imageCapturePreviewPanzoom.zoomOut();
           });
 
-          // Only when zoomed in, indicate that panning is available.
-          // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
-          capturePreview.addEventListener('panzoomchange', (e) => {
+          let zoomEnabled = false;
+          capturePreview.addEventListener('panzoomzoom', (e) => {
             const scale = e.detail.scale;
-            capturePreview.style.cursor = scale <= 1 ? 'default' : 'move';
+            zoomEnabled = scale > 1;
+            capturePreview.style.cursor = zoomEnabled ? 'grab' : 'default';
+
+            // Only when zoomed in, indicate that panning is available.
+            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+            if (scale === MIN_ZOOM_SCALE) {
+              zoomOutButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomOutButton.classList.remove('disabled', 'opacity-10');
+            }
+
+            if (scale >= MAX_ZOOM_SCALE) {
+              zoomInButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomInButton.classList.remove('disabled', 'opacity-10');
+            }
+          });
+
+          capturePreview.addEventListener('panzoomstart', () => {
+            if (zoomEnabled) {
+              capturePreview.style.cursor = 'grabbing';
+            } else {
+              capturePreview.style.cursor = 'default';
+            }
+          });
+
+          capturePreview.addEventListener('panzoomend', () => {
+            if (zoomEnabled) {
+              capturePreview.style.cursor = 'grab';
+            }
           });
         } else {
           this.imageCapturePreviewPanzoom.reset({ animate: false });
