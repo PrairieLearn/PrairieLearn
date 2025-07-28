@@ -31,7 +31,8 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
-      this.previousHiddenCaptureChangedFlagValue = false;
+      /** Flag representing the current state of the capture before entering crop/zoom */
+      this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
@@ -322,7 +323,7 @@
           data: msg.file_content,
           type: 'image/jpeg',
         });
-        this.setHiddenCaptureChangedFlag(true);
+        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -550,7 +551,7 @@
      * unload event handler to detect unsaved edits to the image (e.g., after
      * capturing, cropping, or rotating).
      */
-    setHiddenCaptureChangedFlag(value) {
+    setCaptureChangedFlag(value) {
       const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
         '.js-hidden-capture-changed-flag',
       );
@@ -683,7 +684,7 @@
       this.loadCapturePreviewFromDataUrl({
         dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
-      this.setHiddenCaptureChangedFlag(true);
+      this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -753,10 +754,10 @@
         hiddenCaptureChangedFlag,
       });
 
-      this.previousHiddenCaptureChangedFlagValue = hiddenCaptureChangedFlag.value === 'true';
+      this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
 
       // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
-      this.setHiddenCaptureChangedFlag(true);
+      this.setCaptureChangedFlag(true);
 
       this.openContainer('crop-rotate');
 
@@ -1104,7 +1105,7 @@
 
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
-      this.setHiddenCaptureChangedFlag(this.previousHiddenCaptureChangedFlagValue);
+      this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
   }
 
