@@ -1,4 +1,10 @@
-/* global QRCode, io, bootstrap, Cropper */
+/* global QRCode, io, bootstrap, Cropper, Panzoom */
+
+/** Minimum zoom scale for the submitted image preview */
+const MIN_ZOOM_SCALE = 1;
+
+/** Maximum zoom scale for the submitted image preview */
+const MAX_ZOOM_SCALE = 5;
 
 (() => {
   class PLImageCapture {
@@ -513,6 +519,75 @@
           },
           { once: true },
         );
+      }
+
+      if (!this.editable) {
+        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+
+        this.ensureElementsExist({
+          zoomButtonsContainer,
+          zoomInButton,
+          zoomOutButton,
+        });
+
+        // Display the zoom buttons only when the image is not editable to
+        // prevent confusion with crop/rotate functionality, which is
+        // available when the image is editable.
+        zoomButtonsContainer.classList.remove('d-none');
+
+        if (!this.imageCapturePreviewPanzoom) {
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+            contain: 'outside',
+            minScale: MIN_ZOOM_SCALE,
+            maxScale: MAX_ZOOM_SCALE,
+          });
+
+          zoomInButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomIn();
+          });
+          zoomOutButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomOut();
+          });
+
+          let panEnabled = false;
+          capturePreview.addEventListener('panzoomzoom', (e) => {
+            const scale = e.detail.scale;
+
+            panEnabled = scale > 1;
+
+            // We only indicate that panning is available when the image is zoomed in.
+            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+            capturePreview.style.cursor = panEnabled ? 'grab' : 'default';
+
+            if (scale === MIN_ZOOM_SCALE) {
+              zoomOutButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomOutButton.classList.remove('disabled', 'opacity-10');
+            }
+
+            if (scale >= MAX_ZOOM_SCALE) {
+              zoomInButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomInButton.classList.remove('disabled', 'opacity-10');
+            }
+          });
+
+          capturePreview.addEventListener('panzoomstart', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grabbing';
+            }
+          });
+
+          capturePreview.addEventListener('panzoomend', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grab';
+            }
+          });
+        } else {
+          this.imageCapturePreviewPanzoom.reset({ animate: false });
+        }
       }
 
       if (this.editable) {
