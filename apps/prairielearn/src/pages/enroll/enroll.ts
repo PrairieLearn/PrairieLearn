@@ -4,9 +4,14 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
+import {
+  CourseInstanceSchema,
+  CourseSchema,
+  IdSchema,
+  InstitutionSchema,
+} from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureCheckedEnrollment } from '../../models/enrollment.js';
@@ -30,9 +35,7 @@ router.get('/', [
     if (res.locals.authn_provider_name === 'LTI') {
       const result = await queryRow(
         sql.lti_course_instance_lookup,
-        {
-          course_instance_id: res.locals.authn_user.lti_course_instance_id,
-        },
+        { course_instance_id: res.locals.authn_user.lti_course_instance_id },
         z.object({
           plc_short_name: z.string(),
           ci_long_name: z.string(),
@@ -100,11 +103,15 @@ router.post('/', [
       flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
-      await queryZeroOrOneRowAsync(sql.unenroll, {
-        course_instance_id: req.body.course_instance_id,
-        user_id: res.locals.authn_user.user_id,
-        req_date: res.locals.req_date,
-      });
+      await queryOptionalRow(
+        sql.unenroll,
+        {
+          course_instance_id: req.body.course_instance_id,
+          user_id: res.locals.authn_user.user_id,
+          req_date: res.locals.req_date,
+        },
+        IdSchema,
+      );
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {

@@ -16,12 +16,10 @@ export { defaultPool, type CursorIterator, type QueryParams };
 // documentation from the `PostgresPool` class. We mirror the documentation
 // here for *async methods* in VSCode intellisense.
 
-export const init = defaultPool.init.bind(defaultPool);
 /**
  * Creates a new connection pool and attempts to connect to the database.
  */
 export const initAsync = defaultPool.initAsync.bind(defaultPool);
-export const close = defaultPool.close.bind(defaultPool);
 /**
  * Closes the connection pool.
  */
@@ -132,19 +130,30 @@ export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 /**
- * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
- * the given Zod schema. If the query doesn't return exactly one row, an error
- * is thrown.
+ * Executes a query with the specified parameters. Errors if the query does
+ * not return exactly one row that conforms to the given Zod schema.
+ *
  */
 export const queryRow = defaultPool.queryRow.bind(defaultPool);
 /**
- * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
- * (if any) with the given Zod schema. Returns either null or a single row, and
- * errors otherwise.
+ * Executes a query with the specified parameters. Returns either null or a
+ * single row that conforms to the given Zod schema, and errors otherwise.
  */
 export const queryOptionalRow = defaultPool.queryOptionalRow.bind(defaultPool);
+/**
+ * Calls the given function with the specified parameters.
+ * Errors if the function does not return anything.
+ */
 export const callRows = defaultPool.callRows.bind(defaultPool);
+/**
+ * Calls the given function with the specified parameters. Errors if the
+ * function does not return exactly one row.
+ */
 export const callRow = defaultPool.callRow.bind(defaultPool);
+/**
+ * Calls the given function with the specified parameters. Returns either null
+ * or a single row, and errors otherwise.
+ */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
 /**
  * Returns a {@link Cursor} for the given query. The cursor can be used to
@@ -176,7 +185,6 @@ export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
  * @return schema in use (may be `null` to indicate no schema)
  */
 export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
-export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
 /**
  * Generate, set, and return a random schema name.
  *
