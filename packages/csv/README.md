@@ -16,7 +16,7 @@ import { IdSchema } from './lib/db-types.js';
 const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, IdSchema);
 const output = createWriteStream('workspaces.csv');
 
-const stringifier = stringifyStream<IdSchema>({
+const stringifier = stringifyStream<string>({
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
   // Optionally provide a function to transform each item in the stream.
