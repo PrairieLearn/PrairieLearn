@@ -71,7 +71,6 @@ export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultP
  * will be committed otherwise.
  */
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *

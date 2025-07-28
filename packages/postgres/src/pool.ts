@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Readable, Transform } from 'node:stream';
-import { callbackify } from 'node:util';
 
 import debugfn from 'debug';
 import _ from 'lodash';
@@ -221,11 +220,6 @@ export class PostgresPool {
   }
 
   /**
-   * Creates a new connection pool and attempts to connect to the database.
-   */
-  init = callbackify(this.initAsync);
-
-  /**
    * Closes the connection pool.
    */
   async closeAsync(): Promise<void> {
@@ -233,11 +227,6 @@ export class PostgresPool {
     await this.pool.end();
     this.pool = null;
   }
-
-  /**
-   * Closes the connection pool.
-   */
-  close = callbackify(this.closeAsync);
 
   /**
    * Gets a new client from the connection pool. If `err` is not null
@@ -482,11 +471,6 @@ export class PostgresPool {
   }
 
   /**
-   * Executes a query with the specified parameters.
-   */
-  query = callbackify(this.queryAsync);
-
-  /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
    */
@@ -724,6 +708,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model>[]>;
+  /**
+   * Calls the given function with the specified parameters.
+   * Errors if the function does not return anything.
+   */
   async callRows<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -747,6 +735,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model>>;
+  /**
+   * Calls the given function with the specified parameters. Errors if the
+   * function does not return exactly one row.
+   */
   async callRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -772,6 +764,10 @@ export class PostgresPool {
     params: any[],
     model: Model,
   ): Promise<z.infer<Model> | null>;
+  /**
+   * Calls the given function with the specified parameters. Returns either null
+   * or a single row, and errors otherwise.
+   */
   async callOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,
     paramsOrSchema: any[] | Model,
@@ -953,11 +949,6 @@ export class PostgresPool {
     await this.setSearchSchema(schema);
     return schema;
   }
-
-  /**
-   * Generate, set, and return a random schema name.
-   */
-  setRandomSearchSchema = callbackify(this.setRandomSearchSchemaAsync);
 
   /** The number of established connections. */
   get totalCount() {
