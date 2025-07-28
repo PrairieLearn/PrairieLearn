@@ -1,4 +1,3 @@
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
@@ -116,7 +115,7 @@ export function InstanceQuestion({
             resLocals,
             questionContext: 'manual_grading',
             showFooter: false,
-            aiGradingInfo
+            aiGradingInfo,
           })}
         </div>
 

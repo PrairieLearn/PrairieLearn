@@ -1,11 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import type { ChatCompletionContentPart, ChatCompletionContentPartImage, ChatCompletionContentPartInputAudio, ChatCompletionContentPartRefusal, ChatCompletionContentPartText, ChatCompletionMessage, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -22,7 +21,7 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { formatHtmlWithPrettier, formatJsonWithPrettier } from '../../../lib/prettier.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -148,13 +147,17 @@ router.get(
               for (const part of message.content) {
                 if (part.type === 'image_url') {
                   imageUrls.push(part.image_url.url);
-                } 
+                }
               }
-            } 
+            }
           }
         }
 
-        const formattedPrompt = (await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2))).replaceAll('\\n','\n').trimStart();
+        const formattedPrompt = (
+          await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2))
+        )
+          .replaceAll('\\n', '\n')
+          .trimStart();
 
         aiGradingInfo = {
           aiGradingAvailable,

@@ -1,4 +1,3 @@
-
 import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -17,12 +16,12 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { AIGradingInfo } from '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
-import type { AIGradingInfo } from '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -36,7 +35,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
-  aiGradingInfo
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -106,7 +105,8 @@ export function QuestionContainer({
           : ''
       }
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      (aiGradingInfo && aiGradingInfo.prompt)
+      aiGradingInfo &&
+      aiGradingInfo.prompt
         ? AIGradingPrompt(aiGradingInfo.prompt, aiGradingInfo.imageUrls)
         : ''}
       ${submissions.length > 0
@@ -156,28 +156,34 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt(
-  prompt: string,
-  imageUrls: string[]
-) {
+function AIGradingPrompt(prompt: string, imageUrls: string[]) {
   return html`
     <div class="card mb-3 grading-block">
       <div class="card-header bg-secondary text-white">
         <h2>AI Grading Prompt</h2>
       </div>
-
-      <div class="card-body">
-        <pre class="mb-0"><code>${prompt}</code></pre>
-
-        ${imageUrls.length > 0
-          ? html`
-              <div class="mt-3">
-                <p class="fw-medium">Images sent in prompt</p>
-                ${imageUrls.map((url) => html`<img src="${url}" alt="AI Grading Image" class="img-fluid mb-2" />`)}
-              </div>
-            `
-          : ''}
-      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item my-0">
+          <h3 class="card-title h5 mt-2 mb-3">Raw prompt</h3>
+          <pre class="mb-0"><code>${prompt}</code></pre>
+        </li>
+        <li class="list-group-item my-0">
+          ${imageUrls.length > 0
+            ? html`
+                <h3 class="card-title h5 mt-2 mb-3">Prompt images</h3>
+                ${imageUrls.map(
+                  (url) =>
+                    html`<img
+                      src="${url}"
+                      alt="AI Grading Image"
+                      class="img-fluid mb-2"
+                      style="max-height: 600px"
+                    />`,
+                )}
+              `
+            : ''}
+        </li>
+      </ul>
     </div>
   `;
 }

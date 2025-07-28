@@ -121,9 +121,12 @@ function RubricItems({
       : null;
 
   return html`
-    ${aiGradingInfo?.aiGradingAvailable
+    ${aiGradingInfo?.aiGradingAvailable && aiGradingInfo.manualGradingAvailable
       ? html`
-          <div class="d-flex align-items-center gap-2 text-secondary mb-1">
+          <div
+            class="d-flex align-items-center gap-2 text-secondary mb-1"
+            style="padding-left: 3px;"
+          >
             <div data-bs-toggle="tooltip" data-bs-title="AI grading">
               <i class="bi bi-stars"></i>
             </div>
