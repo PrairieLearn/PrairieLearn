@@ -31,6 +31,8 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
+      /** Flag representing the current state of the capture before entering crop/zoom */
+      this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
@@ -81,25 +83,12 @@
         '.js-cancel-local-camera-button',
       );
 
-      const retakeLocalCameraImageButton = this.imageCaptureDiv.querySelector(
-        '.js-retake-local-camera-image-button',
-      );
-      const confirmLocalCameraImageButton = this.imageCaptureDiv.querySelector(
-        '.js-confirm-local-camera-image-button',
-      );
-      const cancelLocalCameraConfirmationButton = this.imageCaptureDiv.querySelector(
-        '.js-cancel-local-camera-confirmation-button',
-      );
-
       const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
 
       this.ensureElementsExist({
         captureWithLocalCameraButton,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
-        retakeLocalCameraImageButton,
-        confirmLocalCameraImageButton,
-        cancelLocalCameraConfirmationButton,
         applyChangesButton,
       });
 
@@ -113,19 +102,6 @@
 
       cancelLocalCameraButton.addEventListener('click', () => {
         this.cancelLocalCameraCapture();
-      });
-
-      retakeLocalCameraImageButton.addEventListener('click', () => {
-        this.cancelLocalCameraCapture();
-        this.startLocalCameraCapture();
-      });
-
-      confirmLocalCameraImageButton.addEventListener('click', () => {
-        this.confirmLocalCameraCapture();
-      });
-
-      cancelLocalCameraConfirmationButton.addEventListener('click', () => {
-        this.cancelConfirmationLocalCamera();
       });
 
       applyChangesButton.addEventListener('click', () => {
@@ -214,7 +190,7 @@
     /**
      * When the user clicks Enter or Space, apply any pending changes based on the current container.
      * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in local-camera-confirmation, confirm the local camera capture.
+     * - If in local-camera-capture, capture the current image.
      */
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
@@ -222,8 +198,8 @@
           event.preventDefault();
           if (this.selectedContainerName === 'crop-rotate') {
             this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'local-camera-confirmation') {
-            this.confirmLocalCameraCapture();
+          } else if (this.selectedContainerName === 'local-camera-capture') {
+            this.handleCaptureImage();
           }
         }
       });
@@ -233,17 +209,10 @@
      * Show the specified container within the image capture element and hide all others.
      *
      * @param {string} containerName The name of the container to open. Valid values are:
-     * 'capture-preview', 'local-camera-capture', or 'local-camera-confirmation'.
+     * 'capture-preview', 'local-camera-capture', 'crop-rotate'
      */
     openContainer(containerName) {
-      if (
-        ![
-          'capture-preview',
-          'local-camera-capture',
-          'local-camera-confirmation',
-          'crop-rotate',
-        ].includes(containerName)
-      ) {
+      if (!['capture-preview', 'local-camera-capture', 'crop-rotate'].includes(containerName)) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
 
@@ -257,18 +226,12 @@
         '.js-local-camera-capture-container',
       );
 
-      // Displays the image captured from the local camera and allows the user to confirm or retake it.
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-
       // Displays an interface for cropping and rotating the captured image.
       const cropRotateContainer = this.imageCaptureDiv.querySelector('.js-crop-rotate-container');
 
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        localCameraConfirmationContainer,
         cropRotateContainer,
       });
 
@@ -282,11 +245,6 @@
         {
           name: 'local-camera-capture',
           element: localCameraCaptureContainer,
-          flex: true,
-        },
-        {
-          name: 'local-camera-confirmation',
-          element: localCameraConfirmationContainer,
           flex: true,
         },
         {
@@ -365,6 +323,7 @@
           data: msg.file_content,
           type: 'image/jpeg',
         });
+        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -394,10 +353,9 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user might upload an image while in the crop-rotate or local camera confirmation state.
-          // We discard any pending changes or captured images and show the capture preview, since
-          // the user's most recent action was to capture an image externally.
           if (this.selectedContainerName === 'crop-rotate') {
+            // We discard any pending changes or captured images and show the capture preview, since
+            // the user's most recent action was to capture an image externally.
             await this.revertToPreviousCropRotateState();
           }
           this.openContainer('capture-preview');
@@ -481,7 +439,40 @@
         hiddenCaptureInput,
       });
 
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtonTextForRetake();
+      }
+
       hiddenCaptureInput.value = dataUrl;
+    }
+
+    /**
+     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     */
+    updateCaptureButtonTextForRetake() {
+      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-local-camera-button',
+      );
+      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
+      this.ensureElementsExist({
+        captureWithLocalCameraButtonSpan,
+      });
+      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+
+      if (!this.mobile_capture_enabled) {
+        return;
+      }
+      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-mobile-device-button',
+      );
+      const captureWithMobileDeviceButtonSpan =
+        captureWithMobileDeviceButton?.querySelector('span');
+
+      this.ensureElementsExist({
+        captureWithMobileDeviceButtonSpan,
+      });
+
+      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
     }
 
     /**
@@ -552,6 +543,28 @@
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
     }
 
+    /**
+     * Updates the hidden capture changed flag, ensuring that users receive an unsaved changes
+     * warning if they attempt to leave the question without saving.
+     *
+     * This flag is not included in the submission data; it is used solely by the question
+     * unload event handler to detect unsaved edits to the image (e.g., after
+     * capturing, cropping, or rotating).
+     */
+    setCaptureChangedFlag(value) {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      hiddenCaptureChangedFlag.value = value;
+
+      // Disable the flag if no changes have been made.
+      hiddenCaptureChangedFlag.disabled = !value;
+    }
+
     async startLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
@@ -561,10 +574,6 @@
       );
       const localCameraErrorMessage = localCameraCaptureContainer.querySelector(
         '.js-local-camera-error-message',
-      );
-
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
       );
 
       const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
@@ -577,7 +586,6 @@
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraErrorMessage,
-        localCameraConfirmationContainer,
         localCameraVideo,
         localCameraInstructions,
       });
@@ -649,19 +657,17 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-      const localCameraImagePreviewCanvas = this.imageCaptureDiv.querySelector(
+      const localCameraImagePreviewCanvas = localCameraCaptureContainer.querySelector(
         '.js-local-camera-image-preview',
       );
       const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
         localCameraCaptureContainer,
-        localCameraConfirmationContainer,
         localCameraImagePreviewCanvas,
         localCameraVideo,
+        hiddenCaptureInput,
       });
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
@@ -676,39 +682,11 @@
           localCameraVideo.videoHeight,
         );
 
-      this.openContainer('local-camera-confirmation');
-
       this.deactivateVideoStream();
-
-      this.setHiddenCaptureInputValue(localCameraImagePreviewCanvas.toDataURL('image/jpeg'));
-    }
-
-    async confirmLocalCameraCapture() {
-      const imagePreviewCanvas = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-image-preview',
-      );
-
-      this.ensureElementsExist({
-        imagePreviewCanvas,
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
-
-      this.loadCapturePreviewFromDataUrl({ dataUrl: imagePreviewCanvas.toDataURL('image/jpeg') });
-      this.closeConfirmationContainer();
-    }
-
-    closeConfirmationContainer() {
-      const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.js-capture-preview-container',
-      );
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-
-      this.ensureElementsExist({
-        capturePreviewContainer,
-        localCameraConfirmationContainer,
-      });
-
+      this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -735,24 +713,6 @@
       localCameraErrorMessage.classList.add('d-none');
 
       this.deactivateVideoStream();
-    }
-
-    cancelConfirmationLocalCamera() {
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-      const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.js-capture-preview-container',
-      );
-
-      this.ensureElementsExist({
-        localCameraConfirmationContainer,
-        capturePreviewContainer,
-      });
-
-      this.openContainer('capture-preview');
-
-      this.setHiddenCaptureInputToCapturePreview();
     }
 
     /**
@@ -789,6 +749,18 @@
     }
 
     async startCropRotate() {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
+
+      // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
+      this.setCaptureChangedFlag(true);
+
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -1132,6 +1104,10 @@
 
       this.openContainer('capture-preview');
       this.setHiddenCaptureInputToCapturePreview();
+
+      // Restore the previous hidden capture changed flag value.
+      // Needed for the case that the user had no changes before starting crop/rotate.
+      this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
   }
 

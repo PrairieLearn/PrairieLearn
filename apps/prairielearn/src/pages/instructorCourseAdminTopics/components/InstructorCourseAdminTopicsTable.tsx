@@ -1,7 +1,7 @@
 import { useState } from 'preact/compat';
-
-import { TopicBadgeJsx } from '../../../components/TopicBadge.js';
-import { TopicDescriptionJsx } from '../../../components/TopicDescription.js';
+import { TopicBadge } from '../../../components/TopicBadge.js';
+import { TopicDescription } from '../../../components/TopicDescription.js';
+        
 import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
@@ -170,11 +170,11 @@ export function InstructorCourseAdminTopicsTable({
                     )}
                     <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
-                      <TopicBadgeJsx topic={topic} />
+                      <TopicBadge topic={topic} />
                     </td>
                     <td class="align-middle">{topic.color}</td>
                     <td class="align-middle">
-                      <TopicDescriptionJsx topic={topic} />
+                      <TopicDescription topic={topic} />
                     </td>
                   </tr>
                 );
