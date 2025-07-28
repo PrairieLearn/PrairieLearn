@@ -10,7 +10,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 let initialized = false;
 let currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
 
-export function init(newMaxJobs) {
+export async function init(newMaxJobs) {
   maxJobs = newMaxJobs;
   const nowMS = Date.now();
   lastEstimateTimeMS = nowMS;
@@ -19,8 +19,8 @@ export function init(newMaxJobs) {
   currentJobs = 0;
   maxJobs = newMaxJobs;
   initialized = true;
-  _reportLoad();
-  _reportConfig();
+  await _reportLoad();
+  await _reportConfig();
 }
 
 export function startJob() {
@@ -62,7 +62,7 @@ function _addIntegratedLoad() {
   lastIncrementTimeMS = nowMS;
 }
 
-function _reportLoad() {
+async function _reportLoad() {
   const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
@@ -71,13 +71,16 @@ function _reportLoad() {
     lifecycle_state: lifecycle.getState(),
     healthy: healthCheck.isHealthy(),
   };
-  sqldb.query(sql.insert_load, params, (err) => {
-    if (err) logger.error('Error reporting load:', err);
-    setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
-  });
+  try {
+    await sqldb.queryAsync(sql.insert_load, params);
+  } catch (err) {
+    logger.error('Error reporting load:', err);
+  }
+  // Report load again in the future
+  setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
 }
 
-function _reportConfig() {
+async function _reportConfig() {
   const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
@@ -85,7 +88,5 @@ function _reportConfig() {
     max_jobs: 0,
     config,
   };
-  sqldb.query(sql.insert_config, params, (err) => {
-    if (err) logger.error('Error reporting config:', err);
-  });
+  await sqldb.queryAsync(sql.insert_config, params);
 }
