@@ -93,45 +93,48 @@ export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
  */
 export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters.
+ * Calls the given sproc with the specified parameters.
  *
  * @deprecated Use {@link callRows} instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Errors if the
- * function does not return exactly one row.
+ * Calls the given sproc with the specified parameters. Errors if the
+ * sproc does not return exactly one row.
  *
  * @deprecated Use {@link callRow} instead.
  */
 export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Errors if the
- * function returns more than one row.
+ * Calls the given sproc with the specified parameters. Errors if the
+ * sproc returns more than one row.
  *
  * @deprecated Use {@link callOptionalRow} instead.
  */
 export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
+ * Calls a sproc with the specified parameters using a specific client.
  */
 export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function does not return exactly one row.
+ * Calls a sproc with the specified parameters using a specific client.
+ * Errors if the sproc does not return exactly one row.
  */
 export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function returns more than one row.
+ * Calls a sproc with the specified parameters using a specific client.
+ * Errors if the sproc returns more than one row.
  */
 export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
+/**
+ * Executes a query with the specified parameters. Returns an array of rows
+ * that conform to the given Zod schema.
+ */
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row that conforms to the given Zod schema.
- *
  */
 export const queryRow = defaultPool.queryRow.bind(defaultPool);
 /**
@@ -140,18 +143,18 @@ export const queryRow = defaultPool.queryRow.bind(defaultPool);
  */
 export const queryOptionalRow = defaultPool.queryOptionalRow.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters.
- * Errors if the function does not return anything.
+ * Calls the given sproc with the specified parameters.
+ * Errors if the sproc does not return anything.
  */
 export const callRows = defaultPool.callRows.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Errors if the
- * function does not return exactly one row.
+ * Calls the given sproc with the specified parameters. Errors if the
+ * sproc does not return exactly one row.
  */
 export const callRow = defaultPool.callRow.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Returns either null
- * or a single row, and errors otherwise.
+ * Calls the given sproc with the specified parameters. Returns either null
+ * or a single row that conforms to the given Zod schema, and errors otherwise.
  */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
 /**
