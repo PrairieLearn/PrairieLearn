@@ -30,6 +30,13 @@ $(function() {
       data-skip-unload-check="true"
       disabled
     />
+    <input 
+      class="js-hidden-capture-changed-flag"
+      type="hidden"
+      name="{{file_name}}_changed"
+      value="false"
+      disabled
+    />
     {{/editable}}
     <div class="position-relative">
       <div class="js-uploaded-image-container position-relative">
