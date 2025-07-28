@@ -22,6 +22,7 @@ import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
+import type { AIGradingInfo } from '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -35,7 +36,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
-  aiGradingPrompt,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -45,7 +46,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
-  aiGradingPrompt?: string;
+  aiGradingInfo?: AIGradingInfo;
 }) {
   const {
     question,
@@ -105,8 +106,8 @@ export function QuestionContainer({
           : ''
       }
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingPrompt
-        ? AIGradingPrompt(aiGradingPrompt)
+      (aiGradingInfo && aiGradingInfo.prompt)
+        ? AIGradingPrompt(aiGradingInfo.prompt, aiGradingInfo.imageUrls)
         : ''}
       ${submissions.length > 0
         ? html`
@@ -155,26 +156,27 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt(prompt: string) {
-  console.log('prompt:');
-  console.log(prompt);
-
+function AIGradingPrompt(
+  prompt: string,
+  imageUrls: string[]
+) {
   return html`
     <div class="card mb-3 grading-block">
       <div class="card-header bg-secondary text-white">
         <h2>AI Grading Prompt</h2>
       </div>
-      <button
-        type="button"
-        class="btn btn-primary"
-        data-bs-toggle="tooltip"
-        data-bs-html="true"
-        title='<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Midtown_Manhattan_from_Weehawken_September_2021_HDR.jpg/500px-Midtown_Manhattan_from_Weehawken_September_2021_HDR.jpg" alt="Example" class="img-fluid" />'>
-        Hover me
-      </button>
 
       <div class="card-body">
         <pre class="mb-0"><code>${prompt}</code></pre>
+
+        ${imageUrls.length > 0
+          ? html`
+              <div class="mt-3">
+                <p class="fw-medium">Images sent in prompt</p>
+                ${imageUrls.map((url) => html`<img src="${url}" alt="AI Grading Image" class="img-fluid mb-2" />`)}
+              </div>
+            `
+          : ''}
       </div>
     </div>
   `;

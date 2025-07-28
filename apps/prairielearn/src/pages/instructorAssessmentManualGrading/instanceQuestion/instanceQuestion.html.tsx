@@ -28,6 +28,7 @@ export interface AIGradingInfo {
   feedback?: string;
   prompt?: string;
   selectedRubricItemIds?: string[];
+  imageUrls: string[];
 }
 
 export function InstanceQuestion({
@@ -115,7 +116,7 @@ export function InstanceQuestion({
             resLocals,
             questionContext: 'manual_grading',
             showFooter: false,
-            aiGradingPrompt: aiGradingInfo?.prompt,
+            aiGradingInfo
           })}
         </div>
 

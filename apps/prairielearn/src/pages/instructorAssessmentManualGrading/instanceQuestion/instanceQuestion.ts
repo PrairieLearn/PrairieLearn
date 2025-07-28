@@ -139,50 +139,22 @@ router.get(
             z.boolean(),
           )) ?? false;
 
-        const prompt_for_grading_job_with_image_tooltips: Record<string, any>[] = [];
-        
+        /** Images sent in the AI grading prompt */
+        const imageUrls: string[] = [];
+
         if (prompt_for_grading_job) {
           for (const message of prompt_for_grading_job) {
             if (message.content && typeof message.content === 'object') {
-              const messageParts: any[] = [];
               for (const part of message.content) {
                 if (part.type === 'image_url') {
-                  messageParts.push({
-                    ...part,
-                    image_url: {
-                      url: {
-                        detail: part.image_url.detail,
-                        url: html`
-                        <button
-                          type="button"
-                          class="btn btn-primary"
-                          data-bs-toggle="tooltip"
-                          data-bs-html="true"
-                          title='<img src="${part.image_url.url}" alt="Student-submitted response" class="img-fluid" />'
-                        >
-                          ${part.image_url.url}
-                        </button>
-                        `.toString()
-                      }
-                    }
-                  });
-
-                } else {
-                  messageParts.push(part);
-                }
+                  imageUrls.push(part.image_url.url);
+                } 
               }
-              prompt_for_grading_job_with_image_tooltips.push({
-                ...message,
-                content: messageParts
-              } as any);
-            } else {
-              prompt_for_grading_job_with_image_tooltips.push(message);
-            }
+            } 
           }
         }
 
-
-        const formattedPrompt = (await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job_with_image_tooltips, null, 2))).replaceAll('\\n','\n').trimStart();
+        const formattedPrompt = (await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2))).replaceAll('\\n','\n').trimStart();
 
         aiGradingInfo = {
           aiGradingAvailable,
@@ -192,6 +164,7 @@ router.get(
           selectedRubricItemIds: aiGradingAvailable
             ? selectedRubricItems.map((item) => item.id)
             : undefined,
+          imageUrls,
         };
       }
     }
