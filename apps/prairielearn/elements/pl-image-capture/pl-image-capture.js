@@ -492,67 +492,24 @@
         uploadedImageContainer,
       });
 
-      const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
-
-      capturePreview.src = dataUrl;
-      capturePreview.alt = 'Captured image preview';
-
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
-
-      if (originalCapture) {
-        capturePreview.addEventListener(
-          'load',
-          () => {
-            this.capturePreviewHeight = capturePreview.clientHeight;
-          },
-          { once: true },
-        );
-      }
-
-      if (!this.editable) {
-        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
-        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
-        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
-
-        this.ensureElementsExist({
-          zoomButtonsContainer,
-          zoomInButton,
-          zoomOutButton,
-        });
-
-        // Display the zoom buttons only when the image is not editable to
-        // prevent confusion with crop/rotate functionality, which is
-        // available when the image is editable.
-        zoomButtonsContainer.classList.remove('d-none');
-
-        if (!this.imageCapturePreviewPanzoom) {
-          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
-            contain: 'outside',
-            minScale: 1,
-            maxScale: 5,
-          });
-
-          zoomInButton.addEventListener('click', () => {
-            this.imageCapturePreviewPanzoom.zoomIn();
-          });
-          zoomOutButton.addEventListener('click', () => {
-            this.imageCapturePreviewPanzoom.zoomOut();
-          });
-
-          // Only when zoomed in, indicate that panning is available.
-          // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
-          capturePreview.addEventListener('panzoomchange', (e) => {
-            const scale = e.detail.scale;
-            capturePreview.style.cursor = scale <= 1 ? 'default' : 'move';
-          });
-        } else {
-          this.imageCapturePreviewPanzoom.reset({ animate: false });
-        }
-      }
-
       if (this.editable) {
+        const capturePreview = document.createElement('img');
+        capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
+
+        capturePreview.src = dataUrl;
+        capturePreview.alt = 'Captured image preview';
+
+        uploadedImageContainer.appendChild(capturePreview);
+        if (originalCapture) {
+          capturePreview.addEventListener(
+            'load',
+            () => {
+              this.capturePreviewHeight = capturePreview.clientHeight;
+            },
+            { once: true },
+          );
+        }
         this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
@@ -565,6 +522,94 @@
           }
         }
         this.showCropRotateButton();
+      } else {
+        if (!this.editable) {
+          const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+          const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+          const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+
+          this.ensureElementsExist({
+            zoomButtonsContainer,
+            zoomInButton,
+            zoomOutButton,
+          });
+          // 2. make the canvas (wrapper)
+          const canvasEl = document.createElement('cropper-canvas');
+          // optional: hide any background grid/shade
+          canvasEl.background = false;
+          canvasEl.style.width  = '100%';
+          canvasEl.style.maxHeight = 'max(60vh, 600px)';
+          canvasEl.scaleStep = 0;
+
+          // 3. make the image element
+          const imageEl = document.createElement('cropper-image');
+          imageEl.src = dataUrl;
+          // enable pan & zoom only
+          imageEl.translatable = true;
+          imageEl.scalable    = true;
+          imageEl.imageFit = 'contain';
+          
+          // 4. a plain “move” handle for dragging/panning
+          const handleEl = document.createElement('cropper-handle');
+          handleEl.action = 'move';
+          handleEl.plain  = true;
+
+          // assemble and mount
+          canvasEl.append(imageEl, handleEl);
+          uploadedImageContainer.appendChild(canvasEl);
+
+          // Display the zoom buttons only when the image is not editable to
+          // prevent confusion with crop/rotate functionality, which is
+          // available when the image is editable.
+          zoomButtonsContainer.classList.remove('d-none');
+
+          zoomInButton.addEventListener('click', () => {
+            imageEl.$zoom(0.2);
+          });
+          zoomOutButton.addEventListener('click', () => {
+            imageEl.$zoom(-0.2);
+          });
+
+          canvasEl.addEventListener(
+            'wheel',
+            e => {
+              // Prevent the browser (or Cropper.js) from zooming on mouse wheel
+              e.preventDefault();
+            },
+            { passive: false }  // ensure preventDefault actually works :contentReference[oaicite:0]{index=0}
+          );
+          
+          const TOLERANCE = 200;
+
+          imageEl.addEventListener('transform', event => {
+            const canvasRect = canvasEl.getBoundingClientRect();
+
+            // Clone & apply the tentative matrix so we can measure its bounds
+            const clone = imageEl.cloneNode();
+            clone.style.opacity   = '0';
+            clone.style.transform = `matrix(${event.detail.matrix.join(',')})`;
+            canvasEl.appendChild(clone);
+
+            const imgRect = clone.getBoundingClientRect();
+            canvasEl.removeChild(clone);
+
+            // Allow up to 50px of “overscroll” on any side; block beyond that
+            if (
+              imgRect.top    >  canvasRect.top    + TOLERANCE || // too far down
+              imgRect.left   >  canvasRect.left   + TOLERANCE || // too far right
+              imgRect.right  <  canvasRect.right  - TOLERANCE || // too far left
+              imgRect.bottom <  canvasRect.bottom - TOLERANCE    // too far up
+            ) {
+              event.preventDefault();
+            }
+          });
+
+          imageEl.$ready((img) => {
+            const ratio = img.naturalHeight / img.naturalWidth;
+            // e.g. if container is 400px wide, canvas becomes 400 * ratio tall:
+            canvasEl.style.height = `${uploadedImageContainer.clientWidth * ratio}px`;
+          });
+      }
       }
     }
 
