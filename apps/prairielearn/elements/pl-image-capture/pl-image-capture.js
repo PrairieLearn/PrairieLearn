@@ -526,11 +526,11 @@
 
         buttonsContainer.classList.remove('d-none');
 
-        const panzoom = Panzoom(capturePreview, { 
+        const panzoom = Panzoom(capturePreview, {
           contain: 'outside',
           minScale: 1,
           maxScale: 3,
-          panOnlyWhenZoomed: true
+          panOnlyWhenZoomed: true,
         });
 
         zoomInButton.addEventListener('click', () => {
