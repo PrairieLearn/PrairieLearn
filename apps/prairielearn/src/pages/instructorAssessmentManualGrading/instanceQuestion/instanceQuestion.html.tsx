@@ -44,8 +44,7 @@ export function InstanceQuestion({
   assignedGrader: User | null;
   lastGrader: User | null;
   /**
-   * `undefined` if the AI grading feature flag is disabled.
-   * Otherwise, this is always specified, even if no AI grading is available.
+   * `aiGradingInfo` is defined when the AI grading feature flag is enabled.
    */
   aiGradingInfo?: AIGradingInfo;
 }) {
