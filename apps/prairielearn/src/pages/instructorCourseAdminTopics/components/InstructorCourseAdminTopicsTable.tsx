@@ -1,7 +1,7 @@
 import { useState } from 'preact/compat';
+
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
-        
 import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
@@ -35,20 +35,11 @@ export function InstructorCourseAdminTopicsTable({
   const [addTopic, setAddTopic] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const handleOpenModal = () => {
-    setShowModal(true);
-  };
-
   const handleOpenEditModal = (topicIndex: number) => {
     setAddTopic(false);
     setSelectedTopicIndex(topicIndex);
     setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
     setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedTopic(null);
   };
 
   const handleModalUpdate = () => {
