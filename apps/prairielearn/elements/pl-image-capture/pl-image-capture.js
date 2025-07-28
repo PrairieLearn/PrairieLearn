@@ -555,9 +555,10 @@ const MAX_ZOOM_SCALE = 5;
           capturePreview.addEventListener('panzoomzoom', (e) => {
             const scale = e.detail.scale;
 
-            // Only when zoomed in, indicate that panning is available.
-            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
             panEnabled = scale > 1;
+
+            // We only indicate that panning is available when the image is zoomed in.
+            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
             capturePreview.style.cursor = panEnabled ? 'grab' : 'default';
 
             if (scale === MIN_ZOOM_SCALE) {
@@ -576,7 +577,7 @@ const MAX_ZOOM_SCALE = 5;
           capturePreview.addEventListener('panzoomstart', () => {
             if (panEnabled) {
               capturePreview.style.cursor = 'grabbing';
-            } 
+            }
           });
 
           capturePreview.addEventListener('panzoomend', () => {
