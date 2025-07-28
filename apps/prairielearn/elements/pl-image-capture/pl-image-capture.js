@@ -511,26 +511,35 @@
         );
       }
 
-      const panzoom = Panzoom(capturePreview, { 
-        contain: 'inside',
-        minScale: 1,
-        maxScale: 3,
-        panOnlyWhenZoomed: true
-      });
+      if (!this.editable) {
+        // Only visible when the image capture is not editable to prevent
+        // confusion between zoom and crop/rotate.
+        const buttonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
-      const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
-      const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
-      this.ensureElementsExist({
-        zoomInButton,
-        zoomOutButton,
-      });
-      zoomInButton.addEventListener('click', () => {
-        panzoom.zoomIn();
-      });
-      zoomOutButton.addEventListener('click', () => {
-        panzoom.zoomOut();
-      });
+        this.ensureElementsExist({
+          buttonsContainer,
+          zoomInButton,
+          zoomOutButton,
+        });
 
+        buttonsContainer.classList.remove('d-none');
+
+        const panzoom = Panzoom(capturePreview, { 
+          contain: 'outside',
+          minScale: 1,
+          maxScale: 3,
+          panOnlyWhenZoomed: true
+        });
+
+        zoomInButton.addEventListener('click', () => {
+          panzoom.zoomIn();
+        });
+        zoomOutButton.addEventListener('click', () => {
+          panzoom.zoomOut();
+        });
+      }
 
       if (this.editable) {
         this.setHiddenCaptureInputValue(dataUrl);
