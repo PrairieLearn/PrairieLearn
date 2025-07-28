@@ -1,9 +1,9 @@
 /* global QRCode, io, bootstrap, Cropper, Panzoom */
 
-/** Minimum zoom scale for a submitted image capture preview */
+/** Minimum zoom scale for the submitted image preview */
 const MIN_ZOOM_SCALE = 1;
 
-/** Maximum zoom scale for a submitted image capture preview */
+/** Maximum zoom scale for the submitted image preview */
 const MAX_ZOOM_SCALE = 5;
 
 (() => {
@@ -551,14 +551,15 @@ const MAX_ZOOM_SCALE = 5;
             this.imageCapturePreviewPanzoom.zoomOut();
           });
 
-          let zoomEnabled = false;
+          let panEnabled = false;
           capturePreview.addEventListener('panzoomzoom', (e) => {
             const scale = e.detail.scale;
-            zoomEnabled = scale > 1;
-            capturePreview.style.cursor = zoomEnabled ? 'grab' : 'default';
 
             // Only when zoomed in, indicate that panning is available.
             // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+            panEnabled = scale > 1;
+            capturePreview.style.cursor = panEnabled ? 'grab' : 'default';
+
             if (scale === MIN_ZOOM_SCALE) {
               zoomOutButton.classList.add('disabled', 'opacity-10');
             } else {
@@ -573,15 +574,13 @@ const MAX_ZOOM_SCALE = 5;
           });
 
           capturePreview.addEventListener('panzoomstart', () => {
-            if (zoomEnabled) {
+            if (panEnabled) {
               capturePreview.style.cursor = 'grabbing';
-            } else {
-              capturePreview.style.cursor = 'default';
-            }
+            } 
           });
 
           capturePreview.addEventListener('panzoomend', () => {
-            if (zoomEnabled) {
+            if (panEnabled) {
               capturePreview.style.cursor = 'grab';
             }
           });
