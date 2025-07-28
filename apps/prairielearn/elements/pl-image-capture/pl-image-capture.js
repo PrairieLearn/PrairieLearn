@@ -531,7 +531,7 @@
           this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
             contain: 'outside',
             minScale: 1,
-            maxScale: 5,
+            maxScale: 5
           });
 
           zoomInButton.addEventListener('click', () => {
@@ -540,10 +540,6 @@
           zoomOutButton.addEventListener('click', () => {
             this.imageCapturePreviewPanzoom.zoomOut();
           });
-          capturePreview.parentElement.addEventListener(
-            'wheel',
-            this.imageCapturePreviewPanzoom.zoomWithWheel,
-          );
 
           // Only when zoomed in, indicate that panning is available.
           // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
