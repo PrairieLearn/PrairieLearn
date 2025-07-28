@@ -545,7 +545,7 @@
             this.imageCapturePreviewPanzoom.zoomWithWheel,
           );
 
-          // Only if the image is zoomed in, indicate panning is allowed.
+          // Only when zoomed in, indicate that panning is available.
           // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
           capturePreview.addEventListener('panzoomchange', (e) => {
             const scale = e.detail.scale;
