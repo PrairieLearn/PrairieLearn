@@ -1,4 +1,10 @@
-/* global QRCode, io, bootstrap, Cropper */
+/* global QRCode, io, bootstrap, Cropper, Panzoom */
+
+/** Minimum zoom scale for the submitted image preview */
+const MIN_ZOOM_SCALE = 1;
+
+/** Maximum zoom scale for the submitted image preview */
+const MAX_ZOOM_SCALE = 5;
 
 (() => {
   class PLImageCapture {
@@ -31,6 +37,8 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
+      /** Flag representing the current state of the capture before entering crop/zoom */
+      this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
@@ -321,6 +329,7 @@
           data: msg.file_content,
           type: 'image/jpeg',
         });
+        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -439,6 +448,7 @@
       if (dataUrl && !hiddenCaptureInput.value) {
         this.updateCaptureButtonTextForRetake();
       }
+
       hiddenCaptureInput.value = dataUrl;
     }
 
@@ -511,6 +521,75 @@
         );
       }
 
+      if (!this.editable) {
+        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+
+        this.ensureElementsExist({
+          zoomButtonsContainer,
+          zoomInButton,
+          zoomOutButton,
+        });
+
+        // Display the zoom buttons only when the image is not editable to
+        // prevent confusion with crop/rotate functionality, which is
+        // available when the image is editable.
+        zoomButtonsContainer.classList.remove('d-none');
+
+        if (!this.imageCapturePreviewPanzoom) {
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+            contain: 'outside',
+            minScale: MIN_ZOOM_SCALE,
+            maxScale: MAX_ZOOM_SCALE,
+          });
+
+          zoomInButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomIn();
+          });
+          zoomOutButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomOut();
+          });
+
+          let panEnabled = false;
+          capturePreview.addEventListener('panzoomzoom', (e) => {
+            const scale = e.detail.scale;
+
+            panEnabled = scale > 1;
+
+            // We only indicate that panning is available when the image is zoomed in.
+            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+            capturePreview.style.cursor = panEnabled ? 'grab' : 'default';
+
+            if (scale === MIN_ZOOM_SCALE) {
+              zoomOutButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomOutButton.classList.remove('disabled', 'opacity-10');
+            }
+
+            if (scale >= MAX_ZOOM_SCALE) {
+              zoomInButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomInButton.classList.remove('disabled', 'opacity-10');
+            }
+          });
+
+          capturePreview.addEventListener('panzoomstart', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grabbing';
+            }
+          });
+
+          capturePreview.addEventListener('panzoomend', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grab';
+            }
+          });
+        } else {
+          this.imageCapturePreviewPanzoom.reset({ animate: false });
+        }
+      }
+
       if (this.editable) {
         this.setHiddenCaptureInputValue(dataUrl);
 
@@ -537,6 +616,28 @@
 
     loadCapturePreview({ data, type }) {
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
+    }
+
+    /**
+     * Updates the hidden capture changed flag, ensuring that users receive an unsaved changes
+     * warning if they attempt to leave the question without saving.
+     *
+     * This flag is not included in the submission data; it is used solely by the question
+     * unload event handler to detect unsaved edits to the image (e.g., after
+     * capturing, cropping, or rotating).
+     */
+    setCaptureChangedFlag(value) {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      hiddenCaptureChangedFlag.value = value;
+
+      // Disable the flag if no changes have been made.
+      hiddenCaptureChangedFlag.disabled = !value;
     }
 
     async startLocalCameraCapture() {
@@ -660,6 +761,7 @@
       this.loadCapturePreviewFromDataUrl({
         dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
+      this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -722,6 +824,18 @@
     }
 
     async startCropRotate() {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
+
+      // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
+      this.setCaptureChangedFlag(true);
+
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -1065,6 +1179,10 @@
 
       this.openContainer('capture-preview');
       this.setHiddenCaptureInputToCapturePreview();
+
+      // Restore the previous hidden capture changed flag value.
+      // Needed for the case that the user had no changes before starting crop/rotate.
+      this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
   }
 
