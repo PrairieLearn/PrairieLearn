@@ -1,4 +1,4 @@
-/* eslint-disable @eslint-react/hooks-extra/no-unnecessary-use-prefix */
+/* eslint-disable react-you-might-not-need-an-effect/no-pass-live-state-to-parent */
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import clsx from 'clsx';
 import * as React from 'react';
@@ -122,8 +122,27 @@ export function getFormattedMarkName(type: Mark): string {
 
 export function useMarkState(editor: Editor | null, type: Mark, disabled = false) {
   const markInSchema = isMarkInSchema(type, editor);
-  const isDisabled = isMarkButtonDisabled(editor, type, disabled);
-  const isActive = isMarkActive(editor, type);
+  const [isActive, setIsActive] = React.useState(() => isMarkActive(editor, type));
+  const [isDisabled, setIsDisabled] = React.useState(() =>
+    isMarkButtonDisabled(editor, type, disabled),
+  );
+
+  React.useEffect(() => {
+    if (!editor) return;
+
+    const updateState = () => {
+      setIsActive(isMarkActive(editor, type));
+      setIsDisabled(isMarkButtonDisabled(editor, type, disabled));
+    };
+
+    editor.on('selectionUpdate', updateState);
+    editor.on('update', updateState);
+
+    return () => {
+      editor.off('selectionUpdate', updateState);
+      editor.off('update', updateState);
+    };
+  }, [editor, type, disabled]);
 
   const Icon = markIcons[type];
   const shortcutKey = markShortcutKeys[type];
@@ -160,6 +179,7 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
       type,
       disabled as boolean | undefined,
     );
+    console.log({ markInSchema, isDisabled, isActive });
 
     const handleClick = React.useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -184,6 +204,8 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
     if (!show || !editor || !editor.isEditable) {
       return null;
     }
+
+    console.log(isActive, isDisabled);
 
     return (
       <Button

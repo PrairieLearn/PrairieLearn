@@ -44,9 +44,17 @@ export interface ColorHighlightButtonProps extends Omit<ButtonProps, 'type'> {
    */
   color: string;
   /**
+   * The index of the color in the colors array.
+   */
+  colorIndex: number;
+  /**
    * Optional text to display alongside the icon.
    */
   text?: string;
+  /**
+   * Optional tooltip to display alongside the icon.
+   */
+  tooltip?: string;
   /**
    * Whether the button should hide when the mark is not available.
    * @default false
@@ -182,6 +190,8 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
       node,
       nodePos,
       color,
+      colorIndex,
+      tooltip,
       hideWhenUnavailable = false,
       className = '',
       disabled,
@@ -214,18 +224,27 @@ export const ColorHighlightButton = React.forwardRef<HTMLButtonElement, ColorHig
       return null;
     }
 
+    const style =
+      colorIndex === 0
+        ? {
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+          }
+        : {};
+
     return (
       <Button
         ref={ref}
         type="button"
         className={className}
         disabled={isDisabled}
-        style={{ backgroundColor: isActive ? color : 'transparent' }}
+        style={{ backgroundColor: isActive ? color : 'transparent', ...style }}
         variant="outline-secondary"
         role="button"
         tabIndex={-1}
         aria-label={`${color} highlight color`}
         aria-pressed={isActive}
+        tooltip={tooltip}
         onClick={handleClick}
       >
         <i className="bi bi-marker-tip" style={{ color: isActive ? 'white' : color }} />
@@ -267,12 +286,14 @@ export function ColorHighlightOverlay({
   placement: _placement,
   arrowProps: _arrowProps,
   show: _show,
-  popper,
+  onApplied,
   hasDoneInitialMeasure: _hasDoneInitialMeasure,
   style,
 }: ColorHighlightOverlayProps) {
   const editor = useTiptapEditor();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // popper.scheduleUpdate?.();
 
   const removeHighlight = useCallback(() => {
     if (!editor) return;
@@ -303,9 +324,12 @@ export function ColorHighlightOverlay({
         <ColorHighlightButton
           key={color.value}
           color={color.value}
+          colorIndex={index}
           aria-label={`${color.label} highlight color`}
+          tooltip={color.label}
           tabIndex={index === selectedIndex ? 0 : -1}
-          onClick={() => popper.scheduleUpdate?.()}
+          onClick={() => onApplied?.(color.value)}
+          // onClick={() => popper.scheduleUpdate?.()}
         />
       ))}
       <Button
@@ -314,6 +338,7 @@ export function ColorHighlightOverlay({
         type="button"
         role="menuitem"
         variant={selectedIndex === colors.length ? 'outline-primary' : 'outline-secondary'}
+        tooltip="Remove highlight"
         onClick={removeHighlight}
       >
         <i className="bi bi-ban" />
@@ -324,7 +349,6 @@ export function ColorHighlightOverlay({
 
 export function ColorHighlightPopover({
   colors = DEFAULT_HIGHLIGHT_COLORS,
-  hideWhenUnavailable = false,
 }: ColorHighlightPopoverProps) {
   const editor = useTiptapEditor();
   const [show, setShow] = useState(false);
@@ -363,15 +387,10 @@ export function ColorHighlightPopover({
     };
   }, [editor, markAvailable]);
 
-  const _isActive = editor?.isActive('highlight') ?? false;
+  const isActive = editor?.isActive('highlight') ?? false;
+  const isDisabled = isColorHighlightButtonDisabled(editor);
 
-  const shouldShow = useMemo(() => {
-    if (!hideWhenUnavailable || !editor) return true;
-
-    return !(isNodeSelection(editor.state.selection) || !canToggleHighlight(editor));
-  }, [hideWhenUnavailable, editor]);
-
-  if (!shouldShow || !editor || !editor.isEditable) {
+  if (!editor || !editor.isEditable) {
     return null;
   }
 
@@ -379,14 +398,21 @@ export function ColorHighlightPopover({
     <>
       <Button
         ref={buttonRef}
-        variant="outline-secondary"
+        variant={isActive ? 'primary' : isDisabled ? 'secondary' : 'outline-primary'}
         aria-label="Highlight text"
-        onClick={() => setShow(!show)}
+        tooltip="Highlight text"
+        disabled={isDisabled}
+        onClick={() => {
+          setShow(!show);
+          editor.commands.focus();
+        }}
       >
         <i className="bi bi-highlighter" />
       </Button>
       <Overlay placement="bottom" target={buttonRef} show={show}>
-        {(props) => <ColorHighlightOverlay colors={colors} {...props} />}
+        {(props) => (
+          <ColorHighlightOverlay colors={colors} onApplied={() => setShow(false)} {...props} />
+        )}
       </Overlay>
     </>
   );
