@@ -33,25 +33,21 @@ export function InstructorCourseAdminTopicsTable({
   const [selectedTopicIndex, setSelectedTopicIndex] = useState<number | null>(null);
   const [topicsState, setTopicsState] = useState<Topic[]>(topics);
   const [addTopic, setAddTopic] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const handleOpenModal = () => {
-    window.bootstrap.Modal.getOrCreateInstance(
-      document.querySelector('#editTopicModal') as HTMLElement,
-    ).show();
+    setShowModal(true);
   };
 
   const handleOpenEditModal = (topicIndex: number) => {
     setAddTopic(false);
     setSelectedTopicIndex(topicIndex);
     setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
-    handleOpenModal();
+    setShowModal(true);
   };
 
   const handleCloseModal = () => {
-    (document.activeElement as HTMLElement).blur();
-    window.bootstrap.Modal.getOrCreateInstance(
-      document.querySelector('#editTopicModal') as HTMLElement,
-    ).hide();
+    setShowModal(false);
     setSelectedTopic(null);
   };
 
@@ -65,7 +61,7 @@ export function InstructorCourseAdminTopicsTable({
         ),
       );
     }
-    handleCloseModal();
+    setShowModal(false);
   };
 
   const handleDeleteTopic = (topicIndex: number) => {
@@ -77,7 +73,7 @@ export function InstructorCourseAdminTopicsTable({
     setAddTopic(true);
     setSelectedTopicIndex(topicsState.length);
     setSelectedTopic(emptyTopic);
-    handleOpenModal();
+    setShowModal(true);
   };
 
   return (
@@ -199,10 +195,11 @@ export function InstructorCourseAdminTopicsTable({
         </div>
       </div>
       <EditTopicsModal
+        show={showModal}
         selectedTopic={selectedTopic}
         setSelectedTopic={setSelectedTopic}
+        setShowModal={setShowModal}
         handleModalUpdate={handleModalUpdate}
-        handleCloseModal={handleCloseModal}
         addTopic={addTopic}
       />
     </>

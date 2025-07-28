@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'preact/compat';
+import { Modal } from 'react-bootstrap';
 
 import { type Topic } from '../../../lib/db-types.js';
 const colorOptions = [
@@ -35,125 +35,94 @@ const colorOptions = [
 ];
 
 export function EditTopicsModal({
+  show,
   selectedTopic,
   setSelectedTopic,
+  setShowModal,
   handleModalUpdate,
-  handleCloseModal,
   addTopic,
 }: {
+  show: boolean;
   selectedTopic: Topic | null;
   setSelectedTopic: (topic: Topic | null) => void;
+  setShowModal: (show: boolean) => void;
   handleModalUpdate: () => void;
-  handleCloseModal: () => void;
   addTopic: boolean;
 }) {
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const modalEl = modalRef.current;
-    let modalInstance: any = null;
-    if (window.bootstrap && modalEl) {
-      modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl);
-    }
-    if (!selectedTopic && modalInstance) {
-      modalInstance.hide();
-    }
-    return () => {
-      if (modalInstance) {
-        modalInstance.hide();
-      }
-    };
-  }, [selectedTopic]);
-
   return (
-    <div
-      ref={modalRef}
-      class="modal fade"
-      tabindex={-1}
-      data-bs-backdrop="static"
-      role="dialog"
-      id="editTopicModal"
-      aria-labelledby="editTopicModalTitle"
-    >
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2 class="modal-title" id="editTopicModalTitle">
-              Edit Topic
-            </h2>
-            <button type="button" class="btn-close" aria-label="close" onClick={handleCloseModal} />
-          </div>
-          <div class="modal-body">
-            {selectedTopic ? (
-              <>
-                <div class="mb-3">
-                  <label class="form-label" for="topicName">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="topicName"
-                    value={selectedTopic.name}
-                    onChange={(e) =>
-                      setSelectedTopic({
-                        ...selectedTopic,
-                        name: (e.target as HTMLInputElement)?.value,
-                      })
-                    }
-                  />
-                </div>
-                <div class="mb-3">
-                  <label class="form-label" for="topicColor">
-                    Color
-                  </label>
-                  <select
-                    class="form-select"
-                    id="topicColor"
-                    value={selectedTopic.color ?? 'Select a color'}
-                    onChange={(e) =>
-                      setSelectedTopic({
-                        ...selectedTopic,
-                        color: (e.target as HTMLSelectElement)?.value,
-                      })
-                    }
-                  >
-                    {colorOptions.map((color) => (
-                      <option key={color} value={color}>
-                        {color}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label" for="topicDescription">
-                    Description
-                  </label>
-                  <textarea
-                    class="form-control"
-                    id="topicDescription"
-                    value={selectedTopic.description}
-                    onChange={(e) =>
-                      setSelectedTopic({
-                        ...selectedTopic,
-                        description: (e.target as HTMLTextAreaElement)?.value,
-                      })
-                    }
-                  />
-                </div>
-              </>
-            ) : null}
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" onClick={handleModalUpdate}>
-              {addTopic ? 'Add topic' : 'Update topic'}
-            </button>
-            <button type="button" class="btn btn-secondary" onClick={handleCloseModal}>
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Modal show={show} onHide={() => setShowModal(false)}>
+      <Modal.Header closeButton>
+        <Modal.Title>Edit Topic</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {selectedTopic ? (
+          <>
+            <div class="mb-3">
+              <label class="form-label" for="topicName">
+                Name
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="topicName"
+                value={selectedTopic.name}
+                onChange={(e) =>
+                  setSelectedTopic({
+                    ...selectedTopic,
+                    name: (e.target as HTMLInputElement)?.value,
+                  })
+                }
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="topicColor">
+                Color
+              </label>
+              <select
+                class="form-select"
+                id="topicColor"
+                value={selectedTopic.color ?? 'Select a color'}
+                onChange={(e) =>
+                  setSelectedTopic({
+                    ...selectedTopic,
+                    color: (e.target as HTMLSelectElement)?.value,
+                  })
+                }
+              >
+                {colorOptions.map((color) => (
+                  <option key={color} value={color}>
+                    {color}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="topicDescription">
+                Description
+              </label>
+              <textarea
+                class="form-control"
+                id="topicDescription"
+                value={selectedTopic.description}
+                onChange={(e) =>
+                  setSelectedTopic({
+                    ...selectedTopic,
+                    description: (e.target as HTMLTextAreaElement)?.value,
+                  })
+                }
+              />
+            </div>
+          </>
+        ) : null}
+      </Modal.Body>
+      <Modal.Footer>
+        <button type="button" class="btn btn-primary" onClick={handleModalUpdate}>
+          {addTopic ? 'Add topic' : 'Update topic'}{' '}
+        </button>
+        <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>
+          Close
+        </button>
+      </Modal.Footer>
+    </Modal>
   );
 }
