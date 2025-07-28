@@ -35,7 +35,7 @@ class LoadEstimator {
     this.warnOnOldJobs = warnOnOldJobs == null ? true : warnOnOldJobs;
     this.timeoutID = null;
     this.active = true;
-    // Start the load reporting loop
+    // Start the load reporting loop. This is not awaited on purpose.
     this._reportLoad();
   }
 
