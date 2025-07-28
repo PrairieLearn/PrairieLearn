@@ -2,13 +2,12 @@
 /* eslint-disable @eslint-react/hooks-extra/no-direct-set-state-in-use-effect */
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
+import { OverlayTrigger } from 'react-bootstrap';
 
-import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
-import { Separator } from '../../bootstrap-ui-primitive/separator/index.js';
 import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
 import { isMarkInSchema, sanitizeUrl } from '../../../lib/tiptap-utils.js';
-
-import { OverlayTrigger } from 'react-bootstrap';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
+import { Separator } from '../../bootstrap-ui-primitive/separator/index.js';
 
 export interface LinkHandlerProps {
   editor: Editor | null;
@@ -239,7 +238,7 @@ export function LinkPopover({
 
   const isDisabled = React.useMemo(() => {
     if (!editor) return true;
-    if (editor.isActive('codeBlock')) return true;
+    if (editor.isActive('plCodeBlock')) return true;
     return !editor.can().setLink?.({ href: '' });
   }, [editor]);
 

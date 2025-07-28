@@ -90,7 +90,7 @@ export function isMarkButtonDisabled(
 ): boolean {
   if (!editor) return true;
   if (userDisabled) return true;
-  if (editor.isActive('codeBlock')) return true;
+  if (editor.isActive('plCodeBlock')) return true;
   if (!canToggleMark(editor, type)) return true;
   return false;
 }
@@ -179,7 +179,6 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
       type,
       disabled as boolean | undefined,
     );
-    console.log({ markInSchema, isDisabled, isActive });
 
     const handleClick = React.useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -204,8 +203,6 @@ export const MarkButton = React.forwardRef<HTMLButtonElement, MarkButtonProps>(
     if (!show || !editor || !editor.isEditable) {
       return null;
     }
-
-    console.log(isActive, isDisabled);
 
     return (
       <Button

@@ -103,14 +103,14 @@ export const content = {
       ],
     },
     {
-      type: 'codeBlock',
+      type: 'plCodeBlock',
       attrs: {
         language: null,
       },
       content: [
         {
           type: 'text',
-          text: 'npx @tiptap/cli init',
+          text: 'npx @tiptap/cli init\nnpm i code-block-extension',
         },
       ],
     },

@@ -1,9 +1,9 @@
 import { type Editor, isNodeSelection } from '@tiptap/react';
 import * as React from 'react';
 
-import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
 import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
 import { isNodeInSchema } from '../../../lib/tiptap-utils.js';
+import { Button, type ButtonProps } from '../../bootstrap-ui-primitive/button/index.js';
 
 export interface CodeBlockButtonProps extends Omit<ButtonProps, 'type'> {
   /**
@@ -25,7 +25,7 @@ export function canToggleCodeBlock(editor: Editor | null): boolean {
   if (!editor) return false;
 
   try {
-    return editor.can().toggleNode('codeBlock', 'paragraph');
+    return editor.can().toggleNode('plCodeBlock', 'paragraph');
   } catch {
     return false;
   }
@@ -33,12 +33,12 @@ export function canToggleCodeBlock(editor: Editor | null): boolean {
 
 export function isCodeBlockActive(editor: Editor | null): boolean {
   if (!editor) return false;
-  return editor.isActive('codeBlock');
+  return editor.isActive('plCodeBlock');
 }
 
 export function toggleCodeBlock(editor: Editor | null): boolean {
   if (!editor) return false;
-  return editor.chain().focus().toggleNode('codeBlock', 'paragraph').run();
+  return editor.chain().focus().toggleNode('plCodeBlock', 'paragraph').run();
 }
 
 export function isCodeBlockButtonDisabled(
@@ -78,7 +78,7 @@ export function useCodeBlockState(
   disabled = false,
   hideWhenUnavailable = false,
 ) {
-  const nodeInSchema = isNodeInSchema('codeBlock', editor);
+  const nodeInSchema = isNodeInSchema('plCodeBlock', editor);
 
   const canToggle = canToggleCodeBlock(editor);
   const isDisabled = isCodeBlockButtonDisabled(editor, canToggle, disabled);

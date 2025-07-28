@@ -131,7 +131,7 @@ export function isColorHighlightButtonDisabled(
   if (!editor || userDisabled) return true;
 
   const isIncompatibleContext =
-    editor.isActive('code') || editor.isActive('codeBlock') || editor.isActive('imageUpload');
+    editor.isActive('code') || editor.isActive('plCodeBlock') || editor.isActive('imageUpload');
 
   return isIncompatibleContext || !canToggleHighlight(editor);
 }
@@ -369,7 +369,7 @@ export function ColorHighlightPopover({
       }
 
       const isInCompatibleContext =
-        editor.isActive('code') || editor.isActive('codeBlock') || editor.isActive('imageUpload');
+        editor.isActive('code') || editor.isActive('plCodeBlock') || editor.isActive('imageUpload');
 
       if (isInCompatibleContext) {
         isDisabled = true;
