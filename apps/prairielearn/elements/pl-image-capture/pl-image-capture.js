@@ -757,7 +757,6 @@
       });
 
       this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
-      console.log('previousCaptureChangedFlag', this.previousCaptureChangedFlag);
 
       // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
       this.setCaptureChangedFlag(true);
