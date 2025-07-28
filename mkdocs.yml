@@ -287,7 +287,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  schemas/adminQuery.md
   schemas/infoNewsItem.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md
