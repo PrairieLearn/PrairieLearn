@@ -124,7 +124,7 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
-        ${aiGradingInfo
+        ${aiGradingInfo && aiGradingInfo.submissionManuallyGraded
           ? html`
               <li class="list-group-item overflow-y-auto" style="max-height: 500px;">
                 <label>

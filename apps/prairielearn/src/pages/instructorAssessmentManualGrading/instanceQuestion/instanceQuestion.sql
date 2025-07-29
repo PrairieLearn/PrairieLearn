@@ -91,7 +91,7 @@ WHERE
   AND grading_method = 'AI'
   AND gj.deleted_at IS NULL
 ORDER BY
-  date DESC
+  gj.date DESC
 LIMIT
   1;
 

@@ -160,11 +160,9 @@ router.get(
 
         aiGradingInfo = {
           submissionManuallyGraded,
-          feedback: submissionManuallyGraded ? ai_grading_job_data?.feedback?.manual : undefined,
-          prompt: submissionManuallyGraded ? formattedPrompt : undefined,
-          selectedRubricItemIds: submissionManuallyGraded
-            ? selectedRubricItems.map((item) => item.id)
-            : undefined,
+          feedback: ai_grading_job_data?.feedback?.manual,
+          prompt: formattedPrompt,
+          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           promptImageUrls,
         };
       }
