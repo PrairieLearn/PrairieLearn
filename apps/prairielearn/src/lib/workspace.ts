@@ -129,13 +129,13 @@ function connection(socket: Socket) {
   // that the client possesses a token that is valid for this workspace ID.
   const workspace_id = socket.handshake.auth.workspace_id;
 
-  socket.on('joinWorkspace', (callback?: (result: any) => void) => {
+  socket.on('joinWorkspace', (callback: (result: any) => void) => {
     socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
-      (workspace) => callback?.({ workspace_id, state: workspace.state }),
+      (workspace) => callback({ workspace_id, state: workspace.state }),
       (err) => {
-        callback?.({ errorMessage: err.message });
+        callback({ errorMessage: err.message });
         Sentry.captureException(err);
       },
     );
@@ -153,6 +153,7 @@ function connection(socket: Socket) {
   });
 
   socket.on('heartbeat', (callback?: (result: any) => void) => {
+    // TODO: remove the callback parameter in the future once all clients have been updated.
     sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
       (heartbeat_at) => callback?.({ workspace_id, heartbeat_at }),
       (err) => {
