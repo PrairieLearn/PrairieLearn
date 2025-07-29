@@ -176,4 +176,32 @@ describe('fastSyncQuestion', () => {
     assert(strategy !== null);
     assert.isFalse(await attemptFastSync(course, strategy));
   });
+
+  it('falls back to slow sync when changing to Manual grading method', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // Change the grading method to Manual.
+    courseData.questions[util.QUESTION_ID].gradingMethod = 'Manual';
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
+
+  it('falls back to slow sync when changing from Manual grading method', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // Change the grading method to Internal.
+    courseData.questions[util.MANUAL_GRADING_QUESTION_ID].gradingMethod = 'Internal';
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([
+      path.join('questions', util.MANUAL_GRADING_QUESTION_ID, 'info.json'),
+    ]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
 });

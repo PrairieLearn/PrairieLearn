@@ -146,6 +146,16 @@ async function syncQuestionJson(
     // If the UUIDs don't match, we can't do a fast sync.
     if (jsonData.uuid !== existingQuestion.uuid) return null;
 
+    // If we're changing either to or from the Manual grading method, we won't
+    // use fast sync. This will change point allocations in assessments, so we
+    // need to do a full sync.
+    if (
+      jsonData.data?.gradingMethod !== existingQuestion.grading_method &&
+      (jsonData.data?.gradingMethod === 'Manual' || existingQuestion.grading_method === 'Manual')
+    ) {
+      return null;
+    }
+
     const topic = await run(async () => {
       if (!jsonData.data?.topic) return null;
 
@@ -155,7 +165,7 @@ async function syncQuestionJson(
       });
     });
 
-    // The topic must already exist. I.f it doesn't, we can't do a fast sync.
+    // The topic must already exist. If it doesn't, we can't do a fast sync.
     // The exception is when there's an error in the file, in which case we
     // don't care about syncing the topic (and in fact we don't know what it
     // is from the file anyways).
