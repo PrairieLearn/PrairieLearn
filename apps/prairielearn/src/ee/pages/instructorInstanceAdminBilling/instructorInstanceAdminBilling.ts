@@ -105,6 +105,11 @@ router.post(
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
+    // Only course owners can manage billing.
+    if (!res.locals.authz_data.has_course_permission_own) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
+    }
+
     const pageData = await loadPageData(res);
 
     const desiredRequiredPlans: PlanName[] = [];

@@ -1131,12 +1131,10 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sharing',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   );
   app.use(
@@ -1597,12 +1595,10 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/sharing',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/staff',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   );
   app.use(
