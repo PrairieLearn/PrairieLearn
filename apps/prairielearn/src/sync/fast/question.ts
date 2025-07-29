@@ -18,8 +18,6 @@ import { DEFAULT_QUESTION_INFO, loadAndValidateJson, validateQuestion } from '..
 import { getParamsForQuestion } from '../fromDisk/questions.js';
 import * as infofile from '../infofile.js';
 
-import type { QuestionFastSync } from './index.js';
-
 const sql = loadSqlEquiv(import.meta.url);
 
 async function selectMatchingQuestion(pathPrefix: string) {
@@ -115,11 +113,8 @@ async function updateQuestion(
  * was able to be fast synced, `null` otherwise. If `null`, one should fall back to
  * a full, slow sync.
  */
-async function syncQuestionJson(
-  course: Course,
-  strategy: QuestionFastSync,
-): Promise<Question | null> {
-  const existingQuestion = await selectMatchingQuestion(strategy.pathPrefix);
+async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Question | null> {
+  const existingQuestion = await selectMatchingQuestion(pathPrefix);
 
   if (existingQuestion) {
     // These files all correspond to an existing question. This is the easy case.
@@ -183,19 +178,19 @@ async function syncQuestionJson(
     // prefix should be the JSON file itself, or there are multiple files, in
     // which case we'd expect to find a JSON file directly under the path prefix.
     const jsonFilePath = await run(async () => {
-      if (strategy.pathPrefix.endsWith('.json')) {
+      if (pathPrefix.endsWith('.json')) {
         // The path prefix is the JSON file itself.
-        return strategy.pathPrefix;
+        return pathPrefix;
       }
 
       // The path prefix is a directory, so look for an `info.json` file in it.
-      const jsonFilePath = path.join(course.path, strategy.pathPrefix, 'info.json');
+      const jsonFilePath = path.join(course.path, pathPrefix, 'info.json');
       const jsonFileStat = await fs.stat(jsonFilePath).catch(() => null);
 
       // Handle when the file doesn't exist or isn't actually a file.
       if (!jsonFileStat?.isFile()) return null;
 
-      return path.join(strategy.pathPrefix, 'info.json');
+      return path.join(pathPrefix, 'info.json');
     });
 
     if (!jsonFilePath) {
@@ -259,10 +254,7 @@ async function syncQuestionJson(
   }
 }
 
-export async function fastSyncQuestion(
-  course: Course,
-  strategy: QuestionFastSync,
-): Promise<boolean> {
+export async function fastSyncQuestion(course: Course, pathPrefix: string): Promise<boolean> {
   // TODO: We do need to consider deletion here; it's possible that a question may
   // consist just of a JSON file, and that deleting the file could delete the
   // question. It's also possible that someone might delete a JSON file that's
@@ -276,7 +268,7 @@ export async function fastSyncQuestion(
   // entire containing directory was also deleted. If not, we'll fall back to slow
   // sync.
 
-  const question = await syncQuestionJson(course, strategy);
+  const question = await syncQuestionJson(course, pathPrefix);
   if (!question) return false;
 
   if (config.chunksGenerator) {

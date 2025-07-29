@@ -43,7 +43,7 @@ function getQuestionFastSyncStrategy(changedFiles: string[]): QuestionFastSync |
   };
 }
 
-export interface QuestionFastSync {
+interface QuestionFastSync {
   type: 'Question';
   pathPrefix: string;
 }
@@ -73,6 +73,6 @@ export async function attemptFastSync(
 ): Promise<boolean> {
   switch (strategy.type) {
     case 'Question':
-      return fastSyncQuestion(course, strategy);
+      return fastSyncQuestion(course, strategy.pathPrefix);
   }
 }
