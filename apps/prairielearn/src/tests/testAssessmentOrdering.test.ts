@@ -15,7 +15,6 @@ import {
 
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
-  let courseInstanceId: string | null = null;
   let assessmentBadges;
 
   const course = getCourseData();
@@ -79,7 +78,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   };
 
   async function fetchAssessmentsPage() {
-    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${courseInstanceId}/assessments`;
+    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/1/assessments`;
     const response = await helperClient.fetchCheerio(assessmentsUrl);
     assert.isTrue(response.ok);
     return response;
@@ -105,11 +104,6 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
     await helperServer.before(courseDir)();
-    const courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Fa19',
-    });
-    courseInstanceId = courseInstance.id;
   });
 
   afterAll(helperServer.after);
