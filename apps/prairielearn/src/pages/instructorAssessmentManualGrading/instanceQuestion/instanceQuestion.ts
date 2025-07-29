@@ -11,6 +11,7 @@ import {
   selectLastSubmissionId,
   selectRubricGradingItems,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import {
   AiGradingJobSchema,
   DateFromISOString,
@@ -30,7 +31,6 @@ import { selectAndAuthzVariant } from '../../../models/variant.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import {
-  type AIGradingInfo,
   type GradingJobData,
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
@@ -104,7 +104,7 @@ router.get(
      * Contains feedback, prompt, and selected rubric items of the AI grader.
      * If the submission was not graded by AI, this will be undefined.
      */
-    let aiGradingInfo: AIGradingInfo | undefined = undefined;
+    let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
 
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);

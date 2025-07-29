@@ -8,6 +8,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
@@ -20,19 +21,6 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
   grader_name: z.string().nullable(),
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
-
-export interface AIGradingInfo {
-  /** If the submission was also manually graded. */
-  submissionManuallyGraded: boolean;
-  /** The IDs of the rubric items selected by the AI grader. */
-  selectedRubricItemIds: string[];
-  /** The freeform feedback of the AI grader. */
-  feedback?: string;
-  /** The raw prompt sent to the LLM for AI grading.  */
-  prompt: string;
-  /** Images that were sent in the prompt. */
-  promptImageUrls: string[];
-}
 
 export function InstanceQuestion({
   resLocals,
@@ -52,7 +40,7 @@ export function InstanceQuestion({
    * 1. The AI grading feature flag is enabled
    * 2. The question was AI graded
    */
-  aiGradingInfo?: AIGradingInfo;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   return PageLayout({
     resLocals: {

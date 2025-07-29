@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -16,7 +17,6 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
-import type { AIGradingInfo } from '../pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -45,7 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
-  aiGradingInfo?: AIGradingInfo;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   const {
     question,

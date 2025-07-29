@@ -1,9 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
 import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
-
-import type { AIGradingInfo } from './instanceQuestion.html.js';
 
 export function RubricInputSection({
   resLocals,
@@ -12,7 +11,7 @@ export function RubricInputSection({
 }: {
   resLocals: Record<string, any>;
   disable: boolean;
-  aiGradingInfo?: AIGradingInfo;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
@@ -111,7 +110,7 @@ function RubricItems({
   rubric_grading_items: Record<string, RubricGradingItem> | null | undefined;
   assessment_question: AssessmentQuestion;
   disable: boolean;
-  aiGradingInfo?: AIGradingInfo;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   const ai_selected_rubric_item_ids_set =
     aiGradingInfo && aiGradingInfo.submissionManuallyGraded
