@@ -11,18 +11,18 @@ import { stringifyStream } from '@prairielearn/csv';
 import { queryValidatedCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
-import { z } from 'zod';
+import { IdSchema } from '@prairielearn/zod';
 
-const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, z.any());
+const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, IdSchema);
 const output = createWriteStream('workspaces.csv');
 
-const stringifier = stringifyStream({
+const stringifier = stringifyStream<string>({
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
   // Optionally provide a function to transform each item in the stream.
   transform(record) {
     return {
-      id: `workspace-${id}`,
+      id: `workspace-${record}`,
     };
   },
 });
