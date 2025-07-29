@@ -493,7 +493,7 @@ onDocumentReady(() => {
     },
   });
   document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
-    checkbox.addEventListener('change', (e) => {
+    checkbox.addEventListener('change', () => {
       const filter_rubric_items = Array.from(
         document.querySelectorAll<HTMLInputElement>('.js-rubric-item-filter:checked'),
       ).map((el) => el.value);
