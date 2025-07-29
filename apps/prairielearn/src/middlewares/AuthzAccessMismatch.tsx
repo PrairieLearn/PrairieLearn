@@ -88,21 +88,22 @@ export function AuthzAccessMismatch({
       label: 'Course instance edit',
       key: 'has_course_instance_permission_edit',
     },
-  ];
+  ] satisfies { label: string; key: keyof PageContext['authz_data'] }[];
 
   // Only show the checkboxes that are different between authn and authz
   const authnPermissions = listedPermissions.filter(
-    (permission) => authzData['authn_' + permission.key] !== authzData[permission.key],
+    // 'as any' is fine since we validated the keys without the 'authn_' prefix.
+    (permission) => (authzData as any)['authn_' + permission.key] !== authzData[permission.key],
   );
   const authzPermissions = listedPermissions.filter(
-    (permission) => authzData['authn_' + permission.key] !== authzData[permission.key],
+    (permission) => (authzData as any)['authn_' + permission.key] !== authzData[permission.key],
   );
 
   const authnCheckboxes = authnPermissions.map((permission) => (
     <Checkbox
       key={'authn_' + permission.key}
       label={permission.label}
-      checked={authzData['authn_' + permission.key] ?? false}
+      checked={(authzData as any)['authn_' + permission.key] ?? false}
       isAuthn={true}
     />
   ));
