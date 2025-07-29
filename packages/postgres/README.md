@@ -177,7 +177,7 @@ const { user, course } = await sqldb.runInTransactionAsync(async () => {
 
 ### Cursors
 
-For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time.
+For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time. If you don't need to validate the rows, you can use `z.unknown()` as the schema.
 
 ```ts
 import { queryValidatedCursor } from '@prairielearn/postgres';
@@ -192,7 +192,7 @@ for await (const users of cursor.iterate(100)) {
 }
 ```
 
-You can optionally pass a Zod schema to parse and validate each row:
+Otherwise, pass a Zod schema to parse and validate each row:
 
 ```ts
 import { z } from 'zod';
