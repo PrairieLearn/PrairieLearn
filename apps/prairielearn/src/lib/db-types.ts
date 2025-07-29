@@ -448,7 +448,7 @@ export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
 export const ExamModeNetworkSchema = z.object({
   created_at: DateFromISOString,
-  during: z.any(), // TODO: fix this
+  during: z.unknown(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
   id: IdSchema,
   location: z.string().nullable(),
   network: z.string().cidr(),
@@ -791,6 +791,7 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
   name: z.string(),
   platform: z.string(),
+  require_linked_lti_user: z.boolean(),
   tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),

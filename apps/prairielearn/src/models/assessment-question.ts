@@ -21,7 +21,6 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
   course_id: IdSchema,
   course_sharing_name: z.string().nullable(),
-  number: z.string(),
   open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors: QuestionSchema.shape.sync_errors,
