@@ -42,9 +42,7 @@ router.get(
       // Look up the supported providers for this institution.
       const supportedProviders = await queryRows(
         sql.select_supported_providers_for_institution,
-        {
-          institution_id: institutionId,
-        },
+        { institution_id: institutionId },
         InstitutionSupportedProvidersSchema,
       );
 

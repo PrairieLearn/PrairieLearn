@@ -98,9 +98,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         // Get exam assessment URL using ids from database
         const assessmentId = await queryRow(
           sql.select_group_exam_by_tid,
-          {
-            assessment_tid: GROUP_EXAM_1_TID,
-          },
+          { assessment_tid: GROUP_EXAM_1_TID },
           IdSchema,
         );
         const instructorAssessmentsUrlGroupTab =
@@ -118,9 +116,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         // Get exam assessment URLs using ids from database
         const assessmentId = await queryRow(
           sql.select_group_exam_by_tid,
-          {
-            assessment_tid: GROUP_EXAM_2_TID,
-          },
+          { assessment_tid: GROUP_EXAM_2_TID },
           IdSchema,
         );
         const instructorAssessmentsUrlGroupTab =
@@ -137,17 +133,13 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
     test.sequential('first assessment group config in database is correct', async function () {
       const assessmentId = await queryRow(
         sql.select_group_exam_by_tid,
-        {
-          assessment_tid: GROUP_EXAM_1_TID,
-        },
+        { assessment_tid: GROUP_EXAM_1_TID },
         IdSchema,
       );
 
       const groupConfigResult = await queryRow(
         sql.select_group_config,
-        {
-          assessment_id: assessmentId,
-        },
+        { assessment_id: assessmentId },
         z.object({ minimum: z.number(), maximum: z.number() }),
       );
       const min = groupConfigResult.minimum;
@@ -159,17 +151,13 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
     test.sequential('second assessment group config in database is correct', async function () {
       const assessmentId = await queryRow(
         sql.select_group_exam_by_tid,
-        {
-          assessment_tid: GROUP_EXAM_2_TID,
-        },
+        { assessment_tid: GROUP_EXAM_2_TID },
         IdSchema,
       );
 
       const groupConfigResult = await queryRow(
         sql.select_group_config,
-        {
-          assessment_id: assessmentId,
-        },
+        { assessment_id: assessmentId },
         z.object({ minimum: z.number(), maximum: z.number() }),
       );
       const min = groupConfigResult.minimum;
@@ -184,9 +172,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       // Get exam assessment URL using id from database
       const assessmentId = await queryRow(
         sql.select_group_exam_by_tid,
-        {
-          assessment_tid: GROUP_EXAM_1_TID,
-        },
+        { assessment_tid: GROUP_EXAM_1_TID },
         IdSchema,
       );
       const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
@@ -336,9 +322,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
     // Get exam assessment URL using id from database
     const assessmentId = await queryRow(
       sql.select_group_exam_by_tid,
-      {
-        assessment_tid: GROUP_EXAM_1_TID,
-      },
+      { assessment_tid: GROUP_EXAM_1_TID },
       IdSchema,
     );
     const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
@@ -445,9 +429,7 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
 
     const secondAssessmentId = await queryRow(
       sql.select_group_exam_by_tid,
-      {
-        assessment_tid: GROUP_EXAM_2_TID,
-      },
+      { assessment_tid: GROUP_EXAM_2_TID },
       IdSchema,
     );
     const secondAssessmentUrl = courseInstanceUrl + '/assessment/' + secondAssessmentId;

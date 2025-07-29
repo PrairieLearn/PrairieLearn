@@ -153,9 +153,7 @@ async function prepareGroup() {
   // Get exam assessment URL using ids from database
   const assessmentId = await queryRow(
     sql.select_assessment,
-    {
-      assessment_tid: GROUP_WORK_ASSESSMENT_TID,
-    },
+    { assessment_tid: GROUP_WORK_ASSESSMENT_TID },
     IdSchema,
   );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
