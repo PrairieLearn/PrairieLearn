@@ -550,29 +550,28 @@ function addRubricItemRow() {
   if (!row || !(row instanceof HTMLTableRowElement)) return;
   table.querySelector('tbody').appendChild(row);
 
+  // All entries of an item should be enabled on creation
+  row.querySelectorAll('.js-rubric-item-disable').forEach((item) => (item.disabled = false));
+
   const rubricItemRowOrder = row.querySelector('.js-rubric-item-row-order');
   if (rubricItemRowOrder) {
     rubricItemRowOrder.name = `rubric_item[new${next_id}][order]`;
   }
   const rubricItemPoints = row.querySelector('.js-rubric-item-points');
   if (rubricItemPoints) {
-    rubricItemPoints.disabled = false;
     rubricItemPoints.name = `rubric_item[new${next_id}][points]`;
     rubricItemPoints.value = `${points}`;
   }
   const rubricItemDescription = row.querySelector('.js-rubric-item-description');
   if (rubricItemDescription) {
-    rubricItemDescription.disabled = false;
     rubricItemDescription.name = `rubric_item[new${next_id}][description]`;
   }
   const rubricItemExplanation = row.querySelector('.js-rubric-item-explanation');
   if (rubricItemExplanation) {
-    rubricItemExplanation.disabled = false;
     rubricItemExplanation.name = `rubric_item[new${next_id}][explanation]`;
   }
   const rubricItemGraderNote = row.querySelector('.js-rubric-item-grader-note');
   if (rubricItemGraderNote) {
-    rubricItemGraderNote.disabled = false;
     rubricItemGraderNote.name = `rubric_item[new${next_id}][grader_note]`;
   }
   row
