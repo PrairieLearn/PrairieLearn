@@ -33,9 +33,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
-      {
-        institution_id: req.params.institution_id,
-      },
+      { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
     );
 
