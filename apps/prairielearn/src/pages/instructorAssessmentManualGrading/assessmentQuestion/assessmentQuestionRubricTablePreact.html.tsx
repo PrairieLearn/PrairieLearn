@@ -1,0 +1,424 @@
+/** @jsxImportSource preact */
+import type { FunctionalComponent } from 'preact';
+import { useEffect, useMemo, useState } from 'preact/compat';
+
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { AssessmentQuestion } from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.js';
+
+interface Props {
+  assessment_question: AssessmentQuestion;
+  rubric_data: RubricData | undefined | null;
+  __csrf_token: any;
+  aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
+  aiGradingStats: AiGradingGeneralStats;
+}
+
+export const AssessmentQuestionRubricTable: FunctionalComponent<Props> = ({
+  assessment_question,
+  rubric_data,
+  __csrf_token,
+  aiGradingEnabled,
+  aiGradingMode,
+  aiGradingStats,
+}) => {
+  const showAiGradingStats = true; // later set according to input vars
+  const rubricStats = aiGradingStats.rubric_stats;
+
+  const [rubricPoints, setRubricPoints] = useState<number[]>(
+    aiGradingStats.rubric_stats.map((item) => item.rubric_item.points),
+  );
+  const [startingPoints, setStartingPoints] = useState<number>(rubric_data?.starting_points ?? 0);
+  const [totalPositive, totalNegative] = rubricPoints.reduce(
+    ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
+    [startingPoints, startingPoints],
+  );
+
+  const [minPoints, setMinPoints] = useState<number>(rubric_data?.min_points ?? 0);
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
+
+  const [rubricWarning, setRubricWarning] = useState<string | null>(null);
+
+  const maxPoints = maxExtraPoints + startingPoints;
+
+  if (totalPositive < maxPoints) {
+    setRubricWarning(
+      `Rubric item points reach at most ${totalPositive} points. ${maxPoints - totalPositive} left to reach maximum.`,
+    );
+  } else if (totalNegative > minPoints) {
+    setRubricWarning(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
+  } else {
+    setRubricWarning(null);
+  }
+
+  return (
+    <div class="card overflow-hidden p-2 mb-3 js-rubric-settings-card">
+      <form name="rubric-settings" method="POST" data-max-points={assessment_question.max_points}>
+        <input type="hidden" name="__csrf_token" value={__csrf_token} />
+        <input type="hidden" name="__action" value="modify_rubric_settings" />
+        <input type="hidden" name="modified_at" value={rubric_data?.modified_at.toString()} />
+        <input type="hidden" name="use_rubric" value="true" />
+
+        <div class="card mb-2 mt-1">
+          <button
+            type="button"
+            class="card-header d-flex border-top-0 border-start-0 border-end-0 text-start"
+            data-bs-toggle="collapse"
+            data-bs-target="#rubric-setting"
+          >
+            <div class="card-title mb-0 me-auto d-flex align-items-center">Rubric settings</div>
+          </button>
+          <div id="rubric-setting" class="collapse p-2">
+            <RubricGeneralSettings
+              assessment_question={assessment_question}
+              rubric_data={rubric_data}
+            />
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table
+            class="table table-sm border-bottom mb-3 js-rubric-items-table"
+            aria-label="Rubric items"
+          >
+            <thead>
+              <tr class="table-light fw-bold">
+                <td style="width: 1px"></td>
+                <td>Points</td>
+                <td>Description</td>
+                <td>Detailed explanation</td>
+                <td>Grader note</td>
+                <td>Show to students</td>
+                {aiGradingEnabled && aiGradingMode && <td>AI agreement</td>}
+              </tr>
+            </thead>
+            <tbody>
+              {rubricStats.map((item, index) => (
+                <RubricItemRow
+                  key={item.rubric_item.id}
+                  item={item}
+                  index={index}
+                  submission_rubric_count={aiGradingStats.submission_rubric_count}
+                  showAiGradingStats={showAiGradingStats}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="js-settings-points-warning-placeholder"></div>
+        <div class="js-add-rubric-item-button-container">
+          <button
+            type="button"
+            class="btn btn-sm btn-secondary js-add-rubric-item-button js-rubric-item-disable"
+            disabled
+          >
+            Add item
+          </button>
+        </div>
+
+        <template class="js-new-row-rubric-item">
+          <RubricItemRow
+            item={null}
+            index={rubricStats.length}
+            submission_rubric_count={aiGradingStats.submission_rubric_count}
+            showAiGradingStats={showAiGradingStats}
+          />
+        </template>
+
+        <div class="text-end">
+          <button type="button" class="btn btn-secondary js-rubric-edit">
+            Edit rubric
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const RubricGeneralSettings: FunctionalComponent<{
+  assessment_question: AssessmentQuestion;
+  rubric_data: RubricData | undefined | null;
+}> = ({ assessment_question, rubric_data }) => {
+  const showAutoPointOptions = !!assessment_question.max_auto_points;
+
+  return (
+    <>
+      {showAutoPointOptions && (
+        <>
+          <div class="row">
+            <div class="col-12 col-lg-6">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input js-replace-auto-points-input"
+                    name="replace_auto_points"
+                    type="radio"
+                    value="false"
+                    required
+                    data-max-points={assessment_question.max_manual_points}
+                    checked={
+                      !(rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points)
+                    }
+                  />
+                  Apply rubric to manual points (out of {assessment_question.max_manual_points},
+                  keep auto points)
+                </label>
+                <TooltipInfo text="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results." />
+              </div>
+            </div>
+            <div class="col-12 col-lg-6">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input js-replace-auto-points-input"
+                    name="replace_auto_points"
+                    type="radio"
+                    value="true"
+                    required
+                    data-max-points={assessment_question.max_points}
+                    checked={
+                      rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points
+                    }
+                  />
+                  Apply rubric to total points (out of {assessment_question.max_points}, ignore auto
+                  points)
+                </label>
+                <TooltipInfo
+                  text={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessment_question.max_points} points).`}
+                />
+              </div>
+            </div>
+          </div>
+          <hr />
+        </>
+      )}
+
+      <div class="row">
+        <div class="col-12 col-lg-6">
+          <div class="form-check js-rubric-max-points-positive">
+            <label class="form-check-label">
+              <input
+                class="form-check-input js-rubric-item-limits"
+                name="starting_points"
+                type="radio"
+                value="0"
+                required
+                checked={!rubric_data?.starting_points}
+              />
+              Positive grading (start at zero, add points)
+            </label>
+          </div>
+          <div class="form-check js-rubric-max-points-positive">
+            <label class="form-check-label">
+              <input
+                class="form-check-input js-rubric-item-limits js-negative-grading"
+                name="starting_points"
+                type="radio"
+                value={assessment_question.max_manual_points ?? 0}
+                required
+                checked={!!rubric_data?.starting_points}
+              />
+              Negative grading (start at <span class="js-rubric-max-points-info"></span>, subtract
+              penalties)
+            </label>
+            <TooltipInfo text="This setting only affects starting points. Rubric items may always be added with positive or negative points." />
+          </div>
+        </div>
+
+        <div class="mb-3 col-6 col-lg-3">
+          <label class="form-label">
+            Minimum rubric score
+            <TooltipInfo text="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole." />
+            <input
+              class="form-control js-rubric-item-limits"
+              name="min_points"
+              type="number"
+              required
+              value={rubric_data?.min_points ?? 0}
+            />
+          </label>
+        </div>
+
+        <div class="mb-3 col-6 col-lg-3">
+          <label class="form-label">
+            Maximum extra credit
+            <TooltipInfo text="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit." />
+            <input
+              class="form-control js-rubric-item-limits"
+              name="max_extra_points"
+              type="number"
+              required
+              value={rubric_data?.max_extra_points ?? 0}
+            />
+          </label>
+        </div>
+      </div>
+    </>
+  );
+};
+
+interface RubricItemRowProps {
+  item: AiGradingGeneralStats['rubric_stats'][0] | null;
+  index: number;
+  submission_rubric_count: number;
+  showAiGradingStats: boolean;
+}
+
+export const RubricItemRow: FunctionalComponent<RubricItemRowProps> = ({
+  item,
+  index,
+  submission_rubric_count,
+  showAiGradingStats,
+}) => {
+  const namePrefix = item ? `rubric_item[cur${item.rubric_item.id}]` : 'rubric_item[new]';
+
+  return (
+    <tr>
+      <td class="text-nowrap align-middle">
+        {item && <input type="hidden" name={`${namePrefix}[id]`} value={item.rubric_item.id} />}
+        <input
+          type="hidden"
+          class="js-rubric-item-row-order"
+          name={`${namePrefix}[order]`}
+          value={index}
+        />
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost js-rubric-item-move-button js-rubric-item-disable"
+          disabled
+          draggable
+        >
+          <i class="fas fa-arrows-up-down" />
+        </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-down-button">
+          Move down
+        </button>
+        <button type="button" class="visually-hidden js-rubric-item-move-up-button">
+          Move up
+        </button>
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost js-rubric-item-delete js-rubric-item-disable text-danger"
+          disabled
+          aria-label="Delete"
+        >
+          <i class="fas fa-trash text-danger" />
+        </button>
+      </td>
+
+      <td class="align-middle">
+        <input
+          type="number"
+          class="form-control js-rubric-item-points js-rubric-item-disable"
+          style={{ width: '4rem' }}
+          step="any"
+          required
+          disabled
+          name={`${namePrefix}[points]`}
+          value={item?.rubric_item.points}
+          aria-label="Points"
+        />
+      </td>
+
+      <td class="align-middle">
+        <input
+          type="text"
+          class="form-control js-rubric-item-description js-rubric-item-disable"
+          required
+          disabled
+          maxLength={100}
+          style={{ minWidth: '15rem' }}
+          name={`${namePrefix}[description]`}
+          value={item?.rubric_item.description}
+          aria-label="Description"
+        />
+      </td>
+
+      <td class="align-middle">
+        <textarea
+          class="form-control js-rubric-item-explanation js-rubric-item-disable"
+          disabled
+          maxLength={10000}
+          style={{ minWidth: '15rem' }}
+          name={`${namePrefix}[explanation]`}
+          aria-label="Explanation"
+        >
+          {item?.rubric_item.explanation}
+        </textarea>
+      </td>
+
+      <td class="align-middle">
+        <textarea
+          class="form-control js-rubric-item-grader-note js-rubric-item-disable"
+          disabled
+          maxLength={10000}
+          style={{ minWidth: '15rem' }}
+          name={`${namePrefix}[grader_note]`}
+          aria-label="Grader note"
+        >
+          {item?.rubric_item.grader_note}
+        </textarea>
+      </td>
+
+      <td class="align-middle">
+        <div class="form-check form-check-inline">
+          <label class="form-check-label text-nowrap">
+            <input
+              type="radio"
+              class="form-check-input js-rubric-item-always-show"
+              required
+              name={`${namePrefix}[always_show_to_students]`}
+              value="true"
+              checked={!item || item.rubric_item.always_show_to_students}
+            />
+            Always
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <label class="form-check-label text-nowrap">
+            <input
+              type="radio"
+              class="form-check-input js-rubric-item-always-show"
+              required
+              name={`${namePrefix}[always_show_to_students]`}
+              value="false"
+              checked={!item || !item.rubric_item.always_show_to_students}
+            />
+            If selected
+          </label>
+        </div>
+      </td>
+
+      {showAiGradingStats && (
+        <td class="align-middle">
+          {submission_rubric_count === 0 ? (
+            <>&mdash;</>
+          ) : item?.disagreement_count ? (
+            <>
+              <i class="bi bi-x-square-fill text-danger" />{' '}
+              <span class="text-muted">
+                ({item.disagreement_count}/{submission_rubric_count} disagree)
+              </span>
+            </>
+          ) : (
+            <i class="bi bi-check-square-fill text-success" />
+          )}
+        </td>
+      )}
+    </tr>
+  );
+};
+
+const TooltipInfo: FunctionalComponent<{ text: string }> = ({ text }) => (
+  <button
+    type="button"
+    class="btn btn-sm btn-ghost"
+    data-bs-toggle="tooltip"
+    data-bs-placement="bottom"
+    data-bs-title={text}
+  >
+    <i class="fas fa-circle-info" />
+  </button>
+);
