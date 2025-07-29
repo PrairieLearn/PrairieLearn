@@ -143,6 +143,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-duplicate-imports': 'error',
 
       // Enforce alphabetical order of import specifiers within each import group.
@@ -342,6 +343,12 @@ export default tseslint.config([
     },
   },
   {
+    files: ['apps/prairielearn/src/tests/**/*', 'packages/**/*', 'scripts/**/*'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['**/*.html', '**/*.mustache'],
     rules: {
       '@html-eslint/no-extra-spacing-text': 'off',
@@ -355,6 +362,7 @@ export default tseslint.config([
       },
     },
   },
+
   {
     files: ['**/*.mustache'],
     rules: {

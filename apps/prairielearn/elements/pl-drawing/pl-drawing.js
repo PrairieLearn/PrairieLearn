@@ -308,17 +308,6 @@ class PLDrawingAnswerState {
    * @param object Object to update.
    */
   updateObject(object) {
-    if (object.id in this._answerData) {
-      if (this._answerData[object.id].type !== object.type) {
-        console.trace(
-          `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${
-            object.type
-          }`,
-        );
-        console.warn('Existing', this._answerData[object.id]);
-        console.warn('New', object);
-      }
-    }
     this._answerData[object.id] = object;
     this._updateAnswerInput();
   }
