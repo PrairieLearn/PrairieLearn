@@ -31,7 +31,6 @@
     "node-gyp": "^11.2.0",
     "preact-compat": "^3.19.0",
     "react": "^19.1.0",
-    "react-bootstrap": "^2.10.10",
     "react-dom": "^19.1.0",
     "tar-stream": "^3.1.7"
   },
