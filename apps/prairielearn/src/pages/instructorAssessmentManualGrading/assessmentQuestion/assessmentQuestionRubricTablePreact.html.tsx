@@ -107,7 +107,20 @@ export const AssessmentQuestionRubricTable: FunctionalComponent<Props> = ({
           </table>
         </div>
 
-        <div class="js-settings-points-warning-placeholder"></div>
+        {rubricWarning && (
+          <div
+            class="alert alert-warning alert-dismissible js-settings-points-warning"
+            role="alert"
+          >
+            {rubricWarning}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+        )}
         <div class="js-add-rubric-item-button-container">
           <button
             type="button"
