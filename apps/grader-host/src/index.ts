@@ -102,7 +102,7 @@ async.series(
     },
     async () => {
       if (config.reportLoad) {
-        await load.init(config.maxConcurrentJobs);
+        load.init(config.maxConcurrentJobs);
       }
     },
     async () => {

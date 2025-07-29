@@ -10,7 +10,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 let initialized = false;
 let currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
 
-export async function init(newMaxJobs) {
+export function init(newMaxJobs) {
   maxJobs = newMaxJobs;
   const nowMS = Date.now();
   lastEstimateTimeMS = nowMS;
