@@ -137,6 +137,17 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_embeddings') {
+      let AssessmentQuestionEmbeddingSchema = z.object({
+        instance_question_id: z.number(),
+        assessment_question_id: z.number(),
+        link_to_instance_question: z.string(),
+        error_description: z.string(),
+        embedding: z.array(z.number()),
+        question_content: z.string(),
+        images: z.array(z.string()),
+        prompt: z.any(),
+      });
+
       const openai = new OpenAI({
         apiKey: config.aiGradingOpenAiApiKey,
         organization: config.aiGradingOpenAiOrganization,
@@ -177,6 +188,18 @@ router.post(
           console.log('Embedding', embedding);
           console.log('Submission Message', submissionMessage);
           console.log('Completion Content', completionContent);
+
+          const embeddingData: AssessmentQuestionEmbeddingSchema = {
+            instance_question_id: instance_question.id,
+            assessment_question_id: assessment_question.id,
+            link_to_instance_question: `${res.locals.urlPrefix}/instance-question/${instance_question.id}`,
+            error_description: submissionMessage,
+            embedding: embedding,
+            question_content: question.content,
+            images: instance_question.images || [],
+          }
+
+
         }
         return res.redirect(req.originalUrl);
       }
