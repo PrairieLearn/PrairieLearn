@@ -305,6 +305,69 @@ export async function generateSubmissionEmbedding({
   return new_submission_embedding;
 }
 
+
+export async function generateErrorEmbedding({
+  course,
+  question,
+  instance_question,
+  urlPrefix,
+  openai,
+}: {
+  question: Question;
+  course: Course;
+  instance_question: InstanceQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}) {
+  const question_course = await getQuestionCourse(question, course);
+  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
+  const questionModule = questionServers.getModule(question.type);
+  const render_submission_results = await questionModule.render(
+    { question: false, submissions: true, answer: false },
+    variant,
+    question,
+    submission,
+    [submission],
+    question_course,
+    locals,
+  );
+  const submission_text = render_submission_results.data.submissionHtmls[0];
+
+  const submissionMessage = generateSubmissionMessage({
+    submission_text,
+    submitted_answer: submission.submitted_answer,
+  });
+
+  // Prompt the LLM to determine the errors made in the submission.
+  const messages: ChatCompletionMessageParam[] = [
+    submissionMessage,
+    {
+      role: 'system',
+      content: 'Given the student submission, identify the fundamental errors made in the submission. Keep your response concise and focused on the fundamental problems. Target 1-2 sentences.',
+    }
+  ];
+
+  const completion = await openai.chat.completions.parse({
+    messages,
+    model: OPEN_AI_MODEL,
+    user: `course_${course.id}`,
+    temperature: OPEN_AI_TEMPERATURE,
+  });
+
+  const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
+  const completionContent = completion.choices[0].message.content;
+
+  return {
+    embedding,
+    submissionMessage,
+    completionContent,
+  };
+}
+
 export function parseAiRubricItems({
   ai_rubric_items,
   rubric_items,

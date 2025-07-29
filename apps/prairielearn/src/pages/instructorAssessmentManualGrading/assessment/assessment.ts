@@ -19,6 +19,9 @@ import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
+import { generateErrorEmbedding, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { config } from '../../../lib/config.js';
+import OpenAI from 'openai';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -133,6 +136,50 @@ router.post(
         });
       }
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'generate_embeddings') {
+      const openai = new OpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+    
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_questions = (await selectAssessmentQuestions(
+        assessment.id,
+      )) as AssessmentQuestion[];
+
+      if (!assessment_questions) {
+        return;
+      }
+      const START_INDEX = 1; 
+      for (let i = START_INDEX; i < assessment_questions.length; i++) {
+        const assessment_question = assessment_questions[i];
+        const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+          assessment_question.id,
+        );
+
+        const question = await selectQuestionById(assessment_question.question_id);
+        if (!question) {
+          continue;
+        }
+
+        for (const instance_question of all_instance_questions) {
+          const {
+            embedding,
+            submissionMessage,
+            completionContent
+          } = await generateErrorEmbedding({
+            course: res.locals.course,
+            question,
+            instance_question,
+            urlPrefix: res.locals.urlPrefix,
+            openai
+          })
+          console.log('Embedding', embedding);
+          console.log('Submission Message', submissionMessage);
+          console.log('Completion Content', completionContent);
+        }
+        return res.redirect(req.originalUrl);
+      }
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
