@@ -2,11 +2,12 @@ import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { IdSchema } from '../lib/db-types.js';
+import { GroupConfigSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -76,11 +77,18 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('3. Check if the config is correct', function () {
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
-        assessment_id: locals.assessment_id,
-      });
-      const min = result.rows[0]['minimum'];
-      const max = result.rows[0]['maximum'];
+      const result = await sqldb.queryRow(
+        sql.select_group_config,
+        {
+          assessment_id: locals.assessment_id,
+        },
+        z.object({
+          minimum: GroupConfigSchema.shape.minimum,
+          maximum: GroupConfigSchema.shape.maximum,
+        }),
+      );
+      const min = result.minimum;
+      const max = result.maximum;
       assert.equal(min, 3);
       assert.equal(max, 3);
     });
@@ -104,11 +112,18 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('5. Check if the config is correct', function () {
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
-        assessment_id: locals.assessment_id_2,
-      });
-      const min = result.rows[0]['minimum'];
-      const max = result.rows[0]['maximum'];
+      const result = await sqldb.queryRow(
+        sql.select_group_config,
+        {
+          assessment_id: locals.assessment_id_2,
+        },
+        z.object({
+          minimum: GroupConfigSchema.shape.minimum,
+          maximum: GroupConfigSchema.shape.maximum,
+        }),
+      );
+      const min = result.minimum;
+      const max = result.maximum;
       assert.equal(min, 2);
       assert.equal(max, 5);
     });

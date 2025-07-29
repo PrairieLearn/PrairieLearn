@@ -1,9 +1,12 @@
 import { v4 as uuid } from 'uuid';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { type IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import { CourseInstanceSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -18,7 +21,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
-  let courseInstanceId = null;
+  let courseInstanceId: null | z.infer<typeof IdSchema> = null;
   let assessmentBadges;
 
   const course = getCourseData();
@@ -108,15 +111,27 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
     await helperServer.before(courseDir)();
-    const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
-    courseInstanceId = courseInstanceResult.rows[0].id;
+    const courseInstance = await sqldb.queryRow(
+      sql.get_test_course,
+      z.object({
+        assessments_group_by: CourseInstanceSchema.shape.assessments_group_by,
+        id: CourseInstanceSchema.shape.id,
+      }),
+    );
+    courseInstanceId = courseInstance.id;
   });
 
   afterAll(helperServer.after);
 
   test.sequential('should default to grouping by Set', async function () {
-    const result = await sqldb.queryOneRowAsync(sql.get_test_course, []);
-    assert.equal(result.rows[0].assessments_group_by, 'Set');
+    const result = await sqldb.queryRow(
+      sql.get_test_course,
+      z.object({
+        assessments_group_by: CourseInstanceSchema.shape.assessments_group_by,
+        id: CourseInstanceSchema.shape.id,
+      }),
+    );
+    assert.equal(result.assessments_group_by, 'Set');
   });
 
   test.sequential('should use correct order when grouping by Set', async function () {

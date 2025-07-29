@@ -55,6 +55,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
@@ -2092,8 +2093,7 @@ export async function insertDevUser() {
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';
-  const result = await sqldb.queryOneRowAsync(sql, []);
-  const user_id = result.rows[0].user_id;
+  const user_id = await sqldb.queryRow(sql, [], UserSchema.shape.user_id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +

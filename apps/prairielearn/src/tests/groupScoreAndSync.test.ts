@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -234,8 +235,8 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {});
-      locals.assessment_instance = result.rows[0];
+      const result = await sqldb.queryRow(sql.select_assessment_instance, AssessmentInstanceSchema);
+      locals.assessment_instance = result;
     });
   });
   describe('7. check Score for another student', function () {

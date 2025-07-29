@@ -1,3 +1,4 @@
+-- BLOCK assessment_instance_by_id
 SELECT
   ai.*
 FROM

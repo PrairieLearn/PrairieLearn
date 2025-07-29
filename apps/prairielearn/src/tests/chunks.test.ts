@@ -9,6 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
+import { CourseSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
@@ -294,34 +295,50 @@ describe('chunks', () => {
       await helperServer.before(tempTestCourseDir.path)();
 
       // Find the ID of this course
-      const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
-        course_path: tempTestCourseDir.path,
-      });
-      courseId = results.rows[0].id;
+      const results = await sqldb.queryRow(
+        sql.select_course_by_path,
+        {
+          course_path: tempTestCourseDir.path,
+        },
+        CourseSchema,
+      );
+      courseId = results.id;
 
       // Find the ID of the course instance
-      const courseInstanceResults = await sqldb.queryOneRowAsync(sql.select_course_instance, {
-        long_name: 'Spring 2015',
-      });
-      courseInstanceId = courseInstanceResults.rows[0].id;
+      courseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance,
+        {
+          long_name: 'Spring 2015',
+        },
+        IdSchema,
+      );
 
       // Find the ID of an assessment that has clientFilesAssessment
-      const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
-        tid: 'exam1-automaticTestSuite',
-      });
-      assessmentId = assessmentResults.rows[0].id;
+      assessmentId = await sqldb.queryRow(
+        sql.select_assessment,
+        {
+          tid: 'exam1-automaticTestSuite',
+        },
+        IdSchema,
+      );
 
       // Find the ID of a question.
-      const questionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'addNumbers',
-      });
-      questionId = questionResults.rows[0].id;
+      questionId = await sqldb.queryRow(
+        sql.select_question,
+        {
+          qid: 'addNumbers',
+        },
+        IdSchema,
+      );
 
       // Find the ID of a nested question.
-      const nestedQuestionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'subfolder/nestedQuestion',
-      });
-      nestedQuestionId = nestedQuestionResults.rows[0].id;
+      nestedQuestionId = await sqldb.queryRow(
+        sql.select_question,
+        {
+          qid: 'subfolder/nestedQuestion',
+        },
+        IdSchema,
+      );
     });
 
     afterEach(async () => {
