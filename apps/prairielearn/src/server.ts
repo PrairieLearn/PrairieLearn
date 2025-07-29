@@ -78,6 +78,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { generateSubmissions } from './ee/lib/ai-image-grading/generate-submissions.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1920,6 +1921,14 @@ export async function initExpress(): Promise<Express> {
     '/pl/administrator/batchedMigrations',
     (await import('./pages/administratorBatchedMigrations/administratorBatchedMigrations.js'))
       .default,
+  );
+  app.get(
+    '/pl/generate-submissions',
+    async (req, res) => {
+      await generateSubmissions(req, res);
+      res.status(200).send('Submissions generated successfully');
+
+    }
   );
 
   if (isEnterprise()) {

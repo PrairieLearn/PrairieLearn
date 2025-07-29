@@ -54,13 +54,20 @@ export async function generateSubmissions(
 ) {
     const sql = loadSqlEquiv(import.meta.filename);
 
+    const data = {
+        courseId: '3',
+        shortName: 'FA25',
+        assessmentId: '50',
+    }
+
+
     // Get the course
-    const course = await selectCourseById('33');
+    const course = await selectCourseById(data.courseId);
 
     // Get the courseInstance
     const courseInstance = await selectCourseInstanceByShortName({
-        course_id: '33',
-        short_name: 'FA25'
+        course_id: data.courseId,
+        short_name: data.shortName
     });
 
     // Find all students enrolled in the course instance
@@ -74,7 +81,7 @@ export async function generateSubmissions(
 
     // Find the assessments
     const assessment = await selectAssessmentById(
-        '254'
+        data.assessmentId
     );
 
     // Delete all assessment instances for the assessment
