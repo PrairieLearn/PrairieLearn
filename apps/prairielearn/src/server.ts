@@ -1126,7 +1126,6 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
   );
@@ -1593,7 +1592,6 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/settings',
-    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
   );
