@@ -198,12 +198,20 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callOneRowAsync('assessment_instances_grade', [
-        assessment_instance_id,
-        authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ]);
+      await sqldb.callRow(
+        'assessment_instances_grade',
+        [
+          assessment_instance_id,
+          authn_user_id,
+          null, // credit
+          true, // only_log_if_score_updated
+        ],
+        z.object({
+          updated: z.boolean(),
+          new_points: z.number(),
+          new_score_perc: z.number(),
+        }),
+      );
     }
     return true;
   });
