@@ -47,9 +47,7 @@ const COURSE: courseDB.CourseData = {
 async function getAllChunksForCourse(course_id) {
   return await sqldb.queryRows(
     sql.select_all_chunks,
-    {
-      course_id,
-    },
+    { course_id },
     z.object({
       id: z.string(),
       uuid: z.string(),
