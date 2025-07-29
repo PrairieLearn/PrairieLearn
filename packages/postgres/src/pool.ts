@@ -229,9 +229,7 @@ export class PostgresPool {
   }
 
   /**
-   * Gets a new client from the connection pool. If `err` is not null
-   * then `client` and `done` are undefined. If `err` is null then
-   * `client` is valid and can be used. The caller MUST call `done()` to
+   * Gets a new client from the connection pool. The caller MUST call `release()` to
    * release the client, whether or not errors occurred while using
    * `client`. The client can call `done(truthy_value)` to force
    * destruction of the client, but this should not be used except in
@@ -625,6 +623,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns an array of rows
    * that conform to the given Zod schema.
+   *
+   * If the query returns a single column, the return value will be a list of column values.
    */
   async queryRows<Model extends z.ZodTypeAny>(
     sql: string,
@@ -650,8 +650,9 @@ export class PostgresPool {
     model: Model,
   ): Promise<z.infer<Model>>;
   /**
-   * Executes a query with the specified parameters. Errors if the query does
-   * not return exactly one row that conforms to the given Zod schema.
+   * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
+   *
+   * If the query returns a single column, the return value will be the column value itself.
    */
   async queryRow<Model extends z.ZodTypeAny>(
     sql: string,
@@ -681,6 +682,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Returns either null or a
    * single row that conforms to the given Zod schema, and errors otherwise.
+   *
+   * If the query returns a single column, the return value will be the column value itself.
    */
   async queryOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,
@@ -734,8 +737,8 @@ export class PostgresPool {
     model: Model,
   ): Promise<z.infer<Model>>;
   /**
-   * Calls the given sproc with the specified parameters. Errors if the
-   * sproc does not return exactly one row.
+   * Calls the given sproc with the specified parameters.
+   * Returns exactly one row from the sproc that conforms to the given Zod schema.
    */
   async callRow<Model extends z.ZodTypeAny>(
     sql: string,
@@ -764,7 +767,7 @@ export class PostgresPool {
   ): Promise<z.infer<Model> | null>;
   /**
    * Calls the given sproc with the specified parameters. Returns either null
-   * or a single row that conforms to the given Zod schema, and errors otherwise.
+   * or a single row that conforms to the given Zod schema.
    */
   async callOptionalRow<Model extends z.ZodTypeAny>(
     sql: string,

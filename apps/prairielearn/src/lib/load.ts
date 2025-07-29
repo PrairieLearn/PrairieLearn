@@ -35,7 +35,6 @@ class LoadEstimator {
     this.warnOnOldJobs = warnOnOldJobs == null ? true : warnOnOldJobs;
     this.timeoutID = null;
     this.active = true;
-    // Start the load reporting loop. This is not awaited on purpose.
     this._reportLoad();
   }
 
@@ -91,7 +90,7 @@ class LoadEstimator {
     this.lastIncrementTimeMS = nowMS;
   }
 
-  async _reportLoad() {
+  _reportLoad() {
     debug(`LoadEstimator._reportLoad(): jobType = ${this.jobType}`);
     this._warnOldJobs();
     const params = {
@@ -109,11 +108,9 @@ class LoadEstimator {
       average_jobs: this._getAndResetLoadEstimate(),
       max_jobs: this.maxJobCount,
     };
-    try {
-      await sqldb.queryAsync(sql.insert_load, params);
-    } catch (err) {
+    sqldb.queryAsync(sql.insert_load, params).catch((err) => {
       logger.error('Error reporting load', { err });
-    }
+    });
     if (!this.active) return;
     debug(
       `LoadEstimator._reportLoad(): jobType = ${this.jobType}, scheduling next call for ${

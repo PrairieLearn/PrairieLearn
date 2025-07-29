@@ -28,7 +28,7 @@ router.get('/', [
   forbidAccessInExamMode,
   asyncHandler(async (req, res) => {
     if (res.locals.authn_provider_name === 'LTI') {
-      const result = await queryRow(
+      const ltiInfo = await queryRow(
         sql.lti_course_instance_lookup,
         { course_instance_id: res.locals.authn_user.lti_course_instance_id },
         z.object({
@@ -36,7 +36,7 @@ router.get('/', [
           ci_long_name: z.string(),
         }),
       );
-      res.send(EnrollLtiMessage({ ltiInfo: result, resLocals: res.locals }));
+      res.send(EnrollLtiMessage({ ltiInfo, resLocals: res.locals }));
       return;
     }
 

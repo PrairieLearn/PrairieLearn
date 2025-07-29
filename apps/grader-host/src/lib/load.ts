@@ -19,8 +19,8 @@ export async function init(newMaxJobs) {
   currentJobs = 0;
   maxJobs = newMaxJobs;
   initialized = true;
-  await _reportLoad();
-  await _reportConfig();
+  _reportLoad();
+  _reportConfig();
 }
 
 export function startJob() {
@@ -62,7 +62,7 @@ function _addIntegratedLoad() {
   lastIncrementTimeMS = nowMS;
 }
 
-async function _reportLoad() {
+function _reportLoad() {
   const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
@@ -72,15 +72,18 @@ async function _reportLoad() {
     healthy: healthCheck.isHealthy(),
   };
   // Query will run in the background, without awaiting
-  sqldb.queryAsync(sql.insert_load, params).catch((err) => {
-    logger.error('Error reporting load:', err);
-  }).finally(() => {
-    // Report load again in the future
-    setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
-  });
+  sqldb
+    .queryAsync(sql.insert_load, params)
+    .catch((err) => {
+      logger.error('Error reporting load:', err);
+    })
+    .finally(() => {
+      // Report load again in the future
+      setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+    });
 }
 
-async function _reportConfig() {
+function _reportConfig() {
   const params = {
     instance_id: config.instanceId,
     queue_name: config.jobsQueueName,
@@ -88,5 +91,7 @@ async function _reportConfig() {
     max_jobs: 0,
     config,
   };
-  await sqldb.queryAsync(sql.insert_config, params);
+  sqldb.queryAsync(sql.insert_config, params).catch((err) => {
+    logger.error('Error reporting config:', err);
+  });
 }
