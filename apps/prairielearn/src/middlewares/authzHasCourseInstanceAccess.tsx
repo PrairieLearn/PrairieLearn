@@ -1,53 +1,14 @@
-import { type NextFunction, type Request, type Response } from 'express';
+import { createAuthzMiddleware } from './authzHelper.js';
 
-import { HttpStatusError } from '@prairielearn/error';
-
-import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
-import { Hydrate } from '../lib/preact.js';
-
-import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
-
-export default function (req: Request, res: Response, next: NextFunction) {
-  const effectiveAccess =
+export default createAuthzMiddleware({
+  oneOfPermissions: [
     // Effective user is course instructor.
-    res.locals.authz_data.has_course_permission_preview ||
+    'has_course_permission_preview',
     // Effective user is course instance instructor.
-    res.locals.authz_data.has_course_instance_permission_view ||
+    'has_course_instance_permission_view',
     // Effective user is enrolled in the course instance.
-    res.locals.authz_data.has_student_access_with_enrollment;
-
-  const authenticatedAccess =
-    res.locals.authz_data.authn_has_course_permission_preview ||
-    res.locals.authz_data.authn_has_course_instance_permission_view ||
-    res.locals.authz_data.authn_has_student_access_with_enrollment;
-
-  if (effectiveAccess) {
-    return next();
-  } else if (authenticatedAccess) {
-    const pageContext = getPageContext(res.locals);
-
-    res.status(403).send(
-      PageLayout({
-        resLocals: res.locals,
-        navContext: {
-          type: pageContext.navbarType,
-          page: 'error',
-        },
-        pageTitle: 'Insufficient access',
-        content: (
-          <Hydrate>
-            <AuthzAccessMismatch
-              errorMessage="Access denied"
-              authzData={pageContext.authz_data}
-              authnUser={pageContext.authn_user}
-            />
-          </Hydrate>
-        ),
-      }),
-    );
-    return;
-  } else {
-    return next(new HttpStatusError(403, 'Access denied'));
-  }
-}
+    'has_student_access_with_enrollment',
+  ],
+  errorMessage: 'Access denied',
+  cosmeticOnly: false,
+});
