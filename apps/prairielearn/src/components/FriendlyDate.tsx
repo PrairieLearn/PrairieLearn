@@ -1,11 +1,8 @@
 import { type FC } from 'preact/compat';
-import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger.js';
-import TooltipOriginal from 'react-bootstrap/cjs/Tooltip.js';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
-
-const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
 
 export interface FriendlyDateProps {
   date: Date;
