@@ -4,7 +4,13 @@
   "title": "Image Capture",
   "set": "Homework",
   "number": "13",
-  "allowAccess": [],
+  "allowAccess": [
+    {
+      "startDate": "2015-04-05T00:00:01",
+      "endDate": "2075-04-05T00:00:01"
+      
+    }
+  ],
   "zones": [
     {
       "questions": [
