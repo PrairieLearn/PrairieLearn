@@ -12,6 +12,48 @@ WITH
       AND i.open
     GROUP BY
       i.instance_question_id
+  ),
+  latest_submissions AS (
+    SELECT
+      ranked.id AS submission_id,
+      ranked.manual_rubric_grading_id AS manual_rubric_grading_id,
+      ranked.instance_question_id
+    FROM (
+      SELECT
+        s.id,
+        s.manual_rubric_grading_id,
+        v.instance_question_id,
+        ROW_NUMBER() OVER (
+          PARTITION BY v.instance_question_id
+          ORDER BY v.date DESC, s.date DESC
+        ) AS rn
+      FROM
+        variants AS v
+        JOIN submissions AS s ON s.variant_id = v.id
+    ) ranked
+    WHERE rn = 1
+  ),
+  rubric_grading_to_items AS (
+    SELECT
+      rgi.rubric_grading_id,
+      ri.*
+    FROM
+      rubric_grading_items AS rgi
+      JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
+  ),
+  rubric_items_agg AS (
+    SELECT
+      ls.instance_question_id,
+      COALESCE(
+        json_agg(to_jsonb(rgti)) FILTER (WHERE rgti.id IS NOT NULL),
+        '[]'::json
+      ) AS rubric_items
+    FROM
+      latest_submissions AS ls
+      LEFT JOIN rubric_grading_to_items AS rgti
+        ON ls.manual_rubric_grading_id = rgti.rubric_grading_id
+    GROUP BY
+      ls.instance_question_id
   )
 SELECT
   iq.*,
@@ -27,7 +69,8 @@ SELECT
   -- is designed to reduce the impact of the order of the instance questions on
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
-  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order
+  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order,
+  COALESCE(ri.rubric_items, '[]'::json) AS rubric_grading_items
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -38,6 +81,7 @@ FROM
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
+  LEFT JOIN rubric_items_agg AS ri ON ri.instance_question_id = iq.id
 WHERE
   ai.assessment_id = $assessment_id
   AND iq.assessment_question_id = $assessment_question_id
@@ -243,3 +287,51 @@ SELECT
 FROM
   updated_instance_questions AS uiq
   LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (mriqmgj.instance_question_id = uiq.id);
+
+-- BLOCK select_rubric_data
+WITH
+  submission_count_per_rubric_item AS (
+    SELECT
+      rgi.rubric_item_id,
+      COUNT(DISTINCT iq.id) AS num_submissions
+    FROM
+      instance_questions iq
+      JOIN variants AS v ON (v.instance_question_id = iq.id)
+      JOIN submissions AS s ON (s.variant_id = v.id)
+      JOIN rubric_gradings rg ON (
+        rg.id = s.manual_rubric_grading_id
+        AND rg.rubric_id = $rubric_id
+      )
+      JOIN rubric_grading_items rgi ON (rgi.rubric_grading_id = rg.id)
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+    GROUP BY
+      rgi.rubric_item_id
+  ),
+  rubric_items_data AS (
+    SELECT
+      JSONB_AGG(
+        TO_JSONB(ri) || JSONB_BUILD_OBJECT(
+          'num_submissions',
+          COALESCE(scpri.num_submissions, 0)
+        )
+        ORDER BY
+          ri.number,
+          ri.id
+      ) AS items_data
+    FROM
+      rubric_items AS ri
+      LEFT JOIN submission_count_per_rubric_item AS scpri ON (scpri.rubric_item_id = ri.id)
+    WHERE
+      ri.rubric_id = $rubric_id
+      AND ri.deleted_at IS NULL
+  )
+SELECT
+  r.*,
+  rid.items_data AS rubric_items
+FROM
+  rubrics r
+  LEFT JOIN rubric_items_data rid ON (TRUE)
+WHERE
+  r.id = $rubric_id
+AND r.deleted_at IS NULL;

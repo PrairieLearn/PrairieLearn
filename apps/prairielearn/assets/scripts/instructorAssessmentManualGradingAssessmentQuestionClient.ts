@@ -28,6 +28,7 @@ onDocumentReady(() => {
     maxAutoPoints,
     aiGradingMode,
     csrfToken,
+    rubric_data,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -68,6 +69,8 @@ onDocumentReady(() => {
     rubricItems.sort((a, b) => a.number - b.number);
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
   };
+
+  let filter_rubric_items: string[] = [];
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
@@ -111,7 +114,7 @@ onDocumentReady(() => {
     // keys that aren't recognized are silently skipped.
     //
     // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'not-a-real-button'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -132,6 +135,38 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
+      },
+      rubricFilter: {
+        html: rubric_data
+          ? html`
+              <div class="btn-group">
+                <button
+                  type="button"
+                  class="btn btn-secondary dropdown-toggle"
+                  data-bs-toggle="dropdown"
+                  name="rubric-item-filter"
+                  data-bs-auto-close="outside"
+                >
+                  <i class="fas fa-filter"></i> Filter by rubric items
+                </button>
+                <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+                  ${rubric_data.rubric_items.map(
+                    (item) => html`
+                      <label class="dropdown-item dropdown-item-marker"
+                        ><input
+                          type="checkbox"
+                          class="js-rubric-item-filter"
+                          value="${item.description}"
+                          id="filter-rubric-item-${item.id}"
+                        />
+                        <span>${item.description}</span></label
+                      >
+                    `,
+                  )}
+                </div>
+              </div>
+            `.toString()
+          : '',
       },
     },
     onUncheck: updateGradingTagButton,
@@ -468,6 +503,28 @@ onDocumentReady(() => {
       }
     },
   });
+  document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
+    checkbox.addEventListener('change', (e) => {
+      filter_rubric_items = Array.from(
+        document.querySelectorAll<HTMLInputElement>('.js-rubric-item-filter:checked'),
+      ).map((el) => el.value);
+
+      $('#grading-table').bootstrapTable(
+        'filterBy',
+        { filter_rubric_items },
+        {
+          filterAlgorithm: (
+            row: InstanceQuestionRow,
+            filters: { filter_rubric_items: string[] },
+          ) => {
+            return filters.filter_rubric_items.every((item_description) =>
+              row.rubric_grading_items.map((item) => item.description).includes(item_description),
+            );
+          },
+        },
+      );
+    }),
+  );
 });
 
 function generateAiGraderName(

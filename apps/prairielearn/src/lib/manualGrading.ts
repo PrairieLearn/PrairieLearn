@@ -30,7 +30,7 @@ const AppliedRubricItemSchema = z.object({
 });
 type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
-const RubricDataSchema = RubricSchema.extend({
+export const RubricDataSchema = RubricSchema.extend({
   rubric_items: z.array(
     RubricItemSchema.extend({
       num_submissions: z.number(),
