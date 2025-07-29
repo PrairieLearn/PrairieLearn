@@ -1126,15 +1126,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sharing',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   );
   app.use(
@@ -1263,6 +1266,7 @@ export async function initExpress(): Promise<Express> {
   if (isEnterprise()) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing',
+      (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
     );
@@ -1589,15 +1593,18 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/settings',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
       .default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/sharing',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/staff',
+    (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   );
   app.use(

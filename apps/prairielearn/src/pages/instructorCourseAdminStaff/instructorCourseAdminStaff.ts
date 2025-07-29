@@ -46,10 +46,6 @@ const MAX_UIDS = 100;
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_own) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
-    }
-
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
