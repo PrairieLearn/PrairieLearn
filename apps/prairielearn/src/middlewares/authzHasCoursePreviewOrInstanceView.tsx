@@ -1,3 +1,4 @@
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -8,7 +9,7 @@ import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 
-export default asyncHandler(async (req, res, next) => {
+export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
   const effectiveAccess =
     res.locals.authz_data.has_course_permission_preview ||
     res.locals.authz_data.has_course_instance_permission_view;
@@ -18,29 +19,35 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_course_instance_permission_view;
 
   if (effectiveAccess) {
-    return next();
+    return;
   } else if (authenticatedAccess) {
     const pageContext = getPageContext(res.locals);
-    res.status(403).send(
-      PageLayout({
-        resLocals: res.locals,
-        navContext: {
-          type: pageContext.navbarType,
-          page: 'error',
-        },
-        pageTitle: 'Insufficient access',
-        content: (
-          <Hydrate>
-            <AuthzAccessMismatch errorMessage="Requires either course preview access or student data view access" />
-          </Hydrate>
-        ),
-      }),
-    );
-    return;
+    return PageLayout({
+      resLocals: res.locals,
+      navContext: {
+        type: pageContext.navbarType,
+        page: 'error',
+      },
+      pageTitle: 'Insufficient access',
+      content: (
+        <Hydrate>
+          <AuthzAccessMismatch errorMessage="Requires either course preview access or student data view access" />
+        </Hydrate>
+      ),
+    });
   } else {
     throw new error.HttpStatusError(
       403,
       'Requires either course preview access or student data view access',
     );
+  }
+}
+
+export default asyncHandler(async (req, res, next) => {
+  const body = await authzHasCoursePreviewOrInstanceView(req, res);
+  if (body) {
+    res.status(403).send(body);
+  } else {
+    next();
   }
 });
