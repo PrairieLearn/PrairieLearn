@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { NavbarTypeSchema } from '../../components/Navbar.types.js';
+
 import {
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
@@ -26,6 +28,8 @@ const RawPageContextSchema = z.object({
     name: z.string(),
     uid: z.string(),
   }),
+  // You should prefer to set the navbarType instead of using this value.
+  navbarType: NavbarTypeSchema,
 });
 export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
 export type PageContext = z.infer<typeof PageContextSchema>;
