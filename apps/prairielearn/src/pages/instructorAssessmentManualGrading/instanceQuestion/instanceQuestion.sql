@@ -77,46 +77,25 @@ SELECT
 FROM
   updated_issues AS i;
 
--- BLOCK select_most_recent_grading_job
+-- BLOCK select_ai_grading_job_data_for_submission
 SELECT
-  *
+  gj.id,
+  gj.manual_rubric_grading_id,
+  gj.feedback,
+  agj.prompt
 FROM
-  grading_jobs
+  grading_jobs as gj
+  LEFT JOIN ai_grading_jobs as agj ON (agj.grading_job_id = gj.id)
 WHERE
   submission_id = $submission_id
   AND grading_method = 'AI'
+  AND gj.deleted_at IS NULL
 ORDER BY
   date DESC
 LIMIT
   1;
 
--- BLOCK select_prompt_for_grading_job
-SELECT
-  agj.prompt
-FROM
-  grading_jobs as gj
-  JOIN ai_grading_jobs as agj ON (agj.grading_job_id = gj.id)
-WHERE
-  gj.id = $grading_job_id
-  AND gj.grading_method = 'AI'
-  AND gj.deleted_at IS NULL
-LIMIT
-  1;
-
--- BLOCK exists_select_ai_grading_job_for_submission
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      grading_jobs AS gj
-    WHERE
-      gj.submission_id = $submission_id
-      AND gj.grading_method = 'AI'
-      AND gj.deleted_at IS NULL
-  );
-
--- BLOCK exists_select_manual_grading_job_for_submission
+-- BLOCK select_exists_manual_grading_job_for_submission
 SELECT
   EXISTS (
     SELECT

@@ -114,14 +114,12 @@ function RubricItems({
   aiGradingInfo?: AIGradingInfo;
 }) {
   const ai_selected_rubric_item_ids_set =
-    aiGradingInfo?.selectedRubricItemIds &&
-    aiGradingInfo.submissionAiGraded &&
-    aiGradingInfo.submissionManuallyGraded
+    aiGradingInfo?.selectedRubricItemIds && aiGradingInfo.submissionManuallyGraded
       ? new Set(aiGradingInfo.selectedRubricItemIds)
       : null;
 
   return html`
-    ${aiGradingInfo?.submissionAiGraded && aiGradingInfo?.submissionManuallyGraded
+    ${aiGradingInfo && aiGradingInfo?.submissionManuallyGraded
       ? html`
           <div
             class="d-flex align-items-center gap-2 text-secondary mb-1"

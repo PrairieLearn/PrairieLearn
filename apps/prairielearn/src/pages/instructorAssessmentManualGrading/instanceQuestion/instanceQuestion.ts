@@ -12,6 +12,7 @@ import {
   selectRubricGradingItems,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import {
+  AiGradingJobSchema,
   DateFromISOString,
   GradingJobSchema,
   IdSchema,
@@ -99,43 +100,39 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
+    /**
+     * Contains feedback, prompt, and selected rubric items of the AI grader.
+     * If the submission was not graded by AI, this will be undefined.
+     */
     let aiGradingInfo: AIGradingInfo | undefined = undefined;
 
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
-      const grading_job = await sqldb.queryOptionalRow(
-        sql.select_most_recent_grading_job,
+      const ai_grading_job_data = await sqldb.queryOptionalRow(
+        sql.select_ai_grading_job_data_for_submission,
         {
           submission_id,
         },
-        GradingJobSchema,
+        z.object({
+          id: GradingJobSchema.shape.id,
+          manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+          feedback: GradingJobSchema.shape.feedback,
+          prompt: AiGradingJobSchema.shape.prompt,
+        }),
       );
 
-      if (grading_job) {
+      if (ai_grading_job_data) {
+        const promptForGradingJob = ai_grading_job_data.prompt as
+          | ChatCompletionMessageParam[]
+          | null;
         const selectedRubricItems = await selectRubricGradingItems(
-          grading_job.manual_rubric_grading_id,
+          ai_grading_job_data.manual_rubric_grading_id,
         );
 
-        const prompt_for_grading_job = (await sqldb.queryOptionalRow(
-          sql.select_prompt_for_grading_job,
-          {
-            grading_job_id: grading_job.id,
-          },
-          z.array(z.record(z.string(), z.any())).nullable(),
-        )) as ChatCompletionMessageParam[] | null;
-
-        /** Whether or not the submission was AI graded. */
-        const submissionAiGraded =
-          (await sqldb.queryOptionalRow(
-            sql.exists_select_ai_grading_job_for_submission,
-            { submission_id },
-            z.boolean(),
-          )) ?? false;
-
-        /** Whether or not the submission was manually graded. */
+        /** The submission was also manually graded if a manual grading job exists for it.*/
         const submissionManuallyGraded =
           (await sqldb.queryOptionalRow(
-            sql.exists_select_manual_grading_job_for_submission,
+            sql.select_exists_manual_grading_job_for_submission,
             { submission_id },
             z.boolean(),
           )) ?? false;
@@ -143,8 +140,8 @@ router.get(
         /** Images sent in the AI grading prompt */
         const promptImageUrls: string[] = [];
 
-        if (prompt_for_grading_job) {
-          for (const message of prompt_for_grading_job) {
+        if (promptForGradingJob) {
+          for (const message of promptForGradingJob) {
             if (message.content && typeof message.content === 'object') {
               for (const part of message.content) {
                 if (part.type === 'image_url') {
@@ -156,15 +153,14 @@ router.get(
         }
 
         const formattedPrompt = (
-          await formatJsonWithPrettier(JSON.stringify(prompt_for_grading_job, null, 2))
+          await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2))
         )
           .replaceAll('\\n', '\n')
           .trimStart();
 
         aiGradingInfo = {
-          submissionAiGraded,
           submissionManuallyGraded,
-          feedback: submissionManuallyGraded ? grading_job?.feedback?.manual : undefined,
+          feedback: submissionManuallyGraded ? ai_grading_job_data?.feedback?.manual : undefined,
           prompt: submissionManuallyGraded ? formattedPrompt : undefined,
           selectedRubricItemIds: submissionManuallyGraded
             ? selectedRubricItems.map((item) => item.id)

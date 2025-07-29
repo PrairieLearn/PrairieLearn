@@ -164,18 +164,18 @@ function AIGradingPrompt(prompt: string, promptImageUrls: string[]) {
       </div>
       <ul class="list-group list-group-flush">
         <li class="list-group-item my-0">
-          <h3 class="card-title h5 mt-2 mb-3">Raw prompt</h3>
+          <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
           <pre class="mb-0"><code>${prompt}</code></pre>
         </li>
         <li class="list-group-item my-0">
           ${promptImageUrls.length > 0
             ? html`
-                <h3 class="card-title h5 mt-2 mb-3">Prompt images</h3>
+                <h5 class="card-title mt-2 mb-3">Prompt images</h5>
                 ${promptImageUrls.map(
-                  (url) =>
+                  (url, index) =>
                     html`<img
                       src="${url}"
-                      alt="AI Grading Image"
+                      alt="Image ${index + 1} in the AI grading prompt"
                       class="img-fluid mb-2"
                       style="max-height: 600px"
                     />`,

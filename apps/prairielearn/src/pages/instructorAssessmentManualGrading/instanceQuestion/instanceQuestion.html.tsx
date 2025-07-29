@@ -22,11 +22,15 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
 export interface AIGradingInfo {
-  submissionAiGraded: boolean;
+  /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;
-  feedback?: string;
-  prompt?: string;
+  /** The IDs of the rubric items selected by the AI grader. */
   selectedRubricItemIds?: string[];
+  /** The freeform feedback of the AI grader. */
+  feedback?: string;
+  /** The raw prompt sent to the LLM for AI grading. */
+  prompt?: string;
+  /** Images that were sent in the prompt. */
   promptImageUrls: string[];
 }
 
@@ -44,9 +48,11 @@ export function InstanceQuestion({
   assignedGrader: User | null;
   lastGrader: User | null;
   /**
-   * `aiGradingInfo` is defined when the AI grading feature flag is enabled.
+   * `aiGradingInfo` is defined when
+   * 1. The AI grading feature flag is enabled
+   * 2. The question was AI graded
    */
-  aiGradingInfo?: AIGradingInfo;
+  aiGradingInfo?: AIGradingInfoWithImages;
 }) {
   return PageLayout({
     resLocals: {
