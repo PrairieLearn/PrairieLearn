@@ -112,8 +112,14 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
     setActiveElementId(`${columnId}-pin`);
   };
 
-  const isVisibilityChanged = Object.values(table.getState().columnVisibility).some((v) => !v);
-  const isPinningChanged = (table.getState().columnPinning.left?.length ?? 0) > 0;
+  const isVisibilityChanged = Object.entries(table.getState().columnVisibility).some(
+    ([key, value]) => {
+      return value !== table.initialState.columnVisibility[key];
+    },
+  );
+  const isPinningChanged = Object.entries(table.getState().columnPinning).some(([key, value]) => {
+    return value !== table.initialState.columnPinning[key];
+  });
   const showResetButton = isVisibilityChanged || isPinningChanged;
 
   const pinnedColumns = table.getAllLeafColumns().filter((c) => c.getIsPinned() === 'left');

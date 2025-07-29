@@ -1,6 +1,7 @@
 import {
   type AccessorKeyColumnDef,
   type ColumnFiltersState,
+  type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
   createColumnHelper,
@@ -30,6 +31,8 @@ import { type StudentRow } from './instructorStudents.shared.js';
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
 
+const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
+
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
@@ -47,7 +50,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   );
   const [columnPinning, setColumnPinning] = useQueryState(
     'frozen',
-    parseAsColumnPinningState.withDefault({ left: ['user_uid'], right: [] }),
+    parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -109,11 +112,10 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const allColumnIds = columns
     .filter((col) => col.accessorKey)
     .map((col) => col.accessorKey.replace('.', '_'));
+  const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(
-      Object.fromEntries(allColumnIds.map((id) => [id, true])),
-    ),
+    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
   const table = useReactTable({
@@ -128,6 +130,10 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
       columnSizing,
       columnVisibility,
       columnPinning,
+    },
+    initialState: {
+      columnPinning: DEFAULT_PINNING,
+      columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
