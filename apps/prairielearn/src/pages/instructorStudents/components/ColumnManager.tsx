@@ -1,16 +1,11 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import { useEffect, useRef, useState } from 'preact/compat';
-import ButtonOriginal from 'react-bootstrap/cjs/Button.js';
-import DropdownOriginal from 'react-bootstrap/cjs/Dropdown.js';
-import OverlayTriggerOriginal from 'react-bootstrap/cjs/OverlayTrigger.js';
-import TooltipOriginal from 'react-bootstrap/cjs/Tooltip.js';
+import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
-
-const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
-const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
 
 interface ColumnMenuItemProps {
   column: Column<StudentRow>;
