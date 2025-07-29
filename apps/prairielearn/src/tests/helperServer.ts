@@ -154,8 +154,10 @@ export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success
 
   // In the case of a failure, print more information to aid debugging.
   if (job_sequence.status !== status) {
+    // eslint-disable-next-line no-console
     console.log(job_sequence);
     const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
+    // eslint-disable-next-line no-console
     console.log(result.rows);
   }
 

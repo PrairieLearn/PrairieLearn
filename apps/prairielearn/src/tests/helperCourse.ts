@@ -7,6 +7,7 @@ export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();
   const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
   if (syncResult.status === 'sharing_error' || syncResult.hadJsonErrorsOrWarnings) {
+    // eslint-disable-next-line no-console
     console.log(getOutput());
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);
   }

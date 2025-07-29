@@ -27,9 +27,11 @@ export function waitForJobSequence(locals: Record<string, any>) {
     it('should be successful', async () => {
       assert(locals.job_sequence);
       if (locals.job_sequence.status !== 'Success') {
+        // eslint-disable-next-line no-console
         console.log(locals.job_sequence);
         const params = { job_sequence_id: locals.job_sequence_id };
         const result = await sqldb.queryAsync(sql.select_jobs, params);
+        // eslint-disable-next-line no-console
         console.log(result.rows);
       }
       assert.equal(locals.job_sequence.status, 'Success');
@@ -658,12 +660,15 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         // all child jobs and print them out. We'll also log any issues. We
         // do this before making assertions to ensure that they're printed.
         if (locals.job_sequence.status !== 'Success') {
+          // eslint-disable-next-line no-console
           console.log(locals.job_sequence);
           const params = { job_sequence_id: locals.job_sequence_id };
           const result = await sqldb.queryAsync(sql.select_jobs, params);
+          // eslint-disable-next-line no-console
           console.log(result.rows);
         }
         if (issues.rows.length > 0) {
+          // eslint-disable-next-line no-console
           console.log(issues.rows);
         }
 

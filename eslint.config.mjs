@@ -144,6 +144,7 @@ export default tseslint.config([
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
       'no-duplicate-imports': 'error',
+      'no-console': ['error', { allow: ['warn', 'error', 'table', 'trace'] }],
 
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
@@ -334,6 +335,10 @@ export default tseslint.config([
         ...globals.jquery,
       },
     },
+  },
+  {
+    files: ['contrib/**/*', 'scripts/**/*'],
+    rules: { 'no-console': 'off' },
   },
   {
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
