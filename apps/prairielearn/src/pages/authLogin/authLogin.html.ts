@@ -50,10 +50,6 @@ function LoginPageContainer({
             height: 100%;
           }
 
-          .login-methods > :not(:last-child) {
-            margin-bottom: 0.5rem;
-          }
-
           @media (min-width: 576px) {
             html,
             body {
@@ -234,7 +230,7 @@ export function AuthLogin({
             <hr />
           `
         : ''}
-      <div class="login-methods mt-4">
+      <div class="d-flex flex-column gap-2 mt-4">
         ${config.hasShib && !config.hideShibLogin ? ShibLoginButton() : ''}
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
@@ -242,7 +238,7 @@ export function AuthLogin({
       ${institutionAuthnProviders?.length
         ? html`
             <div class="institution-header text-muted my-3">Institution sign-on</div>
-            <div class="login-methods">
+            <div class="d-flex flex-column gap-2">
               ${institutionAuthnProviders.map(
                 (provider) => html`
                   <a href="${provider.url}" class="btn btn-outline-dark d-block w-100">
@@ -302,6 +298,8 @@ export function AuthLoginInstitution({
   const defaultProvider = loginOptions.find((p) => p.is_default === true);
   const hasNonDefaultProviders = loginOptions.find((p) => p.is_default === false);
 
+  // If a default provider is set, we'll always show it first. These variables
+  // determine whether to separately show other non-default providers.
   const showSaml = supportsSaml && defaultProvider?.name !== 'SAML';
   const showShib = supportsShib && defaultProvider?.name !== 'Shibboleth';
   const showGoogle = supportsGoogle && defaultProvider?.name !== 'Google';
@@ -379,7 +377,7 @@ export function AuthLoginInstitution({
               : ''}
           `
         : ''}
-      <div class="login-methods">
+      <div class="d-flex flex-column gap-2">
         ${[
           showSaml ? SamlLoginButton({ institutionId }) : '',
           showShib ? ShibLoginButton() : '',
