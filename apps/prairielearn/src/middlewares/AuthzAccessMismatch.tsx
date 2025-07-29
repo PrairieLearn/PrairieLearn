@@ -1,36 +1,9 @@
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Popover from 'react-bootstrap/Popover';
 import Tooltip from 'react-bootstrap/Tooltip';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContext } from '../lib/client/page-context.js';
 import type { StaffUser } from '../lib/client/safe-db-types.js';
-
-const Checkbox = ({
-  label,
-  checked,
-  isAuthn,
-}: {
-  label: string;
-  checked: boolean;
-  isAuthn: boolean;
-}) => {
-  return (
-    // no flex wrap
-    <li class="list-group-item d-flex flex-nowrap">
-      <input
-        class="form-check-input me-1"
-        type="checkbox"
-        id={`${label}-${isAuthn ? 'authn' : 'authz'}`}
-        checked={checked}
-        disabled
-      />
-      <label class="form-check-label text-nowrap" for={`${label}-${isAuthn ? 'authn' : 'authz'}`}>
-        {label}
-      </label>
-    </li>
-  );
-};
 
 export function AuthzAccessMismatch({
   errorMessage,
@@ -90,31 +63,10 @@ export function AuthzAccessMismatch({
     },
   ] satisfies { label: string; key: keyof PageContext['authz_data'] }[];
 
-  // Only show the checkboxes that are different between authn and authz
-  const authnPermissions = listedPermissions.filter(
-    // 'as any' is fine since we validated the keys without the 'authn_' prefix.
-    (permission) => (authzData as any)['authn_' + permission.key] !== authzData[permission.key],
-  );
+  // Only show the permissions that are different between authn and authz
   const authzPermissions = listedPermissions.filter(
     (permission) => (authzData as any)['authn_' + permission.key] !== authzData[permission.key],
   );
-
-  const authnCheckboxes = authnPermissions.map((permission) => (
-    <Checkbox
-      key={'authn_' + permission.key}
-      label={permission.label}
-      checked={(authzData as any)['authn_' + permission.key] ?? false}
-      isAuthn={true}
-    />
-  ));
-  const authzCheckboxes = authzPermissions.map((permission) => (
-    <Checkbox
-      key={permission.key}
-      label={permission.label}
-      checked={authzData[permission.key] ?? false}
-      isAuthn={false}
-    />
-  ));
 
   return (
     <main id="content" class="container">
@@ -125,22 +77,10 @@ export function AuthzAccessMismatch({
           <p>
             The
             <OverlayTrigger
-              placement="bottom"
               overlay={
-                <Popover>
-                  <Popover.Header>
-                    {authzUser.name} ({authzUser.uid})
-                  </Popover.Header>
-                  <Popover.Body>
-                    <ul class="list-group">
-                      {authzCheckboxes}
-                      <li class="list-group-item">Course role: {authzData.course_role}</li>
-                      <li class="list-group-item">
-                        Course instance role: {authzData.course_instance_role}
-                      </li>
-                    </ul>
-                  </Popover.Body>
-                </Popover>
+                <Tooltip>
+                  {authzUser.name} ({authzUser.uid})
+                </Tooltip>
               }
             >
               <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
@@ -155,22 +95,10 @@ export function AuthzAccessMismatch({
             </OverlayTrigger>
             to this page, but
             <OverlayTrigger
-              placement="bottom"
               overlay={
-                <Popover>
-                  <Popover.Header>
-                    {authnUser.name} ({authnUser.uid})
-                  </Popover.Header>
-                  <Popover.Body>
-                    <ul class="list-group">
-                      {authnCheckboxes}
-                      <li class="list-group-item">Course role: {authzData.authn_course_role}</li>
-                      <li class="list-group-item">
-                        Course instance role: {authzData.authn_course_instance_role}
-                      </li>
-                    </ul>
-                  </Popover.Body>
-                </Popover>
+                <Tooltip>
+                  {authnUser.name} ({authnUser.uid})
+                </Tooltip>
               }
             >
               <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
@@ -179,6 +107,53 @@ export function AuthzAccessMismatch({
             </OverlayTrigger>
             does.
           </p>
+
+          <details class="mb-3">
+            <summary>View permission differences</summary>
+            <div class="mt-3">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Permission</th>
+                    <th>Effective User</th>
+                    <th>Your Account</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {authzPermissions.map((permission) => (
+                    <tr key={permission.key}>
+                      <td>{permission.label}</td>
+                      <td>
+                        <span
+                          class={`badge ${authzData[permission.key] ? 'bg-success' : 'bg-danger'}`}
+                        >
+                          {authzData[permission.key] ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          class={`badge ${(authzData as any)['authn_' + permission.key] ? 'bg-success' : 'bg-danger'}`}
+                        >
+                          {(authzData as any)['authn_' + permission.key] ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td>Course role</td>
+                    <td>{authzData.course_role}</td>
+                    <td>{authzData.authn_course_role}</td>
+                  </tr>
+                  <tr>
+                    <td>Course instance role</td>
+                    <td>{authzData.course_instance_role}</td>
+                    <td>{authzData.authn_course_instance_role}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
             Clear effective user
           </button>
