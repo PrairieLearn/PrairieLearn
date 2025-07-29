@@ -11,6 +11,7 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import { getCourseOwners } from '../../lib/course.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -20,6 +21,11 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    errorMessage: 'Access denied (must be a student data viewer)',
+    cosmeticOnly: true,
+  }),
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
     const { authz_data, urlPrefix } = pageContext;
@@ -66,7 +72,10 @@ router.get(
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={authz_data}
+              authz_data={{
+                has_course_instance_permission_edit:
+                  authz_data.has_course_instance_permission_edit ?? false,
+              }}
               courseInstance={courseInstance}
               course={course}
               urlPrefix={urlPrefix}
