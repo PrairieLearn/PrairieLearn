@@ -103,7 +103,7 @@ WHERE
 LIMIT
   1;
 
--- BLOCK select_ai_grading_available_for_submission
+-- BLOCK exists_select_ai_grading_job_for_submission
 SELECT
   EXISTS (
     SELECT
@@ -116,7 +116,7 @@ SELECT
       AND gj.deleted_at IS NULL
   );
 
--- BLOCK select_manual_grading_available_for_submission
+-- BLOCK exists_select_manual_grading_job_for_submission
 SELECT
   EXISTS (
     SELECT

@@ -22,12 +22,12 @@ export const GradingJobDataSchema = GradingJobSchema.extend({
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
 export interface AIGradingInfo {
-  aiGradingAvailable: boolean;
-  manualGradingAvailable: boolean;
+  submissionAiGraded: boolean;
+  submissionManuallyGraded: boolean;
   feedback?: string;
   prompt?: string;
   selectedRubricItemIds?: string[];
-  imageUrls: string[];
+  promptImageUrls: string[];
 }
 
 export function InstanceQuestion({

@@ -124,29 +124,31 @@ router.get(
           z.array(z.record(z.string(), z.any())).nullable(),
         )) as ChatCompletionMessageParam[] | null;
 
-        const aiGradingAvailable =
+        /** Whether or not the submission was AI graded. */
+        const submissionAiGraded =
           (await sqldb.queryOptionalRow(
-            sql.select_ai_grading_available_for_submission,
+            sql.exists_select_ai_grading_job_for_submission,
             { submission_id },
             z.boolean(),
           )) ?? false;
 
-        const manualGradingAvailable =
+        /** Whether or not the submission was manually graded. */
+        const submissionManuallyGraded =
           (await sqldb.queryOptionalRow(
-            sql.select_manual_grading_available_for_submission,
+            sql.exists_select_manual_grading_job_for_submission,
             { submission_id },
             z.boolean(),
           )) ?? false;
 
         /** Images sent in the AI grading prompt */
-        const imageUrls: string[] = [];
+        const promptImageUrls: string[] = [];
 
         if (prompt_for_grading_job) {
           for (const message of prompt_for_grading_job) {
             if (message.content && typeof message.content === 'object') {
               for (const part of message.content) {
                 if (part.type === 'image_url') {
-                  imageUrls.push(part.image_url.url);
+                  promptImageUrls.push(part.image_url.url);
                 }
               }
             }
@@ -160,14 +162,14 @@ router.get(
           .trimStart();
 
         aiGradingInfo = {
-          aiGradingAvailable,
-          manualGradingAvailable,
-          feedback: aiGradingAvailable ? grading_job?.feedback?.manual : undefined,
-          prompt: aiGradingAvailable ? formattedPrompt : undefined,
-          selectedRubricItemIds: aiGradingAvailable
+          submissionAiGraded,
+          submissionManuallyGraded,
+          feedback: submissionManuallyGraded ? grading_job?.feedback?.manual : undefined,
+          prompt: submissionManuallyGraded ? formattedPrompt : undefined,
+          selectedRubricItemIds: submissionManuallyGraded
             ? selectedRubricItems.map((item) => item.id)
             : undefined,
-          imageUrls,
+          promptImageUrls,
         };
       }
     }

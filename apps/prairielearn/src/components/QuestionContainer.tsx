@@ -107,7 +107,7 @@ export function QuestionContainer({
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
       aiGradingInfo &&
       aiGradingInfo.prompt
-        ? AIGradingPrompt(aiGradingInfo.prompt, aiGradingInfo.imageUrls)
+        ? AIGradingPrompt(aiGradingInfo.prompt, aiGradingInfo.promptImageUrls)
         : ''}
       ${submissions.length > 0
         ? html`
@@ -156,7 +156,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt(prompt: string, imageUrls: string[]) {
+function AIGradingPrompt(prompt: string, promptImageUrls: string[]) {
   return html`
     <div class="card mb-3 grading-block">
       <div class="card-header bg-secondary text-white">
@@ -168,10 +168,10 @@ function AIGradingPrompt(prompt: string, imageUrls: string[]) {
           <pre class="mb-0"><code>${prompt}</code></pre>
         </li>
         <li class="list-group-item my-0">
-          ${imageUrls.length > 0
+          ${promptImageUrls.length > 0
             ? html`
                 <h3 class="card-title h5 mt-2 mb-3">Prompt images</h3>
-                ${imageUrls.map(
+                ${promptImageUrls.map(
                   (url) =>
                     html`<img
                       src="${url}"
