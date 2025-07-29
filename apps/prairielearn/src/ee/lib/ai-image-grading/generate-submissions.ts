@@ -58,6 +58,7 @@ export async function generateSubmissions(
         courseId: '3',
         shortName: 'FA25',
         assessmentId: '50',
+        skipRubrics: true
     }
 
 
@@ -188,6 +189,11 @@ export async function generateSubmissions(
                     submission_folder,
                     filename.replace('.jpg', '.jpeg') // Ensure the file extension matches
                 );
+                // Check if the file exists
+                if (!fs.existsSync(currentPath)) {
+                    continue;
+                }
+
                 // Retrieve the base-64 encoded image, stored locally 
                 const encodedData = fs.readFileSync(currentPath, {
                     encoding: 'base64'
@@ -203,6 +209,11 @@ export async function generateSubmissions(
 
                 submitted_answer[filename] = dataWithPrefix;
                 submitted_files.push(file);
+            }
+
+            if (submitted_files.length === 0) {
+                console.log(`No files submitted for question ${question.qid}`);
+                continue;
             }
 
             submitted_answer._files = submitted_files;
@@ -223,6 +234,10 @@ export async function generateSubmissions(
                 question,
                 course,
             );
+
+            if (data.skipRubrics) {
+                continue;
+            }
 
             // Insert student grades
             console.log(' rubric id', instance_question.manual_rubric_id)
