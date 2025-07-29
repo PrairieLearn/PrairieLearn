@@ -71,13 +71,13 @@ async function _reportLoad() {
     lifecycle_state: lifecycle.getState(),
     healthy: healthCheck.isHealthy(),
   };
-  try {
-    await sqldb.queryAsync(sql.insert_load, params);
-  } catch (err) {
+  // Query will run in the background, without awaiting
+  sqldb.queryAsync(sql.insert_load, params).catch((err) => {
     logger.error('Error reporting load:', err);
-  }
-  // Report load again in the future
-  setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+  }).finally(() => {
+    // Report load again in the future
+    setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+  });
 }
 
 async function _reportConfig() {
