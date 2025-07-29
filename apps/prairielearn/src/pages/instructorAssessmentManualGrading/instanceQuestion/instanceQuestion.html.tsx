@@ -25,11 +25,11 @@ export interface AIGradingInfo {
   /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;
   /** The IDs of the rubric items selected by the AI grader. */
-  selectedRubricItemIds?: string[];
+  selectedRubricItemIds: string[];
   /** The freeform feedback of the AI grader. */
   feedback?: string;
-  /** The raw prompt sent to the LLM for AI grading. */
-  prompt?: string;
+  /** The raw prompt sent to the LLM for AI grading.  */
+  prompt: string;
   /** Images that were sent in the prompt. */
   promptImageUrls: string[];
 }
@@ -52,7 +52,7 @@ export function InstanceQuestion({
    * 1. The AI grading feature flag is enabled
    * 2. The question was AI graded
    */
-  aiGradingInfo?: AIGradingInfoWithImages;
+  aiGradingInfo?: AIGradingInfo;
 }) {
   return PageLayout({
     resLocals: {
