@@ -1263,7 +1263,6 @@ export async function initExpress(): Promise<Express> {
   if (isEnterprise()) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing',
-      (await import('./middlewares/authzHasCourseOwnerAccess.js')).default,
       (await import('./ee/pages/instructorInstanceAdminBilling/instructorInstanceAdminBilling.js'))
         .default,
     );
