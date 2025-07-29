@@ -101,7 +101,7 @@ router.get(
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     /**
-     * Contains feedback, prompt, and selected rubric items of the AI grader.
+     * Contains the prompt and selected rubric items of the AI grader.
      * If the submission was not graded by AI, this will be undefined.
      */
     let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
@@ -116,7 +116,6 @@ router.get(
         z.object({
           id: GradingJobSchema.shape.id,
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
-          feedback: GradingJobSchema.shape.feedback,
           prompt: AiGradingJobSchema.shape.prompt,
         }),
       );
@@ -160,7 +159,6 @@ router.get(
 
         aiGradingInfo = {
           submissionManuallyGraded,
-          feedback: ai_grading_job_data?.feedback?.manual,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           promptImageUrls,

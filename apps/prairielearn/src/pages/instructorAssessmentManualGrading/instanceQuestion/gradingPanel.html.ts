@@ -124,16 +124,6 @@ ${submission.feedback?.manual}</textarea
             </small>
           </label>
         </li>
-        ${aiGradingInfo && aiGradingInfo.submissionManuallyGraded
-          ? html`
-              <li class="list-group-item overflow-y-auto" style="max-height: 500px;">
-                <label>
-                  <p class="mb-1">AI grader feedback:</p>
-                  <p class="text-muted mb-1">${aiGradingInfo.feedback || 'None available.'}</p>
-                </label>
-              </li>
-            `
-          : ''}
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
               <li class="list-group-item">

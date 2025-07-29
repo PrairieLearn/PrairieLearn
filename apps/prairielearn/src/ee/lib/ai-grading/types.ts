@@ -28,8 +28,6 @@ export interface InstanceQuestionAIGradingInfo {
   submissionManuallyGraded: boolean;
   /** The IDs of the rubric items selected by the AI grader. */
   selectedRubricItemIds: string[];
-  /** The freeform feedback of the AI grader. */
-  feedback?: string;
   /** The raw prompt sent to the LLM for AI grading.  */
   prompt: string;
   /** Images that were sent in the prompt. */

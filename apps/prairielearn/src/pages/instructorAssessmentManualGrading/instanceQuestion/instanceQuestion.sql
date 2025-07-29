@@ -81,7 +81,6 @@ FROM
 SELECT
   gj.id,
   gj.manual_rubric_grading_id,
-  gj.feedback,
   agj.prompt
 FROM
   grading_jobs as gj
