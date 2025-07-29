@@ -362,7 +362,6 @@ export default tseslint.config([
       },
     },
   },
-
   {
     files: ['**/*.mustache'],
     rules: {
