@@ -14,6 +14,10 @@ import {
 
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
+import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
+import { selectQuestionById } from '../../../models/question.js';
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const router = Router();
@@ -102,6 +106,32 @@ router.post(
           });
         }
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'ai_grade_assessment_all') {
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_questions = (await selectAssessmentQuestions(
+        assessment.id,
+      )) as AssessmentQuestion[];
+
+      if (!assessment_questions) {
+        return;
+      }
+      const START_INDEX = 1; 
+      for (let i = START_INDEX; i < assessment_questions.length; i++) {
+        const assessment_question = assessment_questions[i];
+        const question = await selectQuestionById(assessment_question.question_id);
+
+        await aiGrade({
+          question,
+          course: res.locals.course,
+          course_instance_id: assessment.course_instance_id,
+          assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all'
+        });
+      }
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
