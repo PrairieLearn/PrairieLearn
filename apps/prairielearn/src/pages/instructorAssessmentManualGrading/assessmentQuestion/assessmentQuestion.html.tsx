@@ -31,7 +31,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  rubric_data: RubricData | null
+  rubric_data: RubricData | null;
 }) {
   const {
     number_in_alternative_group,
@@ -82,7 +82,7 @@ export function AssessmentQuestion({
           maxAutoPoints: assessment_question.max_auto_points,
           csrfToken: __csrf_token,
           aiGradingMode,
-          rubric_data
+          rubric_data,
         },
         'instance-question-table-data',
       )}
