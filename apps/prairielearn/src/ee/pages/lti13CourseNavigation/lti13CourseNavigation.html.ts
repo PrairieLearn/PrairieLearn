@@ -228,7 +228,9 @@ function TerminologyModal() {
 
       <p>
         For more, see the
-        <a href="https://prairielearn.readthedocs.io/" target="_blank">PrairieLearn User Guide</a>
+        <a href="https://prairielearn.readthedocs.io/" target="_blank" rel="noreferrer"
+          >PrairieLearn User Guide</a
+        >
       </p>
     `,
   });

@@ -4,7 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
-import { IssueBadge } from './IssueBadge.js';
+import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { ProgressCircle } from './ProgressCircle.js';
@@ -367,8 +367,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the user is an administrator.
-  if (course?.example_course && !authz_data?.is_administrator) {
+  // user if the authenticated user is an administrator.
+  if (course?.example_course && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -559,8 +559,8 @@ function AuthnOverrides({
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the user is an administrator.
-  if (course?.example_course && !config.devMode && !authz_data?.is_administrator) {
+  // user if the authenticated user is an administrator.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -887,7 +887,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               })}
             </a>
           </li>
@@ -896,7 +896,7 @@ function NavbarInstructor({
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}
+        Issues ${IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true })}
       </a>
     </li>
     ${authz_data.has_course_permission_preview

@@ -1,8 +1,8 @@
 import * as d3 from 'd3';
+import { useEffect, useRef } from 'preact/hooks';
 
-export function histmini(
-  selector: HTMLElement,
-  data?: number[],
+interface HistMiniProps {
+  data: number[];
   options?: {
     width?: number;
     height?: number;
@@ -11,12 +11,17 @@ export function histmini(
     ymin?: number | 'auto';
     ymax?: number | 'auto';
     normalize?: boolean;
-  },
-) {
-  if (data === undefined) data = JSON.parse(selector.dataset.data ?? '[]');
-  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
+  };
+}
 
-  if (!Array.isArray(data) || data.length === 0) return;
+export function renderHistMini({
+  element,
+  data,
+  options = {},
+}: HistMiniProps & { element: HTMLElement }) {
+  if (!Array.isArray(data) || data.length === 0) {
+    return;
+  }
 
   const resolvedOptions = {
     width: 100,
@@ -51,7 +56,7 @@ export function histmini(
   d3.scaleOrdinal(d3.schemeCategory10);
 
   const svg = d3
-    .select(selector)
+    .select(element)
     .append('svg')
     .attr('width', width + margin.left + margin.right)
     .attr('height', height + margin.top + margin.bottom)
@@ -87,4 +92,23 @@ export function histmini(
     .attr('x2', width)
     .attr('y2', height)
     .attr('class', 'x axis');
+}
+
+export function HistMini({ data, options }: HistMiniProps) {
+  // For this to work on the server, we need to use a ref.
+  // d3.create() is not supported on the server.
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.innerHTML = '';
+      renderHistMini({
+        element: ref.current,
+        data,
+        options: options ?? {},
+      });
+    }
+  }, [data, options]);
+
+  return <div ref={ref} class="histmini" />;
 }
