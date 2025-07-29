@@ -18,7 +18,12 @@ const schemaNameOverrides = {
 };
 
 const customSchemas = ['IdSchema', 'IntervalSchema'];
-const unusedSchemas = ['AssessmentsFormatForQuestionSchema', 'JsonCommentSchema', 'QueryRunSchema'];
+const unusedSchemas = [
+  'AssessmentsFormatForQuestionSchema',
+  'FormatIntervalSchema',
+  'JsonCommentSchema',
+  'QueryRunSchema',
+];
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {

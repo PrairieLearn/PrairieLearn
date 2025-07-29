@@ -12,7 +12,7 @@ import * as cron from '../cron/index.js';
 import * as assets from '../lib/assets.js';
 import * as codeCaller from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
-import { JobSequenceSchema } from '../lib/db-types.js';
+import { type JobSequence, JobSequenceSchema } from '../lib/db-types.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
@@ -138,9 +138,9 @@ export async function after(): Promise<void> {
 }
 
 export async function waitForJobSequence(job_sequence_id) {
-  let job_sequence;
+  let job_sequence: JobSequence;
   while (true) {
-    const job_sequence = await sqldb.queryRow(
+    job_sequence = await sqldb.queryRow(
       sql.select_job_sequence,
       {
         job_sequence_id,
