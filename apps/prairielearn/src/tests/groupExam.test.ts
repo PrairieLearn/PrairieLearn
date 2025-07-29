@@ -278,7 +278,6 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       // Should have no assessment instances in database
       let assessmentInstancesResult = await queryRows(
         sql.select_all_assessment_instance,
-        [],
         AssessmentInstanceSchema,
       );
       assert.lengthOf(assessmentInstancesResult, 0);
@@ -298,7 +297,6 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       // Check there is now one assessment instance in database
       assessmentInstancesResult = await queryRows(
         sql.select_all_assessment_instance,
-        [],
         AssessmentInstanceSchema,
       );
       assert.lengthOf(assessmentInstancesResult, 1);
@@ -382,7 +380,6 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
     // Check there is now one assessment instance in database
     const assessmentInstancesResult = await queryRow(
       sql.select_all_assessment_instance,
-      [],
       AssessmentInstanceSchema,
     );
     assert.equal(assessmentInstancesResult.group_id, '1');

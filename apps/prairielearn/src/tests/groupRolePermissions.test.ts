@@ -246,7 +246,6 @@ async function prepareGroup() {
   // Check there is now one assessment instance in database
   const assessmentInstancesResult = await queryRow(
     sql.select_all_assessment_instance,
-    [],
     AssessmentInstanceSchema,
   );
   assert.equal(assessmentInstancesResult.group_id, '1');
