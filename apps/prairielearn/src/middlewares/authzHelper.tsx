@@ -25,13 +25,25 @@ export const createAuthzMiddleware =
     cosmeticOnly: boolean;
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
-    const effectiveAccess = oneOfPermissions.some(
-      (permission) => res.locals.authz_data[permission],
-    );
+    const effectiveAccess = oneOfPermissions.some((permission) => {
+      // This is special-cased because the middleware that sets authz_data
+      // may not have run yet.
+      // TODO: improve typing and structure of authz_data to avoid this.
+      if (permission === 'is_administrator') {
+        return res.locals.is_administrator;
+      }
+      return res.locals.authz_data[permission];
+    });
 
-    const authenticatedAccess = oneOfPermissions.some(
-      (permission) => res.locals.authz_data['authn_' + permission],
-    );
+    const authenticatedAccess = oneOfPermissions.some((permission) => {
+      // This is special-cased because the middleware that sets authz_data
+      // may not have run yet.
+      // TODO: improve typing and structure of authz_data to avoid this.
+      if (permission === 'is_administrator') {
+        return res.locals.authn_is_administrator;
+      }
+      return res.locals.authz_data['authn_' + permission];
+    });
 
     if (effectiveAccess) {
       return next();
