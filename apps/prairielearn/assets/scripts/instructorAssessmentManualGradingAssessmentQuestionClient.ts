@@ -70,8 +70,6 @@ onDocumentReady(() => {
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
   };
 
-  let filter_rubric_items: string[] = [];
-
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
@@ -505,7 +503,7 @@ onDocumentReady(() => {
   });
   document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
     checkbox.addEventListener('change', (e) => {
-      filter_rubric_items = Array.from(
+      const filter_rubric_items = Array.from(
         document.querySelectorAll<HTMLInputElement>('.js-rubric-item-filter:checked'),
       ).map((el) => el.value);
 
