@@ -18,20 +18,25 @@ WITH
       ranked.id AS submission_id,
       ranked.manual_rubric_grading_id AS manual_rubric_grading_id,
       ranked.instance_question_id
-    FROM (
-      SELECT
-        s.id,
-        s.manual_rubric_grading_id,
-        v.instance_question_id,
-        ROW_NUMBER() OVER (
-          PARTITION BY v.instance_question_id
-          ORDER BY v.date DESC, s.date DESC
-        ) AS rn
-      FROM
-        variants AS v
-        JOIN submissions AS s ON s.variant_id = v.id
-    ) ranked
-    WHERE rn = 1
+    FROM
+      (
+        SELECT
+          s.id,
+          s.manual_rubric_grading_id,
+          v.instance_question_id,
+          ROW_NUMBER() OVER (
+            PARTITION BY
+              v.instance_question_id
+            ORDER BY
+              v.date DESC,
+              s.date DESC
+          ) AS rn
+        FROM
+          variants AS v
+          JOIN submissions AS s ON s.variant_id = v.id
+      ) ranked
+    WHERE
+      rn = 1
   ),
   rubric_grading_to_items AS (
     SELECT
@@ -45,13 +50,15 @@ WITH
     SELECT
       ls.instance_question_id,
       COALESCE(
-        json_agg(to_jsonb(rgti)) FILTER (WHERE rgti.id IS NOT NULL),
+        json_agg(to_jsonb(rgti)) FILTER (
+          WHERE
+            rgti.id IS NOT NULL
+        ),
         '[]'::json
       ) AS rubric_items
     FROM
       latest_submissions AS ls
-      LEFT JOIN rubric_grading_to_items AS rgti
-        ON ls.manual_rubric_grading_id = rgti.rubric_grading_id
+      LEFT JOIN rubric_grading_to_items AS rgti ON ls.manual_rubric_grading_id = rgti.rubric_grading_id
     GROUP BY
       ls.instance_question_id
   )
@@ -334,4 +341,4 @@ FROM
   LEFT JOIN rubric_items_data rid ON (TRUE)
 WHERE
   r.id = $rubric_id
-AND r.deleted_at IS NULL;
+  AND r.deleted_at IS NULL;
