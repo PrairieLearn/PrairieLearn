@@ -1,5 +1,6 @@
 ---
-'@prairielearn/postgres': minor
+'@prairielearn/postgres': major
 ---
 
-Remove callback API versions, deprecate DB fetching functions with a typed variant.
+- Remove callback-based query functions.
+- Deprecate query functions with Zod-validated alternatives.
