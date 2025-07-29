@@ -253,7 +253,7 @@ describe('@prairielearn/postgres', function () {
     });
   });
 
-  describe('queryCursor', () => {
+  describe('queryValidatedCursor', () => {
     it('returns zero rows', async () => {
       const cursor = await queryValidatedCursor(
         'SELECT * FROM workspaces WHERE id = 10000;',
