@@ -306,7 +306,7 @@ export type AuditLog = z.infer<typeof AuditLogSchema>;
 
 export const AuthnProviderSchema = z.object({
   id: IdSchema,
-  name: z.string().nullable(),
+  name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
