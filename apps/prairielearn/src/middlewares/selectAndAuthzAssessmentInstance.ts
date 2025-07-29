@@ -36,6 +36,8 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   instance_group_uid_list: z.array(z.string()),
 });
 
+export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
+
 export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
