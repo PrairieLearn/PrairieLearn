@@ -177,22 +177,7 @@ const { user, course } = await sqldb.runInTransactionAsync(async () => {
 
 ### Cursors
 
-For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time. If you don't need to validate the rows, you can use `z.unknown()` as the schema.
-
-```ts
-import { queryValidatedCursor } from '@prairielearn/postgres';
-import { z } from 'zod';
-
-const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.unknown());
-for await (const users of cursor.iterate(100)) {
-  // `users` will have up to 100 rows in it.
-  for (const user of users) {
-    console.log(user);
-  }
-}
-```
-
-Otherwise, pass a Zod schema to parse and validate each row:
+For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time.
 
 ```ts
 import { z } from 'zod';
@@ -214,10 +199,14 @@ for await (const users of cursor.iterate(100)) {
 You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
 
 ```ts
-import { queryValidatedCursor } from '@prairielearn/postgres';
-
-const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.any());
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, UserSchema);
 cursor.stream(100).pipe(makeStreamSomehow());
+```
+
+If you don't need to parse and validate each row with Zod, you can use `z.unknown()` as the schema:
+
+```ts
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.unknown());
 ```
 
 ### Callback-style functions
