@@ -9,8 +9,8 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
+import * as url from 'node:url';
 import * as util from 'node:util';
-import * as url from 'url';
 
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -26,12 +26,12 @@ import express, {
   Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -78,15 +78,15 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
-const argv = yargsParser(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
+    --config <filename>                 Use the specified configuration file
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
@@ -574,16 +574,20 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzCourseOrInstance.js')).default,
   );
 
-  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
-  // or `autoEnroll` middlewares so that we can render it even when the student
-  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
   if (isEnterprise()) {
-    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
-    // below so that we can render it even when the student isn't enrolled in the
-    // course instance.
+    // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+    // or `autoEnroll` middlewares so that we can render it even when the student
+    // isn't enrolled in the course instance or doesn't have the necessary plan grants.
     app.use('/pl/course_instance/:course_instance_id(\\d+)/upgrade', [
       (await import('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade.js'))
         .default,
+    ]);
+
+    // This must come after `authzCourseOrInstance` but before the `requireLinkedLtiUser`
+    // middleware so that it can render it even if that middleware would otherwise
+    // forbid access.
+    app.use('/pl/course_instance/:course_instance_id(\\d+)/lti_linking_required', [
+      (await import('./ee/pages/linkedLtiUserRequired/linkedLtiUserRequired.js')).default,
     ]);
   }
 
@@ -591,6 +595,9 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
+    await enterpriseOnly(
+      async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
+    ),
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
