@@ -11,6 +11,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { queryValidatedCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
+import { z } from 'zod';
 
 const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, z.any());
 const output = createWriteStream('workspaces.csv');

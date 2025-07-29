@@ -291,11 +291,15 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
 }
 
 async function sendInstancesCsv(res, req, columns, options) {
-  const result = await sqldb.queryValidatedCursor(sql.select_assessment_instances, {
-    assessment_id: res.locals.assessment.id,
-    highest_score: options.only_highest,
-    group_work: options.group_work,
-  });
+  const result = await sqldb.queryValidatedCursor(
+    sql.select_assessment_instances,
+    {
+      assessment_id: res.locals.assessment.id,
+      highest_score: options.only_highest,
+      group_work: options.group_work,
+    },
+    z.unknown(),
+  );
 
   res.attachment(req.params.filename);
   await pipeline(result.stream(100), stringifyWithColumns(columns), res);
@@ -382,9 +386,13 @@ router.get(
         group_work: res.locals.assessment.group_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
-      const cursor = await sqldb.queryValidatedCursor(sql.select_instance_questions, {
-        assessment_id: res.locals.assessment.id,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.select_instance_questions,
+        {
+          assessment_id: res.locals.assessment.id,
+        },
+        z.unknown(),
+      );
 
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
@@ -412,10 +420,14 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
-      const cursor = await sqldb.queryValidatedCursor(sql.submissions_for_manual_grading, {
-        assessment_id: res.locals.assessment.id,
-        include_files: false,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.submissions_for_manual_grading,
+        {
+          assessment_id: res.locals.assessment.id,
+          include_files: false,
+        },
+        z.unknown(),
+      );
 
       // Replace user-friendly column names with upload-friendly names
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(

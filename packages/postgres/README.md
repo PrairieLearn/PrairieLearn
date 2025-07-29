@@ -181,8 +181,9 @@ For very large queries that don't need to fit in memory all at once, it's possib
 
 ```ts
 import { queryValidatedCursor } from '@prairielearn/postgres';
+import { z } from 'zod';
 
-const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.any());
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, z.unknown());
 for await (const users of cursor.iterate(100)) {
   // `users` will have up to 100 rows in it.
   for (const user of users) {

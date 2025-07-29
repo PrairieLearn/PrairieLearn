@@ -258,7 +258,7 @@ describe('@prairielearn/postgres', function () {
       const cursor = await queryValidatedCursor(
         'SELECT * FROM workspaces WHERE id = 10000;',
         {},
-        z.any(),
+        z.unknown(),
       );
       const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
@@ -271,7 +271,7 @@ describe('@prairielearn/postgres', function () {
       const cursor = await queryValidatedCursor(
         'SELECT * FROM workspaces WHERE id <= 2;',
         {},
-        z.any(),
+        z.unknown(),
       );
       const rowBatches = [];
       for await (const rows of cursor.iterate(1)) {
@@ -283,7 +283,11 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns all rows at once', async () => {
-      const cursor = queryValidatedCursor('SELECT * FROM workspaces WHERE id <= 10;', {}, z.any());
+      const cursor = queryValidatedCursor(
+        'SELECT * FROM workspaces WHERE id <= 10;',
+        {},
+        z.unknown(),
+      );
       const rowBatches = [];
       for await (const rows of (await cursor).iterate(10)) {
         rowBatches.push(rows);
@@ -293,7 +297,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryValidatedCursor('NOT VALID SQL', {}, z.any());
+      const cursor = await queryValidatedCursor('NOT VALID SQL', {}, z.unknown());
 
       async function readAllRows() {
         const allRows = [];
