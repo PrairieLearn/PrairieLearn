@@ -19,7 +19,9 @@ UPDATE questions
 SET
   sync_errors = $errors
 WHERE
-  id = $id RETURNING *;
+  id = $id
+RETURNING
+  *;
 
 -- BLOCK update_question
 UPDATE questions
@@ -62,4 +64,6 @@ SET
   sync_errors = NULL,
   sync_warnings = $warnings
 WHERE
-  id = $id RETURNING *;
+  id = $id
+RETURNING
+  *;
