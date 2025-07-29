@@ -265,7 +265,7 @@ export async function aiGrade({
                   submission.id,
                   null, // check_modified_at
                   {
-                     // TODO: consider asking for and recording freeform feedback.
+                    // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
                     feedback: { manual: '' },
                   },
@@ -311,7 +311,6 @@ export async function aiGrade({
                   },
                   IdSchema,
                 );
-
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
