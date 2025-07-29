@@ -47,9 +47,7 @@ export const createAuthzMiddleware =
 
     if (effectiveAccess) {
       return next();
-    }
-
-    if (authenticatedAccess) {
+    } else if (authenticatedAccess && !req.cookies.pl_test_user) {
       const pageContext = getPageContext(res.locals);
 
       res.status(403).send(
