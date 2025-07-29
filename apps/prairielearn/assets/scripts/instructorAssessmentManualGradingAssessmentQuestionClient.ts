@@ -103,15 +103,6 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    // The way that `bootstrap-table` applies options over defaults is bad: when combining
-    // arrays, it treats them as objects with keys and merges them. So, if the default
-    // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
-    //
-    // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
-    // we put a dummy element at the end of the array. This won't be rendered, as any button
-    // keys that aren't recognized are silently skipped.
-    //
-    // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
     buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
