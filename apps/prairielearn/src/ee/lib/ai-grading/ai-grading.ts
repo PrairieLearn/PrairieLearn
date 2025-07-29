@@ -265,6 +265,7 @@ export async function aiGrade({
                   submission.id,
                   null, // check_modified_at
                   {
+                     // TODO: consider asking for and recording freeform feedback.
                     manual_rubric_data,
                     feedback: { manual: '' },
                   },
@@ -306,7 +307,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: manual_rubric_grading.computed_points,
                     manual_rubric_grading_id: manual_rubric_grading.id,
-                    feedback: { manual: null },
+                    feedback: null,
                   },
                   IdSchema,
                 );
@@ -399,7 +400,7 @@ export async function aiGrade({
                     auto_points: 0,
                     manual_points: (score * assessment_question.max_manual_points) / 100,
                     manual_rubric_grading_id: null,
-                    feedback: { manual: null },
+                    feedback: null,
                   },
                   IdSchema,
                 );
