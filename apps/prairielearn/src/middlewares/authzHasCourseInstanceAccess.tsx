@@ -37,7 +37,11 @@ export default function (req: Request, res: Response, next: NextFunction) {
         pageTitle: 'Insufficient access',
         content: (
           <Hydrate>
-            <AuthzAccessMismatch errorMessage="Access denied" />
+            <AuthzAccessMismatch
+              errorMessage="Access denied"
+              authzData={pageContext.authz_data}
+              authnUser={pageContext.authn_user}
+            />
           </Hydrate>
         ),
       }),

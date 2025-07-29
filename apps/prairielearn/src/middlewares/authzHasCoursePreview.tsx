@@ -27,7 +27,11 @@ export default function (req: Request, res: Response, next: NextFunction) {
         pageTitle: 'Insufficient access',
         content: (
           <Hydrate>
-            <AuthzAccessMismatch errorMessage="Requires course preview access" />
+            <AuthzAccessMismatch
+              errorMessage="Requires course preview access"
+              authzData={pageContext.authz_data}
+              authnUser={pageContext.authn_user}
+            />
           </Hydrate>
         ),
       }),

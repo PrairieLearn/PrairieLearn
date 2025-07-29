@@ -31,7 +31,11 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
       pageTitle: 'Insufficient access',
       content: (
         <Hydrate>
-          <AuthzAccessMismatch errorMessage="Requires either course preview access or student data view access" />
+          <AuthzAccessMismatch
+            errorMessage="Requires either course preview access or student data view access"
+            authzData={pageContext.authz_data}
+            authnUser={pageContext.authn_user}
+          />
         </Hydrate>
       ),
     });

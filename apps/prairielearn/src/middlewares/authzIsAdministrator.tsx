@@ -26,7 +26,11 @@ export default function (req: Request, res: Response, next: NextFunction) {
         pageTitle: 'Insufficient access',
         content: (
           <Hydrate>
-            <AuthzAccessMismatch errorMessage="Requires administrator privileges" />
+            <AuthzAccessMismatch
+              errorMessage="Requires administrator privileges"
+              authzData={pageContext.authz_data}
+              authnUser={pageContext.authn_user}
+            />
           </Hydrate>
         ),
       }),
