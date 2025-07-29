@@ -11,8 +11,9 @@ import {
 
 const RawPageContextSchema = z.object({
   authz_data: z.object({
-    has_course_instance_permission_edit: z.boolean(),
-    has_course_instance_permission_view: z.boolean(),
+    // TODO: Type these more accurately into a course instance version.
+    has_course_instance_permission_edit: z.boolean().optional(),
+    has_course_instance_permission_view: z.boolean().optional(),
     has_course_permission_own: z.boolean(),
     user: z.object({
       name: z.string(),
