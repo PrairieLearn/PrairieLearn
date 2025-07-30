@@ -18,7 +18,7 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questionRows: StaffAssessmentQuestionRow[];
 }) {
-  const { authz_data, urlPrefix } = getPageContext(resLocals);
+  const { authz_data, __csrf_token, urlPrefix } = getPageContext(resLocals);
   const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
   const { assessment, assessment_set } = getAssessmentContext(resLocals, 'instructor');
 
@@ -55,7 +55,7 @@ export function InstructorAssessmentQuestions({
             hasCourseInstancePermissionEdit={
               resLocals.authz_data.has_course_instance_permission_edit
             }
-            csrfToken={resLocals.__csrf_token}
+            csrfToken={__csrf_token}
           />
         </Hydrate>
       </>

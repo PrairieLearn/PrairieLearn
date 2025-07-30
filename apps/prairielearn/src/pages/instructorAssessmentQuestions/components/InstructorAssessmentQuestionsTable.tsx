@@ -16,6 +16,8 @@ import { idsEqual } from '../../../lib/id.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+import { Dropdown } from 'react-bootstrap';
+import { HistMini } from '../../../components/HistMini.js';
 
 function Title({
   questionRow,
@@ -198,10 +200,9 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                       <td class="text-center">
                         {assessment_question.number_submissions_hist ? (
-                          <div
-                            class="js-histmini"
-                            data-data={JSON.stringify(assessment_question.number_submissions_hist)}
-                            data-options={JSON.stringify({ width: 60, height: 20 })}
+                          <HistMini
+                            data={assessment_question.number_submissions_hist}
+                            options={{ width: 60, height: 20 }}
                           />
                         ) : (
                           ''
@@ -227,34 +228,22 @@ export function InstructorAssessmentQuestionsTable({
                         })}
                       </td>
                       <td class="text-end">
-                        <div class="dropdown js-question-actions">
-                          <button
-                            type="button"
-                            class="btn btn-secondary btn-xs dropdown-toggle"
-                            data-bs-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                          >
-                            Action <span class="caret" />
-                          </button>
-                          <div class="dropdown-menu">
+                        <Dropdown>
+                          <Dropdown.Toggle variant="secondary" class="dropdown-toggle btn-xs">
+                            Action
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
                             {hasCourseInstancePermissionEdit ? (
-                              <button
-                                type="button"
-                                class="dropdown-item"
-                                data-bs-toggle="modal"
-                                data-bs-target="#resetQuestionVariantsModal"
+                              <Dropdown.Item
                                 onClick={() => handleResetButtonClick(assessment_question.id)}
                               >
                                 Reset question variants
-                              </button>
+                              </Dropdown.Item>
                             ) : (
-                              <button type="button" class="dropdown-item disabled" disabled>
-                                Must have editor permission
-                              </button>
+                              <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
                             )}
-                          </div>
-                        </div>
+                          </Dropdown.Menu>
+                        </Dropdown>
                       </td>
                     </tr>
                   </Fragment>

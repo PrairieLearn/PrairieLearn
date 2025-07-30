@@ -30,6 +30,7 @@ const RawPageContextSchema = z.object({
     name: z.string(),
     uid: z.string(),
   }),
+  __csrf_token: z.string(),
 });
 export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
 export type PageContext = z.infer<typeof PageContextSchema>;
