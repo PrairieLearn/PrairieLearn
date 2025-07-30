@@ -183,8 +183,7 @@ export function InstructorAssessmentQuestionsTable({
                         <td
                           class={clsx(
                             assessment_question.effective_advance_score_perc === 0
-                              ? 'text-muted'
-                              : '',
+                              && 'text-muted',
                           )}
                           data-testid="advance-score-perc"
                         >
