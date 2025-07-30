@@ -113,16 +113,15 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   const debouncedLoadApp = debounce(async () => await _loadApp(config), 500, { immediate: true });
   const debouncedRestart = debounce(() => server.restart(), 500, { immediate: true });
 
-  async function needsFullRestart(file: string): Promise<boolean> {
+  function needsFullRestart(file: string): boolean {
     // This is the easy case: we had a direct change to a file that is supposed
     // to trigger a full reload.
     if (fullRestartPathMatchers.some((matcher) => matcher(file))) return true;
 
     const modules = Array.from(server.moduleGraph.getModulesByFile(file) ?? []);
     if (modules.length === 0) {
-      // This somehow isn't part of the module graph? It could be the Vite config
-      // file itself. To play it safe, we'll assume that we need to restart.
-      return true;
+      // This file isn't part of the module graph. No need to do anything.
+      return false;
     }
 
     if (modules.length !== 1) {
@@ -147,8 +146,8 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   //
   // 2. If we're configured to watch file changes, we'll reload the app (root) module.
   //    This gives us a head start over waiting for the next request to trigger a reload.
-  server.watcher.on('change', async (file) => {
-    if (await needsFullRestart(file)) {
+  server.watcher.on('change', (file) => {
+    if (needsFullRestart(file)) {
       logger.info(`Change to ${file} requires a full restart`, { timestamp: true });
       debouncedRestart();
     } else if (config.watchFileChanges) {
