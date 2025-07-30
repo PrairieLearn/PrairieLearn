@@ -61,11 +61,13 @@ export function AuthzAccessMismatch({
   oneOfPermissionKeys,
   authzData,
   authnUser,
+  authzUser,
 }: {
   errorMessage: string;
   oneOfPermissionKeys: (keyof PageContext['authz_data'])[];
   authzData: PageContext['authz_data'];
   authnUser: StaffUser;
+  authzUser: StaffUser | null;
 }) {
   const clearEffectiveUserCookies = () => {
     removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
@@ -75,7 +77,6 @@ export function AuthzAccessMismatch({
     setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
     window.location.reload();
   };
-  const authzUser = authzData.user;
 
   const permissionsMeta = [
     {
@@ -138,8 +139,9 @@ export function AuthzAccessMismatch({
   const permissions: PermissionData[] = permissionsMeta.map((permission) => {
     return {
       authnValue:
-        authzData?.['authn_' + permission.key] ?? (permission.type === 'string' ? '' : false),
-      value: authzData?.[permission.key] ?? (permission.type === 'string' ? '' : false),
+        (authzData as any)['authn_' + permission.key] ??
+        (permission.type === 'string' ? '' : false),
+      value: (authzData as any)[permission.key] ?? (permission.type === 'string' ? '' : false),
       ...permission,
     };
   });
@@ -161,17 +163,21 @@ export function AuthzAccessMismatch({
           <h2 class="mb-3 h4">Effective user has insufficient access</h2>
           <p>
             The
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  {authzUser.name} ({authzUser.uid})
-                </Tooltip>
-              }
-            >
-              <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                current effective user
-              </button>
-            </OverlayTrigger>
+            {authzUser ? (
+              <OverlayTrigger
+                overlay={
+                  <Tooltip>
+                    {authzUser.name} ({authzUser.uid})
+                  </Tooltip>
+                }
+              >
+                <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
+                  current effective user
+                </button>
+              </OverlayTrigger>
+            ) : (
+              ' current user '
+            )}
             does
             <OverlayTrigger overlay={<Tooltip>{errorMessage}</Tooltip>}>
               <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">

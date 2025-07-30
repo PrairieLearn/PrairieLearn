@@ -25,25 +25,18 @@ export const createAuthzMiddleware =
     cosmeticOnly: boolean;
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
-    const effectiveAccess = oneOfPermissions.some((permission) => {
-      // This is special-cased because the middleware that sets authz_data
-      // may not have run yet.
-      // TODO: improve typing and structure of authz_data to avoid this.
-      if (permission === 'is_administrator') {
-        return res.locals.is_administrator;
-      }
-      return res.locals.authz_data[permission];
-    });
+    // This is special-cased because the middleware that sets authz_data
+    // may not have run yet.
+    const authzData = res.locals.authz_data ?? {
+      is_administrator: res.locals.is_administrator,
+      authn_is_administrator: res.locals.authn_is_administrator,
+    };
 
-    const authenticatedAccess = oneOfPermissions.some((permission) => {
-      // This is special-cased because the middleware that sets authz_data
-      // may not have run yet.
-      // TODO: improve typing and structure of authz_data to avoid this.
-      if (permission === 'is_administrator') {
-        return res.locals.authn_is_administrator;
-      }
-      return res.locals.authz_data['authn_' + permission];
-    });
+    const effectiveAccess = oneOfPermissions.some((permission) => authzData[permission]);
+
+    const authenticatedAccess = oneOfPermissions.some(
+      (permission) => authzData['authn_' + permission],
+    );
 
     if (effectiveAccess) {
       return next();
@@ -63,8 +56,9 @@ export const createAuthzMiddleware =
               <AuthzAccessMismatch
                 errorMessage={errorMessage}
                 oneOfPermissionKeys={oneOfPermissions}
-                authzData={pageContext.authz_data}
+                authzData={authzData}
                 authnUser={pageContext.authn_user}
+                authzUser={authzData.user ?? null}
               />
             </Hydrate>
           ),
