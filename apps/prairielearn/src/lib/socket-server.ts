@@ -95,6 +95,6 @@ export async function close() {
   io.engine.close();
 
   // Shut down the Redis clients.
-  pub?.disconnect();
-  sub?.disconnect();
+  await pub?.quit();
+  await sub?.quit();
 }
