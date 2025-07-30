@@ -104,10 +104,10 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   }
 
   // We'll always normalize the paths to absolute globs.
-  const fullRestartPaths = config.fullRestartPaths ?? [];
-  const fullRestartPathMatchers = fullRestartPaths.map((p) =>
-    picomatch(path.resolve(server.config.root, p)),
+  const fullRestartPaths = (config.fullRestartPaths ?? []).map((p) =>
+    path.resolve(server.config.root, p),
   );
+  const fullRestartPathMatchers = fullRestartPaths.map((p) => picomatch(p));
   server.watcher.add(fullRestartPaths);
 
   const debouncedLoadApp = debounce(async () => await _loadApp(config), 500, { immediate: true });
@@ -147,7 +147,7 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   // 2. If we're configured to watch file changes, we'll reload the app (root) module.
   //    This gives us a head start over waiting for the next request to trigger a reload.
   server.watcher.on('change', (file) => {
-    if (needsFullRestart(file)) {
+    if (needsFullRestart(path.resolve(server.config.root, file))) {
       logger.info(`Change to ${file} requires a full restart`, { timestamp: true });
       debouncedRestart();
     } else if (config.watchFileChanges) {
