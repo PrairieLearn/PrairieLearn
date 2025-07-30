@@ -122,11 +122,6 @@ export function getAssessmentContext(
   resLocals: Record<string, any>,
   authLevel: 'instructor',
 ): StaffAssessmentContext {
-  const schema = run(() => {
-    if (authLevel === 'instructor') {
-      return StaffAssessmentContextSchema;
-    }
-    return StaffAssessmentContextSchema;
-  });
+  const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }
