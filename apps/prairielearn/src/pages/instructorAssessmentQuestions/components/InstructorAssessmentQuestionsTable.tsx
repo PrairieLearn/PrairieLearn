@@ -81,7 +81,7 @@ export function InstructorAssessmentQuestionsTable({
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
-  function maxPoints({
+  function maxPointsText({
     max_auto_points,
     max_manual_points,
     points_list,
