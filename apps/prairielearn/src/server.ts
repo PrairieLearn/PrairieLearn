@@ -2048,7 +2048,7 @@ export async function startServer(app: express.Express) {
     return server;
   }
 
-  // In production, startup the server normally
+  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
