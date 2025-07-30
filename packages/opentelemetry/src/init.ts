@@ -315,8 +315,6 @@ export async function init(config: OpenTelemetryConfig) {
   });
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
-  console.log('set up node tracer provider with context manager', config.contextManager);
-
   // Save the provider so we can shut it down later.
   tracerProvider = nodeTracerProvider;
 
