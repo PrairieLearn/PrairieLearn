@@ -1,3 +1,10 @@
+// This is a fork of Sentry's Express integration that's not available in the
+// `@sentry/node-core` package`. It has been lightly modified to remove unused
+// code and conform to PrairieLearn's coding style.
+//
+// This was forked from the following file on 2025-07-30:
+// https://github.com/getsentry/sentry-javascript/blob/12ac49a9956fd1b64b3f8ad4b2b8f1da426a1efd/packages/node/src/integrations/tracing/express.ts
+
 import type * as http from 'node:http';
 
 import { captureException, getIsolationScope, httpRequestToRequestData } from '@sentry/core';
