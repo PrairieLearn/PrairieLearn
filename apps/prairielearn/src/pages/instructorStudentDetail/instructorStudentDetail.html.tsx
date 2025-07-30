@@ -1,6 +1,7 @@
 import { Fragment } from 'preact/jsx-runtime';
 import { z } from 'zod';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { Scorebar } from '../../components/Scorebar.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
@@ -132,9 +133,14 @@ export function InstructorStudentDetail({
                   {setAssessments.map((row) => (
                     <tr key={row.assessment.id}>
                       <td class="align-middle" style="width: 1%">
-                        <span class={`badge color-${row.assessment_set.color}`}>
-                          {computeLabel(row)}
-                        </span>
+                        <AssessmentBadge
+                          urlPrefix={urlPrefix}
+                          assessment={{
+                            color: row.assessment_set.color,
+                            label: computeLabel(row),
+                            assessment_id: row.assessment.id,
+                          }}
+                        />
                       </td>
                       <td class="align-middle">
                         {computeTitle(row)}
