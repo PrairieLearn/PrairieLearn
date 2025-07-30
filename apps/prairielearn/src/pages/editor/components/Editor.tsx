@@ -52,6 +52,11 @@ export function Editor() {
 
   const editor = useEditor({
     immediatelyRender: false,
+    enableContentCheck: true,
+    emitContentError: true,
+    onContentError: (event) => {
+      console.log('contentError', event);
+    },
     editorProps: {
       attributes: {
         autocomplete: 'off',
@@ -99,8 +104,12 @@ export function Editor() {
   });
 
   editor?.on('update', async () => {
-    // const formattedHtml = await formatHtmlWithPrettier(editor?.getHTML() ?? '');
-    setFormattedHtml(editor?.getHTML() ?? '');
+    const formattedHtml = await formatHtmlWithPrettier(editor?.getHTML() ?? '');
+    setFormattedHtml(formattedHtml);
+  });
+
+  editor?.on('contentError', (event) => {
+    console.log('contentError', event);
   });
 
   return (
