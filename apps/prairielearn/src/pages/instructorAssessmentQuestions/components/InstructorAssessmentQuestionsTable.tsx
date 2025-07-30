@@ -171,7 +171,7 @@ export function InstructorAssessmentQuestionsTable({
                         <TagBadgeList tags={questionRow.tags} />
                       </td>
                       <td>
-                        {maxPoints({
+                        {maxPointsText({
                           max_auto_points: assessment_question.max_auto_points,
                           max_manual_points: assessment_question.max_manual_points,
                           points_list: assessment_question.points_list,
@@ -182,15 +182,12 @@ export function InstructorAssessmentQuestionsTable({
                       {showAdvanceScorePercCol && (
                         <td
                           class={clsx(
-                            assessment_question.effective_advance_score_perc === 0
-                              && 'text-muted',
+                            assessment_question.effective_advance_score_perc === 0 && 'text-muted',
                           )}
                           data-testid="advance-score-perc"
                         >
                           {assessment_question.effective_advance_score_perc}%
                         </td>
-                      ) : (
-                        ''
                       )}
                       <td>
                         {assessment_question.mean_question_score
