@@ -10,7 +10,7 @@ import { getGradebookRows } from '../../lib/gradebook.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 
-import { StudentDetail, UserDetailSchema } from './studentDetail.html.js';
+import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -59,7 +59,7 @@ router.get(
         },
         content: (
           <Hydrate>
-            <StudentDetail
+            <InstructorStudentDetail
               gradebookRows={gradebookRows}
               student={student}
               urlPrefix={urlPrefix}

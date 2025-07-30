@@ -27,7 +27,7 @@ interface StudentDetailProps {
   courseInstanceUrl: string;
 }
 
-export function StudentDetail({
+export function InstructorStudentDetail({
   gradebookRows,
   student,
   urlPrefix,
@@ -184,4 +184,4 @@ export function StudentDetail({
   );
 }
 
-StudentDetail.displayName = 'StudentDetail';
+InstructorStudentDetail.displayName = 'InstructorStudentDetail';
