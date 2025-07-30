@@ -85,7 +85,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
         return codeCaller;
       },
       destroy: async (codeCaller) => {
-        logger.info(
+        logger.verbose(
           `Destroying Python worker ${codeCaller.uuid} (last course path: ${codeCaller.getCoursePath()})`,
         );
         load.endJob('python_worker_idle', codeCaller.uuid);
