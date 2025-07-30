@@ -14,6 +14,7 @@ import {
 
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectQuestionById } from '../../../models/question.js';
@@ -41,12 +42,14 @@ router.get(
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
       ManualGradingAssessment({
         resLocals: res.locals,
         questions,
         courseStaff,
         num_open_instances,
+        aiGradingEnabled,
       }),
     );
   }),
@@ -107,9 +110,14 @@ router.post(
         }
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'ai_grade_assessment_all') {
+    } else if (req.body.__action === 'ai_grade_all') {
       if (!res.locals.is_administrator) {
         throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
       const assessment = res.locals.assessment as Assessment;
@@ -127,18 +135,25 @@ router.post(
         }
         const question = await selectQuestionById(assessment_question.question_id);
 
-        await aiGrade({
-          question,
-          course: res.locals.course,
-          course_instance_id: assessment.course_instance_id,
-          assessment_question,
-          urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
-          mode: 'all',
-          executeInBackground: false
-        });
+        try {
+          await aiGrade({
+            question,
+            course: res.locals.course,
+            course_instance_id: assessment.course_instance_id,
+            assessment_question,
+            urlPrefix: res.locals.urlPrefix,
+            authn_user_id: res.locals.authn_user.user_id,
+            user_id: res.locals.user.user_id,
+            mode: 'all',
+            executeInBackground: false,
+          });
+        } catch (error) {
+          console.error('Error during AI grading:', error);
+          flash('error', `AI grading failed for question ${assessment_question.question_id}`);
+          continue;
+        }
       }
+      flash('success', 'AI grading succeeded for all questions.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

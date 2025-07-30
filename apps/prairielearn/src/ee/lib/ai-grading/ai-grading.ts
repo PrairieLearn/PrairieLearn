@@ -60,7 +60,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
-  executeInBackground = true
+  executeInBackground = true,
 }: {
   question: Question;
   course: Course;
