@@ -3,7 +3,14 @@ import { exit } from 'process';
 
 import debounce from 'debounce';
 import picomatch from 'picomatch';
-import type { ConfigEnv, Connect, Plugin, UserConfig, ViteDevServer } from 'vite';
+import {
+  type ConfigEnv,
+  type Connect,
+  type Plugin,
+  type UserConfig,
+  type ViteDevServer,
+  isRunnableDevEnvironment,
+} from 'vite';
 
 const env: ConfigEnv = { command: 'serve', mode: '' };
 
@@ -35,9 +42,17 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   // doing a full restart.
   let _mostRecentAppModule: any;
   async function _loadApp(config: VitePluginExpressConfig) {
+    if (!isRunnableDevEnvironment(server.environments.ssr)) {
+      throw new Error('VitePluginExpress can only be used with a runnable dev environment');
+    }
+
     let appModule: any;
     try {
-      appModule = await server.ssrLoadModule(config.appPath);
+      // We use `runner.import(...)` instead of `ssrLoadModule(...)` because a)
+      // the latter will be deprecated soon and b) `runner.import(...)` will
+      // automatically produce correct stack traces that account for code
+      // transformations done by Vite.
+      appModule = await server.environments.ssr.runner.import(config.appPath);
     } catch (err: any) {
       if (err?.message?.includes('Transform failed with')) {
         // This is a syntax error, and Vite has already logged it. It's recoverable

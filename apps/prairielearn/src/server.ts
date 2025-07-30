@@ -65,7 +65,6 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
-import { needsFullRestart, setNeedsFullRestart } from './lib/server-fullrestart.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -2126,12 +2125,6 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if (isHMR && needsFullRestart() && isServerInitialized()) {
-  setServerState('pending');
-  await close();
-  setServerState('stopped');
-}
-
 if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
     setServerState('pending');
@@ -2560,7 +2553,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   });
 
   setServerState('initialized');
-  setNeedsFullRestart(false);
   logger.info('PrairieLearn server ready, press Control-C to quit');
   if (config.devMode) {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
