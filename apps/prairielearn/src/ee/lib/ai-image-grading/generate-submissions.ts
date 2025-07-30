@@ -58,7 +58,7 @@ export async function generateSubmissions(
         courseId: '3',
         shortName: 'FA25',
         assessmentId: '50',
-        skipRubrics: true
+        skipRubrics: false
     }
 
 
@@ -246,6 +246,10 @@ export async function generateSubmissions(
                 { rubric_id: instance_question.manual_rubric_id },
                 RubricItemSchema
             );
+            if (rubric_items.length === 0) {
+                console.log(`No rubric items found for question ${question.qid}`);
+                continue;
+            }
 
             // Determine the rubric items that were selected for the student.
             const submission_id_for_file = submissionFolders[i].replace('_redacted.pdf', '');

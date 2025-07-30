@@ -1,5 +1,7 @@
+import async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import OpenAI from 'openai';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -12,16 +14,16 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
-
+import { compareAiErrorRecognitionAndHumanGrading, generateErrorEmbedding, selectInstanceQuestionsForAssessmentQuestion, selectLastVariantAndSubmission, selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
-import { selectQuestionById } from '../../../models/question.js';
-import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
-import { generateErrorEmbedding, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { config } from '../../../lib/config.js';
-import OpenAI from 'openai';
+import { type Assessment, type AssessmentQuestion, type RubricItem } from '../../../lib/db-types.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectQuestionById } from '../../../models/question.js';
+
+import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
+
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -137,16 +139,28 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_embeddings') {
-      let AssessmentQuestionEmbeddingSchema = z.object({
-        instance_question_id: z.number(),
-        assessment_question_id: z.number(),
-        link_to_instance_question: z.string(),
-        error_description: z.string(),
-        embedding: z.array(z.number()),
-        question_content: z.string(),
-        images: z.array(z.string()),
-        prompt: z.any(),
-      });
+      interface AssessmentQuestionEmbedding {
+        instance_question_id: string;
+        assessment_question_id: string;
+        link_to_instance_question: string;
+        error_description: string;
+        embedding: number[];
+        question_content: string;
+        images: string[];
+        prompt: any; // Adjust type as needed
+        rubric_items: RubricItem[];
+        errorRecognitionComparison: {
+          consistent: boolean;
+          explanation: string;
+        }
+      }
+
+      if (!config.aiGradingOpenAiApiKey) {
+        throw new HttpStatusError(
+          400,
+          'AI cluster generation is not available.',
+        );
+      }
 
       const openai = new OpenAI({
         apiKey: config.aiGradingOpenAiApiKey,
@@ -162,22 +176,40 @@ router.post(
         return;
       }
       const START_INDEX = 1; 
-      for (let i = START_INDEX; i < assessment_questions.length; i++) {
+
+      const assessmentEmbeddingData = {};
+
+      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 1;
+      const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 50;
+      const PARALLEL_LIMIT = 20;
+
+      // For testing only - to work with the JSON directly and more easily.
+      const INCLUDE_LONG_DATA = true;
+
+      for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_questions.length); i++) {
         const assessment_question = assessment_questions[i];
-        const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+        const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
           assessment_question.id,
-        );
+        )).slice(0, MAX_INSTANCE_QUESTIONS_TO_PROCESS);
 
         const question = await selectQuestionById(assessment_question.question_id);
         if (!question) {
           continue;
         }
 
-        for (const instance_question of all_instance_questions) {
+        let j = 0;
+
+        const aqEmbeddingData: AssessmentQuestionEmbedding[] = await async.mapLimit(all_instance_questions, PARALLEL_LIMIT, async (instance_question) => {
+          console.log(`Processing instance question ${j} of ${all_instance_questions.length} for assessment question ${assessment_question.id}`);
+          const {submission} = await selectLastVariantAndSubmission(instance_question.id);
+          const rubric_items = await selectRubricGradingItems(submission.manual_rubric_grading_id);
+
           const {
             embedding,
-            submissionMessage,
-            completionContent
+            completionContent,
+            questionPrompt,
+            promptImageUrls,
+            messages
           } = await generateErrorEmbedding({
             course: res.locals.course,
             question,
@@ -185,24 +217,44 @@ router.post(
             urlPrefix: res.locals.urlPrefix,
             openai
           })
-          console.log('Embedding', embedding);
-          console.log('Submission Message', submissionMessage);
-          console.log('Completion Content', completionContent);
 
-          const embeddingData: AssessmentQuestionEmbeddingSchema = {
+          const errorRecognitionComparison = await compareAiErrorRecognitionAndHumanGrading({
+            course: res.locals.course,
+            humanSelectedRubricItems: rubric_items,
+            aiRecognizedErrors: completionContent,
+            openai
+          })
+
+          const embeddingData: AssessmentQuestionEmbedding = {
             instance_question_id: instance_question.id,
             assessment_question_id: assessment_question.id,
-            link_to_instance_question: `${res.locals.urlPrefix}/instance-question/${instance_question.id}`,
-            error_description: submissionMessage,
-            embedding: embedding,
-            question_content: question.content,
-            images: instance_question.images || [],
+            link_to_instance_question: `${config.serverCanonicalHost}/pl/course_instance/${res.locals.course_instance.id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`,
+            error_description: completionContent || '',
+            embedding: INCLUDE_LONG_DATA ? embedding : [],
+            question_content: INCLUDE_LONG_DATA ? questionPrompt : '',
+            images: INCLUDE_LONG_DATA ? promptImageUrls : [],
+            prompt: INCLUDE_LONG_DATA ? messages : [],
+            rubric_items,
+            errorRecognitionComparison
           }
 
+          j++;
+          return embeddingData;
+        });
 
-        }
-        return res.redirect(req.originalUrl);
+        assessmentEmbeddingData[assessment_question.id] = aqEmbeddingData;
       }
+
+      // Download the embeddings as a JSON file
+      const jsonContent = JSON.stringify(assessmentEmbeddingData, null, 2);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="assessment_embeddings_${assessment.id}.json"`,
+      );
+      return res.send(jsonContent);
+
+      // return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
