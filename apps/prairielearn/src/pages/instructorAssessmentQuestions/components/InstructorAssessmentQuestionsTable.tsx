@@ -179,7 +179,7 @@ export function InstructorAssessmentQuestionsTable({
                         })}
                       </td>
                       <td>{assessment_question.max_manual_points || '—'}</td>
-                      {showAdvanceScorePercCol ? (
+                      {showAdvanceScorePercCol && (
                         <td
                           class={clsx(
                             assessment_question.effective_advance_score_perc === 0
