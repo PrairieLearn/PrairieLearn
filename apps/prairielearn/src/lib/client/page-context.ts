@@ -118,10 +118,7 @@ const StaffAssessmentContextSchema =
 
 export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
 
-export function getAssessmentContext(
-  resLocals: Record<string, any>,
-  authLevel: 'instructor',
-): StaffAssessmentContext {
+export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }

@@ -1,12 +1,14 @@
 import clsx from 'clsx';
 import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
+import { Dropdown } from 'react-bootstrap';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../../components/AssessmentQuestions.js';
+import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadge } from '../../../components/IssueBadge.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
@@ -16,8 +18,6 @@ import { idsEqual } from '../../../lib/id.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
-import { Dropdown } from 'react-bootstrap';
-import { HistMini } from '../../../components/HistMini.js';
 
 function Title({
   questionRow,
