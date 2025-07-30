@@ -2464,9 +2464,9 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
 
     logger.verbose('Starting server...');
     app = await initExpress();
-    const serverInstance = await startServer(app);
+    const httpServer = await startServer(app);
 
-    await socketServer.init(serverInstance);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2562,8 +2562,8 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   // We need to re-initialize the server when we are running in HMR mode.
   await socketServer.close();
   app = await initExpress();
-  const serverInstance = await startServer(app);
-  await socketServer.init(serverInstance);
+  const httpServer = await startServer(app);
+  await socketServer.init(httpServer);
 }
 
 /**

@@ -104,6 +104,7 @@ export async function after(): Promise<void> {
   // call close()/stop() functions in reverse order to the
   // start() functions above
   try {
+    await httpser;
     await assets.close();
 
     debug('after(): finish workers');
