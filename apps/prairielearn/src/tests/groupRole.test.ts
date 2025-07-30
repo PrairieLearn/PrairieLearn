@@ -1203,9 +1203,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     // Find the ID of an assessment that has group roles
     assessmentId = await sqldb.queryRow(
       sql.select_assessment,
-      {
-        tid: 'hw5-templateGroupWork',
-      },
+      { tid: 'hw5-templateGroupWork' },
       IdSchema,
     );
     assessmentUrl = locals.courseInstanceUrl + '/assessment/' + assessmentId;

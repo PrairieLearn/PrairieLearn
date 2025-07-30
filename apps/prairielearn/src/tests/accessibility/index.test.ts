@@ -407,9 +407,7 @@ describe('accessibility', () => {
 
     const assessment_id = await sqldb.queryRow(
       'SELECT id FROM assessments WHERE tid = $tid',
-      {
-        tid: 'hw1-automaticTestSuite',
-      },
+      { tid: 'hw1-automaticTestSuite' },
       IdSchema,
     );
 

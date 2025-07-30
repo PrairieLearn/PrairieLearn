@@ -142,9 +142,7 @@ export async function waitForJobSequence(job_sequence_id) {
   while (true) {
     job_sequence = await sqldb.queryRow(
       sql.select_job_sequence,
-      {
-        job_sequence_id,
-      },
+      { job_sequence_id },
       JobSequenceSchema,
     );
     if (job_sequence.status !== 'Running') break;

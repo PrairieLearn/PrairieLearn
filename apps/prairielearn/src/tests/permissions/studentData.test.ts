@@ -88,9 +88,7 @@ describe('student data access', { timeout: 60_000 }, function () {
     assert.isTrue(response.ok);
     const result = await sqldb.queryRow(
       sql.select_variant,
-      {
-        assessment_id: context.homeworkAssessmentId,
-      },
+      { assessment_id: context.homeworkAssessmentId },
       VariantSchema,
     );
     context.homeworkQuestionVariant = result;
@@ -135,9 +133,7 @@ describe('student data access', { timeout: 60_000 }, function () {
     assert.isTrue(response.ok);
     const result = await sqldb.queryRow(
       sql.select_variant,
-      {
-        assessment_id: context.examAssessmentId,
-      },
+      { assessment_id: context.examAssessmentId },
       VariantSchema,
     );
     context.examQuestionVariant = result;

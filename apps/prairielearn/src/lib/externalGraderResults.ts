@@ -157,9 +157,7 @@ async function processMessage(data: {
     // Figure out where we can fetch results from.
     const jobDetails = await sqldb.queryRow(
       sql.get_job_details,
-      {
-        grading_job_id: jobId,
-      },
+      { grading_job_id: jobId },
       z.object({
         s3_bucket: GradingJobSchema.shape.s3_bucket,
         s3_root_key: GradingJobSchema.shape.s3_root_key,

@@ -79,9 +79,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
     it('should create the correct group configuration', async () => {
       const result = await sqldb.queryRow(
         sql.select_group_config,
-        {
-          assessment_id: locals.assessment_id,
-        },
+        { assessment_id: locals.assessment_id },
         z.object({
           minimum: GroupConfigSchema.shape.minimum,
           maximum: GroupConfigSchema.shape.maximum,
@@ -114,9 +112,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
     it('should create the correct group configuration', async () => {
       const result = await sqldb.queryRow(
         sql.select_group_config,
-        {
-          assessment_id: locals.assessment_id_2,
-        },
+        { assessment_id: locals.assessment_id_2 },
         z.object({
           minimum: GroupConfigSchema.shape.minimum,
           maximum: GroupConfigSchema.shape.maximum,

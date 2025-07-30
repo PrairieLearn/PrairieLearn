@@ -43,9 +43,7 @@ router.get(
     // re-fetch assessment to get updated statistics
     const assessment = await sqldb.queryRow(
       sql.select_assessment,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentSchema,
     );
     res.locals.assessment = assessment;

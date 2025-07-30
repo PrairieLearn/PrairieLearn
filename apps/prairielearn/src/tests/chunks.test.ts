@@ -295,9 +295,7 @@ describe('chunks', () => {
       // Find the ID of this course
       const results = await sqldb.queryRow(
         sql.select_course_by_path,
-        {
-          course_path: tempTestCourseDir.path,
-        },
+        { course_path: tempTestCourseDir.path },
         CourseSchema,
       );
       courseId = results.id;
@@ -305,36 +303,24 @@ describe('chunks', () => {
       // Find the ID of the course instance
       courseInstanceId = await sqldb.queryRow(
         sql.select_course_instance,
-        {
-          long_name: 'Spring 2015',
-        },
+        { long_name: 'Spring 2015' },
         IdSchema,
       );
 
       // Find the ID of an assessment that has clientFilesAssessment
       assessmentId = await sqldb.queryRow(
         sql.select_assessment,
-        {
-          tid: 'exam1-automaticTestSuite',
-        },
+        { tid: 'exam1-automaticTestSuite' },
         IdSchema,
       );
 
       // Find the ID of a question.
-      questionId = await sqldb.queryRow(
-        sql.select_question,
-        {
-          qid: 'addNumbers',
-        },
-        IdSchema,
-      );
+      questionId = await sqldb.queryRow(sql.select_question, { qid: 'addNumbers' }, IdSchema);
 
       // Find the ID of a nested question.
       nestedQuestionId = await sqldb.queryRow(
         sql.select_question,
-        {
-          qid: 'subfolder/nestedQuestion',
-        },
+        { qid: 'subfolder/nestedQuestion' },
         IdSchema,
       );
     });

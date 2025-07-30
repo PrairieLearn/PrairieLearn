@@ -95,9 +95,7 @@ router.get(
     // re-fetch assessment to get updated statistics
     const assessment = await sqldb.queryRow(
       sql.select_assessment,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentSchema,
     );
     res.locals.assessment = assessment;
@@ -154,9 +152,7 @@ router.get(
       // get formatted duration statistics
       const duration_stat = await sqldb.queryRow(
         sql.select_duration_stats,
-        {
-          assessment_id: res.locals.assessment.id,
-        },
+        { assessment_id: res.locals.assessment.id },
         z.object({
           median_formatted: FormatIntervalSchema,
           min_formatted: FormatIntervalSchema,

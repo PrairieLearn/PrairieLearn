@@ -27,9 +27,7 @@ export function waitForJobSequence(locals: Record<string, any>) {
         await sleep(10);
         const result = await sqldb.queryRow(
           sql.select_job_sequence,
-          {
-            job_sequence_id: locals.job_sequence_id,
-          },
+          { job_sequence_id: locals.job_sequence_id },
           JobSequenceSchema,
         );
         locals.job_sequence = result;
@@ -98,9 +96,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       }
       const result = await sqldb.queryRow(
         sql.select_variant,
-        {
-          variant_id: locals.variant_id,
-        },
+        { variant_id: locals.variant_id },
         VariantSchema,
       );
       locals.variant = result;
@@ -316,9 +312,7 @@ export function checkSubmissionScore(locals: Record<string, any>) {
     it('should have the submission', async function () {
       const result = await sqldb.queryRow(
         sql.select_last_submission_for_question,
-        {
-          question_id: locals.question?.id,
-        },
+        { question_id: locals.question?.id },
         SubmissionSchema,
       );
       locals.submission = result;
@@ -338,9 +332,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
       if ('submission_score' in locals.expectedResult) {
         const result = await sqldb.queryRow(
           sql.select_last_submission_for_instance_question,
-          {
-            instance_question_id: locals.question?.id,
-          },
+          { instance_question_id: locals.question?.id },
           SubmissionSchema,
         );
         locals.submission = result;
@@ -360,9 +352,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
     it('should still have the instance_question', async function () {
       const result = await sqldb.queryRow(
         sql.select_instance_question,
-        {
-          instance_question_id: locals.question?.id,
-        },
+        { instance_question_id: locals.question?.id },
         InstanceQuestionSchema,
       );
       locals.instance_question = result;
@@ -438,9 +428,7 @@ export function checkAssessmentScore(locals: Record<string, any>) {
     it('should still have the assessment_instance', async function () {
       const result = await sqldb.queryRow(
         sql.select_assessment_instance,
-        {
-          assessment_instance_id: locals.assessment_instance?.id,
-        },
+        { assessment_instance_id: locals.assessment_instance?.id },
         AssessmentInstanceSchema,
       );
       locals.assessment_instance = result;
@@ -675,9 +663,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
           await sleep(10);
           locals.job_sequence = await sqldb.queryRow(
             sql.select_job_sequence,
-            {
-              job_sequence_id: locals.job_sequence_id,
-            },
+            { job_sequence_id: locals.job_sequence_id },
             JobSequenceSchema,
           );
         } while (locals.job_sequence.status === 'Running');

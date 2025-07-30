@@ -70,9 +70,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   test.sequential('check assessment points', async () => {
     const result = await sqldb.queryRow(
       sql.read_assessment_instance_points,
-      {
-        assessment_id: context.assessmentId,
-      },
+      { assessment_id: context.assessmentId },
       z.object({
         points: AssessmentInstanceSchema.shape.points,
         score_perc: AssessmentInstanceSchema.shape.score_perc,
@@ -107,9 +105,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   test.sequential('check assessment points', async () => {
     const results = await sqldb.queryRow(
       sql.read_assessment_instance_points,
-      {
-        assessment_id: context.assessmentId,
-      },
+      { assessment_id: context.assessmentId },
       z.object({
         points: AssessmentInstanceSchema.shape.points,
         score_perc: AssessmentInstanceSchema.shape.score_perc,
