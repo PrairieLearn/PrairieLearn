@@ -10,6 +10,7 @@ import {
   StaffEnrollmentSchema,
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
+import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
 import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
@@ -143,7 +144,14 @@ export function InstructorStudentDetail({
                         />
                       </td>
                       <td class="align-middle">
-                        {computeTitle(row)}
+                        <a
+                          href={getAssessmentInstanceUrl({
+                            urlPrefix,
+                            assessmentId: row.assessment.id,
+                          })}
+                        >
+                          {computeTitle(row)}
+                        </a>
                         {row.assessment.group_work && (
                           <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
                         )}
