@@ -20,7 +20,7 @@ export function InstructorAssessmentQuestions({
 }) {
   const { authz_data, __csrf_token, urlPrefix } = getPageContext(resLocals);
   const { course_instance, course } = getCourseInstanceContext(resLocals, 'instructor');
-  const { assessment, assessment_set } = getAssessmentContext(resLocals, 'instructor');
+  const { assessment, assessment_set } = getAssessmentContext(resLocals);
 
   return PageLayout({
     resLocals,
