@@ -2572,7 +2572,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
  * cleaned up here.
  */
 export async function close() {
-  console.log('closing!');
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
   await serverJobs.stop();

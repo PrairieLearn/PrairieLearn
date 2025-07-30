@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
+import path from 'path';
 import { exit } from 'process';
 
 import debounce from 'debounce';
@@ -6,6 +7,7 @@ import picomatch from 'picomatch';
 import {
   type ConfigEnv,
   type Connect,
+  type ModuleNode,
   type Plugin,
   type UserConfig,
   type ViteDevServer,
@@ -33,6 +35,20 @@ const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginExpress
   console.error('Please setup VitePluginExpress in your vite.config.ts first');
   exit(1);
 };
+
+function recursivelyGetImporters(
+  moduleNode: ModuleNode,
+  visited = new Set<ModuleNode>(),
+): Set<ModuleNode> {
+  if (!visited.has(moduleNode)) {
+    visited.add(moduleNode);
+    for (const importer of moduleNode.importers) {
+      recursivelyGetImporters(importer, visited);
+    }
+  }
+
+  return visited;
+}
 
 const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFunction> => {
   const config = await getPluginConfig(server);
@@ -72,7 +88,9 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const app = await appModule[config.exportName!];
     if (!app) {
-      logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`);
+      logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
+        timestamp: true,
+      });
       process.exit(1);
     }
     return app;
@@ -85,24 +103,53 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     });
   }
 
-  const extraWatchPaths = config.extraWatchPaths ?? [];
-  const extraWatchPathMatchers = extraWatchPaths.map((path) => picomatch(path));
-  server.watcher.add(extraWatchPaths);
+  // We'll always normalize the paths to absolute globs.
+  const fullRestartPaths = config.fullRestartPaths ?? [];
+  const fullRestartPathMatchers = fullRestartPaths.map((p) =>
+    picomatch(path.resolve(server.config.root, p)),
+  );
+  server.watcher.add(fullRestartPaths);
 
   const debouncedLoadApp = debounce(async () => await _loadApp(config), 500, { immediate: true });
   const debouncedRestart = debounce(() => server.restart(), 500, { immediate: true });
 
+  async function needsFullRestart(file: string): Promise<boolean> {
+    // This is the easy case: we had a direct change to a file that is supposed
+    // to trigger a full reload.
+    if (fullRestartPathMatchers.some((matcher) => matcher(file))) return true;
+
+    const modules = Array.from(server.moduleGraph.getModulesByFile(file) ?? []);
+    if (modules.length === 0) {
+      // This somehow isn't part of the module graph? It could be the Vite config
+      // file itself. To play it safe, we'll assume that we need to restart.
+      return true;
+    }
+
+    if (modules.length !== 1) {
+      throw new Error(`Unexpected module graph state: ${modules.length} modules found for ${file}`);
+    }
+
+    // If the file is directly or indirectly imported by a module that matches
+    // the full restart paths, then we need to do a full restart.
+    const importers = recursivelyGetImporters(modules[0]);
+    const importerPaths = Array.from(importers)
+      .map((m) => m.file)
+      .filter((p): p is string => p !== null);
+    return importerPaths.some((p) => fullRestartPathMatchers.some((matcher) => matcher(p)));
+  }
+
   // We'll manually react to changes in two cases:
   //
-  // 1. If the file matches any of the extra watch paths, we'll immediately restart
-  //    the server. These files aren't part of Vite's module graph, so we can't rely
-  //    on any automatic reloading. This also means we need to restart the entire
-  //    server, as we can't just reload the module.
+  // 1. If the file matches any of the full paths, we'll immediately restart
+  //    the server. These paths may not be part of the Vite module graph (e.g.
+  //    SQL files), or they may be part of the module graph but may contain state
+  //    that can't be hot-reloaded (e.g. database connection pools or worker pools).
   //
   // 2. If we're configured to watch file changes, we'll reload the app (root) module.
   //    This gives us a head start over waiting for the next request to trigger a reload.
-  server.watcher.on('change', (file) => {
-    if (extraWatchPathMatchers.some((matcher) => matcher(file))) {
+  server.watcher.on('change', async (file) => {
+    if (await needsFullRestart(file)) {
+      logger.info(`Change to ${file} requires a full restart`, { timestamp: true });
       debouncedRestart();
     } else if (config.watchFileChanges) {
       debouncedLoadApp();
@@ -151,7 +198,11 @@ interface VitePluginExpressConfig {
   exportName?: string;
   outputFormat?: ModuleFormat;
   watchFileChanges?: boolean;
-  extraWatchPaths?: string[];
+  /**
+   * A set of globs for which a direct modification or modification of a dependency
+   * should trigger a full restart of the server.
+   */
+  fullRestartPaths?: string[];
 }
 
 declare interface ViteConfig extends UserConfig {
@@ -166,7 +217,7 @@ export function VitePluginExpress(cfg: VitePluginExpressConfig): Plugin[] {
     initAppOnBoot: cfg.initAppOnBoot ?? true,
     outputFormat: cfg.outputFormat ?? 'cjs',
     watchFileChanges: cfg.watchFileChanges ?? true,
-    extraWatchPaths: cfg.extraWatchPaths ?? [],
+    fullRestartPaths: cfg.fullRestartPaths ?? [],
   };
 
   const plugins: Plugin[] = [
