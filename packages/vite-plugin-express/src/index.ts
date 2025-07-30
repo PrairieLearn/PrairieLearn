@@ -35,7 +35,21 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   // doing a full restart.
   let _mostRecentAppModule: any;
   async function _loadApp(config: VitePluginExpressConfig) {
-    const appModule = await server.ssrLoadModule(config.appPath);
+    let appModule: any;
+    try {
+      appModule = await server.ssrLoadModule(config.appPath);
+    } catch (err: any) {
+      if (err?.message?.includes('Transform failed with')) {
+        // This is a syntax error, and Vite has already logged it. It's recoverable
+        // if the user fixes the syntax error.
+        return null;
+      }
+
+      // We don't know what happened, so we'll just rethrow the error and allow
+      // the process to die.
+      throw err;
+    }
+
     if (appModule) {
       _mostRecentAppModule = appModule;
     }
@@ -97,9 +111,7 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
 
   return async function (req: IncomingMessage, res: ServerResponse): Promise<void> {
     const app = await _loadApp(config);
-    if (!app) {
-      return;
-    }
+    if (!app) return;
 
     app.use((err: unknown, _req: typeof req, _res: typeof res, next: Connect.NextFunction) => {
       if (err instanceof Error) {

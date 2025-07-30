@@ -13,5 +13,5 @@ export function init() {
 }
 
 export async function close() {
-  await client?.quit();
+  client?.disconnect();
 }

@@ -2559,7 +2559,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     }
   });
 
-  setServerState('started');
+  setServerState('initialized');
   setNeedsFullRestart(false);
   logger.info('PrairieLearn server ready, press Control-C to quit');
   if (config.devMode) {
@@ -2580,6 +2580,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
  * cleaned up here.
  */
 export async function close() {
+  console.log('closing!');
   // These are run in the opposite order in which they're initialized/started.
   await cron.stop();
   await serverJobs.stop();

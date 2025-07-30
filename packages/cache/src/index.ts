@@ -173,7 +173,7 @@ export class Cache {
 
     if (this.type === 'redis') {
       assert(this.redisClient, 'Redis client is enabled but not configured');
-      await this.redisClient.quit();
+      this.redisClient.disconnect();
     }
   }
 }
