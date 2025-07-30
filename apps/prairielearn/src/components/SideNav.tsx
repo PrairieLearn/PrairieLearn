@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 
 import { type HtmlValue, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { isEnterprise } from '../lib/license.js';
 
@@ -129,6 +130,14 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
+      activeSubPages: ['students'],
+      urlSuffix: '/instance_admin/students',
+      iconClasses: 'fas fa-users-line fa-fw',
+      tabLabel: 'Students',
+      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+    },
+    {
+      activePages: ['instance_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/instance_admin/file_view',
       iconClasses: 'fa fa-edit fa-fw',
@@ -163,17 +172,34 @@ export function SideNav({
   page: NavPage;
   subPage: NavSubPage;
 }) {
+  // We recompute `urlPrefix` instead of using the one from `resLocals` because
+  // it may not be populated correctly in the case of an access error, specifically
+  // when the user has access to the course but tries to change to an effective user
+  // that does not have access to a course instance.
+  //
+  // In that case, `urlPrefix` would just be `/pl`, which would result in broken
+  // links. We want all sidebar links to work even in this weird state.
+  const urlPrefix = run(() => {
+    if (resLocals.course_instance) {
+      return `/pl/course_instance/${resLocals.course_instance.id}/instructor`;
+    }
+
+    return `/pl/course/${resLocals.course.id}`;
+  });
+
   return html`
     ${CourseNav({
       resLocals,
       page,
       subPage,
+      urlPrefix,
     })}
     ${resLocals.course_instance
       ? CourseInstanceNav({
           resLocals,
           page,
           subPage,
+          urlPrefix,
         })
       : ''}
   `;
@@ -183,10 +209,12 @@ function CourseNav({
   resLocals,
   page,
   subPage,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  urlPrefix: string;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
@@ -245,6 +273,7 @@ function CourseNav({
           navPage: page,
           navSubPage: subPage,
           tabInfo,
+          urlPrefix,
         }),
       )}
     </div>
@@ -255,13 +284,14 @@ function CourseInstanceNav({
   resLocals,
   page,
   subPage,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  urlPrefix: string;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
-
   return html`
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
@@ -305,6 +335,7 @@ function CourseInstanceNav({
                 navPage: page,
                 navSubPage: subPage,
                 tabInfo,
+                urlPrefix,
               }),
             )
           : ''}
@@ -318,13 +349,14 @@ function SideNavLink({
   navPage,
   navSubPage,
   tabInfo,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   tabInfo: SideNavTabInfo;
+  urlPrefix: string;
 }) {
-  const { urlPrefix } = resLocals;
   const {
     activePages,
     checkActiveSubPageForPages,
