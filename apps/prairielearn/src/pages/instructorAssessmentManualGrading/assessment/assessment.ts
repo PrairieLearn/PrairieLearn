@@ -12,12 +12,12 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
-
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectQuestionById } from '../../../models/question.js';
+
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const router = Router();
@@ -116,7 +116,7 @@ router.post(
       if (!assessment_questions) {
         return;
       }
-      const START_INDEX = 1; 
+      const START_INDEX = 1;
       for (let i = START_INDEX; i < assessment_questions.length; i++) {
         const assessment_question = assessment_questions[i];
         const question = await selectQuestionById(assessment_question.question_id);
@@ -129,7 +129,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
-          mode: 'all'
+          mode: 'all',
         });
       }
       res.redirect(req.originalUrl);
