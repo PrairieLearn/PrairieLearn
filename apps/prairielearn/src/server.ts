@@ -2043,6 +2043,7 @@ export async function startServer(app: express.Express) {
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
+  // When using Vite in development, it is responsible for the server.
   if (DEV_EXECUTION_MODE === 'hmr') {
     return server;
   }
