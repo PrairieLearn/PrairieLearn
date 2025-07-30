@@ -235,8 +235,9 @@ export function InstructorAssessmentQuestionsTable({
                           <Dropdown.Menu>
                             {hasCourseInstancePermissionEdit ? (
                               <Dropdown.Item
-                                onClick={() => handleResetButtonClick(assessment_question.id)}
                                 as="button"
+                                type="button"
+                                onClick={() => handleResetButtonClick(assessment_question.id)}
                               >
                                 Reset question variants
                               </Dropdown.Item>
