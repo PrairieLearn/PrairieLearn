@@ -66,7 +66,7 @@ export function InstructorAssessmentQuestionsTable({
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
 }) {
-  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
+  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
 
   const handleResetButtonClick = (questionId: string) => {
