@@ -31,18 +31,22 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   const config = await getPluginConfig(server);
   const logger = server.config.logger;
 
+  // Store a cached copy of the most recent app module that we can use while
+  // doing a full restart.
+  let _mostRecentAppModule: any;
   async function _loadApp(config: VitePluginExpressConfig) {
     const appModule = await server.ssrLoadModule(config.appPath);
+    if (appModule) {
+      _mostRecentAppModule = appModule;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    let app = appModule[config.exportName!];
+    const app = await appModule[config.exportName!];
     if (!app) {
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`);
       process.exit(1);
-    } else {
-      // some app may be created with a function returning a promise
-      app = await app;
-      return app;
     }
+    return app;
   }
 
   if (config.initAppOnBoot) {
@@ -75,6 +79,21 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
       debouncedLoadApp();
     }
   });
+
+  // Hook into the environment's `close` method so we can do cleanup when the
+  // server is closed. Crucially, this allows us to hook into the `k+Enter` key
+  // combo in the Vite dev server to gracefully shut down the server so that it
+  // can be restarted cleanly.
+  //
+  // This uses a hardcoded `close` export from the app module.
+  const originalClose = server.environments.ssr.close.bind(server.environments.ssr);
+  server.environments.ssr.close = async () => {
+    await originalClose();
+
+    if (typeof _mostRecentAppModule?.close === 'function') {
+      await _mostRecentAppModule.close();
+    }
+  };
 
   return async function (req: IncomingMessage, res: ServerResponse): Promise<void> {
     const app = await _loadApp(config);

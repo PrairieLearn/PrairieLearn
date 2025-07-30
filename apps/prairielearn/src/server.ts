@@ -2128,27 +2128,7 @@ if (isHMR && isServerPending()) {
 
 if (isHMR && needsFullRestart() && isServerInitialized()) {
   setServerState('pending');
-  await stopBatchedMigrations();
-
-  await assets.close();
-
-  await codeCaller.finish();
-
-  // The server will get blown away by the full restart, so no need to call stopServer().
-  // await stopServer();
-
-  await cron.stop();
-
-  await serverJobs.stop();
-
-  await cache.close();
-
-  await socketServer.close();
-
-  load.close();
-
-  await namedLocks.close();
-  await sqldb.closeAsync();
+  await close();
   setServerState('stopped');
 }
 
@@ -2578,13 +2558,12 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       process.exit(0);
     }
   });
+
   setServerState('started');
   setNeedsFullRestart(false);
-  if (!isHMR) {
-    logger.info('PrairieLearn server ready, press Control-C to quit');
-    if (config.devMode) {
-      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-    }
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode) {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.
@@ -2592,6 +2571,26 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   app = await initExpress();
   const serverInstance = await startServer(app);
   await socketServer.init(serverInstance);
+}
+
+/**
+ * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
+ * function when it wants to perform a full restart of the server. Anything that
+ * creates long-lived resources (e.g. connection or worker pools) should be
+ * cleaned up here.
+ */
+export async function close() {
+  // These are run in the opposite order in which they're initialized/started.
+  await cron.stop();
+  await serverJobs.stop();
+  await socketServer.close();
+  await cache.close();
+  await assets.close();
+  await codeCaller.finish();
+  load.close();
+  await stopBatchedMigrations();
+  await namedLocks.close();
+  await sqldb.closeAsync();
 }
 
 export const viteExpressApp = app;
