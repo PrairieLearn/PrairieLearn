@@ -225,13 +225,18 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                       <td class="text-end">
                         <Dropdown>
-                          <Dropdown.Toggle variant="secondary" class="dropdown-toggle btn-xs">
+                          <Dropdown.Toggle
+                            variant="secondary"
+                            class="dropdown-toggle btn-xs"
+                            id={`question-actions-${question.qid}`}
+                          >
                             Action
                           </Dropdown.Toggle>
                           <Dropdown.Menu>
                             {hasCourseInstancePermissionEdit ? (
                               <Dropdown.Item
                                 onClick={() => handleResetButtonClick(assessment_question.id)}
+                                as="button"
                               >
                                 Reset question variants
                               </Dropdown.Item>
