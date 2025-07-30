@@ -13,9 +13,9 @@ import * as questionServers from '../question-servers/index.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   type Course,
-  DateFromISOString,
   IdSchema,
   IntervalSchema,
+  NextAllowedGradeSchema,
   type Question,
   QuestionSchema,
   type Submission,
@@ -31,12 +31,6 @@ import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const NextAllowedGradeSchema = z.object({
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_left_ms: z.coerce.number(),
-  allow_grade_interval: z.string(),
-});
 
 const VariantDataSchema = z.object({
   instance_question_id: z.string().nullable(),
