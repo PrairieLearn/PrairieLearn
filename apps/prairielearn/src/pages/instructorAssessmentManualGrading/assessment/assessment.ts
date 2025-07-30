@@ -147,10 +147,10 @@ router.post(
             mode: 'all',
             executeInBackground: false,
           });
-        } catch (error) {
-          console.error('Error during AI grading:', error);
+        } catch {
           flash('error', `AI grading failed for question ${assessment_question.question_id}`);
-          continue;
+          res.redirect(req.originalUrl);
+          return;
         }
       }
       flash('success', 'AI grading succeeded for all questions.');
