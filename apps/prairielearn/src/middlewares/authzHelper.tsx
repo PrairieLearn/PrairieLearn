@@ -9,7 +9,7 @@ import { type NextFunction, type Request, type Response } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
+import { type PageContext, getPageContext } from '../lib/client/page-context.js';
 import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
@@ -20,7 +20,7 @@ export const createAuthzMiddleware =
     errorMessage,
     cosmeticOnly,
   }: {
-    oneOfPermissions: string[];
+    oneOfPermissions: (keyof PageContext['authz_data'])[];
     errorMessage: string;
     cosmeticOnly: boolean;
   }) =>
@@ -62,6 +62,7 @@ export const createAuthzMiddleware =
             <Hydrate>
               <AuthzAccessMismatch
                 errorMessage={errorMessage}
+                oneOfPermissionKeys={oneOfPermissions}
                 authzData={pageContext.authz_data}
                 authnUser={pageContext.authn_user}
               />
