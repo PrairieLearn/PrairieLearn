@@ -175,11 +175,11 @@ router.post(
       if (!assessment_questions) {
         return;
       }
-      const START_INDEX = 1; 
+      const START_INDEX = 0; 
 
       const assessmentEmbeddingData = {};
 
-      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 1;
+      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 40;
       const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 50;
       const PARALLEL_LIMIT = 20;
 

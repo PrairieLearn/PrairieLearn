@@ -423,7 +423,7 @@ export async function generateErrorEmbedding({
     submissionMessage,
     {
       role: 'system',
-      content: 'In a few words and in at most a sentence, explain any errors made in the student response, if any. Avoid specific quotes, numbers, or content from the actual submission. Your response will be used to cluster similar submissions together.',
+      content: 'In a few words and in at most a sentence, explain any errors made in the student response, if any. Avoid specific quotes, numbers, or content from the actual submission. Your response will be used to cluster similar submissions together. Only return a string; nothing more.',
     }
   ];
 
@@ -431,11 +431,7 @@ export async function generateErrorEmbedding({
     messages,
     model: OPEN_AI_MODEL,
     user: `course_${course.id}`,
-    temperature: OPEN_AI_TEMPERATURE,
-    response_format: zodResponseFormat(
-      z.string(),
-      'error-recognition',
-    ),
+    temperature: OPEN_AI_TEMPERATURE
   });
 
   const completionContent = completion.choices[0].message.content;
