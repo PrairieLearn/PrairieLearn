@@ -155,7 +155,7 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const jobDetails = await sqldb.queryRow(
+    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
       sql.get_job_details,
       { grading_job_id: jobId },
       z.object({
@@ -163,8 +163,6 @@ async function processMessage(data: {
         s3_root_key: GradingJobSchema.shape.s3_root_key,
       }),
     );
-    const s3Bucket = jobDetails.s3_bucket;
-    const s3RootKey = jobDetails.s3_root_key;
 
     if (!s3Bucket || !s3RootKey) {
       throw new error.HttpStatusError(
