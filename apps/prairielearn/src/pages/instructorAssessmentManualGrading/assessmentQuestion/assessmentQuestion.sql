@@ -14,28 +14,19 @@ WITH
       i.instance_question_id
   ),
   latest_submissions AS (
-    SELECT
-      ranked.id AS submission_id,
-      ranked.manual_rubric_grading_id AS manual_rubric_grading_id,
-      ranked.instance_question_id
+    SELECT DISTINCT
+      ON (iq.id) iq.id AS instance_question_id,
+      s.id AS submission_id,
+      s.manual_rubric_grading_id
     FROM
-      (
-        SELECT
-          s.id,
-          s.manual_rubric_grading_id,
-          v.instance_question_id,
-          ROW_NUMBER() OVER (
-            PARTITION BY
-              v.instance_question_id
-            ORDER BY
-              s.date DESC
-          ) AS rn
-        FROM
-          variants AS v
-          JOIN submissions AS s ON s.variant_id = v.id
-      ) ranked
+      instance_questions AS iq
+      JOIN variants AS v ON iq.id = v.instance_question_id
+      JOIN submissions AS s ON v.id = s.variant_id
     WHERE
-      rn = 1
+      iq.assessment_question_id = $assessment_question_id
+    ORDER BY
+      iq.id,
+      s.date
   ),
   rubric_grading_to_items AS (
     SELECT
