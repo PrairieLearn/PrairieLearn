@@ -44,7 +44,6 @@ export function ManualGradingAssessment({
   num_open_instances: number;
   aiGradingEnabled: boolean;
 }) {
-
   console.log('questions', questions);
 
   return PageLayout({

@@ -122,13 +122,15 @@ router.post(
 
       const assessment = res.locals.assessment as Assessment;
 
-      const assessment_questions = (await selectAssessmentQuestions({
-        assessment_id: assessment.id,
-      })).map(row => row.assessment_question);
+      const assessment_questions = (
+        await selectAssessmentQuestions({
+          assessment_id: assessment.id,
+        })
+      ).map((row) => row.assessment_question);
 
       // AI grading runs only on manually graded questions.
       const manuallyGradedAssessmentQuestions = assessment_questions.filter(
-        (aq) => aq.max_manual_points
+        (aq) => aq.max_manual_points,
       );
 
       if (manuallyGradedAssessmentQuestions.length === 0) {
@@ -148,7 +150,7 @@ router.post(
             urlPrefix: res.locals.urlPrefix,
             authn_user_id: res.locals.authn_user.user_id,
             user_id: res.locals.user.user_id,
-            mode: 'all'
+            mode: 'all',
           });
         } catch {
           flash('error', `AI grading failed for question ${assessment_question.question_id}`);
@@ -156,7 +158,7 @@ router.post(
           return;
         }
       }
-      flash('success', 'AI grading executing in background.');
+      flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
