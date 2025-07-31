@@ -23,7 +23,7 @@
     "@aws-sdk/client-sqs": "^3.858.0",
     "@aws-sdk/credential-providers": "^3.858.0",
     "@aws-sdk/lib-storage": "^3.858.0",
-    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@fortawesome/fontawesome-free": "^7.0.0",
     "@js-temporal/polyfill": "^0.5.1",
     "@node-saml/passport-saml": "^5.1.0",
     "@octokit/rest": "^22.0.0",
