@@ -145,7 +145,7 @@ onDocumentReady(() => {
                         ><input
                           type="checkbox"
                           class="js-rubric-item-filter"
-                          value="${item.description}"
+                          value="${item.id}"
                           id="filter-rubric-item-${item.id}"
                         />
                         <span>${item.description}</span></label
@@ -506,8 +506,8 @@ onDocumentReady(() => {
             row: InstanceQuestionRow,
             filters: { filter_rubric_items: string[] },
           ) => {
-            return filters.filter_rubric_items.every((item_description) =>
-              row.rubric_grading_items.map((item) => item.description).includes(item_description),
+            return filters.filter_rubric_items.every((item_id) =>
+              row.rubric_grading_items.map((item) => item.id).includes(item_id),
             );
           },
         },

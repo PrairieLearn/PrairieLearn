@@ -28,7 +28,6 @@ WITH
             PARTITION BY
               v.instance_question_id
             ORDER BY
-              v.date DESC,
               s.date DESC
           ) AS rn
         FROM
