@@ -103,7 +103,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   });
 
   test.sequential('check assessment points', async () => {
-    const results = await sqldb.queryRow(
+    const result = await sqldb.queryRow(
       sql.read_assessment_instance_points,
       { assessment_id: context.assessmentId },
       z.object({
@@ -112,7 +112,7 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
       }),
     );
     // 6+8 is 14, but limit should be 10+2 (max plus bonus)
-    assert.equal(results.points, 12);
-    assert.equal(results.score_perc, 120);
+    assert.equal(result.points, 12);
+    assert.equal(result.score_perc, 120);
   });
 });

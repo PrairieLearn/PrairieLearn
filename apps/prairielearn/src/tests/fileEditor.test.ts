@@ -736,8 +736,8 @@ function writeAndPushFileInDev(fileName, fileContents) {
 function waitForJobSequence(locals, expectedResult: 'Success' | 'Error') {
   describe('The job sequence', function () {
     it('should have an id', async () => {
-      const result = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
-      locals.job_sequence_id = result.id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      locals.job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
       await helperServer.waitForJobSequenceStatus(locals.job_sequence_id, expectedResult);

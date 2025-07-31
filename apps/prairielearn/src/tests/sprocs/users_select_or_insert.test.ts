@@ -8,11 +8,10 @@ import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getUserParams(user_id) {
-  const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
-  const result = await sqldb.queryRow(
-    query,
-    [user_id],
+async function getUserParams(user_id: string) {
+  return await sqldb.queryRow(
+    'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $user_id;',
+    { user_id },
     z.object({
       uid: UserSchema.shape.uid,
       name: UserSchema.shape.name,
@@ -20,8 +19,6 @@ async function getUserParams(user_id) {
       institution_id: UserSchema.shape.institution_id,
     }),
   );
-
-  return result;
 }
 
 async function usersSelectOrInsert(

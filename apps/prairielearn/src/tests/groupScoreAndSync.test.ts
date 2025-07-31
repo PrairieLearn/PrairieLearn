@@ -235,8 +235,10 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', async () => {
-      const result = await sqldb.queryRow(sql.select_assessment_instance, AssessmentInstanceSchema);
-      locals.assessment_instance = result;
+      locals.assessment_instance = await sqldb.queryRow(
+        sql.select_assessment_instance,
+        AssessmentInstanceSchema,
+      );
     });
   });
   describe('7. check Score for another student', function () {

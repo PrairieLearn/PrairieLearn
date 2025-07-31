@@ -107,8 +107,8 @@ async function syncSharingCourse(course_id) {
       __csrf_token: token,
     }),
   });
-  const result = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
-  return result.id;
+  const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+  return jobSequence.id;
 }
 
 describe('Question Sharing', function () {
