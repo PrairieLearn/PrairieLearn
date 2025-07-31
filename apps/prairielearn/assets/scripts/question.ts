@@ -274,7 +274,7 @@ function updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'
   const display = document.getElementById('grading-status-' + submission.id);
   if (!display) return;
   let label;
-  const spinner = '<i class="fa fa-sync fa-spin fa-fw"></i>';
+  const spinner = '<i class="fa fa-sync fa-spin"></i>';
   switch (submission.grading_job_status) {
     case 'requested':
       label = 'Grading requested ' + spinner;
