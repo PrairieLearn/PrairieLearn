@@ -13,6 +13,7 @@ import {
   getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorGradebook } from './instructorGradebook.html.js';
 import {
@@ -31,6 +32,11 @@ function buildCsvFilename(locals: Record<string, any>) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    errorMessage: 'Access denied (must be a student data viewer)',
+    cosmeticOnly: true,
+  }),
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 

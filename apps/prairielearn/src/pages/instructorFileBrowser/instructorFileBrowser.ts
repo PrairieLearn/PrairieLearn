@@ -11,11 +11,17 @@ import { getCourseOwners } from '../../lib/course.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 const router = Router();
 
 router.get(
   '/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_view'],
+    errorMessage: 'Requires "Viewer" permissions',
+    cosmeticOnly: true,
+  }),
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_view) {
       // Access denied, but instead of sending them to an error page, we'll show

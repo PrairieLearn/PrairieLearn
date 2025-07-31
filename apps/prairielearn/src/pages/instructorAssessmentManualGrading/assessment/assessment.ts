@@ -12,6 +12,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
@@ -21,10 +22,12 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    errorMessage: 'Access denied (must be a student data viewer)',
+    cosmeticOnly: false,
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {

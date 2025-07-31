@@ -369,6 +369,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.overrides = overrides;
 
     res.locals.user = res.locals.authz_data.user;
+    // After this middleware runs, `is_administrator` is set to the effective user's
+    // administrator status, and not the authn user's administrator status.
     res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
     res.locals.authz_data.mode = effectiveParams.req_mode;
