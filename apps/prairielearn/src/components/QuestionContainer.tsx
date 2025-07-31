@@ -124,7 +124,7 @@ export function QuestionContainer({
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -709,7 +709,7 @@ function QuestionPanel({
                     data-bs-toggle="modal"
                     data-bs-target="#copyQuestionModal"
                   >
-                    <i class="fa fa-fw fa-clone"></i>
+                    <i class="fa fa-clone"></i>
                     <span class="d-none d-sm-inline">Copy question</span>
                   </button>
                 `
