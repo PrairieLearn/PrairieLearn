@@ -176,7 +176,7 @@ onDocumentReady(() => {
       .map((assessment) =>
         AssessmentBadgeHtml({
           plainUrlPrefix,
-          course_instance_id,
+          courseInstanceId: course_instance_id,
           assessment,
         }).toString(),
       )

@@ -108,7 +108,7 @@ function AssessmentQuestionsTable({
                         return AssessmentBadgeHtml({
                           assessment,
                           plainUrlPrefix: urlPrefix,
-                          course_instance_id,
+                          courseInstanceId: course_instance_id,
                           publicURL: true,
                         });
                       })
