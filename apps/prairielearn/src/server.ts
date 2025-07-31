@@ -2161,12 +2161,6 @@ if (esMain(import.meta) && config.startServer) {
       await Sentry.init({
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
-
-        // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-        // try to set that up for itself, but only if OpenTelemetry is
-        // enabled. Otherwise, allow Sentry to install its own stuff so
-        // that request isolation works correctly.
-        skipOpenTelemetrySetup: config.openTelemetryEnabled,
       });
     }
 
