@@ -13,7 +13,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { type Assessment, type AssessmentQuestion } from '../../../lib/db-types.js';
+import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -121,18 +121,22 @@ router.post(
       }
 
       const assessment = res.locals.assessment as Assessment;
-      const assessment_questions = (await selectAssessmentQuestions(
-        assessment.id,
-      )) as AssessmentQuestion[];
 
-      if (!assessment_questions) {
-        return;
+      const assessment_questions = (await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      })).map(row => row.assessment_question);
+
+      // AI grading runs only on manually graded questions.
+      const manuallyGradedAssessmentQuestions = assessment_questions.filter(
+        (aq) => aq.max_manual_points
+      );
+
+      if (manuallyGradedAssessmentQuestions.length === 0) {
+        flash('warning', 'No manually graded assessment questions found for AI grading.');
+        res.redirect(req.originalUrl);
       }
-      for (const assessment_question of assessment_questions) {
-        if (!assessment_question.max_manual_points) {
-          // The assessment is not manually graded, so we skip it.
-          continue;
-        }
+
+      for (const assessment_question of manuallyGradedAssessmentQuestions) {
         const question = await selectQuestionById(assessment_question.question_id);
 
         try {
@@ -144,8 +148,7 @@ router.post(
             urlPrefix: res.locals.urlPrefix,
             authn_user_id: res.locals.authn_user.user_id,
             user_id: res.locals.user.user_id,
-            mode: 'all',
-            executeInBackground: false,
+            mode: 'all'
           });
         } catch {
           flash('error', `AI grading failed for question ${assessment_question.question_id}`);
@@ -153,7 +156,7 @@ router.post(
           return;
         }
       }
-      flash('success', 'AI grading succeeded for all questions.');
+      flash('success', 'AI grading executing in background.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

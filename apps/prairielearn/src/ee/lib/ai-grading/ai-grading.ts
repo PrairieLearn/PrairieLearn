@@ -60,7 +60,6 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
-  executeInBackground = true,
 }: {
   question: Question;
   course: Course;
@@ -75,11 +74,6 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
-  /**
-   * If true, the grading will be executed in the background.
-   * Otherwise, it will be executed synchronously.
-   */
-  executeInBackground?: boolean;
 }): Promise<string> {
   // If OpenAI API Key and Organization are not provided, throw error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
@@ -102,7 +96,10 @@ export async function aiGrade({
     description: 'Perform AI grading',
   });
 
-  const jobFunction = async (job) => {
+  serverJob.executeInBackground(async (job) => {
+    if (!assessment_question.max_manual_points) {
+      job.fail('The assessment question has no manual grading');
+    }
     const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
     );
@@ -478,12 +475,6 @@ export async function aiGrade({
       job.error('Number of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
-  };
-
-  if (executeInBackground) {
-    serverJob.executeInBackground(jobFunction);
-  } else {
-    await jobFunction(serverJob);
-  }
+  });
   return serverJob.jobSequenceId;
 }

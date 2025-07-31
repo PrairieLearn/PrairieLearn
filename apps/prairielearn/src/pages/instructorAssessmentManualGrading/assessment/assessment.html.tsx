@@ -44,6 +44,9 @@ export function ManualGradingAssessment({
   num_open_instances: number;
   aiGradingEnabled: boolean;
 }) {
+
+  console.log('questions', questions);
+
   return PageLayout({
     resLocals,
     pageTitle: 'Manual Grading',
@@ -92,13 +95,14 @@ export function ManualGradingAssessment({
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
           </h1>
           <div class="flex-grow-1"></div>
-          ${resLocals.is_administrator && aiGradingEnabled
+          ${resLocals.is_administrator && aiGradingEnabled && questions.length > 0
             ? html`
                 <button
                   type="button"
                   class="btn btn-sm btn-light grading-tag-button"
                   name="ai-grade-all-questions"
                   onclick="$('#ai-grade-all').submit();"
+                  aria-label="AI grade all questions"
                 >
                   <i class="bi bi-stars" aria-hidden="true"></i>
                   AI grade all questions
