@@ -1,4 +1,10 @@
-export const contentShort = `
+export const content = `
+<pl-question-panel>
+  <p>This is a question panel.</p>
+</pl-question-panel>
+`;
+
+export const contentNodes = `
 <ul data-type="taskList">
   <li data-checked="true" data-type="taskItem"><p>Test template</p></li>
 </ul>
@@ -10,7 +16,7 @@ export const contentShort = `
 </my-invalid-node-children>
 `;
 
-export const content = `
+export const _content = `
 <h1>Getting started</h1>
 <p>
   Welcome to the

@@ -9,6 +9,7 @@ import { HeadingDropdownMenu } from '../../../components/tiptap-ui/heading-dropd
 import { LinkPopover } from '../../../components/tiptap-ui/link-popover/index.js';
 import { ListDropdownMenu } from '../../../components/tiptap-ui/list-dropdown-menu/index.js';
 import { MarkButton } from '../../../components/tiptap-ui/mark-button/index.js';
+import { QuestionPanelButton } from '../../../components/tiptap-ui/question-panel-button/index.js';
 import { TextAlignButton } from '../../../components/tiptap-ui/text-align-button/index.js';
 import { UndoRedoButton } from '../../../components/tiptap-ui/undo-redo-button/index.js';
 import { useTiptapEditor } from '../../../lib/hooks/use-tiptap-editor.js';
@@ -28,6 +29,7 @@ export const MainToolbarContent = () => {
         <ListDropdownMenu types={['bulletList', 'orderedList', 'taskList']} />
         <BlockquoteButton />
         <CodeBlockButton />
+        <QuestionPanelButton />
       </ButtonGroup>
 
       <ButtonGroup>

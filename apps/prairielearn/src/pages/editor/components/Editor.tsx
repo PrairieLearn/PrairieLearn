@@ -30,6 +30,7 @@ import { ButtonToolbar } from 'react-bootstrap';
 
 import { Link } from '../../../components/tiptap-extension/link-extension.js';
 import { PLCodeBlock } from '../../../components/tiptap-extension/pl-code-extension.js';
+import { PlQuestionPanel } from '../../../components/tiptap-extension/pl-question-panel.js';
 import { RawHtml } from '../../../components/tiptap-extension/raw-html-extension.js';
 import { Selection } from '../../../components/tiptap-extension/selection-extension.js';
 import { TrailingNode } from '../../../components/tiptap-extension/trailing-node-extension.js';
@@ -89,6 +90,7 @@ export function Editor() {
       ListItem,
       OrderedList,
       Paragraph,
+      PlQuestionPanel,
       Text,
       Bold,
       Code,

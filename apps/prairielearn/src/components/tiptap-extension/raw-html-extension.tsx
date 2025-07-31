@@ -54,12 +54,13 @@ export const RawHtml = Node.create({
   },
 
   renderHTML({ node }) {
+    // TODO: Can we use HTMLAttributes here?
+    // https://github.com/ueberdosis/tiptap/blob/e0567acfcad097f65dd76e87804eff1c9d805320/packages/extension-list/src/item/list-item.ts#L30
     const div = document.createElement(node.attrs.tag);
     for (const attr of node.attrs.attrs) {
       div.setAttribute(attr.name, attr.value);
     }
     div.innerHTML = node.attrs.html;
-    // For debugging.
     div.dataset.type = 'raw';
     return div;
   },
