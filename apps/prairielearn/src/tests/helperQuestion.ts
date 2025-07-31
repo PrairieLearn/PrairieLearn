@@ -6,21 +6,30 @@ import { assert, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  JobSequenceSchema,
+  SubmissionSchema,
+  VariantSchema,
+} from '../lib/db-types.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      locals.job_sequence_id = result.rows[0].id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, [], JobSequenceSchema);
+      locals.job_sequence_id = jobSequence.id;
     });
     it('should be successful', async function () {
       do {
         await sleep(10);
-        const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
-          job_sequence_id: locals.job_sequence_id,
-        });
-        locals.job_sequence = result.rows[0];
+        locals.job_sequence = await sqldb.queryRow(
+          sql.select_job_sequence,
+          { job_sequence_id: locals.job_sequence_id },
+          JobSequenceSchema,
+        );
         assert(locals.job_sequence);
       } while (locals.job_sequence.status === 'Running');
     });
@@ -84,10 +93,11 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       ) {
         return;
       }
-      const result = await sqldb.queryOneRowAsync(sql.select_variant, {
-        variant_id: locals.variant_id,
-      });
-      locals.variant = result.rows[0];
+      locals.variant = await sqldb.queryRow(
+        sql.select_variant,
+        { variant_id: locals.variant_id },
+        VariantSchema,
+      );
     });
     it('should have the correct variant.instance_question.id if has grade or save button and is student page', function () {
       if (!locals.isStudentPage) return;
@@ -298,10 +308,11 @@ export function postInstanceQuestionAndFail(locals: Record<string, any>, expecte
 export function checkSubmissionScore(locals: Record<string, any>) {
   describe('check submission score', function () {
     it('should have the submission', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_submission_for_question, {
-        question_id: locals.question?.id,
-      });
-      locals.submission = result.rows[0];
+      locals.submission = await sqldb.queryRow(
+        sql.select_last_submission_for_question,
+        { question_id: locals.question?.id },
+        SubmissionSchema,
+      );
     });
     it('should be graded with expected score', function () {
       assert.equal(locals.submission?.score, locals.expectedResult?.submission_score);
@@ -316,11 +327,11 @@ export function checkQuestionScore(locals: Record<string, any>) {
   describe('check question score', function () {
     it('should have the submission', async function () {
       if ('submission_score' in locals.expectedResult) {
-        const result = await sqldb.queryOneRowAsync(
+        locals.submission = await sqldb.queryRow(
           sql.select_last_submission_for_instance_question,
           { instance_question_id: locals.question?.id },
+          SubmissionSchema,
         );
-        locals.submission = result.rows[0];
       }
     });
     it('should be graded with expected score', function () {
@@ -335,10 +346,11 @@ export function checkQuestionScore(locals: Record<string, any>) {
     });
 
     it('should still have the instance_question', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_instance_question, {
-        instance_question_id: locals.question?.id,
-      });
-      locals.instance_question = result.rows[0];
+      locals.instance_question = await sqldb.queryRow(
+        sql.select_instance_question,
+        { instance_question_id: locals.question?.id },
+        InstanceQuestionSchema,
+      );
     });
     it('should have the correct instance_question points', function () {
       assert(locals.instance_question);
@@ -409,10 +421,11 @@ export function checkQuestionStats(locals: Record<string, any>) {
 export function checkAssessmentScore(locals: Record<string, any>) {
   describe('check assessment score', function () {
     it('should still have the assessment_instance', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_assessment_instance, {
-        assessment_instance_id: locals.assessment_instance?.id,
-      });
-      locals.assessment_instance = result.rows[0];
+      locals.assessment_instance = await sqldb.queryRow(
+        sql.select_assessment_instance,
+        { assessment_instance_id: locals.assessment_instance?.id },
+        AssessmentInstanceSchema,
+      );
     });
     it('should have the correct assessment_instance points', function () {
       assert(locals.assessment_instance);
@@ -438,19 +451,19 @@ export function checkAssessmentScore(locals: Record<string, any>) {
 export function checkQuestionFeedback(locals: Record<string, any>) {
   describe('check question feedback', function () {
     it('should still have question feedback', async function () {
-      const result = await sqldb.queryOneRowAsync(sql.select_question_feedback, {
-        assessment_instance_id: locals.assessment_instance.id,
-        qid: locals.expectedFeedback.qid,
-        submission_id: locals.expectedFeedback.submission_id || null,
-      });
-      locals.question_feedback = result.rows[0];
+      locals.question_feedback = await sqldb.queryRow(
+        sql.select_question_feedback,
+        {
+          assessment_instance_id: locals.assessment_instance.id,
+          qid: locals.expectedFeedback.qid,
+          submission_id: locals.expectedFeedback.submission_id || null,
+        },
+        SubmissionSchema.shape.feedback,
+      );
     });
     it('should have the correct feedback', function () {
       for (const p in locals.expectedFeedback.feedback) {
-        assert.deepEqual(
-          locals.question_feedback?.feedback[p],
-          locals.expectedFeedback.feedback[p],
-        );
+        assert.deepEqual(locals.question_feedback[p], locals.expectedFeedback.feedback[p]);
       }
     });
   });
@@ -635,17 +648,21 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(response.status, 200);
       });
       it('should have an id', async function () {
-        const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-        locals.job_sequence_id = result.rows[0].id;
+        const jobSequence = await sqldb.queryRow(
+          sql.select_last_job_sequence,
+          [],
+          JobSequenceSchema,
+        );
+        locals.job_sequence_id = jobSequence.id;
       });
       it('should complete', async function () {
         do {
           await sleep(10);
-          const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
-            job_sequence_id: locals.job_sequence_id,
-          });
-          locals.job_sequence = result.rows[0];
-          assert(locals.job_sequence);
+          locals.job_sequence = await sqldb.queryRow(
+            sql.select_job_sequence,
+            { job_sequence_id: locals.job_sequence_id },
+            JobSequenceSchema,
+          );
         } while (locals.job_sequence.status === 'Running');
       });
       it('should be successful and produce no issues', async function () {
