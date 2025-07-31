@@ -1,6 +1,9 @@
-// This is a fork of Sentry's Express integration that's not available in the
-// `@sentry/node-core` package`. It has been lightly modified to remove unused
-// code and conform to PrairieLearn's coding style.
+// This is a fork of Sentry's Express integration from `@sentry/node`that's not
+// available in the `@sentry/node-core` package`. It has been lightly modified
+// to remove unused code and conform to PrairieLearn's coding style.
+//
+// See this package's `README.md` for more information about why we aren't
+// using `@sentry/node` directly.
 //
 // This was forked from the following file on 2025-07-30:
 // https://github.com/getsentry/sentry-javascript/blob/12ac49a9956fd1b64b3f8ad4b2b8f1da426a1efd/packages/node/src/integrations/tracing/express.ts
