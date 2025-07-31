@@ -30,43 +30,26 @@ export const RawHtml = Node.create({
   addAttributes() {
     return {
       html: {
-        parseHTML: (element) => {
-          const html = element.innerHTML;
-          return html;
-        },
+        parseHTML: (element) => element.innerHTML,
         rendered: false,
       },
       tag: {
-        parseHTML: (element) => {
-          const tag = element.tagName.toLowerCase();
-          console.log('tag', tag);
-          return tag;
-        },
+        parseHTML: (element) => element.tagName.toLowerCase(),
         rendered: false,
       },
       attrs: {
-        parseHTML: (element) => {
-          const attrs = element.attributes;
-          return attrs;
-        },
+        parseHTML: (element) => element.attributes,
         rendered: false,
       },
     };
   },
 
   parseHTML() {
-    // https://github.com/ueberdosis/tiptap/blob/e0567acfcad097f65dd76e87804eff1c9d805320/packages/extension-list/src/task-item/task-item.ts
-    console.log('parseHTML', this.options);
-    // Match on all tags.
     // For this to work, we need all the nodes to be matched correctly by the other extensions.
     return [
       {
         tag: '*',
-        // priority: 1,
       },
-      // {
-      //   tag: 'my-invalid-node-children',
-      // },
     ];
   },
 
@@ -76,6 +59,7 @@ export const RawHtml = Node.create({
       div.setAttribute(attr.name, attr.value);
     }
     div.innerHTML = node.attrs.html;
+    // For debugging.
     div.dataset.type = 'raw';
     return div;
   },
