@@ -33,9 +33,7 @@ router.get(
     }
     const rows = await sqldb.queryRows(
       sql.assessment_question_stats,
-      {
-        question_id: res.locals.question.id,
-      },
+      { question_id: res.locals.question.id },
       AssessmentQuestionStatsRowSchema,
     );
 

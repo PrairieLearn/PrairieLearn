@@ -14,8 +14,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
-import { type Grader } from './externalGraderCommon.js';
-import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
+import { type Grader, buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

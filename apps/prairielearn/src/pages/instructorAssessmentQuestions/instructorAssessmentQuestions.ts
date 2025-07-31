@@ -19,7 +19,9 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await selectAssessmentQuestions(res.locals.assessment.id);
+    const questionRows = await selectAssessmentQuestions({
+      assessment_id: res.locals.assessment.id,
+    });
 
     const assessmentPath = path.join(
       res.locals.course.path,
@@ -45,7 +47,7 @@ router.get(
     res.send(
       InstructorAssessmentQuestions({
         resLocals: res.locals,
-        questions,
+        questionRows,
         origHash,
         editorEnabled,
       }),

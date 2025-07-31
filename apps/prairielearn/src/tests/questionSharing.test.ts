@@ -9,7 +9,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Course, IdSchema } from '../lib/db-types.js';
+import { type Course, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -107,8 +107,8 @@ async function syncSharingCourse(course_id) {
       __csrf_token: token,
     }),
   });
-  const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-  return result.rows[0].id;
+  const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+  return jobSequence.id;
 }
 
 describe('Question Sharing', function () {

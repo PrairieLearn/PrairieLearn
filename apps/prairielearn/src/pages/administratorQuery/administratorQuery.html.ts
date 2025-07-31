@@ -3,8 +3,11 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { AdministratorQueryResultSchema } from '../../admin_queries/util.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import {
+  AdministratorQueryResultSchema,
+  type AdministratorQuerySpecs,
+} from '../../admin_queries/lib/util.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
@@ -18,25 +21,6 @@ export const AdministratorQueryRunParamsSchema = z.object({
   result: AdministratorQueryResultSchema.nullable(),
   formatted_date: z.string().optional().nullable(),
 });
-
-export const AdministratorQuerySchema = z.object({
-  description: z.string(),
-  resultFormats: z.any().optional(),
-  comment: z.any().optional(),
-  params: z
-    .array(
-      z.object({
-        name: z.string(),
-        description: z.string(),
-        default: z.string().optional(),
-        comment: z.string().optional(),
-      }),
-    )
-    .optional(),
-  sqlFilename: z.string().optional(),
-  link: z.string().optional(),
-});
-type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;
 
 export const QueryRunRowSchema = QueryRunSchema.extend({
   user_name: z.string().nullable(),
@@ -56,7 +40,7 @@ export function AdministratorQuery({
   query_run_id: string | null;
   query_run: QueryRun | null;
   queryFilename: string;
-  info: AdministratorQuery;
+  info: AdministratorQuerySpecs;
   recent_query_runs: QueryRunRow[];
 }) {
   return PageLayout({
@@ -277,7 +261,7 @@ function renderHeader(columns: string[], col: string) {
   return html`<th>${col}</th>`;
 }
 
-function renderCell(row: any, col: string, columns: string[], info: AdministratorQuery) {
+function renderCell(row: any, col: string, columns: string[], info: AdministratorQuerySpecs) {
   if (!shouldRenderColumn(columns, col)) return '';
   const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
 

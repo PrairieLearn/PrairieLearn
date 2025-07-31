@@ -1,5 +1,5 @@
 FROM prairielearn/workspace-vscode-base:latest
-ARG CACHEBUST=2025-06-15-14-13-20
+ARG CACHEBUST=2025-07-15-14-16-18
 
 USER root
 RUN apt-get update \

@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';

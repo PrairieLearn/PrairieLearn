@@ -1,10 +1,10 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
-import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
+import { Modal } from '../../../components/Modal.js';
+import { Navbar } from '../../../components/Navbar.js';
+import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,

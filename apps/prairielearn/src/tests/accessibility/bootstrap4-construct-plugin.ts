@@ -105,6 +105,7 @@ class Bootstrap4ConstructRule extends Rule {
       description: 'Bootstrap 4 constructs should not be used',
     };
   }
+
   public setup() {
     this.on('dom:ready', (event: DOMReadyEvent) => {
       const { document } = event;

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { IdSchema, WorkspaceHostSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
@@ -104,7 +104,7 @@ export function AdministratorWorkspaces({
                         </div>
                       `
                     : html`
-                        <div class="list-group list-group my-2">
+                        <div class="list-group my-2">
                           ${workspaces.map((workspace) => {
                             const maybeCourseInstanceName = workspace.course_instance_name
                               ? html`(<span title="Course instance"

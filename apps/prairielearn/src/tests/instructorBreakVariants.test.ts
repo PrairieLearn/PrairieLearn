@@ -31,7 +31,7 @@ describe('Instructor force-breaking variants', () => {
   beforeAll(async () => {
     await helperServer.before()();
 
-    assessmentId = await queryRow(sql.select_break_variants_exam, {}, IdSchema);
+    assessmentId = await queryRow(sql.select_break_variants_exam, IdSchema);
     assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessmentId}`;
 
     partialCredit1AssessmentQuestionId = await queryRow(

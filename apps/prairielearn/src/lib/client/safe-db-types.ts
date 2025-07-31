@@ -1,14 +1,24 @@
 import { type z } from 'zod';
 
 import {
+  AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
+  QuestionSchema as RawQuestionSchema,
+  TagSchema as RawTagSchema,
+  TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
+  ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
+
+/** Alternative Groups */
+export const StaffAlternativeGroupSchema =
+  RawAlternativeGroupSchema.brand<'StaffAlternativeGroup'>();
+export type StaffAlternativeGroup = z.infer<typeof StaffAlternativeGroupSchema>;
 
 /** Assessments */
 export const RawStaffAssessmentSchema = RawAssessmentSchema;
@@ -50,7 +60,7 @@ export const StaffAssessmentInstanceSchema =
   RawStaffAssessmentInstanceSchema.brand<'StaffAssessmentInstance'>();
 export type StaffAssessmentInstance = z.infer<typeof StaffAssessmentInstanceSchema>;
 
-export const RawStudentAssessmentInstanceSchema = RawStaffAssessmentInstanceSchema.pick({
+export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInstanceSchema.pick({
   assessment_id: true,
   auth_user_id: true,
   auto_close: true,
@@ -67,13 +77,16 @@ export const RawStudentAssessmentInstanceSchema = RawStaffAssessmentInstanceSche
   modified_at: true,
   number: true,
   open: true,
-  points: true,
-  score_perc: true,
+  // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
+  points: true, // potentially sensitive
+  score_perc: true, // potentially sensitive
   user_id: true,
 });
-export const StudentAssessmentInstanceSchema =
-  RawStudentAssessmentInstanceSchema.brand<'StudentAssessmentInstance'>();
-export type StudentAssessmentInstance = z.infer<typeof StudentAssessmentInstanceSchema>;
+export const StudentAssessmentInstanceSchema__UNSAFE =
+  RawStudentAssessmentInstanceSchema__UNSAFE.brand<'StudentAssessmentInstance'>();
+export type StudentAssessmentInstance__UNSAFE = z.infer<
+  typeof StudentAssessmentInstanceSchema__UNSAFE
+>;
 
 /** Assessment Sets */
 
@@ -97,7 +110,9 @@ export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 
 /** Assessment Questions */
 
-export const StaffAssessmentQuestionSchema = RawAssessmentQuestionSchema;
+export const StaffAssessmentQuestionSchema =
+  RawAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
+export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
 
 /** Courses */
 
@@ -165,6 +180,18 @@ export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
+/** Questions */
+export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();
+export type StaffQuestion = z.infer<typeof StaffQuestionSchema>;
+
+/** Topics */
+export const StaffTopicSchema = RawTopicSchema.brand<'StaffTopic'>();
+export type StaffTopic = z.infer<typeof StaffTopicSchema>;
+
+/** Tags */
+export const StaffTagSchema = RawTagSchema.brand<'StaffTag'>();
+export type StaffTag = z.infer<typeof StaffTagSchema>;
+
 /** Users */
 
 const RawStaffUserSchema = RawUserSchema.pick({
@@ -186,3 +213,7 @@ const RawStudentUserSchema = RawStaffUserSchema.pick({
 });
 export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;
+
+/** Zones */
+export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
+export type StaffZone = z.infer<typeof StaffZoneSchema>;

@@ -27,9 +27,7 @@ router.get(
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
-      {
-        user_id: authn_user.user_id,
-      },
+      { user_id: authn_user.user_id },
       AccessTokenSchema,
     );
 

@@ -1,41 +1,47 @@
 import clsx from 'clsx';
+import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
-
-import { useState } from '@prairielearn/preact-cjs/hooks';
+import { Dropdown } from 'react-bootstrap';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
-} from '../../../components/AssessmentQuestions.html.js';
-import { IssueBadgeJsx } from '../../../components/IssueBadge.html.js';
-import { SyncProblemButtonJsx } from '../../../components/SyncProblemButton.html.js';
-import { TagBadgeListJsx } from '../../../components/TagBadge.html.js';
-import { TopicBadgeJsx } from '../../../components/TopicBadge.html.js';
+} from '../../../components/AssessmentQuestions.js';
+import { HistMini } from '../../../components/HistMini.js';
+import { IssueBadge } from '../../../components/IssueBadge.js';
+import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
+import { TagBadgeList } from '../../../components/TagBadge.js';
+import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { AssessmentQuestionRow } from '../../../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
-  question,
+  questionRow,
   hasCoursePermissionPreview,
   urlPrefix,
 }: {
-  question: AssessmentQuestionRow;
+  questionRow: StaffAssessmentQuestionRow;
   hasCoursePermissionPreview: boolean;
   urlPrefix: string;
 }) {
+  const { question, assessment_question, alternative_group, alternative_group_size } = questionRow;
   const title = (
     <>
-      <AssessmentQuestionNumber question={question} />
+      <AssessmentQuestionNumber
+        assessmentQuestion={assessment_question}
+        alternativeGroup={alternative_group}
+        alternativeGroupSize={alternative_group_size}
+      />
       {question.title}
     </>
   );
   if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.question_id}/`}>{title}</a>;
+    return <a href={`${urlPrefix}/question/${question.id}/`}>{title}</a>;
   }
   return title;
 }
@@ -78,7 +84,7 @@ function EditModeButtons({
   );
 }
 
-const emptyQuestion: AssessmentQuestionRow = {
+const emptyQuestion: StaffAssessmentQuestionRow = {
   qid: '',
   course_id: '',
   course_sharing_name: '',
@@ -106,7 +112,7 @@ const emptyQuestion: AssessmentQuestionRow = {
 
 export function InstructorAssessmentQuestionsTable({
   course,
-  questions,
+  questionRows,
   urlPrefix,
   assessmentType,
   assessmentSetName,
@@ -118,7 +124,7 @@ export function InstructorAssessmentQuestionsTable({
   editorEnabled,
 }: {
   course: StaffCourse;
-  questions: AssessmentQuestionRow[];
+  questionRows: StaffAssessmentQuestionRow[];
   assessmentType: 'Homework' | 'Exam';
   assessmentSetName: string;
   assessmentNumber: string;
@@ -133,16 +139,13 @@ export function InstructorAssessmentQuestionsTable({
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState<AssessmentQuestionRow>(emptyQuestion);
-  const [questionState, setQuestionState] = useState<AssessmentQuestionRow[]>(questions);
+  const [selectedQuestion, setSelectedQuestion] =
+    useState<StaffAssessmentQuestionRow>(emptyQuestion);
+  const [questionState, setQuestionState] = useState<StaffAssessmentQuestionRow[]>(questionRows);
 
   const handleResetButtonClick = (questionId: string) => {
     setResetAssessmentQuestionId(questionId);
     setShowResetModal(true);
-  };
-
-  const handleResetModalClose = () => {
-    setShowResetModal(false);
   };
 
   const handleEditQuestion = (question) => {
@@ -155,7 +158,7 @@ export function InstructorAssessmentQuestionsTable({
     setShowEditModal(false);
   };
 
-  const handleUpdateQuestion = (updatedQuestion: AssessmentQuestionRow) => {
+  const handleUpdateQuestion = (updatedQuestion: StaffAssessmentQuestionRow) => {
     console.log(updatedQuestion);
     setQuestionState((prevState) =>
       prevState.map((q) => (q.qid === updatedQuestion.qid ? updatedQuestion : q)),
@@ -169,11 +172,12 @@ export function InstructorAssessmentQuestionsTable({
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol =
-    questions.filter((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
+    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
+    1;
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
-  function maxPoints({
+  function maxPointsText({
     max_auto_points,
     max_manual_points,
     points_list,
@@ -210,7 +214,7 @@ export function InstructorAssessmentQuestionsTable({
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}
-                questions={questions}
+                questions={questionState}
                 editMode={editMode}
                 setEditMode={setEditMode}
               />
@@ -286,11 +290,11 @@ export function InstructorAssessmentQuestionsTable({
                       )}
                       <td>
                         <Title
-                          question={question}
+                          questionRow={question}
                           hasCoursePermissionPreview={hasCoursePermissionPreview}
                           urlPrefix={urlPrefix}
                         />
-                        <IssueBadgeJsx
+                        <IssueBadge
                           urlPrefix={urlPrefix}
                           count={question.open_issue_count ?? 0}
                           issueQid={question.qid}
@@ -298,100 +302,104 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                       <td>
                         {question.sync_errors ? (
-                          <SyncProblemButtonJsx output={question.sync_errors} type="error" />
+                          <SyncProblemButton output={question.sync_errors} type="error" />
                         ) : question.sync_warnings ? (
-                          <SyncProblemButtonJsx output={question.sync_warnings} type="warning" />
+                          <SyncProblemButton output={question.sync_warnings} type="warning" />
                         ) : (
                           ''
                         )}
                         {idsEqual(course.id, question.course_id)
                           ? question.qid
-                          : `@${question.course_sharing_name}/${question.qid}`}
+                          : `@${course.sharing_name}/${question.qid}`}
                       </td>
                       <td>
-                        <TopicBadgeJsx topic={question.topic} />
+                        <TopicBadge topic={question.topic} />
                       </td>
                       <td>
-                        <TagBadgeListJsx tags={question.tags} />
+                        <TagBadgeList tags={question.tags} />
                       </td>
                       <td>
-                        {maxPoints({
-                          max_auto_points: question.max_auto_points,
-                          max_manual_points: question.max_manual_points,
-                          points_list: question.points_list,
-                          init_points: question.init_points,
+                        {maxPointsText({
+                          max_auto_points: question.assessment_question.max_auto_points,
+                          max_manual_points: question.assessment_question.max_manual_points,
+                          points_list: question.assessment_question.points_list,
+                          init_points: question.assessment_question.init_points,
                         })}
                       </td>
-                      <td>{question.max_manual_points || '—'}</td>
+                      <td>{question.assessment_question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol ? (
                         <td
                           class={clsx(
-                            question.assessment_question_advance_score_perc === 0
+                            question.assessment_question.effective_advance_score_perc === 0
                               ? 'text-muted'
                               : '',
                           )}
                           data-testid="advance-score-perc"
                         >
-                          {question.assessment_question_advance_score_perc}%
+                          {question.assessment_question.effective_advance_score_perc}%
                         </td>
                       ) : (
                         ''
                       )}
                       <td>
-                        {question.mean_question_score
-                          ? `${question.mean_question_score.toFixed(3)} %`
+                        {question.assessment_question.mean_question_score
+                          ? `${question.assessment_question.mean_question_score.toFixed(3)} %`
                           : ''}
                       </td>
                       <td class="text-center">
-                        {question.number_submissions_hist ? (
-                          <div
-                            class="js-histmini"
-                            data-data={JSON.stringify(question.number_submissions_hist)}
-                            data-options={JSON.stringify({ width: 60, height: 20 })}
-                          ></div>
+                        {question.assessment_question.number_submissions_hist ? (
+                          <HistMini
+                            data={question.assessment_question.number_submissions_hist}
+                            options={{ width: 60, height: 20 }}
+                          />
                         ) : (
                           ''
                         )}
                       </td>
                       <td>
-                        {question.other_assessments?.map((assessment) => (
-                          <div
-                            class="d-inline-block me-1"
-                            key={`${question.qid}-${assessment.assessment_id}`}
-                          >
-                            <AssessmentBadge urlPrefix={urlPrefix} assessment={assessment} />
-                          </div>
-                        ))}
+                        {question.other_assessments?.map((assessment) => {
+                          return (
+                            <div
+                              key={`${question.qid}-${assessment.assessment_id}`}
+                              class="d-inline-block me-1"
+                            >
+                              <AssessmentBadge
+                                urlPrefix={urlPrefix}
+                                assessment={{
+                                  assessment_id: assessment.assessment_id,
+                                  color: assessment.assessment_set_color,
+                                  label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </td>
                       <td class="text-end">
-                        <div class="dropdown js-question-actions">
-                          <button
-                            type="button"
-                            class="btn btn-secondary btn-xs dropdown-toggle"
-                            data-bs-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
+                        <Dropdown>
+                          <Dropdown.Toggle
+                            variant="secondary"
+                            class="dropdown-toggle btn-xs"
+                            id={`question-actions-${question.qid}`}
                           >
-                            Action <span class="caret"></span>
-                          </button>
-                          <div class="dropdown-menu">
+                            Action
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
                             {hasCourseInstancePermissionEdit ? (
-                              <button
+                              <Dropdown.Item
+                                as="button"
                                 type="button"
-                                class="dropdown-item"
-                                data-bs-toggle="modal"
-                                data-bs-target="#resetQuestionVariantsModal"
-                                onClick={() => handleResetButtonClick(question.id)}
+                                onClick={() =>
+                                  handleResetButtonClick(question.assessment_question.id)
+                                }
                               >
                                 Reset question variants
-                              </button>
+                              </Dropdown.Item>
                             ) : (
-                              <button type="button" class="dropdown-item disabled" disabled>
-                                Must have editor permission
-                              </button>
+                              <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
                             )}
-                          </div>
-                        </div>
+                          </Dropdown.Menu>
+                        </Dropdown>
                       </td>
                     </tr>
                   </Fragment>

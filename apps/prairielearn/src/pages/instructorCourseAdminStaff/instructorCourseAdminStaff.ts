@@ -60,9 +60,7 @@ router.get(
 
     const courseUsers = await sqldb.queryRows(
       sql.select_course_users,
-      {
-        course_id: res.locals.course.id,
-      },
+      { course_id: res.locals.course.id },
       CourseUsersRowSchema,
     );
 

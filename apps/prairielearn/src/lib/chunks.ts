@@ -21,6 +21,7 @@ import { type CourseData } from '../sync/course-db.js';
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
 import { chalk } from './chalk.js';
 import { config } from './config.js';
+import { CourseSchema } from './db-types.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -817,8 +818,11 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold('Looking up course directory'));
-  const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
-  let courseDir = result.rows[0].path;
+  let courseDir = await sqldb.queryRow(
+    sql.select_course_dir,
+    { course_id },
+    CourseSchema.shape.path,
+  );
   job.verbose(`Found course directory: ${courseDir}`);
   courseDir = path.resolve(process.cwd(), courseDir);
   job.verbose(`Resolved course directory: ${courseDir}`);

@@ -148,9 +148,7 @@ router.post(
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
       sql.can_auto_create_course,
-      {
-        user_id: res.locals.authn_user.user_id,
-      },
+      { user_id: res.locals.authn_user.user_id },
       z.boolean(),
     );
 

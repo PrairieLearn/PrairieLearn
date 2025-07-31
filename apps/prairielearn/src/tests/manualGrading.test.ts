@@ -265,7 +265,10 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-bs-content'),
+              container
+                .find('[data-testid="rubric-item-explanation"]')
+                .attr('data-bs-content')
+                ?.trim(),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {
@@ -1043,7 +1046,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            action: 'unlimited',
+            action: 'remove',
             time_add: '0',
             reopen_closed: 'on',
           }).toString(),

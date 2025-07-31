@@ -1,9 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionContainer } from '../../components/QuestionContainer.html.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 

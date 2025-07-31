@@ -89,8 +89,10 @@ def execute_code(
         _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = extract_ipynb_contents(f, ipynb_key)
+            traceback_fname_student = f"{fname_student} #grade"
         else:
             str_student = f.read()
+            traceback_fname_student = fname_student
     str_student = "\n".join(filter(bool, (str_leading, str_student, str_trailing)))
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
@@ -188,11 +190,13 @@ def execute_code(
     # The file at path `fname_student` doesn't actually correspond to the
     # code that we're going to execute, since it doesn't include the leading
     # and trailing code. We'll manually construct a `linecache` entry for it
-    # so that the traceback will show the correct code for each line.
-    populate_linecache(fname_student, str_student)
+    # so that the traceback will show the correct code for each line. For
+    # notebooks, this name does not match a real file, so that students see
+    # a pointer to the original source of the code in the traceback.
+    populate_linecache(traceback_fname_student, str_student)
 
     try:
-        code_student = compile(str_student, fname_student, "exec")
+        code_student = compile(str_student, traceback_fname_student, "exec")
         exec(code_student, student_globals)
         err = None
     except Exception:

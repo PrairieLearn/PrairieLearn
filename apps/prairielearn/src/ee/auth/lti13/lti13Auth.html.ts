@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -34,12 +34,14 @@ export function Lti13Test({
           <h2>Mapped LTI 1.3 claims</h2>
           <p>The user would be authenticated as:</p>
           <ul>
-            <li><b>UID:</b> ${userInfo.uid} (<code>${lti13_instance.uid_attribute}</code>)
-            <li><b>UIN:</b> ${userInfo.uin} (<code>${lti13_instance.uin_attribute}</code>)
-            <li><b>Name:</b> ${userInfo.name} (<code>${lti13_instance.name_attribute}</code>)
-            <li><b>Email:</b> ${userInfo.email} (<code>${lti13_instance.email_attribute}</code>)
+            <li><b>UID:</b> ${userInfo.uid} (<code>${lti13_instance.uid_attribute}</code>)</li>
+            <li><b>UIN:</b> ${userInfo.uin} (<code>${lti13_instance.uin_attribute}</code>)</li>
+            <li><b>Name:</b> ${userInfo.name} (<code>${lti13_instance.name_attribute}</code>)</li>
+            <li>
+              <b>Email:</b> ${userInfo.email} (<code>${lti13_instance.email_attribute}</code>)
+            </li>
           </ul>
-          <h2>All LTI 1.3 claims</h1>
+          <h2>All LTI 1.3 claims</h2>
           <pre><code>${JSON.stringify(lti13_claims, null, 2)}</code></pre>
         </main>
       </body>

@@ -71,10 +71,16 @@ function _reportLoad() {
     lifecycle_state: lifecycle.getState(),
     healthy: healthCheck.isHealthy(),
   };
-  sqldb.query(sql.insert_load, params, (err) => {
-    if (err) logger.error('Error reporting load:', err);
-    setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
-  });
+  // Query will run in the background, without awaiting
+  sqldb
+    .queryAsync(sql.insert_load, params)
+    .catch((err) => {
+      logger.error('Error reporting load:', err);
+    })
+    .finally(() => {
+      // Report load again in the future
+      setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+    });
 }
 
 function _reportConfig() {
@@ -85,7 +91,7 @@ function _reportConfig() {
     max_jobs: 0,
     config,
   };
-  sqldb.query(sql.insert_config, params, (err) => {
-    if (err) logger.error('Error reporting config:', err);
+  sqldb.queryAsync(sql.insert_config, params).catch((err) => {
+    logger.error('Error reporting config:', err);
   });
 }

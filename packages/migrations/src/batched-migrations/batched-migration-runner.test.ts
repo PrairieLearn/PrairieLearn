@@ -69,9 +69,7 @@ async function getBatchedMigrationJobs(migrationId: string) {
 async function resetFailedBatchedMigrationJobs(migrationId: string) {
   await queryAsync(
     "UPDATE batched_migration_jobs SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE batched_migration_id = $batched_migration_id AND status = 'failed'",
-    {
-      batched_migration_id: migrationId,
-    },
+    { batched_migration_id: migrationId },
   );
 }
 

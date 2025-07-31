@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/pos
 import { InstitutionSchema } from '../../../lib/db-types.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
-import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForContext,
   reconcilePlanGrantsForInstitution,

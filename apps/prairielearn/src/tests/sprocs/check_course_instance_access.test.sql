@@ -145,17 +145,3 @@ FROM
   ) AS authorized
 WHERE
   ciar.id = $ciar_id;
-
--- BLOCK cia_test
-SELECT
-  *
-FROM
-  (
-    SELECT
-      id
-    FROM
-      institutions
-    WHERE
-      $uid ~ uid_regexp
-  ) AS user_institution (user_institution_id),
-  check_course_instance_access ($ci_id, $uid, user_institution_id, $date) AS authorized;

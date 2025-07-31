@@ -123,6 +123,27 @@ class TestSympy:
         ("acosh(m)", sympy.acosh(M)),
     )
 
+    # Using string-based comparisons here to bypass sympy's default simplification behavior
+    # Note that even simplification disabled, we expect some basic normalizations like alphabetic sorting of expressions
+    NO_SIMPLIFICATION_EXPR_PAIRS = (
+        ("sin(atan(n))", "sin(atan(n))"),
+        ("sin atan n", "sin(atan(n))"),
+        ("ln(e**2)", "log(E**2)"),
+        ("-infty + 99", "-oo + 99"),
+        ("sin(arctan(n))", "sin(atan(n))"),
+        ("2n-m+m-n", "-m + m - n + 2*n"),
+    )
+
+    @pytest.mark.parametrize(("a_sub", "ref"), NO_SIMPLIFICATION_EXPR_PAIRS)
+    def test_no_simplification(self, a_sub: str, ref: str) -> None:
+        assert ref == str(
+            psu.convert_string_to_sympy(
+                a_sub,
+                self.SYMBOL_NAMES,
+                simplify_expression=False,
+            )
+        )
+
     @pytest.mark.parametrize(("a_sub", "sympy_ref"), CUSTOM_FUNCTION_PAIRS)
     def test_custom_function_conversion(
         self, a_sub: str, sympy_ref: sympy.Expr

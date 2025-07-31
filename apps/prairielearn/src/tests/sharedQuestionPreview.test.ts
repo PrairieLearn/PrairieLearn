@@ -58,9 +58,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
-        {
-          qid: testQuestion.qid,
-        },
+        { qid: testQuestion.qid },
         z.string(),
       );
     }

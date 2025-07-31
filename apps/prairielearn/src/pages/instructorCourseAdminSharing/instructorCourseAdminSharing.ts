@@ -21,9 +21,7 @@ async function selectCanChooseSharingName(course) {
     course.sharing_name === null ||
     !(await sqldb.queryOptionalRow(
       sql.select_shared_question_exists,
-      {
-        course_id: course.id,
-      },
+      { course_id: course.id },
       z.boolean().nullable(),
     ))
   );

@@ -40,7 +40,6 @@ describe('getEnrollmentCountsForInstitution', () => {
     // second one for more complete tests.
     const courseInstance = await queryRow(
       "INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *",
-      {},
       CourseInstanceSchema,
     );
 

@@ -492,7 +492,7 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callOneRowAsync('sync_assessments', [
+  await sqldb.callAsync('sync_assessments', [
     assessmentParams,
     courseId,
     courseInstanceId,

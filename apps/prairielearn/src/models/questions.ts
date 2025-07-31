@@ -37,9 +37,7 @@ export async function selectQuestionsForCourse(
 ): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
-    {
-      course_id,
-    },
+    { course_id },
     QuestionsPageDataSchema,
   );
 
@@ -58,9 +56,7 @@ export async function selectPublicQuestionsForCourse(
 ): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_public_questions_for_course,
-    {
-      course_id,
-    },
+    { course_id },
     QuestionsPageDataSchema,
   );
 

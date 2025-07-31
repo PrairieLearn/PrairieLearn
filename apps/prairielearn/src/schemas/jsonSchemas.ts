@@ -35,8 +35,10 @@ import {
   type QuestionCalculationOptionsJson,
   QuestionCalculationOptionsJsonSchema,
 } from './questionOptionsCalculation.js';
-import { QuestionCheckboxOptionsJsonSchema } from './questionOptionsCheckbox.js';
-import type { QuestionCheckboxOptionsJson } from './questionOptionsCheckbox.js';
+import {
+  type QuestionCheckboxOptionsJson,
+  QuestionCheckboxOptionsJsonSchema,
+} from './questionOptionsCheckbox.js';
 import {
   type QuestionFileOptionsJson,
   QuestionFileOptionsJsonSchema,

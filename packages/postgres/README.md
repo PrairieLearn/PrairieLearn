@@ -161,20 +161,6 @@ These functions have some behaviors that can make them more convenient to work w
   console.log(userNames);
   ```
 
-There are also a number of legacy functions available, though these are discouraged in new code.
-
-- `queryValidatedRows`
-- `queryValidatedOneRow`
-- `queryValidatedZeroOrOneRow`
-- `queryValidatedSingleColumnRows`
-- `queryValidatedSingleColumnOneRow`
-- `queryValidatedSingleColumnZeroOrOneRow`
-- `callValidatedRows`
-- `callValidatedOneRow`
-- `callValidatedZeroOrOneRow`
-
-For details on the behavior of these functions, see the source code.
-
 ### Transactions
 
 To use transactions, wrap your queries with the `runInTransactionAsync` function:

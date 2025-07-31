@@ -1,9 +1,8 @@
 import { v4 as uuid } from 'uuid';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -14,11 +13,8 @@ import {
   writeCourseToTempDirectory,
 } from './sync/util.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
 describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
-  let courseInstanceId = null;
   let assessmentBadges;
 
   const course = getCourseData();
@@ -82,7 +78,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   };
 
   async function fetchAssessmentsPage() {
-    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${courseInstanceId}/assessments`;
+    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/1/assessments`;
     const response = await helperClient.fetchCheerio(assessmentsUrl);
     assert.isTrue(response.ok);
     return response;
@@ -108,15 +104,16 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
     await helperServer.before(courseDir)();
-    const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
-    courseInstanceId = courseInstanceResult.rows[0].id;
   });
 
   afterAll(helperServer.after);
 
   test.sequential('should default to grouping by Set', async function () {
-    const result = await sqldb.queryOneRowAsync(sql.get_test_course, []);
-    assert.equal(result.rows[0].assessments_group_by, 'Set');
+    const courseInstance = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Fa19',
+    });
+    assert.equal(courseInstance.assessments_group_by, 'Set');
   });
 
   test.sequential('should use correct order when grouping by Set', async function () {

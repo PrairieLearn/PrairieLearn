@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
@@ -24,6 +24,7 @@ const lti13_instance_defaults = {
   uid_attr: 'email',
   uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
   email_attr: 'email',
+  require_linked_lti_user: false,
 };
 
 router.get(
@@ -32,9 +33,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
-      {
-        institution_id: req.params.institution_id,
-      },
+      { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
     );
 
@@ -103,11 +102,15 @@ router.post(
   '/:unsafe_lti13_instance_id?',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_key') {
-      const keystoreJson = await queryAsync(sql.select_keystore, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-      });
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
+      const keystoreJson = await queryOptionalRow(
+        sql.select_keystore,
+        {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+        },
+        z.any(),
+      );
+      const keystore = await jose.JWK.asKeyStore(keystoreJson || []);
 
       const kid = new Date().toUTCString();
       // RSA256 minimum keysize of 2048 bits
@@ -134,11 +137,15 @@ router.post(
       flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
-      const keystoreJson = await queryAsync(sql.select_keystore, {
-        unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
-        institution_id: req.params.institution_id,
-      });
-      const keystore = await jose.JWK.asKeyStore(keystoreJson?.rows[0]?.keystore || []);
+      const keystoreJson = await queryOptionalRow(
+        sql.select_keystore,
+        {
+          unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
+          institution_id: req.params.institution_id,
+        },
+        z.any(),
+      );
+      const keystore = await jose.JWK.asKeyStore(keystoreJson || []);
 
       const key = keystore.get(req.body.kid);
 
@@ -207,6 +214,7 @@ router.post(
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
         email_attribute: req.body.email_attribute,
+        require_linked_lti_user: !!req.body.require_linked_lti_user,
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });

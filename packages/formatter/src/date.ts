@@ -1,6 +1,8 @@
 import { toTemporalInstant } from '@js-temporal/polyfill';
 import keyBy from 'lodash/keyBy.js';
 
+type TimePrecision = 'hour' | 'minute' | 'second';
+
 /**
  * Format a date to a human-readable string like '2020-03-27T12:34:56 (CDT)'.
  *
@@ -214,14 +216,21 @@ export function formatDateWithinRange(
  * - '3:34pm'
  * - '3:34:17pm'
  *
+ * maxPrecision must be an equal or smaller unit than minPrecision.
+ *
  * @param date The date to format.
  * @param timezone The time zone to use for formatting.
  * @param baseDate The base date to use for comparison.
+ * @param maxPrecision Only show units as large or larger than the max precision.
+ * @param minPrecision Always show that unit and larger, potentially showing smaller units.
+ *
  */
 function formatDateFriendlyParts(
   date: Date,
   timezone: string,
   baseDate: Date,
+  maxPrecision: TimePrecision = 'second',
+  minPrecision: TimePrecision = 'hour',
 ): { dateFormatted: string; timeFormatted: string; timezoneFormatted: string } {
   // compute the number of days from the base date (0 = today, 1 = tomorrow, etc.)
 
@@ -265,15 +274,60 @@ function formatDateFriendlyParts(
     dateFormatted = `${parts.weekday.value}, ${parts.month.value}\u00a0${parts.day.value}, ${parts.year.value}`;
   }
 
-  // format the time string
+  const precisionOrder: TimePrecision[] = ['second', 'minute', 'hour'];
+  const maxIndex = precisionOrder.indexOf(maxPrecision);
+  const minIndex = precisionOrder.indexOf(minPrecision);
 
-  let timeFormatted = '';
-  if (parts.minute.value === '00' && parts.second.value === '00') {
-    timeFormatted = `${parts.hour.value}`;
-  } else if (parts.second.value === '00') {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}`;
-  } else {
-    timeFormatted = `${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
+  /**
+   * The maximum precision must be a unit smaller than or equal to the minimum precision, otherwise the rules will contradict each other.
+   *
+   * If max is a larger unit than min, e.g. max = hour, min = minute, then by "min"
+   * we must display minute and smaller but by "max" we can display hour and larger, which is a contradiction.
+   *
+   * If min is a larger unit than max, e.g. max = minute, min = hour, then by "min" we must display
+   * hour and smaller and by "max" we can display minutes and larger. These do not contradict each other.
+   *
+   *  V min/max > | h | m | s
+   *  h           | X | X | X
+   *  m           | I | X | X
+   *  s           | I | I | X
+   *
+   * X - valid configuration
+   * I - invalid configuration
+   */
+
+  // A higher index corresponds to a larger unit, so if maxIndex is larger than minIndex, then the rules contradict each other.
+  if (maxIndex > minIndex) {
+    throw new Error('maxPrecision must be an equal or smaller unit than minPrecision.');
+  }
+
+  /** Examples:
+   * min=h, max=h: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0AM
+   * min=h, max=m: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0:01AM
+   * min=h, max=s: 0:00:00AM -> 0AM, 0:00:01AM -> 0:00:01AM, 0:01:01AM -> 0:01:01AM
+   *
+   * min=m, max=m: 0:00:00AM -> 0:00AM, 0:00:01AM -> 0:00AM, 0:01:01AM -> 0:00AM
+   * min=m, max=s: 0:00:00AM -> 0:00AM, 0:00:01AM -> 0:00AM, 0:01:01AM -> 0:01:01AM
+   *
+   * min=s, max=s: 0:00:00AM -> 0:00:00AM, 0:00:01AM -> 0:00:01AM, 0:01:01AM -> 0:01:01AM
+   */
+
+  let timeFormatted = parts.hour.value;
+
+  const shouldShowMinutes =
+    ['minute', 'second'].includes(minPrecision) ||
+    (maxPrecision === 'minute' && parts.minute.value !== '00') ||
+    (maxPrecision === 'second' && (parts.minute.value !== '00' || parts.second.value !== '00'));
+
+  if (shouldShowMinutes) {
+    timeFormatted += `:${parts.minute.value}`;
+  }
+
+  const shouldShowSeconds =
+    minPrecision === 'second' || (maxPrecision === 'second' && parts.second.value !== '00');
+
+  if (shouldShowSeconds) {
+    timeFormatted += `:${parts.second.value}`;
   }
   // add the am/pm part
   timeFormatted = `${timeFormatted}${parts.dayPeriod.value.toLowerCase()}`;
@@ -310,6 +364,8 @@ function formatDateFriendlyParts(
  * @param param.timeFirst If true, the time is shown before the date (default false).
  * @param param.dateOnly If true, only the date is shown (default false).
  * @param param.timeOnly If true, only the time is shown (default false).
+ * @param param.maxPrecision The maximum precision to show for time (default 'minute').
+ * @param param.minPrecision The minimum precision to always show for time (default 'hour').
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
@@ -321,18 +377,24 @@ export function formatDateFriendly(
     timeFirst = false,
     dateOnly = false,
     timeOnly = false,
+    maxPrecision = 'second',
+    minPrecision = 'hour',
   }: {
     baseDate?: Date;
     includeTz?: boolean;
     timeFirst?: boolean;
     dateOnly?: boolean;
     timeOnly?: boolean;
+    maxPrecision?: TimePrecision;
+    minPrecision?: TimePrecision;
   } = {},
 ): string {
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
     date,
     timezone,
     baseDate,
+    maxPrecision,
+    minPrecision,
   );
 
   let dateTimeFormatted = '';
@@ -379,15 +441,17 @@ export function formatDateRangeFriendly(
     includeTz = true,
     timeFirst = false,
     dateOnly = false,
+    maxPrecision = 'second',
+    minPrecision = 'hour',
   }: Parameters<typeof formatDateFriendly>[2] = {},
 ): string {
   const {
     dateFormatted: startDateFormatted,
     timeFormatted: startTimeFormatted,
     timezoneFormatted,
-  } = formatDateFriendlyParts(start, timezone, baseDate);
+  } = formatDateFriendlyParts(start, timezone, baseDate, maxPrecision, minPrecision);
   const { dateFormatted: endDateFormatted, timeFormatted: endTimeFormatted } =
-    formatDateFriendlyParts(end, timezone, baseDate);
+    formatDateFriendlyParts(end, timezone, baseDate, maxPrecision, minPrecision);
 
   let result: string | undefined;
   if (dateOnly) {

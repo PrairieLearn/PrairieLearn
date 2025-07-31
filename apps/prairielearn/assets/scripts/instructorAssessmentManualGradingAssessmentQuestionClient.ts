@@ -1,15 +1,15 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
 
-import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import type {
-  InstanceQuestionRowWithAIGradingStats,
-  InstanceQuestionTableData,
+import {
+  type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
+  InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
+  type InstanceQuestionTableData,
 } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
 
-type InstanceQuestionRow = InstanceQuestionRowWithAIGradingStats;
 type InstanceQuestionRowWithIndex = InstanceQuestionRow & { index: number };
 
 declare global {
@@ -82,10 +82,16 @@ onDocumentReady(() => {
 
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
-    responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
+    responseHandler: ({ instance_questions }: { instance_questions: InstanceQuestionRow[] }) => {
       // Add a stable, user-friendly index that is used to identify an instance
       // question anonymously but retain its value in case of sorting/filters
-      res.instance_questions.map((row, index) => ({ ...row, index })),
+      return instance_questions.map((row, index) => ({
+        // Re-parse the row to ensure that date strings are parsed correctly
+        // typeof JSON.parse(JSON.stringify(new Date())) === 'string'
+        ...InstanceQuestionRowSchema.parse(row),
+        index,
+      }));
+    },
     escape: true,
     uniqueId: 'id',
     idField: 'id',
@@ -565,7 +571,7 @@ function scorebarFormatter(
   csrfToken: string,
 ) {
   return html`<div class="d-inline-block align-middle">
-      ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
+      ${score == null ? '' : ScorebarHtml(score, { minWidth: '10em' })}
     </div>
     ${hasCourseInstancePermissionEdit
       ? EditQuestionPointsScoreButton({

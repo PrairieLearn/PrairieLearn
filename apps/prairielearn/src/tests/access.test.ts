@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
@@ -105,8 +106,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('2. the student user', function () {
     it('should select from the DB', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_student_user, []);
-      user = result.rows[0];
+      user = await sqldb.queryRow(sql.select_student_user, UserSchema);
     });
   });
 

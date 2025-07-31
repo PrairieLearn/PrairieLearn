@@ -8,8 +8,8 @@ reviews:
   collapse_walkthrough: true
   changed_files_summary: true
   sequence_diagrams: false
-  related_issues: true
-  related_prs: true
+  related_issues: false
+  related_prs: false
   suggested_labels: true
   auto_apply_labels: false
   suggested_reviewers: true

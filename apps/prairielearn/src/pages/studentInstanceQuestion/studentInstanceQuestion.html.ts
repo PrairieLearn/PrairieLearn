@@ -4,14 +4,14 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
-} from '../../components/AssessmentRegenerate.html.js';
-import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
-import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
-import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
-import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
-import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
+} from '../../components/AssessmentRegenerate.js';
+import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
+import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.js';
+import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
+import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';

@@ -1,25 +1,24 @@
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   getAssessmentContext,
   getCourseInstanceContext,
   getPageContext,
 } from '../../lib/client/page-context.js';
-import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { Hydrate } from '../../lib/preact.js';
-import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
-  questions,
+  questionRows,
   origHash,
   editorEnabled,
 }: {
   resLocals: Record<string, any>;
-  questions: AssessmentQuestionRow[];
+  questionRows: StaffAssessmentQuestionRow[];
   origHash: string;
   editorEnabled: boolean;
 }) {
@@ -44,14 +43,14 @@ export function InstructorAssessmentQuestions({
         <AssessmentSyncErrorsAndWarnings
           authz_data={authz_data}
           assessment={assessment}
-          courseInstance={course_instance as StaffCourseInstance}
-          course={course as StaffCourse}
+          courseInstance={course_instance}
+          course={course}
           urlPrefix={urlPrefix}
         />
         <Hydrate>
           <InstructorAssessmentQuestionsTable
-            course={course as StaffCourse}
-            questions={questions}
+            course={course}
+            questionRows={questionRows}
             urlPrefix={urlPrefix}
             assessmentType={assessment.type}
             assessmentSetName={assessment_set.name}
@@ -69,5 +68,3 @@ export function InstructorAssessmentQuestions({
     ),
   });
 }
-
-InstructorAssessmentQuestions.displayName = 'InstructorAssessmentQuestions';

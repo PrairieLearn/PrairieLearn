@@ -25,11 +25,52 @@ onDocumentReady(() => {
     confirmOnUnload(questionForm);
   }
 
+  const markdownBody = document.querySelector<HTMLDivElement>('.markdown-body');
+  const revealFade = document.querySelector<HTMLDivElement>('.reveal-fade');
+  const expandButtonContainer = document.querySelector('.js-expand-button-container');
+  const expandButton = expandButtonContainer?.querySelector('button');
+
+  let readMeExpanded = false;
+
+  function toggleExpandReadMe() {
+    if (!markdownBody || !expandButton) return;
+    readMeExpanded = !readMeExpanded;
+    expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
+    revealFade?.classList.toggle('d-none');
+    markdownBody?.classList.toggle('max-height');
+  }
+
+  expandButton?.addEventListener('click', toggleExpandReadMe);
+
+  if (markdownBody && markdownBody.scrollHeight > 150) {
+    markdownBody.classList.add('max-height');
+    revealFade?.classList.remove('d-none');
+    expandButtonContainer?.classList.remove('d-none');
+    expandButtonContainer?.classList.add('d-flex');
+  }
+
   setupDynamicObjects();
   disableOnSubmit();
 
   $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
     loadPendingSubmissionPanel(e.currentTarget, false);
+  });
+
+  document.addEventListener('show.bs.collapse', (e) => {
+    if ((e.target as HTMLElement)?.classList.contains('js-collapsible-card-body')) {
+      (e.target as HTMLElement)
+        .closest('.card')
+        ?.querySelector<HTMLDivElement>('.collapsible-card-header')
+        ?.classList.remove('border-bottom-0');
+    }
+  });
+  document.addEventListener('hidden.bs.collapse', (e) => {
+    if ((e.target as HTMLElement)?.classList.contains('js-collapsible-card-body')) {
+      (e.target as HTMLElement)
+        .closest('.card')
+        ?.querySelector<HTMLDivElement>('.collapsible-card-header')
+        ?.classList.add('border-bottom-0');
+    }
   });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');

@@ -19,12 +19,6 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK select_student_user
-SELECT
-  count(*) as result
-FROM
-  users AS u;
-
 -- BLOCK select_all_user_in_group
 SELECT
   group_id,

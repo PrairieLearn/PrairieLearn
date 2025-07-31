@@ -5,9 +5,12 @@ import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
 import { v4 as uuid } from 'uuid';
 import * as xml2js from 'xml2js';
+import z from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+
+import { AssessmentInstanceSchema, LtiCredentialSchema, LtiOutcomeSchema } from './db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const parser = new xml2js.Parser({ explicitArray: false });
@@ -54,19 +57,27 @@ function xmlReplaceResult(sourcedId: string, score: number, identifier: string) 
 export async function updateScore(assessment_instance_id: string) {
   if (assessment_instance_id == null) return;
 
-  const scoreResult = await sqldb.queryZeroOrOneRowAsync(sql.get_score, {
-    ai_id: assessment_instance_id,
-  });
-  if (scoreResult.rowCount === 0) return null;
+  const info = await sqldb.queryOptionalRow(
+    sql.get_score,
+    { ai_id: assessment_instance_id },
+    z.object({
+      ...AssessmentInstanceSchema.shape,
+      ...LtiOutcomeSchema.shape,
+      ...LtiCredentialSchema.shape,
+    }),
+  );
+  if (info === null) return null;
 
-  const info = scoreResult.rows[0];
-
-  let score = info.score_perc / 100;
+  let score = (info.score_perc ?? 0) / 100;
   if (score > 1) {
     score = 1.0;
   }
   if (score < 0) {
     score = 0.0;
+  }
+
+  if (info.lis_result_sourcedid === null || info.date === null) {
+    throw new Error('lis_result_sourcedid and date are required');
   }
 
   const body = xmlReplaceResult(info.lis_result_sourcedid, score, info.date.toString());
@@ -75,6 +86,10 @@ export async function updateScore(assessment_instance_id: string) {
   const shasum = crypto.createHash('sha1');
   shasum.update(body || '');
   const sha1 = shasum.digest('hex');
+
+  if (info.consumer_key === null || info.lis_outcome_service_url === null || info.secret === null) {
+    throw new Error('consumer_key, lis_outcome_service_url, and secret are required');
+  }
 
   const oauthParams: Record<string, string> = {
     oauth_consumer_key: info.consumer_key,

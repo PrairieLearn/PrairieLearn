@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { SubmissionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
@@ -783,8 +784,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
       it('should succeed', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_last_submission, []);
-        const submission = result.rows[0];
+        const submission = await sqldb.queryRow(sql.select_last_submission, SubmissionSchema);
         if (submission.gradable) throw new Error('submission.gradable is true');
       });
     });

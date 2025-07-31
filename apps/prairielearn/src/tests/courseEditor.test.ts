@@ -13,6 +13,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { updateCourseSharingName } from '../models/course.js';
 
@@ -68,7 +69,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty question',
+      start_from: 'empty',
     },
     files: new Set([
       'README.md',
@@ -92,7 +93,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty question',
+      start_from: 'empty',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
@@ -542,8 +543,8 @@ function testEdit(params: EditData) {
   describe('The job sequence', () => {
     let job_sequence_id: string;
     it('should have an id', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      job_sequence_id = result.rows[0].id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
       await helperServer.waitForJobSequenceSuccess(job_sequence_id);

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export const AdministratorInstitutionSso = ({
@@ -66,7 +66,7 @@ export const AdministratorInstitutionSso = ({
           <small class="form-text text-muted mt-0 mb-2">
             When a default single sign-on provider is configured, users can click on your
             institution's name on the login screen and be taken directly to the appropriate
-            provider. Note that LTI cannot be set as the default provider.
+            provider. Note that LTI and LTI 1.3 cannot be set as the default provider.
           </small>
           <select
             class="form-select js-default-authentication-provider"
@@ -78,7 +78,7 @@ export const AdministratorInstitutionSso = ({
               None
             </option>
             ${supportedAuthenticationProviders.map((provider) => {
-              if (provider.name === 'LTI') return '';
+              if (provider.name === 'LTI' || provider.name === 'LTI 1.3') return '';
 
               const isEnabled = institutionAuthenticationProviders.some(
                 (p) => p.id === provider.id,

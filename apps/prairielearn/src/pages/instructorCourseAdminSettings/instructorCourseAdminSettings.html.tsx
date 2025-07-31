@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
@@ -125,6 +125,7 @@ export function InstructorCourseAdminSettings({
                 <a
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                   target="_blank"
+                  rel="noreferrer"
                   >tz database</a
                 >. It's best to use a city-based timezone that has the same times as you.
               </small>

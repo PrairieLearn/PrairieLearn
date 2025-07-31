@@ -1,22 +1,31 @@
 <!--htmlhint tag-pair:false -->
 <!-- htmlhint doesn't understand our markdown tag-->
+<!-- eslint-disable @html-eslint/no-multiple-h1 -->
+<!-- html-eslint doesn't understand our markdown tag (https://github.com/yeonjuan/html-eslint/issues/381) -->
+<!-- eslint-disable @html-eslint/require-closing-tags -->
 
 <pl-question-panel>
 <markdown>
 # Hello, world!
 
-**Markdown**? *In your question?* ***It's more likely than you might think!***
+**Markdown**? *In your question?* ***It's more likely than you might think!*** Just add a `<markdown#>` tag around your text, and it will be rendered as Markdown.
 
 Here, enjoy some cute dogs from [this Markdown link!](https://www.goodhousekeeping.com/life/pets/g3413/cute-dog-pictures/)
 
-Let's check out some math! $c^2 = a^2 + b^2$
+Let's check out some math! Use `$formula$` or `\(formula\)` for inline formulas: $c^2 = a^2 + b^2$, \(\sin(\theta)=\tan(\theta)\cos(\theta)\)
 
-Golden Ratio is:
+Use `$$formula$$` or `\[formula\]` for block formulas: $$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$ \[\phi = \frac{1+\sqrt{5}}{2}\]
 
-$$\phi = \frac{1+\sqrt{5}}{2}$$
+\[
+a_{n+1} = 
+\begin{cases}
+\dfrac{a_n}{2} & \text{if } a_n \text{ is even} \\
+3a_n + 1 & \text{if } a_n \text{ is odd}
+\end{cases}
+\]
 
 Need to use `$` outside of math-mode? Place inside inline code.
-So, excel formulas would look like: `$A$1`, `B$5`, `$C9`, `D2`.
+So, excel cell references look like: `$A$1`, `B$5`, `$C9`, `D2`. Or use `\$` if you don't want code formatting: a coffee and a bagel cost \$1.50 and \$2.00 respectively.
 
 ```
 Inline `code` has `back-ticks around` it.
@@ -29,6 +38,8 @@ Code blocks without a language specified have no syntax highlighting.
 ```
 <h1>This code doesn't have syntax highlighting</h1>
 ```
+
+Code blocks with a language specified have syntax highlighting.
 
 ```cpp
 class Example {
