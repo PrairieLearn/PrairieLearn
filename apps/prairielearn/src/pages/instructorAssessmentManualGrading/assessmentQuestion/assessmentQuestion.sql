@@ -26,7 +26,7 @@ WITH
       iq.assessment_question_id = $assessment_question_id
     ORDER BY
       iq.id,
-      s.date
+      s.date DESC
   ),
   rubric_grading_to_items AS (
     SELECT
