@@ -4,6 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
+import { type RubricData } from '../../src/lib/manualGrading.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -126,36 +127,7 @@ onDocumentReady(() => {
         },
       },
       rubricFilter: {
-        html: rubric_data
-          ? html`
-              <div class="btn-group">
-                <button
-                  type="button"
-                  class="btn btn-secondary dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  name="rubric-item-filter"
-                  data-bs-auto-close="outside"
-                >
-                  <i class="fas fa-filter"></i> Filter by rubric items
-                </button>
-                <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
-                  ${rubric_data.rubric_items.map(
-                    (item) => html`
-                      <label class="dropdown-item dropdown-item-marker"
-                        ><input
-                          type="checkbox"
-                          class="js-rubric-item-filter"
-                          value="${item.id}"
-                          id="filter-rubric-item-${item.id}"
-                        />
-                        <span>${item.description}</span></label
-                      >
-                    `,
-                  )}
-                </div>
-              </div>
-            `.toString()
-          : '',
+        html: rubricFilterHtml(rubric_data),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -515,6 +487,39 @@ onDocumentReady(() => {
     }),
   );
 });
+
+function rubricFilterHtml(rubric_data: RubricData | null): string {
+  return rubric_data
+    ? html`
+        <div class="btn-group">
+          <button
+            type="button"
+            class="btn btn-secondary dropdown-toggle"
+            data-bs-toggle="dropdown"
+            name="rubric-item-filter"
+            data-bs-auto-close="outside"
+          >
+            <i class="fas fa-filter"></i> Filter by rubric items
+          </button>
+          <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+            ${rubric_data.rubric_items.map(
+              (item) => html`
+                <label class="dropdown-item dropdown-item-marker"
+                  ><input
+                    type="checkbox"
+                    class="js-rubric-item-filter"
+                    value="${item.id}"
+                    id="filter-rubric-item-${item.id}"
+                  />
+                  <span>${item.description}</span></label
+                >
+              `,
+            )}
+          </div>
+        </div>
+      `.toString()
+    : '';
+}
 
 function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
