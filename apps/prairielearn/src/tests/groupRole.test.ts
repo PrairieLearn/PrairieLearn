@@ -7,6 +7,7 @@ import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
@@ -1200,10 +1201,11 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await helperServer.before(tempTestCourseDir.path)();
 
     // Find the ID of an assessment that has group roles
-    const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      tid: 'hw5-templateGroupWork',
-    });
-    assessmentId = assessmentResults.rows[0].id;
+    assessmentId = await sqldb.queryRow(
+      sql.select_assessment,
+      { tid: 'hw5-templateGroupWork' },
+      IdSchema,
+    );
     assessmentUrl = locals.courseInstanceUrl + '/assessment/' + assessmentId;
   });
 
