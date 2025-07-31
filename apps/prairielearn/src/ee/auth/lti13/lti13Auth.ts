@@ -125,9 +125,13 @@ router.post(
 
         // If the `uid_attribute` is present, we must have a claim for it by this point.
         //
-        // To account for potential UID changes, we'll make a best-effort attempt to
-        // find the user by their `sub` claim. If we can do that, we'll update the UID
-        // if needed and proceed from there.
+        // It's possible that the UID for a user may have changed, but we may or may not
+        // have a UIN attribute here. To account for a missing UIN, we'll try to find an
+        // existing user by their `sub` claim. If we do, and the UIDs don't match, we'll
+        // update the UID for that existing user.
+        //
+        // This is trusting that `sub` is immutable for a given user, which the LTI spec
+        // requires. Note that `sub` is scoped to an LTI 1.3 instance.
         const user = await selectOptionalUserByLti13Sub({
           lti13_instance_id: lti13_instance.id,
           sub: ltiClaim.get('sub'),
