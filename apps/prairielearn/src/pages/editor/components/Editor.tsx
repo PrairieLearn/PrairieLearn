@@ -22,7 +22,7 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { Typography } from '@tiptap/extension-typography';
 import { Underline } from '@tiptap/extension-underline';
 import { UndoRedo } from '@tiptap/extensions';
-import { EditorContent, EditorContext, useEditor } from '@tiptap/react';
+import { EditorContent, EditorContext, mergeAttributes, useEditor } from '@tiptap/react';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
 import { useRef, useState } from 'react';
@@ -30,12 +30,25 @@ import { ButtonToolbar } from 'react-bootstrap';
 
 import { Link } from '../../../components/tiptap-extension/link-extension.js';
 import { PLCodeBlock } from '../../../components/tiptap-extension/pl-code-extension.js';
+import { RawHtml } from '../../../components/tiptap-extension/raw-html-extension.js';
 import { Selection } from '../../../components/tiptap-extension/selection-extension.js';
 import { TrailingNode } from '../../../components/tiptap-extension/trailing-node-extension.js';
 // import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 
 import { ContextMenu, MainToolbarContent } from './Toolbar.js';
 import { content } from './content.js';
+
+// The exported HTML from TaskItem isn't great for a full input-output loop.
+// https://github.com/ueberdosis/tiptap/issues/4774
+export const CustomTaskItem = TaskItem.extend({
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'li',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-type': this.name }),
+      0,
+    ];
+  },
+});
 
 function formatHtmlWithPrettier(html: string): Promise<string> {
   return prettier.format(html, {
@@ -91,7 +104,7 @@ export function Editor() {
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Underline,
       TaskList,
-      TaskItem.configure({ nested: true }),
+      CustomTaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
       Typography,
       Superscript,
@@ -99,6 +112,7 @@ export function Editor() {
       Selection,
       TrailingNode,
       Link.configure({ openOnClick: false }),
+      RawHtml,
     ],
     content,
   });

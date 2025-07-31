@@ -1,3 +1,15 @@
+export const contentShort = `
+<ul data-type="taskList">
+  <li data-checked="true" data-type="taskItem"><p>Test template</p></li>
+</ul>
+<my-invalid-node attr="1">
+  This is an invalid node.
+</my-invalid-node>
+<my-invalid-node-children>
+  <p>This is an invalid node.</p>
+</my-invalid-node-children>
+`;
+
 export const content = `
 <h1>Getting started</h1>
 <p>
@@ -12,9 +24,12 @@ export const content = `
   template! This template integrates <strong>open source</strong> UI components and Tiptap
   extensions licensed under <strong>MIT</strong>.
 </p>
-<my-invalid-node>
+<my-invalid-node attr="1">
   This is an invalid node.
 </my-invalid-node>
+<my-invalid-node-children>
+  <p>This is an invalid node.</p>
+</my-invalid-node-children>
 <p>
   Integrate it by following the
   <a
@@ -77,20 +92,11 @@ npm i code-block-extension
     >Learn more</a
   >
 </p>
-<hr />
-<h2 style="text-align: left;">Make it your own</h2>
-<p style="text-align: left;">
-  Switch between light and dark modes, and tailor the editor's appearance with customizable CSS to
-  match your style.
-</p>
 <ul data-type="taskList">
   <li data-checked="true" data-type="taskItem">
-    <label><input type="checkbox" checked="checked" /><span></span></label>
-    <div><p style="text-align: left;">Test template</p></div>
+    <p style="text-align: left;">Test template</p>
   </li>
   <li data-checked="false" data-type="taskItem">
-    <label><input type="checkbox" /><span></span></label>
-    <div>
       <p style="text-align: left;">
         <a
           target="_blank"
@@ -99,8 +105,14 @@ npm i code-block-extension
           >Integrate the free template</a
         >
       </p>
-    </div>
   </li>
 </ul>
+<hr />
+<h2 style="text-align: left;">Make it your own</h2>
+<p style="text-align: left;">
+  Switch between light and dark modes, and tailor the editor's appearance with customizable CSS to
+  match your style.
+</p>
+
 <p style="text-align: left;"></p>
 `;
