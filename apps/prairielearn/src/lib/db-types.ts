@@ -20,9 +20,6 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// Result of format_interval sproc
-export const FormatIntervalSchema = z.string();
-
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
 // *******************************************************************************

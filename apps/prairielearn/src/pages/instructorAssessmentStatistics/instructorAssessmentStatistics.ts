@@ -7,7 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateAssessmentStatistics } from '../../lib/assessment.js';
-import { AssessmentSchema, FormatIntervalSchema } from '../../lib/db-types.js';
+import { AssessmentSchema } from '../../lib/db-types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import {
@@ -154,10 +154,10 @@ router.get(
         sql.select_duration_stats,
         { assessment_id: res.locals.assessment.id },
         z.object({
-          median_formatted: FormatIntervalSchema,
-          min_formatted: FormatIntervalSchema,
-          max_formatted: FormatIntervalSchema,
-          mean_formatted: FormatIntervalSchema,
+          median_formatted: z.string(),
+          min_formatted: z.string(),
+          max_formatted: z.string(),
+          mean_formatted: z.string(),
           median_minutes: z.number(),
           min_minutes: z.number(),
           max_minutes: z.number(),
