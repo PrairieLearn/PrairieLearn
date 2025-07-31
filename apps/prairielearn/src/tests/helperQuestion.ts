@@ -318,9 +318,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
       if ('submission_score' in locals.expectedResult) {
         const result = await sqldb.queryOneRowAsync(
           sql.select_last_submission_for_instance_question,
-          {
-            instance_question_id: locals.question?.id,
-          },
+          { instance_question_id: locals.question?.id },
         );
         locals.submission = result.rows[0];
       }
