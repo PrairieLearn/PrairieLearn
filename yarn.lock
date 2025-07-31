@@ -4107,8 +4107,8 @@ __metadata:
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@sentry/core": "npm:^9.43.0"
-    "@sentry/node-core": "npm:^9.43.0"
+    "@sentry/core": "npm:^10.0.0"
+    "@sentry/node-core": "npm:^10.0.0"
     "@types/node": "npm:^22.17.0"
     execa: "npm:^9.6.0"
     tsx: "npm:^4.20.3"
@@ -4546,19 +4546,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/core@npm:9.43.0, @sentry/core@npm:^9.43.0":
-  version: 9.43.0
-  resolution: "@sentry/core@npm:9.43.0"
-  checksum: 10c0/6766c6e2c49c8ea7712a6e60055f9f691ad31bfe18159fa2d7f415a46afa7f001e62b6da872c7b9814239ef43be0222008c8c010120cf8ac96c1603d8ec68823
+"@sentry/core@npm:10.0.0, @sentry/core@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@sentry/core@npm:10.0.0"
+  checksum: 10c0/c0f323e225935f600d13e9065e6f7e618a1668b42e5e1722559732e93d00dd2f6a5cadd9d0823379b9f9ef34824812c033c7615f22bc00fc0d677433da448078
   languageName: node
   linkType: hard
 
-"@sentry/node-core@npm:^9.43.0":
-  version: 9.43.0
-  resolution: "@sentry/node-core@npm:9.43.0"
+"@sentry/node-core@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "@sentry/node-core@npm:10.0.0"
   dependencies:
-    "@sentry/core": "npm:9.43.0"
-    "@sentry/opentelemetry": "npm:9.43.0"
+    "@sentry/core": "npm:10.0.0"
+    "@sentry/opentelemetry": "npm:10.0.0"
     import-in-the-middle: "npm:^1.14.2"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
@@ -4568,22 +4568,22 @@ __metadata:
     "@opentelemetry/resources": ^1.30.1 || ^2.0.0
     "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.0.0
     "@opentelemetry/semantic-conventions": ^1.34.0
-  checksum: 10c0/7a9793d7e745f1763eafc8052bdfec6bfa72c68e0ffd24b69fa968183592bd32c88f67b45ecf4306faf30905b8b7763e218b7a236357b7f9fbebf837a171b971
+  checksum: 10c0/a80df02a689e700af5e8259be104ecdd8008ed2ed4bb28ea3bab5ce48408a8febd4e9960583f7901f759a2a2d8819c6d445c7c8e4066f4b399f577dc35130436
   languageName: node
   linkType: hard
 
-"@sentry/opentelemetry@npm:9.43.0":
-  version: 9.43.0
-  resolution: "@sentry/opentelemetry@npm:9.43.0"
+"@sentry/opentelemetry@npm:10.0.0":
+  version: 10.0.0
+  resolution: "@sentry/opentelemetry@npm:10.0.0"
   dependencies:
-    "@sentry/core": "npm:9.43.0"
+    "@sentry/core": "npm:10.0.0"
   peerDependencies:
     "@opentelemetry/api": ^1.9.0
     "@opentelemetry/context-async-hooks": ^1.30.1 || ^2.0.0
     "@opentelemetry/core": ^1.30.1 || ^2.0.0
     "@opentelemetry/sdk-trace-base": ^1.30.1 || ^2.0.0
     "@opentelemetry/semantic-conventions": ^1.34.0
-  checksum: 10c0/4e41f3f0b53f65ff700a748fef32ad390c38009993c783d99a4e3acf39be3a06387d1fe90dfe51935dbf88aa445285b2815481400390b3a89b7d441015bd951f
+  checksum: 10c0/e05b7df56368cb1da4a69bf56a93f345a3240bf2c4d0eaceccb630623679438a9d5a250a6bf54b76efc32a137c5916f87f47067022c9ebea931d5f8f2309f09d
   languageName: node
   linkType: hard
 
