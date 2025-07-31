@@ -21,4 +21,4 @@ await init({
 
 By using `@sentry/node-core` instead, we retain full control over the OpenTelemetry setup and the versions of OpenTelemetry instrumentation packages we use.
 
-See https://github.com/getsentry/sentry-javascript/issues/15213 for slightly more historical context.
+See <https://github.com/getsentry/sentry-javascript/issues/15213> for slightly more historical context.
