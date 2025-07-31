@@ -709,7 +709,7 @@ function QuestionPanel({
                     data-bs-toggle="modal"
                     data-bs-target="#copyQuestionModal"
                   >
-                    <i class="fa  fa-clone"></i>
+                    <i class="fa fa-clone"></i>
                     <span class="d-none d-sm-inline">Copy question</span>
                   </button>
                 `
