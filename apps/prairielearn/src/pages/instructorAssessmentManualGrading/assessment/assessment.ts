@@ -17,7 +17,6 @@ import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
-import { selectQuestionById } from '../../../models/question.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
@@ -122,38 +121,37 @@ router.post(
 
       const assessment = res.locals.assessment as Assessment;
 
-      const assessment_questions = (
-        await selectAssessmentQuestions({
-          assessment_id: assessment.id,
-        })
-      ).map((row) => row.assessment_question);
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
 
       // AI grading runs only on manually graded questions.
-      const manuallyGradedAssessmentQuestions = assessment_questions.filter(
-        (aq) => aq.max_manual_points,
+      const manuallyGradedRows = assessmentQuestionRows.filter(
+        (row) => row.assessment_question.max_manual_points,
       );
 
-      if (manuallyGradedAssessmentQuestions.length === 0) {
+      if (manuallyGradedRows.length === 0) {
         flash('warning', 'No manually graded assessment questions found for AI grading.');
         res.redirect(req.originalUrl);
       }
 
-      for (const assessment_question of manuallyGradedAssessmentQuestions) {
-        const question = await selectQuestionById(assessment_question.question_id);
-
+      for (const row of manuallyGradedRows) {
         try {
           await aiGrade({
-            question,
+            question: row.question,
             course: res.locals.course,
             course_instance_id: assessment.course_instance_id,
-            assessment_question,
+            assessment_question: row.assessment_question,
             urlPrefix: res.locals.urlPrefix,
             authn_user_id: res.locals.authn_user.user_id,
             user_id: res.locals.user.user_id,
             mode: 'all',
           });
         } catch {
-          flash('error', `AI grading failed for question ${assessment_question.question_id}`);
+          flash(
+            'error',
+            `AI grading failed for assessment question ${row.assessment_question.id}.`,
+          );
           res.redirect(req.originalUrl);
           return;
         }
