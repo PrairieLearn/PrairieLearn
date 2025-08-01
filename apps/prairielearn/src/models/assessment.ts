@@ -3,10 +3,10 @@ import { z } from 'zod';
 import {
   type CursorIterator,
   loadSqlEquiv,
+  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryCursor,
 } from '@prairielearn/postgres';
 
 import {

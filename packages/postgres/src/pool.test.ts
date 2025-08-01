@@ -9,10 +9,10 @@ import {
   callRow,
   callRows,
   queryAsync,
+  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryCursor,
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
 

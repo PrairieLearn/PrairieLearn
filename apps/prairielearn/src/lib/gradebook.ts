@@ -1,6 +1,6 @@
 /* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 
-import { type CursorIterator, loadSqlEquiv, queryRows, queryCursor } from '@prairielearn/postgres';
+import { type CursorIterator, loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
 import {
   type StaffGradebookRow,
