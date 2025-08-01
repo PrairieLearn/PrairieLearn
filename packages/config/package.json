@@ -9,8 +9,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.857.0",
-    "@aws-sdk/client-secrets-manager": "^3.857.0",
+    "@aws-sdk/client-ec2": "^3.858.0",
+    "@aws-sdk/client-secrets-manager": "^3.858.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.3.0",
     "lodash": "^4.17.21",
