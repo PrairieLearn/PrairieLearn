@@ -108,12 +108,14 @@ export default tseslint.config([
       jsdoc: {
         exemptDestructuredRootsFromChecks: true,
         contexts: [
+          // We don't want to require documentation of a 'locals' (res.locals) variable
+          // AST Parser: https://github.com/es-joy/jsdoccomment
           {
-            comment: 'JsdocBlock:not(:has(JsdocTag[name=param]:has(JsdocTagValue[value=locals])))',
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
             context: 'FunctionDeclaration',
           },
           {
-            comment: 'JsdocBlock:not(:has(JsdocTag[name=param]:has(JsdocTagValue[value=locals])))',
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
             context: 'FunctionExpression',
           },
           'ArrowFunctionExpression',
