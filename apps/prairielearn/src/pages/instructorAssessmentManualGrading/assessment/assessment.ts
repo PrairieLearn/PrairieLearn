@@ -12,6 +12,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { generateAssessmentAiGradingStatsCSV } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -158,6 +159,19 @@ router.post(
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'export_ai_grading_statistics') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
+      res.send(await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment));
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

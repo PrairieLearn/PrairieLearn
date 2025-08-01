@@ -84,6 +84,10 @@ export function ManualGradingAssessment({
               <input type="hidden" name="__action" value="ai_grade_all" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             </form>
+            <form method="POST" id="export-ai-grading-statistics">
+              <input type="hidden" name="__action" value="export_ai_grading_statistics" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            </form>
           `
         : ''}
       <div class="card mb-4">
@@ -94,6 +98,16 @@ export function ManualGradingAssessment({
           <div class="flex-grow-1"></div>
           ${resLocals.is_administrator && aiGradingEnabled && questions.length > 0
             ? html`
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light grading-tag-button"
+                  name="export-ai-grading-statistics"
+                  onclick="$('#export-ai-grading-statistics').submit();"
+                  aria-label="Export AI grading statistics"
+                >
+                  <i class="bi bi-download" aria-hidden="true"></i>
+                  Export AI grading statistics
+                </button>
                 <button
                   type="button"
                   class="btn btn-sm btn-light grading-tag-button"
