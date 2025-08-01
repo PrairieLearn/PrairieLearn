@@ -7,12 +7,11 @@ import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryOneRowAsync, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
+import { queryOneRowAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { WorkspaceSchema } from '../lib/db-types.js';
 import { LocalCache } from '../lib/local-cache.js';
-
-const WORKSPACE_CONTAINER_PATH_REGEXP = /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/;
 
 /**
  * Removes "sensitive" cookies from the request to avoid exposing them to
@@ -80,7 +79,7 @@ function getRequestPath(req: Request): string {
   return req.originalUrl ?? req.url;
 }
 
-export function makeWorkspaceProxyMiddleware() {
+export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions: httpProxyMiddleware.Options<Request, Response> = {
     target: 'invalid',
@@ -90,7 +89,7 @@ export function makeWorkspaceProxyMiddleware() {
       // the `/pl/workspace/<workspace_id>/container/` prefix, so we need to
       // reconstruct it from the request.
       const path = getRequestPath(req);
-      return WORKSPACE_CONTAINER_PATH_REGEXP.test(path);
+      return containerPathRegex.test(path);
     },
     pathRewrite: async (_path, req) => {
       // The path provided to this function doesn't include the full path with
@@ -99,7 +98,7 @@ export function makeWorkspaceProxyMiddleware() {
       const path = getRequestPath(req);
 
       try {
-        const match = path.match(WORKSPACE_CONTAINER_PATH_REGEXP);
+        const match = path.match(containerPathRegex);
         if (!match) throw new Error(`Could not match path: ${path}`);
         const workspace_id = parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
@@ -126,20 +125,21 @@ export function makeWorkspaceProxyMiddleware() {
     },
     router: async (req) => {
       const path = getRequestPath(req);
-      const match = path.match(WORKSPACE_CONTAINER_PATH_REGEXP);
+      const match = path.match(containerPathRegex);
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = match[1];
-      const result = await queryZeroOrOneRowAsync(
+      const hostname = await queryOptionalRow(
         "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
         { workspace_id },
+        WorkspaceSchema.shape.hostname,
       );
 
-      if (result.rows.length === 0) {
+      if (hostname === null) {
         throw new HttpStatusError(404, 'Workspace is not running');
       }
 
-      return `http://${result.rows[0].hostname}/`;
+      return `http://${hostname}/`;
     },
     on: {
       proxyReq: (proxyReq) => {

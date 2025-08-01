@@ -101,8 +101,11 @@ SELECT
     WHEN a.group_work
     AND ai.group_id IS NOT NULL THEN (
       SELECT
-        jsonb_agg(
-          to_jsonb(users) || jsonb_build_object('lti13_sub', lti13_users.sub)
+        COALESCE(
+          jsonb_agg(
+            to_jsonb(users) || jsonb_build_object('lti13_sub', lti13_users.sub)
+          ),
+          '[]'::jsonb
         )
       FROM
         group_users
