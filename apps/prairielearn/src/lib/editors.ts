@@ -35,8 +35,10 @@ import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
+  AssessmentSchema,
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Question,
   type User,
 } from './db-types.js';
@@ -952,10 +954,13 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -966,7 +971,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
-    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+    if (oldNamesShort.includes(shortName) || (longName && oldNamesLong.includes(longName))) {
       const names = getNamesForCopy(
         this.course_instance.short_name,
         oldNamesShort,
@@ -1285,10 +1290,13 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1375,6 +1383,7 @@ export class QuestionAddEditor extends Editor {
 
   private qid?: string;
   private title?: string;
+  private template_source?: 'empty' | 'example' | 'course';
   private template_qid?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
@@ -1383,6 +1392,7 @@ export class QuestionAddEditor extends Editor {
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
+      template_source?: 'empty' | 'example' | 'course';
       template_qid?: string;
       files?: Record<string, string>;
       isDraft?: boolean;
@@ -1396,6 +1406,7 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.qid = params.qid;
     this.title = params.title;
+    this.template_source = params.template_source;
     this.template_qid = params.template_qid;
     this.files = params.files;
     this.isDraft = params.isDraft;
@@ -1461,12 +1472,15 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    if (this.template_qid) {
-      const exampleCourseQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
-      const fromPath = path.join(exampleCourseQuestionsPath, this.template_qid);
+    if (this.template_source !== 'empty' && this.template_qid) {
+      const sourceQuestionsPath =
+        this.template_source === 'course'
+          ? questionsPath
+          : path.join(EXAMPLE_COURSE_PATH, 'questions');
+      const fromPath = path.join(sourceQuestionsPath, this.template_qid);
 
-      // Ensure that the template_qid folder path is fully contained in the example course questions directory
-      if (!contains(exampleCourseQuestionsPath, fromPath)) {
+      // Ensure that the template_qid folder path is fully contained in the source course questions directory
+      if (!contains(sourceQuestionsPath, fromPath)) {
         throw new AugmentedError('Invalid folder path', {
           info: html`
             <p>The path of the template question folder</p>
@@ -1475,7 +1489,7 @@ export class QuestionAddEditor extends Editor {
             </div>
             <p>must be inside the root directory</p>
             <div class="container">
-              <pre class="bg-dark text-white rounded p-2">${exampleCourseQuestionsPath}</pre>
+              <pre class="bg-dark text-white rounded p-2">${sourceQuestionsPath}</pre>
             </div>
           `,
         });
@@ -1739,10 +1753,14 @@ export class QuestionRenameEditor extends Editor {
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-      question_id: this.question.id,
-    });
-    const assessments = result.rows;
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      { question_id: this.question.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
 
     const pathsToAdd = [oldPath, newPath];
 
@@ -1750,6 +1768,11 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',

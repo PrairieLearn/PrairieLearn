@@ -4,12 +4,12 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
-import { Scorebar } from '../../components/Scorebar.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
+import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
@@ -45,7 +45,6 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -234,7 +233,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Score</th>
                 <td class="align-middle" style="width: 20%;">
-                  ${Scorebar(resLocals.assessment_instance.score_perc)}
+                  ${ScorebarHtml(resLocals.assessment_instance.score_perc)}
                 </td>
                 <td class="align-middle" style="width: 100%;">
                   ${resLocals.authz_data.has_course_instance_permission_edit
@@ -332,7 +331,7 @@ export function InstructorAssessmentInstance({
                 <th class="text-center">Awarded points</th>
                 <th class="text-center" colspan="2">Percentage score</th>
                 <th><!--Manual grading column --></th>
-                <th class="text-right">Actions</th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -421,7 +420,7 @@ export function InstructorAssessmentInstance({
                         : ''}
                     </td>
                     <td class="text-center text-nowrap" style="padding-top: 0.65rem;">
-                      ${Scorebar(instance_question.score_perc)}
+                      ${ScorebarHtml(instance_question.score_perc)}
                     </td>
                     <td style="width: 1em;">
                       ${resLocals.authz_data.has_course_instance_permission_edit
@@ -447,7 +446,7 @@ export function InstructorAssessmentInstance({
                           `
                         : ''}
                     </td>
-                    <td class="text-right">
+                    <td class="text-end">
                       <div class="dropdown js-question-actions">
                         <button
                           type="button"
@@ -707,7 +706,11 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
   return html`
     <div>
       IP Address:
-      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+      <a
+        href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}"
+        target="_blank"
+        rel="noreferrer"
+      >
         ${fingerprint.ip_address}
       </a>
     </div>
@@ -750,7 +753,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
           This change will be overwritten if further questions are answered by the student.
         </small>
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
@@ -785,7 +788,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
           This change will be overwritten if further questions are answered by the student.
         </small>
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>

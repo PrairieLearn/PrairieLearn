@@ -1,13 +1,31 @@
+import z from 'zod';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import * as opsbot from '../lib/opsbot.js';
 
+const GradingJobStatsDaySchema = z.object({
+  count: z.number(),
+  delta_total: z.number(),
+  delta_submitted_at: z.number(),
+  delta_received_at: z.number(),
+  delta_started_at: z.number(),
+  delta_finished_at: z.number(),
+  delta_final: z.number(),
+  max_total: z.number(),
+  max_submitted_at: z.number(),
+  max_received_at: z.number(),
+  max_started_at: z.number(),
+  max_finished_at: z.number(),
+  max_final: z.number(),
+});
+
 export async function run() {
   if (!opsbot.canSendMessages()) return;
 
-  const result = await sqldb.callOneRowAsync('grading_jobs_stats_day', []);
+  const result = await sqldb.callRow('grading_jobs_stats_day', GradingJobStatsDaySchema);
   const {
     count,
     delta_total,
@@ -22,10 +40,10 @@ export async function run() {
     max_started_at,
     max_finished_at,
     max_final,
-  } = result.rows[0];
+  } = result;
   logger.verbose('cron:sendExternalGraderStats', {
     queueName: config.externalGradingJobsQueueName,
-    ...result.rows[0],
+    ...result,
   });
 
   let msg = `_External grading stats, past 24 hours:_ *${config.externalGradingJobsQueueName}*\n`;

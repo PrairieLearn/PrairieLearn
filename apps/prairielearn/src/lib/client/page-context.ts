@@ -1,13 +1,17 @@
 import { z } from 'zod';
 
+import { run } from '@prairielearn/run';
+
 import {
-  StaffCourseInstanceSchema,
-  StaffCourseSchema,
-  StudentCourseInstanceSchema,
-  StudentCourseSchema,
+  RawStaffAssessmentSchema,
+  RawStaffAssessmentSetSchema,
+  RawStaffCourseInstanceSchema,
+  RawStaffCourseSchema,
+  RawStudentCourseInstanceSchema,
+  RawStudentCourseSchema,
 } from './safe-db-types.js';
 
-const PageContext = z.object({
+const RawPageContextSchema = z.object({
   authz_data: z.object({
     has_course_instance_permission_edit: z.boolean(),
     has_course_instance_permission_view: z.boolean(),
@@ -27,39 +31,55 @@ const PageContext = z.object({
     uid: z.string(),
   }),
 });
-export type PageContext = z.infer<typeof PageContext>;
+export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
+export type PageContext = z.infer<typeof PageContextSchema>;
 
 export function getPageContext(resLocals: Record<string, any>): PageContext {
-  return PageContext.parse(resLocals);
+  return PageContextSchema.parse(resLocals);
 }
 
 // Since this data comes from res.locals and not the database, we can make certain guarantees
 // about the data. Specifically, `short_name` will never be null for non-deleted courses
 // and course instances.
 
-const StudentCourseInstanceContextSchema = z.object({
-  course_instance: z.object({
-    ...StudentCourseInstanceSchema.shape,
-    short_name: z.string(),
-  }),
-  course: z.object({
-    ...StudentCourseSchema.shape,
-    short_name: z.string(),
-  }),
+// If '*CourseInstanceSchema' ever differs at a column level
+// from '*CourseInstanceContext.course_instance' our branding strategy needs to be updated.
+
+const RawStudentCourseInstanceContextSchema = z.object({
+  course_instance: z
+    .object({
+      ...RawStudentCourseInstanceSchema.shape,
+      short_name: z.string(),
+    })
+    .brand('StudentCourseInstance'),
+  course: z
+    .object({
+      ...RawStudentCourseSchema.shape,
+      short_name: z.string(),
+    })
+    .brand('StudentCourse'),
 });
+export const StudentCourseInstanceContextSchema =
+  RawStudentCourseInstanceContextSchema.brand<'StudentCourseInstanceContext'>();
 
 export type StudentCourseInstanceContext = z.infer<typeof StudentCourseInstanceContextSchema>;
 
-const StaffCourseInstanceContextSchema = z.object({
-  course_instance: z.object({
-    ...StaffCourseInstanceSchema.shape,
-    short_name: z.string(),
-  }),
-  course: z.object({
-    ...StaffCourseSchema.shape,
-    short_name: z.string(),
-  }),
+const RawStaffCourseInstanceContextSchema = z.object({
+  course_instance: z
+    .object({
+      ...RawStaffCourseInstanceSchema.shape,
+      short_name: z.string(),
+    })
+    .brand('StaffCourseInstance'),
+  course: z
+    .object({
+      ...RawStaffCourseSchema.shape,
+      short_name: z.string(),
+    })
+    .brand('StaffCourse'),
 });
+export const StaffCourseInstanceContextSchema =
+  RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();
 
 export type StaffCourseInstanceContext = z.infer<typeof StaffCourseInstanceContextSchema>;
 
@@ -77,8 +97,27 @@ export function getCourseInstanceContext(
   resLocals: Record<string, any>,
   authLevel: 'student' | 'instructor',
 ): StudentCourseInstanceContext | StaffCourseInstanceContext {
-  if (authLevel === 'student') {
-    return StudentCourseInstanceContextSchema.parse(resLocals);
-  }
-  return StaffCourseInstanceContextSchema.parse(resLocals);
+  const schema = run(() => {
+    if (authLevel === 'student') {
+      return StudentCourseInstanceContextSchema;
+    }
+    return StaffCourseInstanceContextSchema;
+  });
+  return schema.parse(resLocals);
+}
+
+const RawStaffAssessmentContextSchema = z.object({
+  assessment: RawStaffAssessmentSchema.extend({
+    type: z.enum(['Exam', 'Homework']),
+  }),
+  assessment_set: RawStaffAssessmentSetSchema,
+});
+const StaffAssessmentContextSchema =
+  RawStaffAssessmentContextSchema.brand<'StaffAssessmentContext'>();
+
+export type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
+
+export function getAssessmentContext(resLocals: Record<string, any>): StaffAssessmentContext {
+  const schema = StaffAssessmentContextSchema;
+  return schema.parse(resLocals);
 }
