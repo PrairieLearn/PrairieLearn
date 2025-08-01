@@ -6,6 +6,7 @@ import * as prettier from 'prettier/standalone';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { configureAceBasePaths } from './lib/ace.js';
+import './lib/verboseToggle.js';
 
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
