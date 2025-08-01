@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 
@@ -20,8 +21,8 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const results = await sqldb.queryOneRowAsync(sql.select_sequential_exam, []);
-      context.assessmentId = results.rows[0].id;
+      const assessmentId = await sqldb.queryRow(sql.select_sequential_exam, IdSchema);
+      context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
       context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/`;
     });

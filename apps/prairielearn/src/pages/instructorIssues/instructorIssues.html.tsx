@@ -479,7 +479,7 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 data-bs-placement="top"
                 data-bs-title="Close issue"
               >
-                <i class="fa fa-times fa-fw" aria-hidden="true"></i>
+                <i class="fa fa-times" aria-hidden="true"></i>
               </button>
             `
           : html`
@@ -492,7 +492,7 @@ function IssueActionButton({ issue, csrfToken }: { issue: Issue; csrfToken: stri
                 data-bs-placement="top"
                 data-bs-title="Reopen issue"
               >
-                <i class="fa fa-rotate-right fa-fw" aria-hidden="true"></i>
+                <i class="fa fa-rotate-right" aria-hidden="true"></i>
               </button>
             `}
       </div>

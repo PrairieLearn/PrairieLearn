@@ -1,10 +1,13 @@
 import { type Config, config } from '../../lib/config.js';
 
-export async function withConfig(overrides: Partial<Config>, fn: () => Promise<void>) {
+export async function withConfig<T>(
+  overrides: Partial<Config>,
+  fn: () => T | Promise<T>,
+): Promise<T> {
   const originalConfig = structuredClone(config);
   Object.assign(config, originalConfig, overrides);
   try {
-    await fn();
+    return await fn();
   } finally {
     Object.assign(config, originalConfig);
   }

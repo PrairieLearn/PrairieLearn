@@ -74,7 +74,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
@@ -91,7 +91,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['Username'], 'dev');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
@@ -108,7 +108,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
@@ -125,7 +125,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['Username'], 'dev');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
@@ -142,7 +142,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Username'], 'dev');
       assert.equal(data[0]['Assessment'], 'Exam 1');
@@ -163,7 +163,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert(data.every((entry) => entry['UID'] === 'dev@example.com'));
       assert(data.every((entry) => entry['Assessment'] === 'Exam 1'));
       const questions = data.map((entry) => entry['Question']).sort();
@@ -183,7 +183,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['uid'], 'dev@example.com');
       assert.equal(data[0]['qid'], 'addNumbers');
     });
@@ -200,7 +200,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
@@ -219,7 +219,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
@@ -240,7 +240,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       page = await res.text();
     });
     it('should contain correct data', function () {
-      const data = csvParse(page, { columns: true, cast: true });
+      const data = csvParse<any>(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@example.com');
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.equal(data[0]['Question'], 'addNumbers');
