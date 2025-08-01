@@ -158,6 +158,10 @@ router.post(
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'export_statistics') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
+      res.send(await exportAssessmentStatistics(res.locals.assessment as Assessment));
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
