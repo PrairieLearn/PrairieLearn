@@ -97,7 +97,7 @@ jobs:
 
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint
+          sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
