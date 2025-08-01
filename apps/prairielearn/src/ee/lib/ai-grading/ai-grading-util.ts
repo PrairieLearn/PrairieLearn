@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
@@ -303,6 +304,155 @@ export async function generateSubmissionEmbedding({
     SubmissionGradingContextEmbeddingSchema,
   );
   return new_submission_embedding;
+}
+
+export async function compareAiErrorRecognitionAndHumanGrading({
+  course,
+  humanSelectedRubricItems,
+  aiRecognizedErrors,
+  openai
+}: {
+  course: Course;
+  humanSelectedRubricItems: RubricItem[];
+  aiRecognizedErrors: string;
+  openai: OpenAI;
+}): Promise<{
+  consistent: boolean;
+  explanation: string;
+}> {
+
+  const messages: ChatCompletionMessageParam[] = [
+    {
+      role: 'user',
+      content: 'Determine if the AI-generated errors are consistent with the human-selected rubric items and why.'
+    },
+    {
+      role: 'system',
+      content: `Human-selected rubric items: ${humanSelectedRubricItems.map(item => item.description).join('; ')}`
+    },
+    {
+      role: 'system',
+      content: `AI-recognized errors: ${aiRecognizedErrors}`
+    }
+  ];
+  console.log('Comparing AI error recognition with human grading...', messages);
+
+  const ErrorComparisonSchema = z.object({
+    consistent: z.boolean(),
+    explanation: z.string(),
+  });
+
+  const completion = await openai.chat.completions.parse({
+    messages,
+    model: OPEN_AI_MODEL,
+    user: `course_${course.id}`,
+    temperature: OPEN_AI_TEMPERATURE,
+    response_format: zodResponseFormat(ErrorComparisonSchema, 'error-comparison'),
+  });
+
+  const completionContent = completion.choices[0].message.content;
+  if (!completionContent) {
+    throw new Error('No completion content returned from OpenAI.');
+  }
+
+  const parsedContent = ErrorComparisonSchema.parse(JSON.parse(completionContent));
+  return {
+    consistent: parsedContent.consistent,
+    explanation: parsedContent.explanation,
+  };
+};
+export async function generateErrorEmbedding({
+  course,
+  question,
+  instance_question,
+  urlPrefix,
+  openai,
+}: {
+  question: Question;
+  course: Course;
+  instance_question: InstanceQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}) {
+  const question_course = await getQuestionCourse(question, course);
+  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    questionRenderContext: 'ai_grading',
+  };
+  const questionModule = questionServers.getModule(question.type);
+  const render_submission_results = await questionModule.render(
+    { question: false, submissions: true, answer: false },
+    variant,
+    question,
+    submission,
+    [submission],
+    question_course,
+    locals,
+  );
+
+  const render_question_results = await questionModule.render(
+    { question: true, submissions: false, answer: false },
+    variant,
+    question,
+    null,
+    [],
+    question_course,
+    locals,
+  );
+  const submission_text = render_submission_results.data.submissionHtmls[0];
+  const questionPrompt = render_question_results.data.questionHtml;
+
+  const submissionMessage = generateSubmissionMessage({
+    submission_text,
+    submitted_answer: submission.submitted_answer,
+  });
+
+  // Extract all images
+  const promptImageUrls: string[] = [];
+  if (submissionMessage && submissionMessage.content) {
+    for (const part of submissionMessage.content) {
+      if (typeof part === 'object' && part.type === 'image_url') {
+        promptImageUrls.push(part.image_url.url);
+      }
+    }
+  }
+
+  // Prompt the LLM to determine the errors made in the submission.
+  const messages: ChatCompletionMessageParam[] = [
+    submissionMessage,
+    {
+      role: 'system',
+      content: 'In a few words and in at most a sentence, explain any errors made in the student response, if any. Avoid specific quotes, numbers, or content from the actual submission. Your response will be used to cluster similar submissions together. Only return a string; nothing more.',
+    }
+  ];
+
+  const completion = await openai.chat.completions.parse({
+    messages,
+    model: OPEN_AI_MODEL,
+    user: `course_${course.id}`,
+    temperature: OPEN_AI_TEMPERATURE
+  });
+
+  const completionContent = completion.choices[0].message.content;
+
+  if (!completionContent) {
+    throw new Error('No completion content returned from OpenAI.');
+  }
+
+  const embedding = await createEmbedding(
+    openai, 
+    completionContent, 
+    `course_${course.id}`
+  );
+
+  return {
+    embedding,
+    completionContent,
+    questionPrompt,
+    promptImageUrls,
+    messages
+  };
 }
 
 export function parseAiRubricItems({
