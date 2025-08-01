@@ -8,7 +8,6 @@ import {
   callAsync,
   loadSqlEquiv,
   queryAsync,
-  queryOptionalRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -47,14 +46,9 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const rubric_data = await queryOptionalRow(
-      sql.select_rubric_data,
-      {
-        assessment_question_id: res.locals.assessment_question.id,
-        rubric_id: res.locals.assessment_question.manual_rubric_id,
-      },
-      manualGrading.RubricDataSchema,
-    );
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question: res.locals.assessment_question,
+    });
     res.send(
       AssessmentQuestion({
         resLocals: res.locals,
