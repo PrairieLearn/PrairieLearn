@@ -12,7 +12,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { deleteAiGradingData } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -169,7 +169,7 @@ router.post(
         assessment_id: assessment.id,
       });
 
-      await deleteAiGradingData({
+      await deleteAiGradingJobs({
         assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
         authn_user_id: res.locals.authn_user.user_id,
       });

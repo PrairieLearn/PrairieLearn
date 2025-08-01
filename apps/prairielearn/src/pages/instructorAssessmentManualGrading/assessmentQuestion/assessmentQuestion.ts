@@ -10,7 +10,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingData } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -210,7 +210,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const iqs = await deleteAiGradingData({
+      const iqs = await deleteAiGradingJobs({
         assessment_question_ids: [res.locals.assessment_question.id],
         authn_user_id: res.locals.authn_user.user_id,
       });

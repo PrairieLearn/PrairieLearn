@@ -452,7 +452,7 @@ export async function selectEmbeddingForSubmission(
   );
 }
 
-export async function deleteAiGradingData({
+export async function deleteAiGradingJobs({
   assessment_question_ids,
   authn_user_id,
 }: {
