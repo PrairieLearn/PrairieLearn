@@ -61,7 +61,7 @@
     "pyright": "^1.1.403",
     "s3rver": "^3.7.1",
     "turbo": "^2.5.5",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "typescript-eslint": "^8.38.0",
     "vitest": "^3.2.4"
   },

@@ -267,7 +267,7 @@
     "jsdom": "^26.1.0",
     "set-cookie-parser": "^2.7.1",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "typescript-cp": "^0.1.9",
     "vitest": "^3.2.4"
   },
