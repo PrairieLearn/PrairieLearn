@@ -497,7 +497,7 @@ export async function selectAssessmentInstanceLogCursor(
   assessment_instance_id,
   include_files,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
-  return sqldb.queryValidatedCursor(
+  return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,

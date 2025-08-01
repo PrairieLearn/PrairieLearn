@@ -1,11 +1,6 @@
 /* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 
-import {
-  type CursorIterator,
-  loadSqlEquiv,
-  queryRows,
-  queryValidatedCursor,
-} from '@prairielearn/postgres';
+import { type CursorIterator, loadSqlEquiv, queryRows, queryCursor } from '@prairielearn/postgres';
 
 import {
   type StaffGradebookRow,
@@ -82,7 +77,7 @@ async function getGradebookRowsCursor({
   CursorIterator<StudentGradebookRow> | CursorIterator<StaffGradebookRow>
 > {
   if (auth === 'student') {
-    return await queryValidatedCursor(
+    return await queryCursor(
       sql.select_assessment_instances,
       {
         course_instance_id,
@@ -94,7 +89,7 @@ async function getGradebookRowsCursor({
     );
   }
 
-  return await queryValidatedCursor(
+  return await queryCursor(
     sql.select_assessment_instances,
     {
       course_instance_id,

@@ -81,7 +81,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryValidatedCursor(
+      const cursor = await sqldb.queryCursor(
         sql.questions,
         { assessment_id: res.locals.assessment.id },
         AssessmentQuestionStatsRowSchema,

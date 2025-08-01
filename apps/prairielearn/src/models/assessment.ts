@@ -6,7 +6,7 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryValidatedCursor,
+  queryCursor,
 } from '@prairielearn/postgres';
 
 import {
@@ -92,7 +92,7 @@ export function selectAssessmentsCursor({
 }: {
   course_instance_id: string;
 }): Promise<CursorIterator<AssessmentRow>> {
-  return queryValidatedCursor(
+  return queryCursor(
     sql.select_assessments_for_course_instance,
     { course_instance_id },
     AssessmentRowSchema,

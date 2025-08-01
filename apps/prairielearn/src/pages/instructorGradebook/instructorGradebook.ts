@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryCursor } from '@prairielearn/postgres';
 
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
@@ -91,7 +91,7 @@ router.get(
         { course_instance_id: res.locals.course_instance.id },
         CourseAssessmentRowSchema,
       );
-      const userScoresCursor = await queryValidatedCursor(
+      const userScoresCursor = await queryCursor(
         sql.user_scores,
         {
           course_id: res.locals.course.id,

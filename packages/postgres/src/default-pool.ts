@@ -165,7 +165,7 @@ export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
  * results of the query in batches, which is useful for large result sets.
  * Each row will be parsed by the given Zod schema.
  */
-export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);
+export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**
  * Set the schema to use for the search path.
  *

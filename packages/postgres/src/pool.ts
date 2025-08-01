@@ -809,15 +809,15 @@ export class PostgresPool {
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryValidatedCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params, model);
+    return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryValidatedCursorInternal<Model extends z.ZodTypeAny>(
+  private async queryCursorInternal<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model?: Model,

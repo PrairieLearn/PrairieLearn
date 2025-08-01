@@ -2,4 +2,4 @@
 '@prairielearn/postgres': major
 ---
 
-Remove `queryCursor`. Use `queryValidatedCursor` with a Zod schema instead.
+`queryCursor` was removed, and now requires a Zod schema. `queryValidatedCursor` was renamed to `queryCursor`.
