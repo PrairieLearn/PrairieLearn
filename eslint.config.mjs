@@ -355,6 +355,8 @@ export default tseslint.config([
         },
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
@@ -367,6 +369,9 @@ export default tseslint.config([
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-returns': 'off',
       'jsdoc/require-param': 'off',
+      // Potential future rules:
+      // 'jsdoc/informative-docs': ['error'],
+      // 'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
       'jsdoc/tag-lines': 'off',
     },
   },
@@ -375,6 +380,8 @@ export default tseslint.config([
     rules: {
       ...jsdoc.configs['flat/recommended-typescript-flavor-error'].rules,
       'jsdoc/require-param-description': 'off',
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-returns': 'off',
       'jsdoc/require-param': 'off',
