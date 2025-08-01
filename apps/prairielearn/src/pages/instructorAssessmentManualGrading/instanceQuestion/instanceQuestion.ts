@@ -1,15 +1,29 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
+import {
+  selectLastSubmissionId,
+  selectRubricGradingItems,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import {
+  AiGradingJobSchema,
+  DateFromISOString,
+  GradingJobSchema,
+  IdSchema,
+  type InstanceQuestion,
+} from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -19,7 +33,7 @@ import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
-  InstanceQuestion,
+  InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
@@ -78,11 +92,86 @@ router.get(
     const lastGrader = res.locals.instance_question.last_grader
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
+
+    const instance_question = res.locals.instance_question as InstanceQuestion;
+    if (instance_question == null) {
+      throw new error.HttpStatusError(404, 'Instance question not found');
+    }
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+    /**
+     * Contains the prompt and selected rubric items of the AI grader.
+     * If the submission was not graded by AI, this will be undefined.
+     */
+    let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
+
+    if (aiGradingEnabled) {
+      const submission_id = await selectLastSubmissionId(instance_question.id);
+      const ai_grading_job_data = await sqldb.queryOptionalRow(
+        sql.select_ai_grading_job_data_for_submission,
+        {
+          submission_id,
+        },
+        z.object({
+          id: GradingJobSchema.shape.id,
+          manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+          prompt: AiGradingJobSchema.shape.prompt,
+        }),
+      );
+
+      if (ai_grading_job_data) {
+        const promptForGradingJob = ai_grading_job_data.prompt as
+          | ChatCompletionMessageParam[]
+          | null;
+        const selectedRubricItems = await selectRubricGradingItems(
+          ai_grading_job_data.manual_rubric_grading_id,
+        );
+
+        /** The submission was also manually graded if a manual grading job exists for it.*/
+        const submissionManuallyGraded =
+          (await sqldb.queryOptionalRow(
+            sql.select_exists_manual_grading_job_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
+
+        /** Images sent in the AI grading prompt */
+        const promptImageUrls: string[] = [];
+
+        if (promptForGradingJob) {
+          for (const message of promptForGradingJob) {
+            if (message.content && typeof message.content === 'object') {
+              for (const part of message.content) {
+                if (part.type === 'image_url') {
+                  promptImageUrls.push(part.image_url.url);
+                }
+              }
+            }
+          }
+        }
+
+        const formattedPrompt = (
+          await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2))
+        )
+          .replaceAll('\\n', '\n')
+          .trimStart();
+
+        aiGradingInfo = {
+          submissionManuallyGraded,
+          prompt: formattedPrompt,
+          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+          promptImageUrls,
+        };
+      }
+    }
+
     res.send(
-      InstanceQuestion({
+      InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        aiGradingInfo,
       }),
     );
   }),
@@ -128,7 +217,10 @@ router.get(
   asyncHandler(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const gradingPanel = GradingPanel({
+        ...locals,
+        context: 'main',
+      }).toString();
       const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
