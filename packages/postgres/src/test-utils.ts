@@ -112,6 +112,7 @@ async function dropDatabase(
 
   const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
   if ('PL_KEEP_TEST_DB' in process.env && !force) {
+    // eslint-disable-next-line no-console
     console.log(`PL_KEEP_TEST_DB environment variable set, not dropping database ${databaseName}`);
     return;
   }
