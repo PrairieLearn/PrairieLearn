@@ -791,7 +791,7 @@ export class PostgresPool {
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
    */
-  async queryCursorWithClient(
+  private async queryCursorWithClient(
     client: pg.PoolClient,
     sql: string,
     params: QueryParams,
