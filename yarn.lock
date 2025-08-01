@@ -3983,7 +3983,7 @@ __metadata:
     openai: "npm:^5.11.0"
     openid-client: "npm:^5.7.1"
     p-memoize: "npm:^7.1.1"
-    parse5: "npm:^7.3.0"
+    parse5: "npm:^8.0.0"
     passport: "npm:^0.7.0"
     passport-azure-ad: "npm:^4.3.5"
     pem: "npm:^1.14.8"
@@ -14017,6 +14017,15 @@ __metadata:
   dependencies:
     entities: "npm:^6.0.0"
   checksum: 10c0/7fd2e4e247e85241d6f2a464d0085eed599a26d7b0a5233790c49f53473232eb85350e8133344d9b3fd58b89339e7ad7270fe1f89d28abe50674ec97b87f80b5
+  languageName: node
+  linkType: hard
+
+"parse5@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "parse5@npm:8.0.0"
+  dependencies:
+    entities: "npm:^6.0.0"
+  checksum: 10c0/8279892dcd77b2f2229707f60eb039e303adf0288812b2a8fd5acf506a4d432da833c6c5d07a6554bef722c2367a81ef4a1f7e9336564379a7dba3e798bf16b3
   languageName: node
   linkType: hard
 

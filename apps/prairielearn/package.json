@@ -162,7 +162,7 @@
     "openai": "^5.11.0",
     "openid-client": "^5.7.1",
     "p-memoize": "^7.1.1",
-    "parse5": "^7.3.0",
+    "parse5": "^8.0.0",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
     "pem": "^1.14.8",
