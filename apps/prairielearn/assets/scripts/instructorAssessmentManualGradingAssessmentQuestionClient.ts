@@ -464,21 +464,26 @@ onDocumentReady(() => {
       }
     },
   });
+
+  // Build an internal state of filter selection to avoid reading from the html again on click
+  const rubricFilterState: Record<string, boolean> = Object.fromEntries(
+    (rubric_data?.rubric_items ?? []).map((item) => [item.id, false]),
+  );
+
   document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
-    checkbox.addEventListener('change', () => {
-      const filter_rubric_items = Array.from(
-        document.querySelectorAll<HTMLInputElement>('.js-rubric-item-filter:checked'),
-      ).map((el) => el.value);
+    checkbox.addEventListener('change', (e) => {
+      rubricFilterState[(e.target as HTMLInputElement).value] =
+        !rubricFilterState[(e.target as HTMLInputElement).value];
+      const rubricFilterItems = Object.entries(rubricFilterState)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
 
       $('#grading-table').bootstrapTable(
         'filterBy',
-        { filter_rubric_items },
+        { rubricFilterItems },
         {
-          filterAlgorithm: (
-            row: InstanceQuestionRow,
-            filters: { filter_rubric_items: string[] },
-          ) => {
-            return filters.filter_rubric_items.every((item_id) =>
+          filterAlgorithm: (row: InstanceQuestionRow, filters: { rubricFilterItems: string[] }) => {
+            return filters.rubricFilterItems.every((item_id) =>
               row.rubric_grading_items.map((item) => item.id).includes(item_id),
             );
           },
