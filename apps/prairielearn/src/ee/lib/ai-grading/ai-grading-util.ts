@@ -8,15 +8,19 @@ import type {
 import { z } from 'zod';
 
 import {
+  callAsync,
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
+  AssessmentQuestionSchema,
   type Course,
+  GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -30,6 +34,7 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -445,4 +450,66 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteAiGradingData({
+  assessment_question_ids,
+  authn_user_id,
+}: {
+  assessment_question_ids: string[];
+  authn_user_id: string;
+}) {
+  // TODO: revisit this before general availability of AI grading. This implementation
+  // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
+  // correctly in call cases; see the TODOs in the SQL query for more details.
+  //
+  // TODO: we should add locking here. Specifically, we should process each
+  // assessment instance + instance question one at a time in separate
+  // transactions so that we don't need to lock all relevant assessment instances
+  // and assessment questions at once.
+  const iqs = await runInTransactionAsync(async () => {
+    const iqs = await queryRows(
+      sql.delete_ai_grading_jobs,
+      {
+        authn_user_id,
+        assessment_question_ids,
+      },
+      z.object({
+        id: IdSchema,
+        assessment_instance_id: IdSchema,
+        max_points: AssessmentQuestionSchema.shape.max_points,
+        max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+        max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+        points: InstanceQuestionSchema.shape.points,
+        score_perc: InstanceQuestionSchema.shape.score_perc,
+        auto_points: InstanceQuestionSchema.shape.auto_points,
+        manual_points: InstanceQuestionSchema.shape.manual_points,
+        most_recent_manual_grading_job: GradingJobSchema.nullable(),
+      }),
+    );
+
+    for (const iq of iqs) {
+      await callAsync('assessment_instances_grade', [
+        iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        100, // credit
+        false, // only_log_if_score_updated
+        true, // allow_decrease
+      ]);
+    }
+
+    return iqs;
+  });
+
+  // Important: this is done outside of the above transaction so that we don't
+  // hold a database connection open while we do network calls.
+  //
+  // This is here for consistency with other assessment score updating code. We
+  // shouldn't hit this for the vast majority of assessments.
+  for (const iq of iqs) {
+    await ltiOutcomes.updateScore(iq.assessment_instance_id);
+  }
+
+  return iqs;
 }

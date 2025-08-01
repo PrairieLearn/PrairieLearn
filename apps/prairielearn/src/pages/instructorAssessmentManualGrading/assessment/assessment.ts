@@ -12,6 +12,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { deleteAiGradingData } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -157,6 +158,23 @@ router.post(
         }
       }
       flash('success', 'AI grading successfully initiated.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_ai_grading_data') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const assessment = res.locals.assessment as Assessment;
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      await deleteAiGradingData({
+        assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      flash('success', 'AI grading data deleted successfully.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
