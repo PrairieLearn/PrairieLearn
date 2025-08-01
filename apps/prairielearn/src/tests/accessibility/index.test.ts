@@ -342,6 +342,7 @@ const SKIP_ROUTES = [
   // in order to create a workspace.
   // TODO: open a question and create a workspace so we can test this page.
   /^\/pl\/workspace\//,
+  /^\/pl\/public\/workspace\//,
 
   // TODO: run a query so we can test this page.
   '/pl/administrator/query/:query',
