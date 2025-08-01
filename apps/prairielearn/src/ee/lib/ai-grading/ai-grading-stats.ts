@@ -70,6 +70,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
+      rubric_similarity: null,
     };
     results.push(instance_question);
 
@@ -99,6 +100,18 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
+
+      const allRubricItems = await selectRubricForGrading(assessment_question.id);
+      const tpItems = manualItems
+        .filter((item) => rubricListIncludes(aiItems, item))
+        .map((item) => ({ ...item, true_positive: true }));
+      const tnItems = allRubricItems
+        .filter(
+          (item) => !rubricListIncludes(manualItems, item) && !rubricListIncludes(aiItems, item),
+        )
+        .map((item) => ({ ...item, true_positive: false }));
+      instance_question.rubric_similarity = tpItems.concat(tnItems);
+
       const fpItems = aiItems
         .filter((item) => !rubricListIncludes(manualItems, item))
         .map((item) => ({ ...item, false_positive: true }));
@@ -226,11 +239,11 @@ export function meanError(actual: number[], predicted: number[]): number {
 }
 
 export interface AiGradingPerformanceStats {
-  accuracy: number;
   truePositives: number;
+  trueNegatives: number;
   falsePositives: number;
   falseNegatives: number;
-  totalGraded: number;
+  accuracy: number;
   precision: number;
   recall: number;
   f1score: number;
@@ -241,9 +254,12 @@ export type AiGradingAQPerformanceStatsRow = {
   number: number;
 } & AiGradingPerformanceStats;
 
-export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
-  perQuestion: AiGradingAQPerformanceStatsRow[],
-  total: AiGradingPerformanceStats
+/**
+ * Generate detailed AI grading classification performance statistics for an assessment.
+ */
+async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
+  perQuestion: AiGradingAQPerformanceStatsRow[];
+  total: AiGradingPerformanceStats;
 }> {
   const assessmentQuestionRows = await selectAssessmentQuestions({
     assessment_id: assessment.id,
@@ -255,9 +271,9 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
       total: {
         accuracy: 0,
         truePositives: 0,
+        trueNegatives: 0,
         falsePositives: 0,
         falseNegatives: 0,
-        totalGraded: 0,
         precision: 0,
         recall: 0,
         f1score: 0,
@@ -267,11 +283,12 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
 
   const rows: AiGradingAQPerformanceStatsRow[] = [];
 
-  const totalConfusionMatrix = {
+  const totals = {
     truePositives: 0,
+    trueNegatives: 0,
     falsePositives: 0,
     falseNegatives: 0,
-  }
+  };
 
   for (let i = 0; i < assessmentQuestionRows.length; i++) {
     const questionRow = assessmentQuestionRows[i];
@@ -287,15 +304,13 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
 
     const confusionMatrix = {
       truePositives: 0,
+      trueNegatives: 0,
       falsePositives: 0,
       falseNegatives: 0,
     };
 
-    let totalGradedInstanceQuestions = 0;
-
     for (const row of instanceQuestionsTable) {
       if (row.ai_grading_status === 'LatestRubric') {
-        totalGradedInstanceQuestions++;
         if (row.rubric_difference) {
           for (const difference of row.rubric_difference) {
             if (difference.false_positive) {
@@ -305,69 +320,92 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
             }
           }
         }
+        if (row.rubric_similarity) {
+          for (const item of row.rubric_similarity) {
+            if (item.true_positive) {
+              confusionMatrix.truePositives++;
+            } else {
+              confusionMatrix.trueNegatives++;
+            }
+          }
+        }
       }
     }
 
-    totalConfusionMatrix.truePositives += confusionMatrix.truePositives;
-    totalConfusionMatrix.falsePositives += confusionMatrix.falsePositives;
-    totalConfusionMatrix.falseNegatives += confusionMatrix.falseNegatives;
+    totals.truePositives += confusionMatrix.truePositives;
+    totals.trueNegatives += confusionMatrix.trueNegatives;
+    totals.falsePositives += confusionMatrix.falsePositives;
+    totals.falseNegatives += confusionMatrix.falseNegatives;
+
+    const accuracy =
+      (confusionMatrix.truePositives + confusionMatrix.trueNegatives) /
+        (confusionMatrix.truePositives +
+          confusionMatrix.trueNegatives +
+          confusionMatrix.falsePositives +
+          confusionMatrix.falseNegatives) || 0;
 
     const precision =
       confusionMatrix.truePositives /
-      (confusionMatrix.truePositives + confusionMatrix.falsePositives);
+        (confusionMatrix.truePositives + confusionMatrix.falsePositives) || 0; // Handle division by zero
+
     const recall =
       confusionMatrix.truePositives /
-      (confusionMatrix.truePositives + confusionMatrix.falseNegatives);
-
-    const f1score = (2 * (precision * recall)) / (precision + recall);
+        (confusionMatrix.truePositives + confusionMatrix.falseNegatives) || 0; // Handle division by zero
+    const f1score = (2 * (precision * recall)) / (precision + recall) || 0; // Handle division by zero
 
     rows.push({
       assessment_question_id: questionRow.assessment_question.id,
       number: i + 1,
-      accuracy: totalGradedInstanceQuestions > 0 ? (confusionMatrix.truePositives / totalGradedInstanceQuestions) : 0,
       truePositives: confusionMatrix.truePositives,
+      trueNegatives: confusionMatrix.trueNegatives,
       falsePositives: confusionMatrix.falsePositives,
       falseNegatives: confusionMatrix.falseNegatives,
-      totalGraded: totalGradedInstanceQuestions,
+      accuracy,
       precision,
       recall,
-      f1score
+      f1score,
     });
   }
 
+  const totalAccuracy =
+    (totals.truePositives + totals.trueNegatives) /
+    (totals.truePositives + totals.trueNegatives + totals.falsePositives + totals.falseNegatives);
 
+  const totalPrecision = totals.truePositives / (totals.truePositives + totals.falsePositives) || 0; // Handle division by zero
 
-  const totalPrecision =
-    totalConfusionMatrix.truePositives /
-    (totalConfusionMatrix.truePositives + totalConfusionMatrix.falsePositives);
-  const totalRecall =
-    totalConfusionMatrix.truePositives /
-    (totalConfusionMatrix.truePositives + totalConfusionMatrix.falseNegatives);
-  const totalF1Score = (2 * (totalPrecision * totalRecall)) / (totalPrecision + totalRecall);
+  const totalRecall = totals.truePositives / (totals.truePositives + totals.falseNegatives) || 0; // Handle division by zero
 
-  rows.push({
-    assessment_question_id: 'total',
-    number: -1,
-    accuracy:
-      (totalConfusionMatrix.truePositives + totalConfusionMatrix.trueNegatives) /
-      (totalConfusionMatrix.truePositives +
-        totalConfusionMatrix.trueNegatives +
-        totalConfusionMatrix.falsePositives +
-        totalConfusionMatrix.falseNegatives),
-    truePositives: totalConfusionMatrix.truePositives,
-    falsePositives: totalConfusionMatrix.falsePositives,
-    falseNegatives: totalConfusionMatrix.falseNegatives,
-    precision:  rows.reduce((row) => row.truePositives, 0) / rows.reduce((row) => row.truePositives, 0),
-    recall: totalRecall || 0,
-    f1score: totalF1Score || 0,
-  });
+  const totalF1Score = (2 * (totalPrecision * totalRecall)) / (totalPrecision + totalRecall) || 0; // Handle division by zero
 
-  // Export the JSON as a CSV file
-  return [
-    'assessment_question_id,number,accuracy,truePositives,trueNegatives,falsePositives,falseNegatives,precision,recall,f1score',
-    ...rows.map(
-      (row) =>
-        `${row.assessment_question_id},${row.number},${row.accuracy},${row.truePositives},${row.trueNegatives},${row.falsePositives},${row.falseNegatives},${row.precision},${row.recall},${row.f1score}`,
-    ),
-  ].join('\n');
+  const total: AiGradingPerformanceStats = {
+    truePositives: totals.truePositives,
+    trueNegatives: totals.trueNegatives,
+    falsePositives: totals.falsePositives,
+    falseNegatives: totals.falseNegatives,
+    accuracy: totalAccuracy,
+    precision: totalPrecision,
+    recall: totalRecall,
+    f1score: totalF1Score,
+  };
+
+  return {
+    perQuestion: rows,
+    total,
+  };
+}
+
+/**
+ * Generate a CSV string of detailed AI grading classification performance statistics for an assessment.
+ */
+export async function generateAssessmentAiGradingStatsCSV(assessment: Assessment): Promise<string> {
+  const stats = await generateAssessmentAiGradingStats(assessment);
+  const header =
+    'assessment_question_id,questionNumber,truePositives,trueNegatives,falsePositives,falseNegatives,accuracy,precision,recall,f1score';
+  const rows = stats.perQuestion.map(
+    (row) =>
+      `${row.assessment_question_id},${row.number},${row.truePositives},${row.trueNegatives},${row.falsePositives},${row.falseNegatives},${row.accuracy},${row.precision},${row.recall},${row.f1score}`,
+  );
+  const totalRow = `Total,,${stats.total.truePositives},${stats.total.trueNegatives},${stats.total.falsePositives},${stats.total.falseNegatives},${stats.total.accuracy},${stats.total.precision},${stats.total.recall},${stats.total.f1score}`;
+  rows.push(totalRow);
+  return [header, ...rows].join('\n');
 }
