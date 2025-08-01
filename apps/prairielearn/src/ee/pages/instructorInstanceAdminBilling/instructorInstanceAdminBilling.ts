@@ -5,7 +5,6 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import {
   getPlanGrantsForContext,
@@ -56,11 +55,6 @@ async function loadPageData(res: Response) {
 
 router.get(
   '/',
-  createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_own'],
-    errorMessage: 'Access denied (must be course owner)',
-    unauthorizedUsers: 'block',
-  }),
   asyncHandler(async (req, res) => {
     // This page is behind a feature flag for now.
     if (!res.locals.billing_enabled) {
