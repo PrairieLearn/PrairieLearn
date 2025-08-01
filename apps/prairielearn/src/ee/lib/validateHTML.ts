@@ -131,7 +131,6 @@ function assertInChoices(
  * @param tag The name of the tag being checked.
  * @param key The attribute name.
  * @param val The attribute value.
- * @param choices The list of potential choices for the attribute.
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {

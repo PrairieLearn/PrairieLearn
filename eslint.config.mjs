@@ -105,6 +105,21 @@ export default tseslint.config([
     },
 
     settings: {
+      jsdoc: {
+        exemptDestructuredRootsFromChecks: true,
+        contexts: [
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[name=param]:has(JsdocTagValue[value=locals])))',
+            context: 'FunctionDeclaration',
+          },
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[name=param]:has(JsdocTagValue[value=locals])))',
+            context: 'FunctionExpression',
+          },
+          'ArrowFunctionExpression',
+          'TSDeclareFunction',
+        ],
+      },
       'jsx-a11y-x': {
         attributes: {
           for: ['for'],
@@ -180,17 +195,6 @@ export default tseslint.config([
       ],
 
       'no-floating-promise/no-floating-promise': 'error',
-
-      // ...jsdoc.configs['flat/recommended-typescript-error'].rules,
-      'jsdoc/convert-to-jsdoc-comments': [
-        'error',
-        {
-          enforceJsdocLineStyle: 'single',
-          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
-          contextsBeforeAndAfter: ['TSPropertySignature'],
-          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
-        },
-      ],
 
       // Enable all jsx-a11y rules.
       ...jsxA11yX.configs.strict.rules,
@@ -338,7 +342,7 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -348,6 +352,31 @@ export default tseslint.config([
           message: 'module.exports should not be used in TypeScript files',
         },
       ],
+      ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/convert-to-jsdoc-comments': [
+        'error',
+        {
+          enforceJsdocLineStyle: 'single',
+          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
+          contextsBeforeAndAfter: ['TSPropertySignature'],
+          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
+        },
+      ],
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    files: ['**/*.js'],
+    rules: {
+      ...jsdoc.configs['flat/recommended-typescript-flavor-error'].rules,
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/tag-lines': 'off',
     },
   },
   {

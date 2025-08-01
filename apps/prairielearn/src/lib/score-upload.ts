@@ -304,7 +304,8 @@ function getPartialScoresOrNull(json: Record<string, any>): Record<string, any> 
   return partial_scores;
 }
 
-/** Update the score of an instance question based on a single row from the CSV file.
+/**
+ * Update the score of an instance question based on a single row from the CSV file.
  *
  * @param json Data from the CSV row.
  * @param assessment_id ID of the assessment being updated.
