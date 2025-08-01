@@ -238,7 +238,7 @@ export function meanError(actual: number[], predicted: number[]): number {
   return Math.round(mean * 100) / 100;
 }
 
-export interface AiGradingPerformanceStats {
+interface AiGradingPerformanceStats {
   truePositives: number;
   trueNegatives: number;
   falsePositives: number;
@@ -249,13 +249,21 @@ export interface AiGradingPerformanceStats {
   f1score: number;
 }
 
-export type AiGradingAQPerformanceStatsRow = {
+type AiGradingAQPerformanceStatsRow = {
   assessment_question_id: string;
   number: number;
 } & AiGradingPerformanceStats;
 
 /**
- * Generate detailed AI grading classification performance statistics for an assessment.
+ * Safely divide two numbers, returning 0 if the denominator is 0.
+ */
+function safeDivide(numerator: number, denominator: number): number {
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+/**
+ * Generate detailed AI grading classification performance statistics for an assessment, including confusion
+ * matrix elements (TP, FP, TN, FN), accuracy, precision, recall, and F1 score per question and overall.
  */
 async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
   perQuestion: AiGradingAQPerformanceStatsRow[];
@@ -337,21 +345,25 @@ async function generateAssessmentAiGradingStats(assessment: Assessment): Promise
     totals.falsePositives += confusionMatrix.falsePositives;
     totals.falseNegatives += confusionMatrix.falseNegatives;
 
-    const accuracy =
-      (confusionMatrix.truePositives + confusionMatrix.trueNegatives) /
-        (confusionMatrix.truePositives +
-          confusionMatrix.trueNegatives +
-          confusionMatrix.falsePositives +
-          confusionMatrix.falseNegatives) || 0;
+    const accuracy = safeDivide(
+      confusionMatrix.truePositives + confusionMatrix.trueNegatives,
+      confusionMatrix.truePositives +
+        confusionMatrix.trueNegatives +
+        confusionMatrix.falsePositives +
+        confusionMatrix.falseNegatives,
+    );
 
-    const precision =
-      confusionMatrix.truePositives /
-        (confusionMatrix.truePositives + confusionMatrix.falsePositives) || 0; // Handle division by zero
+    const precision = safeDivide(
+      confusionMatrix.truePositives,
+      confusionMatrix.truePositives + confusionMatrix.falsePositives,
+    );
 
-    const recall =
-      confusionMatrix.truePositives /
-        (confusionMatrix.truePositives + confusionMatrix.falseNegatives) || 0; // Handle division by zero
-    const f1score = (2 * (precision * recall)) / (precision + recall) || 0; // Handle division by zero
+    const recall = safeDivide(
+      confusionMatrix.truePositives,
+      confusionMatrix.truePositives + confusionMatrix.falseNegatives,
+    );
+
+    const f1score = safeDivide(2 * (precision * recall), precision + recall);
 
     rows.push({
       assessment_question_id: questionRow.assessment_question.id,
@@ -371,11 +383,17 @@ async function generateAssessmentAiGradingStats(assessment: Assessment): Promise
     (totals.truePositives + totals.trueNegatives) /
     (totals.truePositives + totals.trueNegatives + totals.falsePositives + totals.falseNegatives);
 
-  const totalPrecision = totals.truePositives / (totals.truePositives + totals.falsePositives) || 0; // Handle division by zero
+  const totalPrecision = safeDivide(
+    totals.truePositives,
+    totals.truePositives + totals.falsePositives,
+  );
 
-  const totalRecall = totals.truePositives / (totals.truePositives + totals.falseNegatives) || 0; // Handle division by zero
+  const totalRecall = safeDivide(
+    totals.truePositives,
+    totals.truePositives + totals.falseNegatives,
+  );
 
-  const totalF1Score = (2 * (totalPrecision * totalRecall)) / (totalPrecision + totalRecall) || 0; // Handle division by zero
+  const totalF1Score = safeDivide(2 * (totalPrecision * totalRecall), totalPrecision + totalRecall);
 
   const total: AiGradingPerformanceStats = {
     truePositives: totals.truePositives,
