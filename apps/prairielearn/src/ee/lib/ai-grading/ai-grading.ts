@@ -200,7 +200,7 @@ export async function aiGrade({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,
         embedding: submission_embedding.embedding,
-        limit: 5,
+        limit: 0,
       });
       let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {

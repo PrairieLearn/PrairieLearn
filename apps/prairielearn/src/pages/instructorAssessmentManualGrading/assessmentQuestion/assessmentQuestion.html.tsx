@@ -144,6 +144,10 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
+            <form method="POST" id="select-references">
+              <input type="hidden" name="__action" value="select_references" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
@@ -308,6 +312,13 @@ export function AssessmentQuestion({
                           onclick="$('#ai-grading-all').submit();"
                         >
                           Grade all
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#select-references').submit();"
+                        >
+                          Select reference submissions
                         </button>
 
                         <hr class="dropdown-divider" />

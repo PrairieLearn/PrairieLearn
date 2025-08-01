@@ -68,6 +68,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ...base_instance_question,
       last_human_grader: null,
       ai_grading_status: 'None',
+      ai_points: null,
       point_difference: null,
       rubric_difference: null,
       rubric_similarity: null,
@@ -93,6 +94,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     }
 
     if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
+      instance_question.ai_points = aiGradingJob.manual_points;
       instance_question.point_difference =
         aiGradingJob.manual_points - manualGradingJob.manual_points;
     }

@@ -10,7 +10,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { deleteAiGradingJobs, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -205,6 +205,36 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'select_references') {
+      // Select all submissions
+      // Acquire the AI gradings for each
+
+        const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
+          res.locals.assessment_question.id,
+        );
+    
+        const instanceQuestionsTable = await fillInstanceQuestionColumns(
+          instanceQuestions,
+          res.locals.assessment_question,
+        );
+
+        const aiGradingsForEachPtLevel: Record<number, string[]> = {};
+
+        for (let i = 0; i < instanceQuestionsTable.length; i++) {
+          const instanceQuestionRow = instanceQuestionsTable[i];
+          if (instanceQuestionRow.point_difference === null) {
+            continue; // Skip if no AI grading
+          }
+
+          // Add the AI grading to the corresponding point level
+          const aiPoints = instanceQuestionRow.ai_points ?? -1; // Default to -1 if null
+
+          aiGradingsForEachPtLevel[aiPoints] = aiGradingsForEachPtLevel[aiPoints] || [];
+          aiGradingsForEachPtLevel[aiPoints].push(instanceQuestions[i].id);
+        }
+
+        console.log('AI gradings for each point level:', aiGradingsForEachPtLevel);
+        res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_ai_grading_jobs') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
