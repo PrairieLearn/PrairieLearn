@@ -46,7 +46,7 @@ const RawPageContextSchema = z.object({
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,
-  // You should prefer to set the navbarType instead of using this value.
+  /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,
 });
 export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();

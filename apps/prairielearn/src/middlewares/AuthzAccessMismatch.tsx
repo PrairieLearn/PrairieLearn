@@ -17,6 +17,64 @@ interface PermissionData extends PermissionMeta {
   authnValue: boolean | string;
 }
 
+const PermissionsMeta = [
+  {
+    label: 'Administrator',
+    key: 'is_administrator',
+    type: 'boolean',
+  },
+  {
+    label: 'Course preview',
+    key: 'has_course_permission_preview',
+    type: 'boolean',
+  },
+  {
+    label: 'Course view',
+    key: 'has_course_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Course edit',
+    key: 'has_course_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Course own',
+    key: 'has_course_permission_own',
+    type: 'boolean',
+  },
+  {
+    label: 'Student access',
+    key: 'has_student_access',
+    type: 'boolean',
+  },
+  {
+    label: 'Enrollment student access',
+    key: 'has_student_access_with_enrollment',
+    type: 'boolean',
+  },
+  {
+    label: 'Course instance view',
+    key: 'has_course_instance_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Course instance edit',
+    key: 'has_course_instance_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Course role',
+    key: 'course_role',
+    type: 'string',
+  },
+  {
+    label: 'Course instance role',
+    key: 'course_instance_role',
+    type: 'string',
+  },
+] satisfies PermissionMeta[];
+
 const PermissionsTable = ({ permissions }: { permissions: PermissionData[] }) => {
   return (
     <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
@@ -78,70 +136,12 @@ export function AuthzAccessMismatch({
     window.location.reload();
   };
 
-  const permissionsMeta = [
-    {
-      label: 'Administrator',
-      key: 'is_administrator',
-      type: 'boolean',
-    },
-    {
-      label: 'Course preview',
-      key: 'has_course_permission_preview',
-      type: 'boolean',
-    },
-    {
-      label: 'Course view',
-      key: 'has_course_permission_view',
-      type: 'boolean',
-    },
-    {
-      label: 'Course edit',
-      key: 'has_course_permission_edit',
-      type: 'boolean',
-    },
-    {
-      label: 'Course own',
-      key: 'has_course_permission_own',
-      type: 'boolean',
-    },
-    {
-      label: 'Student access',
-      key: 'has_student_access',
-      type: 'boolean',
-    },
-    {
-      label: 'Enrollment student access',
-      key: 'has_student_access_with_enrollment',
-      type: 'boolean',
-    },
-    {
-      label: 'Course instance view',
-      key: 'has_course_instance_permission_view',
-      type: 'boolean',
-    },
-    {
-      label: 'Course instance edit',
-      key: 'has_course_instance_permission_edit',
-      type: 'boolean',
-    },
-    {
-      label: 'Course role',
-      key: 'course_role',
-      type: 'string',
-    },
-    {
-      label: 'Course instance role',
-      key: 'course_instance_role',
-      type: 'string',
-    },
-  ] satisfies PermissionMeta[];
-
-  const permissions: PermissionData[] = permissionsMeta.map((permission) => {
+  const permissions: PermissionData[] = PermissionsMeta.map((permission) => {
     return {
       authnValue:
         (authzData as any)['authn_' + permission.key] ??
         (permission.type === 'string' ? '' : false),
-      value: (authzData as any)[permission.key] ?? (permission.type === 'string' ? '' : false),
+      value: authzData[permission.key] ?? (permission.type === 'string' ? '' : false),
       ...permission,
     };
   });
@@ -151,7 +151,7 @@ export function AuthzAccessMismatch({
   );
 
   // Only show the permissions that are different between authn and authz
-  const otherPermissons = allOtherPermissions.filter(
+  const otherPermissions = allOtherPermissions.filter(
     (permission) => permission.authnValue !== permission.value,
   );
 
@@ -204,10 +204,10 @@ export function AuthzAccessMismatch({
             <div class="mt-3">
               <h6>One of these permissions is required</h6>
               <PermissionsTable permissions={oneOfPermissions} />
-              {otherPermissons.length > 0 && (
+              {otherPermissions.length > 0 && (
                 <>
                   <h6>Other permission differences</h6>
-                  <PermissionsTable permissions={otherPermissons} />
+                  <PermissionsTable permissions={otherPermissions} />
                 </>
               )}
             </div>

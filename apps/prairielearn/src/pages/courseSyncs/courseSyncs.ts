@@ -23,7 +23,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_edit'],
     errorMessage: 'Access denied (must be course editor)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     const jobSequences = await queryRows(

@@ -18,7 +18,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
     errorMessage: 'Access denied (must be course previewer or student data viewer)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     const courseRoles = await queryRow(

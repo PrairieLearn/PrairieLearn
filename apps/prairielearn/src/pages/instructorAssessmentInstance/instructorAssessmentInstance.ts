@@ -55,7 +55,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
     errorMessage: 'Access denied (must be a student data viewer)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res, _next) => {
     const logCsvFilename = makeLogCsvFilename(res.locals);
@@ -104,7 +104,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
     errorMessage: 'Access denied (must be a student data viewer)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     if (req.params.filename === makeLogCsvFilename(res.locals)) {

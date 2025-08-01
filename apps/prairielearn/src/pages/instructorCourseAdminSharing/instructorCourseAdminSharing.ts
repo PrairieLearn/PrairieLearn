@@ -33,7 +33,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_own'],
     errorMessage: 'Access denied (must be course owner)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     if (!res.locals.question_sharing_enabled) {

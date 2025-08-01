@@ -94,7 +94,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
     errorMessage: 'Requires "Previewer" permissions',
-    cosmeticOnly: true,
+    unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async function (req, res) {
     if (!res.locals.authz_data.has_course_permission_preview) {
@@ -156,7 +156,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
     errorMessage: 'Requires "Previewer" permissions',
-    cosmeticOnly: true,
+    unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny

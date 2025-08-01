@@ -18,11 +18,11 @@ export const createAuthzMiddleware =
   ({
     oneOfPermissions,
     errorMessage,
-    cosmeticOnly,
+    unauthorizedUsers,
   }: {
     oneOfPermissions: (keyof PageContext['authz_data'])[];
     errorMessage: string;
-    cosmeticOnly: boolean;
+    unauthorizedUsers: 'passthrough' | 'block';
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
     // This is special-cased because the middleware that sets authz_data
@@ -67,7 +67,7 @@ export const createAuthzMiddleware =
       return;
     }
 
-    if (cosmeticOnly) {
+    if (unauthorizedUsers === 'passthrough') {
       return next();
     }
 

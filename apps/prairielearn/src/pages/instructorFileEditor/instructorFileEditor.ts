@@ -42,7 +42,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_edit'],
     errorMessage: 'Requires "Editor" permissions',
-    cosmeticOnly: true,
+    unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
     // Do not allow users to edit the exampleCourse

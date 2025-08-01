@@ -49,7 +49,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_edit'],
     errorMessage: 'Access denied (must be a student data editor)',
-    cosmeticOnly: false,
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     const instances = await queryRows(
