@@ -14,6 +14,7 @@ const HIDDEN_PROPERTIES = new Set([
   'alsClient',
   'searchSchema',
   '_queryCount',
+  'queryCursorWithClient',
   'queryCursorInternal',
   'errorOnUnusedParameters',
   // Getters
