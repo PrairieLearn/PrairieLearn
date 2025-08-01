@@ -277,7 +277,7 @@ router.get(
   }),
 );
 
-/*
+/**
  * Local abstraction to adapt our internal notion of columns to the columns
  * format that the CSV `stringify()` function expects.
  */

@@ -23,7 +23,7 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
 
   const names = new Set<string>();
 
-  // Helper function to recursively collect names.
+  /** Helper function to recursively collect names. */
   function collectNames(tokensList: MustacheToken[]) {
     for (const token of tokensList) {
       const [type, value] = token;

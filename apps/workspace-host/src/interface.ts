@@ -210,12 +210,13 @@ async
     async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of containers that shouldn't exist.
-      //
-      // Note that this updates the load count. The cron job that kills workspace
-      // hosts will only kill hosts that have a load count of 0. This should ensure
-      // that we never kill a host before its had a chance to spin down all its
-      // containers (and flush their logs and record their disk usage).
+      /** Set up a periodic pruning of containers that shouldn't exist.
+       *
+       *  Note that this updates the load count. The cron job that kills workspace
+       *  hosts will only kill hosts that have a load count of 0. This should ensure
+       *  that we never kill a host before its had a chance to spin down all its
+       * containers (and flush their logs and record their disk usage).
+       */
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
@@ -476,7 +477,7 @@ const _allocateContainerPortMutex = new Mutex();
  * @return Port that was allocated to the workspace.
  */
 async function _allocateContainerPort(workspace_id: string | number): Promise<number> {
-  // Check if a port is considered free in the database
+  /** Check if a port is considered free in the database */
   async function check_port_db(port: number) {
     const params = {
       instance_id: workspace_server_settings.instance_id,
@@ -486,7 +487,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     return !result.rows[0].port_used;
   }
 
-  // Spin up a server to check if a port is free
+  /** Spin up a server to check if a port is free */
   async function check_port_server(port: number) {
     return new Promise((res) => {
       const server = net.createServer();
@@ -881,7 +882,7 @@ function safeUpdateWorkspaceState(
   });
 }
 
-// Called by the main server the first time a workspace is used by a user
+/** Called by the main server the first time a workspace is used by a user */
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);

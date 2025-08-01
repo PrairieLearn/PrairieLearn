@@ -1129,8 +1129,10 @@ async function updateInfoAssessmentFilesForTargetCourse(
     delete infoJson['shareSourcePublicly'];
     infoJson['allowAccess'] = [];
 
-    // Rewrite the question IDs to include the course sharing name,
-    // or to point to the new path if the question was copied
+    /**
+     * Rewrite the question IDs to include the course sharing name,
+     * or to point to the new path if the question was copied
+     */
     function shouldAddSharingPrefix(qid: string) {
       return qid && qid[0] !== '@' && questionsToImport.has(qid);
     }

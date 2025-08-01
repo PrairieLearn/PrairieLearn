@@ -8,6 +8,7 @@ import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -87,6 +88,7 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      jsdoc,
       'react-hooks': reactHooks,
       vitest,
       'jsx-a11y-x': jsxA11yX,
@@ -178,6 +180,17 @@ export default tseslint.config([
       ],
 
       'no-floating-promise/no-floating-promise': 'error',
+
+      // ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/convert-to-jsdoc-comments': [
+        'error',
+        {
+          enforceJsdocLineStyle: 'single',
+          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
+          contextsBeforeAndAfter: ['TSPropertySignature'],
+          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
+        },
+      ],
 
       // Enable all jsx-a11y rules.
       ...jsxA11yX.configs.strict.rules,
