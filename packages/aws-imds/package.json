@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "node-fetch": "^3.3.2",
-    "zod": "^3.25.76"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

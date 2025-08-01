@@ -3283,7 +3283,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.17.0"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3295,7 +3295,7 @@ __metadata:
     "@types/node": "npm:^22.17.0"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3346,7 +3346,7 @@ __metadata:
     ioredis: "npm:^5.7.0"
     lru-cache: "npm:^11.1.0"
     typescript: "npm:^5.8.3"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3394,7 +3394,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3559,7 +3559,7 @@ __metadata:
     vitest: "npm:^3.2.4"
     winston: "npm:^3.17.0"
     winston-transport: "npm:^4.9.0"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3601,7 +3601,7 @@ __metadata:
     logform: "npm:^2.7.0"
     typescript: "npm:^5.8.3"
     winston: "npm:^3.17.0"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3655,7 +3655,7 @@ __metadata:
     typescript: "npm:^5.8.3"
     typescript-cp: "npm:^0.1.9"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -3776,7 +3776,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -4034,7 +4034,7 @@ __metadata:
     winston: "npm:^3.17.0"
     xml-formatter: "npm:^3.6.6"
     xml2js: "npm:^0.6.2"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
     zod-to-json-schema: "npm:^3.24.6"
   languageName: unknown
   linkType: soft
@@ -4205,7 +4205,7 @@ __metadata:
     typescript-cp: "npm:^0.1.9"
     uuid: "npm:^11.1.0"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -4238,7 +4238,7 @@ __metadata:
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.8.3"
     vitest: "npm:^3.2.4"
-    zod: "npm:^3.25.76"
+    zod: "npm:^4.0.14"
   languageName: unknown
   linkType: soft
 
@@ -17580,14 +17580,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.25.76":
-  version: 3.25.76
-  resolution: "zod@npm:3.25.76"
-  checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c
-  languageName: node
-  linkType: hard
-
-"zod@npm:^4.0.5":
+"zod@npm:^4.0.14, zod@npm:^4.0.5":
   version: 4.0.14
   resolution: "zod@npm:4.0.14"
   checksum: 10c0/ec8681050d393f3be1c2c8f30d7dd4f56bec3746855fb17288be856185a0fe65e68d1b24aec657bbf956f64c05e69332d3751eafd6c103d19385bcc46075612b

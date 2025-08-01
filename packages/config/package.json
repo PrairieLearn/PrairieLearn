@@ -14,7 +14,7 @@
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.3.0",
     "lodash": "^4.17.21",
-    "zod": "^3.25.76"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
