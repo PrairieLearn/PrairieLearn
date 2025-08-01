@@ -4,6 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
+import { type RubricData } from '../../src/lib/manualGrading.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -28,6 +29,7 @@ onDocumentReady(() => {
     maxAutoPoints,
     aiGradingMode,
     csrfToken,
+    rubric_data,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -102,16 +104,7 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    // The way that `bootstrap-table` applies options over defaults is bad: when combining
-    // arrays, it treats them as objects with keys and merges them. So, if the default
-    // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
-    //
-    // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
-    // we put a dummy element at the end of the array. This won't be rendered, as any button
-    // keys that aren't recognized are silently skipped.
-    //
-    // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'not-a-real-button'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -132,6 +125,9 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
+      },
+      rubricFilter: {
+        html: rubricFilterHtml(rubric_data),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -468,7 +464,67 @@ onDocumentReady(() => {
       }
     },
   });
+
+  // Build an internal state of filter selection to avoid reading from the html again on click
+  const rubricFilterState: Record<string, boolean> = Object.fromEntries(
+    (rubric_data?.rubric_items ?? []).map((item) => [item.id, false]),
+  );
+
+  document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
+    checkbox.addEventListener('change', (e) => {
+      rubricFilterState[(e.target as HTMLInputElement).value] =
+        !rubricFilterState[(e.target as HTMLInputElement).value];
+      const rubricFilterItems = Object.entries(rubricFilterState)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+
+      $('#grading-table').bootstrapTable(
+        'filterBy',
+        { rubricFilterItems },
+        {
+          filterAlgorithm: (row: InstanceQuestionRow, filters: { rubricFilterItems: string[] }) => {
+            return filters.rubricFilterItems.every((item_id) =>
+              row.rubric_grading_items.map((item) => item.id).includes(item_id),
+            );
+          },
+        },
+      );
+    }),
+  );
 });
+
+function rubricFilterHtml(rubric_data: RubricData | null): string {
+  return rubric_data
+    ? html`
+        <div class="btn-group">
+          <button
+            type="button"
+            class="btn btn-secondary dropdown-toggle"
+            data-bs-toggle="dropdown"
+            name="rubric-item-filter"
+            data-bs-auto-close="outside"
+          >
+            <i class="fas fa-filter"></i> Filter by rubric items
+          </button>
+          <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+            ${rubric_data.rubric_items.map(
+              (item) => html`
+                <label class="dropdown-item dropdown-item-marker"
+                  ><input
+                    type="checkbox"
+                    class="js-rubric-item-filter"
+                    value="${item.id}"
+                    id="filter-rubric-item-${item.id}"
+                  />
+                  <span>${item.description}</span></label
+                >
+              `,
+            )}
+          </div>
+        </div>
+      `.toString()
+    : '';
+}
 
 function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
