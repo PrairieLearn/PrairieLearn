@@ -55,6 +55,7 @@ import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
@@ -289,37 +290,57 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = Router();
-  workspaceAuthRouter.use([
-    // We use a short-lived cookie to cache a successful
-    // authn/authz for a specific workspace. We run the following
-    // middlewares in this separate sub-router so that we can
-    // short-circuit out of authzWorkspaceCookieCheck if we find
-    // the workspace-authz cookie. Short-circuiting will exit this
-    // sub-router immediately, so we can either exit this
-    // sub-router by finding the cookie, or by running regular
-    // authn/authz.
+  async function makeWorkspaceContainerRoutes({
+    url,
+    containerPathRegex,
+    publicQuestionEndpoint,
+  }: {
+    url: string;
+    containerPathRegex: RegExp;
+    publicQuestionEndpoint: boolean;
+  }) {
+    const workspaceAuthRouter = Router();
+    workspaceAuthRouter.use([
+      // We use a short-lived cookie to cache a successful
+      // authn/authz for a specific workspace. We run the following
+      // middlewares in this separate sub-router so that we can
+      // short-circuit out of authzWorkspaceCookieCheck if we find
+      // the workspace-authz cookie. Short-circuiting will exit this
+      // sub-router immediately, so we can either exit this
+      // sub-router by finding the cookie, or by running regular
+      // authn/authz.
 
-    (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
-    (await import('./middlewares/date.js')).default,
-    (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
-    (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
-  ]);
-  app.use('/pl/workspace/:workspace_id(\\d+)/container', [
-    cookieParser(),
-    (req: Request, res: Response, next: NextFunction) => {
-      // Needed for workspaceAuthRouter.
-      res.locals.workspace_id = req.params.workspace_id;
-      next();
-    },
-    workspaceAuthRouter,
-    (req: Request, res: Response, next: NextFunction) => {
-      workspaceProxySocketActivityMetrics.addSocket(req.socket);
-      next();
-    },
-    makeWorkspaceProxyMiddleware(),
-  ]);
+      (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
+      (await import('./middlewares/date.js')).default,
+      (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
+      (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
+    ]);
+    app.use(url, [
+      cookieParser(),
+      (req: Request, res: Response, next: NextFunction) => {
+        // Needed for workspaceAuthRouter.
+        res.locals.workspace_id = req.params.workspace_id;
+        next();
+      },
+      workspaceAuthRouter,
+      (req: Request, res: Response, next: NextFunction) => {
+        workspaceProxySocketActivityMetrics.addSocket(req.socket);
+        next();
+      },
+      makeWorkspaceProxyMiddleware(containerPathRegex),
+    ]);
+  }
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: false,
+  });
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: true,
+  });
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
@@ -530,11 +551,11 @@ export async function initExpress(): Promise<Express> {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    (await import('./middlewares/authzWorkspace.js')).default,
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }),
   ]);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
-    (await import('./pages/workspace/workspace.js')).default,
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: false }),
   );
   app.use(
     '/pl/workspace/:workspace_id(\\d+)/logs',
@@ -1785,6 +1806,17 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
   );
+  app.use('/pl/public/workspace/:workspace_id(\\d+)', [
+    (req: Request, res: Response, next: NextFunction) => {
+      res.locals.workspace_id = req.params.workspace_id;
+      next();
+    },
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: true }),
+  ]);
+  app.use(
+    '/pl/public/workspace/:workspace_id(\\d+)',
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: true }),
+  );
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
@@ -2096,8 +2128,7 @@ export async function insertDevUser() {
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';
-  const result = await sqldb.queryOneRowAsync(sql, []);
-  const user_id = result.rows[0].user_id;
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2161,12 +2192,6 @@ if (esMain(import.meta) && config.startServer) {
       await Sentry.init({
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
-
-        // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-        // try to set that up for itself, but only if OpenTelemetry is
-        // enabled. Otherwise, allow Sentry to install its own stuff so
-        // that request isolation works correctly.
-        skipOpenTelemetrySetup: config.openTelemetryEnabled,
       });
     }
 

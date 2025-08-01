@@ -92,7 +92,7 @@ export function JobSequenceResults({
               </p>
               <p class="mb-1">
                 ${JobStatus({ status: job.status })}
-                ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin fa-fw"></i>` : ''}
+                ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin"></i>` : ''}
               </p>
               ${jobSequence.legacy
                 ? html`
