@@ -14,10 +14,10 @@ import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import {
-  Resource,
-  detectResourcesSync,
+  detectResources,
   envDetector,
   processDetector,
+  resourceFromAttributes,
 } from '@opentelemetry/resources';
 import {
   AggregationTemporality,
@@ -281,7 +281,7 @@ export async function init(config: OpenTelemetryConfig) {
   // then can we actually start requiring all of our code that loads our config
   // and ultimately tells us how to configure OpenTelemetry.
 
-  let resource = detectResourcesSync({
+  let resource = detectResources({
     // The AWS resource detector always tries to reach out to the EC2 metadata
     // service endpoint. When running locally, or otherwise in a non-AWS environment,
     // this will typically fail immediately wih `EHOSTDOWN`, but will sometimes wait
@@ -301,7 +301,7 @@ export async function init(config: OpenTelemetryConfig) {
   });
 
   if (config.serviceName) {
-    resource = resource.merge(new Resource({ [ATTR_SERVICE_NAME]: config.serviceName }));
+    resource = resource.merge(resourceFromAttributes({ [ATTR_SERVICE_NAME]: config.serviceName }));
   }
 
   // Set up tracing instrumentation.
