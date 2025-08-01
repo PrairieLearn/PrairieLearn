@@ -1,27 +1,32 @@
+import clsx from 'clsx';
+
 import { renderHtml } from '../lib/preact-html.js';
 
 export function Scorebar({
   score,
-  className = '',
+  class: className = '',
   minWidth = '5em',
   maxWidth = '20em',
 }: {
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  className?: string;
+  class: string;
 }) {
   if (score == null) return '';
   return (
-    <div class={`progress border border-success ${className}`} style={{ minWidth, maxWidth }}>
+    <div
+      class={clsx('progress', 'border', 'border-success', className)}
+      style={{ minWidth, maxWidth }}
+    >
       <div
-        className="progress-bar bg-success"
+        class="progress-bar bg-success"
         style={{ width: `${Math.floor(Math.min(100, score))}%` }}
       >
         {score >= 50 ? `${Math.floor(score)}%` : ''}
       </div>
       <div
-        className="d-flex flex-column justify-content-center text-center"
+        class="d-flex flex-column justify-content-center text-center"
         style={{ width: `${100 - Math.floor(Math.min(100, score))}%` }}
       >
         {score >= 50 ? '' : `${Math.floor(score)}%`}
@@ -39,6 +44,6 @@ export function ScorebarHtml(
   }: { minWidth?: string; maxWidth?: string; classes?: string } = {},
 ) {
   return renderHtml(
-    <Scorebar score={score} className={classes} minWidth={minWidth} maxWidth={maxWidth} />,
+    <Scorebar score={score} class={classes} minWidth={minWidth} maxWidth={maxWidth} />,
   );
 }
