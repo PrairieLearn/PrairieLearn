@@ -364,7 +364,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
     interval_secs,
   });
 
-  if (result.length > 0) {
+  if (result.rowCount != null && result.rowCount > 0) {
     debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
     logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
     return null;
