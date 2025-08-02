@@ -364,7 +364,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
     interval_secs,
   });
 
-  if (result.rowCount != null && result.rowCount > 0) {
+  if (result.length > 0) {
     debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
     logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
     return null;
@@ -374,8 +374,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   logger.verbose('cron: ' + job.name + ' job was not recently run', {
     cronUuid,
   });
-  const params = { name: job.name };
-  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  await sqldb.queryAsync(sql.update_cron_job_time, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
   logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
   await runJob(job, cronUuid);

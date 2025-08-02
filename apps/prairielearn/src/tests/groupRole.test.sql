@@ -26,15 +26,11 @@ WHERE
   AND gc.has_roles is FALSE;
 
 -- BLOCK select_assessment_group_roles
-SELECT
-  gr.id,
-  gr.role_name,
-  gr.minimum,
-  gr.maximum
-FROM
-  group_roles AS gr
+SELECT *
+FROM 
+  group_roles
 WHERE
-  gr.assessment_id = $assessment_id;
+  assessment_id = $assessment_id;
 
 -- BLOCK select_group_user_roles
 SELECT
