@@ -48,11 +48,12 @@ describe('assessment instance group synchronization test', function () {
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', async () => {
-      const assessment_id = await sqldb.queryRow(sql.select_group_work_assessment, IdSchema);
-      locals.assessment_id = assessment_id;
+      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      assert.notEqual(assessment_ids.length, 0);
+      locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
       locals.instructorAssessmentsUrlGroupTab =
-        locals.courseInstanceBaseUrl + '/instructor/assessment/' + assessment_id + '/groups';
+        locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
       locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
     });
