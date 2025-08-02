@@ -75,7 +75,7 @@ export async function questionFilePath(
       );
     }
 
-    assert(templateQuestion.directory !== null, 'template_directory is required');
+    assert(templateQuestion.directory !== null, 'template question directory is required');
 
     return await questionFilePath(
       filename,

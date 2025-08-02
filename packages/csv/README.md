@@ -4,25 +4,36 @@ A few helpful wrappers on top of the functionality from [`csv-stringify`](https:
 
 ## Usage
 
-Here's an example taking data from `@prairielearn/postgres#queryValidatedCursor()` and writing it to a file, though this should be applicable to any source and destination streams:
+Here's an example taking data from `@prairielearn/postgres#queryCursor()` and writing it to a file, though this should be applicable to any source and destination streams:
 
 ```ts
 import { stringifyStream } from '@prairielearn/csv';
-import { queryValidatedCursor } from '@prairielearn/postgres';
+import { queryCursor } from '@prairielearn/postgres';
 import { pipeline } from 'node:stream/promises';
 import { createWriteStream } from 'node:fs';
-import { IdSchema } from './lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
+import { z } from 'zod';
 
-const cursor = await queryValidatedCursor('SELECT id FROM workspaces;', {}, IdSchema);
+const WorkspaceSchema = z.object({
+  id: IdSchema,
+  hostname: z.string(),
+});
+type Workspace = z.infer<typeof WorkspaceSchema>;
+
+const cursor = await queryCursor('SELECT id, hostname FROM workspaces;', WorkspaceSchema);
 const output = createWriteStream('workspaces.csv');
 
-const stringifier = stringifyStream<string>({
+const stringifier = stringifyStream<Workspace>({
   header: true,
-  columns: [{ key: 'id', header: 'ID' }],
+  columns: [
+    { key: 'id', header: 'ID' },
+    { key: 'hostname', header: 'Hostname' },
+  ],
   // Optionally provide a function to transform each item in the stream.
   transform(record) {
     return {
-      id: `workspace-${record}`,
+      id: `workspace-${record.id}`,
+      hostname: record.hostname,
     };
   },
 });

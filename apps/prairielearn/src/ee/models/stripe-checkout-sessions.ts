@@ -40,9 +40,7 @@ export async function getStripeCheckoutSessionByStripeObjectId(
 ): Promise<StripeCheckoutSession | null> {
   return await queryOptionalRow(
     sql.get_stripe_checkout_session_by_stripe_object_id,
-    {
-      stripe_object_id,
-    },
+    { stripe_object_id },
     StripeCheckoutSessionSchema,
   );
 }

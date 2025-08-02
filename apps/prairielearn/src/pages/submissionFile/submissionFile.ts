@@ -56,9 +56,7 @@ export default function (options = { publicEndpoint: false }) {
 
       const unsafe_variant_id = await sqldb.queryOptionalRow(
         sql.select_variant_id_by_submission_id,
-        {
-          submission_id: req.params.unsafe_submission_id,
-        },
+        { submission_id: req.params.unsafe_submission_id },
         IdSchema,
       );
 

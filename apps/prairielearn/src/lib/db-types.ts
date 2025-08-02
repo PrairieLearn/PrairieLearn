@@ -41,6 +41,16 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumQuestionTypeSchema = z.enum([
+  'Calculation',
+  'MultipleChoice',
+  'Checkbox',
+  'File',
+  'MultipleTrueFalse',
+  'Freeform',
+]);
+export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
+
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
@@ -303,7 +313,7 @@ export type AuditLog = z.infer<typeof AuditLogSchema>;
 
 export const AuthnProviderSchema = z.object({
   id: IdSchema,
-  name: z.string().nullable(),
+  name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
@@ -448,7 +458,7 @@ export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
 export const ExamModeNetworkSchema = z.object({
   created_at: DateFromISOString,
-  during: z.any(), // TODO: fix this
+  during: z.unknown(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
   id: IdSchema,
   location: z.string().nullable(),
   network: z.string().cidr(),
@@ -791,6 +801,7 @@ export const Lti13InstanceSchema = z.object({
   name_attribute: z.string().nullable(),
   name: z.string(),
   platform: z.string(),
+  require_linked_lti_user: z.boolean(),
   tool_platform_name: z.string().nullable(),
   uid_attribute: z.string().nullable(),
   uin_attribute: z.string().nullable(),
@@ -919,14 +930,7 @@ export const QuestionSchema = z.object({
   template_directory: z.string().nullable(),
   title: z.string().nullable(),
   topic_id: IdSchema.nullable(),
-  type: z.enum([
-    'Calculation',
-    'MultipleChoice',
-    'Checkbox',
-    'File',
-    'MultipleTrueFalse',
-    'Freeform',
-  ]),
+  type: EnumQuestionTypeSchema.nullable(),
   uuid: z.string().nullable(),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),

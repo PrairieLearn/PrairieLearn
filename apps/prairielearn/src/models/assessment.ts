@@ -3,10 +3,10 @@ import { z } from 'zod';
 import {
   type CursorIterator,
   loadSqlEquiv,
+  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryValidatedCursor,
 } from '@prairielearn/postgres';
 
 import {
@@ -92,7 +92,7 @@ export function selectAssessmentsCursor({
 }: {
   course_instance_id: string;
 }): Promise<CursorIterator<AssessmentRow>> {
-  return queryValidatedCursor(
+  return queryCursor(
     sql.select_assessments_for_course_instance,
     { course_instance_id },
     AssessmentRowSchema,

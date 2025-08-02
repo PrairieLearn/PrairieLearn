@@ -91,7 +91,7 @@ router.get(
         { course_instance_id: res.locals.course_instance.id },
         CourseAssessmentRowSchema,
       );
-      const userScoresCursor = await queryValidatedCursor(
+      const userScoresCursor = await queryCursor(
         sql.user_scores,
         {
           course_id: res.locals.course.id,

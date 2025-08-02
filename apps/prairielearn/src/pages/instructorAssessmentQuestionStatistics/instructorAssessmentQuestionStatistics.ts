@@ -12,6 +12,7 @@ import {
   updateAssessmentQuestionStatsForAssessment,
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
+import { AssessmentSchema } from '../../lib/db-types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
@@ -41,10 +42,12 @@ router.get(
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment = assessmentResult.rows[0].assessment;
+    const assessment = await sqldb.queryRow(
+      sql.select_assessment,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentSchema,
+    );
+    res.locals.assessment = assessment;
 
     // Fetch assessments.stats_last_updated (the time when we last updated
     // the _question_ statistics for this assessment). Note that this is
@@ -59,9 +62,7 @@ router.get(
 
     const rows = await sqldb.queryRows(
       sql.questions,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentQuestionStatsRowSchema,
     );
 
@@ -80,7 +81,7 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryValidatedCursor(
+      const cursor = await sqldb.queryCursor(
         sql.questions,
         { assessment_id: res.locals.assessment.id },
         AssessmentQuestionStatsRowSchema,

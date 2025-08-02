@@ -956,10 +956,10 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Get all existing long names');
     const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
-      {
-        course_id: this.course.id,
-      },
-      CourseInstanceSchema.shape.long_name,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
     );
 
     debug('Get all existing short names');
@@ -971,7 +971,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
-    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+    if (oldNamesShort.includes(shortName) || (longName && oldNamesLong.includes(longName))) {
       const names = getNamesForCopy(
         this.course_instance.short_name,
         oldNamesShort,
@@ -1292,10 +1292,10 @@ export class CourseInstanceAddEditor extends Editor {
     debug('Get all existing long names');
     const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
-      {
-        course_id: this.course.id,
-      },
-      CourseInstanceSchema.shape.long_name,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
     );
 
     debug('Get all existing short names');
@@ -1755,9 +1755,7 @@ export class QuestionRenameEditor extends Editor {
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const assessments = await sqldb.queryRows(
       sql.select_assessments_with_question,
-      {
-        question_id: this.question.id,
-      },
+      { question_id: this.question.id },
       z.object({
         course_instance_directory: CourseInstanceSchema.shape.short_name,
         assessment_directory: AssessmentSchema.shape.tid,
