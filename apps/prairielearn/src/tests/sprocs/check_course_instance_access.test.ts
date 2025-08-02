@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
+import { CourseInstanceAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -11,8 +11,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const CiarTestResultSchema = z.object({
   ...CourseInstanceAccessRuleSchema.shape,
   authorized: z.boolean(),
-  user_institution_id: z.bigint().nullable(),
-  course_institution_id: z.bigint().nullable(),
+  user_institution_id: IdSchema.nullable(),
+  course_institution_id: IdSchema.nullable(),
 });
 
 describe('sproc check_course_instance_access* tests', function () {
