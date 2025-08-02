@@ -31,7 +31,7 @@ export class LocalCache {
 
   /**
    * @param key The key for the value to retrieve.
-   * @return The value associated with the key, or undefined if the key is not present in the cache.
+   * @returns The value associated with the key, or undefined if the key is not present in the cache.
    */
   get(key: any): any {
     if (key in this.data) {

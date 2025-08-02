@@ -8,16 +8,16 @@ export type ExamplePrompt = {
     }
   | {
       answerType: 'number';
-      /* Numeric tolerances for grading answers */
+      /** Numeric tolerances for grading answers */
       rtol?: number;
       atol?: number;
-      /* Describes what the question answer is, e.g. dot product or velocity */
+      /** Describes what the question answer is, e.g. dot product or velocity */
       answerLabel: string;
       answerUnits?: string;
     }
   | {
       answerType: 'string';
-      /* Describes what the question answer is, e.g. dot product or velocity */
+      /** Describes what the question answer is, e.g. dot product or velocity */
       answerLabel: string;
       answerUnits?: string;
     }

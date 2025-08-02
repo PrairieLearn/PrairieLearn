@@ -23,7 +23,7 @@ export function extractMustacheTemplateNames(str: string): Set<string> {
 
   const names = new Set<string>();
 
-  // Helper function to recursively collect names.
+  /** Helper function to recursively collect names. */
   function collectNames(tokensList: MustacheToken[]) {
     for (const token of tokensList) {
       const [type, value] = token;
@@ -131,7 +131,6 @@ function assertInChoices(
  * @param tag The name of the tag being checked.
  * @param key The attribute name.
  * @param val The attribute value.
- * @param choices The list of potential choices for the attribute.
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {

@@ -109,7 +109,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return The express "app" object that was created.
+ * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
   const app = express();

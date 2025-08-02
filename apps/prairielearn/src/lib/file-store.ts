@@ -45,7 +45,16 @@ interface UploadFileOptions {
  * Upload a file into the file store.
  *
  * @param options - The options for the file upload.
- * @return The file_id of the newly created file.
+ * @param options.display_filename - The display_filename of the file.
+ * @param options.contents - The file contents.
+ * @param options.type - The file type.
+ * @param options.assessment_id - The assessment for the file.
+ * @param options.assessment_instance_id - The assessment instance for the file.
+ * @param options.instance_question_id - The instance question for the file.
+ * @param options.user_id - The current user performing the update.
+ * @param options.authn_user_id - The current authenticated user.
+ * @param options.storage_type - The storage type.
+ * @returns The file_id of the newly created file.
  */
 export async function uploadFile({
   display_filename,
@@ -132,7 +141,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
  * Option of returning a stream instead of a file
  *
  * @param file_id - The file to get.
- * @return Requested file stream.
+ * @returns Requested file stream.
  */
 export async function getStream(file_id: number | string): Promise<Stream> {
   debug(`getStream(): file_id=${file_id}`);
@@ -159,7 +168,7 @@ export async function getFile(
  * Get a file from the file store.
  *
  * @param file_id - The file to get.
- * @return An object with a buffer (of the file contents) and a file object.
+ * @returns An object with a buffer (of the file contents) and a file object.
  */
 export async function getFile(
   file_id: number | string,

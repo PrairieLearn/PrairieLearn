@@ -6,7 +6,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { config } from '../../../lib/config.js';
 import { type RubricData } from '../../../lib/manualGrading.js';
 
-// Popover for users to import rubric settings from a JSON file.
+/** Popover for users to import rubric settings from a JSON file. */
 function ImportRubricSettingsPopover() {
   return html`
     <form

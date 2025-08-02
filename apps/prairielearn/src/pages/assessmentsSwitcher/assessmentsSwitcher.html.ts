@@ -21,7 +21,7 @@ export function AssessmentSwitcher({
   currentAssessmentId: string;
   courseInstanceId: string;
   plainUrlPrefix: string;
-  /* The subPage that assessment links should redirect to. */
+  /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`

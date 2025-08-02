@@ -4,7 +4,7 @@
  * provided object.
  *
  * @param value The object to be sanitized.
- * @return The sanitized object.
+ * @returns The sanitized object.
  */
 export function sanitizeObject<T>(value: T): T {
   if (value === null) {
@@ -31,7 +31,7 @@ export function sanitizeObject<T>(value: T): T {
  * Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Using_special_characters
  *
  * @param str A literal string to act as a match for RegExp objects
- * @return A string literal ready to match
+ * @returns A string literal ready to match
  */
 export function escapeRegExp(str: string) {
   return str.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');

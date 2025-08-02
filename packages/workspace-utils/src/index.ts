@@ -37,7 +37,7 @@ export function emitMessageForWorkspace(
 /**
  * Updates a workspace's current message.
  *
- * @param id The workspace's id.
+ * @param workspace_id The workspace's id.
  * @param message The workspace's new message.
  * @param toDatabase Whether to write the message to the database.
  */
@@ -56,7 +56,7 @@ export async function updateWorkspaceMessage(
 /**
  * Updates a workspace's current state and message.
  *
- * @param id The workspace's id.
+ * @param workspace_id The workspace's id.
  * @param state The workspace's new state.
  * @param message The workspace's new message.
  */
@@ -211,9 +211,9 @@ export const workspaceFastGlobDefaultOptions = {
 
 /**
  * Update the course instance usages for workspace usage.
- *
+ * @param param
  * @param param.workspace_id The ID of the workspace.
- * @param param.duration The usage duration (in milliseconds).
+ * @param param.duration_milliseconds The usage duration (in milliseconds).
  */
 export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id,

@@ -8,8 +8,10 @@ type TimePrecision = 'hour' | 'minute' | 'second';
  *
  * @param date The date to format.
  * @param timeZone The time zone to use for formatting.
- * @param param2.includeTz Whether to include the time zone in the output (default true).
- * @param param2.longTz Whether to use the long time zone name (default false).
+ * @param options
+ * @param options.includeMs Whether to include milliseconds in the output (default false).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @param options.longTz Whether to use the long time zone name (default false).
  * @returns Human-readable string representing the date.
  */
 export function formatDate(
@@ -105,7 +107,8 @@ export function formatTz(timeZone: string): string {
  *
  * @param date The date to format.
  * @param timeZone The time zone to use for formatting.
- * @param param2.includeTz Whether to include the time zone in the output (default true).
+ * @param options
+ * @param options.includeTz Whether to include the time zone in the output (default true).
  * @returns Human-readable string representing the date.
  */
 export function formatDateHMS(
@@ -301,7 +304,8 @@ function formatDateFriendlyParts(
     throw new Error('maxPrecision must be an equal or smaller unit than minPrecision.');
   }
 
-  /** Examples:
+  /**
+   * Examples:
    * min=h, max=h: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0AM
    * min=h, max=m: 0:00:00AM -> 0AM, 0:00:01AM -> 0AM, 0:01:01AM -> 0:01AM
    * min=h, max=s: 0:00:00AM -> 0AM, 0:00:01AM -> 0:00:01AM, 0:01:01AM -> 0:01:01AM
@@ -359,13 +363,14 @@ function formatDateFriendlyParts(
  *
  * @param date The date to format.
  * @param timezone The time zone to use for formatting.
- * @param param.baseDate The base date to use for comparison (default is the current date).
- * @param param.includeTz Whether to include the time zone in the output (default true).
- * @param param.timeFirst If true, the time is shown before the date (default false).
- * @param param.dateOnly If true, only the date is shown (default false).
- * @param param.timeOnly If true, only the time is shown (default false).
- * @param param.maxPrecision The maximum precision to show for time (default 'minute').
- * @param param.minPrecision The minimum precision to always show for time (default 'hour').
+ * @param options
+ * @param options.baseDate The base date to use for comparison (default is the current date).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @param options.timeFirst If true, the time is shown before the date (default false).
+ * @param options.dateOnly If true, only the date is shown (default false).
+ * @param options.timeOnly If true, only the time is shown (default false).
+ * @param options.maxPrecision The maximum precision to show for time (default 'minute').
+ * @param options.minPrecision The minimum precision to always show for time (default 'hour').
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
@@ -430,6 +435,12 @@ export function formatDateFriendly(
  * @param end The end date and time.
  * @param timezone The time zone to use for formatting.
  * @param options Additional options for formatting the displayed date, taken from `formatDateFriendlyString()`.
+ * @param options.baseDate The base date to use for comparison (default is the current date).
+ * @param options.includeTz Whether to include the time zone in the output (default true).
+ * @param options.timeFirst If true, the time is shown before the date (default false).
+ * @param options.dateOnly If true, only the date is shown (default false).
+ * @param options.maxPrecision The maximum precision to show for time (default 'minute').
+ * @param options.minPrecision The minimum precision to always show for time (default 'hour').
  * @returns Human-readable string representing the datetime range.
  */
 export function formatDateRangeFriendly(

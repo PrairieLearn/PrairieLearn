@@ -206,10 +206,10 @@
 
     /**
      * Saves or updates the given file.
-     * @param  {String} name     Name of the file
-     * @param  {Number} size     Size of the file in bytes
-     * @param  {Date|null} date     Date when the file was uploaded (null if file is downloaded)
-     * @param  {String} contents The file's base64-encoded contents
+     * @param {string} name Name of the file
+     * @param {number} size Size of the file in bytes
+     * @param {Date|null} date Date when the file was uploaded (null if file is downloaded)
+     * @param {string} contents The file's base64-encoded contents
      */
     saveSubmittedFile(name, size, date, contents) {
       var idx = this.files.findIndex((file) => file.name === name);
@@ -231,8 +231,8 @@
 
     /**
      * Gets the base64-encoded contents of a file with the given name.
-     * @param  {String} name The desired file
-     * @return {String}      The file's contents, or null if the file was not found
+     * @param {string} name The desired file
+     * @returns {string} The file's contents, or null if the file was not found
      */
     getSubmittedFileContents(name) {
       const file = this.files.find((file) => file.name === name);
@@ -503,8 +503,8 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * @param  {String}  decodedFileContents File contents to check
-     * @return {Boolean}                     If the file is recognized as binary
+     * @param {string} decodedFileContents File contents to check
+     * @returns {boolean} If the file is recognized as binary
      */
     isBinary(decodedFileContents) {
       var nulIdx = decodedFileContents.indexOf('\0');
@@ -532,8 +532,8 @@
      * first we get the bytestream, then we percent-encode it, then we
      * decode that to the original string.
      * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-     * @param  {String} str the base64 string to decode
-     * @return {String}     the decoded string
+     * @param {string} str the base64 string to decode
+     * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
       // Going backwards: from bytestream, to percent-encoding, to original string.

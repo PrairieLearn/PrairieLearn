@@ -53,7 +53,7 @@ function hasParams(expressPathRegExp: string): boolean {
 /**
  * @param route Express route object to be parsed
  * @param basePath The basePath the route is on
- * @return Endpoints info
+ * @returns Endpoints info
  */
 function parseExpressRoute(route: Route, basePath: string): Endpoint[] {
   const paths = [];
