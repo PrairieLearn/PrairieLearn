@@ -2,10 +2,16 @@ import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+} from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -145,17 +151,24 @@ export function startExam(locals: Record<string, any>) {
       assert.equal(new URL(response.url).pathname, '/pl/course_instance/1/assessment_instance/1');
     });
     it('should create one assessment_instance', async function () {
-      const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
-      assert.equal(result.rowCount, 1);
-      locals.assessment_instance = result.rows[0];
+      locals.assessment_instance = await sqldb.queryRow(
+        sql.select_assessment_instances,
+        AssessmentInstanceSchema,
+      );
     });
     it('should have the correct assessment_instance.assessment_id', function () {
       assert.equal(locals.assessment_instance?.assessment_id, locals.assessment_id);
     });
     it(`should create ${questionsArray.length} instance_questions`, async function () {
-      const result = await sqldb.queryAsync(sql.select_instance_questions, []);
-      assert.equal(result.rowCount, questionsArray.length);
-      locals.instance_questions = result.rows;
+      const result = await sqldb.queryRows(
+        sql.select_instance_questions,
+        z.object({
+          ...InstanceQuestionSchema.shape,
+          qid: QuestionSchema.shape.qid,
+        }),
+      );
+      assert.equal(result.length, questionsArray.length);
+      locals.instance_questions = result;
     });
     questionsArray.forEach(function (question, i) {
       it(`should have question #${i + 1} as QID ${question.qid}`, function () {
