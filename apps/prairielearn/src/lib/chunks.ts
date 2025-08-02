@@ -137,7 +137,14 @@ export type Chunk =
   | QuestionChunk;
 
 const DatabaseChunkSchema = z.object({
-  ...ChunkSchema.shape,
+  // All fields in ChunkSchema are nullable from the LEFT JOIN
+  assessment_id: ChunkSchema.shape.assessment_id.nullable(),
+  course_id: ChunkSchema.shape.course_id.nullable(),
+  course_instance_id: ChunkSchema.shape.course_instance_id.nullable(),
+  id: ChunkSchema.shape.id.nullable(),
+  question_id: ChunkSchema.shape.question_id.nullable(),
+  uuid: ChunkSchema.shape.uuid.nullable(),
+  // Other fields
   type: EnumChunkTypeSchema,
   question_name: QuestionSchema.shape.qid,
   assessment_name: AssessmentSchema.shape.tid,
@@ -871,6 +878,7 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
 }
 
 const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
+  assert(chunk.uuid != null, 'chunk.uuid is required');
   const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   const downloadPath = path.join(courseChunksDirs.downloads, `${chunk.uuid}.tar.gz`);
   const chunkPath = path.join(courseChunksDirs.chunks, `${chunk.uuid}.tar.gz`);
@@ -1050,6 +1058,7 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
   // Now, ensure each individual chunk is loaded and untarred to the correct
   // place on disk.
   await async.eachLimit(validChunks, config.chunksMaxParallelDownload, async (chunk) => {
+    assert(chunk.uuid != null, 'chunk.uuid is required');
     const pendingChunkKey = `${courseId}-${chunk.uuid}`;
     const pendingChunkPromise = pendingChunksMap.get(pendingChunkKey);
     if (pendingChunkPromise) {
