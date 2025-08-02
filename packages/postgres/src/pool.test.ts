@@ -9,6 +9,7 @@ import {
   callRow,
   callRows,
   queryAsync,
+  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,

@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
