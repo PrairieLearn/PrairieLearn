@@ -71,11 +71,10 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   describe('the database', function () {
     let questions;
     it('should contain questions', async () => {
-      const result = await sqldb.queryRows(sql.select_questions, QuestionSchema);
-      if (result.length === 0) {
+      questions = await sqldb.queryRows(sql.select_questions, QuestionSchema);
+      if (questions.length === 0) {
         throw new Error('no questions in DB');
       }
-      questions = result;
     });
 
     for (const testQuestion of testQuestions) {

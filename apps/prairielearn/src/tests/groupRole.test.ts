@@ -338,16 +338,12 @@ describe(
 
         const res = await fetch(locals.assessmentUrl);
         assert.isOk(res.ok);
-        const result = await sqldb.queryRows(
-          sql.select_group_user_roles,
-          {
-            assessment_id: locals.assessment_id,
-          },
-          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
-        );
+        const result = await sqldb.queryAsync(sql.select_group_user_roles, {
+          assessment_id: locals.assessment_id,
+        });
 
         // Since there are no users currently in the group, there must be no role assignments
-        assert.lengthOf(result, 0);
+        assert.lengthOf(result.rows, 0);
       },
     );
 
