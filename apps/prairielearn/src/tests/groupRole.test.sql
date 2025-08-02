@@ -26,8 +26,9 @@ WHERE
   AND gc.has_roles is FALSE;
 
 -- BLOCK select_assessment_group_roles
-SELECT *
-FROM 
+SELECT
+  *
+FROM
   group_roles
 WHERE
   assessment_id = $assessment_id;
