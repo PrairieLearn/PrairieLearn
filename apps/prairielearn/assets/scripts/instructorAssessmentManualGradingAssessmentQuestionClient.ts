@@ -36,6 +36,9 @@ onDocumentReady(() => {
 
   window.gradersList = function () {
     const data = $('#grading-table').bootstrapTable('getData') as InstanceQuestionRow[];
+
+
+
     const graders = data.flatMap((row) =>
       (row.ai_grading_status !== 'None'
         ? [generateAiGraderName(row.ai_grading_status)]
@@ -85,6 +88,14 @@ onDocumentReady(() => {
     responseHandler: ({ instance_questions }: { instance_questions: InstanceQuestionRow[] }) => {
       // Add a stable, user-friendly index that is used to identify an instance
       // question anonymously but retain its value in case of sorting/filters
+
+      const instanceQuestionIdToIndex: Record<string, number> = {};
+      instance_questions.forEach((row, index) => {
+        instanceQuestionIdToIndex[row.id] = index;
+      });
+
+      console.log('instanceQuestionIdToIndex', instanceQuestionIdToIndex);
+
       return instance_questions.map((row, index) => ({
         // Re-parse the row to ensure that date strings are parsed correctly
         // typeof JSON.parse(JSON.stringify(new Date())) === 'string'

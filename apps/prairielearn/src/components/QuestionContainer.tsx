@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -34,6 +35,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -43,6 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   const {
     question,
@@ -102,6 +105,11 @@ export function QuestionContainer({
             `
           : ''
       }
+      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
+      aiGradingInfo &&
+      aiGradingInfo.prompt
+        ? AIGradingPrompt(aiGradingInfo.prompt, aiGradingInfo.promptImageUrls)
+        : ''}
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
@@ -146,6 +154,38 @@ export function QuestionContainer({
         : ''}
     </div>
     ${CopyQuestionModal({ resLocals, questionCopyTargets })}
+  `;
+}
+
+function AIGradingPrompt(prompt: string, promptImageUrls: string[]) {
+  return html`
+    <div class="card mb-3 grading-block">
+      <div class="card-header bg-secondary text-white">
+        <h2>AI Grading Prompt</h2>
+      </div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item my-0">
+          <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
+          <pre class="mb-0"><code>${prompt}</code></pre>
+        </li>
+        <li class="list-group-item my-0">
+          ${promptImageUrls.length > 0
+            ? html`
+                <h5 class="card-title mt-2 mb-3">Prompt images</h5>
+                ${promptImageUrls.map(
+                  (url, index) =>
+                    html`<img
+                      src="${url}"
+                      alt="Image ${index + 1} in the AI grading prompt"
+                      class="img-fluid mb-2"
+                      style="max-height: 600px"
+                    />`,
+                )}
+              `
+            : ''}
+        </li>
+      </ul>
+    </div>
   `;
 }
 
