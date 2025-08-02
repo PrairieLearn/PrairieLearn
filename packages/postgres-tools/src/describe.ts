@@ -8,8 +8,8 @@ const sql = loadSqlEquiv(import.meta.url);
 interface ColumnDescription {
   name: string;
   type: string;
-  notnull: boolean;
-  default: any;
+  isnotnull: boolean;
+  defaultval: any;
 }
 
 interface IndexDescription {
@@ -209,11 +209,11 @@ export function formatDatabaseDescription(
         .map((row) => {
           let rowText = formatText(`    ${row.name}`, chalk.bold);
           rowText += ':' + formatText(` ${row.type}`, chalk.green);
-          if (row.notnull) {
+          if (row.isnotnull) {
             rowText += formatText(' not null', chalk.gray);
           }
-          if (row.default) {
-            rowText += formatText(` default ${row.default}`, chalk.gray);
+          if (row.defaultval) {
+            rowText += formatText(` default ${row.defaultval}`, chalk.gray);
           }
           return rowText;
         })

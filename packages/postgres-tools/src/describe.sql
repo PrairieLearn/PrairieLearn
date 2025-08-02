@@ -18,7 +18,7 @@ ORDER BY
 SELECT
   a.attname AS name,
   pg_catalog.format_type (a.atttypid, a.atttypmod) AS type,
-  a.attnotnull AS notnull,
+  a.attnotnull AS isnotnull,
   (
     SELECT
       substring(
@@ -30,7 +30,7 @@ SELECT
       d.adrelid = a.attrelid
       AND d.adnum = a.attnum
       AND a.atthasdef
-  ) AS default
+  ) AS defaultval
 FROM
   pg_catalog.pg_attribute a
   JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
