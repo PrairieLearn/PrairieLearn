@@ -25,7 +25,7 @@ import {
   CourseSyncErrorsAndWarnings,
   QuestionSyncErrorsAndWarnings,
 } from './SyncErrorsAndWarnings.js';
-import { SyncProblemButton } from './SyncProblemButton.js';
+import { SyncProblemButtonHtml } from './SyncProblemButton.js';
 
 interface FileInfo {
   id: number;
@@ -593,17 +593,17 @@ function DirectoryBrowserBody({
             <tr>
               <td>
                 ${f.sync_errors
-                  ? SyncProblemButton({
+                  ? SyncProblemButtonHtml({
                       type: 'error',
                       output: f.sync_errors,
                     })
                   : f.sync_warnings
-                    ? SyncProblemButton({
+                    ? SyncProblemButtonHtml({
                         type: 'warning',
                         output: f.sync_warnings,
                       })
                     : ''}
-                <span><i class="far fa-file-alt fa-fw"></i></span>
+                <span><i class="far fa-file-alt"></i></span>
                 ${f.canView
                   ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}">${f.name}</a>`
                   : html`<span>${f.name}</span>`}
@@ -689,7 +689,7 @@ function DirectoryBrowserBody({
           (d) => html`
             <tr>
               <td colspan="2">
-                <i class="fa fa-folder fa-fw"></i>
+                <i class="fa fa-folder"></i>
                 ${d.canView
                   ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}">${d.name}</a>`
                   : html`<span>${d.name}</span>`}

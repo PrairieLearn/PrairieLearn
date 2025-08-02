@@ -8,7 +8,7 @@ import {
   StaffCourseInstanceSchema,
   StaffCourseSchema,
   StaffUserSchema,
-  StudentAssessmentInstanceSchema,
+  StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
@@ -216,7 +216,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   user_id: null,
 };
 
-const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstanceSchema> = {
+const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstanceSchema__UNSAFE> = {
   assessment_id: '2',
   id: '3',
   number: null,
@@ -323,7 +323,7 @@ describe('safe-db-types schemas', () => {
   });
 
   it('parses valid StudentAssessmentInstance and drops extra fields', () => {
-    const parsed = StudentAssessmentInstanceSchema.parse({
+    const parsed = StudentAssessmentInstanceSchema__UNSAFE.parse({
       ...minimalStudentAssessmentInstance,
       extra: 123,
     });

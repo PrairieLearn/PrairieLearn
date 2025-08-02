@@ -1,5 +1,5 @@
 import { httpRequestToRequestData, stripUrlQueryAndFragment } from '@sentry/core';
-import * as Sentry from '@sentry/node';
+import * as Sentry from '@sentry/node-core';
 import { execa } from 'execa';
 
 /**
@@ -100,7 +100,7 @@ export type {
   Stacktrace,
   Thread,
   User,
-} from '@sentry/node';
+} from '@sentry/node-core';
 
 export {
   addBreadcrumb,
@@ -111,8 +111,6 @@ export {
   close,
   createTransport,
   defaultStackParser,
-  expressErrorHandler,
-  expressIntegration,
   flush,
   getCurrentScope,
   getSentryRelease,
@@ -126,11 +124,12 @@ export {
   setExtras,
   setTag,
   setTags,
-  setupExpressErrorHandler,
   setUser,
   startInactiveSpan,
   startSpan,
   startSpanManual,
   withIsolationScope,
   withScope,
-} from '@sentry/node';
+} from '@sentry/node-core';
+
+export { expressErrorHandler, setupExpressErrorHandler } from './express.js';
