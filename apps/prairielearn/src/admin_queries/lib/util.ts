@@ -8,7 +8,7 @@ import { queryAsync } from '@prairielearn/postgres';
 
 export const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
-  resultFormats: z.record(z.enum(['pre'])).optional(),
+  resultFormats: z.record(z.string(), z.enum(['pre'])).optional(),
   params: z
     .array(
       z.object({
@@ -22,7 +22,7 @@ export const AdministratorQuerySpecsSchema = z.object({
 export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
 export const AdministratorQueryResultSchema = z.object({
-  rows: z.record(z.any()).array(),
+  rows: z.record(z.string(), z.any()).array(),
   columns: z.string().array(),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;

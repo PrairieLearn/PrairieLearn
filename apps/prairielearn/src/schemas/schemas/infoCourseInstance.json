@@ -7,8 +7,11 @@
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -43,8 +46,8 @@
       "description": "DEPRECATED -- do not use.",
       "type": "object",
       "additionalProperties": {},
-      "properties": {},
-      "deprecated": true
+      "deprecated": true,
+      "properties": {}
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
@@ -55,14 +58,17 @@
         "additionalProperties": false,
         "properties": {
           "comment": {
-            "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "role": {
             "description": "DEPRECATED -- do not use.",
             "type": "string",
-            "enum": ["Student", "TA", "Instructor", "Superuser"],
-            "deprecated": true
+            "deprecated": true,
+            "enum": ["Student", "TA", "Instructor", "Superuser"]
           },
           "uids": {
             "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
@@ -89,8 +95,8 @@
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "type": "string",
-      "enum": ["Set", "Module"],
-      "default": "Set"
+      "default": "Set",
+      "enum": ["Set", "Module"]
     },
     "shareSourcePublicly": {
       "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
@@ -101,12 +107,14 @@
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
+      "id": "CommentJsonSchema",
       "anyOf": [
         {
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",
