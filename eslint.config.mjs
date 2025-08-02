@@ -12,6 +12,7 @@ import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -93,6 +94,7 @@ export default tseslint.config([
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       ...eslintReact.configs['recommended-typescript'].plugins,
+      unicorn: eslintPluginUnicorn,
       '@prairielearn': prairielearn,
       '@html-eslint': html,
       '@stylistic': stylistic,
@@ -213,6 +215,59 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
+
+      ...eslintPluginUnicorn.configs.recommended.rules,
+      // We don't have specific rules for null/undefined, so we'll disable these.
+      'unicorn/no-null': 'off', // 1k+ violations
+      'unicorn/no-useless-undefined': 'off', // 15 violations
+
+      // We don't enforce specific styles for filenames.
+      'unicorn/filename-case': 'off', // 500+ violations
+
+      // We don't use `String.raw` in our codebase yet.
+      'unicorn/prefer-string-raw': 'off', // 300+ violations
+
+      // These rules don't provide much value.
+      'unicorn/prevent-abbreviations': 'off',
+
+      // These rules have many violations. Decisions about enabling the rules have been deferred.
+      'unicorn/no-await-expression-member': 'off', // 400+ violations
+      'unicorn/no-array-for-each': 'off', // 300+ violations
+      'unicorn/catch-error-name': 'off', // 200+ violations
+      'unicorn/switch-case-braces': 'off', // 200+ violations
+      'unicorn/no-negated-condition': 'off', // 150+ violations
+      'unicorn/prefer-global-this': 'off', // 150+ violations
+      'unicorn/prefer-node-protocol': 'off', // 100+ violations
+      // 20 - 100 violations //
+      'unicorn/prefer-spread': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/prefer-switch': 'off',
+      'unicorn/prefer-query-selector': 'off',
+      'unicorn/escape-case': 'off',
+      'unicorn/import-style': 'off',
+      'unicorn/numeric-separators-style': 'off',
+      'unicorn/explicit-length-check': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+      'unicorn/consistent-assert': 'off',
+      'unicorn/text-encoding-identifier-case': 'off',
+      'unicorn/prefer-string-replace-all': 'off',
+      'unicorn/prefer-string-slice': 'off',
+      'unicorn/prefer-dom-node-dataset': 'off',
+      'unicorn/no-zero-fractions': 'off',
+      // 20 - 100 violations //
+
+      // Sometimes, an if/else is more readable than a ternary.
+      'unicorn/prefer-ternary': 'off',
+
+      // Sometimes, an array reduce is more readable.
+      'unicorn/no-array-reduce': 'off',
+
+      // Conflicts with prettier
+      'unicorn/template-indent': 'off',
+      'unicorn/no-nested-ternary': 'off',
+
+      // We use anonymous default exports for all of our pages.
+      'unicorn/no-anonymous-default-export': 'off',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
@@ -350,6 +405,7 @@ export default tseslint.config([
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      'unicorn/prefer-module': 'off',
     },
   },
   {
