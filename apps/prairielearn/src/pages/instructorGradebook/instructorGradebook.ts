@@ -91,15 +91,19 @@ router.get(
         { course_instance_id: res.locals.course_instance.id },
         CourseAssessmentRowSchema,
       );
-      const userScoresCursor = await queryCursor(sql.user_scores, {
-        course_id: res.locals.course.id,
-        course_instance_id: res.locals.course_instance.id,
-      });
+      const userScoresCursor = await queryCursor(
+        sql.user_scores,
+        {
+          course_id: res.locals.course.id,
+          course_instance_id: res.locals.course_instance.id,
+        },
+        GradebookRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<GradebookRow>({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
-        transform: (record: GradebookRow) => [
+        transform: (record) => [
           record.uid,
           record.uin,
           record.user_name,
