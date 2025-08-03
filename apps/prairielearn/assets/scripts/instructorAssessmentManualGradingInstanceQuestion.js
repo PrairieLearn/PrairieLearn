@@ -747,7 +747,7 @@ function enableRubricItemLongTextField(container) {
   input.setAttribute('maxlength', 10000);
   input.textContent = button.dataset.currentValue || '';
 
-  container.insertBefore(input, button);
+  button.before(input);
   label?.remove();
   button.remove();
   input.focus();

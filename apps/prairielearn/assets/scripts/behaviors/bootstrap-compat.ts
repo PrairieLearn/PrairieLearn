@@ -237,7 +237,7 @@ makeMigrator({
     if (!input || !label) return;
 
     // Move the label before the input.
-    el.insertBefore(label, input);
+    input.before(label);
 
     // Update the classes.
     label.classList.add('form-label');

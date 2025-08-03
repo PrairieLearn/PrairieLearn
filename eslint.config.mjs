@@ -279,9 +279,6 @@ export default tseslint.config([
           'unicorn/no-process-exit',
           'unicorn/no-object-as-default-parameter',
           'unicorn/prefer-negative-index',
-          'unicorn/prefer-logical-operator-over-ternary',
-          'unicorn/prefer-modern-dom-apis',
-          'unicorn/throw-new-error',
         ].map((k) => [k, 'off']),
       ),
       // 20 - 100 violations //
@@ -292,6 +289,7 @@ export default tseslint.config([
       // False positives
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/error-message': 'off',
+      'unicorn/throw-new-error': 'off',
 
       // Duplicated rules
       'unicorn/no-this-assignment': 'off',

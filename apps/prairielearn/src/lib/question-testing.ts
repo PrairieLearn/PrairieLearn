@@ -441,7 +441,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array.from({length: count * test_types.length}).keys()) {
+    for (const iter of Array.from({ length: count * test_types.length }).keys()) {
       const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
