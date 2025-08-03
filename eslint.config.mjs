@@ -293,17 +293,15 @@ export default tseslint.config([
           'unicorn/prefer-event-target',
           'unicorn/error-message',
           'unicorn/require-array-join-separator',
-          'unicorn/prefer-dom-node-remove',
-          'unicorn/prefer-class-fields',
-          'unicorn/prefer-array-index-of',
-          'unicorn/no-this-assignment',
-          'unicorn/no-for-loop',
         ].map((k) => [k, 'off']),
       ),
       // 20 - 100 violations //
 
       // False positives
       'unicorn/no-array-method-this-argument': 'off',
+
+      // Duplicated rules
+      'unicorn/no-this-assignment': 'off',
 
       // Sometimes, an if/else is more readable than a ternary.
       'unicorn/prefer-ternary': 'off',

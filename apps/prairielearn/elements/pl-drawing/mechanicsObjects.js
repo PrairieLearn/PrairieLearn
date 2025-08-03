@@ -939,16 +939,16 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     let built_str = '';
     const spl = str.split('$');
 
-    for (let i = 0; i < spl.length; i++) {
+    for (const [i, element] of spl.entries()) {
       if (i % 2 === 0) {
         // Text
-        if (spl[i].length > 0) {
+        if (element.length > 0) {
           // Ignore empty strings
-          built_str += '\\text{' + spl[i] + '} ';
+          built_str += '\\text{' + element + '} ';
         }
       } else {
         // LaTeX
-        built_str += spl[i] + ' ';
+        built_str += element + ' ';
       }
     }
     return built_str;

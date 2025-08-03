@@ -110,9 +110,9 @@ export function parallelHistograms(
   const width_per_day = width / numHistograms;
   const height_per_bucket = height / numBuckets;
 
-  for (let index = 0; index < data.length; index++) {
-    const histogram = data[index].histogram;
-    const mean = data[index].mean;
+  for (const [index, datum] of data.entries()) {
+    const histogram = datum.histogram;
+    const mean = datum.mean;
 
     const widthForBucketFunction = function (i: number) {
       return (histogram[i] / max) * width_per_day;

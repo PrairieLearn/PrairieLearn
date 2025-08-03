@@ -56,7 +56,7 @@ export function getDetailsForFile(filePath: string): FileDetails {
     pathComponents[pathComponents.length - 1] === 'infoAssessment.json'
   ) {
     const assessment_index =
-      pathComponents.slice(2, pathComponents.length - 2).findIndex((e) => e === 'assessments') + 2;
+      pathComponents.slice(2, pathComponents.length - 2).indexOf('assessments') + 2;
     const ciid = pathComponents.slice(1, assessment_index).join(path.posix.sep);
     const aid = pathComponents
       .slice(assessment_index + 1, pathComponents.length - 1)
