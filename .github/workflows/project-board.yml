@@ -1,6 +1,6 @@
 # This internal workflow track the status of PRs opened by the core team.
 # Open-source contributors should not worry about this workflow.
-name: Project Triage
+name: 'Project Board'
 on:
   pull_request:
 jobs:
