@@ -59,9 +59,9 @@ window.PLOrderBlocks = function (uuid, options) {
       );
       if (!block.classList.contains('pl-order-blocks-selected')) {
         const moveBetweenOptionsOrDropzone = (options) => {
-          if (options && inDropzone(block) && optionsBlocks.length) {
+          if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
-          } else if (!options && !inDropzone(block) && dropzoneBlocks.length) {
+          } else if (!options && !inDropzone(block) && dropzoneBlocks.length > 0) {
             dropzoneBlocks[0].focus();
           }
         };

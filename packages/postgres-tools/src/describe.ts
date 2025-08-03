@@ -221,7 +221,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.indexes.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('indexes\n', chalk.underline);
@@ -249,7 +249,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.checkConstraints.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('check constraints\n', chalk.underline);
@@ -274,7 +274,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.foreignKeyConstraints.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('foreign-key constraints\n', chalk.underline);
@@ -288,7 +288,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.references.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('referenced by\n', chalk.underline);

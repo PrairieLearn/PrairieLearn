@@ -205,7 +205,7 @@ function ImageTable({
                       : `${image.digest?.slice(0, 24)}...`}
                   </code>
                 </td>
-                <td>${image.size ? filesize(image.size) : ''}</td>
+                <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>
                   ${image.imageSyncNeeded
                     ? html`<span class="text-warning">Not found in PL registry</span>`

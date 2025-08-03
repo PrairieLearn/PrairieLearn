@@ -68,7 +68,7 @@ export function beforeEnd(res: any, next: NextFunction, fn: () => Promise<void>)
         chunk = !Buffer.isBuffer(chunk) ? Buffer.from(chunk, encoding) : chunk;
         encoding = undefined;
 
-        if (chunk.length !== 0) {
+        if (chunk.length > 0) {
           ret = _write.call(res, chunk.slice(0, -1));
           chunk = chunk.slice(-1);
           return ret;

@@ -247,7 +247,6 @@ export default tseslint.config([
       'unicorn/escape-case': 'off',
       'unicorn/import-style': 'off',
       'unicorn/numeric-separators-style': 'off',
-      'unicorn/explicit-length-check': 'off',
       'unicorn/consistent-function-scoping': 'off',
       'unicorn/consistent-assert': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
@@ -255,10 +254,8 @@ export default tseslint.config([
         [
           'unicorn/prefer-code-point',
           'unicorn/prefer-type-error',
-          'unicorn/number-literal-case',
           'unicorn/prefer-single-call',
           'unicorn/prefer-export-from',
-          'unicorn/prefer-dom-node-append',
           'unicorn/prefer-dom-node-text-content',
           'unicorn/prefer-top-level-await',
           'unicorn/prefer-add-event-listener',

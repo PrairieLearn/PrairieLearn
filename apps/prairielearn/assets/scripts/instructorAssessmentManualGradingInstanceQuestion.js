@@ -296,7 +296,7 @@ function resetRubricExportFormListeners() {
       ) + '.json';
 
     a.download = exportFileName;
-    document.body.appendChild(a);
+    document.body.append(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
@@ -627,8 +627,8 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   closeBtn.classList.add('btn-close');
   closeBtn.dataset.bsDismiss = 'alert';
   closeBtn.setAttribute('aria-label', 'Close');
-  alert.appendChild(closeBtn);
-  placeholder.appendChild(alert);
+  alert.append(closeBtn);
+  placeholder.append(alert);
 }
 
 function resetRubricItemRowsListeners() {
@@ -821,7 +821,7 @@ function rowDragOver(event) {
   } else if (row.nextSibling) {
     row.parentNode.insertBefore(window.rubricItemRowDragging, row.nextSibling);
   } else {
-    row.parentNode.appendChild(window.rubricItemRowDragging);
+    row.parentNode.append(window.rubricItemRowDragging);
   }
   updateRubricItemOrderField();
 }
@@ -844,7 +844,7 @@ function addRubricItemRow(rubricItem = null) {
   const templateRow = modal.querySelector('.js-new-row-rubric-item');
   const row = templateRow?.content.firstElementChild?.cloneNode(true);
   if (!row || !(row instanceof HTMLTableRowElement)) return;
-  table.querySelector('tbody').appendChild(row);
+  table.querySelector('tbody').append(row);
 
   const rubricItemRowOrder = row.querySelector('.js-rubric-item-row-order');
   const rubricItemPoints = row.querySelector('.js-rubric-item-points');

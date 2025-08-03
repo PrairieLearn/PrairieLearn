@@ -84,27 +84,27 @@ router.post(
       );
       error = true;
     }
-    if (title.length < 1) {
+    if (title.length === 0) {
       flash('error', 'The course title should not be empty.');
       error = true;
     }
-    if (first_name.length < 1) {
+    if (first_name.length === 0) {
       flash('error', 'The first name should not be empty.');
       error = true;
     }
-    if (last_name.length < 1) {
+    if (last_name.length === 0) {
       flash('error', 'The last name should not be empty.');
       error = true;
     }
-    if (work_email.length < 1) {
+    if (work_email.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
     }
-    if (institution.length < 1) {
+    if (institution.length === 0) {
       flash('error', 'The institution should not be empty.');
       error = true;
     }
-    if (referral_source.length < 1) {
+    if (referral_source.length === 0) {
       flash('error', 'The referral source should not be empty.');
       error = true;
     }

@@ -128,7 +128,7 @@ function parseEndpoints(
   basePath = basePath || '';
 
   if (!stack) {
-    if (endpoints.length) {
+    if (endpoints.length > 0) {
       endpoints = addEndpoints(endpoints, [
         {
           path: basePath,

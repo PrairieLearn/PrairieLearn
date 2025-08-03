@@ -166,7 +166,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
         'script[type="importmap"]',
       );
       if (!currentImportMap) {
-        document.head.appendChild(newImportMap);
+        document.head.append(newImportMap);
       } else {
         // This case is not currently possible with existing importmap
         // functionality. Once an existing importmap has been created, the
@@ -194,7 +194,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     );
     headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
       if (!currentLinks.has(header.href)) {
-        document.head.appendChild(header);
+        document.head.append(header);
       }
     });
 
@@ -207,7 +207,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
       .forEach((header) => {
         if (!currentScripts.has(header.src)) {
-          document.head.appendChild(header);
+          document.head.append(header);
         }
       });
   }

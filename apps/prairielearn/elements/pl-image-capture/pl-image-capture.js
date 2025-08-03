@@ -509,7 +509,7 @@ const MAX_ZOOM_SCALE = 5;
       capturePreview.alt = 'Captured image preview';
 
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
+      uploadedImageContainer.append(capturePreview);
 
       if (originalCapture) {
         capturePreview.addEventListener(
