@@ -167,7 +167,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -613,7 +613,7 @@ function getNamesForCopy(
   const baseLongName = getBaseLongName(oldLongName);
   const numberShortName = getNumberShortName(baseShortName, shortNames);
   const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
   return {
     shortName: `${baseShortName}_copy${number}`,
     longName: `${baseLongName} (copy ${number})`,
