@@ -26,10 +26,8 @@ const findQuestionDirectories = (dir: string): string[] => {
   const questionDirs: string[] = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true, recursive: true });
   for (const entry of entries) {
-    if (entry.isDirectory()) {
-      if (fs.existsSync(join(entry.parentPath, entry.name, 'info.json'))) {
-        questionDirs.push(join(entry.parentPath, entry.name));
-      }
+    if (entry.isDirectory() && fs.existsSync(join(entry.parentPath, entry.name, 'info.json'))) {
+      questionDirs.push(join(entry.parentPath, entry.name));
     }
   }
   return questionDirs;

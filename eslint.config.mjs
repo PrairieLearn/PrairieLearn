@@ -266,7 +266,7 @@ export default tseslint.config([
           'unicorn/prefer-export-from',
           'unicorn/prefer-dom-node-append',
           'unicorn/prefer-dom-node-text-content',
-          'unicorn/no-lonely-if',
+          // 'unicorn/no-lonely-if',
           'unicorn/prefer-top-level-await',
           'unicorn/prefer-add-event-listener',
         ].map((k) => [k, 'off']),

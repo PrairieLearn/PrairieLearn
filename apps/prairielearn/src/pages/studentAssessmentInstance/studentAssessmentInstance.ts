@@ -271,17 +271,18 @@ router.get(
       (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
-    if (groupConfig.has_roles) {
+    if (
+      groupConfig.has_roles &&
+      !res.locals.authz_data.has_course_instance_permission_view
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
-      if (!res.locals.authz_data.has_course_instance_permission_view) {
-        for (const question of instance_question_rows) {
-          question.group_role_permissions = await getQuestionGroupPermissions(
-            question.id,
-            res.locals.assessment_instance.group_id,
-            res.locals.authz_data.user.user_id,
-          );
-        }
+    ) {
+      for (const question of instance_question_rows) {
+        question.group_role_permissions = await getQuestionGroupPermissions(
+          question.id,
+          res.locals.assessment_instance.group_id,
+          res.locals.authz_data.user.user_id,
+        );
       }
     }
 

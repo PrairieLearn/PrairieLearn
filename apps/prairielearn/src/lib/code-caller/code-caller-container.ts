@@ -650,13 +650,14 @@ export class CodeCallerContainer implements CodeCaller {
         `Not ready for call, container is not created (state: ${String(this.state)})`,
       );
     }
-    if (fcn !== 'ping' && fcn !== 'restart') {
-      // 'ping' and 'restart' are fake functions that don't need a course path
-      if (!this.coursePath) {
-        return this._logError(
-          `Not ready for call, course was not set (state: ${String(this.state)})`,
-        );
-      }
+    if (
+      fcn !== 'ping' &&
+      fcn !== 'restart' &&
+      !this.coursePath // 'ping' and 'restart' are fake functions that don't need a course path
+    ) {
+      return this._logError(
+        `Not ready for call, course was not set (state: ${String(this.state)})`,
+      );
     }
     return true;
   }

@@ -41,10 +41,8 @@ let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null
  *    on the database.
  */
 async function getTemplateQuestionsExampleCourse() {
-  if (!config.devMode) {
-    if (cachedTemplateQuestionExampleCourse) {
-      return cachedTemplateQuestionExampleCourse;
-    }
+  if (!config.devMode && cachedTemplateQuestionExampleCourse) {
+    return cachedTemplateQuestionExampleCourse;
   }
 
   const questions = await loadQuestions({

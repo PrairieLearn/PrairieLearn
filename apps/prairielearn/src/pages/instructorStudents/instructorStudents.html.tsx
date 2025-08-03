@@ -68,11 +68,14 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   // Focus the search input when Ctrl+F is pressed
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
-          searchInputRef.current.focus();
-          event.preventDefault();
-        }
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === 'f' &&
+        searchInputRef.current &&
+        searchInputRef.current !== document.activeElement
+      ) {
+        searchInputRef.current.focus();
+        event.preventDefault();
       }
     }
     document.addEventListener('keydown', onKeyDown);
