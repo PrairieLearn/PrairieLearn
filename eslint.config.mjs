@@ -242,7 +242,6 @@ export default tseslint.config([
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
       // 20 - 100 violations //
       'unicorn/prefer-spread': 'off',
-      'unicorn/prefer-number-properties': 'off',
       'unicorn/prefer-switch': 'off',
       'unicorn/prefer-query-selector': 'off',
       'unicorn/escape-case': 'off',
@@ -252,11 +251,6 @@ export default tseslint.config([
       'unicorn/consistent-function-scoping': 'off',
       'unicorn/consistent-assert': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
-      // TODO:
-      // 'unicorn/prefer-string-replace-all': 'off',
-      // 'unicorn/prefer-string-slice': 'off',
-      // 'unicorn/prefer-dom-node-dataset': 'off',
-      // 'unicorn/no-zero-fractions': 'off',
       ...Object.fromEntries(
         [
           'unicorn/prefer-code-point',

@@ -175,7 +175,7 @@ class OrbitControls extends THREE.EventDispatcher {
         let min = scope.minAzimuthAngle;
         let max = scope.maxAzimuthAngle;
 
-        if (isFinite(min) && isFinite(max)) {
+        if (Number.isFinite(min) && Number.isFinite(max)) {
           if (min < -Math.PI) min += twoPI;
           else if (min > Math.PI) min -= twoPI;
 

@@ -71,8 +71,9 @@ function getGroupRoles() {
 function getPermission(permissions, groupRole, assessmentQuestion) {
   return permissions.find(
     (permission) =>
-      parseInt(permission.assessment_question_id) === parseInt(assessmentQuestion.id) &&
-      parseInt(permission.group_role_id) === parseInt(groupRole.id),
+      Number.parseInt(permission.assessment_question_id) ===
+        Number.parseInt(assessmentQuestion.id) &&
+      Number.parseInt(permission.group_role_id) === Number.parseInt(groupRole.id),
   );
 }
 
@@ -1050,13 +1051,15 @@ describe('Assessment syncing', () => {
     // Check permissions
     const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
     assert.equal(
-      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder?.id))
-        .length,
+      syncedPermissions.filter(
+        (p) => Number.parseInt(p.group_role_id) === Number.parseInt(foundRecorder?.id),
+      ).length,
       2,
     );
     assert.equal(
-      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundContributor?.id))
-        .length,
+      syncedPermissions.filter(
+        (p) => Number.parseInt(p.group_role_id) === Number.parseInt(foundContributor?.id),
+      ).length,
       2,
     );
 
@@ -1092,13 +1095,14 @@ describe('Assessment syncing', () => {
 
     const newSyncedPermissions = await util.dumpTable('assessment_question_role_permissions');
     assert.equal(
-      newSyncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder?.id))
-        .length,
+      newSyncedPermissions.filter(
+        (p) => Number.parseInt(p.group_role_id) === Number.parseInt(foundRecorder?.id),
+      ).length,
       2,
     );
     assert.equal(
       newSyncedPermissions.filter(
-        (p) => parseInt(p.group_role_id) === parseInt(foundContributor?.id),
+        (p) => Number.parseInt(p.group_role_id) === Number.parseInt(foundContributor?.id),
       ).length,
       0,
     );
@@ -1324,8 +1328,8 @@ describe('Assessment syncing', () => {
     // Contributor can no longer view QUESTION_ID
     const firstQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
-        parseInt(p.assessment_question_id) === parseInt(firstAssessmentQuestion.id) &&
-        parseInt(p.group_role_id) === parseInt(foundContributor?.id),
+        Number.parseInt(p.assessment_question_id) === Number.parseInt(firstAssessmentQuestion.id) &&
+        Number.parseInt(p.group_role_id) === Number.parseInt(foundContributor?.id),
     );
     assert.isFalse(firstQuestionContributorPermission?.can_view);
     assert.isFalse(firstQuestionContributorPermission?.can_submit);
@@ -1333,8 +1337,9 @@ describe('Assessment syncing', () => {
     // Contributor can view ALTERNATIVE_QUESTION_ID, but not submit
     const secondQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
-        parseInt(p.assessment_question_id) === parseInt(secondAssessmentQuestion.id) &&
-        parseInt(p.group_role_id) === parseInt(foundContributor?.id),
+        Number.parseInt(p.assessment_question_id) ===
+          Number.parseInt(secondAssessmentQuestion.id) &&
+        Number.parseInt(p.group_role_id) === Number.parseInt(foundContributor?.id),
     );
     assert.isTrue(secondQuestionContributorPermission?.can_view);
     assert.isFalse(secondQuestionContributorPermission?.can_submit);

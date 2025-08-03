@@ -165,8 +165,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);

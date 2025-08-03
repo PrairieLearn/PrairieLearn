@@ -23,7 +23,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
   }
 
   function setIndentation(block, indentation) {
@@ -194,7 +194,7 @@ window.PLOrderBlocks = function (uuid, options) {
         var answerDistractorBin = answerObj.dataset.distractorBin;
         var answerIndent = null;
         if (enableIndentation) {
-          answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
+          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
@@ -221,7 +221,7 @@ window.PLOrderBlocks = function (uuid, options) {
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
     const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
-      leftDiff += parseInt(currentIndent);
+      leftDiff += Number.parseInt(currentIndent);
     }
 
     // limit leftDiff to be in within the bounds of the drag and drop box

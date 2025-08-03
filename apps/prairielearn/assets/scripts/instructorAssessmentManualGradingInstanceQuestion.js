@@ -120,7 +120,7 @@ function resetRubricImportFormListeners() {
         if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
           // If the rubric does not use auto points, or if it replaces auto points,
           // then the scale factor is based on max_points (the total point gs of the rubric)
-          const maxPoints = parseFloat(rubricPointsInfo.max_points) ?? 0;
+          const maxPoints = Number.parseFloat(rubricPointsInfo.max_points) ?? 0;
 
           if (maxPoints > 0 && parsedData.max_points) {
             scaleFactor = maxPoints / parsedData.max_points;
@@ -129,7 +129,7 @@ function resetRubricImportFormListeners() {
           // If the rubric uses auto points and does not replace them, it
           // applies only to the manual points of the assessment question.
           // Therefore, we base the scale factor on max_manual_points.
-          const maxManualPoints = parseFloat(rubricPointsInfo.max_manual_points) ?? 0;
+          const maxManualPoints = Number.parseFloat(rubricPointsInfo.max_manual_points) ?? 0;
 
           if (maxManualPoints > 0 && parsedData.max_manual_points) {
             scaleFactor = maxManualPoints / parsedData.max_manual_points;
@@ -222,10 +222,10 @@ function resetRubricExportFormListeners() {
     const { max_points, max_auto_points, max_manual_points } = decodeData('rubric-settings-data');
 
     const rubricData = {
-      max_extra_points: parseFloat(max_extra_points),
-      min_points: parseFloat(min_points),
+      max_extra_points: Number.parseFloat(max_extra_points),
+      min_points: Number.parseFloat(min_points),
       replace_auto_points: replace_auto_points === 'true',
-      starting_points: parseFloat(starting_points),
+      starting_points: Number.parseFloat(starting_points),
       max_points,
       max_manual_points,
       max_auto_points,
@@ -272,8 +272,8 @@ function resetRubricExportFormListeners() {
               .querySelector(`[data-input-name="rubric_item[${key}][grader_note]"]`)
               ?.getAttribute('data-current-value') ??
             '',
-          order: parseInt(value.order),
-          points: parseFloat(value.points),
+          order: Number.parseInt(value.order),
+          points: Number.parseFloat(value.points),
         });
       }
     }
@@ -460,7 +460,10 @@ function adjustHeightFromContent(element) {
   if (element.scrollHeight) {
     const style = window.getComputedStyle(element);
     element.style.height =
-      element.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+      element.scrollHeight +
+      Number.parseFloat(style.paddingTop) +
+      Number.parseFloat(style.paddingBottom) +
+      'px';
   }
 }
 

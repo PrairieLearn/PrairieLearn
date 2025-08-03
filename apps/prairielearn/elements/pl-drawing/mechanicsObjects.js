@@ -985,8 +985,8 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     // Convert width/height from `ex` units to `px` units. This ensures that
     // the image renders consistently regardless of the browser's configured
     // font size.
-    const parsedWidth = parseFloat(svg.getAttribute('width'));
-    const parsedHeight = parseFloat(svg.getAttribute('height'));
+    const parsedWidth = Number.parseFloat(svg.getAttribute('width'));
+    const parsedHeight = Number.parseFloat(svg.getAttribute('height'));
     const width = parsedWidth * exScale * options.fontSize;
     const height = parsedHeight * exScale * options.fontSize;
     svg.setAttribute('width', width + 'px');

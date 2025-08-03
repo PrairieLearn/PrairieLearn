@@ -10,7 +10,7 @@ export function b64EncodeUnicode(str: string) {
   try {
     return btoa(
       encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode(parseInt('0x' + p1, 16));
+        return String.fromCharCode(Number.parseInt('0x' + p1, 16));
       }),
     );
   } catch {

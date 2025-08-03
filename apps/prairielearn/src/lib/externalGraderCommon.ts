@@ -101,7 +101,7 @@ export async function buildDirectory(
       partial_scores: submission.partial_scores ?? {},
       score: submission.score ?? 0,
       feedback: submission.feedback ?? {},
-      variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+      variant_seed: Number.parseInt(variant.variant_seed ?? '0', 36),
       options: variant.options || {},
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,

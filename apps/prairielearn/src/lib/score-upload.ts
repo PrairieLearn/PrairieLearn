@@ -256,7 +256,7 @@ function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
 // missing values and empty strings get mapped to null
 function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
   const value = getJsonPropertyOrNull(json, key);
-  if (value != null && (typeof value !== 'number' || isNaN(value))) {
+  if (value != null && (typeof value !== 'number' || Number.isNaN(value))) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
   return value;

@@ -83,7 +83,7 @@ export function SampleQuestionDemo({
     }
 
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
-      const responseNum = parseFloat(userInputResponse);
+      const responseNum = Number.parseFloat(userInputResponse);
 
       const rtol = prompt.rtol;
       const atol = prompt.atol;

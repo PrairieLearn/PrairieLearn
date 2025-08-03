@@ -114,8 +114,5 @@ router.post(
 export default router;
 
 function randomString() {
-  const len = 10;
-  return (
-    Math.random().toString(36).substring(2, len) + Math.random().toString(36).substring(2, len)
-  );
+  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
 }
