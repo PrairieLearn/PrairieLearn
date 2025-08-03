@@ -17,7 +17,7 @@ const router = Router({ mergeParams: true });
 
 // Grant user access to course
 router.post(
-  '/insert',
+  '/',
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
@@ -32,8 +32,8 @@ router.post(
 );
 
 // Update user access to course
-router.post(
-  '/update',
+router.put(
+  '/',
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
@@ -53,8 +53,8 @@ router.post(
 );
 
 // Remove user access from course
-router.post(
-  '/delete',
+router.delete(
+  '/',
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
 
@@ -74,7 +74,7 @@ router.post(
 
 // Grant user access to student data
 router.post(
-  '/insert/:course_instance(\\d+)',
+  '/course_instance/:course_instance(\\d+)',
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
 
@@ -95,8 +95,8 @@ router.post(
 );
 
 // Update user access to student data
-router.post(
-  '/update/:course_instance(\\d+)',
+router.put(
+  '/course_instance/:course_instance(\\d+)',
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
 
@@ -117,8 +117,8 @@ router.post(
 );
 
 // Remove user access from student data
-router.post(
-  '/delete/:course_instance(\\d+)',
+router.delete(
+  '/course_instance/:course_instance(\\d+)',
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
 
