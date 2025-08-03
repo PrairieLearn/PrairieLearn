@@ -229,6 +229,7 @@ export default tseslint.config([
 
       // These rules don't provide much value.
       'unicorn/prevent-abbreviations': 'off',
+      'unicorn/no-array-callback-reference': 'off',
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations
