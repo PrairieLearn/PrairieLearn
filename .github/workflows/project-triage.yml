@@ -1,0 +1,16 @@
+# This internal workflow track the status of PRs opened by the core team.
+# Open-source contributors should not worry about this workflow.
+name: Project Triage
+on:
+  pull_request:
+jobs:
+  add-to-project:
+    name: Add pull request to project
+    runs-on: ubuntu-latest
+    if: contains('["miguelaenlle", "mwest1066", "mylesw27", "nwalters512", "reteps"]', github.triggering_actor)
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/PrairieLearnInc/projects/15
+          # https://github.com/actions/add-to-project?tab=readme-ov-file#creating-a-pat-and-adding-it-to-your-repository
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
