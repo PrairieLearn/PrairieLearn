@@ -824,7 +824,7 @@ export async function prepare(
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -901,7 +901,7 @@ async function renderPanel(
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -1424,7 +1424,7 @@ export async function file(
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
@@ -1478,7 +1478,7 @@ export async function parse(
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1534,7 +1534,7 @@ export async function grade(
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1588,7 +1588,7 @@ export async function test(
       score: 0,
       feedback: {},
       variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

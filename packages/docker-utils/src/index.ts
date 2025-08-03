@@ -111,7 +111,7 @@ export class DockerName {
 
   getRegistryRepo() {
     let combined = '';
-    if (typeof this.registry !== 'undefined') {
+    if (this.registry !== undefined) {
       combined = this.registry + '/';
     }
     combined += this.repository;
@@ -120,7 +120,7 @@ export class DockerName {
 
   getCombined(latestTag = false) {
     let combined = '';
-    if (typeof this.registry !== 'undefined') {
+    if (this.registry !== undefined) {
       combined = this.registry + '/';
     }
     combined += this.repository;

@@ -3004,7 +3004,7 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     // pick matching colors for both arrows; these rotate throughout the page
-    if (typeof this.myIndex === 'undefined') {
+    if (this.myIndex === undefined) {
       this.myIndex = 0;
     } else {
       this.myIndex += 1;

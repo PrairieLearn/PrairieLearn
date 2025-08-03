@@ -26,7 +26,7 @@ const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
-    ...((err as any).data ?? {}),
+    ...(err as any).data,
     ...data,
   };
   return err;
