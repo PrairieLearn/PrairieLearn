@@ -217,22 +217,22 @@ export default tseslint.config([
       ),
 
       ...eslintPluginUnicorn.configs.recommended.rules,
-      // We don't have specific rules for null/undefined, so we'll disable these.
-      'unicorn/no-null': 'off', // 1k+ violations
-      'unicorn/no-useless-undefined': 'off', // 15 violations
 
-      // We don't enforce specific styles for filenames.
-      'unicorn/filename-case': 'off', // 500+ violations
-
-      // We don't use `String.raw` in our codebase yet.
-      'unicorn/prefer-string-raw': 'off', // 300+ violations
-
-      // These rules don't provide much value.
-      'unicorn/prevent-abbreviations': 'off',
+      // These rules don't align with our own style guidelines
+      'unicorn/filename-case': 'off', // We don't enforce specific styles for filenames
+      'unicorn/no-anonymous-default-export': 'off', // We use this for all of our pages
       'unicorn/no-array-callback-reference': 'off',
+      'unicorn/no-array-method-this-argument': 'off',
+      'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
       'unicorn/no-hex-escape': 'off',
+      'unicorn/no-null': 'off',
+      'unicorn/no-useless-undefined': 'off', // Explicit undefined is more readable than implicit undefined
       'unicorn/prefer-code-point': 'off',
+      'unicorn/prefer-string-raw': 'off', // We don't use `String.raw` in our codebase
+      'unicorn/prefer-ternary': 'off', // if/else can be more readable than a ternary
+      'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages
       'unicorn/prefer-type-error': 'off',
+      'unicorn/prevent-abbreviations': 'off',
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations
@@ -242,49 +242,36 @@ export default tseslint.config([
       'unicorn/no-negated-condition': 'off', // 150+ violations
       'unicorn/prefer-global-this': 'off', // 150+ violations
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
-      /* TODO: < 100 violations */
-      'unicorn/prefer-spread': 'off',
-      'unicorn/prefer-switch': 'off',
-      'unicorn/prefer-query-selector': 'off',
+
+      // TODO: investigate, < 100 violations
+      'unicorn/consistent-assert': 'off',
+      'unicorn/consistent-function-scoping': 'off',
       'unicorn/escape-case': 'off',
       'unicorn/import-style': 'off',
       'unicorn/numeric-separators-style': 'off',
-      'unicorn/consistent-function-scoping': 'off',
-      'unicorn/consistent-assert': 'off',
+      'unicorn/prefer-spread': 'off',
+      'unicorn/prefer-switch': 'off',
+      'unicorn/prefer-query-selector': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
 
-      // TODO: manual fixes required
-      'unicorn/prefer-event-target': 'off',
+      // TODO: investigated and manual fixes are required
       'unicorn/no-object-as-default-parameter': 'off',
+      'unicorn/prefer-event-target': 'off',
       'unicorn/prefer-dom-node-text-content': 'off',
       'unicorn/prefer-add-event-listener': 'off',
 
       // False positives
-      'unicorn/no-array-method-this-argument': 'off',
       'unicorn/error-message': 'off',
       'unicorn/throw-new-error': 'off',
-      // https://github.com/microsoft/TypeScript/issues/47660#issuecomment-3146907649
-      'unicorn/prefer-at': 'off',
+      'unicorn/prefer-at': 'off', // https://github.com/microsoft/TypeScript/issues/47660#issuecomment-3146907649
 
-      // Duplicated rules
+      // Duplicated from other lint rules
       'unicorn/no-this-assignment': 'off',
       'unicorn/prefer-module': 'off',
-
-      // Sometimes, an if/else is more readable than a ternary.
-      'unicorn/prefer-ternary': 'off',
-
-      // Sometimes, an array reduce is more readable.
-      'unicorn/no-array-reduce': 'off',
-
-      // We use this on a lot of pages
-      'unicorn/prefer-top-level-await': 'off',
 
       // Conflicts with prettier
       'unicorn/template-indent': 'off',
       'unicorn/no-nested-ternary': 'off',
-
-      // We use anonymous default exports for all of our pages.
-      'unicorn/no-anonymous-default-export': 'off',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
