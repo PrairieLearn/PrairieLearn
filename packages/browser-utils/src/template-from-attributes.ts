@@ -46,7 +46,7 @@ export function templateFromAttributes(
         }
       } else if (targetElement instanceof HTMLSelectElement) {
         const i = Array.from(targetElement.options).findIndex((o) => o.value === attributeValue);
-        if (i >= 0) {
+        if (i !== -1) {
           targetElement.selectedIndex = i;
           // Manually trigger a 'change' event. This does not trigger
           // automatically when we change properties like 'checked'.

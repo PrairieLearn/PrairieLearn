@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';

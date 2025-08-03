@@ -275,16 +275,13 @@ export default tseslint.config([
           'unicorn/no-lonely-if',
           'unicorn/prefer-top-level-await',
           'unicorn/prefer-add-event-listener',
-          'unicorn/consistent-existence-index-check',
-          'unicorn/no-process-exit',
-          'unicorn/no-object-as-default-parameter',
-          'unicorn/prefer-negative-index',
         ].map((k) => [k, 'off']),
       ),
       // 20 - 100 violations //
 
       // TODO:
       'unicorn/prefer-event-target': 'off',
+      'unicorn/no-object-as-default-parameter': 'off',
 
       // False positives
       'unicorn/no-array-method-this-argument': 'off',

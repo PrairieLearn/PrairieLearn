@@ -66,7 +66,7 @@
           const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
             new RegExp(f[0], 'i').test(n),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
           }
         });
@@ -263,7 +263,7 @@
         const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
           new RegExp(f[0], 'i').test(n.name),
         );
-        if (matchingRegex >= 0) {
+        if (matchingRegex !== -1) {
           this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
         }
       });
@@ -457,7 +457,7 @@
           const matchingRegex = this.requiredFilesRegex.findIndex(
             (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
             matchedRegexFiles.push(n);
             return true;
