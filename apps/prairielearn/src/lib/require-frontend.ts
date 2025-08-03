@@ -31,4 +31,5 @@ requirejs.onError = function (err: Error) {
   logger.error('requirejs load error', data);
 };
 
+// eslint-disable-next-line unicorn/prefer-export-from
 export default requirejs;

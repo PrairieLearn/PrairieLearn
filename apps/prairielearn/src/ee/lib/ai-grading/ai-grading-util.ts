@@ -110,8 +110,7 @@ export async function generatePrompt({
         (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding selected rubric items.'
           : ''),
-    });
-    messages.push({
+    }, {
       role: 'system',
       content: `Here are the rubric items:\n\n${rubric_info}`,
     });

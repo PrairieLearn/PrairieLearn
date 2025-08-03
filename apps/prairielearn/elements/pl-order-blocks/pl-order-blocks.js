@@ -236,8 +236,7 @@ window.PLOrderBlocks = function (uuid, options) {
     let indicator = document.getElementById('indicator-' + uuid);
     if (!indicator) {
       indicator = document.createElement('li');
-      indicator.classList.add('pl-order-blocks-pairing-indicator');
-      indicator.classList.add('bg-info-subtle');
+      indicator.classList.add('pl-order-blocks-pairing-indicator', 'bg-info-subtle');
       indicator.dataset.distractorBin = uuid;
       indicator.id = 'indicator-' + uuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';

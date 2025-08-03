@@ -231,6 +231,8 @@ export default tseslint.config([
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-hex-escape': 'off',
+      'unicorn/prefer-code-point': 'off',
+      'unicorn/prefer-type-error': 'off',
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations
@@ -240,7 +242,7 @@ export default tseslint.config([
       'unicorn/no-negated-condition': 'off', // 150+ violations
       'unicorn/prefer-global-this': 'off', // 150+ violations
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
-      // 20 - 100 violations //
+      /* TODO: < 100 violations */
       'unicorn/prefer-spread': 'off',
       'unicorn/prefer-switch': 'off',
       'unicorn/prefer-query-selector': 'off',
@@ -250,22 +252,12 @@ export default tseslint.config([
       'unicorn/consistent-function-scoping': 'off',
       'unicorn/consistent-assert': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
-      ...Object.fromEntries(
-        [
-          'unicorn/prefer-code-point',
-          'unicorn/prefer-type-error',
-          'unicorn/prefer-single-call',
-          'unicorn/prefer-export-from',
-          'unicorn/prefer-dom-node-text-content',
-          'unicorn/prefer-top-level-await',
-          'unicorn/prefer-add-event-listener',
-        ].map((k) => [k, 'off']),
-      ),
-      // 20 - 100 violations //
 
-      // TODO:
+      // TODO: manual fixes required
       'unicorn/prefer-event-target': 'off',
       'unicorn/no-object-as-default-parameter': 'off',
+      'unicorn/prefer-dom-node-text-content': 'off',
+      'unicorn/prefer-add-event-listener': 'off',
 
       // False positives
       'unicorn/no-array-method-this-argument': 'off',
@@ -283,6 +275,9 @@ export default tseslint.config([
 
       // Sometimes, an array reduce is more readable.
       'unicorn/no-array-reduce': 'off',
+
+      // We use this on a lot of pages
+      'unicorn/prefer-top-level-await': 'off',
 
       // Conflicts with prettier
       'unicorn/template-indent': 'off',

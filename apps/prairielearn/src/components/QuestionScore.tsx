@@ -513,19 +513,20 @@ function QuestionValue({
 
     if (bestCurrentScore === 0) {
       const pluralizedPoints = currentAutoValue === 1 ? 'point' : 'points';
-      parts.push(html`
-        <p>
-          If you score 100% on your next submission, you will be awarded an additional
-          ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
-        </p>
-      `);
-
-      parts.push(html`
-        <p class="mb-0">
-          If you score less than 100% on your next submission, you will be awarded an additional
-          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
-        </p>
-      `);
+      parts.push(
+        html`
+          <p>
+            If you score 100% on your next submission, you will be awarded an additional
+            ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
+          </p>
+        `,
+        html`
+          <p class="mb-0">
+            If you score less than 100% on your next submission, you will be awarded an additional
+            <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
+          </p>
+        `,
+      );
     } else {
       if (instance_question.some_perfect_submission) {
         parts.push(html`
@@ -542,14 +543,13 @@ function QuestionValue({
 
       const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
       const pluralizedPoints = perfectAdditionalPoints === 1 ? 'point' : 'points';
-      parts.push(html`
-        <p>
-          If you score 100% on your next submission, you will be awarded an additional
-          ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
-        </p>
-      `);
-
       parts.push(
+        html`
+          <p>
+            If you score 100% on your next submission, you will be awarded an additional
+            ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
+          </p>
+        `,
         html`<p>
           If you score between ${formatPoints(bestCurrentScore)}% and 100% on your next submission,
           you will be awarded an additional
@@ -558,14 +558,13 @@ function QuestionValue({
           </code>
           points.
         </p>`,
+        html`
+          <p class="mb-0">
+            If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
+            will not be awarded any additional points for that submission.
+          </p>
+        `,
       );
-
-      parts.push(html`
-        <p class="mb-0">
-          If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
-          will not be awarded any additional points for that submission.
-        </p>
-      `);
     }
 
     return joinHtml(parts);

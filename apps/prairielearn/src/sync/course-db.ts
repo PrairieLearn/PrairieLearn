@@ -1056,8 +1056,7 @@ async function validateAssessment({
   // which are accessible either now or any time in the future.
   if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
-      warnings.push(...checkAllowAccessRoles(rule));
-      warnings.push(...checkAllowAccessUids(rule));
+      warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
         warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
@@ -1359,8 +1358,7 @@ async function validateCourseInstance({
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
     (courseInstance.allowAccess || []).forEach((rule) => {
-      warnings.push(...checkAllowAccessRoles(rule));
-      warnings.push(...checkAllowAccessUids(rule));
+      warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 
     if ('userRoles' in courseInstance) {

@@ -146,9 +146,9 @@ class STLLoader extends THREE.Loader {
 
       for (let index = 0; index < 80 - 10; index++) {
         if (
-          reader.getUint32(index, false) === 0x434f4c4f /*COLO*/ &&
+          reader.getUint32(index, false) === 0x434F4C4F /*COLO*/ &&
           reader.getUint8(index + 4) === 0x52 /*'R'*/ &&
-          reader.getUint8(index + 5) === 0x3d /*'='*/
+          reader.getUint8(index + 5) === 0x3D /*'='*/
         ) {
           hasColors = true;
           colors = new Float32Array(faces * 3 * 3);
@@ -180,9 +180,9 @@ class STLLoader extends THREE.Loader {
           if ((packedColor & 0x8000) === 0) {
             // facet has its own unique color
 
-            r = (packedColor & 0x1f) / 31;
-            g = ((packedColor >> 5) & 0x1f) / 31;
-            b = ((packedColor >> 10) & 0x1f) / 31;
+            r = (packedColor & 0x1F) / 31;
+            g = ((packedColor >> 5) & 0x1F) / 31;
+            b = ((packedColor >> 10) & 0x1F) / 31;
           } else {
             r = defaultR;
             g = defaultG;
@@ -318,7 +318,7 @@ class STLLoader extends THREE.Loader {
       if (typeof buffer === 'string') {
         const array_buffer = new Uint8Array(buffer.length);
         for (let i = 0; i < buffer.length; i++) {
-          array_buffer[i] = buffer.charCodeAt(i) & 0xff; // implicitly assumes little-endian
+          array_buffer[i] = buffer.charCodeAt(i) & 0xFF; // implicitly assumes little-endian
         }
 
         return array_buffer.buffer || array_buffer;

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 // re-export schemas for backwards compatibility
-export { DateFromISOString, IdSchema, IntervalSchema };
+export { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
