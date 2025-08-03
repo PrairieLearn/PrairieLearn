@@ -161,23 +161,11 @@ export const callRow = defaultPool.callRow.bind(defaultPool);
  */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
 /**
- * Returns a {@link Cursor} for the given query. The cursor can be used to
- * read results in batches, which is useful for large result sets.
- */
-export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
-/**
- * Returns an {@link CursorIterator} that can be used to iterate over the
- * results of the query in batches, which is useful for large result sets.
- *
- * @deprecated Use {@link queryValidatedCursor} instead.
- */
-export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
-/**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
  * Each row will be parsed by the given Zod schema.
  */
-export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);
+export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**
  * Set the schema to use for the search path.
  *
