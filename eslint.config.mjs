@@ -284,9 +284,6 @@ export default tseslint.config([
           'unicorn/prefer-array-some',
           'unicorn/new-for-builtins',
           'unicorn/no-hex-escape',
-          'unicorn/no-array-reverse',
-          'unicorn/prefer-structured-clone',
-          'unicorn/prefer-native-coercion-functions',
         ].map((k) => [k, 'off']),
       ),
       // 20 - 100 violations //
