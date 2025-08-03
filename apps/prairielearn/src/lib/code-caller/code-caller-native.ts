@@ -425,7 +425,7 @@ export class CodeCallerNative implements CodeCaller {
       this.outputData.push(data);
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
-      if (data.indexOf('\n') >= 0) {
+      if (data.includes('\n')) {
         this._callIsFinished();
       }
     }
@@ -604,7 +604,7 @@ export class CodeCallerNative implements CodeCaller {
    * code.
    */
   _restartWasSuccessful() {
-    if (this.outputRestart.indexOf('\n') === -1) {
+    if (!this.outputRestart.includes('\n')) {
       // We haven't yet gotten enough output to know if the restart
       // was successful.
       return false;

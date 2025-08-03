@@ -84,7 +84,7 @@ export class DockerName {
       const tag = name.slice(separatorPos + 1);
 
       // if it contains a / its not a tag and is part of the url
-      if (tag.indexOf('/') === -1) {
+      if (!tag.includes('/')) {
         this.repository = name.slice(0, separatorPos);
         this.tag = tag;
       }

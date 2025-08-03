@@ -262,8 +262,6 @@ export default tseslint.config([
           'unicorn/prefer-code-point',
           'unicorn/prefer-type-error',
           'unicorn/prefer-set-has',
-          'unicorn/prefer-at',
-          'unicorn/prefer-includes',
           'unicorn/number-literal-case',
           'unicorn/prefer-single-call',
           'unicorn/prefer-regexp-test',
@@ -285,6 +283,8 @@ export default tseslint.config([
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/error-message': 'off',
       'unicorn/throw-new-error': 'off',
+      // https://github.com/microsoft/TypeScript/issues/47660#issuecomment-3146907649
+      'unicorn/prefer-at': 'off',
 
       // Duplicated rules
       'unicorn/no-this-assignment': 'off',

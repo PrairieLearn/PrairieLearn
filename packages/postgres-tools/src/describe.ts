@@ -71,7 +71,7 @@ async function describeWithPool(
 
   // Get the names of the tables and filter out any ignored tables
   const tablesRes = await pool.queryAsync(sql.get_tables, []);
-  const tables = tablesRes.rows.filter((table) => ignoreTables.indexOf(table.name) === -1);
+  const tables = tablesRes.rows.filter((table) => !ignoreTables.includes(table.name));
 
   // Transform ignored columns into a map from table names to arrays
   // of column names
@@ -102,7 +102,7 @@ async function describeWithPool(
     });
 
     const columns = columnResults.rows.filter((row) => {
-      return (ignoreColumns[table.name] || []).indexOf(row.name) === -1;
+      return !(ignoreColumns[table.name] || []).includes(row.name);
     });
 
     const indexResults = await pool.queryAsync(sql.get_indexes_for_table, {
@@ -120,7 +120,7 @@ async function describeWithPool(
 
     // Filter out references from ignored tables
     const references = referenceResults.rows.filter((row) => {
-      return ignoreTables.indexOf(row.table) === -1;
+      return !ignoreTables.includes(row.table);
     });
 
     const checkConstraintResults = await pool.queryAsync(sql.get_check_constraints_for_table, {
@@ -141,7 +141,7 @@ async function describeWithPool(
 
   // Filter ignored enums
   const rows = enumsRes.rows.filter((row) => {
-    return ignoreEnums.indexOf(row.name) === -1;
+    return !ignoreEnums.includes(row.name);
   });
 
   rows.forEach((row) => {
@@ -182,7 +182,7 @@ export async function describeDatabase(
 
 export function formatDatabaseDescription(
   description: DatabaseDescription,
-  options = { coloredOutput: true },
+  options: { coloredOutput: boolean } = { coloredOutput: true },
 ): { tables: Record<string, string>; enums: Record<string, string> } {
   const output = {
     tables: {} as Record<string, string>,
@@ -231,13 +231,15 @@ export function formatDatabaseDescription(
           let rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
           // Primary indexes are implicitly unique, so we don't need to
           // capture that explicitly.
-          if (row.isunique && !row.isprimary) {
-            if (!row.constraintdef || row.constraintdef.indexOf('UNIQUE') === -1) {
-              // Some unique indexes don't include the UNIQUE constraint
-              // as part of the constraint definition, so we need to capture
-              // that manually.
-              rowText += formatText(' UNIQUE', chalk.green);
-            }
+          if (
+            row.isunique &&
+            !row.isprimary &&
+            (!row.constraintdef || !row.constraintdef.includes('UNIQUE'))
+          ) {
+            // Some unique indexes don't include the UNIQUE constraint
+            // as part of the constraint definition, so we need to capture
+            // that manually.
+            rowText += formatText(' UNIQUE', chalk.green);
           }
           rowText += row.constraintdef ? formatText(` ${row.constraintdef}`, chalk.green) : '';
           rowText += using ? formatText(` ${using}`, chalk.green) : '';
