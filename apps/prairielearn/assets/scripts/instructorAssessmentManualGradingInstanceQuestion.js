@@ -290,7 +290,7 @@ function resetRubricExportFormListeners() {
       decodeData('rubric-settings-data');
 
     const exportFileName =
-      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replace(
+      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
         '_',
       ) + '.json';
@@ -619,7 +619,7 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   closeBtn.setAttribute('type', 'button');
 
   // Make sure Bootstrap sees the close button as an alert dismiss button.
-  closeBtn.setAttribute('data-bs-dismiss', 'alert');
+  closeBtn.dataset.bsDismiss = 'alert';
 
   closeBtn.classList.add('btn-close');
   closeBtn.dataset.bsDismiss = 'alert';
@@ -872,7 +872,7 @@ function addRubricItemRow(rubricItem = null) {
 
   rubricItemExplanation.dataset.inputName = `rubric_item[new${next_id}][explanation]`;
   if (rubricItem) {
-    rubricItemExplanation.setAttribute('data-current-value', rubricItem.explanation ?? '');
+    rubricItemExplanation.dataset.currentValue = rubricItem.explanation ?? '';
     if (rubricItem.explanation) {
       const label = document.createElement('label');
       label.setAttribute('for', `rubric-item-explanation-button-${next_id}`);
@@ -888,7 +888,7 @@ function addRubricItemRow(rubricItem = null) {
 
   rubricItemGraderNote.dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
   if (rubricItem) {
-    rubricItemGraderNote.setAttribute('data-current-value', rubricItem.grader_note ?? '');
+    rubricItemGraderNote.dataset.currentValue = rubricItem.grader_note ?? '';
     if (rubricItem.grader_note) {
       const label = document.createElement('label');
       label.setAttribute('for', `rubric-item-grader-note-button-${next_id}`);

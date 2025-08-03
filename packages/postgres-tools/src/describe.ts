@@ -227,7 +227,7 @@ export function formatDatabaseDescription(
       output.tables[tableName] += formatText('indexes\n', chalk.underline);
       output.tables[tableName] += table.indexes
         .map((row) => {
-          const using = row.indexdef.substring(row.indexdef.indexOf('USING '));
+          const using = row.indexdef.slice(Math.max(0, row.indexdef.indexOf('USING ')));
           let rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
           // Primary indexes are implicitly unique, so we don't need to
           // capture that explicitly.
@@ -264,7 +264,7 @@ export function formatDatabaseDescription(
           //
           // The second replace handles all other lines: we want to collapse
           // all leading whitespace into a single space.
-          const def = row.def.replace(/\(\n/g, '(').replace(/\n\s*/g, ' ');
+          const def = row.def.replaceAll('(\n', '(').replaceAll(/\n\s*/g, ' ');
 
           let rowText = formatText(`    ${row.name}:`, chalk.bold);
           rowText += formatText(` ${def}`, chalk.green);

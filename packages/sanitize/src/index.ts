@@ -34,7 +34,7 @@ export function sanitizeObject<T>(value: T): T {
  * @return A string literal ready to match
  */
 export function escapeRegExp(str: string) {
-  return str.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+  return str.replaceAll(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
 }
 
 /**
@@ -47,7 +47,7 @@ export function recursivelyTruncateStrings<T>(value: T, maxLength: number): T {
     if (value.length <= maxLength) {
       return value;
     }
-    return (value.substring(0, maxLength) + '...[truncated]') as T;
+    return (value.slice(0, maxLength) + '...[truncated]') as T;
   } else if (Array.isArray(value)) {
     return value.map((value) => recursivelyTruncateStrings(value, maxLength)) as T;
   } else if (typeof value === 'object') {

@@ -64,7 +64,7 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
   // Pricings are updated according to https://platform.openai.com/docs/pricing
   const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
-  const completion_cost = 10.0 / 10 ** 6;
+  const completion_cost = 10 / 10 ** 6;
 
   return (
     cached_input_tokens * cached_input_cost +

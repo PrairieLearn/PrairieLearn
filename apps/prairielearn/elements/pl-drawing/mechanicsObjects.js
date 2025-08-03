@@ -69,7 +69,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
     }
 
     // Undo fabric's scale tranformations
-    ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
+    ctx.scale(1 / this.scaleX, 1 / this.scaleY);
 
     ctx.beginPath();
     ctx.moveTo(-l2, 0);
@@ -143,7 +143,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     const l2 = len / 2;
 
     // Undo fabric's scale tranformations
-    ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
+    ctx.scale(1 / this.scaleX, 1 / this.scaleY);
 
     ctx.beginPath();
     ctx.moveTo(-l2, 0);
@@ -254,7 +254,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
     const update_visuals = () => {
       this.left = this.x1;
       this.top = this.y1;
-      this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180.0 / Math.PI);
+      this.angle = Math.atan2(this.y2 - this.y1, this.x2 - this.x1) * (180 / Math.PI);
     };
     update_visuals();
     this.on('update_visuals', update_visuals);
@@ -980,7 +980,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         use.parentNode.replaceChild(replacement, use);
       });
 
-    const exScale = 1.0 - MathJax.config.svg.font.params.x_height;
+    const exScale = 1 - MathJax.config.svg.font.params.x_height;
 
     // Convert width/height from `ex` units to `px` units. This ensures that
     // the image renders consistently regardless of the browser's configured
@@ -995,7 +995,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     let svgSource = svg.outerHTML;
 
     // Fix for Safari, https://stackoverflow.com/questions/30273775/namespace-prefix-ns1-for-href-on-tagelement-is-not-defined-setattributens
-    svgSource = svgSource.replace(/NS\d+:href/gi, 'xlink:href');
+    svgSource = svgSource.replaceAll(/NS\d+:href/gi, 'xlink:href');
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
@@ -1155,7 +1155,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     var dx = this.getScaledWidth() / nSpaces;
 
     // Undo Fabric's scale transformation.
-    ctx.scale(1.0 / this.scaleX, 1.0 / this.scaleY);
+    ctx.scale(1 / this.scaleX, 1 / this.scaleY);
 
     // Centered coordinates
     const cx = this.getScaledWidth() / 2;
@@ -2085,7 +2085,7 @@ mechanicsObjects.byType['pl-dimensions'] = class extends PLDrawingBaseElement {
 
     options.left = p1d.e(1);
     options.top = p1d.e(2);
-    options.angle = Math.atan2(p2d.e(2) - p1d.e(2), p2d.e(1) - p1d.e(1)) * (180.0 / Math.PI);
+    options.angle = Math.atan2(p2d.e(2) - p1d.e(2), p2d.e(1) - p1d.e(1)) * (180 / Math.PI);
     options.width = Math.sqrt(Math.pow(p2d.e(2) - p1d.e(2), 2) + Math.pow(p2d.e(1) - p1d.e(1), 2));
 
     const obj = new mechanicsObjects.Arrow(options);

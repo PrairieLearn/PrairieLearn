@@ -170,12 +170,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }

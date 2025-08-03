@@ -39,8 +39,8 @@ router.get(
 
     let ipAddress = req.ip;
     // Trim out IPv6 wrapper on IPv4 addresses
-    if (ipAddress.substring(0, 7) === '::ffff:') {
-      ipAddress = ipAddress.substring(7);
+    if (ipAddress.slice(0, 7) === '::ffff:') {
+      ipAddress = ipAddress.slice(7);
     }
 
     res.send(InstructorEffectiveUser({ resLocals: res.locals, ipAddress, courseRoles }));

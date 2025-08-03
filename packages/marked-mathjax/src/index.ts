@@ -52,7 +52,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
           for (const inputJax of mathjaxInput) {
             const foundMath = inputJax.findMath([src])?.find((math: any) => math.start?.n === 0);
             if (foundMath?.end?.n !== undefined) {
-              const raw = src.substring(0, foundMath.end.n);
+              const raw = src.slice(0, foundMath.end.n);
               return {
                 type: 'math',
                 raw,

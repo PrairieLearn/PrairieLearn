@@ -253,10 +253,10 @@ export default tseslint.config([
       'unicorn/consistent-assert': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
       // TODO:
-      'unicorn/prefer-string-replace-all': 'off',
-      'unicorn/prefer-string-slice': 'off',
-      'unicorn/prefer-dom-node-dataset': 'off',
-      'unicorn/no-zero-fractions': 'off',
+      // 'unicorn/prefer-string-replace-all': 'off',
+      // 'unicorn/prefer-string-slice': 'off',
+      // 'unicorn/prefer-dom-node-dataset': 'off',
+      // 'unicorn/no-zero-fractions': 'off',
       ...Object.fromEntries(
         [
           'unicorn/prefer-code-point',
@@ -266,7 +266,6 @@ export default tseslint.config([
           'unicorn/prefer-export-from',
           'unicorn/prefer-dom-node-append',
           'unicorn/prefer-dom-node-text-content',
-          // 'unicorn/no-lonely-if',
           'unicorn/prefer-top-level-await',
           'unicorn/prefer-add-event-listener',
         ].map((k) => [k, 'off']),

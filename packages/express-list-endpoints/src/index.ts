@@ -68,7 +68,7 @@ function parseExpressRoute(route: Route, basePath: string): Endpoint[] {
     const completePath = basePath && path === '/' ? basePath : `${basePath}${path}`;
 
     const endpoint: Endpoint = {
-      path: completePath.replace(regexpExpressPathParamRegexp, '$1'),
+      path: completePath.replaceAll(regexpExpressPathParamRegexp, '$1'),
       methods: getRouteMethods(route),
       middlewares: getRouteMiddlewares(route),
     };
@@ -112,7 +112,7 @@ function parseExpressPath(expressPathRegExp: RegExp, params: any[]): string {
     throw new Error('Error parsing express path');
   }
 
-  const parsedPath = expressPathRegExpExec[1].replace(/\\\//g, '/');
+  const parsedPath = expressPathRegExpExec[1].replaceAll('\\/', '/');
 
   return parsedPath;
 }

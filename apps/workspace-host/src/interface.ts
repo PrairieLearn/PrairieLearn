@@ -354,7 +354,7 @@ async function pruneRunawayContainers() {
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length !== 1) return;
     // Remove the preceding forward slash
-    const name = container_info.Names[0].substring(1);
+    const name = container_info.Names[0].slice(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
     const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
@@ -1025,7 +1025,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
   const workspaceSettings = await _getWorkspaceSettings(workspace_id);
-  const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+  const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 

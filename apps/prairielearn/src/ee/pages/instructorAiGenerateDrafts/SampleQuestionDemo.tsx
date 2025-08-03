@@ -202,7 +202,7 @@ export function SampleQuestionDemo({
               }
 
               // Regular text
-              return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
+              return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
             })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput

@@ -5,7 +5,7 @@
  * @return {String} A sanitized version of s.
  */
 export function sanitizeString(s: string): string {
-  return s.replace(/[^a-zA-Z0-9-]/g, '_');
+  return s.replaceAll(/[^a-zA-Z0-9-]/g, '_');
 }
 
 /**

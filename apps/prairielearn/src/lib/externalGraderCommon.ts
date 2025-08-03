@@ -135,7 +135,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   let data: Record<string, any>;
   try {
     // replace NULL with unicode replacement character
-    data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
+    data = JSON.parse(dataStr.replaceAll('\0', '\ufffd'));
   } catch {
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
@@ -143,7 +143,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   function replaceNull(d: any) {
     if (typeof d === 'string') {
       // replace NULL with unicode replacement character
-      return d.replace(/\0/g, '\ufffd');
+      return d.replaceAll('\0', '\ufffd');
     } else if (Array.isArray(d)) {
       return d.map((x) => replaceNull(x));
     } else if (d != null && typeof d === 'object') {
@@ -176,7 +176,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     return makeGradingFailureWithMessage(jobId, data, "results did not contain 'results' object.");
   }
 
-  let score = 0.0;
+  let score = 0;
   if (typeof data.results.score === 'number' || !Number.isNaN(data.results.score)) {
     score = data.results.score;
   } else {

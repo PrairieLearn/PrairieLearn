@@ -285,7 +285,7 @@ async function startup(workspace_id: string): Promise<void> {
         // that we don't try to write on top of an existing directory, as this
         // could lead to unexpected behavior.
         try {
-          const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
+          const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
           await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,

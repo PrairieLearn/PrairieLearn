@@ -51,22 +51,22 @@ class OrbitControls extends THREE.EventDispatcher {
     // This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
     // Set to false to disable zooming
     this.enableZoom = true;
-    this.zoomSpeed = 1.0;
+    this.zoomSpeed = 1;
 
     // Set to false to disable rotating
     this.enableRotate = true;
-    this.rotateSpeed = 1.0;
+    this.rotateSpeed = 1;
 
     // Set to false to disable panning
     this.enablePan = true;
-    this.panSpeed = 1.0;
+    this.panSpeed = 1;
     this.screenSpacePanning = true; // if false, pan orthogonal to world-space direction camera.up
-    this.keyPanSpeed = 7.0; // pixels moved per arrow key push
+    this.keyPanSpeed = 7; // pixels moved per arrow key push
 
     // Set to true to automatically rotate around the target
     // If auto-rotate is enabled, you must call controls.update() in your animation loop
     this.autoRotate = false;
-    this.autoRotateSpeed = 2.0; // 30 seconds per orbit when fps is 60
+    this.autoRotateSpeed = 2; // 30 seconds per orbit when fps is 60
 
     // The four arrow keys
     this.keys = { LEFT: 'ArrowLeft', UP: 'ArrowUp', RIGHT: 'ArrowRight', BOTTOM: 'ArrowDown' };
@@ -378,7 +378,7 @@ class OrbitControls extends THREE.EventDispatcher {
           let targetDistance = offset.length();
 
           // half of the fov is center to top of screen
-          targetDistance *= Math.tan(((scope.object.fov / 2) * Math.PI) / 180.0);
+          targetDistance *= Math.tan(((scope.object.fov / 2) * Math.PI) / 180);
 
           // we use only clientHeight here so aspect ratio does not distort speed
           panLeft((2 * deltaX * targetDistance) / element.clientHeight, scope.object.matrix);
