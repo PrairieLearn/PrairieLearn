@@ -230,6 +230,7 @@ export default tseslint.config([
       // These rules don't provide much value.
       'unicorn/prevent-abbreviations': 'off',
       'unicorn/no-array-callback-reference': 'off',
+      'unicorn/no-hex-escape': 'off',
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations
@@ -281,9 +282,6 @@ export default tseslint.config([
           'unicorn/prefer-logical-operator-over-ternary',
           'unicorn/prefer-modern-dom-apis',
           'unicorn/throw-new-error',
-          'unicorn/prefer-array-some',
-          'unicorn/new-for-builtins',
-          'unicorn/no-hex-escape',
         ].map((k) => [k, 'off']),
       ),
       // 20 - 100 violations //

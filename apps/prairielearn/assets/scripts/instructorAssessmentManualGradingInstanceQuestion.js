@@ -501,7 +501,7 @@ function checkRubricItemTotals() {
   const maxPointsInput = form.querySelector('[name="max_extra_points"]');
   const jsNegativeGradingInput = form.querySelector('.js-negative-grading');
   if (!minPointsInput || !maxPointsInput || !jsNegativeGradingInput) {
-    throw Error('Missing a required input');
+    throw new Error('Missing a required input');
   }
 
   const minPoints = Number(minPointsInput.value ?? 0);

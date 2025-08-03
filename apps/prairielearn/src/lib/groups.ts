@@ -468,8 +468,7 @@ export function getGroupRoleReassignmentsAfterLeave(
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => idsEqual(user_id, m.user_id)) ===
-          undefined,
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({

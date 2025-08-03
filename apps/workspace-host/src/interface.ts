@@ -802,7 +802,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   try {
     await fs.access(workspaceJobPath);
   } catch (err) {
-    throw Error('Could not access workspace files.', { cause: err });
+    throw new Error('Could not access workspace files.', { cause: err });
   }
 
   await fs.chown(
