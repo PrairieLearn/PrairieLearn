@@ -16,7 +16,7 @@ export function generateSignedToken(data: any, secretKey: string) {
   debug(`generateSignedToken(): secretKey = ${secretKey}`);
   const dataJSON = JSON.stringify(data);
   const dataString = base64url.default.encode(dataJSON);
-  const dateString = new Date().getTime().toString(36);
+  const dateString = Date.now().toString(36);
   const checkString = dateString + sep + dataString;
   const signature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
   const encodedSignature = base64url.default.encode(signature);

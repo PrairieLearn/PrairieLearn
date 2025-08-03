@@ -190,6 +190,7 @@ function resetRubricImportFormListeners() {
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
       };
 
+      // eslint-disable-next-line unicorn/prefer-blob-reading-methods
       reader.readAsText(fileData);
     });
 

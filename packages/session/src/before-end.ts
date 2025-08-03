@@ -70,7 +70,7 @@ export function beforeEnd(res: any, next: NextFunction, fn: () => Promise<void>)
 
         if (chunk.length !== 0) {
           ret = _write.call(res, chunk.slice(0, chunk.length - 1));
-          chunk = chunk.slice(chunk.length - 1, chunk.length);
+          chunk = chunk.slice(chunk.length - 1);
           return ret;
         }
       }
