@@ -19,7 +19,7 @@ const regexpExpressParamRegexp = /\(\?:\\?\\?\/?\([^)]+\)\)/g;
 const regexpExpressPathParamRegexp = /(:[^)]+)\([^)]+\)/g;
 
 const EXPRESS_ROOT_PATH_REGEXP_VALUE = '/^\\/?(?=\\/|$)/i';
-const STACK_ITEM_VALID_NAMES = ['router', 'bound dispatch', 'mounted_app'];
+const STACK_ITEM_VALID_NAMES = new Set(['router', 'bound dispatch', 'mounted_app']);
 
 /**
  * Returns all the verbs detected for the passed route
@@ -179,7 +179,7 @@ function parseStack(stack: any[], basePath: string, endpoints: Endpoint[]): Endp
       const newEndpoints = parseExpressRoute(stackItem.route, basePath);
 
       endpoints = addEndpoints(endpoints, newEndpoints);
-    } else if (STACK_ITEM_VALID_NAMES.includes(stackItem.name)) {
+    } else if (STACK_ITEM_VALID_NAMES.has(stackItem.name)) {
       const isExpressPathRegexp = regExpToParseExpressPathRegExp.test(stackItem.regexp);
 
       let newBasePath = basePath;

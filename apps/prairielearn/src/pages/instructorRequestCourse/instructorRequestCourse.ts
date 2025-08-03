@@ -77,7 +77,7 @@ router.post(
 
     let error = false;
 
-    if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
+    if (!/[A-Z]+ [A-Z0-9]+/.test(short_name)) {
       flash(
         'error',
         'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',

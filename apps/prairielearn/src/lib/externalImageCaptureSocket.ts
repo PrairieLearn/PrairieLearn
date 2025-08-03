@@ -102,14 +102,14 @@ function validateMessageContent({ variant_id, variant_token, file_name }: Status
 
   // file_name must be a valid file name with no directory traversal: it must not contain
   // any path separators (e.g., / or \) and must have an extension.
-  if (!file_name.match(/^(?!.*[\\/])[^\\/]+\.[^\\/]+$/)) {
+  if (!/^(?!.*[\\/])[^\\/]+\.[^\\/]+$/.test(file_name)) {
     logger.error('Invalid file_name provided for external image capture');
     Sentry.captureException(new Error('Invalid file_name provided for external image capture'));
     return false;
   }
 
   // variant_id must be a positive integer.
-  if (!variant_id.match(/^\d+$/)) {
+  if (!/^\d+$/.test(variant_id)) {
     logger.error('Invalid variant_id provided for external image capture');
     Sentry.captureException(new Error('Invalid variant_id provided for external image capture'));
     return false;

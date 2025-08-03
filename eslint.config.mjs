@@ -261,10 +261,8 @@ export default tseslint.config([
         [
           'unicorn/prefer-code-point',
           'unicorn/prefer-type-error',
-          'unicorn/prefer-set-has',
           'unicorn/number-literal-case',
           'unicorn/prefer-single-call',
-          'unicorn/prefer-regexp-test',
           'unicorn/prefer-export-from',
           'unicorn/prefer-dom-node-append',
           'unicorn/prefer-dom-node-text-content',

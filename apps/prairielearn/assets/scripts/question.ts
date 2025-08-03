@@ -187,22 +187,26 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       }
     }
 
-    const currentLinks = Array.from(
-      document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
-    ).map((link) => link.href);
+    const currentLinks = new Set(
+      Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+        (link) => link.href,
+      ),
+    );
     headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
-      if (!currentLinks.includes(header.href)) {
+      if (!currentLinks.has(header.href)) {
         document.head.appendChild(header);
       }
     });
 
-    const currentScripts = Array.from(
-      document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
-    ).map((script) => script.src);
+    const currentScripts = new Set(
+      Array.from(
+        document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+      ).map((script) => script.src),
+    );
     headers
       .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
       .forEach((header) => {
-        if (!currentScripts.includes(header.src)) {
+        if (!currentScripts.has(header.src)) {
           document.head.appendChild(header);
         }
       });
