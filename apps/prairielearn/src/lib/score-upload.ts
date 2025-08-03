@@ -253,7 +253,6 @@ function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
   return value;
 }
 
-/** missing values and empty strings get mapped to null */
 function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
   const value = getJsonPropertyOrNull(json, key);
   if (value != null && (typeof value !== 'number' || isNaN(value))) {
