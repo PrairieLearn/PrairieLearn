@@ -195,37 +195,75 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
+    setShowDeletionDialogs(showDialogs) {
+      const uploadedImageDeletionDialog = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-deletion-dialog',
+      );
+      this.ensureElementsExist({
+        uploadedImageDeletionDialog,
+      });
+      if (showDialogs) {
+        // Show the deletion dialog
+        uploadedImageDeletionDialog.classList.remove('d-none');
+      } else {
+        // Hide the deletion dialog
+        uploadedImageDeletionDialog.classList.add('d-none');
+      }
+    }
+
+    setShowDeletionConfirmationDialog(showDialog) {
+      const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
+        '.js-open-deletion-dialog-button',
+      );
+      const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-deletion-confirmation-dialog',
+      );
+
+      if (showDialog) {
+        // Hide the open deletion dialog button
+        openDeletionDialogButton.classList.remove('d-flex');
+        openDeletionDialogButton.classList.add('d-none');
+
+        // Show the deletion confirmation dialog
+        uploadedImageDeletionConfirmationDialog.classList.remove('d-none');
+        uploadedImageDeletionConfirmationDialog.classList.add('d-flex');
+      } else {
+        // Show the open deletion dialog button
+        openDeletionDialogButton.classList.remove('d-none');
+        openDeletionDialogButton.classList.add('d-flex');
+
+        // Hide the deletion confirmation dialog
+        uploadedImageDeletionConfirmationDialog.classList.remove('d-flex');
+        uploadedImageDeletionConfirmationDialog.classList.add('d-none');
+      }
+    }
+
+    /**
+     * Manages the deletion UI for the uploaded image.
+     */
     createDeletionListeners() {
-      const uploadedImageDeletionButtons = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-deletion-buttons',
+      const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
+        '.js-open-deletion-dialog-button',
       );
-      const uploadedImageDeletionConfirmationButtons = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-deletion-confirmation-buttons',
+      const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-deletion-confirmation-dialog',
       );
-
-      const deleteUploadedImageButton = this.imageCaptureDiv.querySelector(
-        '.js-delete-uploaded-image-button',
-      );
-
       const confirmDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
         '.js-confirm-delete-uploaded-image-button',
       );
-
       const cancelDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
         '.js-cancel-delete-uploaded-image-button',
       );
 
       this.ensureElementsExist({
-        uploadedImageDeletionButtons,
-        uploadedImageDeletionConfirmationButtons,
-        deleteUploadedImageButton,
+        uploadedImageDeletionConfirmationDialog,
+        openDeletionDialogButton,
         confirmDeleteUploadedImageButton,
         cancelDeleteUploadedImageButton,
       });
 
-      deleteUploadedImageButton.addEventListener('click', () => {
-        uploadedImageDeletionButtons.classList.add('d-none');
-        uploadedImageDeletionConfirmationButtons.classList.replace('d-none', 'd-flex');
+      openDeletionDialogButton.addEventListener('click', () => {
+        this.setShowDeletionConfirmationDialog(true);
       });
 
       confirmDeleteUploadedImageButton.addEventListener('click', () => {
@@ -245,13 +283,11 @@ const MAX_ZOOM_SCALE = 5;
         // Reset the hidden capture input value to indicate no image is captured.
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
-        // Hide the deletion buttons (no image is uploaded).
-        uploadedImageDeletionConfirmationButtons.classList.replace('d-flex', 'd-none');
+        this.setShowDeletionConfirmationDialog(false);
       });
 
       cancelDeleteUploadedImageButton.addEventListener('click', () => {
-        uploadedImageDeletionButtons.classList.replace('d-none', 'd-flex');
-        uploadedImageDeletionConfirmationButtons.classList.add('d-none');
+        this.setShowDeletionConfirmationDialog(false);
       });
     }
 
@@ -521,7 +557,6 @@ const MAX_ZOOM_SCALE = 5;
         hiddenCaptureInput.value = dataUrl;
       } else {
         hiddenCaptureInput.removeAttribute('value');
-
       }
     }
 
@@ -578,7 +613,7 @@ const MAX_ZOOM_SCALE = 5;
       const capturePreview = document.createElement('img');
       capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
 
-      if (dataUrl) {  
+      if (dataUrl) {
         capturePreview.src = dataUrl;
       } else {
         capturePreview.removeAttribute('src');
@@ -608,20 +643,9 @@ const MAX_ZOOM_SCALE = 5;
       uploadedImageContainerTopButtons.classList.remove('d-none');
 
       if (this.editable) {
+        this.setShowDeletionDialogs(dataUrl ? true : false);
         if (dataUrl) {
-          const uploadedImageDeletionButtons = this.imageCaptureDiv.querySelector(
-            '.js-uploaded-image-deletion-buttons',
-          );
-          const uploadedImageDeletionConfirmationButtons = this.imageCaptureDiv.querySelector(
-            '.js-uploaded-image-deletion-confirmation-buttons',
-          );
-          this.ensureElementsExist({
-            uploadedImageDeletionButtons,
-            uploadedImageDeletionConfirmationButtons, 
-          });
-          uploadedImageDeletionButtons.classList.remove('d-none');
-          uploadedImageDeletionConfirmationButtons.classList.remove('d-flex');
-          uploadedImageDeletionConfirmationButtons.classList.add('d-none');
+          this.setShowDeletionConfirmationDialog(false);
         }
       } else {
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');

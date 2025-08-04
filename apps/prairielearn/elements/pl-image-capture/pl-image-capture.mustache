@@ -50,10 +50,10 @@ $(function() {
       </div>
       <div class="js-uploaded-image-container-top-buttons position-absolute top-0 end-0 m-2 d-none">
         {{#editable}}
-        <div class="js-uploaded-image-deletion-buttons">
+        <div class="js-uploaded-image-deletion-dialog">
           <button 
             type="button" 
-            class="js-delete-uploaded-image-button btn btn-danger"
+            class="js-open-deletion-dialog-button btn btn-danger"
             title="Delete uploaded image"
             data-toggle="tooltip"
             data-placement="top" 
@@ -62,24 +62,24 @@ $(function() {
           >
             <i class="bi bi-trash-fill"></i>
           </button>
-        </div>
-        <div class="js-uploaded-image-deletion-confirmation-buttons d-none align-items-center gap-2 p-2 bg-black bg-opacity-75 rounded flex-wrap">
-          <span class="text-white me-2">Are you sure? This is permanent. </span>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <button 
-              type="button" 
-              class="js-confirm-delete-uploaded-image-button btn btn-danger"
-              aria-label="Delete image permanently"
-            >
-              Delete
-            </button>
-            <button 
-              type="button" 
-              class="js-cancel-delete-uploaded-image-button btn btn-secondary"
-              aria-label="Cancel"
-            >
-              Cancel
-            </button>
+          <div class="js-uploaded-image-deletion-confirmation-dialog d-none align-items-center gap-2 p-2 bg-black bg-opacity-75 rounded flex-wrap">
+            <span class="text-white me-2">Are you sure? This is permanent. </span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <button 
+                type="button" 
+                class="js-confirm-delete-uploaded-image-button btn btn-danger"
+                aria-label="Delete image permanently"
+              >
+                Delete
+              </button>
+              <button 
+                type="button" 
+                class="js-cancel-delete-uploaded-image-button btn btn-secondary"
+                aria-label="Cancel"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
         {{/editable}}
