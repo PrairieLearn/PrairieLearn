@@ -335,9 +335,7 @@ export async function validateLti13CourseInstance(
 ): Promise<boolean> {
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
-    {
-      course_instance_id: resLocals.course_instance.id,
-    },
+    { course_instance_id: resLocals.course_instance.id },
     z.boolean(),
   );
 
@@ -587,6 +585,8 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Node fetch response object
  */
 export async function fetchRetry(
@@ -657,13 +657,11 @@ export async function fetchRetry(
 
 /**
  * Pagination wrapper around fetchRetry
- *
- * @param input
- * @param opts
- * @param incomingfetchRetryOpts
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
@@ -839,9 +837,7 @@ export async function updateLti13Scores(
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    {
-      assessment_id: assessment.id,
-    },
+    { assessment_id: assessment.id },
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query

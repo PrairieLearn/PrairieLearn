@@ -432,11 +432,6 @@ export async function createOrAddToGroup(
   });
 }
 
-/**
- * @param {GroupInfo} groupInfo
- * @param {string} leavingUserId
- * @returns {GroupRoleAssignment[]}
- */
 export function getGroupRoleReassignmentsAfterLeave(
   groupInfo: GroupInfo,
   leavingUserId: string,
