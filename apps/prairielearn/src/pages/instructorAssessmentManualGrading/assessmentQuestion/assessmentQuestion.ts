@@ -12,11 +12,12 @@ import { run } from '@prairielearn/run';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
+  generateAssessmentAiGradingStatsCSV,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { clearRubricOptionalFields, deleteAiGradingJobs, generateRubricTuningPrompt, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { config } from '../../../lib/config.js';
-import type { AssessmentQuestion, InstanceQuestion } from '../../../lib/db-types.js';
+import type { Assessment, AssessmentQuestion, InstanceQuestion } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -24,6 +25,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 
 import { AssessmentQuestion as AssessmentQuestionPage } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+import archiver from 'archiver';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -237,6 +239,25 @@ router.post(
           assessment_question
         );
 
+        // Rerun AI grading on all instance questions
+        // This will be used by the AI to identify the submissions used to tune the rubric
+        await deleteAiGradingJobs({
+          assessment_question_ids: [res.locals.assessment_question.id],
+          authn_user_id: res.locals.authn_user.user_id,
+        });
+
+        await aiGrade({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all',
+          syncGrading: true
+        });
+
         const aiGradingsForEachPtLevel: Record<number, string[]> = {};
 
         for (let i = 0; i < instanceQuestionsTable.length; i++) {
@@ -293,6 +314,8 @@ router.post(
           openai
         });
 
+        console.log('rubricTuningMessages', rubricTuningMessages);
+
         const TunedRubricResponseSchema = z.object({
           rubric_items: z.array(
             z.object({
@@ -304,6 +327,7 @@ router.post(
           )
         });
 
+        // Tune the rubric
         const completion = await openai.chat.completions.parse({
           messages: rubricTuningMessages,
           model: 'o4-mini',
@@ -316,6 +340,8 @@ router.post(
         }
 
         const generatedRubricItems = response.parsed.rubric_items;
+
+        console.log('generatedRubricItems', generatedRubricItems);
 
         // testing value. TODO: Remove
         // const generatedRubricItems = [
@@ -393,17 +419,46 @@ router.post(
         //   }
         // ]
 
+        // Prior to tuning the rubric, we acquire the performance of all 
+        // submissions NOT used to tune the rubric.
+
+        // This simulates that we told the user to grade the reference submissions, they did,
+        // and we are now using those references to guide the grading of the rest of the submissions.
+        await deleteAiGradingJobs({
+          assessment_question_ids: [res.locals.assessment_question.id],
+          authn_user_id: res.locals.authn_user.user_id,
+        });
+
+        // Grade everything that isn't the instance questions we just used
+        const instanceQuestionsToGrade = instanceQuestionsTable.filter(
+          (iq) => !selectedInstanceQuestions.some((siq) => idsEqual(siq.id, iq.id)),
+        );
+        
+        await aiGrade({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'selected',
+          instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+          syncGrading: true
+        });
+
+        // Acquire statistics from doing so.
+        const file1_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
+
         // Ensure all AI-generated rubric items are in the original rubric items list
-
         const originalRubricItemIds = new Set(rubric_items.map((item) => item.id));
-
-
         for (const item of generatedRubricItems) {
           if (!originalRubricItemIds.has(item.id)) {
             throw new error.HttpStatusError(400, `Unknown AI-generated rubric item ID: ${item.id}`);
           }
         }
 
+        // Update the rubric items in the database
         for (const item of generatedRubricItems) {
           // Dummy message for testing
           // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
@@ -416,8 +471,54 @@ router.post(
           }, z.string());
         }
 
-        flash('success', 'Rubric tuning completed successfully. The rubric has been updated.');
-        res.redirect(req.originalUrl);
+        // We repeat the process of grading the remaining submissions again,
+        // but with the AI-enhanced rubric.
+        await deleteAiGradingJobs({
+          assessment_question_ids: [res.locals.assessment_question.id],
+          authn_user_id: res.locals.authn_user.user_id,
+        });
+
+        await aiGrade({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'selected',
+          instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+          syncGrading: true
+        });
+
+        const file2_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
+
+
+        // Export the two statistics files.
+
+        try {
+          // 2) set headers for a zip download
+          res.setHeader('Content-Type', 'application/zip');
+          res.setHeader(
+            'Content-Disposition',
+            'attachment; filename="all_assessment_data.zip"'
+          );
+
+          // 3) create a zip stream
+          const archive = archiver('zip', { zlib: { level: 9 } });
+          archive.pipe(res);
+
+          // 4) append both CSVs under different names
+          archive.append(file1_data,    { name: 'file1_data.csv' });
+          archive.append(file2_data,    { name: 'file2_data.csv' });
+
+          // 5) finalize and send
+          await archive.finalize();
+        } catch (err) {
+          flash('error', 'Failed to create zip file for download.');
+          res.redirect(req.originalUrl);
+        }
+
     } else if (req.body.__action === 'clear_rubric') {    
       await clearRubricOptionalFields(
         res.locals.assessment_question.id,
