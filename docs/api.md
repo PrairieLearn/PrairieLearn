@@ -181,7 +181,7 @@ PUT /pl/api/v1/course/:course_id/staff
 #### Give student data access to a course instance
 
 ```text
-POST /pl/api/v1/course/:course_id/staff/:course_instance_id
+POST /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
 ```json
@@ -191,7 +191,7 @@ POST /pl/api/v1/course/:course_id/staff/:course_instance_id
 #### Change existing student data access level in a course instance
 
 ```text
-PUT /pl/api/v1/course/:course_id/staff/:course_instance_id
+PUT /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
 ```json
@@ -201,7 +201,7 @@ PUT /pl/api/v1/course/:course_id/staff/:course_instance_id
 #### Remove student data access in a course instance
 
 ```text
-DELETE /pl/api/v1/course/:course_id/staff/:course_instance_id
+DELETE /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
 ```json
