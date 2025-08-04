@@ -500,13 +500,18 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
+      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100 transition-all';
 
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
+      const capturePreviewParent = document.createElement('div');
+      capturePreviewParent.className = 'js-capture-preview-div';
+
+      capturePreviewParent.appendChild(capturePreview);
+
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
+      uploadedImageContainer.appendChild(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -520,11 +525,15 @@ const MAX_ZOOM_SCALE = 5;
 
       if (!this.editable) {
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
+          '.js-viewer-rotate-clockwise-button',
+        );
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
           zoomButtonsContainer,
+          viewerRotateClockwiseButton,
           zoomInButton,
           zoomOutButton,
         });
@@ -535,7 +544,9 @@ const MAX_ZOOM_SCALE = 5;
         zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
-          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+          let rotation = 0;
+
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
             maxScale: MAX_ZOOM_SCALE,
@@ -546,6 +557,19 @@ const MAX_ZOOM_SCALE = 5;
           });
           zoomOutButton.addEventListener('click', () => {
             this.imageCapturePreviewPanzoom.zoomOut();
+          });
+          viewerRotateClockwiseButton.addEventListener('click', () => {
+            const capturePreviewImg = this.imageCaptureDiv.querySelector(
+              '.js-uploaded-image-container .capture-preview',
+            );
+
+            this.ensureElementsExist({
+              capturePreviewImg,
+            });
+
+            rotation += 90;
+            capturePreviewImg.style.transform = `rotate(${rotation}deg)`;
+            // this.imageCapturePreviewPanzoom.reset({ animate: false });
           });
 
           let panEnabled = false;
