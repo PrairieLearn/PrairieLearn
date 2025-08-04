@@ -41,6 +41,16 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumQuestionTypeSchema = z.enum([
+  'Calculation',
+  'MultipleChoice',
+  'Checkbox',
+  'File',
+  'MultipleTrueFalse',
+  'Freeform',
+]);
+export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
+
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `GroupSchema` should come before `GroupConfigSchema`
@@ -303,7 +313,7 @@ export type AuditLog = z.infer<typeof AuditLogSchema>;
 
 export const AuthnProviderSchema = z.object({
   id: IdSchema,
-  name: z.string().nullable(),
+  name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
@@ -446,7 +456,16 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const ExamModeNetworkSchema = null;
+export const ExamModeNetworkSchema = z.object({
+  created_at: DateFromISOString,
+  during: z.unknown(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
+  id: IdSchema,
+  location: z.string().nullable(),
+  network: z.string().cidr(),
+  purpose: z.string().nullable(),
+});
+export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
+
 export const ExamSchema = null;
 export const FeatureGrantSchema = null;
 
@@ -807,8 +826,27 @@ export const LtiCredentialSchema = z.object({
 });
 export type LtiCredential = z.infer<typeof LtiCredentialSchema>;
 
-export const LtiLinkSchema = null;
-export const LtiOutcomeSchema = null;
+export const LtiLinkSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  context_id: z.string().nullable(),
+  course_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  resource_link_description: z.string().nullable(),
+  resource_link_id: z.string().nullable(),
+  resource_link_title: z.string().nullable(),
+});
+export type LtiLink = z.infer<typeof LtiLinkSchema>;
+
+export const LtiOutcomeSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  id: IdSchema,
+  lis_outcome_service_url: z.string().nullable(),
+  lis_result_sourcedid: z.string().nullable(),
+  lti_credential_id: IdSchema.nullable(),
+  user_id: IdSchema.nullable(),
+});
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
@@ -892,14 +930,7 @@ export const QuestionSchema = z.object({
   template_directory: z.string().nullable(),
   title: z.string().nullable(),
   topic_id: IdSchema.nullable(),
-  type: z.enum([
-    'Calculation',
-    'MultipleChoice',
-    'Checkbox',
-    'File',
-    'MultipleTrueFalse',
-    'Freeform',
-  ]),
+  type: EnumQuestionTypeSchema.nullable(),
   uuid: z.string().nullable(),
   workspace_args: z.string().nullable(),
   workspace_enable_networking: z.boolean().nullable(),
