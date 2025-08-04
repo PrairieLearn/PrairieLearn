@@ -563,7 +563,9 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtonTextForRetake();
+        this.setCaptureButtonText(true);
+      } else if (!dataUrl) {
+        this.setCaptureButtonText(false);
       }
 
       if (dataUrl) {
@@ -574,9 +576,11 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     * Sets the capture button text to indicate whether the user is retaking a photo or capturing a new one.
+     *
+     * @param {boolean} showRetakeText If true, the button text will indicate that the user is retaking a photo. Otherwise, it will indicate that the user is capturing a new photo.
      */
-    updateCaptureButtonTextForRetake() {
+    setCaptureButtonText(showRetakeText) {
       const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-local-camera-button',
       );
@@ -584,7 +588,9 @@ const MAX_ZOOM_SCALE = 5;
       this.ensureElementsExist({
         captureWithLocalCameraButtonSpan,
       });
-      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+      captureWithLocalCameraButtonSpan.innerHTML = showRetakeText
+        ? 'Retake with webcam'
+        : 'Capture with webcam';
 
       if (!this.mobile_capture_enabled) {
         return;
@@ -599,7 +605,9 @@ const MAX_ZOOM_SCALE = 5;
         captureWithMobileDeviceButtonSpan,
       });
 
-      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
+      captureWithMobileDeviceButtonSpan.innerHTML = showRetakeText
+        ? 'Retake with phone'
+        : 'Capture with phone';
     }
 
     /**
@@ -743,7 +751,8 @@ const MAX_ZOOM_SCALE = 5;
             this.resetCropRotate();
           }
         }
-        this.showCropRotateButton();
+
+        this.setShowCropRotateButton(dataUrl ? true : false);
       }
     }
 
@@ -954,14 +963,22 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    showCropRotateButton() {
+    /**
+     * Set if the crop rotate button is shown or not.
+     *
+     * @param {boolean} show If true, shows the crop rotate button. Otherwise, hides it.
+     */
+    setShowCropRotateButton(show) {
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
 
       this.ensureElementsExist({
         cropRotateButton,
       });
-
-      cropRotateButton.classList.remove('d-none');
+      if (show) {
+        cropRotateButton.classList.remove('d-none');
+      } else {
+        cropRotateButton.classList.add('d-none');
+      }
     }
 
     async startCropRotate() {
