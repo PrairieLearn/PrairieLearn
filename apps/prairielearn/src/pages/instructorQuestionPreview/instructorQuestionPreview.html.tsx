@@ -126,7 +126,7 @@ export function InstructorQuestionPreview({
                       aria-expanded="true"
                       aria-controls="#readme-card-body"
                     >
-                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
                     </button>
                   </div>
                   <div class="show js-collapsible-card-body" id="readme-card-body">
