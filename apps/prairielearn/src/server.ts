@@ -93,6 +93,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
+  // eslint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -2232,7 +2233,7 @@ if (esMain(import.meta) && config.startServer) {
         (time, stack) => {
           const msg = `BLOCKED-AT: Blocked for ${time}ms`;
           logger.verbose(msg, { time, stack });
-          console.log(msg + '\n' + stack.join('\n'));
+          console.warn(msg + '\n' + stack.join('\n'));
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds
@@ -2241,7 +2242,7 @@ if (esMain(import.meta) && config.startServer) {
         (time) => {
           const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
           logger.verbose(msg, { time });
-          console.log(msg);
+          console.warn(msg);
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds
