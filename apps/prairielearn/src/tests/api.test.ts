@@ -465,7 +465,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_role: 'Owner',
           }),
         });
-        assert.equal(res.status, 404);
+        assert.equal(res.status, 400);
       },
     );
 
@@ -483,7 +483,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_role: '',
           }),
         });
-        assert.equal(res.status, 500);
+        assert.equal(res.status, 400);
       },
     );
 

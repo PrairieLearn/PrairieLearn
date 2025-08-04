@@ -72,6 +72,13 @@ router.put(
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
+    if (!uid || !course_role) {
+      throw new error.HttpStatusError(
+        400,
+        'Missing required field(s): {uid, course_instance_role}',
+      );
+    }
+
     const user = await selectOptionalUserByUid(uid);
     if (!user) {
       throw new error.HttpStatusError(404, 'User not found');
