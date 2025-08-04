@@ -422,7 +422,7 @@ describe('API', { timeout: 60_000 }, function () {
     );
 
     test.sequential(
-      'PUT to update user in staff list to an owner of a specific course fails with invalid user fails',
+      'PUT to update user in staff list to an owner of a specific course with invalid user fails',
       async function () {
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
@@ -440,7 +440,7 @@ describe('API', { timeout: 60_000 }, function () {
     );
 
     test.sequential(
-      'PUT to update user in staff list to an owner of a specific course fails with invalid role fails',
+      'PUT to update user in staff list to an owner of a specific course with invalid role fails',
       async function () {
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
