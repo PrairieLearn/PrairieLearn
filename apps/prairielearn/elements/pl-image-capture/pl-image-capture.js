@@ -1207,7 +1207,7 @@ const MAX_ZOOM_SCALE = 5;
 
       cropperImage.$resetTransform();
 
-      // Select the entire image in the cropper.
+      // Select the entire captured image.
       cropperSelection
         .$change(0, 0, cropperCanvas.clientWidth, cropperCanvas.clientHeight)
         .$render();
