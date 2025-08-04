@@ -14,13 +14,27 @@ curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PA
 
 ## Endpoint HTTP methods
 
-API endpoints require either a [`GET` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET) or a [`POST` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST). A `GET` request retrieves information from PrairieLearn, such as gradebook information. A `POST` request asks PrairieLearn to perform an action, such as syncing a course GitHub repository. For `GET` requests, you can follow the format in the above example.
+API endpoints require a specific [HTTP method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods) depending on the nature of the request. A [`GET` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET) retrieves information from PrairieLearn, such as gradebook information. A [`POST` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST) asks PrairieLearn to perform an action, such as syncing a course GitHub repository. A [`PUT` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/PUT) updates a record on PrairieLearn, such as staff course access level. A [`DELETE` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/DELETE) removes information from PrairieLearn, such as removing staff access to a course. For `GET` requests, you can follow the format in the above example. For all other requests, you will need to specify the HTTP method type.
 
 Here is an example of using `curl` for a `POST` request:
 
 ```sh
 curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
+
+For other HTTP methods, replace the word `POST` with the required method type. Each endpoint below will indicate the method required before listing the URL path of the endpoint.
+
+## Providing data to an endpoint
+
+Endpoints that are making a change to PrairieLearn will typically require you to provide additional data to the endpoint. For example, to grant a staff member access to a specific course, you will need to provide their UID and the level of access you wish to grant them. For `curl`, this is done using the `-d` option.
+
+Here is an example of using `curl` for a `POST` request:
+
+```sh
+curl -H "Private-Token: TOKEN" -X POST -d '{"key":"value"}' https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+```
+
+When listed, make sure to include the correct `JSON` key(s) for each endpoint and update the value(s) in each example for your use case.
 
 ## Example access script
 
@@ -135,3 +149,71 @@ GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
 ```
 
 Returns the status and output of the sync job.
+
+### Staff access
+
+#### List all staff in a course
+
+```text
+GET /pl/api/v1/course/:course_id/staff
+```
+
+#### Add staff to a course
+
+```text
+POST /pl/api/v1/course/:course_id/staff
+```
+
+```json
+-d '{"uid": "dev@example.com", "course_role": "Previewer"}'
+```
+
+#### Change existing staff access level in a course
+
+```text
+PUT /pl/api/v1/course/:course_id/staff
+```
+
+```json
+-d '{"uid": "dev@example.com", "course_role": "Editor"}'
+```
+
+#### Give student data access to a course instance
+
+```text
+POST /pl/api/v1/course/:course_id/staff/:course_instance_id
+```
+
+```json
+-d '{"uid": "dev@example.com", "course_instance_role": "Student Data Viewer"}'
+```
+
+#### Change existing student data access level in a course instance
+
+```text
+PUT /pl/api/v1/course/:course_id/staff/:course_instance_id
+```
+
+```json
+-d '{"uid": "dev@example.com", "course_instance_role": "Student Data Editor"}'
+```
+
+#### Remove student data access in a course instance
+
+```text
+DELETE /pl/api/v1/course/:course_id/staff/:course_instance_id
+```
+
+```json
+-d '{"uid": "dev@example.com"}'
+```
+
+#### Remove staff access from a course
+
+```text
+DELETE /pl/api/v1/course/:course_id/staff
+```
+
+```json
+-d '{"uid": "dev@example.com"}'
+```
