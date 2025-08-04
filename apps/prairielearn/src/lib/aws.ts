@@ -155,7 +155,7 @@ export async function getFromS3(
  * @param bucket - S3 bucket name.
  * @param key - The S3 target path.
  * @param buffer - Defaults to true to return buffer.
- * @return Buffer or ReadableStream type from S3 file contents.
+ * @returns Buffer or ReadableStream type from S3 file contents.
  */
 export async function getFromS3(
   bucket: string,
