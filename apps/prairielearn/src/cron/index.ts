@@ -8,6 +8,7 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { SpanStatusCode, context, suppressTracing, trace } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
@@ -266,7 +267,6 @@ function queueDailyJobs(jobsList: CronJob[]) {
   jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
 }
 
-/** run a list of jobs */
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
   const cronUuid = uuidv4();
@@ -318,7 +318,9 @@ async function runJobs(jobsList: CronJob[]) {
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 
-/** try and get the job lock, and run the job if we get it */
+/**
+ * Tries to get the job lock; executes the job if the lock is acquired.
+ */
 async function tryJobWithLock(job: CronJob, cronUuid: string) {
   debug(`tryJobWithLock(): ${job.name}`);
   const lockName = 'cron:' + job.name;
@@ -353,14 +355,15 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
  */
 async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}`);
-  let interval_secs;
-  if (Number.isInteger(job.intervalSec)) {
-    interval_secs = job.intervalSec;
-  } else if (job.intervalSec === 'daily') {
-    interval_secs = 12 * 60 * 60;
-  } else {
-    throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
-  }
+  const interval_secs = run(() => {
+    if (Number.isInteger(job.intervalSec)) {
+      return job.intervalSec;
+    } else if (job.intervalSec === 'daily') {
+      return 12 * 60 * 60;
+    } else {
+      throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
+    }
+  });
   const result = await sqldb.queryAsync(sql.select_recent_cron_job, {
     name: job.name,
     interval_secs,
@@ -386,7 +389,6 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
 }
 
-/** actually run the job */
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
