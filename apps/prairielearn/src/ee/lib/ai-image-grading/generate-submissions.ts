@@ -58,7 +58,7 @@ export async function generateSubmissions(
         courseId: '3',
         shortName: 'FA25',
         assessmentId: '50',
-        skipRubrics: true
+        skipRubrics: false
     }
 
 
