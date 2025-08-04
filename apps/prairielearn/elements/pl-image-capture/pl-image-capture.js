@@ -384,7 +384,7 @@ const MAX_ZOOM_SCALE = 5;
         <span class="text-muted text-center">
           No image captured yet.
           <br/>
-          Use a clean sheet of paper for each capture.
+          Use a clean sheet of paper.
         </span>
       `;
     }
