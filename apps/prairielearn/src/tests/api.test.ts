@@ -406,7 +406,6 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential(
       'PUT to update user in staff list to an owner of a specific course succeeds',
       async function () {
-        locals.apiCourseStaffUrl = locals.apiCourseUrl + '/staff';
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
           headers: {
@@ -425,7 +424,6 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential(
       'PUT to update user in staff list to an owner of a specific course fails with invalid user fails',
       async function () {
-        locals.apiCourseStaffUrl = locals.apiCourseUrl + '/staff';
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
           headers: {
@@ -444,7 +442,6 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential(
       'PUT to update user in staff list to an owner of a specific course fails with invalid role fails',
       async function () {
-        locals.apiCourseStaffUrl = locals.apiCourseUrl + '/staff';
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
           headers: {
@@ -533,6 +530,24 @@ describe('API', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential('GET to /staff returns JSON of course staff permissions', async function () {
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.users);
+      assert.equal(json.users[0].user.uid, 'dev@example.com');
+      assert.equal(json.users[0].course_permission.course_role, 'Owner');
+      assert.equal(
+        json.users[0].course_instance_roles[0].course_instance_role,
+        'Student Data Editor',
+      );
+    });
+
     test.sequential(
       'DELETE users access to student data of a specific course instance succeeds',
       async function () {
@@ -550,6 +565,24 @@ describe('API', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential(
+      'Use GET endpoint to verify that student data access was removed',
+      async function () {
+        const res = await fetch(locals.apiCourseStaffUrl, {
+          headers: {
+            'Private-Token': locals.api_token,
+          },
+        });
+        assert.equal(res.status, 200);
+
+        const json = (await res.json()) as any;
+        assert.exists(json.users);
+        assert.equal(json.users[0].user.uid, 'dev@example.com');
+        assert.equal(json.users[0].course_permission.course_role, 'Owner');
+        assert.isNull(json.users[0].course_instance_roles);
+      },
+    );
+
     test.sequential('DELETE user from staff list of a specific course succeeds', async function () {
       const res = await fetch(locals.apiCourseStaffUrl, {
         method: 'DELETE',
@@ -562,6 +595,19 @@ describe('API', { timeout: 60_000 }, function () {
         }),
       });
       assert.equal(res.status, 200);
+    });
+
+    test.sequential('Use GET endpoint to verify that staff access was removed', async function () {
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = (await res.json()) as any;
+      assert.exists(json.users);
+      assert.isEmpty(json.users);
     });
   });
 });

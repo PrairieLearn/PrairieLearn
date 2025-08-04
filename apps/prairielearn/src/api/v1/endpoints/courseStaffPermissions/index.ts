@@ -1,7 +1,10 @@
+import * as path from 'node:path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import {
   deleteCourseInstancePermissions,
@@ -13,7 +16,36 @@ import {
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 
+import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
+
+const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
+  user: true,
+  course_permission: true,
+  course_instance_roles: true,
+});
+
+const sql = sqldb.loadSql(
+  path.join(
+    import.meta.dirname,
+    '../../../..',
+    'pages/instructorCourseAdminStaff/instructorCourseAdminStaff.sql',
+  ),
+);
+
 const router = Router({ mergeParams: true });
+
+// List users with access to course
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const users = await sqldb.queryRows(
+      sql.select_course_users,
+      { course_id: req.params.course_id },
+      CourseUsersRowSchemaAPIFriendly,
+    );
+    res.status(200).json({ users });
+  }),
+);
 
 // Grant user access to course
 router.post(
