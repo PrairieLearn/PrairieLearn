@@ -8,6 +8,7 @@ import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -87,6 +88,7 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      jsdoc,
       'react-hooks': reactHooks,
       vitest,
       'jsx-a11y-x': jsxA11yX,
@@ -103,6 +105,23 @@ export default tseslint.config([
     },
 
     settings: {
+      jsdoc: {
+        exemptDestructuredRootsFromChecks: true,
+        contexts: [
+          // We don't want to require documentation of a 'locals' (res.locals) variable
+          // AST Parser: https://github.com/es-joy/jsdoccomment
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionDeclaration',
+          },
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionExpression',
+          },
+          'ArrowFunctionExpression',
+          'TSDeclareFunction',
+        ],
+      },
       'jsx-a11y-x': {
         attributes: {
           for: ['for'],
@@ -325,7 +344,7 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -335,6 +354,38 @@ export default tseslint.config([
           message: 'module.exports should not be used in TypeScript files',
         },
       ],
+      ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/convert-to-jsdoc-comments': [
+        'error',
+        {
+          enforceJsdocLineStyle: 'single',
+          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
+          contextsBeforeAndAfter: ['TSPropertySignature'],
+          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
+        },
+      ],
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      // Potential future rules:
+      // 'jsdoc/informative-docs': ['error'],
+      // 'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
+      'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    files: ['**/*.js'],
+    rules: {
+      ...jsdoc.configs['flat/recommended-typescript-flavor-error'].rules,
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/tag-lines': 'off',
     },
   },
   {

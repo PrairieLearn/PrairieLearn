@@ -266,7 +266,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
   jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
 }
 
-// run a list of jobs
+/** run a list of jobs */
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
   const cronUuid = uuidv4();
@@ -318,7 +318,7 @@ async function runJobs(jobsList: CronJob[]) {
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 
-// try and get the job lock, and run the job if we get it
+/** try and get the job lock, and run the job if we get it */
 async function tryJobWithLock(job: CronJob, cronUuid: string) {
   debug(`tryJobWithLock(): ${job.name}`);
   const lockName = 'cron:' + job.name;
@@ -346,9 +346,11 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
   }
 }
 
-// See how long it is since we last ran the job and only run it if
-// enough time has elapsed. We are protected by a lock here so we
-// have exclusive access.
+/**
+ * See how long it is since we last ran the job and only run it if
+ * enough time has elapsed. We are protected by a lock here so we
+ * have exclusive access.
+ */
 async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}`);
   let interval_secs;
@@ -384,7 +386,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
 }
 
-// actually run the job
+/** actually run the job */
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
