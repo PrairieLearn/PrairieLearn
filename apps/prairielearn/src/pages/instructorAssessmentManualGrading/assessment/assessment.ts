@@ -136,25 +136,16 @@ router.post(
       }
 
       for (const row of manuallyGradedRows) {
-        try {
-          await aiGrade({
-            question: row.question,
-            course: res.locals.course,
-            course_instance_id: assessment.course_instance_id,
-            assessment_question: row.assessment_question,
-            urlPrefix: res.locals.urlPrefix,
-            authn_user_id: res.locals.authn_user.user_id,
-            user_id: res.locals.user.user_id,
-            mode: 'all',
-          });
-        } catch {
-          flash(
-            'error',
-            `AI grading failed for assessment question ${row.assessment_question.id}.`,
-          );
-          res.redirect(req.originalUrl);
-          return;
-        }
+        await aiGrade({
+          question: row.question,
+          course: res.locals.course,
+          course_instance_id: assessment.course_instance_id,
+          assessment_question: row.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all',
+        });
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
