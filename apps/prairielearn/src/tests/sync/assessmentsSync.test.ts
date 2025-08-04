@@ -10,9 +10,12 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import {
   AlternativeGroupSchema,
+  type AssessmentQuestion,
+  type AssessmentQuestionRolePermission,
   AssessmentQuestionRolePermissionSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
+  type GroupRole,
   GroupRoleSchema,
   QuestionSchema,
   ZoneSchema,
@@ -68,11 +71,15 @@ function getGroupRoles() {
   ] satisfies GroupRoleJsonInput[];
 }
 
-function getPermission(permissions, groupRole, assessmentQuestion) {
+function getPermission(
+  permissions: AssessmentQuestionRolePermission[],
+  groupRole: GroupRole,
+  assessmentQuestion: AssessmentQuestion,
+) {
   return permissions.find(
     (permission) =>
-      parseInt(permission.assessment_question_id) === parseInt(assessmentQuestion.id) &&
-      parseInt(permission.group_role_id) === parseInt(groupRole.id),
+      permission.assessment_question_id === assessmentQuestion.id &&
+      permission.group_role_id === groupRole.id,
   );
 }
 
@@ -90,12 +97,12 @@ async function getSyncedAssessmentData(tid: string) {
   );
 }
 
-async function findSyncedAssessment(tid) {
+async function findSyncedAssessment(tid: string) {
   const syncedAssessments = await util.dumpTable('assessments');
   return syncedAssessments.find((a) => a.tid === tid);
 }
 
-async function findSyncedUndeletedAssessment(tid) {
+async function findSyncedUndeletedAssessment(tid: string) {
   const syncedAssessments = await util.dumpTable('assessments');
   return syncedAssessments.find((a) => a.tid === tid && a.deleted_at == null);
 }
@@ -767,8 +774,11 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
 
+    assert.isDefined(firstAssessmentQuestion);
+    assert.isDefined(secondAssessmentQuestion);
+
     // Check group roles
-    const syncedRoles = await util.dumpTable('group_roles');
+    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -777,7 +787,10 @@ describe('Assessment syncing', () => {
     assert.isDefined(contributor);
 
     // Check question role permissions
-    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionSchema,
+    );
 
     const firstQuestionRecorderPermission = getPermission(
       syncedPermissions,
@@ -860,8 +873,11 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
 
+    assert.isDefined(firstAssessmentQuestion);
+    assert.isDefined(secondAssessmentQuestion);
+
     // Check group roles
-    const syncedRoles = await util.dumpTable('group_roles');
+    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -870,7 +886,10 @@ describe('Assessment syncing', () => {
     assert.isDefined(contributor);
 
     // Check question role permissions
-    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionSchema,
+    );
 
     const firstQuestionRecorderPermission = getPermission(
       syncedPermissions,
@@ -953,8 +972,11 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
 
+    assert.isDefined(firstAssessmentQuestion);
+    assert.isDefined(secondAssessmentQuestion);
+
     // Check group roles
-    const syncedRoles = await util.dumpTable('group_roles');
+    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -963,7 +985,10 @@ describe('Assessment syncing', () => {
     assert.isDefined(contributor);
 
     // Check question role permissions
-    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionSchema,
+    );
 
     const firstQuestionRecorderPermission = getPermission(
       syncedPermissions,
