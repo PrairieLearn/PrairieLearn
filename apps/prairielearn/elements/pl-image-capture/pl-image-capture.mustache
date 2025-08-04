@@ -173,84 +173,98 @@ $(function() {
       >
     </div>
   </div>
-  <div class="js-crop-rotate-container d-none">
-    <div class="js-cropper-container">
-      <img class="js-cropper-base-image w-100" alt="Captured image" />
-    </div>
-    <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
-      <div class="d-flex align-items-center gap-2">
-        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
-          Rotation: 
-        </label>
-        <input 
-          id="rotation-slider-{{uuid}}"
-          type="range" 
-          class="js-rotation-slider form-range mx-2" 
-          style="max-width: 200px; min-width: 100px;" 
-          min="-45" 
-          max="45" 
-          step="1" 
-          value="0"
-        />  
+  <div class="js-crop-rotate-container d-none position-relative">
+    <div class="position-relative">
+      <div class="js-cropper-container">
+        <img class="js-cropper-base-image w-100" alt="Captured image" />
       </div>
-      <div class="d-flex align-items-center gap-2">
-        <button 
-          type="button"
-          class="js-rotate-clockwise-button btn btn-light border"
-          title="Rotate clockwise"
-          data-toggle="tooltip"
-          data-placement="top" 
-          aria-label="Rotate clockwise"
-        >
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
-        <button 
-          type="button"
-          class="js-rotate-counterclockwise-button btn btn-light border"
-          title="Rotate counterclockwise"
-          data-toggle="tooltip"
-          data-placement="top"
-          aria-label="Rotate counterclockwise"
-        >
-          <i class="bi bi-arrow-counterclockwise"></i>
-        </button>
+      <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
+        <div class="d-flex align-items-center gap-2">
+          <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
+            Rotation: 
+          </label>
+          <input 
+            id="rotation-slider-{{uuid}}"
+            type="range" 
+            class="js-rotation-slider form-range mx-2" 
+            style="max-width: 200px; min-width: 100px;" 
+            min="-45" 
+            max="45" 
+            step="1" 
+            value="0"
+          />  
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button 
+            type="button"
+            class="js-rotate-clockwise-button btn btn-light border"
+            title="Rotate clockwise"
+            data-toggle="tooltip"
+            data-placement="top" 
+            aria-label="Rotate clockwise"
+          >
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button 
+            type="button"
+            class="js-rotate-counterclockwise-button btn btn-light border"
+            title="Rotate counterclockwise"
+            data-toggle="tooltip"
+            data-placement="top"
+            aria-label="Rotate counterclockwise"
+          >
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
 
-        <button 
-          type="button"
-          class="js-flip-horizontal-button btn btn-light border"
-          title="Flip horizontally"
-          data-toggle="tooltip"
-          data-placement="top"
-          aria-label="Flip horizontally"
-        >
-          <i class="bi bi-symmetry-vertical"></i>
-        </button>
-        <button 
-          type="button"
-          class="js-flip-vertical-button btn btn-light border"
-          title="Flip vertically"
-          data-toggle="tooltip"
-          data-placement="top"
-          aria-label="Flip vertically"
-        >
-          <i class="bi bi-symmetry-horizontal"></i>
-        </button>
+          <button 
+            type="button"
+            class="js-flip-horizontal-button btn btn-light border"
+            title="Flip horizontally"
+            data-toggle="tooltip"
+            data-placement="top"
+            aria-label="Flip horizontally"
+          >
+            <i class="bi bi-symmetry-vertical"></i>
+          </button>
+          <button 
+            type="button"
+            class="js-flip-vertical-button btn btn-light border"
+            title="Flip vertically"
+            data-toggle="tooltip"
+            data-placement="top"
+            aria-label="Flip vertically"
+          >
+            <i class="bi bi-symmetry-horizontal"></i>
+          </button>
+        </div>
+        <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
+          <button 
+            type="button"
+            class="js-cancel-crop-rotate-button btn btn-secondary"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button" 
+            class="js-apply-changes-button btn btn-info"
+          >
+            <i class="bi bi-check2 me-1"></i>
+            Apply changes
+          </button>
+        </div>
       </div>
-      <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
-        <button 
-          type="button"
-          class="js-cancel-crop-rotate-button btn btn-secondary"
-        >
-          Cancel
-        </button>
-        <button 
-          type="button" 
-          class="js-apply-changes-button btn btn-info"
-        >
-          <i class="bi bi-check2 me-1"></i>
-          Apply changes
-        </button>
-      </div>
+    </div>
+    <div class="js-top-buttons position-absolute top-0 end-0 m-2">
+      <button 
+        type="button" 
+        class="js-use-full-image-button btn btn-primary"
+        title="Crop to the full, original image"
+        data-toggle="tooltip"
+        data-placement="top" 
+        aria-label="Crop to the full, original image"
+      >
+        Use full image
+      </button>
     </div>
   </div>
   
