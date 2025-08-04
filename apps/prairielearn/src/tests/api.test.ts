@@ -403,6 +403,36 @@ describe('API', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential('POST trying to add user with missing uid fails', async function () {
+      locals.apiCourseStaffUrl = locals.apiCourseUrl + '/staff';
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        method: 'POST',
+        headers: {
+          'Private-Token': locals.api_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          course_role: 'Previewer',
+        }),
+      });
+      assert.equal(res.status, 400);
+    });
+
+    test.sequential('POST trying to add user with missing role fails', async function () {
+      locals.apiCourseStaffUrl = locals.apiCourseUrl + '/staff';
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        method: 'POST',
+        headers: {
+          'Private-Token': locals.api_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uid: 'dev@example.com',
+        }),
+      });
+      assert.equal(res.status, 400);
+    });
+
     test.sequential(
       'PUT to update user in staff list to an owner of a specific course succeeds',
       async function () {
@@ -477,6 +507,42 @@ describe('API', { timeout: 60_000 }, function () {
     );
 
     test.sequential(
+      'POST to give user access to student data with missing uid fails',
+      async function () {
+        locals.apiCourseInstanceStaffUrl = locals.apiCourseStaffUrl + '/course_instance/1';
+        const res = await fetch(locals.apiCourseInstanceStaffUrl, {
+          method: 'POST',
+          headers: {
+            'Private-Token': locals.api_token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            course_instance_role: 'Student Data Viewer',
+          }),
+        });
+        assert.equal(res.status, 400);
+      },
+    );
+
+    test.sequential(
+      'POST to give user access to student data with missing role fails',
+      async function () {
+        locals.apiCourseInstanceStaffUrl = locals.apiCourseStaffUrl + '/course_instance/1';
+        const res = await fetch(locals.apiCourseInstanceStaffUrl, {
+          method: 'POST',
+          headers: {
+            'Private-Token': locals.api_token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: 'dev@example.com',
+          }),
+        });
+        assert.equal(res.status, 400);
+      },
+    );
+
+    test.sequential(
       'PUT to update users access to student data of a specific course instance succeeds',
       async function () {
         const res = await fetch(locals.apiCourseInstanceStaffUrl, {
@@ -508,7 +574,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_instance_role: 'Student Data Editor',
           }),
         });
-        assert.equal(res.status, 404);
+        assert.equal(res.status, 400);
       },
     );
 
@@ -526,7 +592,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_instance_role: '',
           }),
         });
-        assert.equal(res.status, 500);
+        assert.equal(res.status, 400);
       },
     );
 
@@ -565,6 +631,18 @@ describe('API', { timeout: 60_000 }, function () {
       },
     );
 
+    test.sequential('DELETE student data access with missing `uid` fails', async function () {
+      const res = await fetch(locals.apiCourseInstanceStaffUrl, {
+        method: 'DELETE',
+        headers: {
+          'Private-Token': locals.api_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      assert.equal(res.status, 400);
+    });
+
     test.sequential(
       'Use GET endpoint to verify that student data access was removed',
       async function () {
@@ -582,6 +660,18 @@ describe('API', { timeout: 60_000 }, function () {
         assert.isNull(json.users[0].course_instance_roles);
       },
     );
+
+    test.sequential('DELETE user with missing `uid` fails', async function () {
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        method: 'DELETE',
+        headers: {
+          'Private-Token': locals.api_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      assert.equal(res.status, 400);
+    });
 
     test.sequential('DELETE user from staff list of a specific course succeeds', async function () {
       const res = await fetch(locals.apiCourseStaffUrl, {

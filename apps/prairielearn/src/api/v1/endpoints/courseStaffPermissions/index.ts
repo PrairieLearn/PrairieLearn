@@ -52,6 +52,10 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
+    if (!uid || !course_role) {
+      throw new error.HttpStatusError(400, 'Missing required field(s): {uid, course_role}');
+    }
+
     const job = await insertCoursePermissionsByUserUid({
       course_id: req.params.course_id,
       uid,
@@ -89,6 +93,10 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
 
+    if (!uid) {
+      throw new error.HttpStatusError(400, 'Missing required field: uid');
+    }
+
     const user = await selectOptionalUserByUid(uid);
     if (!user) {
       throw new error.HttpStatusError(404, 'User not found');
@@ -108,6 +116,13 @@ router.post(
   '/course_instance/:course_instance(\\d+)',
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
+
+    if (!uid || !course_instance_role) {
+      throw new error.HttpStatusError(
+        400,
+        'Missing required field(s): {uid, course_instance_role}',
+      );
+    }
 
     const user = await selectOptionalUserByUid(uid);
     if (!user) {
@@ -131,6 +146,13 @@ router.put(
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
 
+    if (!uid || !course_instance_role) {
+      throw new error.HttpStatusError(
+        400,
+        'Missing required field(s): {uid, course_instance_role}',
+      );
+    }
+
     const user = await selectOptionalUserByUid(uid);
     if (!user) {
       throw new error.HttpStatusError(404, 'User not found');
@@ -152,6 +174,10 @@ router.delete(
   '/course_instance/:course_instance(\\d+)',
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
+
+    if (!uid) {
+      throw new error.HttpStatusError(400, 'Missing required field: uid');
+    }
 
     const user = await selectOptionalUserByUid(uid);
     if (!user) {
