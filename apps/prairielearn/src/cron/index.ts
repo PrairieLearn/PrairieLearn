@@ -8,11 +8,11 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { SpanStatusCode, context, suppressTracing, trace } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
 import { isEnterprise } from '../lib/license.js';
-import { run } from '@prairielearn/run';
 
 const debug = debugfn('prairielearn:cron');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -355,7 +355,7 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
  */
 async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}`);
-  let interval_secs = run(() => {
+  const interval_secs = run(() => {
     if (Number.isInteger(job.intervalSec)) {
       return job.intervalSec;
     } else if (job.intervalSec === 'daily') {
