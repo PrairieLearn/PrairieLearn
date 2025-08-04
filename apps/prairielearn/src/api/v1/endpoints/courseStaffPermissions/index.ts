@@ -15,7 +15,6 @@ import {
   updateCoursePermissionsRole,
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
-
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
 
 const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
