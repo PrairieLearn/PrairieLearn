@@ -332,3 +332,15 @@ SELECT
 FROM
   updated_instance_questions AS uiq
   LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (mriqmgj.instance_question_id = uiq.id);
+
+-- BLOCK update_rubric_item
+UPDATE rubric_items
+SET
+  description = $description,
+  explanation = $explanation,
+  grader_note = $grader_note
+WHERE
+  id = $id
+  AND rubric_id = $rubric_id
+RETURNING
+  id;

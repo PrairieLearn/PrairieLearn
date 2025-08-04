@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -12,7 +13,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs, generateRubricTuningPrompt, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { clearRubricOptionalFields, deleteAiGradingJobs, generateRubricTuningPrompt, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { config } from '../../../lib/config.js';
 import type { AssessmentQuestion, InstanceQuestion } from '../../../lib/db-types.js';
@@ -283,7 +284,7 @@ router.post(
           idx++;
         }
 
-        const {rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
+        const {messages: rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
           urlPrefix: res.locals.urlPrefix,
           selectedInstanceQuestions,
           assessmentQuestion: res.locals.assessment_question,
@@ -305,10 +306,9 @@ router.post(
 
         const completion = await openai.chat.completions.parse({
           messages: rubricTuningMessages,
-          model: OPEN_AI_MODEL,
+          model: 'o4-mini',
           user: `course_${res.locals.course.id}`,
           response_format: zodResponseFormat(TunedRubricResponseSchema, 'formatted_rubric'),
-          temperature: OPEN_AI_TEMPERATURE,
         });
         const response = completion.choices[0].message;
         if (!response?.parsed?.rubric_items) {
@@ -418,6 +418,14 @@ router.post(
 
         flash('success', 'Rubric tuning completed successfully. The rubric has been updated.');
         res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'clear_rubric') {    
+      await clearRubricOptionalFields(
+        res.locals.assessment_question.id,
+        res.locals.assessment_question.manual_rubric_id
+      );
+
+      flash('success', 'Optional rubric fields cleared successfully.');
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_ai_grading_jobs') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');

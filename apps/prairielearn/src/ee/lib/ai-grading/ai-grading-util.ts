@@ -348,6 +348,20 @@ export async function generateRubricTuningPrompt({
   return {messages, rubric_items};
 }
 
+export async function clearRubricOptionalFields(assessmentQuestionId: string, rubricId: string) {
+  const rubric_items = await selectRubricForGrading(assessmentQuestionId);
+
+  for (const rubric_item of rubric_items) {
+    await queryAsync(sql.update_rubric_item, {
+      id: rubric_item.id,
+      rubric_id: rubricId,
+      description: rubric_item.description,
+      explanation: '',
+      grader_note: '',
+    });
+  }
+}
+
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */

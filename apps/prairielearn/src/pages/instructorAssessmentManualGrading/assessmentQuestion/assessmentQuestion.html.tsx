@@ -148,6 +148,10 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="tune_rubric" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
+            <form method="POST" id="clear-rubric">
+              <input type="hidden" name="__action" value="clear_rubric" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
@@ -319,6 +323,13 @@ export function AssessmentQuestion({
                           onclick="$('#tune-rubric').submit();"
                         >
                           Tune rubric
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#clear-rubric').submit();"
+                        >
+                          Clear rubric
                         </button>
 
                         <hr class="dropdown-divider" />
