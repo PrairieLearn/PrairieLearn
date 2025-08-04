@@ -1,5 +1,15 @@
 # @prairielearn/sentry
 
+## 4.0.0
+
+### Major Changes
+
+- a7d1ad9: Switch to using `@sentry/node-core`. The consumer must now ensure that OpenTelemetry is configured correctly.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 3.0.7
 
 ### Patch Changes

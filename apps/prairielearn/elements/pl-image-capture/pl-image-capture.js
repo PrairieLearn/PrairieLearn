@@ -404,9 +404,6 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Loads the most recent submission or external image capture.
-     *
-     * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
-     * If false, load the image from the most recent submission.
      */
     async loadSubmission() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
@@ -792,7 +789,7 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Ensures that the provided elements exist. Throws an error if any element is not present.
-     * @param {Object} containers An object wherein keys are element names and values are the elements.
+     * @param {object} elements An object wherein keys are element names and values are the elements.
      */
     ensureElementsExist(elements) {
       for (const elementName in elements) {
