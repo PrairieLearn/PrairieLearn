@@ -195,7 +195,11 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
-    setShowDeletionDialogs(showDialogs) {
+    /**
+     * Whether or not to show the deletion dialog for the uploaded image.
+     * @param {boolean} showDialogs If true, shows the deletion dialog. Otherwise, hides it.
+     */
+    setShowDeletionDialog(showDialogs) {
       const uploadedImageDeletionDialog = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-deletion-dialog',
       );
@@ -211,6 +215,10 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
+    /**
+     * Whether or not to show the confirm deletion dialog for the uploaded image.
+     * @param {boolean} showDialog If true, shows the deletion confirmation dialog. Otherwise, shows the button to open the confirmation dialog.
+     */
     setShowDeletionConfirmationDialog(showDialog) {
       const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
         '.js-open-deletion-dialog-button',
@@ -267,11 +275,6 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       confirmDeleteUploadedImageButton.addEventListener('click', () => {
-        this.loadCapturePreviewFromDataUrl({
-          dataUrl: undefined,
-          originalCapture: false,
-        });
-
         const uploadedImageContainer = this.imageCaptureDiv.querySelector(
           '.js-uploaded-image-container',
         );
@@ -280,10 +283,16 @@ const MAX_ZOOM_SCALE = 5;
           uploadedImageContainer,
         });
 
-        // Reset the hidden capture input value to indicate no image is captured.
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: null,
+          originalCapture: true,
+        });
+
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
         this.setShowDeletionConfirmationDialog(false);
+
+        this.setCaptureChangedFlag(true);
       });
 
       cancelDeleteUploadedImageButton.addEventListener('click', () => {
@@ -467,6 +476,14 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
+    createJsImagePlaceholderDivHtml = (content) => {
+      return `
+        <div class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center" style="height: 200px;">
+          ${content}
+        </div>
+      `;
+    };
+
     /**
      * Updates the uploaded image container to display that no image has been captured yet.
      * @param {HTMLElement} uploadedImageContainer
@@ -478,14 +495,9 @@ const MAX_ZOOM_SCALE = 5;
           <span class="text-muted">No image captured yet.</span>
         `;
       } else {
-        uploadedImageContainer.innerHTML = `
-          <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
-            style="height: 200px;"
-          >
-            <span class="text-muted">No image captured yet.</span>
-          </div>
-        `;
+        uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
+          <span class="text-muted">No image captured yet.</span>
+        `);
       }
     }
 
@@ -494,16 +506,11 @@ const MAX_ZOOM_SCALE = 5;
      * @param {HTMLElement} uploadedImageContainer
      */
     setLoadingCaptureState(uploadedImageContainer) {
-      uploadedImageContainer.innerHTML = `
-        <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center w-100"
-            style="height: 200px;"
-        >
-            <div class="spinning-wheel spinner-border">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+      uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
+        <div class="spinning-wheel spinner-border">
+          <span class="visually-hidden">Loading...</span>
         </div>
-      `;
+      `);
     }
 
     /**
@@ -643,7 +650,7 @@ const MAX_ZOOM_SCALE = 5;
       uploadedImageContainerTopButtons.classList.remove('d-none');
 
       if (this.editable) {
-        this.setShowDeletionDialogs(dataUrl ? true : false);
+        this.setShowDeletionDialog(dataUrl ? true : false);
         if (dataUrl) {
           this.setShowDeletionConfirmationDialog(false);
         }
