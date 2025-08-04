@@ -160,7 +160,7 @@ const MAX_ZOOM_SCALE = 5;
         rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
-        useFullImageButton
+        useFullImageButton,
       });
 
       cropRotateButton.addEventListener('click', () => {
@@ -197,7 +197,7 @@ const MAX_ZOOM_SCALE = 5;
 
       useFullImageButton.addEventListener('click', () => {
         this.selectFullImage();
-      }); 
+      });
     }
 
     /**
@@ -1197,27 +1197,20 @@ const MAX_ZOOM_SCALE = 5;
 
       const cropperImage = this.cropper.getCropperImage();
       const cropperSelection = this.cropper.getCropperSelection();
+      const cropperCanvas = this.cropper.getCropperCanvas();
 
       this.ensureElementsExist({
         cropperImage,
         cropperSelection,
+        cropperCanvas,
       });
 
+      cropperImage.$resetTransform();
 
-      cropperImage.$resetTransform();  
-      cropperSelection.$reset();     
-
-      // Reset the selection to the full image.
-
-      console.log('natural width', cropperImage.width);
-      console.log('natural height', cropperImage.height);
-
-      cropperSelection.$change(
-        0,
-        0,
-        cropperImage.width,
-        cropperImage.height,
-      ).$render();
+      // Select the entire image in the cropper.
+      cropperSelection
+        .$change(0, 0, cropperCanvas.clientWidth, cropperCanvas.clientHeight)
+        .$render();
 
       // Center the image in the cropper.
       cropperImage.$center('contain');
