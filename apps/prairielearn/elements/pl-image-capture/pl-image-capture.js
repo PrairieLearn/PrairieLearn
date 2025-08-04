@@ -576,9 +576,9 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Sets the capture button text to indicate whether the user is retaking a photo or capturing a new one.
+     * Sets the capture button text to indicate whether the user is retaking a photo or not.
      *
-     * @param {boolean} showRetakeText If true, the button text will indicate that the user is retaking a photo. Otherwise, it will indicate that the user is capturing a new photo.
+     * @param {boolean} showRetakeText If true, the button text will indicate that the user is retaking a photo. Otherwise, it will show the default text.
      */
     setCaptureButtonText(showRetakeText) {
       const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
@@ -590,7 +590,7 @@ const MAX_ZOOM_SCALE = 5;
       });
       captureWithLocalCameraButtonSpan.innerHTML = showRetakeText
         ? 'Retake with webcam'
-        : 'Capture with webcam';
+        : 'Use webcam';
 
       if (!this.mobile_capture_enabled) {
         return;
@@ -607,7 +607,7 @@ const MAX_ZOOM_SCALE = 5;
 
       captureWithMobileDeviceButtonSpan.innerHTML = showRetakeText
         ? 'Retake with phone'
-        : 'Capture with phone';
+        : 'Use phone';
     }
 
     /**
