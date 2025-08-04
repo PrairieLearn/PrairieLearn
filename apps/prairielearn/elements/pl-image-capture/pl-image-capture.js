@@ -196,7 +196,9 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Whether or not to show the deletion dialog for the uploaded image.
+     * Whether or not to show the deletion dialog for the uploaded image, which contains the
+     * open confirmation dialog button and the confirmation dialog.
+     *
      * @param {boolean} showDialogs If true, shows the deletion dialog. Otherwise, hides it.
      */
     setShowDeletionDialog(showDialogs) {
@@ -217,6 +219,7 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Whether or not to show the confirm deletion dialog for the uploaded image.
+     *
      * @param {boolean} showDialog If true, shows the deletion confirmation dialog. Otherwise, shows the button to open the confirmation dialog.
      */
     setShowDeletionConfirmationDialog(showDialog) {
@@ -264,8 +267,8 @@ const MAX_ZOOM_SCALE = 5;
       );
 
       this.ensureElementsExist({
-        uploadedImageDeletionConfirmationDialog,
         openDeletionDialogButton,
+        uploadedImageDeletionConfirmationDialog,
         confirmDeleteUploadedImageButton,
         cancelDeleteUploadedImageButton,
       });
@@ -476,7 +479,13 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
-    createJsImagePlaceholderDivHtml = (content) => {
+    /**
+     * Creates the HTML for the image placeholder div, which is displayed when
+     * no image is captured or when the image is loading.
+     *
+     * @param {string} content The inner HTML of the placeholder div.
+     */
+    createJsImagePlaceholderHtml = (content) => {
       return `
         <div class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center" style="height: 200px;">
           ${content}
@@ -659,7 +668,6 @@ const MAX_ZOOM_SCALE = 5;
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
-          uploadedImageContainerTopButtons,
           zoomInButton,
           zoomOutButton,
         });
@@ -724,6 +732,11 @@ const MAX_ZOOM_SCALE = 5;
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
             '.js-hidden-original-capture-input',
           );
+
+          this.ensureElementsExist({
+            hiddenOriginalCaptureInput,
+          });
+
           if (dataUrl) {
             hiddenOriginalCaptureInput.value = dataUrl;
           } else {
