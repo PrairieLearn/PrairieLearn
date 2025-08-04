@@ -1,23 +1,27 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import OpenAI from 'openai';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { deleteAiGradingJobs, generateRubricTuningPrompt, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { config } from '../../../lib/config.js';
+import type { AssessmentQuestion, InstanceQuestion } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
-import { AssessmentQuestion } from './assessmentQuestion.html.js';
+import { AssessmentQuestion as AssessmentQuestionPage } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const router = Router();
@@ -34,7 +38,7 @@ router.get(
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
-      AssessmentQuestion({
+      AssessmentQuestionPage({
         resLocals: res.locals,
         courseStaff,
         aiGradingEnabled,
@@ -205,17 +209,31 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'select_references') {
+    } else if (req.body.__action === 'tune_rubric') {
+      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
       // Select all submissions
       // Acquire the AI gradings for each
+      const openai = new OpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+
+      const assessment_question = res.locals.assessment_question as AssessmentQuestion;
 
         const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
-          res.locals.assessment_question.id,
+          assessment_question.id,
         );
-    
+
+        const instanceQuestionsById: Record<string, InstanceQuestion> = {};
+        for (const instanceQuestion of instanceQuestions) {
+          instanceQuestionsById[instanceQuestion.id] = instanceQuestion;
+        }
+
         const instanceQuestionsTable = await fillInstanceQuestionColumns(
           instanceQuestions,
-          res.locals.assessment_question,
+          assessment_question
         );
 
         const aiGradingsForEachPtLevel: Record<number, string[]> = {};
@@ -233,7 +251,172 @@ router.post(
           aiGradingsForEachPtLevel[aiPoints].push(instanceQuestions[i].id);
         }
 
-        console.log('AI gradings for each point level:', aiGradingsForEachPtLevel);
+        
+        // Select a total of 5 AI gradings, distributed across the point levels
+        const selectedInstanceQuestions: InstanceQuestion[] = [];
+      
+        const levels = Object.keys(aiGradingsForEachPtLevel)
+        .map(Number)
+        .filter(lvl => aiGradingsForEachPtLevel[lvl].length > 0);
+        
+        const numToSelect = Math.max(5, levels.length);
+
+
+        let idx = 0;
+        while (selectedInstanceQuestions.length < numToSelect) {
+          // If all buckets are empty, stop early
+          if (levels.every(lvl => aiGradingsForEachPtLevel[lvl].length === 0)) {
+            break;
+          }
+
+          const level = levels[idx % levels.length];
+          const bucket = aiGradingsForEachPtLevel[level];
+
+          if (bucket.length > 0) {
+            // Pull one at random from this bucket
+            const randomIndex = Math.floor(Math.random() * bucket.length);
+            const [pickedId] = bucket.splice(randomIndex, 1);
+            console.log(`Picked ID: ${pickedId} from level ${level}`);
+            selectedInstanceQuestions.push(instanceQuestionsById[pickedId]);
+          }
+
+          idx++;
+        }
+
+        const {rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
+          urlPrefix: res.locals.urlPrefix,
+          selectedInstanceQuestions,
+          assessmentQuestion: res.locals.assessment_question,
+          question: res.locals.question,
+          course: res.locals.course,
+          openai
+        });
+
+        const TunedRubricResponseSchema = z.object({
+          rubric_items: z.array(
+            z.object({
+              id: z.string(),
+              description: z.string(),
+              explanation: z.string(),
+              grader_note: z.string(),
+            }),
+          )
+        });
+
+        const completion = await openai.chat.completions.parse({
+          messages: rubricTuningMessages,
+          model: OPEN_AI_MODEL,
+          user: `course_${res.locals.course.id}`,
+          response_format: zodResponseFormat(TunedRubricResponseSchema, 'formatted_rubric'),
+          temperature: OPEN_AI_TEMPERATURE,
+        });
+        const response = completion.choices[0].message;
+        if (!response?.parsed?.rubric_items) {
+          throw new error.HttpStatusError(500, 'AI did not return a formatted rubric');          
+        }
+
+        const generatedRubricItems = response.parsed.rubric_items;
+
+        // testing value. TODO: Remove
+        // const generatedRubricItems = [
+        //   {
+        //     id: '33',
+        //     description: 'Correct',
+        //     explanation: 'The response is entirely correct and demonstrates a clear understanding of the problem.',
+        //     grader_note: 'Award full points for a completely correct response with no errors.'
+        //   },
+        //   {
+        //     id: '34',
+        //     description: 'Missing or incorrect final statement',
+        //     explanation: 'The response does not include a final statement or the final statement is incorrect.',
+        //     grader_note: 'Deduct points if the conclusion about continuity is missing or incorrect.'
+        //   },
+        //   {
+        //     id: '35',
+        //     description: 'Did not set up left-hand limit',
+        //     explanation: 'The response does not include the setup for evaluating the left-hand limit.',
+        //     grader_note: 'Deduct points if the left-hand limit is not addressed or set up.'
+        //   },
+        //   {
+        //     id: '36',
+        //     description: 'Did not set up right-hand limit',
+        //     explanation: 'The response does not include the setup for evaluating the right-hand limit.',
+        //     grader_note: 'Deduct points if the right-hand limit is not addressed or set up.'
+        //   },
+        //   {
+        //     id: '37',
+        //     description: 'Left-hand limit evaluated incorrectly',
+        //     explanation: 'The left-hand limit is evaluated but contains errors.',
+        //     grader_note: 'Deduct points if the left-hand limit is evaluated incorrectly.'
+        //   },
+        //   {
+        //     id: '38',
+        //     description: 'Right-hand limit evaluated incorrectly',
+        //     explanation: 'The right-hand limit is evaluated but contains errors.',
+        //     grader_note: 'Deduct points if the right-hand limit is evaluated incorrectly.'
+        //   },
+        //   {
+        //     id: '39',
+        //     description: 'Incorrectly evaluated the left- and right-hand limits as equivalent',
+        //     explanation: 'The response incorrectly concludes that the left- and right-hand limits are equal.',
+        //     grader_note: 'Deduct points if the response incorrectly equates the left- and right-hand limits.'
+        //   },
+        //   {
+        //     id: '40',
+        //     description: 'Incorrect limit notation',
+        //     explanation: 'The response uses incorrect notation when discussing limits.',
+        //     grader_note: 'Deduct points for incorrect or unclear limit notation.'
+        //   },
+        //   {
+        //     id: '41',
+        //     description: 'Missing or incorrect',
+        //     explanation: 'The response is missing key components or is entirely incorrect.',
+        //     grader_note: 'Deduct points for responses that lack the necessary components or are incorrect overall.'
+        //   },
+        //   {
+        //     id: '42',
+        //     description: 'Correct conclusion',
+        //     explanation: 'The response includes a correct conclusion about the continuity of the function.',
+        //     grader_note: 'Award points for a correct conclusion, even if minor errors are present elsewhere.'
+        //   },
+        //   {
+        //     id: '43',
+        //     description: 'Minor error',
+        //     explanation: 'The response contains a minor error that does not significantly impact the overall correctness.',
+        //     grader_note: 'Deduct a small number of points for minor errors.'
+        //   },
+        //   {
+        //     id: '44',
+        //     description: 'Work not shown computing limit',
+        //     explanation: 'The response does not show the work for computing the limits.',
+        //     grader_note: 'Deduct points if the work for computing limits is not shown.'
+        //   }
+        // ]
+
+        // Ensure all AI-generated rubric items are in the original rubric items list
+
+        const originalRubricItemIds = new Set(rubric_items.map((item) => item.id));
+
+
+        for (const item of generatedRubricItems) {
+          if (!originalRubricItemIds.has(item.id)) {
+            throw new error.HttpStatusError(400, `Unknown AI-generated rubric item ID: ${item.id}`);
+          }
+        }
+
+        for (const item of generatedRubricItems) {
+          // Dummy message for testing
+          // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
+          const rubricItemId = await queryRow(sql.update_rubric_item, {
+            id: item.id,
+            rubric_id: res.locals.assessment_question.manual_rubric_id,
+            description: item.description,
+            explanation: item.explanation,
+            grader_note: item.grader_note,
+          }, z.string());
+        }
+
+        flash('success', 'Rubric tuning completed successfully. The rubric has been updated.');
         res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_ai_grading_jobs') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {

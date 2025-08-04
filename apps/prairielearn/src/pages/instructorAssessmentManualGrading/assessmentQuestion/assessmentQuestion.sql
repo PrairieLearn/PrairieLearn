@@ -67,3 +67,15 @@ SET
   ai_grading_mode = NOT ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK update_rubric_item
+UPDATE rubric_items
+SET
+  description = $description,
+  explanation = $explanation,
+  grader_note = $grader_note
+WHERE
+  id = $id
+  AND rubric_id = $rubric_id
+RETURNING
+  id;

@@ -5,8 +5,10 @@ import type {
   ChatCompletionMessageParam,
   ParsedChatCompletion,
 } from 'openai/resources/chat/completions.mjs';
+import type { L } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
 import {
   callAsync,
   loadSqlEquiv,
@@ -18,6 +20,7 @@ import {
 } from '@prairielearn/postgres';
 
 import {
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   type Course,
   GradingJobSchema,
@@ -39,6 +42,8 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
+
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
@@ -176,22 +181,194 @@ export async function generatePrompt({
   return { messages };
 }
 
+export async function generateRubricTuningPrompt({
+  urlPrefix,
+  selectedInstanceQuestions,
+  assessmentQuestion,
+  question,
+  course,
+  openai
+}: {
+  urlPrefix: string;
+  selectedInstanceQuestions: InstanceQuestion[];
+  assessmentQuestion: AssessmentQuestion;
+  question: Question;
+  course: Course;
+  openai: OpenAI;
+}) {
+  const rubric_items = await selectRubricForGrading(assessmentQuestion.id);
+  const rubricItemsJSON = rubric_items.map((item) => ({
+    id: item.id,
+    description: item.description,
+    explanation: item.explanation,
+    grader_note: item.grader_note,
+    points: item.points,
+  }));
+
+  const messages: ChatCompletionMessageParam[] = [
+    {
+      role: 'system',
+      content: `
+        You are an AI rubric calibration tool in an AI grading platform. 
+        In the explanation and grader notes fields, enhance this rubric. You may also modify the description, though don't change it significantly. 
+        Use the sample submissions provided to clarify the rubric and enhance its meaning. 
+        You are provided the correct rubric items and the AI-selected rubric items, which you must optimize.
+        Return the adjusted rubric items as a JSON object with the following fields:
+        - id: The ID of the rubric item.
+        - description: The description of the rubric item.
+        - explanation: The explanation of the rubric item.
+        - grader_note: The grader note of the rubric item.
+        The ID you provide must be identical to the ID of the rubric item you are modifying.
+        You must return all the rubric items, modified or not, in the JSON object.
+      `
+    },
+  ];
+
+  const question_course = await getQuestionCourse(question, course);
+
+  let questionPromptAdded = false;
+  let index = 0;
+
+  const gradingJobMapping = await selectGradingJobsInfo(selectedInstanceQuestions);
+
+  for (const instanceQuestion of selectedInstanceQuestions) {
+    const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+
+    const locals = {
+      ...buildQuestionUrls(urlPrefix, variant, question, instanceQuestion),
+      questionRenderContext: 'ai_grading',
+    };
+    // Get question html
+    const questionModule = questionServers.getModule(question.type);
+    const render_question_results = await questionModule.render(
+      { question: true, submissions: false, answer: false },
+      variant,
+      question,
+      null,
+      [],
+      question_course,
+      locals,
+    );
+    if (render_question_results.courseIssues.length > 0) {
+      logger.info(render_question_results.courseIssues.toString());
+      logger.error('Errors occurred while AI grading, see output for details');
+      throw new Error(
+        'Errors occurred while AI grading, see output for details. Please check the logs for more information.',
+      );
+    }
+
+    const questionPrompt = render_question_results.data.questionHtml;
+    if (!questionPromptAdded) {
+      messages.push({
+        role: 'user',
+        content: `Question prompt: \n${questionPrompt}\n`
+      });
+
+      messages.push({
+        role: 'system',
+        content: 'Here are the rubric items: ' + JSON.stringify(rubricItemsJSON, null, 2)
+      });
+
+      messages.push({
+        role: 'system',
+        content: 'Here are some sample responses to the question, along with correct rubric items and what the AI selected:'
+      });
+      questionPromptAdded = true;
+    }
+
+    let submission_embedding = await selectEmbeddingForSubmission(submission.id);
+    if (!submission_embedding) {
+      submission_embedding = await generateSubmissionEmbedding({
+        course,
+        question,
+        instance_question: instanceQuestion,
+        urlPrefix,
+        openai,
+      });
+    }
+
+    const submission_text = submission_embedding.submission_text;
+    
+    const submissionMessage = await generateSubmissionMessage({
+      submission_text,
+      submitted_answer: submission.submitted_answer,
+      forGrading: false
+    });
+
+    messages.push({
+      role: 'user',
+      content: `Sample submission #${index} response:`
+    });
+    messages.push(submissionMessage);
+
+    messages.push({
+      role: 'user',
+      content: `Sample submission #${index} selected rubric items:`
+    });
+
+    const grading_jobs = gradingJobMapping[instanceQuestion.id] ?? [];
+
+    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+
+    if (!manualGradingJob || !aiGradingJob) {
+      throw new Error(
+        `No manual or AI grading job found for instance question ${instanceQuestion.id}.`
+      );
+    }
+
+
+    const aiRubricItems = aiGradingJob.rubric_items;
+    const aiRubricItemsJSON = aiRubricItems.map((item) => ({
+      id: item.id,
+      description: item.description
+    }));
+    messages.push({
+      role: 'user',
+        content: `AI-selected rubric items for submission #${index}: ${JSON.stringify(aiRubricItemsJSON, null, 2)}`,
+      });
+
+    const manualRubricItems = await selectRubricGradingItems(manualGradingJob.manual_rubric_grading_id);
+    const manualRubricItemsJSON = manualRubricItems.map((item) => ({
+      id: item.id,
+      description: item.description
+    }));
+    messages.push({
+      role: 'user',
+      content: `Correct rubric items for submission #${index}: ${JSON.stringify(manualRubricItemsJSON, null, 2)}`,
+    });
+
+    index++;
+  }
+
+  messages.push({
+    role: 'user',
+    content: 'Please adjust the rubric items based on the provided sample submissions and responses.'
+  });
+  return {messages, rubric_items};
+}
+
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  forGrading = true
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  /** Determines if additional messages used for grading student submissions are included. */
+  forGrading?: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (forGrading) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response: \n<response>\n',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -254,10 +431,12 @@ function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (forGrading) {
+    message_content.push({
+      type: 'text',
+      text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    });
+  }
 
   return {
     role: 'user',

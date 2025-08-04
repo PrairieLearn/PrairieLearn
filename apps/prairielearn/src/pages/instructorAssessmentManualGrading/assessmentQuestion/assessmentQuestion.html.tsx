@@ -144,8 +144,8 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form method="POST" id="select-references">
-              <input type="hidden" name="__action" value="select_references" />
+            <form method="POST" id="tune-rubric">
+              <input type="hidden" name="__action" value="tune_rubric" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
           `
@@ -316,9 +316,9 @@ export function AssessmentQuestion({
                         <button
                           class="dropdown-item"
                           type="button"
-                          onclick="$('#select-references').submit();"
+                          onclick="$('#tune-rubric').submit();"
                         >
-                          Select reference submissions
+                          Tune rubric
                         </button>
 
                         <hr class="dropdown-divider" />
