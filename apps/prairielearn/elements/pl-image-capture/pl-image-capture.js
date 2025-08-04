@@ -55,6 +55,8 @@ const MAX_ZOOM_SCALE = 5;
       this.createLocalCameraCaptureListeners();
 
       this.loadSubmission();
+      this.createDeletionListeners();
+
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
@@ -190,6 +192,66 @@ const MAX_ZOOM_SCALE = 5;
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
+      });
+    }
+
+    createDeletionListeners() {
+      const uploadedImageDeletionButtons = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-deletion-buttons',
+      );
+      const uploadedImageDeletionConfirmationButtons = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-deletion-confirmation-buttons',
+      );
+
+      const deleteUploadedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-uploaded-image-button',
+      );
+
+      const confirmDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-confirm-delete-uploaded-image-button',
+      );
+
+      const cancelDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-cancel-delete-uploaded-image-button',
+      );
+
+      this.ensureElementsExist({
+        uploadedImageDeletionButtons,
+        uploadedImageDeletionConfirmationButtons,
+        deleteUploadedImageButton,
+        confirmDeleteUploadedImageButton,
+        cancelDeleteUploadedImageButton,
+      });
+
+      deleteUploadedImageButton.addEventListener('click', () => {
+        uploadedImageDeletionButtons.classList.add('d-none');
+        uploadedImageDeletionConfirmationButtons.classList.replace('d-none', 'd-flex');
+      });
+
+      confirmDeleteUploadedImageButton.addEventListener('click', () => {
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: undefined,
+          originalCapture: false,
+        });
+
+        const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+          '.js-uploaded-image-container',
+        );
+
+        this.ensureElementsExist({
+          uploadedImageContainer,
+        });
+
+        // Reset the hidden capture input value to indicate no image is captured.
+        this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+        // Hide the deletion buttons (no image is uploaded).
+        uploadedImageDeletionConfirmationButtons.classList.replace('d-flex', 'd-none');
+      });
+
+      cancelDeleteUploadedImageButton.addEventListener('click', () => {
+        uploadedImageDeletionButtons.classList.replace('d-none', 'd-flex');
+        uploadedImageDeletionConfirmationButtons.classList.add('d-none');
       });
     }
 
@@ -375,14 +437,20 @@ const MAX_ZOOM_SCALE = 5;
      */
     setNoCaptureAvailableYetState(uploadedImageContainer) {
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
-
-      this.ensureElementsExist({
-        imagePlaceholderDiv,
-      });
-
-      imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image captured yet.</span>
-      `;
+      if (imagePlaceholderDiv) {
+        imagePlaceholderDiv.innerHTML = `
+          <span class="text-muted">No image captured yet.</span>
+        `;
+      } else {
+        uploadedImageContainer.innerHTML = `
+          <div
+            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
+            style="height: 200px;"
+          >
+            <span class="text-muted">No image captured yet.</span>
+          </div>
+        `;
+      }
     }
 
     /**
@@ -449,7 +517,12 @@ const MAX_ZOOM_SCALE = 5;
         this.updateCaptureButtonTextForRetake();
       }
 
-      hiddenCaptureInput.value = dataUrl;
+      if (dataUrl) {
+        hiddenCaptureInput.value = dataUrl;
+      } else {
+        hiddenCaptureInput.removeAttribute('value');
+
+      }
     }
 
     /**
@@ -505,7 +578,11 @@ const MAX_ZOOM_SCALE = 5;
       const capturePreview = document.createElement('img');
       capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
 
-      capturePreview.src = dataUrl;
+      if (dataUrl) {  
+        capturePreview.src = dataUrl;
+      } else {
+        capturePreview.removeAttribute('src');
+      }
       capturePreview.alt = 'Captured image preview';
 
       uploadedImageContainer.innerHTML = '';
@@ -520,22 +597,41 @@ const MAX_ZOOM_SCALE = 5;
           { once: true },
         );
       }
+      const uploadedImageContainerTopButtons = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container-top-buttons',
+      );
 
-      if (!this.editable) {
-        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+      this.ensureElementsExist({
+        uploadedImageContainerTopButtons,
+      });
+
+      uploadedImageContainerTopButtons.classList.remove('d-none');
+
+      if (this.editable) {
+        if (dataUrl) {
+          const uploadedImageDeletionButtons = this.imageCaptureDiv.querySelector(
+            '.js-uploaded-image-deletion-buttons',
+          );
+          const uploadedImageDeletionConfirmationButtons = this.imageCaptureDiv.querySelector(
+            '.js-uploaded-image-deletion-confirmation-buttons',
+          );
+          this.ensureElementsExist({
+            uploadedImageDeletionButtons,
+            uploadedImageDeletionConfirmationButtons, 
+          });
+          uploadedImageDeletionButtons.classList.remove('d-none');
+          uploadedImageDeletionConfirmationButtons.classList.remove('d-flex');
+          uploadedImageDeletionConfirmationButtons.classList.add('d-none');
+        }
+      } else {
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
-          zoomButtonsContainer,
+          uploadedImageContainerTopButtons,
           zoomInButton,
           zoomOutButton,
         });
-
-        // Display the zoom buttons only when the image is not editable to
-        // prevent confusion with crop/rotate functionality, which is
-        // available when the image is editable.
-        zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
           this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
@@ -597,7 +693,11 @@ const MAX_ZOOM_SCALE = 5;
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
             '.js-hidden-original-capture-input',
           );
-          hiddenOriginalCaptureInput.value = dataUrl;
+          if (dataUrl) {
+            hiddenOriginalCaptureInput.value = dataUrl;
+          } else {
+            hiddenOriginalCaptureInput.removeAttribute('value');
+          }
           if (this.cropper) {
             this.resetCropRotate();
           }
