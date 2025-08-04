@@ -59,9 +59,7 @@ export async function updateScore(assessment_instance_id: string) {
 
   const info = await sqldb.queryOptionalRow(
     sql.get_score,
-    {
-      ai_id: assessment_instance_id,
-    },
+    { ai_id: assessment_instance_id },
     z.object({
       ...AssessmentInstanceSchema.shape,
       ...LtiOutcomeSchema.shape,
