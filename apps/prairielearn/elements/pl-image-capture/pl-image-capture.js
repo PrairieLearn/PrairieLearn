@@ -544,7 +544,7 @@ const MAX_ZOOM_SCALE = 5;
         zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
-          // Initialize Panzoom on the parent of the image element, since
+          // Initialize Panzoom on the parent of the captured image element, since
           // the image itself may be rotated.
           this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
