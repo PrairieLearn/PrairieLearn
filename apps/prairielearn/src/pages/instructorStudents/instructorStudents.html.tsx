@@ -84,18 +84,22 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const columns = useMemo(
     () => [
       columnHelper.accessor((row) => row.user.uid, {
+        id: 'user.uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor((row) => row.user.name, {
+        id: 'user.name',
         header: 'Name',
         cell: (info) => info.getValue() || '—',
       }),
       columnHelper.accessor((row) => row.user.email, {
+        id: 'user.email',
         header: 'Email',
         cell: (info) => info.getValue() || '—',
       }),
       columnHelper.accessor((row) => row.enrollment.created_at, {
+        id: 'enrollment.created_at',
         header: 'Enrolled on',
         cell: (info) => {
           const date = info.getValue();
@@ -110,8 +114,9 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   );
 
   const allColumnIds = columns
-    .filter((col) => col.accessorKey)
-    .map((col) => col.accessorKey.replace('.', '_'));
+    .map((col) => col.id)
+    .filter((id) => typeof id === 'string')
+    .map((id) => id.replace('.', '_'));
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
