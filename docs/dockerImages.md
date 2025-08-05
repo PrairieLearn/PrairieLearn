@@ -45,11 +45,11 @@ Some questions may require additional customization of existing images, such as 
 
 Note that the process above _will not_ cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to periodically update your custom image by repeating steps 5-8 above.
 
-### Testing custom images
+### Testing custom images locally
 
-Occasionally, instructors may need to update their own existing custom images, e.g., to update versions of supported packages, to install additional packages, or to change specific settings. For simple changes that are not expected to impact existing questions significantly, updating the `Dockerfile` and related files and executing steps 5-8 above may be sufficient.
+For simple custom images that only include one or two extra packages or libraries, the steps above should be sufficient to ensure that the image works as expected, testing them in production itself. Similarly, simple changes like updating package versions can be achieved by updating the files from step 4 above, then re-running steps 5-8.
 
-In some cases, however, changes may be significant enough that [testing in a local environment](./installing.md#support-for-external-graders-and-workspaces) is strongly advisable to ensure that existing questions continue to work as expected. In this scenario, it is important to ensure that the production environment is not updated with the new image version until testing is complete. There are some approaches that can be taken to achieve this result.
+However, for more complex images or more elaborate changes to existing custom images, it is advisable to test the image locally in a [local PrairieLearn environment](./installing.md#support-for-external-graders-and-workspaces) before pushing it to the production environment. In this scenario, it is important to ensure that the updated version of the image is restricted to the local environment, and that the production environment is not updated with the new image version until testing is complete. While avoiding an image sync (step 8 above) is often enough to prevent this, this may be difficult to ensure in practice, especially if multiple users are working on the same course.
 
 By default, a local installation of PrairieLearn will pull the latest version of the grader/workspace image every time it is used. However, it is possible to change PrairieLearn's configuration to use the local version of an image. This can be done by creating a `config.json` file in any directory of your choice with the following content:
 
