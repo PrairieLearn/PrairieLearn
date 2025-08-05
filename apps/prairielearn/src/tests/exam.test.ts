@@ -1242,9 +1242,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should get the submission_ids for addNumbers', async () => {
         const result = await sqldb.queryRows(
           sql.select_submissions_by_qid,
-          {
-            qid: helperExam.questions.addNumbers.qid,
-          },
+          { qid: helperExam.questions.addNumbers.qid },
           SubmissionSchema,
         );
         const rowCount = result.length;
@@ -1493,9 +1491,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should get the submission_ids for addNumbers', async () => {
         const result = await sqldb.queryRows(
           sql.select_submissions_by_qid,
-          {
-            qid: helperExam.questions.addNumbers.qid,
-          },
+          { qid: helperExam.questions.addNumbers.qid },
           SubmissionSchema,
         );
         const rowCount = result.length;
@@ -1633,9 +1629,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
       it('should get the submission_ids for addNumbers', async () => {
         const result = await sqldb.queryRows(
           sql.select_submissions_by_qid,
-          {
-            qid: helperExam.questions.addNumbers.qid,
-          },
+          { qid: helperExam.questions.addNumbers.qid },
           SubmissionSchema,
         );
         const rowCount = result.length;

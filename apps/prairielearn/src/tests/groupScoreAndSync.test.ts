@@ -182,9 +182,7 @@ describe('assessment instance group synchronization test', function () {
     it('should have the variant in the DB if has grade or save button', async () => {
       locals.variant = await sqldb.queryRow(
         sql.select_variant,
-        {
-          variant_id: locals.variant_id,
-        },
+        { variant_id: locals.variant_id },
         VariantSchema,
       );
     });
@@ -234,9 +232,7 @@ describe('assessment instance group synchronization test', function () {
     it('should have the submission', async () => {
       locals.submission = await sqldb.queryRow(
         sql.select_last_submission_for_variants,
-        {
-          variant_id: locals.variant.id,
-        },
+        { variant_id: locals.variant.id },
         SubmissionSchema,
       );
     });

@@ -208,9 +208,7 @@ router.get(
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
       const histByDateResult = await sqldb.queryRows(
         sql.assessment_score_histogram_by_date,
-        {
-          assessment_id: res.locals.assessment.id,
-        },
+        { assessment_id: res.locals.assessment.id },
         AssessmentScoreHistogramByDateSchema,
       );
       const scoresByDay = histByDateResult;

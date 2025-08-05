@@ -16,9 +16,7 @@ async function stopLaunchedTimeoutWorkspaces() {
 
   const workspaces = await sqldb.queryRows(
     sql.select_launched_timeout_workspaces,
-    {
-      launched_timeout_sec: config.workspaceLaunchedTimeoutSec,
-    },
+    { launched_timeout_sec: config.workspaceLaunchedTimeoutSec },
     WorkspaceSchema,
   );
   for (const workspace of workspaces) {
@@ -42,9 +40,7 @@ async function stopHeartbeatTimeoutWorkspaces() {
 
   const workspaces = await sqldb.queryRows(
     sql.select_heartbeat_timeout_workspaces,
-    {
-      heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec,
-    },
+    { heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec },
     WorkspaceSchema,
   );
   for (const workspace of workspaces) {
@@ -68,9 +64,7 @@ async function stopInLaunchingTimeoutWorkspaces() {
 
   const workspaces = await sqldb.queryRows(
     sql.select_in_launching_timeout_workspaces,
-    {
-      in_launching_timeout_sec: config.workspaceInLaunchingTimeoutSec,
-    },
+    { in_launching_timeout_sec: config.workspaceInLaunchingTimeoutSec },
     WorkspaceSchema,
   );
   for (const workspace of workspaces) {

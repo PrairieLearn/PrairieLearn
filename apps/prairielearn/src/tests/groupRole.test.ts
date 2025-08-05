@@ -107,9 +107,7 @@ async function verifyRoleAssignmentsInDatabase(
     .sort((a, b) => +a.user_id - +b.user_id || +a.group_role_id - +b.group_role_id);
   const result = await sqldb.queryRows(
     sql.select_group_user_roles,
-    {
-      assessment_id: assessmentId,
-    },
+    { assessment_id: assessmentId },
     GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
   );
   assert.sameDeepMembers(result, expected);
@@ -223,9 +221,7 @@ describe(
     test.sequential('contains the 4 group roles for the assessment', async function () {
       const result = await sqldb.queryRows(
         sql.select_assessment_group_roles,
-        {
-          assessment_id: locals.assessment_id,
-        },
+        { assessment_id: locals.assessment_id },
         GroupRoleSchema,
       );
       assert.lengthOf(result, 4);
@@ -954,9 +950,7 @@ describe(
         // they previously had non-required roles
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
-          {
-            assessment_id: locals.assessment_id,
-          },
+          { assessment_id: locals.assessment_id },
           GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
         );
         assert.lengthOf(result, 4);
@@ -1092,9 +1086,7 @@ describe(
         // Assert that the reflector role is given to either first or second user
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
-          {
-            assessment_id: locals.assessment_id,
-          },
+          { assessment_id: locals.assessment_id },
           GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
         );
         assert.lengthOf(result, 3);
@@ -1258,9 +1250,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles);
     const groupRolesResult = await sqldb.queryRows(
       sql.select_assessment_group_roles,
-      {
-        assessment_id: assessmentId,
-      },
+      { assessment_id: assessmentId },
       GroupRoleSchema,
     );
     assert.lengthOf(groupRolesResult, 4);
@@ -1726,9 +1716,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       async function () {
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
-          {
-            assessment_id: assessmentId,
-          },
+          { assessment_id: assessmentId },
           GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
         );
 
@@ -1781,9 +1769,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   test.sequential('should contain the 4 group roles for the assessment', async function () {
     const result = await sqldb.queryRows(
       sql.select_assessment_group_roles,
-      {
-        assessment_id: locals.assessment_id,
-      },
+      { assessment_id: locals.assessment_id },
       GroupRoleSchema,
     );
     assert.lengthOf(result, 4);

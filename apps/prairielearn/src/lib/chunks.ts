@@ -445,9 +445,7 @@ export function identifyChunksFromChangedFiles(
 export async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
     sql.select_course_chunks,
-    {
-      course_id: courseId,
-    },
+    { course_id: courseId },
     RawCourseChunkSchema,
   );
   return result;
@@ -1119,9 +1117,7 @@ export async function getTemplateQuestionIds(
   if (!question.template_directory) return [];
   const questionIds = await sqldb.queryRows(
     sql.select_template_question_ids,
-    {
-      question_id: question.id,
-    },
+    { question_id: question.id },
     IdSchema,
   );
   return questionIds;

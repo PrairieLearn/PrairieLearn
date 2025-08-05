@@ -22,7 +22,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
-      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, [], JobSequenceSchema);
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
       locals.job_sequence_id = jobSequence.id;
     });
     it('should be successful', async function () {
@@ -659,11 +659,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(response.status, 200);
       });
       it('should have an id', async function () {
-        const jobSequence = await sqldb.queryRow(
-          sql.select_last_job_sequence,
-          [],
-          JobSequenceSchema,
-        );
+        const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
         locals.job_sequence_id = jobSequence.id;
       });
       it('should complete', async function () {

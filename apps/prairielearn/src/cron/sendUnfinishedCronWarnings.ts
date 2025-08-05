@@ -13,7 +13,6 @@ export async function run() {
 
   const result = await sqldb.queryRows(
     sql.select_unfinished_cron_jobs,
-    [],
     z.object({
       name: CronJobSchema.shape.name,
       formatted_started_at: z.string(),
