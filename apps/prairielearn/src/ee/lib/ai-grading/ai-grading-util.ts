@@ -19,9 +19,11 @@ import {
 } from '@prairielearn/postgres';
 
 import {
+  type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
   type Course,
+  type CourseInstance,
   GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
@@ -42,7 +44,11 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
-import { selectGradingJobsInfo } from './ai-grading-stats.js';
+import { fillInstanceQuestionColumns, generateAssessmentAiGradingStatsCSV, selectGradingJobsInfo } from './ai-grading-stats.js';
+import { aiGrade } from './ai-grading.js';
+import { zodResponseFormat } from 'openai/helpers/zod.mjs';
+import { HttpStatusError } from '@prairielearn/error';
+import { idsEqual } from '../../../lib/id.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
@@ -704,4 +710,239 @@ export async function deleteAiGradingJobs({
   }
 
   return iqs;
+}
+
+export async function benchmarkRubricTuning({
+  assessment,
+  assessment_question,
+  course,
+  course_instance,
+  question,
+  urlPrefix,
+  authn_user_id,
+  openai
+
+}: {
+  assessment: Assessment;
+  assessment_question: AssessmentQuestion;
+  course: Course; 
+  course_instance: CourseInstance;
+  question: Question;
+  urlPrefix: string;
+  authn_user_id: string;
+  openai: OpenAI;
+}) {
+  const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
+    assessment_question.id,
+  );
+
+  const instanceQuestionsById: Record<string, InstanceQuestion> = {};
+  for (const instanceQuestion of instanceQuestions) {
+    instanceQuestionsById[instanceQuestion.id] = instanceQuestion;
+  }
+
+  // Rerun AI grading on all instance questions
+  // This will be used by the AI to identify the submissions used to tune the rubric
+  await deleteAiGradingJobs({
+    assessment_question_ids: [assessment_question.id],
+    authn_user_id
+  });
+
+  await aiGrade({
+    question,
+    course,
+    course_instance_id: course_instance.id,
+    assessment_question,
+    urlPrefix,
+    authn_user_id,
+    user_id: authn_user_id, // TODO: is this okay?
+    mode: 'all',
+    syncGrading: true
+  });
+
+  // Retrieve all human and AI gradings.
+  const instanceQuestionsTable = await fillInstanceQuestionColumns(
+    instanceQuestions,
+    assessment_question
+  );
+
+  const aiGradingsForEachPtLevel: Record<number, string[]> = {};
+
+  for (let i = 0; i < instanceQuestionsTable.length; i++) {
+    const instanceQuestionRow = instanceQuestionsTable[i];
+    if (instanceQuestionRow.point_difference === null) {
+      continue; // Skip if no AI grading
+    }
+
+    // Add the AI grading to the corresponding point level
+    const aiPoints = instanceQuestionRow.ai_points ?? -1; // Default to -1 if null
+
+    aiGradingsForEachPtLevel[aiPoints] = aiGradingsForEachPtLevel[aiPoints] || [];
+    aiGradingsForEachPtLevel[aiPoints].push(instanceQuestions[i].id);
+  }
+
+  
+  // Select a total of 5 AI gradings, distributed across the point levels
+  const selectedInstanceQuestions: InstanceQuestion[] = [];
+
+  const levels = Object.keys(aiGradingsForEachPtLevel)
+    .map(Number)
+    .filter(lvl => aiGradingsForEachPtLevel[lvl].length > 0);
+  
+  const numToSelect = Math.max(5, levels.length);
+
+
+  let idx = 0;
+  while (selectedInstanceQuestions.length < numToSelect) {
+    // If all buckets are empty, stop early
+    if (levels.every(lvl => aiGradingsForEachPtLevel[lvl].length === 0)) {
+      break;
+    }
+
+    const level = levels[idx % levels.length];
+    const bucket = aiGradingsForEachPtLevel[level];
+
+    if (bucket.length > 0) {
+      // Pull one at random from this bucket
+      const randomIndex = Math.floor(Math.random() * bucket.length);
+      const [pickedId] = bucket.splice(randomIndex, 1);
+      console.log(`Picked ID: ${pickedId} from level ${level}`);
+      selectedInstanceQuestions.push(instanceQuestionsById[pickedId]);
+    }
+
+    idx++;
+  }
+
+  const {messages: rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
+    urlPrefix: urlPrefix,
+    selectedInstanceQuestions,
+    assessmentQuestion: assessment_question,
+    question,
+    course,
+    openai
+  });
+
+  const TunedRubricResponseSchema = z.object({
+    rubric_items: z.array(
+      z.object({
+        id: z.string(),
+        description: z.string(),
+        explanation: z.string(),
+        grader_note: z.string(),
+      }),
+    )
+  });
+
+  // AI-generate the tuned rubric.
+  const NUM_ATTEMPTS = 3;
+  let attempt = 0;
+  let generatedRubricItems: z.infer<typeof TunedRubricResponseSchema>['rubric_items'] = [];
+  for (attempt = 0; attempt < NUM_ATTEMPTS; attempt++) {
+    try {
+      const completion = await openai.chat.completions.parse({
+        messages: rubricTuningMessages,
+        model: 'o4-mini',
+        user: `course_${course.id}`,
+        response_format: zodResponseFormat(TunedRubricResponseSchema, 'formatted_rubric'),
+      });
+      const response = completion.choices[0].message;
+      if (!response?.parsed?.rubric_items) {
+        throw new HttpStatusError(500, 'AI did not return a formatted rubric');          
+      }
+
+      generatedRubricItems = response.parsed.rubric_items;
+
+      // Ensure all AI-generated rubric items are in the original rubric items list
+      const originalRubricItemIds = new Set(rubric_items.map((item) => item.id));
+      for (const item of generatedRubricItems) {
+        if (!originalRubricItemIds.has(item.id)) {
+          throw new HttpStatusError(400, `Unknown AI-generated rubric item ID: ${item.id}`);
+        }
+      }
+      break;
+    } catch (err) {
+      if (err instanceof HttpStatusError && err.status === 400) {
+        // If the AI response is invalid, we retry
+        console.warn(`AI response invalid on attempt ${attempt + 1}:`, err.message);
+        continue;
+      }
+      throw err; // Rethrow other errors
+    }
+  }
+  
+  if (attempt === NUM_ATTEMPTS) {
+    throw new HttpStatusError(500, 'AI failed to generate a valid rubric after multiple attempts');
+  }
+
+  // Prior to tuning the rubric, we acquire the performance of all 
+  // submissions NOT used to tune the rubric.
+
+  // This simulates that we told the user to grade the reference submissions, they did,
+  // and we are now using those references to guide the grading of the rest of the submissions.
+  await deleteAiGradingJobs({
+    assessment_question_ids: [assessment_question.id],
+    authn_user_id
+  });
+
+  // Grade everything but the instance questions selected for tuning the rubric to prevent
+  // ground-truth labels from contaminating the benchmark.
+  const instanceQuestionsToGrade = instanceQuestionsTable.filter(
+    (iq) => !selectedInstanceQuestions.some((siq) => idsEqual(siq.id, iq.id)),
+  );
+  
+  await aiGrade({
+    question,
+    course,
+    course_instance_id: course_instance.id,
+    assessment_question: assessment_question,
+    urlPrefix: urlPrefix,
+    authn_user_id: authn_user_id,
+    user_id: authn_user_id,
+    mode: 'selected',
+    instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+    syncGrading: true
+  });
+
+  // Acquire performance statistics
+  const file1_data = await generateAssessmentAiGradingStatsCSV(assessment);
+
+  // Update the rubric items in the database
+  for (const item of generatedRubricItems) {
+    // Dummy message for testing
+    // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
+    await queryAsync(sql.update_rubric_item, {
+      id: item.id,
+      rubric_id: assessment_question.manual_rubric_id,
+      description: item.description,
+      explanation: item.explanation,
+      grader_note: item.grader_note,
+    });
+  }
+
+  // We repeat the process of grading the remaining submissions again,
+  // but with the AI-enhanced rubric.
+  await deleteAiGradingJobs({
+    assessment_question_ids: [assessment_question.id],
+    authn_user_id: authn_user_id,
+  });
+
+  await aiGrade({
+    question,
+    course,
+    course_instance_id: course_instance.id,
+    assessment_question: assessment_question,
+    urlPrefix: urlPrefix,
+    authn_user_id: authn_user_id,
+    user_id: authn_user_id,
+    mode: 'selected',
+    instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+    syncGrading: true
+  });
+
+  const file2_data = await generateAssessmentAiGradingStatsCSV(assessment);
+
+  return {
+    file1_data,
+    file2_data
+  };
 }
